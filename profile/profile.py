@@ -1,30 +1,11 @@
-import asyncio
-from collections import defaultdict
-from datetime import datetime
-from datetime import timedelta
-from dateutil import tz
-import http.client
-import json
-import os
-import pytz
 import re
-import threading
-import time
-import time
-import traceback
-import urllib.parse
 
-from enum import Enum
-
-from __main__ import user_allowed, send_cmd_help
 import discord
+from __main__ import send_cmd_help
 from discord.ext import commands
-import prettytable
 
 from .rpadutils import CogSettings
-from .utils import checks
 from .utils.chat_formatting import *
-from .utils.dataIO import fileIO
 
 
 # from copy import deepcopy
@@ -57,12 +38,13 @@ def computeOldGroup(str_id):
     old_id_digit = str_id[2]
     return chr(ord('A') + (int(old_id_digit) % 5))
 
+
 # def computeNewGroup(str_id):
 #     int_id = int(str_id)
 #     return (int_id % 3)
 
 
-class Profile:
+class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.settings = ProfileSettings("profile")
