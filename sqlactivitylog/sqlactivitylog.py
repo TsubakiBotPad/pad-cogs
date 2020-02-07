@@ -1,23 +1,15 @@
-from collections import deque
-from datetime import datetime, timedelta
-import os
+import sqlite3 as lite
 import textwrap
 import timeit
+from collections import deque
+from datetime import datetime, timedelta
 
-import discord
-from discord.ext import commands
 import prettytable
-import pytz
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
-from __main__ import send_cmd_help
-from cogs.utils import checks
-from cogs.utils.dataIO import dataIO
-import sqlite3 as lite
-
-from . import rpadutils
-from .rpadutils import *
-from .utils.chat_formatting import *
-
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
 
 TIMESTAMP_FORMAT = '%Y-%m-%d %X'  # YYYY-MM-DD HH:MM:SS
 PATH_LIST = ['data', 'sqlactivitylog']
@@ -184,12 +176,12 @@ WHERE server_id = :server_id
 '''
 
 
-class SqlActivityLogger(object):
+class SqlActivityLogger(commands.Cog):
     """Log activity seen by bot"""
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json(JSON)
+        self.settings = SQLSettings("sqlactivitylog")
         self.lock = False
         self.con = lite.connect(DB, detect_types=lite.PARSE_DECLTYPES)
         self.con.row_factory = lite.Row
@@ -205,38 +197,38 @@ class SqlActivityLogger(object):
         self.lock = True
         self.con.close()
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def rawquery(self, ctx, *, query: str):
-        await self.queryAndPrint(ctx.message.server, query, {}, {})
+        await self.queryAndPrint(ctx.guild, query, {}, {})
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def inserttiming(self, ctx):
         size = len(self.insert_timing)
         avg_time = round(sum(self.insert_timing) / size, 4)
         max_time = round(max(self.insert_timing), 4)
         min_time = round(min(self.insert_timing), 4)
-        await self.bot.say(inline('{} inserts, min={} max={} avg={}'.format(size, min_time, max_time, avg_time)))
+        await ctx.send(inline('{} inserts, min={} max={} avg={}'.format(size, min_time, max_time, avg_time)))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def togglelock(self, ctx):
         self.lock = not self.lock
-        await self.bot.say(inline('Locked is now {}'.format(self.lock)))
+        await ctx.send(inline('Locked is now {}'.format(self.lock)))
 
-    @commands.group(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @commands.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def exlog(self, context):
         """Extra log querying tools.
 
         Uses the bot's local SQL message storage to retrieve messages
         seen in the current server since the cog was installed.
         """
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def user(self, ctx, user: discord.User, count=10):
         """exlog user tactical_retreat 100
 
@@ -244,7 +236,7 @@ class SqlActivityLogger(object):
         Count is optional, with a low default and a maximum value.
         """
         count = min(count, MAX_LOGS)
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'row_count': count,
@@ -259,8 +251,9 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, USER_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
-    async def channel(self, ctx, channel: discord.Channel, count=10):
+    @exlog.command()
+    @commands.guild_only()
+    async def channel(self, ctx, channel: discord.TextChannel, count=10):
         """exlog channel #general_chat 100
 
         List of messages in a given channel.
@@ -268,7 +261,7 @@ class SqlActivityLogger(object):
         The bot is excluded from results.
         """
         count = min(count, MAX_LOGS)
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'bot_id': self.bot.user.id,
@@ -284,15 +277,16 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, CHANNEL_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
-    async def userchannel(self, ctx, user: discord.User, channel: discord.Channel, count=10):
+    @exlog.command()
+    @commands.guild_only()
+    async def userchannel(self, ctx, user: discord.User, channel: discord.TextChannel, count=10):
         """exlog userchannel tactical_retreat #general_chat 100
 
         List of messages from a user in a given channel.
         Count is optional, with a low default and a maximum value.
         """
         count = min(count, MAX_LOGS)
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'row_count': count,
@@ -307,7 +301,8 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, USER_CHANNEL_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def query(self, ctx, query, count=10):
         """exlog query "4 whale" 100
 
@@ -317,11 +312,11 @@ class SqlActivityLogger(object):
         The bot is excluded from results.
         """
         if query[0] in ('%', '_'):
-            await self.bot.say('`You cannot start this query with a wildcard`')
+            await ctx.send('`You cannot start this query with a wildcard`')
             return
 
         count = min(count, MAX_LOGS)
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'bot_id': self.bot.user.id,
@@ -338,7 +333,8 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, CONTENT_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def whosays(self, ctx, query, count=10):
         """exlog whosays "%:thinking:%" 10
 
@@ -348,11 +344,11 @@ class SqlActivityLogger(object):
         The bot is excluded from results.
         """
         if query[0] in ('%', '_'):
-            await self.bot.say('`You cannot start this query with a wildcard`')
+            await ctx.send('`You cannot start this query with a wildcard`')
             return
 
         count = min(count, MAX_LOGS)
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'bot_id': self.bot.user.id,
@@ -365,7 +361,8 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, WHOSAYS_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def dailyreport(self, ctx, count=10):
         """exlog dailyreport 10
 
@@ -373,7 +370,7 @@ class SqlActivityLogger(object):
         """
         count = min(count, 30)
         start_date = datetime.today() - timedelta(days=(count + 1))
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'row_count': count,
@@ -383,7 +380,8 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, DAILY_REPORT_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def periodreport(self, ctx, start_date, end_date):
         """exlog periodreport 2017-01-01 2017-01-10
 
@@ -398,7 +396,7 @@ class SqlActivityLogger(object):
         start_date = start_date.replace(tzinfo=pytz.utc)
         end_date = end_date.replace(tzinfo=pytz.utc)
 
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'start_timestamp': start_date,
@@ -408,8 +406,9 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, PERIOD_REPORT_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
-    async def channelreport(self, ctx, channel: discord.Channel, start_date: str, end_date: str, count=10):
+    @exlog.command()
+    @commands.guild_only()
+    async def channelreport(self, ctx, channel: discord.TextChannel, start_date: str, end_date: str, count=10):
         """exlog channelreport #general_chat 2017-01-01 2017-01-10
 
         Prints a report on user activity for the specified time period in a channel.
@@ -424,7 +423,7 @@ class SqlActivityLogger(object):
         start_date = start_date.replace(tzinfo=pytz.utc)
         end_date = end_date.replace(tzinfo=pytz.utc)
 
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'channel_id': channel.id,
@@ -436,7 +435,8 @@ class SqlActivityLogger(object):
 
         await self.queryAndPrint(server, CHANNEL_REPORT_QUERY, values, column_data)
 
-    @exlog.command(pass_context=True, no_pm=True)
+    @exlog.command()
+    @commands.guild_only()
     async def userreport(self, ctx, user: discord.User, start_date: str, end_date: str, count=10):
         """exlog userreport tactical_retreat 2017-01-01 2017-01-10
 
@@ -452,7 +452,7 @@ class SqlActivityLogger(object):
         start_date = start_date.replace(tzinfo=pytz.utc)
         end_date = end_date.replace(tzinfo=pytz.utc)
 
-        server = ctx.message.server
+        server = ctx.guild
         values = {
             'server_id': server.id,
             'user_id': user.id,
@@ -523,16 +523,16 @@ class SqlActivityLogger(object):
         result_text = "{} results fetched in {}s\n{}".format(
             len(rows), round(execution_time, 2), tbl.get_string())
         for p in pagify(result_text):
-            await self.bot.say(box(p))
+            await ctx.send(box(p))
 
     def save_json(self):
-        dataIO.save_json(JSON, self.settings)
+        self.settings.save_settings()
 
     async def on_message(self, message):
-        self.log('NEW', message, message.timestamp)
+        self.log('NEW', message, message.created_at)
 
     async def on_message_edit(self, before, after):
-        self.log('EDIT', after, after.edited_timestamp)
+        self.log('EDIT', after, after.edited_at)
 
     async def on_message_delete(self, message):
         self.log('DELETE', message, datetime.utcnow())
@@ -549,7 +549,7 @@ class SqlActivityLogger(object):
           VALUES(:timestamp, :server_id, :channel_id, :user_id, :msg_type, :content, :clean_content)
         '''
         timestamp = timestamp or datetime.utcnow()
-        server_id = message.server.id if message.server else -1
+        server_id = message.guild.id if message.guild else -1
         channel_id = message.channel.id if message.channel else -1
 
         msg_content = message.content
@@ -597,19 +597,7 @@ class SqlActivityLogger(object):
         return [(str(r['user_id']), str(r['content'])) for r in rows]
 
 
-def check_folders():
-    if not os.path.exists(PATH):
-        os.mkdir(PATH)
-
-
-def check_files():
-    if not dataIO.is_valid_json(JSON):
-        defaults = {}
-        dataIO.save_json(JSON, defaults)
-
-
-def setup(bot):
-    check_folders()
-    check_files()
-    n = SqlActivityLogger(bot)
-    bot.add_cog(n)
+class SQLSettings(CogSettings):
+    def make_default_settings(self):
+        config = {}
+        return config
