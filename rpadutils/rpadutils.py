@@ -10,31 +10,51 @@ import urllib
 
 import aiohttp
 import backoff
-import discord
 import pytz
-from cogs.utils.chat_formatting import *
-from discord.ext import commands
 from discord.ext.commands import CommandNotFound
-from discord.ext.commands import converter
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
-from .utils.dataIO import fileIO
 
-
-class RpadUtils:
-    def __init__(self, bot):
+class RpadUtils(commands.Cog):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
-    async def on_command_error(self, error, ctx):
-        channel = ctx.message.channel
+    async def on_command_error(self, ctx, error):
+        channel = ctx.channel
         if isinstance(error, ReportableError):
             msg = 'An error occurred while processing your command: {}'.format(error.message)
-            await self.bot.send_message(channel, inline(msg))
+            await channel.send(inline(msg))
 
+    def user_allowed(self, message):
+        author = message.author
 
-def setup(bot):
-    print('rpadutils setup')
-    n = RpadUtils(bot)
-    bot.add_cog(n)
+        if author.bot:
+            return False
+        """
+        mod_cog = self.bot.get_cog('Mod')
+
+        if not isinstance(message.channel, discord.abc.PrivateChannel):
+            guild = message.guild
+            names = (self.bot.settings.get_server_admin(
+                guild), self.bot.settings.get_server_mod(guild))
+            results = map(
+                lambda name: discord.utils.get(author.roles, name=name),
+                names)
+            for r in results:
+                if r is not None:
+                    return True
+
+        if mod_cog is not None:
+            if not isinstance(message.channel, discord.abc.PrivateChannel):
+                if message.guild.id in mod_cog.ignore_list["SERVERS"]:
+                    return False
+
+                if message.channel.id in mod_cog.ignore_list["CHANNELS"]:
+                    return False
+        """
+        return True
 
 
 # TZ used for PAD NA
@@ -43,7 +63,6 @@ NA_TZ_OBJ = pytz.timezone('US/Pacific')
 
 # TZ used for PAD JP
 JP_TZ_OBJ = pytz.timezone('Asia/Tokyo')
-
 
 # https://gist.github.com/ryanmcgrath/982242
 # UNICODE RANGE : DESCRIPTION
@@ -111,29 +130,30 @@ def get_role(roles, role_string):
         lambda r: r.name.lower() == role_string.lower(), roles)
 
     if role is None:
+        print("Could not find role named " + role_string)
         raise ReportableError("Could not find role named " + role_string)
 
     return role
 
 
-def get_role_from_id(bot, server, roleid):
+def get_role_from_id(bot, guild, roleid):
     try:
-        roles = server.roles
+        roles = guild.roles
     except AttributeError:
-        server = get_server_from_id(bot, server)
+        guild = get_server_from_id(bot, guild)
         try:
-            roles = server.roles
+            roles = guild.roles
         except AttributeError:
-            raise RoleNotFound(server, roleid)
+            raise RoleNotFound(guild, roleid)
 
     role = discord.utils.get(roles, id=roleid)
     if role is None:
-        raise ReportableError("Could not find role id {} in server {}".format(roleid, server.name))
+        raise ReportableError("Could not find role id {} in guild {}".format(roleid, guild.name))
     return role
 
 
 def get_server_from_id(bot, serverid):
-    return discord.utils.get(bot.servers, id=serverid)
+    return discord.utils.get(bot.guilds, id=serverid)
 
 
 def normalizeServer(server):
@@ -158,13 +178,9 @@ def should_download(file_path, expiry_secs):
         return False
 
 
-def shouldDownload(file_path, expiry_secs):
-    return should_download(file_path, expiry_secs)
-
-
 def writeJsonFile(file_path, js_data):
     with open(file_path, "w") as f:
-        json.dump(js_data, f, sort_keys=True, indent=4)
+        json.dump(js_data, f, indent=4)
 
 
 def readJsonFile(file_path):
@@ -173,7 +189,7 @@ def readJsonFile(file_path):
 
 
 @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_time=60)
-@backoff.on_exception(backoff.expo, aiohttp.DisconnectedError, max_time=60)
+@backoff.on_exception(backoff.expo, aiohttp.ServerDisconnectedError, max_time=60)
 async def async_cached_dadguide_request(file_path, file_url, expiry_secs):
     if should_download(file_path, expiry_secs):
         async with aiohttp.ClientSession() as session:
@@ -206,7 +222,7 @@ async def makeAsyncPlainRequest(file_url):
 
 
 async def makeAsyncCachedPlainRequest(file_path, file_url, expiry_secs):
-    if shouldDownload(file_path, expiry_secs):
+    if should_download(file_path, expiry_secs):
         resp = await makeAsyncPlainRequest(file_url)
         writePlainFile(file_path, resp)
     return readPlainFile(file_path)
@@ -221,11 +237,8 @@ class Forbidden():
     pass
 
 
-def default_check(reaction, user):
-    if user.bot:
-        return False
-    else:
-        return True
+def default_check(payload):
+    return not payload.member.bot
 
 
 class EmojiUpdater(object):
@@ -265,11 +278,11 @@ class Menu():
 
     # for use as an action
     async def reaction_delete_message(self, bot, ctx, message):
-        await bot.delete_message(message)
+        await message.delete()
 
-#     def perms(self, ctx):
-#         user = ctx.message.server.get_member(self.bot.user.id)
-#         return ctx.message.channel.permissions_for(user)
+    #     def perms(self, ctx):
+    #         user = ctx.guild.get_member(int(self.bot.user.id))
+    #         return ctx.channel.permissions_for(user)
 
     async def custom_menu(self, ctx, emoji_to_message, selected_emoji, **kwargs):
         """Creates and manages a new menu
@@ -304,53 +317,62 @@ class Menu():
                         message,
                         new_message_content):
         if message:
-            if type(new_message_content) == discord.Embed:
-                return await self.bot.edit_message(message, embed=new_message_content)
+            if isinstance(new_message_content, discord.Embed):
+                return await message.edit(embed=new_message_content)
             else:
-                return await self.bot.edit_message(message, new_message_content)
+                return await message.edit(content=new_message_content)
         else:
-            if type(new_message_content) == discord.Embed:
-                return await self.bot.send_message(ctx.message.channel,
-                                                   embed=new_message_content)
+            if isinstance(new_message_content, discord.Embed):
+                return await ctx.send(embed=new_message_content)
             else:
-                return await self.bot.say(new_message_content)
+                return await ctx.send(new_message_content)
 
     async def _custom_menu(self, ctx, emoji_to_message, selected_emoji,
                            allowed_action=True, **kwargs):
         timeout = kwargs.get('timeout', 15)
-        check = kwargs.get('check', default_check)
         message = kwargs.get('message', None)
 
         reactions_required = not message
         new_message_content = emoji_to_message.emoji_dict[selected_emoji]
         if allowed_action:
-            message = await self.show_menu(ctx, message, new_message_content)
+            if not message:
+                message = await self.show_menu(ctx, message, new_message_content)
+            else:
+                await self.show_menu(ctx, message, new_message_content)
 
         if reactions_required:
             for e in emoji_to_message.emoji_dict:
                 try:
-                    await self.bot.add_reaction(message, e)
+                    await message.add_reaction(e)
                 except Exception as e:
                     # failed to add reaction, ignore
                     pass
 
-        r = await self.bot.wait_for_reaction(
-            emoji=list(emoji_to_message.emoji_dict.keys()),
-            message=message,
-            user=ctx.message.author,
-            check=check,
-            timeout=timeout)
+        def check(payload):
+            return kwargs.get('check', default_check)(payload) and \
+                   str(payload.emoji.name) in list(emoji_to_message.emoji_dict.keys()) and \
+                   payload.user_id == ctx.author.id and \
+                   payload.message_id == message.id
 
-        if r is None:
+        if not message:
+            raise ValueError(message, ctx)
+            return None, None
+
+        try:
+            p = await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)
+        except Exception as e:
+            p = None
+
+        if p is None:
             try:
-                await self.bot.clear_reactions(message)
+                await message.clear_reactions()
             except Exception as e:
                 # This is expected when miru doesn't have manage messages
                 pass
             return message, new_message_content
 
-        react_emoji = r.reaction.emoji
-        react_action = emoji_to_message.emoji_dict[r.reaction.emoji]
+        react_emoji = p.emoji.name
+        react_action = emoji_to_message.emoji_dict[p.emoji.name]
 
         if inspect.iscoroutinefunction(react_action):
             message = await react_action(self.bot, ctx, message)
@@ -362,7 +384,7 @@ class Menu():
             return None, None
 
         try:
-            await self.bot.remove_reaction(message, react_emoji, r.user)
+            await message.remove_reaction(react_emoji, p.member)
         except:
             # This is expected when miru doesn't have manage messages
             pass
@@ -405,34 +427,38 @@ def char_to_emoji(c):
 ##############################
 # Hack to fix discord.py
 ##############################
-class UserConverter2(converter.IDConverter):
-    @asyncio.coroutine
-    def convert(self):
-        message = self.ctx.message
-        bot = self.ctx.bot
-        match = self._get_id_match() or re.match(r'<@!?([0-9]+)>$', self.argument)
-        server = message.server
-        result = None
-        if match is None:
-            # not a mention...
-            if server:
-                result = server.get_member_named(self.argument)
-            else:
-                result = _get_from_servers(bot, 'get_member_named', self.argument)
-        else:
-            user_id = match.group(1)
-            if server:
-                result = yield from bot.get_user_info(user_id)
-            else:
-                result = _get_from_servers(bot, 'get_member', user_id)
 
-        if result is None:
-            raise BadArgument('Member "{}" not found'.format(self.argument))
+# TODO: DETERMINE IF THIS IS STILL NECESSARY, AND IF SO, UPDATE IT
 
-        return result
+# class UserConverter2(converter.IDConverter):
+#     @asyncio.coroutine
+#     def convert(self, ctx, argument):
+#         message = ctx.message
+#         bot = ctx.bot
+#         match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+#         server = message.guild
+#         result = None
+#         if match is None:
+#             # not a mention...
+#             if server:
+#                 result = server.get_member_named(argument)
+#             else:
+#                 result = _get_from_servers(bot, 'get_member_named', argument)
+#         else:
+#             user_id = match.group(1)
+#             if server:
+#                 result = yield from bot.fetch_user(int(user_id))
+#             else:
+#                 result = _get_from_servers(bot, 'get_member', user_id)
+#
+#         if result is None:
+#             raise BadArgument('Member "{}" not found'.format(argument))
+#
+#         return result
+#
+#
+# converter.UserConverter = UserConverter2
 
-
-converter.UserConverter = UserConverter2
 
 ##############################
 # End hack to fix discord.py
@@ -502,8 +528,8 @@ def is_valid_image_url(url):
 def extract_image_url(m):
     if is_valid_image_url(m.content):
         return m.content
-    if m.attachments and len(m.attachments) and is_valid_image_url(m.attachments[0]['url']):
-        return m.attachments[0]['url']
+    if m.attachments and len(m.attachments) and is_valid_image_url(m.attachments[0].url):
+        return m.attachments[0].url
     return None
 
 
@@ -530,7 +556,21 @@ def clean_global_mentions(content):
     return re.sub(r'(@)(\w)', '\\g<1>\u200b\\g<2>', content)
 
 
-class CogSettings:
+def intify(iterable):
+    if isinstance(iterable, dict):
+        for item in list(iterable):
+            try:
+                iterable[int(item)] = intify(iterable[item])
+            except:
+                iterable[item] = intify(iterable[item])
+    elif isinstance(iterable, (list, tuple)):
+        for item in iterable:
+            if intify(item) != item:
+                iterable.append(intify(item))
+    return iterable
+
+
+class CogSettings(object):
     BASE_DATA_PATH = "data"
     SETTINGS_FILE_NAME = "settings.json"
 
@@ -541,11 +581,11 @@ class CogSettings:
         self.check_folder()
 
         self.default_settings = self.make_default_settings()
-        if not fileIO(self.file_path, "check"):
+        if not os.path.isfile(self.file_path):
             self.bot_settings = self.default_settings
             self.save_settings()
         else:
-            current = fileIO(self.file_path, "load")
+            current = intify(readJsonFile(self.file_path))
             updated = False
             for key in self.default_settings.keys():
                 if key not in current.keys():
@@ -562,7 +602,7 @@ class CogSettings:
             os.makedirs(self.folder)
 
     def save_settings(self):
-        fileIO(self.file_path, "save", self.bot_settings)
+        writeJsonFile(self.file_path, self.bot_settings)
 
     def make_default_settings(self):
         return {}
@@ -591,6 +631,8 @@ def strip_right_multiline(txt: str):
     return '\n'.join([x.strip() for x in txt.splitlines()])
 
 
+# TODO: I THINK THIS ID ADJUSTING GARBAGE CAN ALL GO
+
 # This was overwritten by voltron. PDX opted to copy it +10,000 ids away
 CROWS_1 = {x: x + 10000 for x in range(2601, 2635 + 1)}
 # This isn't overwritten but PDX adjusted anyway
@@ -607,6 +649,7 @@ def get_pdx_id(m):
         pdx_id = PDX_JP_ADJUSTMENTS.get(pdx_id, pdx_id)
     return pdx_id
 
+
 def get_pdx_id_dadguide(m):
     pdx_id = m.monster_no_na
     if int(m.monster_id) == m.monster_no_jp:
@@ -616,27 +659,32 @@ def get_pdx_id_dadguide(m):
 
 async def await_and_remove(bot, react_msg, listen_user, delete_msgs=None, emoji="❌", timeout=15):
     try:
-        await bot.add_reaction(react_msg, emoji)
+        await react_msg.add_reaction(emoji)
     except Exception as e:
         # failed to add reaction, ignore
         return
 
-    r = await bot.wait_for_reaction(
-        emoji=[emoji],
-        message=react_msg,
-        user=listen_user,
-        timeout=timeout)
+    def check(payload):
+        return str(payload.emoji.name) == emoji and \
+               payload.user_id == listen_user.id and \
+               payload.message_id == react_msg.id
 
-    if r is None:
+    try:
+        p = await bot.wait_for('add_reaction', check=check, timeout=timeout)
+    except:
+        # Expected after {timeout} seconds
+        p = None
+
+    if p is None:
         try:
-            await bot.remove_reaction(react_msg, emoji, react_msg.server.me)
+            await react_msg.remove_reaction(emoji, react_msg.guild.me)
         except Exception as e:
             # failed to remove reaction, ignore
             return
     else:
         msgs = delete_msgs or [react_msg]
         for m in msgs:
-            await bot.delete_message(m)
+            await m.delete_message()
 
 
 loop_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)

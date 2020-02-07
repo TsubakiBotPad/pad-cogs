@@ -6,12 +6,8 @@ Access via the exported DadGuide sqlite database.
 Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
-import asyncio
 import csv
 import difflib
-import json
-import os
-import re
 import shutil
 import sqlite3 as lite
 import traceback
@@ -19,15 +15,11 @@ from _collections import defaultdict, deque, OrderedDict
 from datetime import datetime
 from enum import Enum
 
-import pytz
 import romkan
-from __main__ import send_cmd_help
-from discord.ext import commands
+from redbot.core import checks
 
-from . import rpadutils
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import inline
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
 
 CSV_FILE_PATTERN = 'data/dadguide/{}.csv'
 NAMES_EXPORT_PATH = 'data/dadguide/computed_names.json'
@@ -48,8 +40,9 @@ DB_DUMP_FILE = 'data/dadguide/dadguide.sqlite'
 DB_DUMP_WORKING_FILE = 'data/dadguide/dadguide_working.sqlite'
 
 
-class Dadguide(object):
-    def __init__(self, bot):
+class Dadguide(commands.Cog):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self._is_ready = asyncio.Event(loop=self.bot.loop)
 
@@ -169,7 +162,7 @@ class Dadguide(object):
             results[name] = int(rpadutils.get_pdx_id_dadguide(nm))
 
         with open(NAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f, sort_keys=True)
+            json.dump(results, f)
 
         results = {}
         for nm in self.index.all_monsters:
@@ -179,7 +172,7 @@ class Dadguide(object):
             results[int(rpadutils.get_pdx_id_dadguide(nm))] = entry
 
         with open(BASENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f, sort_keys=True)
+            json.dump(results, f)
 
     def _csv_to_tuples(self, file_path: str, cols: int = 2):
         # Loads a two-column CSV into an array of tuples.
@@ -213,19 +206,20 @@ class Dadguide(object):
         await rpadutils.makeAsyncCachedPlainRequest(
             PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
     async def dadguide(self, ctx):
         """Dadguide database settings"""
         if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+            # await ctx.send_help()
+            pass
 
-    @dadguide.command(pass_context=True)
+    @dadguide.command()
     @checks.is_owner()
     async def setdatafile(self, ctx, *, data_file):
         """Set a local path to dadguide data instead of downloading it."""
         self.settings.setDataFile(data_file)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
 
 class DadguideSettings(CogSettings):
@@ -241,12 +235,6 @@ class DadguideSettings(CogSettings):
     def setDataFile(self, data_file):
         self.bot_settings['data_file'] = data_file
         self.save_settings()
-
-
-def setup(bot):
-    n = Dadguide(bot)
-    bot.add_cog(n)
-    n.register_tasks()
 
 
 class Attribute(Enum):
@@ -426,7 +414,8 @@ class DadguideDatabase(object):
 
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
-        return [r.awoken_skill_id for r in self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
+        return [r.awoken_skill_id for r in
+                self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
         return self._query_many(
@@ -526,6 +515,23 @@ class DadguideDatabase(object):
             (monster_id,),
             DgEvolution,
             as_generator=True)
+
+    def get_base_monster_by_monster(self, monster_id):
+        base = {'from_id': monster_id, 'to_id': monster_id}
+        lastbase = None
+        while base != None:
+            lastbase = base
+            base = self.get_prev_evolution_by_monster(base['from_id'])
+        return lastbase
+
+    def get_all_evolutions_by_monster(self, monster_id):
+        base = self.get_base_monster_by_monster(monster_id)
+        queue = [base]
+
+        while queue:
+            curr = queue.pop(0)
+            yield curr
+            queue.extend(self.get_next_evolutions_by_monster(curr['to_id']))
 
     def get_evolution_by_material(self, monster_id):
         return self._query_many(

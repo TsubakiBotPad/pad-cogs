@@ -2,7 +2,9 @@
 setuptools
 wheel
 Red-DiscordBot[postgres]
-
+backoff
+prettytable
+romkan
 #python-dateutil
 #pytz
 #twython
@@ -15,7 +17,6 @@ Red-DiscordBot[postgres]
 #setuptools
 #google-cloud
 #google-api
-#backoff
 #dill
 #prettytable
 #ply

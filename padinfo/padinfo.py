@@ -1,29 +1,12 @@
-import asyncio
-from builtins import filter, map
-from collections import OrderedDict
-from collections import defaultdict
-import os
-import io
-import json
-import re
-import traceback
 import urllib.parse
+from builtins import filter
+from collections import OrderedDict
 
-from dateutil import tz
-import discord
-from discord.ext import commands
-from enum import Enum
 import prettytable
 
-from __main__ import user_allowed, send_cmd_help
-
-from . import dadguide
-from . import rpadutils
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import *
-from .utils.dataIO import dataIO
+from dadguide import *
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
 
 HELP_MSG = """
 ^helpid : shows this message
@@ -75,13 +58,37 @@ def get_pic_url(m):
 
 class IdEmojiUpdater(EmojiUpdater):
     def __init__(self, emoji_to_embed, m: dadguide.DgMonster = None,
-                 pad_info=None, selected_emoji=None):
+                 pad_info=None, selected_emoji=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
         self.pad_info = pad_info
         self.selected_emoji = selected_emoji
+        self.bot = bot
 
     def on_update(self, selected_emoji):
+        # TODO: River Suggestion
+        """
+        DGCOG = self.bot.get_cog('Dadguide')
+        evos = list(map(lambda x: [x['from_id'], x['to_id']], DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
+        evos = list(set(sum(evos,[])))
+        evos.sort()
+        index = evos.index(self.m.monster_id)
+        if selected_emoji == self.pad_info.previous_monster_emoji:
+            if index == 0:
+                self.m = DGCOG.get_monster_by_no(evos[-1])
+            else:
+                self.m = DGCOG.get_monster_by_no(evos[index-1])
+        elif selected_emoji == self.pad_info.next_monster_emoji:
+            if index == len(evos)-1:
+                self.m = DGCOG.get_monster_by_no(evos[0])
+            else:
+                self.m = DGCOG.get_monster_by_no(evos[index+1])
+        else:
+            self.selected_emoji = selected_emoji
+            return True
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
+        return True
+        """
         if selected_emoji == self.pad_info.previous_monster_emoji:
             if self.m.prev_monster is None:
                 return False
@@ -97,8 +104,17 @@ class IdEmojiUpdater(EmojiUpdater):
         return True
 
 
-class PadInfo:
-    def __init__(self, bot):
+def _validate_json(fp):
+    try:
+        json.load(open(fp))
+        return True
+    except:
+        return False
+
+
+class PadInfo(commands.Cog):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = PadInfoSettings("padinfo")
@@ -125,16 +141,20 @@ class PadInfo:
 
         self.historic_lookups_file_path = "data/padinfo/historic_lookups.json"
         self.historic_lookups_file_path_id2 = "data/padinfo/historic_lookups_id2.json"
-        if not dataIO.is_valid_json(self.historic_lookups_file_path):
+        if not _validate_json(self.historic_lookups_file_path):
             print("Creating empty historic_lookups.json...")
-            dataIO.save_json(self.historic_lookups_file_path, {})
+            json.dump({}, open(self.historic_lookups_file_path, "w+"))
 
-        if not dataIO.is_valid_json(self.historic_lookups_file_path_id2):
+        if not _validate_json(self.historic_lookups_file_path_id2):
             print("Creating empty historic_lookups_id2.json...")
-            dataIO.save_json(self.historic_lookups_file_path_id2, {})
+            json.dump({}, open(self.historic_lookups_file_path_id2, "w+"))
 
-        self.historic_lookups = dataIO.load_json(self.historic_lookups_file_path)
-        self.historic_lookups_id2 = dataIO.load_json(self.historic_lookups_file_path_id2)
+        with open(self.historic_lookups_file_path, "a+") as f1:
+            f1.seek(0)
+            self.historic_lookups = json.load(f1)
+        with open(self.historic_lookups_file_path_id2, "a+") as f2:
+            f2.seek(0)
+            self.historic_lookups_id2 = json.load(f2)
 
     def __unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -158,6 +178,9 @@ class PadInfo:
     async def refresh_index(self):
         """Refresh the monster indexes."""
         dg_cog = self.bot.get_cog('Dadguide')
+        if not dg_cog:
+            print("Cog 'Dadguide' not loaded")
+            return
         await dg_cog.wait_until_ready()
         self.index_all = dg_cog.create_index()
         self.index_na = dg_cog.create_index(lambda m: m.on_na)
@@ -166,22 +189,22 @@ class PadInfo:
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster_by_no(monster_no)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def jpname(self, ctx, *, query: str):
         """Print the Japanese name of a monster"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
-            await self.bot.say(monsterToHeader(m))
-            await self.bot.say(box(m.name_jp))
+            await ctx.send(monsterToHeader(m))
+            await ctx.send(box(m.name_jp))
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="id", pass_context=True)
+    @commands.command(name="id")
     async def _do_id_all(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await self._do_id(ctx, query)
 
-    @commands.command(name="idna", pass_context=True)
+    @commands.command(name="idna")
     async def _do_id_na(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id(ctx, query, na_only=True)
@@ -191,14 +214,14 @@ class PadInfo:
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="id2", pass_context=True)
+    @commands.command(name="id2")
     async def _do_id2_all(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await self._do_id2(ctx, query)
 
-    @commands.command(name="id2na", pass_context=True)
+    @commands.command(name="id2na")
     async def _do_id2_na(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id2(ctx, query, na_only=True)
@@ -208,47 +231,47 @@ class PadInfo:
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="evos", pass_context=True)
+    @commands.command(name="evos")
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="mats", pass_context=True, aliases=['evomats', 'evomat'])
+    @commands.command(name="mats", aliases=['evomats', 'evomat'])
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
             if menu == EMBED_NOT_GENERATED:
-                await self.bot.say(inline('Not a pantheon monster'))
+                await ctx.send(inline('Not a pantheon monster'))
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def skillups(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.skillups_emoji)
             if menu == EMBED_NOT_GENERATED:
-                await self.bot.say(inline('No skillups available'))
+                await ctx.send(inline('No skillups available'))
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         emoji_to_embed = self.get_id_emoji_options(m=m)
@@ -256,7 +279,7 @@ class PadInfo:
             ctx,
             starting_menu_emoji,
             IdEmojiUpdater(emoji_to_embed, pad_info=self,
-                           m=m, selected_emoji=starting_menu_emoji)
+                           m=m, selected_emoji=starting_menu_emoji, bot=self.bot)
         )
 
     def get_id_emoji_options(self, m=None):
@@ -315,52 +338,52 @@ class PadInfo:
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                starting_menu_emoji, timeout=timeout)
+                                                                   starting_menu_emoji, timeout=timeout)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
-                await self.bot.edit_message(result_msg, embed=result_embed)
+                await result_msg.edit(embed=result_embed)
         except Exception as ex:
             print('Menu failure', ex)
 
-    @commands.command(pass_context=True, aliases=['img'])
+    @commands.command(aliases=['img'])
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True, aliases=['stats'])
+    @commands.command(aliases=['stats'])
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             embed = monsterToHeaderEmbed(m)
-            await self.bot.say(embed=embed)
+            await ctx.send(embed=embed)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(pass_context=True, aliases=['leaders', 'leaderskills', 'ls'])
+    @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
     async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
         """Display the multiplier and leaderskills for two monsters
 
@@ -368,7 +391,7 @@ class PadInfo:
         e.g.: ^leaderskill "r sonia" "b sonia"
         """
         if bad:
-            await self.bot.say(inline('Too many inputs. Try wrapping your queries in quotes.'))
+            await ctx.send(inline('Too many inputs. Try wrapping your queries in quotes.'))
             return
 
         # Handle a very specific failure case, user typing something like "uuvo ragdra"
@@ -387,10 +410,10 @@ class PadInfo:
 
         err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, wrap it in quotes.'
         if left_err:
-            await self.bot.say(inline(err_msg.format('Left', left_query)))
+            await ctx.send(inline(err_msg.format('Left', left_query)))
             return
         if right_err:
-            await self.bot.say(inline(err_msg.format('Right', right_query)))
+            await ctx.send(inline(err_msg.format('Right', right_query)))
             return
 
         emoji_to_embed = OrderedDict()
@@ -400,23 +423,23 @@ class PadInfo:
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(name="helpid", pass_context=True, aliases=['helppic', 'helpimg'])
+    @commands.command(name="helpid", aliases=['helppic', 'helpimg'])
     async def _helpid(self, ctx):
         """Whispers you info on how to craft monster queries for ^id"""
-        await self.bot.whisper(box(HELP_MSG))
+        await ctx.author.send(box(HELP_MSG))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
         """Speak the voice line of a monster into your current chat"""
-        voice = ctx.message.author.voice
-        channel = voice.voice_channel
-        if channel is None:
-            await self.bot.say(inline('You must be in a voice channel to use this command'))
+        voice = ctx.author.voice
+        if not voice:
+            await ctx.send(inline('You must be in a voice channel to use this command'))
             return
+        channel = voice.channel
 
         speech_cog = self.bot.get_cog('Speech')
         if not speech_cog:
-            await self.bot.say(inline('Speech seems to be offline'))
+            await ctx.send(inline('Speech seems to be offline'))
             return
 
         if server.lower() not in ['na', 'jp']:
@@ -431,32 +454,32 @@ class PadInfo:
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
             header = '{} ({})'.format(monsterToHeader(m), server)
             if not os.path.exists(voice_file):
-                await self.bot.say(inline('Could not find voice for ' + header))
+                await ctx.send(inline('Could not find voice for ' + header))
                 return
-            await self.bot.say('Speaking for ' + header)
+            await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await self.bot.say(self.makeFailureMsg(err))
+            await ctx.send(self.makeFailureMsg(err))
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
     async def padinfo(self, ctx):
         """PAD info management"""
         if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+            await ctx.send_help()
 
-    @padinfo.command(pass_context=True)
+    @padinfo.command()
     @checks.is_owner()
     async def setemojiservers(self, ctx, *, emoji_servers=''):
         """Set the emoji servers by ID (csv)"""
         self.settings.emojiServers().clear()
         if emoji_servers:
             self.settings.setEmojiServers(emoji_servers.split(','))
-        await self.bot.say(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+        await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
 
     def get_emojis(self):
         server_ids = self.settings.emojiServers()
-        return [e for s in self.bot.servers if s.id in server_ids for e in s.emojis]
+        return [e for s in self.bot.guilds if s.id in server_ids for e in s.emojis]
 
     def makeFailureMsg(self, err):
         msg = 'Lookup failed: {}.\n'.format(err)
@@ -469,7 +492,7 @@ class PadInfo:
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups[query] = monster_no
-        dataIO.save_json(self.historic_lookups_file_path, self.historic_lookups)
+        json.dump(self.historic_lookups, open(self.historic_lookups_file_path, "w+"))
 
         m = self.get_monster_by_no(nm.monster_id) if nm else None
 
@@ -485,7 +508,7 @@ class PadInfo:
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups_id2[query] = monster_no
-        dataIO.save_json(self.historic_lookups_file_path_id2, self.historic_lookups_id2)
+        json.dump(self.historic_lookups_id2, open(self.historic_lookups_file_path_id2, "w+"))
 
         m = self.get_monster_by_no(nm.monster_id) if nm else None
 
@@ -494,14 +517,6 @@ class PadInfo:
     def _findMonster2(self, query, na_only=False):
         monster_index = self.index_na if na_only else self.index_all
         return monster_index.find_monster2(query)
-
-
-def setup(bot):
-    print('padinfo bot setup')
-    n = PadInfo(bot)
-    bot.add_cog(n)
-    bot.loop.create_task(n.reload_nicknames())
-    print('done adding padinfo bot')
 
 
 class PadInfoSettings(CogSettings):
