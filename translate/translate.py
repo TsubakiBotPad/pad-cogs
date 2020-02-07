@@ -1,23 +1,15 @@
-from collections import defaultdict
-import os
-import re
-
-import discord
-from discord.ext import commands
 from googleapiclient.discovery import build
+from redbot.core import commands, checks
+from redbot.core.utils.chat_formatting import *
 
-from __main__ import user_allowed, send_cmd_help
-
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.dataIO import dataIO
+from rpadutils.rpadutils import CogSettings, containsJp
 
 
-class Translate:
+class Translate(commands.Cog):
     """Translation utilities."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = TranslateSettings("translate")
 
@@ -29,10 +21,11 @@ class Translate:
         if api_key:
             self.service = build('translate', 'v2', developerKey=api_key)
 
+    @commands.Cog.listener('on_message')
     async def checkAutoTranslateJp(self, message):
-        if (message.channel.is_private
-            or not self.service
-            or message.channel.id not in self.settings.autoTranslateJp()
+        if (isinstance(message.channel, discord.abc.PrivateChannel)
+                or not self.service
+                or message.channel.id not in self.settings.autoTranslateJp()
                 or not containsJp(message.clean_content)):
             return
 
@@ -44,24 +37,24 @@ class Translate:
         for part in message_parts:
             if containsJp(part):
                 em = self.translateToEmbed(part)
-                await self.bot.send_message(message.channel, embed=em)
+                await message.channel.send_message(embed=em)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
     async def translate(self, context):
         """Translation utilities."""
         if context.invoked_subcommand is None:
-            await send_cmd_help(context)
+            await self.bot.send_cmd_help(context)
 
-    @commands.command(pass_context=True, aliases=['jaus', 'jpen', 'jpus'])
+    @commands.command(aliases=['jaus', 'jpen', 'jpus'])
     async def jaen(self, ctx, *, query):
         """Translates from Japanese to English"""
         if not self.service:
-            await self.bot.say(inline('Set up an API key first!'))
+            await ctx.send(inline('Set up an API key first!'))
             return
 
         em = self.translateToEmbed(query)
-        await self.bot.say(embed=em)
+        await ctx.send(embed=em)
 
     def translate_jp_en(self, query):
         result = self.service.translations().list(source='ja', target='en', format='text', q=query).execute()
@@ -71,29 +64,24 @@ class Translate:
         translation = self.translate_jp_en(query)
         return discord.Embed(description='**Original**\n`{}`\n\n**Translation**\n`{}`'.format(query, translation))
 
-    @translate.command(pass_context=True, no_pm=True)
+    @translate.command()
     @checks.is_owner()
-    async def autotranslatejp(self, ctx, channel: discord.Channel=None):
-        channel = channel if channel else ctx.message.channel
+    @commands.guild_only()
+    async def autotranslatejp(self, ctx, channel: discord.TextChannel = None):
+        channel = channel or ctx.channel
         if channel.id in self.settings.autoTranslateJp():
             self.settings.rmAutoTranslateJp(channel.id)
-            await self.bot.say(inline('Removed {} from Japanese auto translate'.format(channel.name)))
+            await ctx.send(inline('Removed {} from Japanese auto translate'.format(channel.name)))
         else:
             self.settings.addAutoTranslateJp(channel.id)
-            await self.bot.say(inline('Added {} to Japanese auto translate'.format(channel.name)))
+            await ctx.send(inline('Added {} to Japanese auto translate'.format(channel.name)))
 
-    @translate.command(pass_context=True)
+    @translate.command()
     @checks.is_owner()
     async def setkey(self, ctx, api_key):
         """Sets the google api key."""
         self.settings.setKey(api_key)
-        await self.bot.say("done")
-
-
-def setup(bot):
-    n = Translate(bot)
-    bot.add_listener(n.checkAutoTranslateJp, "on_message")
-    bot.add_cog(n)
+        await ctx.send("done")
 
 
 class TranslateSettings(CogSettings):
