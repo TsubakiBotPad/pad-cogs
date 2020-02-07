@@ -1,17 +1,12 @@
 import json
-import math
 
-import discord
-from discord.ext import commands
-from ply import lex, yacc
-from png import itertools
+import redbot.core
+from ply import lex
+from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import box, pagify
 
-from __main__ import user_allowed, send_cmd_help
-
-from . import rpadutils
-from .utils import checks
-from .utils.chat_formatting import box, inline, pagify
-
+from rpadutils import rpadutils
 
 HELP_MSG = """
 ^search <specification string>
@@ -495,8 +490,8 @@ class SearchConfig(object):
             text_from = self.convert[0][0]
             text_to = self.convert[0][1]
             self.filters.append(lambda m,
-                                tt=text_to,
-                                tf=text_from:
+                                       tt=text_to,
+                                       tf=text_from:
                                 [tt] in m.search.orb_convert.values() if text_from == 'any' else
                                 (tf in m.search.orb_convert.keys() if text_to == 'any' else
                                  (tf in m.search.orb_convert.keys() and
@@ -629,18 +624,18 @@ class SearchConfig(object):
         return new_value
 
 
-class PadSearch:
+class PadSearch(redbot.core.commands.Cog):
     """PAD data searching."""
 
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def helpsearch(self, ctx):
         """Help info for the search command."""
-        await self.bot.whisper(box(HELP_MSG))
+        await ctx.author.send(box(HELP_MSG))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def search(self, ctx, *, filter_spec: str):
         """Searches for monsters based on a filter you specify.
         Use ^helpsearch for more info.
@@ -683,30 +678,25 @@ class PadSearch:
 
         if dm_required:
             header += '\nList too long to display; sent via DM'
-            await self.bot.say(box(header))
+            await ctx.send(box(header))
             for page in pagify(msg):
-                await self.bot.whisper(box(page))
+                await ctx.author.send(box(page))
         else:
-            await self.bot.say(box(msg))
+            await ctx.send(box(msg))
 
     def _make_search_config(self, input):
         lexer = PadSearchLexer().build()
         lexer.input(input)
         return SearchConfig(lexer)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def debugsearch(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
         m, err, debug_info = padinfo_cog.findMonster(query)
 
         if m is None:
-            await self.bot.say(box('No match: ' + err))
+            await ctx.send(box('No match: ' + err))
             return
 
-        await self.bot.say(box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))
-
-
-def setup(bot):
-    n = PadSearch(bot)
-    bot.add_cog(n)
+        await ctx.send(box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))
