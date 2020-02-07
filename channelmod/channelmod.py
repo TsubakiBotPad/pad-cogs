@@ -1,20 +1,16 @@
-from _datetime import datetime
 import asyncio
 import io
 import logging
-import os
 import time
 import traceback
+from _datetime import datetime
 
 import aiohttp
-import discord
-from discord.ext import commands
-
 from cogs.utils import checks
 from cogs.utils.chat_formatting import inline, box
+from discord.ext import commands
 
 from .rpadutils import CogSettings, ReportableError
-
 
 log = logging.getLogger("red.admin")
 
@@ -24,7 +20,7 @@ INACTIVE = '_inactive'
 ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
 
 
-class ChannelMod:
+class ChannelMod(commands.Cog):
     """Channel moderation tools."""
 
     def __init__(self, bot):
@@ -37,7 +33,7 @@ class ChannelMod:
     async def channelmod(self, ctx):
         """Manage channel moderation settings"""
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @channelmod.command(pass_context=True)
     @checks.mod_or_permissions(manage_channels=True)
@@ -124,7 +120,7 @@ class ChannelMod:
 
     @channelmod.command(pass_context=True)
     @checks.is_owner()
-    async def addmirror(self, ctx, source_channel_id: str, dest_channel_id: str, docheck: bool=True):
+    async def addmirror(self, ctx, source_channel_id: str, dest_channel_id: str, docheck: bool = True):
         """Set mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await self.bot.say(inline('Check your channel IDs, or maybe the bot is not in those servers'))
@@ -134,7 +130,7 @@ class ChannelMod:
 
     @channelmod.command(pass_context=True)
     @checks.is_owner()
-    async def rmmirror(self, ctx, source_channel_id: str, dest_channel_id: str, docheck: bool=True):
+    async def rmmirror(self, ctx, source_channel_id: str, dest_channel_id: str, docheck: bool = True):
         """Remove mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await self.bot.say(inline('Check your channel IDs, or maybe the bot is not in those servers'))
@@ -174,7 +170,7 @@ class ChannelMod:
             last_spoke_timestamp) if last_spoke_timestamp else now_time
         attribution_required = last_spoke != message.author.id
         attribution_required |= (
-            now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
+                                        now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
         self.settings.set_last_spoke(channel.id, message.author.id)
 
         attachment_bytes = None
@@ -182,9 +178,9 @@ class ChannelMod:
             # If we know we're copying a message and that message has an attachment,
             # pre download it and reuse it for every upload.
             attachment = message.attachments[0]
-            if 'url' and 'filename' in attachment:
-                url = attachment['url']
-                filename = attachment['filename']
+            if hasattr(attachment, 'url') and hasattr(attachment, 'filename'):
+                url = attachment.url
+                filename = attachment.filename
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as response:
                         attachment_bytes = io.BytesIO(await response.read())
@@ -202,7 +198,8 @@ class ChannelMod:
                     await self.bot.send_message(dest_channel, msg)
 
                 if attachment_bytes:
-                    dest_message = await self.bot.send_file(dest_channel, attachment_bytes, filename=filename, content=message.content)
+                    dest_message = await self.bot.send_file(dest_channel, attachment_bytes, filename=filename,
+                                                            content=message.content)
                     attachment_bytes.seek(0)
                 elif message.content:
                     dest_message = await self.bot.send_message(dest_channel, message.content)
@@ -237,8 +234,8 @@ class ChannelMod:
         await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
 
     async def mirror_msg_mod(self, message,
-                             new_message_content: str=None,
-                             delete_message_content: bool=False,
+                             new_message_content: str = None,
+                             delete_message_content: bool = False,
                              new_message_reaction=None,
                              delete_message_reaction=None):
         if message.author.id == self.bot.user.id or message.channel.is_private:
