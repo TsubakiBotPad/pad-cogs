@@ -1,21 +1,19 @@
-import os
 import re
 from collections import defaultdict
 
-import discord
-from __main__ import send_cmd_help
-from discord.ext import commands
+from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.dataIO import dataIO
+from rpadutils import CogSettings, safe_read_json, writeJsonFile, ensure_json_exists
 
 STICKER_COG = None
 
 
-def is_sticker_admin_check(ctx):
-    return STICKER_COG.settings.checkAdmin(ctx.message.author.id) or checks.is_owner_check(ctx)
+def is_sticker_admin_check(ctx: commands.Context):
+    is_owner = ctx.bot.owner_id == ctx.author.id
+    is_sticker_admin = STICKER_COG.settings.checkAdmin(ctx.author.id)
+    return is_sticker_admin or is_owner
 
 
 def is_sticker_admin():
@@ -25,10 +23,11 @@ def is_sticker_admin():
 class Stickers(commands.Cog):
     """Sticker commands."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.file_path = "data/stickers/commands.json"
-        self.c_commands = dataIO.load_json(self.file_path)
+        self.c_commands = safe_read_json(self.file_path)
         self.settings = StickersSettings("stickers")
 
         global STICKER_COG
@@ -36,10 +35,9 @@ class Stickers(commands.Cog):
 
     @commands.group(pass_context=True)
     @is_sticker_admin()
-    async def sticker(self, context):
+    async def sticker(self, ctx: commands.Context) -> None:
         """Global stickers."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
+        pass
 
     @sticker.command(pass_context=True)
     @is_sticker_admin()
@@ -58,7 +56,7 @@ class Stickers(commands.Cog):
         cmdlist = self.c_commands
 
         cmdlist[command] = text
-        dataIO.save_json(self.file_path, self.c_commands)
+        writeJsonFile(self.file_path, self.c_commands)
         await self.bot.say("Sticker successfully added.")
 
     @sticker.command(pass_context=True)
@@ -72,7 +70,7 @@ class Stickers(commands.Cog):
         cmdlist = self.c_commands
         if command in cmdlist:
             cmdlist.pop(command, None)
-            dataIO.save_json(self.file_path, self.c_commands)
+            writeJsonFile(self.file_path, self.c_commands)
             await self.bot.say("Sticker successfully deleted.")
         else:
             await self.bot.say("Sticker doesn't exist.")
@@ -132,10 +130,10 @@ class Stickers(commands.Cog):
         if len(message.content) < 2:
             return
 
-        prefix = self.get_prefix(message)
-
-        if not prefix:
+        ctx = await self.bot.get_context(message)
+        if ctx.prefix is None or ctx.valid:
             return
+        prefix = ctx.prefix
 
         cmdlist = self.c_commands
         image_url = None
@@ -152,32 +150,9 @@ class Stickers(commands.Cog):
 
             await self.bot.delete_message(message)
 
-    def get_prefix(self, message):
-        for p in self.bot.settings.get_prefixes(message.server):
-            if message.content.startswith(p):
-                return p
-        return False
-
-
-def check_folders():
-    if not os.path.exists("data/stickers"):
-        print("Creating data/stickers folder...")
-        os.makedirs("data/stickers")
-
 
 def check_files():
-    f = "data/stickers/commands.json"
-    if not dataIO.is_valid_json(f):
-        print("Creating empty commands.json...")
-        dataIO.save_json(f, {})
-
-
-def setup(bot):
-    check_folders()
-    check_files()
-    n = Stickers(bot)
-    bot.add_listener(n.checkCC, "on_message")
-    bot.add_cog(n)
+    ensure_json_exists('data/stickers', 'commands.json')
 
 
 class StickersSettings(CogSettings):

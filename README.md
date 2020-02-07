@@ -21,6 +21,8 @@ calculator
 dadguide
 padinfo
 rpadutils
+stickers
+streamcopy
 timecog
 translate
 trutils
@@ -51,8 +53,6 @@ schoolidol
 seniority
 speech
 sqlactivitylog
-stickers
-streamcopy
 ```
 
 ### Deliberately ignored

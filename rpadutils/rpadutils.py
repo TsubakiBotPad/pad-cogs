@@ -180,12 +180,32 @@ def should_download(file_path, expiry_secs):
 
 def writeJsonFile(file_path, js_data):
     with open(file_path, "w") as f:
-        json.dump(js_data, f, indent=4)
+        json.dump(js_data, f, sort_keys=True, indent=4)
 
 
 def readJsonFile(file_path):
     with open(file_path, "r") as f:
         return json.load(f)
+
+
+def safe_read_json(file_path):
+    try:
+        return readJsonFile(file_path)
+    except Exception as ex:
+        print('failed to read', file_path, 'got exception', ex)
+    return {}
+
+
+def ensure_json_exists(file_dir, file_name):
+    if not os.path.exists(file_dir):
+        print("Creating dir: ", file_dir)
+        os.makedirs(file_dir)
+    file_path = os.path.join(file_dir, file_name)
+    try:
+        readJsonFile(file_path)
+    except:
+        print('File missing or invalid json:', file_path)
+        writeJsonFile(file_path, {})
 
 
 @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_time=60)
