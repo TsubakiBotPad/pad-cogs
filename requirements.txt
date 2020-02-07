@@ -5,6 +5,9 @@ Red-DiscordBot[postgres]
 backoff
 prettytable
 romkan
+google-api
+google-cloud
+google-api-python-client
 #python-dateutil
 #pytz
 #twython
@@ -15,8 +18,6 @@ romkan
 #opencv-python
 #Pillow
 #setuptools
-#google-cloud
-#google-api
 #dill
 #prettytable
 #ply
