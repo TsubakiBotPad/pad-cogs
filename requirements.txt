@@ -1,0 +1,20 @@
+# LEGACY DEPS - WILL UNCOMMENT AS THINGS ARE CONFIRMED NECESSARY
+
+#python-dateutil
+#pytz
+#twython
+#feedparser
+#tabulate
+#pypng
+#padtools
+#opencv-python
+#Pillow
+#setuptools
+#google-cloud
+#google-api
+#backoff
+#dill
+#prettytable
+#ply
+#aiohttp
+#discord
