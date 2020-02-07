@@ -1,22 +1,18 @@
+import os
 from collections import defaultdict
 from collections import deque
-from io import BytesIO
-import os
-from zipfile import ZipFile
 
 import aiohttp
 import cv2
 import discord
-from discord.ext import commands
 import numpy as np
-
 from __main__ import send_cmd_help
+from discord.ext import commands
 
 from . import padvision
 from . import rpadutils
 from .utils import checks
 from .utils.chat_formatting import *
-
 
 DATA_DIR = os.path.join('data', 'padboard')
 
@@ -24,7 +20,7 @@ DAWNGLARE_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
 MIRUGLARE_BOARD_TEMPLATE = "https://storage.googleapis.com/mirubot/websites/padsim/index.html?patt={}"
 
 
-class PadBoard:
+class PadBoard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.logs = defaultdict(lambda: deque(maxlen=1))
@@ -41,7 +37,6 @@ class PadBoard:
         if context.invoked_subcommand is None:
             await send_cmd_help(context)
 
-
     def find_image(self, user_id):
         urls = list(self.logs[user_id])
         if urls:
@@ -56,7 +51,7 @@ class PadBoard:
         return None
 
     @commands.command(pass_context=True)
-    async def dawnglare(self, ctx, user: discord.Member=None):
+    async def dawnglare(self, ctx, user: discord.Member = None):
         """Converts your most recent image to a dawnglare link
 
         Scans your recent messages for images (links with embeds, or uploads)
@@ -79,7 +74,7 @@ class PadBoard:
 
         await self.bot.say(msg)
 
-    async def get_recent_image(self, ctx, user: discord.Member=None, message: discord.Message=None):
+    async def get_recent_image(self, ctx, user: discord.Member = None, message: discord.Message = None):
         user_id = user.id if user else ctx.message.author.id
 
         image_url = rpadutils.extract_image_url(message)
@@ -90,7 +85,8 @@ class PadBoard:
             if user:
                 await self.bot.say(inline("Couldn't find an image in that user's recent messages."))
             else:
-                await self.bot.say(inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
+                await self.bot.say(
+                    inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
             return None
 
         image_data = await self.download_image(image_url)
@@ -106,6 +102,7 @@ class PadBoard:
         model_path = '/home/tactical0retreat/git/pad-models/ICN3582626462823189160/model.tflite'
         img_extractor = padvision.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()
+
 
 def check_folder():
     if not os.path.exists(DATA_DIR):
