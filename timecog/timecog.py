@@ -1,27 +1,20 @@
+import time
 from datetime import datetime
 from datetime import timedelta
-from dateutil import tz
-import os
+
 import pytz
-import time
-
-from __main__ import send_cmd_help
-import discord
-from discord.ext import commands
-
-from .utils import checks
-from .utils.chat_formatting import *
-from .utils.dataIO import fileIO
-
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import inline
 
 tz_lookup = dict([(pytz.timezone(x).localize(datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])
 
 
-class TimeCog:
+class TimeCog(commands.Cog):
     """Utilities to convert time"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     @commands.command(name="time", pass_context=True)
@@ -61,7 +54,7 @@ class TimeCog:
         delta = req_time - now
 
         msg = "There are " + fmtHrsMins(delta.seconds).strip() + \
-            " until " + time.strip() + " in " + now.strftime('%Z')
+              " until " + time.strip() + " in " + now.strftime('%Z')
         await self.bot.say(inline(msg))
 
 
