@@ -1,24 +1,21 @@
 import math
 
-import discord
+from __main__ import send_cmd_help
 from discord.ext import commands
-from ply import lex, yacc
-
-from __main__ import user_allowed, send_cmd_help
+from ply import lex
 
 
 class PadLexer(object):
-
     tokens = [
         'ROWS',
         'TPAS',
         'ATK',
         'OE',
-#         'ID',
+        #         'ID',
         'MULT',
 
-#         'RESIST',
-#         'DEFENCE',
+        #         'RESIST',
+        #         'DEFENCE',
 
         'ROW',
         'TPA',
@@ -98,6 +95,7 @@ class PadLexer(object):
         # pass debug=1 to enable verbose output
         self.lexer = lex.lex(module=self)
         return self.lexer
+
 
 class DamageConfig(object):
 
@@ -187,7 +185,7 @@ class DamageConfig(object):
         return int(final_damage)
 
 
-class DamageCalc:
+class DamageCalc(commands.Cog):
     """Damage calculator."""
 
     def __init__(self, bot):
@@ -256,7 +254,8 @@ class DamageCalc:
         config = DamageConfig(lexer)
         damage = config.calculate(all_enhanced=False)
         enhanced_damage = config.calculate(all_enhanced=True)
-        await self.bot.say("```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
+        await self.bot.say(
+            "```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
 
 
 def setup(bot):

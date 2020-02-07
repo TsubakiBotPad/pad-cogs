@@ -1,9 +1,6 @@
 import discord
+from __main__ import send_cmd_help
 from discord.ext import commands
-import os
-
-from __main__ import user_allowed, send_cmd_help
-from cogs.utils.dataIO import dataIO
 
 from .rpadutils import *
 from .rpadutils import CogSettings
@@ -11,7 +8,7 @@ from .utils import checks
 from .utils.chat_formatting import *
 
 
-class VoiceRole:
+class VoiceRole(commands.Cog):
     """Gives a custom to anyone who enters a voice channel. THIS ROLE MUST EXIST AND THE BOT MUST HAVE THE RIGHTS TO CHANGE ROLES FOR IT TO WORK!"""
 
     def __init__(self, bot):

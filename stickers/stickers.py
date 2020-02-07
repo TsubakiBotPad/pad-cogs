@@ -1,17 +1,15 @@
-import asyncio
-from collections import defaultdict
 import os
 import re
+from collections import defaultdict
 
-from __main__ import user_allowed, send_cmd_help
 import discord
+from __main__ import send_cmd_help
 from discord.ext import commands
 
 from .rpadutils import *
 from .rpadutils import CogSettings
 from .utils import checks
 from .utils.dataIO import dataIO
-
 
 STICKER_COG = None
 
@@ -24,7 +22,7 @@ def is_sticker_admin():
     return commands.check(is_sticker_admin_check)
 
 
-class Stickers:
+class Stickers(commands.Cog):
     """Sticker commands."""
 
     def __init__(self, bot):
@@ -153,8 +151,6 @@ class Stickers:
             sticker_msg = await self.bot.send_message(message.channel, embed=embed)
 
             await self.bot.delete_message(message)
-#             await asyncio.sleep(15)
-#             await self.bot.delete_message(sticker_msg)
 
     def get_prefix(self, message):
         for p in self.bot.settings.get_prefixes(message.server):

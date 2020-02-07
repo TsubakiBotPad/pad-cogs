@@ -2,26 +2,20 @@ from _collections import OrderedDict
 import asyncio
 import csv
 import difflib
-import json
 import os
-from time import time
 import traceback
 import urllib.parse
 
-import aiohttp
 import discord
 from discord.ext import commands
 
-from __main__ import send_cmd_help, set_cog
 from cogs.utils import checks
 from cogs.utils.chat_formatting import pagify, box
-from cogs.utils.dataIO import dataIO
 
 from . import rpadutils
 from .rpadutils import CogSettings
-from .rpadutils import Menu, char_to_emoji
+from .rpadutils import Menu
 from .utils.chat_formatting import *
-
 
 SUMMARY_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsO9Xi9cKaUQWPvDjjIKpHotZ036LCTN66PuNoQwvb8qZi4LmEUEOYmHDyqUJUzghI28aPrQHfRSYd/pub?gid=1488138129&single=true&output=csv'
 PIC_URL = 'https://storage.googleapis.com/mirubot-chronomagia/cards/{}.png'
@@ -44,7 +38,7 @@ class CmCard(object):
         self.cardeff = row[11]
 
 
-class ChronoMagia:
+class ChronoMagia(commands.Cog):
     """ChronoMagia."""
 
     def __init__(self, bot):
@@ -146,7 +140,7 @@ def make_embed(c: CmCard):
         embed.add_field(name=mtype, value='Atk {}\nDef {}'.format(c.atk, c.defn), inline=True)
         if c.expansion:
             embed.add_field(name='Expansion', value=c.expansion, inline=False)
-            
+
         if c.atkeff:
             embed.add_field(name='Attack Effect', value=c.atkeff, inline=False)
 

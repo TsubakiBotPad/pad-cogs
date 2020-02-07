@@ -1,30 +1,16 @@
 import asyncio
-from collections import defaultdict
 import concurrent.futures
-import csv
-from datetime import datetime, date
-import decimal
-import io
 import json
-import logging
-import os
-import re
 import subprocess
-import sys
 
 import discord
-from discord.ext import commands
-import prettytable
 import pymysql
+from __main__ import send_cmd_help
+from discord.ext import commands
 
-from __main__ import user_allowed, send_cmd_help
-
-from . import rpadutils
 from .rpadutils import *
 from .rpadutils import CogSettings
 from .utils import checks
-from .utils.dataIO import dataIO
-
 
 PADGUIDEDB_COG = None
 
@@ -38,7 +24,7 @@ def is_padguidedb_admin():
     return commands.check(is_padguidedb_admin_check)
 
 
-class PadGuideDb:
+class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
 
     def __init__(self, bot):
@@ -54,7 +40,8 @@ class PadGuideDb:
         PADGUIDEDB_COG = self
 
     def get_connection(self):
-        with open(self.settings.configFile()) as f:
+        with open(self.settings.configFile(), 'a+') as f:
+            f.seek(0)
             db_config = json.load(f)
         return self.connect(db_config)
 
@@ -106,7 +93,7 @@ class PadGuideDb:
                    " order by dungeon_id desc limit 20".format(search_text, search_text))
             cursor.execute(sql)
             results = list(cursor.fetchall())
-            msg = 'Results\n' + json.dumps(results, indent=2, sort_keys=True, ensure_ascii=False)
+            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
             await self.bot.say(inline(sql))
             for page in pagify(msg):
                 await self.bot.say(box(page))
