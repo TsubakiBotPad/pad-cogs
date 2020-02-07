@@ -32,35 +32,39 @@ voicerole
 ### WIP
 
 ```
-azurelane
 channelmod
-chronomagia
-damagecalc
 donations
-fancysay
 memes
 modnotes
-padboard
 padbuilds
 padevents
 padglobal
 padguidedb
 padmonitor
 padsearch
-padvision
-profile
-schoolidol
 seniority
-sqlactivitylog
-
-# annoying
-speech
 ```
 
 ### Deliberately ignored
 
 ```
+# Non critical pad
+damagecalc
+padboard
+padvision
+profile
 
+# Non critical non pad
+azurelane
+chronomagia
+schoolidol
+
+# Non critical mod utility
+sqlactivitylog
+fancysay
+
+# annoying
+speech
 ```
 
 
