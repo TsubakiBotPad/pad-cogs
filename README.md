@@ -51,8 +51,10 @@ padvision
 profile
 schoolidol
 seniority
-speech
 sqlactivitylog
+
+# annoying
+speech
 ```
 
 ### Deliberately ignored
