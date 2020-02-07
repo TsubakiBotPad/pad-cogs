@@ -1,21 +1,10 @@
-from collections import defaultdict
-import io
-import os
-import re
-import traceback
-
 import discord
 from discord.ext import commands
-from google.oauth2 import service_account
-
-from __main__ import user_allowed, send_cmd_help
 from google.cloud import texttospeech
-
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.dataIO import dataIO
-
+from google.oauth2 import service_account
+from redbot.core.rpadutils import *
+from redbot.core.rpadutils import CogSettings
+from redbot.core.utils import checks
 
 try:
     if not discord.opus.is_loaded():
@@ -29,7 +18,7 @@ else:
 SPOOL_PATH = "data/speech/spool.mp3"
 
 
-class Speech:
+class Speech(commands.Cog):
     """Speech utilities."""
 
     def __init__(self, bot):
@@ -49,36 +38,37 @@ class Speech:
             except:
                 print('speech setup failed')
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
-    async def speech(self, context):
+    async def speech(self, ctx):
         """Speech utilities."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def vcsay(self, ctx, *, text):
         """Speak into the current user's voice channel."""
         if not self.service:
-            await self.bot.say(inline('Set up an API key file first!'))
+            await ctx.send(inline('Set up an API key file first!'))
             return
 
-        voice = ctx.message.author.voice
-        channel = voice.voice_channel
-        if channel is None:
-            await self.bot.say(inline('You must be in a voice channel to use this command'))
+        voice = ctx.author.voice
+        if not voice:
+            await ctx.send(inline('You must be in a voice channel to use this command'))
             return
+
+        channel = voice.voice_channel
 
         if len(text) > 300:
-            await self.bot.say(inline('Command is too long'))
+            await ctx.send(inline('Command is too long'))
             return
 
-        await self.speak(channel, text) 
+        await self.speak(channel, text)
 
     async def speak(self, channel, text: str):
         if self.busy:
-            await self.bot.say(inline('Sorry, saying something else right now'))
+            await ctx.send(inline('Sorry, saying something else right now'))
             return False
         else:
             self.busy = True
@@ -103,20 +93,18 @@ class Speech:
         return False
 
     async def play_path(self, channel, audio_path: str):
-        existing_vc = self.bot.voice_client_in(channel.server)
+        existing_vc = self.bot.voice_client_in(channel.guild)
         if existing_vc:
             await existing_vc.disconnect()
 
         voice_client = None
         try:
-            voice_client = await self.bot.join_voice_channel(channel)
+            voice_client = await channel.connect()
 
-            use_avconv = False
             options = "-filter \"volume=volume=0.3\""
 
-            audio_player = voice_client.create_ffmpeg_player(
-                audio_path, use_avconv=use_avconv, options=options)
-            audio_player.start()
+            audio_source = discord.FFmpegPCMAudio(audio_path, options=options)
+            voice_client.play(audio_source)
 
             while not audio_player.is_done():
                 await asyncio.sleep(0.01)
@@ -132,17 +120,12 @@ class Speech:
                     pass
             return False
 
-    @speech.command(pass_context=True)
+    @speech.command()
     @checks.is_owner()
     async def setkeyfile(self, ctx, api_key_file):
         """Sets the google api key file."""
         self.settings.setKeyFile(api_key_file)
-        await self.bot.say("done, make sure the key file is in the data/speech directory")
-
-
-def setup(bot):
-    n = Speech(bot)
-    bot.add_cog(n)
+        await ctx.send("done, make sure the key file is in the data/speech directory")
 
 
 class SpeechSettings(CogSettings):
