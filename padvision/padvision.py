@@ -1,23 +1,19 @@
-import PIL.Image
 import io
 import traceback
 
+import PIL.Image
+import redbot.core
+
 ORB_IMG_SIZE = 40
 
-class PadVision:
+
+class PadVision(redbot.core.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-def setup(bot):
-    n = PadVision(bot)
-    bot.add_cog(n)
-
-
-###############################################################################
-# Library code
-###############################################################################
 
 EXTRACTABLE = 'rbgldhjpmo'
+
 
 # returns y, x
 def board_iterator():
@@ -85,13 +81,12 @@ class OrbExtractor(object):
     def get_orb_coords(self, x, y):
         box_xstart, box_ystart, box_xend, box_yend = self.get_orb_vertices(x, y)
         coords = (slice(box_ystart, box_yend),
-                slice(box_xstart, box_xend),
-                slice(None))
+                  slice(box_xstart, box_xend),
+                  slice(None))
         return coords
 
     def get_orb_img(self, x, y):
         return self.img[self.get_orb_coords(x, y)]
-
 
 
 nn_orb_types = [
@@ -106,6 +101,7 @@ nn_orb_types = [
     'p',
     'r',
 ]
+
 
 class NeuralClassifierBoardExtractor(object):
     def __init__(self, model_path, np_img, img_bytes):
@@ -159,4 +155,3 @@ class NeuralClassifierBoardExtractor(object):
             self.process()
             self.processed = True
         return self.results
-
