@@ -2,12 +2,16 @@ import asyncio
 import random
 import traceback
 
-import discord
-from discord.ext import commands
+from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
+
+from rpadutils import CogSettings, get_role, get_role_from_id
 
 
 class StreamCopy(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = StreamCopySettings("streamcopy")
         self.current_user_id = None
@@ -24,12 +28,11 @@ class StreamCopy(commands.Cog):
             await asyncio.sleep(60 * 3)
         print("done refresh_stream")
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.mod_or_permissions(manage_guild=True)
-    async def streamcopy(self, context):
+    async def streamcopy(self, ctx: commands.Context) -> None:
         """Utilities for reacting to users gaining/losing streaming status."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
+        pass
 
     @streamcopy.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_guild=True)
@@ -109,7 +112,7 @@ class StreamCopy(commands.Cog):
                 await self.bot.add_roles(user, streamer_role)
             elif not user_is_playing and user_has_streamer_role:
                 await self.bot.remove_roles(user, streamer_role)
-        except ex:
+        except Exception as ex:
             pass
 
     async def do_refresh(self):
@@ -141,15 +144,10 @@ class StreamCopy(commands.Cog):
         return member and member.game and member.game.type == 1 and member.game.url
 
     async def copy_playing(self, game: discord.Game):
-        new_game = discord.Game(name=game.name, url=game.url, type=game.type)
-        await self.bot.change_presence(game=new_game)
-
-
-def setup(bot):
-    n = StreamCopy(bot)
-    bot.add_listener(n.check_stream, "on_member_update")
-    bot.loop.create_task(n.refresh_stream())
-    bot.add_cog(n)
+        # TODO: this is broken; Game has no URL now.
+        # new_game = discord.Game(name=game.name, url=game., type=game.type)
+        # await self.bot.change_presence(game=new_game)
+        pass
 
 
 class StreamCopySettings(CogSettings):
