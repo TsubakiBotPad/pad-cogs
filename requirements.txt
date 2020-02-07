@@ -1,4 +1,7 @@
 # LEGACY DEPS - WILL UNCOMMENT AS THINGS ARE CONFIRMED NECESSARY
+setuptools
+wheel
+Red-DiscordBot[postgres]
 
 #python-dateutil
 #pytz
