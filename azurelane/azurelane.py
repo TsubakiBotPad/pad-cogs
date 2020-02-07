@@ -1,21 +1,14 @@
 from _collections import OrderedDict
 import difflib
 import json
-import os
 from time import time
 
 import aiohttp
 import discord
 from discord.ext import commands
 
-from __main__ import send_cmd_help, set_cog
-from cogs.utils import checks
-from cogs.utils.chat_formatting import pagify, box
-from cogs.utils.dataIO import dataIO
-
 from .rpadutils import Menu, EmojiUpdater, char_to_emoji
 from .utils.chat_formatting import *
-
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
 DATA_URL = '{}/azure_lane.json'.format(BASE_URL)
@@ -40,8 +33,8 @@ class AzureLane:
 
         self.id_to_card = {c['id']: c for c in self.card_data}
         name_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
-#         collection_name_to_card = {'{} {}'.format(
-#             i['title'], c['name_en']).lower(): c for i in c['images'] for c in self.card_data}
+        #         collection_name_to_card = {'{} {}'.format(
+        #             i['title'], c['name_en']).lower(): c for i in c['images'] for c in self.card_data}
         self.names_to_card = {
             **name_to_card,
             #             **collection_name_to_card,
@@ -81,7 +74,8 @@ class AzureLane:
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx,
-                   EmojiUpdater(emoji_to_embed), starting_menu_emoji, timeout=20)
+                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
+                                                                   timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
