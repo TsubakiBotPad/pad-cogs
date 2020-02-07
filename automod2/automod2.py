@@ -8,24 +8,13 @@ If a violation occurs, the message will be deleted and the user notified.
 from _datetime import datetime
 from collections import defaultdict
 from collections import deque
-import copy
-import discord
-from discord.ext import commands
-import os
+
 import prettytable
-import re
-from time import time
+from redbot.core import checks
 
-from __main__ import send_cmd_help
-from __main__ import settings
-
-from . import rpadutils
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.dataIO import fileIO
-from .utils.settings import Settings
-
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
 
 LOGS_PER_CHANNEL_USER = 5
 
@@ -79,18 +68,9 @@ EMOJIS = {
     ]
 }
 
+
 def linked_img_count(message):
     return len(message.embeds) + len(message.attachments)
-
-
-def mod_or_perms(ctx, **perms):
-    try:
-        server = ctx.message.server
-        mod_role = settings.get_server_mod(server).lower()
-        admin_role = settings.get_server_admin(server).lower()
-        return checks.role_or_permissions(ctx, lambda r: r.name.lower() in (mod_role, admin_role), **perms)
-    except:
-        return False
 
 
 class CtxWrapper:
@@ -99,8 +79,9 @@ class CtxWrapper:
         self.bot = bot
 
 
-class AutoMod2:
-    def __init__(self, bot):
+class AutoMod2(commands.Cog):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = AutoMod2Settings("automod2")
@@ -111,15 +92,16 @@ class AutoMod2:
         self.server_phrase_last = defaultdict(dict)
 
     @commands.command()
-    @checks.mod_or_permissions(manage_server=True)
-    async def automodhelp(self):
+    @checks.mod_or_permissions(manage_guild=True)
+    async def automodhelp(self, ctx):
         """Sends you info on how to use automod."""
         for page in pagify(AUTOMOD_HELP, delims=['\n'], shorten_by=8):
-            await self.bot.whisper(box(page))
+            await ctx.author.send(box(page))
 
-    @commands.group(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def automod2(self, context):
+    @commands.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def automod2(self, ctx):
         """AutoMod2 tools.
 
         This cog works by creating named global patterns, and then applying them in
@@ -127,67 +109,88 @@ class AutoMod2:
 
         For more information, use [p]automodhelp
         """
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @automod2.command(name="addpattern", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="addpattern")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addPattern(self, ctx, name, include_pattern, exclude_pattern='', error=None):
         """Add a pattern for use in this server."""
         if error is not None:
-            await self.bot.say(inline('Too many inputs detected, check your quotes'))
+            await ctx.send(inline('Too many inputs detected, check your quotes'))
             return
         try:
             re.compile(include_pattern)
             re.compile(exclude_pattern)
         except Exception as ex:
-            raise rpadutils.ReportableError(str(ex))
+            await ctx.send(inline(str(ex)))
+            return
         self.settings.addPattern(ctx, name, include_pattern, exclude_pattern)
-        await self.bot.say(inline('Added pattern'))
+        await ctx.send(inline('Added pattern'))
 
-    @automod2.command(name="rmpattern", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="rmpattern")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmPattern(self, ctx, *, name):
         """Remove a pattern from this server. Pattern must not be in use."""
-        self.settings.rmPattern(ctx, name)
-        await self.bot.say(inline('Removed pattern'))
+        exit_code = self.settings.rmPattern(ctx, name)
+        if exit_code == 1:
+            await ctx.send(inline('Removed pattern'))
+        elif exit_code == 0:
+            await ctx.send(inline("Rule '{}' is undefined.".format(name)))
+        else:
+            await ctx.send(inline("Rule '{}' is in use.".format(name)))
 
-    @automod2.command(name="addwhitelist", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="addwhitelist")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addWhitelist(self, ctx, *, name):
         """Add the named pattern as a whitelist for this channel."""
-        self.settings.addWhitelist(ctx, name)
-        await self.bot.say(inline('Added whitelist config for: ' + name))
+        name = name.strip('"')
+        if self.settings.addWhitelist(ctx, name):
+            await ctx.send(inline('Added whitelist config for: ' + name))
+        else:
+            await ctx.send(inline("Rule '{}' is undefined.".format(name)))
 
-    @automod2.command(name="rmwhitelist", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="rmwhitelist")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmWhitelist(self, ctx, *, name):
         """Remove the named pattern as a whitelist for this channel."""
-        self.settings.rmWhitelist(ctx, name)
-        await self.bot.say(inline('Removed whitelist config for: ' + name))
+        if self.settings.rmWhitelist(ctx, name):
+            await ctx.send(inline('Removed whitelist config for: ' + name))
+        else:
+            await ctx.send(inline("Rule '{}' is undefined.".format(name)))
 
-    @automod2.command(name="addblacklist", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="addblacklist")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addBlacklist(self, ctx, *, name):
         """Add the named pattern as a blacklist for this channel."""
-        self.settings.addBlacklist(ctx, name)
-        await self.bot.say(inline('Added blacklist config for: ' + name))
+        name = name.strip('"')
+        if self.settings.addBlacklist(ctx, name):
+            await ctx.send(inline('Added blacklist config for: ' + name))
+        else:
+            await ctx.send(inline("Rule '{}' is undefined.".format(name)))
 
-    @automod2.command(name="rmblacklist", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="rmblacklist")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmBlacklist(self, ctx, *, name):
         """Remove the named pattern as a blacklist for this channel."""
-        self.settings.rmBlacklist(ctx, name)
-        await self.bot.say(inline('Removed blacklist config for: ' + name))
+        if self.settings.rmBlacklist(ctx, name):
+            await ctx.send(inline('Removed blacklist config for: ' + name))
+        else:
+            await ctx.send(inline("Rule '{}' is undefined.".format(name)))
 
-    @automod2.command(name="list", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="list")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def list(self, ctx):
         """List the whitelist/blacklist configuration for the current channel."""
         output = 'AutoMod configs\n'
         channels = self.settings.getChannels(ctx)
         for channel_id, config in channels.items():
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(int(channel_id))
             if channel is None:
                 continue
 
@@ -201,25 +204,27 @@ class AutoMod2:
             output += '\n#{}'.format(channel.name)
             output += '\n\tWhitelists'
             for name in whitelists:
-                output += '\n\t\t{}'.format(name)
+                output += '\t\t{}\n'.format(name)
             output += '\n\tBlacklists'
             for name in blacklists:
-                output += '\n\t\t{}'.format(name)
+                output += '\t\t{}\n'.format(name)
             output += '\n\tImage Limit: {}'.format(image_limit)
             output += '\n\tAuto Emojis Type: {}'.format(auto_emojis_type)
-        await boxPagifySay(self.bot.say, output)
+        await boxPagifySay(ctx.send, output)
 
-    @automod2.command(name="patterns", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command(name="patterns")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def patterns(self, ctx):
         """List the registered patterns."""
         patterns = self.settings.getPatterns(ctx)
         output = 'AutoMod patterns for this server\n\n'
         output += self.patternsToTableText(patterns.values())
-        await boxPagifySay(self.bot.say, output)
+        await boxPagifySay(ctx.send, output)
 
-    @automod2.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def imagelimit(self, ctx, limit: int):
         """Prevents users from spamming images in a channel.
 
@@ -232,21 +237,22 @@ class AutoMod2:
         """
         self.settings.setImageLimit(ctx, limit)
         if limit == 0:
-            await self.bot.say(inline('Limit cleared'))
+            await ctx.send(inline('Limit cleared'))
         elif limit == -1:
-            await self.bot.say(inline('I will only allow images in this channel'))
+            await ctx.send(inline('I will only allow images in this channel'))
         else:
-            await self.bot.say(inline('I will delete excess images in this channel'))
+            await ctx.send(inline('I will delete excess images in this channel'))
 
+    @commands.Cog.listener('on_message')
     async def mod_message_images(self, message):
-        if message.author.id == self.bot.user.id or message.channel.is_private:
+        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
         ctx = CtxWrapper(message, self.bot)
         image_limit = self.settings.getImageLimit(ctx)
         if image_limit == 0:
             return
         elif image_limit > 0:
-            if mod_or_perms(ctx, manage_messages=True):
+            if message.channel.permissions_for(message.author).manage_messages:
                 return
 
             key = (message.channel.id, message.author.id)
@@ -262,7 +268,7 @@ class AutoMod2:
             for m in list(user_logs):
                 if linked_img_count(m) > 0:
                     try:
-                        await self.bot.delete_message(m)
+                        await m.delete()
                     except:
                         pass
                     try:
@@ -271,27 +277,29 @@ class AutoMod2:
                         pass
 
             msg = m.author.mention + inline(' Upload multiple images to an imgur gallery #endimagespam')
-            alert_msg = await self.bot.send_message(message.channel, msg)
+            alert_msg = await message.channel.send(msg)
             await asyncio.sleep(10)
-            await self.bot.delete_message(alert_msg)
+            await alert_msg.delete()
         else:
-            if mod_or_perms(ctx, manage_messages=True):
+            if message.channel.permissions_for(message.author).manage_messages:
                 return
             if len(message.embeds) or len(message.attachments):
                 return
             msg_template = box('Your message in {} was deleted for not containing an image')
             msg = msg_template.format(message.channel.name)
             await self.deleteAndReport(message, msg)
-                
+
+    @commands.Cog.listener('on_message_edit')
     async def mod_message_edit(self, before, after):
         await self.mod_message(after)
 
+    @commands.Cog.listener('on_message')
     async def mod_message(self, message):
-        if message.author.id == self.bot.user.id or message.channel.is_private:
+        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
 
         ctx = CtxWrapper(message, self.bot)
-        if mod_or_perms(ctx, manage_messages=True):
+        if message.channel.permissions_for(message.author).manage_messages:
             return
 
         whitelists, blacklists = self.settings.getRulesForChannel(ctx)
@@ -326,8 +334,9 @@ class AutoMod2:
                                       ','.join(failed_whitelists), msg_content)
             await self.deleteAndReport(message, msg)
 
-    @automod2.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @automod2.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def autoemojis(self, ctx, key: str = None):
         """Will automatically add a set of emojis to all messages sent in this channel.
 
@@ -337,17 +346,18 @@ class AutoMod2:
         """
         if not key:
             self.settings.setAutoEmojis(ctx, None)
-            await self.bot.say(inline('Auto emojis cleared'))
+            await ctx.send(inline('Auto emojis cleared'))
             return
         key = key.lower()
         if key not in EMOJIS:
-            await self.bot.say(inline('Unknown key'))
+            await ctx.send(inline('Unknown key'))
             return
         self.settings.setAutoEmojis(ctx, key)
-        await self.bot.say(inline('Auto Emojis for this channel configured!'))
+        await ctx.send(inline('Auto Emojis for this channel configured!'))
 
+    @commands.Cog.listener('on_message')
     async def add_auto_emojis(self, message):
-        if message.author.id == self.bot.user.id or message.channel.is_private:
+        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
         ctx = CtxWrapper(message, self.bot)
         key = self.settings.getAutoEmojis(ctx)
@@ -357,24 +367,24 @@ class AutoMod2:
             return
         emoji_list = EMOJIS[key]
         for emoji in emoji_list:
-            await self.bot.add_reaction(message, emoji)
+            await message.add_reaction(emoji)
 
-    @commands.group(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @commands.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def watchdog(self, ctx):
         """User monitoring tools."""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
 
-    @watchdog.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @watchdog.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def printconfig(self, ctx):
         """Print the watchdog configuration."""
-        server_id = ctx.message.server.id
+        server_id = ctx.guild.id
         msg = 'Watchdog config:'
         watchdog_channel_id = self.settings.getWatchdogChannel(server_id)
         if watchdog_channel_id:
-            watchdog_channel = self.bot.get_channel(watchdog_channel_id)
+            watchdog_channel = self.bot.get_channel(int(watchdog_channel_id))
             if watchdog_channel:
                 msg += '\nChannel: ' + watchdog_channel.name
             else:
@@ -388,9 +398,9 @@ class AutoMod2:
             request_user_id = user_settings['request_user_id']
             reason = user_settings['reason'] or 'no reason'
 
-            request_user = ctx.message.server.get_member(request_user_id)
+            request_user = ctx.guild.get_member(int(request_user_id))
             request_user_txt = request_user.name if request_user else '???'
-            member = ctx.message.server.get_member(user_id)
+            member = ctx.guild.get_member(int(user_id))
             if user_cooldown and member:
                 msg += '\n{} ({})\n\tcooldown {}\n\tby {} because [{}]'.format(
                     member.name, member.id, user_cooldown, request_user_txt, reason)
@@ -401,42 +411,44 @@ class AutoMod2:
             request_user_id = phrase_settings['request_user_id']
             phrase = phrase_settings['phrase']
 
-            request_user = ctx.message.server.get_member(request_user_id)
+            request_user = ctx.guild.get_member(int(request_user_id))
             request_user_txt = request_user.name if request_user else '???'
             if phrase_cooldown:
                 msg += '\n{} -> {}\n\tcooldown {}\n\tby {}'.format(
                     name, phrase, phrase_cooldown, request_user_txt)
 
         for page in pagify(msg):
-            await self.bot.say(box(page))
+            await ctx.send(box(page))
 
-    @watchdog.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def user(self, ctx, user: discord.User, cooldown: int=None, *, reason: str=''):
+    @watchdog.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def user(self, ctx, user: discord.User, cooldown: int = None, *, reason: str = ''):
         """Keep an eye on a user.
 
         Whenever the user speaks in this server, a note will be printed to the watchdog
         channel, subject to the specified cooldown in seconds. Set to 0 to clear.
         """
-        server_id = ctx.message.server.id
+        server_id = ctx.guild.id
         if cooldown is None:
             user_settings = self.settings.getWatchdogUsers(server_id).get(user.id, {})
             existing_cd = user_settings.get('cooldown', 0)
             if existing_cd == 0:
-                await self.bot.say(inline('No watchdog for that user'))
+                await ctx.send(inline('No watchdog for that user'))
             else:
-                await self.bot.say(inline('Watchdog set with cooldown of {} seconds'.format(existing_cd)))
+                await ctx.send(inline('Watchdog set with cooldown of {} seconds'.format(existing_cd)))
         else:
             self.settings.setWatchdogUser(
                 server_id, user.id, ctx.message.author.id, cooldown, reason)
             if cooldown == 0:
-                await self.bot.say(inline('Watchdog cleared for {}'.format(user.name)))
+                await ctx.send(inline('Watchdog cleared for {}'.format(user.name)))
             else:
-                await self.bot.say(inline('Watchdog set on {} with cooldown of {} seconds'.format(user.name, cooldown)))
+                await ctx.send(inline('Watchdog set on {} with cooldown of {} seconds'.format(user.name, cooldown)))
 
-    @watchdog.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def phrase(self, ctx, name: str, cooldown: int, *, phrase: str=None):
+    @watchdog.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def phrase(self, ctx, name: str, cooldown: int, *, phrase: str = None):
         """Keep an eye out for a phrase (regex).
 
         Whenever the regex is matched, a note will be printed to the watchdog
@@ -444,12 +456,12 @@ class AutoMod2:
 
         Name is descriptive. Set a cooldown of 0 to clear.
         """
-        server_id = ctx.message.server.id
+        server_id = ctx.guild.id
 
         if cooldown == 0:
             self.settings.setWatchdogPhrase(
                 server_id, name, None, None, None)
-            await self.bot.say(inline('Watchdog phrase cleared for {}'.format(name)))
+            await ctx.send(inline('Watchdog phrase cleared for {}'.format(name)))
             return
 
         try:
@@ -458,24 +470,26 @@ class AutoMod2:
             raise rpadutils.ReportableError(str(ex))
 
         if cooldown < 300:
-            await self.bot.say(inline('Overriding cooldown to minimum'))
+            await ctx.send(inline('Overriding cooldown to minimum'))
             cooldown = 300
-        self.settings.setWatchdogPhrase(server_id, name, ctx.message.author.id, cooldown, phrase)
+        self.settings.setWatchdogPhrase(server_id, name, ctx.author.id, cooldown, phrase)
         self.server_phrase_last[server_id][name] = None
-        await self.bot.say(inline('Watchdog named {} set on {} with cooldown of {} seconds'.format(name, phrase, cooldown)))
+        await ctx.send(inline('Watchdog named {} set on {} with cooldown of {} seconds'.format(name, phrase, cooldown)))
 
-    @watchdog.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def channel(self, ctx, channel: discord.Channel):
+    @watchdog.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def channel(self, ctx, channel: discord.TextChannel):
         """Set the announcement channel."""
-        server_id = ctx.message.server.id
+        server_id = ctx.guild.id
         self.settings.setWatchdogChannel(server_id, channel.id)
         await self.bot.say(inline('Watchdog channel set'))
 
+    @commands.Cog.listener('on_message')
     async def mod_message_watchdog(self, message):
-        if message.author.id == self.bot.user.id or message.channel.is_private:
+        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        if self.settings.getWatchdogChannel(message.server.id) is None:
+        if self.settings.getWatchdogChannel(message.guild.id) is None:
             return
 
         await self.mod_message_watchdog_user(message)
@@ -483,7 +497,7 @@ class AutoMod2:
 
     async def mod_message_watchdog_user(self, message):
         user_id = message.author.id
-        server_id = message.server.id
+        server_id = message.guild.id
         watchdog_channel_id = self.settings.getWatchdogChannel(server_id)
         user_settings = self.settings.getWatchdogUsers(server_id).get(user_id)
 
@@ -497,7 +511,7 @@ class AutoMod2:
         request_user_id = user_settings['request_user_id']
         reason = user_settings['reason'] or 'no reason'
 
-        request_user = message.server.get_member(request_user_id)
+        request_user = message.guild.get_member(request_user_id)
         request_user_txt = request_user.mention if request_user else '???'
 
         now = datetime.utcnow()
@@ -515,7 +529,7 @@ class AutoMod2:
         await self._watchdog_print(watchdog_channel_id, output_msg)
 
     async def mod_message_watchdog_phrase(self, message):
-        server_id = message.server.id
+        server_id = message.guild.id
         watchdog_channel_id = self.settings.getWatchdogChannel(server_id)
 
         for phrase_settings in self.settings.getWatchdogPhrases(server_id).values():
@@ -553,8 +567,8 @@ class AutoMod2:
 
     async def deleteAndReport(self, delete_msg, outgoing_msg):
         try:
-            await self.bot.delete_message(delete_msg)
-            await self.bot.send_message(delete_msg.author, outgoing_msg)
+            await delete_msg.delete()
+            await delete_msg.author.send(outgoing_msg)
         except Exception as e:
             print('Failure while deleting message from {}, tried to send : {}'.format(
                 delete_msg.author.name, outgoing_msg))
@@ -614,16 +628,6 @@ def matchesIncludeExclude(include_pattern, exclude_pattern, txt):
     return False
 
 
-def setup(bot):
-    n = AutoMod2(bot)
-    bot.add_listener(n.mod_message_images, "on_message")
-    bot.add_listener(n.add_auto_emojis, "on_message")
-    bot.add_listener(n.mod_message, "on_message")
-    bot.add_listener(n.mod_message_edit, "on_message_edit")
-    bot.add_listener(n.mod_message_watchdog, "on_message")
-    bot.add_cog(n)
-
-
 class AutoMod2Settings(CogSettings):
     def make_default_settings(self):
         config = {
@@ -645,7 +649,7 @@ class AutoMod2Settings(CogSettings):
 
     def getServer(self, ctx, server_id=None):
         configs = self.serverConfigs()
-        server_id = server_id or ctx.message.server.id
+        server_id = server_id or ctx.message.guild.id
         if server_id not in configs:
             configs[server_id] = {
                 'patterns': {},
@@ -706,33 +710,43 @@ class AutoMod2Settings(CogSettings):
         return False
 
     def rmPattern(self, ctx, name):
+        patterns = self.getPatterns(ctx)
         if self.checkPatternUsed(ctx, name):
-            raise rpadutils.ReportableError("That pattern is in use")
-        self.getPatterns(ctx).pop(name)
+            return -1
+        elif name not in patterns:
+            return 0
+        patterns.pop(name)
         self.save_settings()
+        return 1
 
     def addRule(self, ctx, name, list_type):
         patterns = self.getPatterns(ctx)
         if name not in patterns:
-            raise rpadutils.ReportableError("Couldn't find rule name")
+            return False
         self.getChannel(ctx)[list_type].append(name)
         self.save_settings()
+        return True
 
     def rmRule(self, ctx, name, list_type):
-        self.getChannel(ctx)[list_type].remove(name)
-        self.save_settings()
+        chan_list = self.getChannel(ctx)[list_type]
+        if name in chan_list:
+            chan_list.remove(name)
+            self.save_settings()
+            return True
+        else:
+            return False
 
     def addWhitelist(self, ctx, name):
-        self.addRule(ctx, name, 'whitelist')
+        return self.addRule(ctx, name, 'whitelist')
 
     def rmWhitelist(self, ctx, name):
-        self.rmRule(ctx, name, 'whitelist')
+        return self.rmRule(ctx, name, 'whitelist')
 
     def addBlacklist(self, ctx, name):
-        self.addRule(ctx, name, 'blacklist')
+        return self.addRule(ctx, name, 'blacklist')
 
     def rmBlacklist(self, ctx, name):
-        self.rmRule(ctx, name, 'blacklist')
+        return self.rmRule(ctx, name, 'blacklist')
 
     def getImageLimit(self, ctx):
         channel = self.getChannel(ctx)

@@ -5,40 +5,28 @@ communication about role changes.
 
 from collections import defaultdict
 from collections import deque
-import copy
-import os
-import re
-from time import time
 
-import aiohttp
-import discord
-from discord.ext import commands
+from redbot.core import checks
 
-from __main__ import send_cmd_help
-from __main__ import settings
-
-from . import rpadutils
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import *
-from .utils.dataIO import fileIO
-from .utils.settings import Settings
-
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
 
 LOGS_PER_USER = 10
 
 
-class BadUser:
-    def __init__(self, bot):
+class BadUser(commands.Cog):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = BadUserSettings("baduser")
         self.logs = defaultdict(lambda: deque(maxlen=LOGS_PER_USER))
 
-    @commands.group(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def baduser(self, context):
+    @commands.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def baduser(self, ctx):
         """BadUser tools.
 
         The scope of this module has expanded a bit. It now covers both 'positive' and 'negative'
@@ -55,91 +43,97 @@ class BadUser:
 
         Besides the automatic tracking, you can manually add strikes, print them, and clear them.
         """
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @baduser.command(name="addnegativerole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="addnegativerole")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addNegativeRole(self, ctx, *, role):
         """Designate a role as a 'punishment' role."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.addPunishmentRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Added punishment role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.addPunishmentRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Added punishment role "' + role.name + '"'))
 
-    @baduser.command(name="rmnegativerole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="rmnegativerole")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmNegativeRole(self, ctx, *, role):
         """Cancels a role from 'punishment' status."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.rmPunishmentRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Removed punishment role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.rmPunishmentRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Removed punishment role "' + role.name + '"'))
 
-    @baduser.command(name="addpositiverole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="addpositiverole")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addPositiveRole(self, ctx, *, role):
         """Designate a role as a 'benefit' role."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.addPositiveRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Added positive role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.addPositiveRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Added positive role "' + role.name + '"'))
 
     @baduser.command(name="rmpositiverole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmPositiveRole(self, ctx, *, role):
         """Cancels a role from 'benefit' status."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.rmPositiveRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Removed positive role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.rmPositiveRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Removed positive role "' + role.name + '"'))
 
     @baduser.command(name="addneutralrole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def addNeutralRole(self, ctx, *, role):
         """Designate a role as a notable but not ping-worthy role."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.addNeutralRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Added neutral role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.addNeutralRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Added neutral role "' + role.name + '"'))
 
-    @baduser.command(name="rmneutralrole", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="rmneutralrole")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmNeutralRole(self, ctx, *, role):
         """Cancels a role from notable but not ping-worthy status."""
-        role = get_role(ctx.message.server.roles, role)
-        self.settings.rmNeutralRole(ctx.message.server.id, role.id)
-        await self.bot.say(inline('Removed neutral role "' + role.name + '"'))
+        role = get_role(ctx.guild.roles, role)
+        self.settings.rmNeutralRole(ctx.guild.id, role.id)
+        await ctx.send(inline('Removed neutral role "' + role.name + '"'))
 
-    @baduser.command(name="setchannel", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
-    async def setChannel(self, ctx, channel: discord.Channel):
+    @baduser.command(name="setchannel")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def setChannel(self, ctx, channel: discord.TextChannel):
         """Set the channel for moderation announcements."""
-        self.settings.updateChannel(ctx.message.server.id, channel.id)
-        await self.bot.say(inline('Set the announcement channel'))
+        self.settings.updateChannel(ctx.guild.id, channel.id)
+        await ctx.send(inline('Set the announcement channel'))
 
-    @baduser.command(name="clearchannel", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="clearchannel")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def clearChannel(self, ctx):
         """Clear the channel for moderation announcements."""
-        self.settings.updateChannel(ctx.message.server.id, None)
-        await self.bot.say(inline('Cleared the announcement channel'))
+        self.settings.updateChannel(ctx.guild.id, None)
+        await ctx.send(inline('Cleared the announcement channel'))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def togglestrikeprivacy(self, ctx):
         """Change strike existance policy."""
-        server = ctx.message.server
+        server = ctx.guild
         self.settings.setStrikesPrivate(server.id, not self.settings.getStrikesPrivate(server.id))
         output = '\nStrike existance is now ' + \
-            'private' if self.settings.getStrikesPrivate(server.id) else 'public'
-        await self.bot.say(inline(output))
+                 'private' if self.settings.getStrikesPrivate(server.id) else 'public'
+        await ctx.send(inline(output))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def config(self, ctx):
         """Print the baduser configuration."""
-        server = ctx.message.server
+        server = ctx.guild
         output = 'Punishment roles:\n'
         for role_id in self.settings.getPunishmentRoles(server.id):
             try:
                 role = get_role_from_id(self.bot, server, role_id)
-                output += '\n\t' + role.name
+                output += '\t' + role.name + '\n'
             except Exception as e:
                 pass  # Role was deleted
 
@@ -147,7 +141,7 @@ class BadUser:
         for role_id in self.settings.getPositiveRoles(server.id):
             try:
                 role = get_role_from_id(self.bot, server, role_id)
-                output += '\n\t' + role.name
+                output += '\t' + role.name + '\n'
             except Exception as e:
                 pass  # Role was deleted
 
@@ -155,81 +149,87 @@ class BadUser:
         for role_id in self.settings.getNeutralRoles(server.id):
             try:
                 role = get_role_from_id(self.bot, server, role_id)
-                output += '\n\t' + role.name
+                output += '\t' + role.name + '\n'
             except Exception as e:
                 pass  # Role was deleted
 
         output += '\nStrike contents are private'
         output += '\nStrike existence is ' + \
-            ('private' if self.settings.getStrikesPrivate(server.id) else 'public')
+                  ('private' if self.settings.getStrikesPrivate(server.id) else 'public')
 
-        await self.bot.say(box(output))
+        await ctx.send(box(output))
 
-    @baduser.command(name="strikes", pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command(name="strikes")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def strikes(self, ctx, user: discord.User):
         """Print the strike count for a user."""
-        strikes = self.settings.countUserStrikes(ctx.message.server.id, user.id)
-        await self.bot.say(box('User {} has {} strikes'.format(user.name, strikes)))
+        strikes = self.settings.countUserStrikes(ctx.guild.id, user.id)
+        await ctx.send(box('User {} has {} strikes'.format(user.name, strikes)))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def addstrike(self, ctx, user: discord.User, *, strike_text: str):
         """Manually add a strike to a user."""
-        timestamp = str(ctx.message.timestamp)[:-7]
+        timestamp = str(ctx.message.created_at)[:-7]
         msg = 'Manually added by {} ({}): {}'.format(
-            ctx.message.author.name, timestamp, strike_text)
-        server_id = ctx.message.server.id
+            ctx.author.name, timestamp, strike_text)
+        server_id = ctx.guild.id
         self.settings.updateBadUser(server_id, user.id, msg)
         strikes = self.settings.countUserStrikes(server_id, user.id)
-        await self.bot.say(box('Done. User {} now has {} strikes'.format(user.name, strikes)))
+        await ctx.send(box('Done. User {} now has {} strikes'.format(user.name, strikes)))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def clearstrikes(self, ctx, user: discord.User):
         """Clear all strikes for a user."""
-        self.settings.clearUserStrikes(ctx.message.server.id, user.id)
-        await self.bot.say(box('Cleared strikes for {}'.format(user.name)))
+        self.settings.clearUserStrikes(ctx.guild.id, user.id)
+        await ctx.send(box('Cleared strikes for {}'.format(user.name)))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def printstrikes(self, ctx, user: discord.User):
         """Print all strikes for a user."""
-        strikes = self.settings.getUserStrikes(ctx.message.server.id, user.id)
+        strikes = self.settings.getUserStrikes(ctx.guild.id, user.id)
         if not strikes:
-            await self.bot.say(box('No strikes for {}'.format(user.name)))
+            await ctx.send(box('No strikes for {}'.format(user.name)))
             return
 
         for idx, strike in enumerate(strikes):
-            await self.bot.say(inline('Strike {} of {}:'.format(idx + 1, len(strikes))))
-            await self.bot.say(box(strike))
+            await ctx.send(inline('Strike {} of {}:'.format(idx + 1, len(strikes))))
+            await ctx.send(box(strike))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def deletestrike(self, ctx, user: discord.User, strike_num: int):
         """Delete a specific strike for a user."""
-        strikes = self.settings.getUserStrikes(ctx.message.server.id, user.id)
+        strikes = self.settings.getUserStrikes(ctx.guild.id, user.id)
         if not strikes or len(strikes) < strike_num:
-            await self.bot.say(box('Strike not found for {}'.format(user.name)))
+            await ctx.send(box('Strike not found for {}'.format(user.name)))
             return
 
         strike = strikes[strike_num - 1]
         strikes.remove(strike)
-        self.settings.setUserStrikes(ctx.message.server.id, user.id, strikes)
-        await self.bot.say(inline('Removed strike {}. User has {} remaining.'.format(strike_num, len(strikes))))
-        await self.bot.say(box(strike))
+        self.settings.setUserStrikes(ctx.guild.id, user.id, strikes)
+        await ctx.send(inline('Removed strike {}. User has {} remaining.'.format(strike_num, len(strikes))))
+        await ctx.send(box(strike))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def report(self, ctx):
         """Displays a report of information on bad users for the server."""
-        cur_server = ctx.message.server
+        cur_server = ctx.guild
         global_banned_users = await self._load_banned_users()
 
         user_id_to_ban_server = defaultdict(list)
         user_id_to_baduser_server = defaultdict(list)
         error_messages = list()
-        for server in self.bot.servers:
+        for server in self.bot.guilds:
             if server.id == cur_server.id:
                 continue
 
@@ -255,14 +255,14 @@ class BadUser:
         baduser_entries = list()
         otheruser_entries = list()
 
-        await self.bot.request_offline_members(cur_server)
         for member in cur_server.members:
             local_strikes = self.settings.getUserStrikes(cur_server.id, member.id)
             other_baduser_servers = user_id_to_baduser_server[member.id]
             other_banned_servers = user_id_to_ban_server[member.id]
             is_globally_banned = member.id in global_banned_users
 
-            if not len(local_strikes) and not len(other_baduser_servers) and not len(other_banned_servers) and not is_globally_banned:
+            if not len(local_strikes) and not len(other_baduser_servers) and not len(
+                    other_banned_servers) and not is_globally_banned:
                 continue
 
             tmp_msg = "{} ({})".format(member.name, member.id)
@@ -281,7 +281,7 @@ class BadUser:
             else:
                 otheruser_entries.append(tmp_msg)
 
-        other_server_count = len(self.bot.servers) - 1
+        other_server_count = len(self.bot.guilds) - 1
         other_ban_count = len([x for x, l in user_id_to_ban_server.items() if len(l)])
         other_baduser_count = len([x for x, l in user_id_to_baduser_server.items() if len(l)])
         msg = "Across {} other servers, {} users are banned and {} have baduser entries".format(
@@ -298,47 +298,47 @@ class BadUser:
             msg += "\n" + "\n".join(error_messages)
 
         for page in pagify(msg):
-            await self.bot.say(box(page))
+            await ctx.send(box(page))
 
-    @baduser.command(pass_context=True)
+    @baduser.command()
     @checks.is_owner()
     async def addban(self, ctx, user_id: int, *, reason: str):
-        user_id = str(user_id)
         self.settings.addBannedUser(user_id, reason)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
-    @baduser.command(pass_context=True)
+    @baduser.command()
     @checks.is_owner()
     async def rmban(self, ctx, user_id: int):
         user_id = str(user_id)
         self.settings.rmBannedUser(user_id)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
-    @baduser.command(pass_context=True, no_pm=True)
+    @baduser.command()
+    @commands.guild_only()
     @checks.is_owner()
     async def globalcheckbanlist(self, ctx):
         bans = await self._load_banned_users()
-        msg = 'Checking for banned users in {} servers'.format(len(self.bot.servers))
-        for cur_server in self.bot.servers:
+        msg = 'Checking for banned users in {} guilds'.format(len(self.bot.guilds))
+        for cur_server in self.bot.guilds:
             msg += await self._check_ban_list(cur_server)
 
         for page in pagify(msg):
-            await self.bot.say(box(page))
+            await ctx.send(box(page))
 
-    @baduser.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @baduser.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
     async def checkbanlist(self, ctx):
         msg = 'Checking for banned users'
-        msg += await self._check_ban_list(ctx.message.server)
-        await self.bot.say(box(msg))
+        msg += await self._check_ban_list(ctx.guild)
+        await ctx.send(box(msg))
 
-    async def _check_ban_list(self, server: discord.Server):
+    async def _check_ban_list(self, server: discord.Guild):
         # external_ban_list is [user_id]
         # local_ban_list is {user.id : reason}
         external_bans = await self._load_banned_users()
         local_bans = self.settings.bannedUsers()
         msg = '\n\tChecking {}'.format(server.name)
-        await self.bot.request_offline_members(server)
         for member in server.members:
             if member.id in external_bans:
                 msg += '\n\t\tExternal banned user: {} ({})'.format(member.name, member.id)
@@ -349,7 +349,7 @@ class BadUser:
 
     async def _load_banned_users(self):
         if True:
-            # This thing is broken
+            # TODO: This thing is broken
             return []
 
         ban_file_path = 'data/baduser/global_ban_list.txt'
@@ -374,49 +374,54 @@ class BadUser:
 
         return bans
 
+    @commands.Cog.listener('on_message')
     async def mod_message(self, message):
-        if message.author.id == self.bot.user.id or message.channel.is_private:
+        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
 
         author = message.author
         content = message.clean_content
         channel = message.channel
-        timestamp = str(message.timestamp)[:-7]
+        timestamp = str(message.created_at)[:-7]
         log_msg = '[{}] {} ({}): {}/{}'.format(timestamp, author.name,
                                                author.id, channel.name, content)
         self.logs[author.id].append(log_msg)
 
-    async def mod_ban(self, member):
-        await self.recordBadUser(member, 'BANNED')
+    @commands.Cog.listener('on_member_ban')
+    async def mod_ban(self, guild, user):
+        await self.recordBadUser(user, 'BANNED')
 
+    @commands.Cog.listener('on_member_remove')
     async def mod_user_left(self, member):
-        strikes = self.settings.countUserStrikes(member.server.id, member.id)
+        strikes = self.settings.countUserStrikes(member.guild.id, member.id)
         if strikes:
             msg = 'FYI: A user with {} strikes just left the server: {}'.format(
                 strikes, member.name)
-            update_channel = self.settings.getChannel(member.server.id)
+            update_channel = self.settings.getChannel(member.guild.id)
             if update_channel is not None:
-                channel_obj = discord.Object(update_channel)
-                await self.bot.send_message(channel_obj, msg)
+                channel_obj = member.guild.get_channel(update_channel)
+                await channel_obj.send(msg)
 
+    @commands.Cog.listener('on_member_join')
     async def mod_user_join(self, member):
-        update_channel = self.settings.getChannel(member.server.id)
+        update_channel = self.settings.getChannel(member.guild.id)
         if update_channel is None:
             return
 
-        channel_obj = discord.Object(update_channel)
-        strikes = self.settings.countUserStrikes(member.server.id, member.id)
+        channel_obj = member.guild.get_channel(update_channel)
+        strikes = self.settings.countUserStrikes(member.guild.id, member.id)
         if strikes:
             msg = 'Hey @here a user with {} strikes just joined the server: {}'.format(
                 strikes, member.mention)
-            await self.bot.send_message(channel_obj, msg)
+            await channel_obj.send(msg)
 
         local_ban = self.settings.bannedUsers().get(member.id, None)
         if local_ban:
             msg = 'Hey @here locally banned user {} (for: {}) just joined the server'.format(
                 member.mention, local_ban)
-            await self.bot.send_message(channel_obj, msg)
+            await channel_obj.send(msg)
 
+    @commands.Cog.listener('on_member_update')
     async def check_punishment(self, before, after):
         if before.roles == after.roles:
             return
@@ -424,9 +429,9 @@ class BadUser:
         new_roles = set(after.roles).difference(before.roles)
         removed_roles = set(before.roles).difference(after.roles)
 
-        bad_role_ids = self.settings.getPunishmentRoles(after.server.id)
-        positive_role_ids = self.settings.getPositiveRoles(after.server.id)
-        neutral_role_ids = self.settings.getNeutralRoles(after.server.id)
+        bad_role_ids = self.settings.getPunishmentRoles(after.guild.id)
+        positive_role_ids = self.settings.getPositiveRoles(after.guild.id)
+        neutral_role_ids = self.settings.getNeutralRoles(after.guild.id)
 
         for role in new_roles:
             if role.id in bad_role_ids:
@@ -454,51 +459,40 @@ class BadUser:
         msg = 'Name={} Nick={} ID={} Joined={} Role={}\n'.format(
             member.name, member.nick, member.id, member.joined_at, role_name)
         msg += '\n'.join(latest_messages)
-        self.settings.updateBadUser(member.server.id, member.id, msg)
-        strikes = self.settings.countUserStrikes(member.server.id, member.id)
+        self.settings.updateBadUser(member.guild.id, member.id, msg)
+        strikes = self.settings.countUserStrikes(member.guild.id, member.id)
 
-        update_channel = self.settings.getChannel(member.server.id)
+        update_channel = self.settings.getChannel(member.guild.id)
         if update_channel is not None:
-            channel_obj = discord.Object(update_channel)
-            await self.bot.send_message(channel_obj, inline('Detected bad user'))
-            await self.bot.send_message(channel_obj, box(msg))
-            await self.bot.send_message(channel_obj, 'Hey @here please leave a note explaining why this user is punished')
-            await self.bot.send_message(channel_obj, 'This user now has {} strikes'.format(strikes))
+            channel_obj = member.guild.get_channel(update_channel)
+            await channel_obj.send(inline('Detected bad user'))
+            await channel_obj.send(box(msg))
+            await channel_obj.send('Hey @here please leave a note explaining why this user is punished')
+            await channel_obj.send('This user now has {} strikes'.format(strikes))
 
             try:
                 dm_msg = ('You were assigned the punishment role "{}" in the server "{}".\n'
                           'The Mods will contact you shortly regarding this.\n'
-                          'Attempting to clear this role yourself will result in punishment.').format(role_name, member.server.name)
-                await self.bot.send_message(member, box(dm_msg))
-                await self.bot.send_message(channel_obj, 'User successfully notified')
+                          'Attempting to clear this role yourself will result in punishment.').format(role_name,
+                                                                                                      member.guild.name)
+                await member.send(box(dm_msg))
+                await channel_obj.send('User successfully notified')
             except Exception as e:
-                await self.bot.send_message(channel_obj, 'Failed to notify the user! I might be blocked\n' + box(str(e)))
+                await channel_obj.send('Failed to notify the user! I might be blocked\n' + box(str(e)))
 
-    async def recordRoleChange(self, member, role_name, is_added, send_ping = True):
+    async def recordRoleChange(self, member, role_name, is_added, send_ping=True):
         msg = 'Detected role {} : Name={} Nick={} ID={} Joined={} Role={}'.format(
             "Added" if is_added else "Removed", member.name, member.nick, member.id, member.joined_at, role_name)
 
-        update_channel = self.settings.getChannel(member.server.id)
+        update_channel = self.settings.getChannel(member.guild.id)
         if update_channel is not None:
-            channel_obj = discord.Object(update_channel)
+            channel_obj = member.guild.get_channel(update_channel)
             try:
-                await self.bot.send_message(channel_obj, inline(msg))
+                await channel_obj.send(inline(msg))
                 if send_ping:
-                    await self.bot.send_message(channel_obj, 'Hey @here please leave a note explaining why this role was modified')
+                    await channel_obj.send('Hey @here please leave a note explaining why this role was modified')
             except:
                 print('Failed to notify in', update_channel, msg)
-
-
-def setup(bot):
-    print('baduser bot setup')
-    n = BadUser(bot)
-    bot.add_listener(n.mod_message, "on_message")
-    bot.add_listener(n.mod_ban, "on_member_ban")
-    bot.add_listener(n.check_punishment, "on_member_update")
-    bot.add_listener(n.mod_user_join, "on_member_join")
-    bot.add_listener(n.mod_user_left, "on_member_remove")
-    bot.add_cog(n)
-    print('done adding baduser bot')
 
 
 class BadUserSettings(CogSettings):
