@@ -7,7 +7,7 @@ from .utils import checks
 from .utils.chat_formatting import *
 
 
-class PadMonitor:
+class PadMonitor(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.settings = PadMonitorSettings("padmonitor")
@@ -49,7 +49,8 @@ class PadMonitor:
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
                     msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_na)
-                    if rpadutils.containsJp(m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
+                    if rpadutils.containsJp(
+                            m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
                         msg += ' ({})'.format(m.name_na_override)
                 return msg
             else:
@@ -74,21 +75,21 @@ class PadMonitor:
             print('failed to send message to', channel_id, ' : ', ex)
 
     @commands.group(pass_context=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def padmonitor(self, ctx):
         """PAD info monitoring"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
     @padmonitor.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def addnewchannel(self, ctx):
         """Sets announcements for the current channel."""
         self.settings.add_new_monster_channel(ctx.message.channel.id)
         await self.bot.say(inline('done'))
 
     @padmonitor.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def rmnewchannel(self, ctx):
         """Removes announcements for the current channel."""
         self.settings.rm_new_monster_channel(ctx.message.channel.id)
