@@ -1,20 +1,12 @@
-from collections import defaultdict
-from collections import deque
-import copy
-import os
-from time import time
-
 import discord
-from discord.ext import commands
-
 from __main__ import send_cmd_help
+from discord.ext import commands
 
 from .rpadutils import *
 from .utils import checks
-from .utils.dataIO import fileIO
 
 
-class FancySay:
+class FancySay(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
