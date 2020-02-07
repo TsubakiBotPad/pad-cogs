@@ -24,7 +24,7 @@ rpadutils
 timecog
 translate
 trutils
-
+voicerole
 ```
 
 ### WIP
@@ -53,7 +53,6 @@ speech
 sqlactivitylog
 stickers
 streamcopy
-voicerole
 ```
 
 ### Deliberately ignored
