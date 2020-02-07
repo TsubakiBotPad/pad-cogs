@@ -1,27 +1,12 @@
 import asyncio
-from collections import defaultdict
-from collections import deque
-import copy
-import os
 import random
-import re
-from time import time
 import traceback
 
 import discord
 from discord.ext import commands
 
-from __main__ import send_cmd_help
-from __main__ import settings
 
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.dataIO import fileIO
-from .utils.settings import Settings
-
-
-class StreamCopy:
+class StreamCopy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.settings = StreamCopySettings("streamcopy")
@@ -40,14 +25,14 @@ class StreamCopy:
         print("done refresh_stream")
 
     @commands.group(pass_context=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def streamcopy(self, context):
         """Utilities for reacting to users gaining/losing streaming status."""
         if context.invoked_subcommand is None:
             await send_cmd_help(context)
 
     @streamcopy.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def setStreamerRole(self, ctx, *, role_name: str):
         try:
             role = get_role(ctx.message.server.roles, role_name)
@@ -59,7 +44,7 @@ class StreamCopy:
         await self.bot.say(inline('Done. Make sure that role is below the bot in the hierarchy'))
 
     @streamcopy.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(manage_server=True)
+    @checks.mod_or_permissions(manage_guild=True)
     async def clearStreamerRole(self, ctx):
         self.settings.clearStreamerRole(ctx.message.server.id)
         await self.bot.say(inline('Done'))
