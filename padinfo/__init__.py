@@ -1,6 +1,5 @@
 from .padinfo import PadInfo
 
-
 def setup(bot):
     n = PadInfo(bot)
     bot.add_cog(n)

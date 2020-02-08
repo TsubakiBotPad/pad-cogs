@@ -1,9 +1,14 @@
-from redbot.core import checks
+import os
+import re
+import json
 
-from padinfo.padinfo import _validate_json
+import discord
+from discord.ext import commands
+
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-
+from redbot.core import checks
+from padinfo.padinfo import _validate_json
 
 class Memes(commands.Cog):
     """Custom memes."""

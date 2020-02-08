@@ -1,17 +1,28 @@
 import asyncio
+from collections import defaultdict
+from collections import deque
+import copy
+import os
 import random
+import re
+from time import time
 import traceback
 
-from redbot.core import checks
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+import discord
+from discord.ext import commands
 
-from rpadutils import CogSettings, get_role, get_role_from_id
+from __main__ import send_cmd_help
+from __main__ import settings
+
+from .rpadutils import *
+from .rpadutils import CogSettings
+from .utils import checks
+from .utils.dataIO import fileIO
+from .utils.settings import Settings
 
 
 class StreamCopy(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
         self.settings = StreamCopySettings("streamcopy")
         self.current_user_id = None
@@ -28,11 +39,12 @@ class StreamCopy(commands.Cog):
             await asyncio.sleep(60 * 3)
         print("done refresh_stream")
 
-    @commands.group()
+    @commands.group(pass_context=True)
     @checks.mod_or_permissions(manage_guild=True)
-    async def streamcopy(self, ctx: commands.Context) -> None:
+    async def streamcopy(self, context):
         """Utilities for reacting to users gaining/losing streaming status."""
-        pass
+        if context.invoked_subcommand is None:
+            await send_cmd_help(context)
 
     @streamcopy.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_guild=True)
@@ -112,7 +124,7 @@ class StreamCopy(commands.Cog):
                 await self.bot.add_roles(user, streamer_role)
             elif not user_is_playing and user_has_streamer_role:
                 await self.bot.remove_roles(user, streamer_role)
-        except Exception as ex:
+        except ex:
             pass
 
     async def do_refresh(self):
@@ -144,10 +156,15 @@ class StreamCopy(commands.Cog):
         return member and member.game and member.game.type == 1 and member.game.url
 
     async def copy_playing(self, game: discord.Game):
-        # TODO: this is broken; Game has no URL now.
-        # new_game = discord.Game(name=game.name, url=game., type=game.type)
-        # await self.bot.change_presence(game=new_game)
-        pass
+        new_game = discord.Game(name=game.name, url=game.url, type=game.type)
+        await self.bot.change_presence(game=new_game)
+
+
+def setup(bot):
+    n = StreamCopy(bot)
+    bot.add_listener(n.check_stream, "on_member_update")
+    bot.loop.create_task(n.refresh_stream())
+    bot.add_cog(n)
 
 
 class StreamCopySettings(CogSettings):

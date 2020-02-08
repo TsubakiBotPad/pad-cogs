@@ -1,21 +1,22 @@
 import math
 
-from __main__ import send_cmd_help
-from discord.ext import commands
-from ply import lex
-
+import discord
+from redbot.core import commands
+from ply import lex, yacc
+from rpadutils.rpadutils import ReportableError
 
 class PadLexer(object):
+
     tokens = [
         'ROWS',
         'TPAS',
         'ATK',
         'OE',
-        #         'ID',
+#         'ID',
         'MULT',
 
-        #         'RESIST',
-        #         'DEFENCE',
+#         'RESIST',
+#         'DEFENCE',
 
         'ROW',
         'TPA',
@@ -63,7 +64,7 @@ class PadLexer(object):
         t.value = t.value.strip('row').strip('(').strip(')')
         t.value = int(t.value) if t.value else 6
         if t.value < 6 or t.value > 30:
-            raise Exception('row must have 6-30 orbs, got ' + t.value)
+            raise ReportableError('row must have 6-30 orbs, got ' + t.value)
 
         return t
 
@@ -77,7 +78,7 @@ class PadLexer(object):
         t.value = t.value.strip('orb').strip('s').strip('(').strip(')')
         t.value = int(t.value) if t.value else 3
         if t.value < 3 or t.value > 30:
-            raise Exception('match must have 3-30 orbs, got ' + t.value)
+            raise ReportableError('match must have 3-30 orbs, got ' + t.value)
         return t
 
     def t_COMBO(self, t):
@@ -89,13 +90,12 @@ class PadLexer(object):
     t_ignore = ' \t\n'
 
     def t_error(self, t):
-        raise TypeError("Unknown text '%s'" % (t.value,))
+        raise ReportableError("Invalid text: '%s'" % (t.value,))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
         self.lexer = lex.lex(module=self)
         return self.lexer
-
 
 class DamageConfig(object):
 
@@ -150,13 +150,13 @@ class DamageConfig(object):
             self.combos = 0
 
         if (len(self.row_matches) + len(self.tpa_matches) + len(self.orb_matches)) == 0:
-            raise Exception('You need to specify at least one attack match (orb, tpa, row)')
+            raise ReportableError('You need to specify at least one attack match (orb, tpa, row)')
 
     def setIfType(self, expected_type, given_type, current_value, new_value):
         if expected_type != given_type:
             return current_value
         if current_value is not None:
-            raise Exception('You set {} more than once'.format(given_type))
+            raise ReportableError('You set {} more than once'.format(given_type))
         return new_value
 
     def updateWithMonster(self, monster):
@@ -191,7 +191,7 @@ class DamageCalc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(pass_context=True)
+    @commands.group()
     async def helpdamage(self, ctx):
         """Help info for the damage command
 
@@ -237,9 +237,8 @@ class DamageCalc(commands.Cog):
 
         Resistance, defense, loading by monster id, killers, etc coming soon
         """
-        await send_cmd_help(ctx)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def damage(self, ctx, *, damage_spec):
         """Computes damage for the provided damage_spec
 
@@ -248,16 +247,12 @@ class DamageCalc(commands.Cog):
 
         Use ^helpdamage for more info
         """
-
-        lexer = PadLexer().build()
-        lexer.input(damage_spec)
-        config = DamageConfig(lexer)
-        damage = config.calculate(all_enhanced=False)
-        enhanced_damage = config.calculate(all_enhanced=True)
-        await self.bot.say(
-            "```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
-
-
-def setup(bot):
-    n = DamageCalc(bot)
-    bot.add_cog(n)
+        try:
+            lexer = PadLexer().build()
+            lexer.input(damage_spec)
+            config = DamageConfig(lexer)
+            damage = config.calculate(all_enhanced=False)
+            enhanced_damage = config.calculate(all_enhanced=True)
+            await ctx.send("```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
+        except ReportableError as e:
+            await ctx.send(e.message)

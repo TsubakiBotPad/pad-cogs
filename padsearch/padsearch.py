@@ -1,12 +1,16 @@
 import json
+import math
 
-import redbot.core
-from ply import lex
-from redbot.core import checks
+import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box, pagify
+from ply import lex, yacc
+from png import itertools
 
 from rpadutils import rpadutils
+from redbot.core import checks
+import redbot.core
+from redbot.core.utils.chat_formatting import box, inline, pagify
+
 
 HELP_MSG = """
 ^search <specification string>
@@ -490,8 +494,8 @@ class SearchConfig(object):
             text_from = self.convert[0][0]
             text_to = self.convert[0][1]
             self.filters.append(lambda m,
-                                       tt=text_to,
-                                       tf=text_from:
+                                tt=text_to,
+                                tf=text_from:
                                 [tt] in m.search.orb_convert.values() if text_from == 'any' else
                                 (tf in m.search.orb_convert.keys() if text_to == 'any' else
                                  (tf in m.search.orb_convert.keys() and
@@ -624,7 +628,7 @@ class SearchConfig(object):
         return new_value
 
 
-class PadSearch(redbot.core.commands.Cog):
+class PadSearch(commands.Cog):
     """PAD data searching."""
 
     def __init__(self, bot):
@@ -700,3 +704,4 @@ class PadSearch(redbot.core.commands.Cog):
             return
 
         await ctx.send(box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))
+

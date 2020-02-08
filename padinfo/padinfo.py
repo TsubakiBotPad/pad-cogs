@@ -1,12 +1,26 @@
-import urllib.parse
-from builtins import filter
+import asyncio
+from builtins import filter, map
 from collections import OrderedDict
+from collections import defaultdict
+import os
+import io
+import json
+import re
+import traceback
+import urllib.parse
 
+from dateutil import tz
+import discord
+from discord.ext import commands
+from enum import Enum
 import prettytable
 
+#import rpadutils
 from dadguide import *
-from rpadutils import rpadutils
 from rpadutils.rpadutils import *
+from rpadutils import rpadutils
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 HELP_MSG = """
 ^helpid : shows this message
@@ -57,7 +71,7 @@ def get_pic_url(m):
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: dadguide.DgMonster = None,
+    def __init__(self, emoji_to_embed, m:dadguide.DgMonster=None,
                  pad_info=None, selected_emoji=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -102,7 +116,7 @@ class IdEmojiUpdater(EmojiUpdater):
             return True
         self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
         return True
-
+        
 
 def _validate_json(fp):
     try:
@@ -111,10 +125,8 @@ def _validate_json(fp):
     except:
         return False
 
-
 class PadInfo(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
 
         self.settings = PadInfoSettings("padinfo")
@@ -338,7 +350,7 @@ class PadInfo(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                                                                   starting_menu_emoji, timeout=timeout)
+                starting_menu_emoji, timeout=timeout)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
@@ -517,6 +529,28 @@ class PadInfo(commands.Cog):
     def _findMonster2(self, query, na_only=False):
         monster_index = self.index_na if na_only else self.index_all
         return monster_index.find_monster2(query)
+
+    @padinfo.command()
+    @checks.is_owner()
+    async def setanimationdir(self, ctx, *, animation_dir=''):
+        """Set a directory containing animated images"""
+        self.settings.setAnimationDir(animation_dir)
+        await ctx.send(inline('Done'))
+
+    def check_monster_animated(self, monster_id: int):
+        if not self.settings.animationDir():
+            return False
+
+        try:
+            animated_ids = set()
+            for f in os.listdir(self.settings.animationDir()):
+                f = f.replace('.mp4', '')
+                if f.isdigit() and int(f) == monster_id:
+                    return True
+        except:
+            pass
+
+        return False
 
 
 class PadInfoSettings(CogSettings):

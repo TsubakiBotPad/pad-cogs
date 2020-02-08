@@ -9,10 +9,13 @@ import discord
 from discord.ext import commands
 
 from __main__ import send_cmd_help, set_cog
+from cogs.utils import checks
+from cogs.utils.chat_formatting import pagify, box
 from cogs.utils.dataIO import dataIO
 
 from .rpadutils import Menu, EmojiUpdater, char_to_emoji
 from .utils.chat_formatting import *
+
 
 FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
 
@@ -52,7 +55,7 @@ class SchoolIdol(commands.Cog):
             **name_to_card,
             **firstname_to_card,
             **collection_name_to_card,
-            **collection_firstname_to_card,
+            ** collection_firstname_to_card,
         }
 
     @commands.command(pass_context=True)
@@ -99,8 +102,7 @@ class SchoolIdol(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx,
-                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
-                                                                   timeout=20)
+                EmojiUpdater(emoji_to_embed), starting_menu_emoji, timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)

@@ -1,23 +1,28 @@
-import discord
-from __main__ import send_cmd_help
-from discord.ext import commands
+from collections import defaultdict
+from collections import deque
+import copy
+import os
+from time import time
 
-from .rpadutils import *
-from .utils import checks
+import discord
+from redbot.core import commands
+
+from rpadutils.rpadutils import *
+from redbot.core import checks
 
 
 class FancySay(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(pass_context=True, no_pm=True)
+    @commands.group()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
-    async def fancysay(self, context):
+    async def fancysay(self, ctx):
         """Make the bot say fancy things (via embeds)."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @fancysay.command(pass_context=True, no_pm=True)
+    @fancysay.command()
+    @commands.guild_only()
     async def pingrole(self, ctx, role: discord.Role, *, text):
         """^fancysay pingrole rolename this is the text to ping
 
@@ -29,29 +34,35 @@ class FancySay(commands.Cog):
         The role must be unmentionable before this command for safety.
         """
         if role.mentionable:
-            await self.bot.say(inline('Error: role is already mentionable'))
+            await ctx.send(inline('Error: role is already mentionable'))
             return
 
         try:
-            await self.bot.edit_role(ctx.message.server, role, mentionable=True)
+            await role.edit(mentionable=True)
         except Exception as ex:
-            await self.bot.say(inline('Error: failed to set role mentionable'))
+            await ctx.send(inline('Error: failed to set role mentionable'))
+            if ex.text == "Missing Permissions":
+                message = await ctx.send(inline('Make sure this bot\'s role is higher than the one you\'re mentioning'))
+                await asyncio.sleep(3)
+                await message.delete()
             return
 
-        await self.bot.delete_message(ctx.message)
+        await ctx.message.delete()
         await asyncio.sleep(1)
-        await self.bot.say('From {}:\n{}\n{}'.format(ctx.message.author.mention, role.mention, text))
+        await ctx.send('From {}:\n{}\n{}'.format(ctx.author.mention, role.mention, text))
 
         try:
-            await self.bot.edit_role(ctx.message.server, role, mentionable=False)
+            await role.edit(mentionable=False)
         except Exception as ex:
-            await self.bot.say(inline('Error: failed to set role unmentionable'))
+            await ctx.send(inline('Error: failed to set role unmentionable'))
+            print(ex)
             return
 
-    @fancysay.command(pass_context=True, no_pm=True)
+    @fancysay.command()
+    @commands.guild_only()
     async def emoji(self, ctx, *, text):
         """Speak the provided text as emojis, deleting the original request"""
-        await self.bot.delete_message(ctx.message)
+        await ctx.message.delete()
         new_msg = ""
         for char in text:
             if char.isalpha():
@@ -62,9 +73,10 @@ class FancySay(commands.Cog):
                 new_msg += char
 
         if len(new_msg):
-            await self.bot.say(new_msg)
+            await ctx.send(new_msg)
 
-    @fancysay.command(pass_context=True, no_pm=True)
+    @fancysay.command()
+    @commands.guild_only()
     async def title_description_image_footer(self, ctx, title, description, image, footer):
         """[title] [description] [image_url] [footer_text]
 
@@ -90,12 +102,7 @@ class FancySay(commands.Cog):
             embed.set_footer(text=footer)
 
         try:
-            await self.bot.say(embed=embed)
-            await self.bot.delete_message(ctx.message)
+            await ctx.send(embed=embed)
+            await ctx.message.delete()
         except Exception as error:
             print("failed to fancysay", error)
-
-
-def setup(bot):
-    n = FancySay(bot)
-    bot.add_cog(n)

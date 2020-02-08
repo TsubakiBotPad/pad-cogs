@@ -4,12 +4,11 @@ import io
 from collections import defaultdict
 
 import prettytable
+from rpadutils.rpadutils import *
+import rpadutils.rpadutils
 import redbot.core
 from redbot.core import checks
 from redbot.core import commands
-
-import rpadutils.rpadutils
-from rpadutils.rpadutils import *
 
 global PADGLOBAL_COG
 
@@ -38,7 +37,7 @@ SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest e
 
 
 def is_padglobal_admin_check(ctx):
-    return checks.is_owner()  # or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
+    return checks.is_owner() #or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
 
 
 def is_padglobal_admin():
@@ -60,7 +59,7 @@ def monster_no_to_monster(monster_no):
     return padinfo_cog.get_monster_by_no(monster_no)
 
 
-class PadGlobal(redbot.core.commands.Cog):
+class PadGlobal(commands.Cog):
     """Global PAD commands."""
 
     def __init__(self, bot):
@@ -259,7 +258,7 @@ class PadGlobal(redbot.core.commands.Cog):
     async def padglobal(self, ctx):
         """PAD global custom commands."""
         if ctx.invoked_subcommand is None:
-            # await ctx.send_help()
+            #await ctx.send_help()
             pass
 
     @padglobal.command()
@@ -845,10 +844,10 @@ class PadGlobal(redbot.core.commands.Cog):
 
         try:
             async with aiohttp.ClientSession() as sess:
-                async with sess.get(source_url) as resp:
-                    emoji_content = await resp.read()
-                    await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
-                    await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
+              async with sess.get(source_url) as resp:
+                emoji_content = await resp.read()
+                await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
+                await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
         except Exception as ex:
             await ctx.send(box('Error:\n' + str(ex)))
 
@@ -857,7 +856,7 @@ class PadGlobal(redbot.core.commands.Cog):
         if message.author.id == self.bot.user.id:
             return
 
-        global_ignores = {'blacklist': []}  # self.bot.get_cog('Owner').global_ignores
+        global_ignores = {'blacklist':[]} # self.bot.get_cog('Owner').global_ignores
         if message.author.id in global_ignores["blacklist"]:
             return False
 
@@ -1273,3 +1272,4 @@ class PadGlobalSettings(CogSettings):
         if server_id in disabled_servers:
             disabled_servers.remove(server_id)
             self.save_settings()
+

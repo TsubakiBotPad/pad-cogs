@@ -1,5 +1,5 @@
 from .damagecalc import *
 
-
 def setup(bot):
-    bot.add_cog(DamageCalc(bot))
+    n = DamageCalc(bot)
+    bot.add_cog(n)

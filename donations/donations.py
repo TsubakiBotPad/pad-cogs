@@ -1,15 +1,20 @@
-import random
+from collections import defaultdict
+import difflib
+import os
 import random
 import re
 
 import discord
-from __main__ import send_cmd_help
 from discord.ext import commands
+from numpy.doc import glossary
+
+from __main__ import user_allowed, send_cmd_help
 
 from .rpadutils import *
 from .rpadutils import CogSettings
 from .utils import checks
 from .utils.dataIO import dataIO
+
 
 DONATE_MSG = """
 To donate to cover bot hosting fees you can use one of:
@@ -30,7 +35,7 @@ DEFAULT_INSULTS = {
     'miru_references': [
         'Are you talking to me you piece of shit?',
     ],
-    'insults': [
+    'insults':  [
         'You are garbage.',
         'Kill yourself.',
     ]
@@ -142,8 +147,7 @@ class Donations(commands.Cog):
         else:
             await self.bot.say('Ripper is not in this server but I let him know anyway')
             ripper = discord.utils.get(self.bot.get_all_members(), id=ripper_id)
-            await self.bot.send_message(ripper,
-                                        '{} asked me to send you this:\n{}'.format(ctx.message.author.name, insult))
+            await self.bot.send_message(ripper, '{} asked me to send you this:\n{}'.format(ctx.message.author.name, insult))
 
     @commands.command(pass_context=True)
     async def vcinsultripper(self, ctx):
