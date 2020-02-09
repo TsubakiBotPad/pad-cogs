@@ -1,31 +1,14 @@
-import asyncio
-from collections import defaultdict
-import http.client
-import json
-import os
-import re
-import threading
-import time
-import time
 import traceback
-import urllib.parse
-import datetime
-
-from rpadutils.rpadutils import *
+from collections import defaultdict
 from datetime import timedelta
-from dateutil import tz
-import discord
-from redbot.core import commands
 from enum import Enum
-import prettytable
-import pytz
 
+import prettytable
+from redbot.core import checks
 
 from dadguide import dadguide
+from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import *
-
 
 SUPPORTED_SERVERS = ["NA", "JP", "FAKE"]
 
@@ -83,7 +66,7 @@ class PadEvents(commands.Cog):
         while self == self.bot.get_cog('PadEvents'):
             try:
                 events = filter(lambda e: e.is_started()
-                                and not e.key in self.started_events, self.events)
+                                          and not e.key in self.started_events, self.events)
 
                 daily_refresh_servers = set()
                 for e in events:
@@ -110,7 +93,7 @@ class PadEvents(commands.Cog):
                                 except Exception as ex:
                                     # deregister gr
                                     traceback.print_exc()
-#                                     self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
+                                    #                                     self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
                                     print(
                                         "caught exception while sending guerrilla msg" + str(ex))
 
@@ -126,8 +109,8 @@ class PadEvents(commands.Cog):
                                 await self.pageOutput(ctx, msg, channel_id=daily_registration['channel_id'])
                         except Exception as ex:
                             traceback.print_exc()
-#                             self.settings.removeDailyReg(
-#                                 daily_registration['channel_id'], daily_registration['server'])
+                            #                             self.settings.removeDailyReg(
+                            #                                 daily_registration['channel_id'], daily_registration['server'])
                             print("caught exception while sending daily msg " + str(ex))
 
             except Exception as ex:
@@ -150,7 +133,7 @@ class PadEvents(commands.Cog):
     @padevents.command(name="testevent")
     @checks.is_owner()
     async def _testevent(self, ctx, server):
-        #TODO: Fix this (it's borked)
+        # TODO: Fix this (it's borked)
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
@@ -296,7 +279,7 @@ class PadEvents(commands.Cog):
         active_guerrilla_events = active_events.withType(EventType.Guerrilla).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
+                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
 
         guerrilla_events = pending_events.withType(EventType.Guerrilla).items()
         if len(guerrilla_events) > 0:
@@ -306,13 +289,13 @@ class PadEvents(commands.Cog):
         active_guerrilla_events = active_events.withType(EventType.SpecialWeek).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
+                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
 
         guerrilla_events = pending_events.withType(EventType.SpecialWeek).items()
         if len(guerrilla_events) > 0:
             msg += "\n\n" + \
-                self.makeFullGuerrillaOutput(
-                    'Guerrilla Events', guerrilla_events, starter_guerilla=True)
+                   self.makeFullGuerrillaOutput(
+                       'Guerrilla Events', guerrilla_events, starter_guerilla=True)
 
         # clean up long headers
         msg = msg.replace('-------------------------------------', '-----------------------')
@@ -543,7 +526,8 @@ class Event:
         return not self.is_finished()
 
     def tostr(self):
-        return fmtTime(self.open_datetime) + "," + fmtTime(self.close_datetime) + "," + self.group + "," + self.dungeon_code + "," + self.event_type + "," + self.event_seq
+        return fmtTime(self.open_datetime) + "," + fmtTime(
+            self.close_datetime) + "," + self.group + "," + self.dungeon_code + "," + self.event_type + "," + self.event_seq
 
     def startPst(self):
         tz = pytz.timezone('US/Pacific')
@@ -566,7 +550,8 @@ class Event:
         return fmtTimeShort(self.startPst())
 
     def toDateStr(self):
-        return self.server + "," + self.group + "," + fmtTime(self.startPst()) + "," + fmtTime(self.startEst()) + "," + self.startFromNow()
+        return self.server + "," + self.group + "," + fmtTime(self.startPst()) + "," + fmtTime(
+            self.startEst()) + "," + self.startFromNow()
 
     def groupShortName(self):
         return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
@@ -579,7 +564,8 @@ class Event:
         if self.is_started():
             return group + " " + self.endFromNow() + "   " + self.name_and_modifier
         else:
-            return group + " " + fmtTimeShort(self.startPst()) + " " + fmtTimeShort(self.startEst()) + " " + self.startFromNow() + " " + self.name_and_modifier
+            return group + " " + fmtTimeShort(self.startPst()) + " " + fmtTimeShort(
+                self.startEst()) + " " + self.startFromNow() + " " + self.name_and_modifier
 
 
 class EventList:
@@ -726,5 +712,5 @@ def cleanDungeonNames(name):
     name = name.replace("Star Treasure Thieves' Den", 'STTD')
     name = name.replace('Ruins of the Star Vault', 'Star Vault')
     name = name.replace('-★6 or lower Enhanced', '')
-    
+
     return name

@@ -1,19 +1,10 @@
-from collections import defaultdict
-import io
-import os
-import re
-import traceback
-
-import discord
-from redbot.core import commands
 from google.oauth2 import service_account
 
-from google.cloud import texttospeech
+from google.oauth2 import service_account
+from redbot.core import checks
 
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-
 
 try:
     if not discord.opus.is_loaded():
@@ -71,7 +62,7 @@ class Speech(commands.Cog):
             await ctx.send(inline('Command is too long'))
             return
 
-        await self.speak(channel, text) 
+        await self.speak(channel, text)
 
     async def speak(self, channel, text: str):
         if self.busy:

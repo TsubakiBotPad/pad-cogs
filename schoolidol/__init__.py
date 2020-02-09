@@ -1,5 +1,6 @@
 from .schoolidol import *
 
+
 def setup(bot):
     n = SchoolIdol(bot)
     bot.add_cog(n)

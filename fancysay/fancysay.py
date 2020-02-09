@@ -1,14 +1,6 @@
-from collections import defaultdict
-from collections import deque
-import copy
-import os
-from time import time
-
-import discord
-from redbot.core import commands
+from redbot.core import checks
 
 from rpadutils.rpadutils import *
-from redbot.core import checks
 
 
 class FancySay(commands.Cog):

@@ -1,11 +1,10 @@
-import os
 import re
-import discord 
 
-from redbot.core import commands
-
+import discord
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify, box
+
 from rpadutils.rpadutils import CogSettings
 
 
@@ -50,8 +49,8 @@ class PadBuilds(commands.Cog):
             await ctx.send("PAD Build successfully added.")
         else:
             await ctx.send("This build already exists. Use "
-                               "`{}builds edit` to edit it."
-                               "".format(ctx.prefix))
+                           "`{}builds edit` to edit it."
+                           "".format(ctx.prefix))
 
     @builds.command(name="edit")
     @checks.mod_or_permissions(administrator=True)
@@ -73,12 +72,12 @@ class PadBuilds(commands.Cog):
                 await ctx.send("PAD Build successfully edited.")
             else:
                 await ctx.send("That build doesn't exist. Use "
-                                   "`{}builds add` to add it."
-                                   "".format(ctx.prefix))
+                               "`{}builds add` to add it."
+                               "".format(ctx.prefix))
         else:
             await ctx.send("There are no PAD Builds in this server."
-                               " Use `{}builds add` to start adding some."
-                               "".format(ctx.prefix))
+                           " Use `{}builds add` to start adding some."
+                           "".format(ctx.prefix))
 
     @builds.command(name="delete")
     @checks.mod_or_permissions(administrator=True)
@@ -100,19 +99,19 @@ class PadBuilds(commands.Cog):
                 await ctx.send("That command doesn't exist.")
         else:
             await ctx.send("There are no PAD Builds in this server."
-                               " Use `{}builds add` to start adding some."
-                               "".format(ctx.prefix))
+                           " Use `{}builds add` to start adding some."
+                           "".format(ctx.prefix))
 
     @builds.command(name="list")
     async def cc_list(self, ctx):
         """Shows PAD Builds list"""
         server = ctx.guild
-        commands = self.c_commands.get_key(server.id, default = {})
+        commands = self.c_commands.get_key(server.id, default={})
 
         if not commands:
             await ctx.send("There are no PAD Builds in this server."
-                               " Use `{}builds add` to start adding some."
-                               "".format(ctx.prefix))
+                           " Use `{}builds add` to start adding some."
+                           "".format(ctx.prefix))
             return
 
         commands = ", ".join([ctx.prefix + c for c in sorted(commands)])
@@ -188,7 +187,7 @@ class PadBuildSettings(CogSettings):
 
     def get_key(self, key, **kwargs):
         if 'default' in kwargs:
-            return self.bot_settings.get(key, kwargs['default']) 
+            return self.bot_settings.get(key, kwargs['default'])
         return self.bot_settings[key]
 
     def set_key(self, key, value):

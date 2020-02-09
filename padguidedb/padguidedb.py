@@ -1,27 +1,11 @@
-import asyncio
-from collections import defaultdict
 import concurrent.futures
-import csv
-from datetime import datetime, date
-import decimal
-import io
-import json
-import logging
-import os
-import re
 import subprocess
-import sys
 
-import discord
-from redbot.core import commands
-import prettytable
 import pymysql
-
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
 from redbot.core import checks
 
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
 
 PADGUIDEDB_COG = None
 

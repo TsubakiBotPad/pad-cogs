@@ -1,5 +1,7 @@
-from .padevents import *
 import warnings
+
+from .padevents import *
+
 
 def setup(bot):
     warnings.warn("PadEvents is borked.")

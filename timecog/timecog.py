@@ -1,16 +1,9 @@
-import datetime
-from datetime import timedelta
-from dateutil import tz
-import os
-import pytz
 import time
+from datetime import timedelta
 
-import discord
+import pytz
 from redbot.core import commands
-
-from redbot.core import checks
 from redbot.core.utils.chat_formatting import *
-
 
 tz_lookup = dict([(pytz.timezone(x).localize(datetime.datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])
@@ -59,7 +52,7 @@ class TimeCog(commands.Cog):
         delta = req_time - now
 
         msg = "There are " + fmtHrsMins(delta.seconds).strip() + \
-            " until " + time.strip() + " in " + now.strftime('%Z')
+              " until " + time.strip() + " in " + now.strftime('%Z')
         await ctx.send(inline(msg))
 
 

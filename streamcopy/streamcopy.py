@@ -1,19 +1,10 @@
-import asyncio
-from collections import defaultdict
-from collections import deque
-import copy
-import os
 import random
-import re
-from time import time
 import traceback
 
-import discord
-from redbot.core import commands
+from redbot.core import checks
 
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
 
 
 class StreamCopy(commands.Cog):

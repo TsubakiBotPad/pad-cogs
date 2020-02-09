@@ -1,25 +1,16 @@
-from _collections import OrderedDict
 import asyncio
 import csv
 import difflib
-import json
-import os
-from time import time
 import traceback
 import urllib.parse
+from collections import OrderedDict
 
-import aiohttp
-import discord
 from redbot.core import commands
-
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import pagify, box
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils import rpadutils
 from rpadutils.rpadutils import CogSettings
-from rpadutils.rpadutils import Menu, char_to_emoji, EmojiUpdater
-from redbot.core.utils.chat_formatting import *
-
+from rpadutils.rpadutils import Menu, EmojiUpdater
 
 SUMMARY_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsO9Xi9cKaUQWPvDjjIKpHotZ036LCTN66PuNoQwvb8qZi4LmEUEOYmHDyqUJUzghI28aPrQHfRSYd/pub?gid=1488138129&single=true&output=csv'
 PIC_URL = 'https://storage.googleapis.com/mirubot-chronomagia/cards/{}.png'
@@ -118,7 +109,8 @@ class ChronoMagia(commands.Cog):
         emoji_to_embed[remove_emoji] = self.menu.reaction_delete_message
 
         try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx, EmojiUpdater(emoji_to_embed), starting_menu_emoji, timeout=20)
+            result_msg, result_embed = await self.menu.custom_menu(ctx, EmojiUpdater(emoji_to_embed),
+                                                                   starting_menu_emoji, timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
@@ -144,7 +136,7 @@ def make_embed(c: CmCard):
         embed.add_field(name=mtype, value='Atk {}\nDef {}'.format(c.atk, c.defn), inline=True)
         if c.expansion:
             embed.add_field(name='Expansion', value=c.expansion, inline=False)
-            
+
         if c.atkeff:
             embed.add_field(name='Attack Effect', value=c.atkeff, inline=False)
 

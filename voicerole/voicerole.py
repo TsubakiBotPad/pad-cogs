@@ -1,11 +1,8 @@
-import discord
-from discord.ext import commands
-import os
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import *
 
 
 class VoiceRole(commands.Cog):
@@ -76,7 +73,7 @@ class VoiceRole(commands.Cog):
         msg = 'Channel -> Role:'
         for channel_id, role_id in self.settings.getChannelRoles(ctx.guild.id).items():
             if isinstance(channel_id, int):
-                    msg += '\n\t{} : {}'.format(channel_id, role_id)
+                msg += '\n\t{} : {}'.format(channel_id, role_id)
         await ctx.send(box(msg))
 
 

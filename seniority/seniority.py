@@ -1,26 +1,18 @@
-import asyncio
+import sys
+import timeit
 from collections import deque
 from datetime import datetime, timedelta
-import discord
-from discord.ext import commands
-from discord.ext.commands import Cog
-import os
-import prettytable
-import pytz
-import re
-import sys
-import textwrap
-import timeit
 
 import aioodbc
+import prettytable
+from discord.ext import commands
 from redbot.core import checks
-import sqlite3 as lite
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils import rpadutils
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core.utils.chat_formatting import *
-from redbot.core import commands
 
 CREATE_TABLE = '''
 CREATE TABLE IF NOT EXISTS seniority(
@@ -402,9 +394,11 @@ class Seniority(commands.Cog):
                                      points_greater_than: bool):
 
         if points_greater_than:
-            def point_check_fn(p): return p >= amount
+            def point_check_fn(p):
+                return p >= amount
         else:
-            def point_check_fn(p): return p < amount
+            def point_check_fn(p):
+                return p < amount
 
         users_and_points = await self.get_lookback_points(server, lookback_days)
         grant_users, ignored_users = self.check_users_for_role(
@@ -706,7 +700,8 @@ class Seniority(commands.Cog):
         now_date_str = now_date()
         await self.process_message(server, channel, user, now_date_str, msg_content)
 
-    async def process_message(self, server: discord.Guild, channel: discord.TextChannel, user: discord.User, now_date_str: str, msg_content: str):
+    async def process_message(self, server: discord.Guild, channel: discord.TextChannel, user: discord.User,
+                              now_date_str: str, msg_content: str):
         if self.lock:
             return
         if server is None:
@@ -748,7 +743,8 @@ class Seniority(commands.Cog):
 
         return incremental_points
 
-    async def get_current_channel_points(self, now_date_str: str, server: discord.Guild, channel: discord.TextChannel, user: discord.User):
+    async def get_current_channel_points(self, now_date_str: str, server: discord.Guild, channel: discord.TextChannel,
+                                         user: discord.User):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(GET_NEWMESSAGE_POINTS_QUERY, now_date_str, server.id, channel.id, user.id)
@@ -762,7 +758,8 @@ class Seniority(commands.Cog):
                 results = await cur.fetchone()
                 return results.points if results else 0
 
-    async def save_current_points(self, now_date_str: str, server: discord.Guild, channel: discord.TextChannel, user: discord.User, new_points: int):
+    async def save_current_points(self, now_date_str: str, server: discord.Guild, channel: discord.TextChannel,
+                                  user: discord.User, new_points: int):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(REPLACE_POINTS_QUERY, now_date_str, server.id, channel.id, user.id, new_points)

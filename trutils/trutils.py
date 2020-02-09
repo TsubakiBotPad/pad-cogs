@@ -1,16 +1,14 @@
-import datetime
-
 try:
     from google.cloud import vision
 except:
     print('google cloud vision not found, some features unavailable')
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+import discord
 from redbot.core import checks, modlog
 from redbot.core.utils.chat_formatting import *
 
-import discord
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
@@ -193,12 +191,12 @@ class TrUtils(commands.Cog):
             await ctx.send(inline('Can only edit messages I own'))
             return
 
-        await msg.edit(content = new_msg)
+        await msg.edit(content=new_msg)
         await ctx.send(inline('done'))
 
     @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
-    async def dumpchannel(self, ctx, channel: discord.TextChannel, msg_id: int=None):
+    async def dumpchannel(self, ctx, channel: discord.TextChannel, msg_id: int = None):
         """Given a channel and an ID for a message printed in that channel, dumps it 
         boxed with formatting escaped and some issues cleaned up.
 
@@ -208,7 +206,7 @@ class TrUtils(commands.Cog):
         await self._dump(ctx, channel, msg_id)
 
     @commands.command()
-    async def dumpmsg(self, ctx, msg_id: int=None):
+    async def dumpmsg(self, ctx, msg_id: int = None):
         """Given an ID for a message printed in the current channel, dumps it
         boxed with formatting escaped and some issues cleaned up.
 
@@ -217,7 +215,7 @@ class TrUtils(commands.Cog):
         """
         await self._dump(ctx, ctx.channel, msg_id)
 
-    async def _dump(self, ctx, channel: discord.TextChannel=None, msg_id: int=None):
+    async def _dump(self, ctx, channel: discord.TextChannel = None, msg_id: int = None):
         if msg_id:
             msg = await channel.fetch_message(msg_id)
         else:
@@ -340,7 +338,8 @@ class TrUtils(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @checks.is_owner()
-    async def bulkimagecopy(self, ctx, source_channel: discord.TextChannel, dest_channel: discord.TextChannel, number: int):
+    async def bulkimagecopy(self, ctx, source_channel: discord.TextChannel, dest_channel: discord.TextChannel,
+                            number: int):
         copy_items = []
         async for message in source_channel.history(limit=number):
             if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
@@ -497,7 +496,7 @@ class TrUtils(commands.Cog):
             to_await = local_vars['to_await']
         except Exception as e:
             await ctx.send(box('{}: {}'.format(type(e).__name__, str(e)),
-                                lang="py"))
+                               lang="py"))
             return
 
         for result in to_await:
@@ -524,7 +523,7 @@ class TrUtils(commands.Cog):
 
     def _get_image_labels(self, img: str):
         # TODO: Fix this.  I don't have a google API
-        client = vision.ImageAnnotatorClient()#project='rpad-discord')
+        client = vision.ImageAnnotatorClient()  # project='rpad-discord')
         image = vision.types.Image()
         image.source.image_uri = img
 
@@ -559,7 +558,8 @@ class TrUtils(commands.Cog):
         async def change_role_fn(m: discord.Member):
             await m.add_roles(role)
 
-        await ctx.send(inline("About to ensure that all {} members in the server have role: {}".format(len(members), role.name)))
+        await ctx.send(
+            inline("About to ensure that all {} members in the server have role: {}".format(len(members), role.name)))
         await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
         await ctx.send("done")
 
@@ -578,7 +578,8 @@ class TrUtils(commands.Cog):
         async def change_role_fn(m: discord.Member):
             await m.remove_roles(role)
 
-        await ctx.send(inline("About to ensure that all {} members in the server do not have role: {}".format(len(members), role.name)))
+        await ctx.send(inline(
+            "About to ensure that all {} members in the server do not have role: {}".format(len(members), role.name)))
         await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
         await ctx.send("done")
 
@@ -597,7 +598,9 @@ class TrUtils(commands.Cog):
         async def change_role_fn(m: discord.Member):
             await m.add_roles(newrole)
 
-        await ctx.send(inline("About to ensure that all members in the server with role {} have role: {}".format(srcrole.name, newrole.name)))
+        await ctx.send(inline(
+            "About to ensure that all members in the server with role {} have role: {}".format(srcrole.name,
+                                                                                               newrole.name)))
         await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
         await ctx.send("done")
 
@@ -639,9 +642,9 @@ class TrUtils(commands.Cog):
                 try:
                     await self.bot.http.ban(user.id, guild.id, 0)
                     msg += '\n\tUser not in {}; added to hackban'.format(guild.name)
-                    await modlog.create_case(bot = self.bot,
-                                             guild = guild,
-                                             created_at = datetime.datetime.now(),
+                    await modlog.create_case(bot=self.bot,
+                                             guild=guild,
+                                             created_at=datetime.datetime.now(),
                                              action_type="hackban",
                                              moderator=ctx.author,
                                              user=user,
@@ -652,9 +655,9 @@ class TrUtils(commands.Cog):
             try:
                 await m.ban(delete_message_days=0)
                 msg += '\n\tBanned from {}'.format(guild.name)
-                await modlog.create_case(bot = self.bot,
-                                         guild = guild,
-                                         created_at = datetime.datetime.now(),
+                await modlog.create_case(bot=self.bot,
+                                         guild=guild,
+                                         created_at=datetime.datetime.now(),
                                          action_type="ban",
                                          moderator=ctx.author,
                                          user=user,
@@ -694,8 +697,8 @@ class TrUtils(commands.Cog):
             await ctx.send(inline("I'm unable to deliver your message. Sorry."))
         else:
             await ctx.send(inline("Your message has been sent."
-                                      " Abusing this feature will result in a blacklist."
-                                      + success_message))
+                                  " Abusing this feature will result in a blacklist."
+                                  + success_message))
 
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.user)
@@ -706,7 +709,8 @@ class TrUtils(commands.Cog):
         to commands, requests for new ^pad/^which entries, etc.
         """
         feedback_channel = self.bot.get_channel(int(self.settings.getFeedbackChannel()))
-        await self._send_feedback(ctx, message, feedback_channel, " Join the Miru Server to see any responses (^miruserver).")
+        await self._send_feedback(ctx, message, feedback_channel,
+                                  " Join the Miru Server to see any responses (^miruserver).")
 
     @commands.command()
     @commands.guild_only()
@@ -748,7 +752,7 @@ class TrUtils(commands.Cog):
 
     @commands.command()
     @checks.is_owner()
-    async def trackuser(self, ctx, user: discord.User=None):
+    async def trackuser(self, ctx, user: discord.User = None):
         """Track/untrack a user, list track info."""
         if user:
             if user.id in self.settings.trackedUsers().keys():

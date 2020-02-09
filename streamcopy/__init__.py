@@ -1,5 +1,6 @@
 from .streamcopy import *
 
+
 def setup(bot):
     n = StreamCopy(bot)
     bot.add_listener(n.check_stream, "on_member_update")

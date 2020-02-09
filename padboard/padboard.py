@@ -1,12 +1,9 @@
 from collections import defaultdict
 from collections import deque
-from io import BytesIO
 import os
-from zipfile import ZipFile
 
 import aiohttp
 import cv2
-import discord
 from redbot.core import commands
 import numpy as np
 
@@ -14,7 +11,6 @@ from padvision import padvision
 from rpadutils import rpadutils
 from redbot.core import checks
 from redbot.core.utils.chat_formatting import *
-
 
 DATA_DIR = os.path.join('data', 'padboard')
 
@@ -53,7 +49,7 @@ class PadBoard(commands.Cog):
         return None
 
     @commands.command()
-    async def dawnglare(self, ctx, user: discord.Member=None):
+    async def dawnglare(self, ctx, user: discord.Member = None):
         """Converts your most recent image to a dawnglare link
 
         Scans your recent messages for images (links with embeds, or uploads)
@@ -76,7 +72,7 @@ class PadBoard(commands.Cog):
 
         await ctx.send(msg)
 
-    async def get_recent_image(self, ctx, user: discord.Member=None, message: discord.Message=None):
+    async def get_recent_image(self, ctx, user: discord.Member = None, message: discord.Message = None):
         user_id = user.id if user else ctx.author.id
 
         image_url = rpadutils.extract_image_url(message)
@@ -87,7 +83,8 @@ class PadBoard(commands.Cog):
             if user:
                 await ctx.send(inline("Couldn't find an image in that user's recent messages."))
             else:
-                await ctx.send(inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
+                await ctx.send(
+                    inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
             return None
 
         image_data = await self.download_image(image_url)
@@ -98,7 +95,7 @@ class PadBoard(commands.Cog):
         return image_data
 
     def nc_classify(self, image_data):
-        #TODO: Test this (for TR to do)
+        # TODO: Test this (for TR to do)
         nparr = np.fromstring(image_data, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         model_path = '/home/tactical0retreat/git/pad-models/ICN3582626462823189160/model.tflite'

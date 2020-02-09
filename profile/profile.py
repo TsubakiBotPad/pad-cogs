@@ -1,28 +1,9 @@
-import asyncio
-from collections import defaultdict
-from datetime import datetime
-from datetime import timedelta
-from dateutil import tz
-import http.client
-import json
-import os
-import pytz
 import re
-import threading
-import time
-import time
-import traceback
-import urllib.parse
 
-from enum import Enum
-
-import discord
 from redbot.core import commands
-import prettytable
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import *
 
 
 # from copy import deepcopy
@@ -54,6 +35,7 @@ def formatId(id):
 def computeOldGroup(str_id):
     old_id_digit = str_id[2]
     return chr(ord('A') + (int(old_id_digit) % 5))
+
 
 # def computeNewGroup(str_id):
 #     int_id = int(str_id)

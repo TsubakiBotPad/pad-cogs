@@ -1,15 +1,9 @@
-import asyncio
 from collections import defaultdict
-import os
-import re
 
-import discord
-from redbot.core import commands
+from redbot.core import checks
 
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-
 
 STICKER_COG = None
 
@@ -139,6 +133,8 @@ class Stickers(commands.Cog):
             sticker_msg = await message.channel.send(embed=embed)
 
             await message.delete()
+
+
 #             await asyncio.sleep(15)
 #             await self.bot.delete_message(sticker_msg)
 

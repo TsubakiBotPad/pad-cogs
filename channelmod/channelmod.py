@@ -1,20 +1,17 @@
-from _datetime import datetime
 import asyncio
 import io
 import logging
-import os
 import time
 import traceback
+from _datetime import datetime
 
 import aiohttp
 import discord
-from redbot.core import commands
-
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline, box
 
 from rpadutils.rpadutils import CogSettings, ReportableError
-
 
 log = logging.getLogger("red.admin")
 
@@ -124,7 +121,7 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def addmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool=True):
+    async def addmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Set mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
@@ -134,7 +131,7 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool=True):
+    async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Remove mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
@@ -177,7 +174,7 @@ class ChannelMod(commands.Cog):
             last_spoke_timestamp) if last_spoke_timestamp else now_time
         attribution_required = last_spoke != message.author.id
         attribution_required |= (
-            now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
+                                        now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
         self.settings.set_last_spoke(channel.id, message.author.id)
 
         attachment_bytes = None
@@ -205,7 +202,8 @@ class ChannelMod(commands.Cog):
                     await dest_channel.send(msg)
 
                 if attachment_bytes:
-                    dest_message = await dest_channel.send(file=attachment_bytes, filename=filename, content=message.content)
+                    dest_message = await dest_channel.send(file=attachment_bytes, filename=filename,
+                                                           content=message.content)
                     attachment_bytes.seek(0)
                 elif message.content:
                     dest_message = await dest_channel.send(message.content)
@@ -244,8 +242,8 @@ class ChannelMod(commands.Cog):
         await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
 
     async def mirror_msg_mod(self, message,
-                             new_message_content: str=None,
-                             delete_message_content: bool=False,
+                             new_message_content: str = None,
+                             delete_message_content: bool = False,
                              new_message_reaction=None,
                              delete_message_reaction=None):
         if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):

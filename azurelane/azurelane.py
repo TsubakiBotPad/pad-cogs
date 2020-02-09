@@ -1,19 +1,12 @@
-from _collections import OrderedDict
 import difflib
 import json
-import os
-from time import time
+from _collections import OrderedDict
 
 import aiohttp
-import discord
 from redbot.core import commands
-
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import pagify, box
-
-from rpadutils.rpadutils import Menu, EmojiUpdater, char_to_emoji
 from redbot.core.utils.chat_formatting import *
 
+from rpadutils.rpadutils import Menu, EmojiUpdater, char_to_emoji
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
 DATA_URL = '{}/azure_lane.json'.format(BASE_URL)
@@ -38,8 +31,8 @@ class AzureLane(commands.Cog):
 
         self.id_to_card = {c['id']: c for c in self.card_data}
         name_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
-#         collection_name_to_card = {'{} {}'.format(
-#             i['title'], c['name_en']).lower(): c for i in c['images'] for c in self.card_data}
+        #         collection_name_to_card = {'{} {}'.format(
+        #             i['title'], c['name_en']).lower(): c for i in c['images'] for c in self.card_data}
         self.names_to_card = {
             **name_to_card,
             #             **collection_name_to_card,
@@ -79,7 +72,8 @@ class AzureLane(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx,
-                   EmojiUpdater(emoji_to_embed), starting_menu_emoji, timeout=20)
+                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
+                                                                   timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)

@@ -1,4 +1,5 @@
 from .damagecalc import *
+ 
 
 def setup(bot):
     n = DamageCalc(bot)

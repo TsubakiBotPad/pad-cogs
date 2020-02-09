@@ -1,22 +1,13 @@
-import asyncio
-from collections import OrderedDict, defaultdict
-import os
-import io
-import json
-import re
 import traceback
 import urllib.parse
+from collections import OrderedDict
 
-from dateutil import tz
-import discord
-from discord.ext import commands
-from enum import Enum
 import prettytable
-
-from rpadutils.rpadutils import *
-from rpadutils import rpadutils
 from redbot.core import checks
 from redbot.core.utils.chat_formatting import *
+
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
 
 HELP_MSG = """
 ^helpid : shows this message
@@ -67,7 +58,7 @@ def get_pic_url(m):
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m:"DgMonster"=None,
+    def __init__(self, emoji_to_embed, m: "DgMonster" = None,
                  pad_info=None, selected_emoji=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -112,7 +103,7 @@ class IdEmojiUpdater(EmojiUpdater):
             return True
         self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
         return True
-        
+
 
 def _validate_json(fp):
     try:
@@ -120,6 +111,7 @@ def _validate_json(fp):
         return True
     except:
         return False
+
 
 class PadInfo(commands.Cog):
     def __init__(self, bot):
@@ -346,7 +338,7 @@ class PadInfo(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                starting_menu_emoji, timeout=timeout)
+                                                                   starting_menu_emoji, timeout=timeout)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)

@@ -5,25 +5,17 @@ communication about role changes.
 
 from collections import defaultdict
 from collections import deque
-import copy
-import os
-import re
-from time import time
 
-import aiohttp
-import discord
-from discord.ext import commands
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils import rpadutils
 from rpadutils.rpadutils import *
 from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import *
-
 
 LOGS_PER_USER = 10
 
-
+ 
 class BadUser(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -128,7 +120,7 @@ class BadUser(commands.Cog):
         server = ctx.guild
         self.settings.setStrikesPrivate(server.id, not self.settings.getStrikesPrivate(server.id))
         output = '\nStrike existance is now ' + \
-            'private' if self.settings.getStrikesPrivate(server.id) else 'public'
+                 'private' if self.settings.getStrikesPrivate(server.id) else 'public'
         await ctx.send(inline(output))
 
     @baduser.command()
@@ -141,7 +133,7 @@ class BadUser(commands.Cog):
         for role_id in self.settings.getPunishmentRoles(server.id):
             try:
                 role = get_role_from_id(self.bot, server, role_id)
-                output +=  '\t' + role.name + '\n'
+                output += '\t' + role.name + '\n'
             except Exception as e:
                 pass  # Role was deleted
 
@@ -163,7 +155,7 @@ class BadUser(commands.Cog):
 
         output += '\nStrike contents are private'
         output += '\nStrike existence is ' + \
-            ('private' if self.settings.getStrikesPrivate(server.id) else 'public')
+                  ('private' if self.settings.getStrikesPrivate(server.id) else 'public')
 
         await ctx.send(box(output))
 
@@ -269,7 +261,8 @@ class BadUser(commands.Cog):
             other_banned_servers = user_id_to_ban_server[member.id]
             is_globally_banned = member.id in global_banned_users
 
-            if not len(local_strikes) and not len(other_baduser_servers) and not len(other_banned_servers) and not is_globally_banned:
+            if not len(local_strikes) and not len(other_baduser_servers) and not len(
+                    other_banned_servers) and not is_globally_banned:
                 continue
 
             tmp_msg = "{} ({})".format(member.name, member.id)
@@ -480,13 +473,14 @@ class BadUser(commands.Cog):
             try:
                 dm_msg = ('You were assigned the punishment role "{}" in the server "{}".\n'
                           'The Mods will contact you shortly regarding this.\n'
-                          'Attempting to clear this role yourself will result in punishment.').format(role_name, member.guild.name)
+                          'Attempting to clear this role yourself will result in punishment.').format(role_name,
+                                                                                                      member.guild.name)
                 await member.send(box(dm_msg))
                 await channel_obj.send('User successfully notified')
             except Exception as e:
                 await channel_obj.send('Failed to notify the user! I might be blocked\n' + box(str(e)))
 
-    async def recordRoleChange(self, member, role_name, is_added, send_ping = True):
+    async def recordRoleChange(self, member, role_name, is_added, send_ping=True):
         msg = 'Detected role {} : Name={} Nick={} ID={} Joined={} Role={}'.format(
             "Added" if is_added else "Removed", member.name, member.nick, member.id, member.joined_at, role_name)
 
