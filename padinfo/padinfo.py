@@ -1,3 +1,6 @@
+import asyncio
+import json
+import os
 import traceback
 import urllib.parse
 from collections import OrderedDict
@@ -8,6 +11,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
+from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
 HELP_MSG = """
 ^helpid : shows this message
@@ -105,16 +109,9 @@ class IdEmojiUpdater(EmojiUpdater):
         return True
 
 
-def _validate_json(fp):
-    try:
-        json.load(open(fp))
-        return True
-    except:
-        return False
-
-
 class PadInfo(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = PadInfoSettings("padinfo")
@@ -140,21 +137,10 @@ class PadInfo(commands.Cog):
         self.remove_emoji = self.menu.emoji['no']
 
         self.historic_lookups_file_path = "data/padinfo/historic_lookups.json"
+        self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
+
         self.historic_lookups_file_path_id2 = "data/padinfo/historic_lookups_id2.json"
-        if not _validate_json(self.historic_lookups_file_path):
-            print("Creating empty historic_lookups.json...")
-            json.dump({}, open(self.historic_lookups_file_path, "w+"))
-
-        if not _validate_json(self.historic_lookups_file_path_id2):
-            print("Creating empty historic_lookups_id2.json...")
-            json.dump({}, open(self.historic_lookups_file_path_id2, "w+"))
-
-        with open(self.historic_lookups_file_path, "a+") as f1:
-            f1.seek(0)
-            self.historic_lookups = json.load(f1)
-        with open(self.historic_lookups_file_path_id2, "a+") as f2:
-            f2.seek(0)
-            self.historic_lookups_id2 = json.load(f2)
+        self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
     def __unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -515,28 +501,6 @@ class PadInfo(commands.Cog):
     def _findMonster2(self, query, na_only=False):
         monster_index = self.index_na if na_only else self.index_all
         return monster_index.find_monster2(query)
-
-    @padinfo.command()
-    @checks.is_owner()
-    async def setanimationdir(self, ctx, *, animation_dir=''):
-        """Set a directory containing animated images"""
-        self.settings.setAnimationDir(animation_dir)
-        await ctx.send(inline('Done'))
-
-    def check_monster_animated(self, monster_id: int):
-        if not self.settings.animationDir():
-            return False
-
-        try:
-            animated_ids = set()
-            for f in os.listdir(self.settings.animationDir()):
-                f = f.replace('.mp4', '')
-                if f.isdigit() and int(f) == monster_id:
-                    return True
-        except:
-            pass
-
-        return False
 
 
 class PadInfoSettings(CogSettings):

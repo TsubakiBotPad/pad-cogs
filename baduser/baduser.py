@@ -7,6 +7,7 @@ from collections import defaultdict
 from collections import deque
 
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
@@ -16,7 +17,8 @@ LOGS_PER_USER = 10
 
 
 class BadUser(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = BadUserSettings("baduser")

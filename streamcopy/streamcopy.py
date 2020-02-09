@@ -3,7 +3,7 @@ import random
 import traceback
 
 from redbot.core import checks
-from redbot.core.commands import commands
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings, get_role, get_role_from_id

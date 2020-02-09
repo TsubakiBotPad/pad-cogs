@@ -66,7 +66,7 @@ class Translate(commands.Cog):
     @translate.command()
     @checks.is_owner()
     @commands.guild_only()
-    async def autotranslatejp(self, ctx, channel: discord.Channel = None):
+    async def autotranslatejp(self, ctx, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
         if channel.id in self.settings.autoTranslateJp():
             self.settings.rmAutoTranslateJp(channel.id)

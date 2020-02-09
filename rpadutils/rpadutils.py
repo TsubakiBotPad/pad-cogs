@@ -11,9 +11,7 @@ import urllib
 import aiohttp
 import backoff
 import pytz
-from discord.ext.commands import BadArgument
 from discord.ext.commands import CommandNotFound
-from discord.ext.commands import converter
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
@@ -188,6 +186,26 @@ def writeJsonFile(file_path, js_data):
 def readJsonFile(file_path):
     with open(file_path, "r") as f:
         return json.load(f)
+
+
+def safe_read_json(file_path):
+    try:
+        return readJsonFile(file_path)
+    except Exception as ex:
+        print('failed to read', file_path, 'got exception', ex)
+    return {}
+
+
+def ensure_json_exists(file_dir, file_name):
+    if not os.path.exists(file_dir):
+        print("Creating dir: ", file_dir)
+        os.makedirs(file_dir)
+    file_path = os.path.join(file_dir, file_name)
+    try:
+        readJsonFile(file_path)
+    except:
+        print('File missing or invalid json:', file_path)
+        writeJsonFile(file_path, {})
 
 
 @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_time=60)
@@ -429,34 +447,35 @@ def char_to_emoji(c):
 ##############################
 # Hack to fix discord.py
 ##############################
-class UserConverter2(converter.IDConverter):
-    @asyncio.coroutine
-    def convert(self, ctx, argument):
-        message = ctx.message
-        bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
-        server = message.guild
-        result = None
-        if match is None:
-            # not a mention...
-            if server:
-                result = server.get_member_named(argument)
-            else:
-                result = _get_from_servers(bot, 'get_member_named', argument)
-        else:
-            user_id = match.group(1)
-            if server:
-                result = yield from bot.fetch_user(int(user_id))
-            else:
-                result = _get_from_servers(bot, 'get_member', user_id)
-
-        if result is None:
-            raise BadArgument('Member "{}" not found'.format(argument))
-
-        return result
-
-
-converter.UserConverter = UserConverter2
+# TODO: check if this is still needed
+# class UserConverter2(converter.IDConverter):
+#     @asyncio.coroutine
+#     def convert(self, ctx, argument):
+#         message = ctx.message
+#         bot = ctx.bot
+#         match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+#         server = message.guild
+#         result = None
+#         if match is None:
+#             # not a mention...
+#             if server:
+#                 result = server.get_member_named(argument)
+#             else:
+#                 result = _get_from_servers(bot, 'get_member_named', argument)
+#         else:
+#             user_id = match.group(1)
+#             if server:
+#                 result = yield from bot.fetch_user(int(user_id))
+#             else:
+#                 result = _get_from_servers(bot, 'get_member', user_id)
+#
+#         if result is None:
+#             raise BadArgument('Member "{}" not found'.format(argument))
+#
+#         return result
+#
+#
+# converter.UserConverter = UserConverter2
 
 
 ##############################
@@ -698,3 +717,11 @@ async def translate_jp_en(bot, jp_text):
     if not translate_cog:
         return None
     return await run_in_loop(bot, translate_cog.translate_jp_en, jp_text)
+
+
+def validate_json(fp):
+    try:
+        json.load(open(fp))
+        return True
+    except:
+        return False

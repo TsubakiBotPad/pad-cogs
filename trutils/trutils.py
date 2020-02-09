@@ -4,6 +4,7 @@ except:
     print('google cloud vision not found, some features unavailable')
 
 from redbot.core import checks, modlog
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings

@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import timeit
@@ -9,6 +10,7 @@ import discord
 import prettytable
 import pytz
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline, pagify, box
 
 import rpadutils
@@ -104,7 +106,8 @@ WHERE record_date = ?
 class Seniority(commands.Cog):
     """Automatically promote people based on activity."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = SenioritySettings("seniority")
         self.db_path = self.settings.folder + '/log.db'

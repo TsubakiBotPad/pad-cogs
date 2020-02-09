@@ -6,8 +6,12 @@ Access via the exported DadGuide sqlite database.
 Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
+import asyncio
 import csv
 import difflib
+import json
+import os
+import re
 import shutil
 import sqlite3 as lite
 import traceback
@@ -15,8 +19,10 @@ from _collections import defaultdict, deque, OrderedDict
 from datetime import datetime
 from enum import Enum
 
+import pytz
 import romkan
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
@@ -41,7 +47,8 @@ DB_DUMP_WORKING_FILE = 'data/dadguide/dadguide_working.sqlite'
 
 
 class Dadguide(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self._is_ready = asyncio.Event(loop=self.bot.loop)
 
@@ -217,7 +224,7 @@ class Dadguide(commands.Cog):
         await ctx.send(inline('Done'))
 
 
-class DadguideSettings(CogSettings):
+class DadguideSettings(rpadutils.CogSettings):
     def make_default_settings(self):
         config = {
             'data_file': '',

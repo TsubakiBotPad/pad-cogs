@@ -1,16 +1,16 @@
+import os
 from collections import defaultdict
 from collections import deque
-import os
 
 import aiohttp
 import cv2
-from redbot.core import commands
 import numpy as np
+from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 from padvision import padvision
 from rpadutils import rpadutils
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import *
 
 DATA_DIR = os.path.join('data', 'padboard')
 
@@ -19,7 +19,8 @@ MIRUGLARE_BOARD_TEMPLATE = "https://storage.googleapis.com/mirubot/websites/pads
 
 
 class PadBoard(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.logs = defaultdict(lambda: deque(maxlen=1))
 

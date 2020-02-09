@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import discord
 from redbot.core import checks
-from redbot.core.commands import commands
+from redbot.core import commands
 
 from rpadutils import CogSettings
 

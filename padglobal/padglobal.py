@@ -1,6 +1,7 @@
 import csv
 import difflib
 import io
+import json
 from collections import defaultdict
 
 import prettytable
@@ -9,6 +10,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
+from rpadutils import CogSettings, safe_read_json
 
 global PADGLOBAL_COG
 
@@ -62,14 +64,13 @@ def monster_no_to_monster(monster_no):
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
         self.bot = bot
         self.file_path = "data/padglobal/commands.json"
-        with open("data/padglobal/commands.json", "a+") as f:
-            f.seek(0)
-            self.c_commands = json.load(f)
+        self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
 
         self._export_data()
