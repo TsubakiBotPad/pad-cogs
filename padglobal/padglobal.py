@@ -856,7 +856,7 @@ class PadGlobal(commands.Cog):
         if message.author.id == self.bot.user.id:
             return
 
-        global_ignores = {'blacklist':[]} # self.bot.get_cog('Owner').global_ignores
+        global_ignores = {'blacklist':[]} # self.bot.get_cog('Core').global_ignores
         if message.author.id in global_ignores["blacklist"]:
             return False
 
