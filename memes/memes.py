@@ -1,14 +1,16 @@
 from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 from padinfo.padinfo import _validate_json
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 
 class Memes(commands.Cog):
     """Custom memes."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.file_path = "data/memes/commands.json"
         with open("data/memes/commands.json", "a+") as f:

@@ -3,9 +3,10 @@ import subprocess
 
 import pymysql
 from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 PADGUIDEDB_COG = None
 
@@ -22,7 +23,8 @@ def is_padguidedb_admin():
 class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = PadGuideDbSettings("padguidedb")
 

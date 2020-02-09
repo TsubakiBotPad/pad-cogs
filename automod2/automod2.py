@@ -11,10 +11,11 @@ from collections import deque
 
 import prettytable
 from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+import rpadutils
+from rpadutils import CogSettings
 
 LOGS_PER_CHANNEL_USER = 5
 

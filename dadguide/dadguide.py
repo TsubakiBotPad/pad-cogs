@@ -17,10 +17,9 @@ from enum import Enum
 
 import romkan
 from redbot.core import checks
-from redbot.core.utils.chat_formatting import inline
+from redbot.core.utils.chat_formatting import *
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
+import rpadutils
 
 CSV_FILE_PATTERN = 'data/dadguide/{}.csv'
 NAMES_EXPORT_PATH = 'data/dadguide/computed_names.json'
@@ -159,7 +158,7 @@ class Dadguide(commands.Cog):
 
         with open(NAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
             json.dump(results, f)
- 
+
         results = {}
         for nm in self.index.all_monsters:
             entry = {'bn': list(nm.group_basenames)}

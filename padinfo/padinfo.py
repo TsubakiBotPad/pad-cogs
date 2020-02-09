@@ -4,10 +4,10 @@ from collections import OrderedDict
 
 import prettytable
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
+import rpadutils
 
 HELP_MSG = """
 ^helpid : shows this message

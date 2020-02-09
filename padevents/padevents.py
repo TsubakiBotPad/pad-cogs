@@ -5,16 +5,18 @@ from enum import Enum
 
 import prettytable
 from redbot.core import checks
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 from dadguide import dadguide
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 SUPPORTED_SERVERS = ["NA", "JP", "FAKE"]
 
 
 class PadEvents(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: object, args: object, kwargs: object) -> object:
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = PadEventSettings("padevents")

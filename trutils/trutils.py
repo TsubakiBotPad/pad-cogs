@@ -3,12 +3,10 @@ try:
 except:
     print('google cloud vision not found, some features unavailable')
 
-import discord
 from redbot.core import checks, modlog
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
@@ -161,7 +159,8 @@ in specific channels, or unless they have specific roles. Read the documentation
 
 
 class TrUtils(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = TrUtilsSettings("trutils")
 

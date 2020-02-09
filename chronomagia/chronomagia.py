@@ -8,9 +8,8 @@ from collections import OrderedDict
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import CogSettings
-from rpadutils.rpadutils import Menu, EmojiUpdater
+import rpadutils
+from rpadutils import CogSettings, Menu, EmojiUpdater
 
 SUMMARY_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsO9Xi9cKaUQWPvDjjIKpHotZ036LCTN66PuNoQwvb8qZi4LmEUEOYmHDyqUJUzghI28aPrQHfRSYd/pub?gid=1488138129&single=true&output=csv'
 PIC_URL = 'https://storage.googleapis.com/mirubot-chronomagia/cards/{}.png'

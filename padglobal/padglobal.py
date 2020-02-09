@@ -6,9 +6,9 @@ from collections import defaultdict
 import prettytable
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
-import rpadutils.rpadutils
-from rpadutils.rpadutils import *
+import rpadutils
 
 global PADGLOBAL_COG
 

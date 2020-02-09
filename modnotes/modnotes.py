@@ -6,11 +6,12 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 
 class ModNotes(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ModNotesSettings("modnotes")
 

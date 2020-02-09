@@ -3,7 +3,7 @@ import math
 from ply import lex
 from redbot.core import commands
 
-from rpadutils.rpadutils import ReportableError
+from rpadutils import ReportableError
 
 
 class PadLexer(object):
@@ -191,7 +191,7 @@ class DamageCalc(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
- 
+
     @commands.group()
     async def helpdamage(self, ctx):
         """Help info for the damage command

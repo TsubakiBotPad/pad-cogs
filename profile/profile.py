@@ -3,7 +3,7 @@ import re
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 
 # from copy import deepcopy
@@ -37,13 +37,9 @@ def computeOldGroup(str_id):
     return chr(ord('A') + (int(old_id_digit) % 5))
 
 
-# def computeNewGroup(str_id):
-#     int_id = int(str_id)
-#     return (int_id % 3)
-
-
 class Profile(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ProfileSettings("profile")
 

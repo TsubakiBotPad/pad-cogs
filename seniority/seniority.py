@@ -1,18 +1,18 @@
+import re
 import sys
 import timeit
 from collections import deque
 from datetime import datetime, timedelta
 
 import aioodbc
+import discord
 import prettytable
-from discord.ext import commands
+import pytz
 from redbot.core import checks
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, pagify, box
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+import rpadutils
+from rpadutils import CogSettings, NA_TZ_OBJ
 
 CREATE_TABLE = '''
 CREATE TABLE IF NOT EXISTS seniority(
@@ -495,10 +495,7 @@ class Seniority(commands.Cog):
     @commands.guild_only()
     async def config(self, ctx):
         """Toggle Seniority configuration settings."""
-        if ctx.invoked_subcommand is None or \
-                isinstance(ctx.invoked_subcommand, commands.Group):
-            await send_cmd_help(ctx)
-            return
+        pass
 
     @config.command()
     @commands.guild_only()

@@ -19,7 +19,8 @@ from redbot.core.utils.chat_formatting import *
 
 
 class RpadUtils(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     async def on_command_error(self, ctx, error):

@@ -1,10 +1,12 @@
 from redbot.core import checks
 
-from rpadutils.rpadutils import *
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 
 class FancySay(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     @commands.group()

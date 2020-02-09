@@ -5,7 +5,7 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify, box
 
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 
 class PadBuilds(commands.Cog):
@@ -13,7 +13,8 @@ class PadBuilds(commands.Cog):
 
     Creates commands used to display text"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.c_commands = PadBuildSettings("padbuilds")
 

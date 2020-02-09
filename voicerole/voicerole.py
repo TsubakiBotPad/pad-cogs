@@ -1,14 +1,15 @@
 from redbot.core import checks
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings, get_role_from_id
 
 
 class VoiceRole(commands.Cog):
     """Gives a custom to anyone who enters a voice channel. THIS ROLE MUST EXIST AND THE BOT MUST HAVE THE RIGHTS TO CHANGE ROLES FOR IT TO WORK!"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = VoiceRoleSettings("voicerole")
 

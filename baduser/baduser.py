@@ -9,13 +9,12 @@ from collections import deque
 from redbot.core import checks
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+import rpadutils
+from rpadutils import CogSettings
 
 LOGS_PER_USER = 10
 
- 
+
 class BadUser(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

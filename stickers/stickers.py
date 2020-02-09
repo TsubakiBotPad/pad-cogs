@@ -1,9 +1,10 @@
 from collections import defaultdict
 
+import discord
 from redbot.core import checks
+from redbot.core.commands import commands
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings
 
 STICKER_COG = None
 
@@ -19,7 +20,8 @@ def is_sticker_admin():
 class Stickers(commands.Cog):
     """Sticker commands."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.file_path = "data/stickers/commands.json"
         self.settings = StickersSettings("stickers")

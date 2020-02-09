@@ -6,7 +6,7 @@ import aiohttp
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import Menu, EmojiUpdater, char_to_emoji
+from rpadutils import Menu, EmojiUpdater, char_to_emoji
 
 FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
 
@@ -14,7 +14,8 @@ FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
 class SchoolIdol(commands.Cog):
     """SchoolIdol."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.card_data = []
         self.menu = Menu(bot)

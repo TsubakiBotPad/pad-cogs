@@ -8,7 +8,8 @@ ORB_IMG_SIZE = 40
 
 
 class PadVision(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
 

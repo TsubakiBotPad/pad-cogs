@@ -6,7 +6,7 @@ import aiohttp
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import Menu, EmojiUpdater, char_to_emoji
+from rpadutils import Menu, EmojiUpdater, char_to_emoji
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
 DATA_URL = '{}/azure_lane.json'.format(BASE_URL)

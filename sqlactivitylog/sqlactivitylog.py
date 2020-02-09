@@ -1,16 +1,17 @@
-from collections import deque
-from datetime import datetime, timedelta
+import os
+import sqlite3 as lite
 import textwrap
 import timeit
+from collections import deque
+from datetime import datetime, timedelta
 
 import prettytable
-
-from redbot.core import checks
-import sqlite3 as lite
-
-from rpadutils import rpadutils
-from rpadutils.rpadutils import *
+import pytz
+from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import *
+
+import rpadutils
+from rpadutils import CogSettings
 
 TIMESTAMP_FORMAT = '%Y-%m-%d %X'  # YYYY-MM-DD HH:MM:SS
 PATH_LIST = ['data', 'sqlactivitylog']
@@ -180,7 +181,8 @@ WHERE server_id = :server_id
 class SqlActivityLogger(commands.Cog):
     """Log activity seen by bot"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = SQLSettings("sqlactivitylog")
         self.lock = False
@@ -502,7 +504,7 @@ class SqlActivityLogger(commands.Cog):
                     # Assign a UTC timezone to the datetime
                     raw_value = raw_value.replace(tzinfo=pytz.utc)
                     # Change the UTC timezone to PT
-                    raw_value = NA_TZ_OBJ.normalize(raw_value)
+                    raw_value = rpadutils.NA_TZ_OBJ.normalize(raw_value)
                     value = raw_value.strftime("%F %X")
                 if col == 'channel_id':
                     channel = server.get_channel(value) if server else None

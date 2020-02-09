@@ -1,14 +1,17 @@
+import asyncio
 import random
 import traceback
 
 from redbot.core import checks
+from redbot.core.commands import commands
+from redbot.core.utils.chat_formatting import *
 
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings
+from rpadutils import CogSettings, get_role, get_role_from_id
 
 
 class StreamCopy(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = StreamCopySettings("streamcopy")
         self.current_user_id = None
@@ -142,6 +145,7 @@ class StreamCopy(commands.Cog):
         return member and member.activity and member.activity.type == 1 and member.activity.url
 
     async def copy_playing(self, game: discord.Game):
+        # TODO: URL no longer exists on Game
         new_game = discord.Game(name=game.name, url=game.url, type=game.type)
         await self.bot.change_presence(activity=new_game)
 

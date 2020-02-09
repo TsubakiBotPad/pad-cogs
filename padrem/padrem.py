@@ -3,19 +3,19 @@ import random
 import traceback
 from _collections import OrderedDict
 
+from redbot.core import checks
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import box, pagify
 
 from dadguide import dadguide
-from rpadutils.rpadutils import *
-from rpadutils.rpadutils import CogSettings, normalizeServer
-from redbot.core import checks
-from redbot.core.utils.chat_formatting import box, pagify
+from rpadutils import CogSettings, normalizeServer
 
 SUPPORTED_SERVERS = ["NA", "JP"]
 
 
 class PadRem(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = PadRemSettings("padrem")

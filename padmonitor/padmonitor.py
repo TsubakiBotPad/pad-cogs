@@ -1,14 +1,10 @@
-from __main__ import send_cmd_help
-
-from . import rpadutils
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import *
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 
 class PadMonitor(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = PadMonitorSettings("padmonitor")
 
@@ -49,7 +45,8 @@ class PadMonitor(commands.Cog):
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
                     msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_na)
-                    if rpadutils.containsJp(m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
+                    if rpadutils.containsJp(
+                            m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
                         msg += ' ({})'.format(m.name_na_override)
                 return msg
             else:
