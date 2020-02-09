@@ -6,8 +6,12 @@ Access via the exported DadGuide sqlite database.
 Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
+import asyncio
 import csv
 import difflib
+import json
+import os
+import re
 import shutil
 import sqlite3 as lite
 import traceback
@@ -15,11 +19,14 @@ from _collections import defaultdict, deque, OrderedDict
 from datetime import datetime
 from enum import Enum
 
+import pytz
 import romkan
-from redbot.core import checks
+from discord.ext import commands
 
-from rpadutils import rpadutils
 from rpadutils.rpadutils import *
+from rpadutils import rpadutils
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import inline
 
 CSV_FILE_PATTERN = 'data/dadguide/{}.csv'
 NAMES_EXPORT_PATH = 'data/dadguide/computed_names.json'
@@ -41,13 +48,11 @@ DB_DUMP_WORKING_FILE = 'data/dadguide/dadguide_working.sqlite'
 
 
 class Dadguide(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
         self._is_ready = asyncio.Event(loop=self.bot.loop)
 
         self.settings = DadguideSettings("dadguide")
-        self.reload_task = None
 
         # A string -> int mapping, nicknames to monster_id_na
         self.nickname_overrides = {}
@@ -83,9 +88,6 @@ class Dadguide(commands.Cog):
     def get_monster_by_no(self, monster_no: int):
         """Exported function that allows a client cog to get a full PgMonster by monster_no"""
         return self.database.get_monster(monster_no)
-
-    def register_tasks(self):
-        self.reload_task = self.bot.loop.create_task(self.reload_data_task())
 
     def __unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -211,7 +213,7 @@ class Dadguide(commands.Cog):
     async def dadguide(self, ctx):
         """Dadguide database settings"""
         if ctx.invoked_subcommand is None:
-            # await ctx.send_help()
+            #await ctx.send_help()
             pass
 
     @dadguide.command()
@@ -414,8 +416,7 @@ class DadguideDatabase(object):
 
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
-        return [r.awoken_skill_id for r in
-                self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
+        return [r.awoken_skill_id for r in self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
         return self._query_many(
@@ -517,7 +518,7 @@ class DadguideDatabase(object):
             as_generator=True)
 
     def get_base_monster_by_monster(self, monster_id):
-        base = {'from_id': monster_id, 'to_id': monster_id}
+        base = {'from_id':monster_id, 'to_id':monster_id}
         lastbase = None
         while base != None:
             lastbase = base

@@ -1,9 +1,19 @@
-from google.cloud import texttospeech
-from google.oauth2 import service_account
-from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import *
+from collections import defaultdict
+import io
+import os
+import re
+import traceback
 
-from rpadutils import CogSettings
+import discord
+from redbot.core import commands
+from google.oauth2 import service_account
+
+from google.cloud import texttospeech
+
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
+
 
 try:
     if not discord.opus.is_loaded():
@@ -20,8 +30,7 @@ SPOOL_PATH = "data/speech/spool.mp3"
 class Speech(commands.Cog):
     """Speech utilities."""
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
         self.settings = SpeechSettings("speech")
 
@@ -42,8 +51,6 @@ class Speech(commands.Cog):
     @checks.is_owner()
     async def speech(self, ctx):
         """Speech utilities."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
 
     @commands.command()
     @checks.is_owner()
@@ -64,9 +71,9 @@ class Speech(commands.Cog):
             await ctx.send(inline('Command is too long'))
             return
 
-        await self.speak(ctx, channel, text)
+        await self.speak(channel, text) 
 
-    async def speak(self, ctx, channel, text: str):
+    async def speak(self, channel, text: str):
         if self.busy:
             await ctx.send(inline('Sorry, saying something else right now'))
             return False
@@ -90,6 +97,7 @@ class Speech(commands.Cog):
             return True
         finally:
             self.busy = False
+        return False
 
     async def play_path(self, channel, audio_path: str):
         existing_vc = self.bot.voice_client_in(channel.guild)

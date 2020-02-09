@@ -1,15 +1,20 @@
-from googleapiclient.discovery import build
-from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import *
+from collections import defaultdict
+import os
+import re
 
-from rpadutils.rpadutils import CogSettings, containsJp
+import discord
+from redbot.core import commands
+from googleapiclient.discovery import build
+
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
 
 
 class Translate(commands.Cog):
     """Translation utilities."""
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
         self.settings = TranslateSettings("translate")
 
@@ -24,8 +29,8 @@ class Translate(commands.Cog):
     @commands.Cog.listener('on_message')
     async def checkAutoTranslateJp(self, message):
         if (isinstance(message.channel, discord.abc.PrivateChannel)
-                or not self.service
-                or message.channel.id not in self.settings.autoTranslateJp()
+            or not self.service
+            or message.channel.id not in self.settings.autoTranslateJp()
                 or not containsJp(message.clean_content)):
             return
 
@@ -43,9 +48,7 @@ class Translate(commands.Cog):
     @checks.is_owner()
     async def translate(self, context):
         """Translation utilities."""
-        if context.invoked_subcommand is None:
-            await self.bot.send_cmd_help(context)
-
+        
     @commands.command(aliases=['jaus', 'jpen', 'jpus'])
     async def jaen(self, ctx, *, query):
         """Translates from Japanese to English"""
@@ -67,7 +70,7 @@ class Translate(commands.Cog):
     @translate.command()
     @checks.is_owner()
     @commands.guild_only()
-    async def autotranslatejp(self, ctx, channel: discord.TextChannel = None):
+    async def autotranslatejp(self, ctx, channel: discord.Channel=None):
         channel = channel or ctx.channel
         if channel.id in self.settings.autoTranslateJp():
             self.settings.rmAutoTranslateJp(channel.id)

@@ -1,52 +1,57 @@
-import time
-from datetime import datetime
+import datetime
 from datetime import timedelta
-
+from dateutil import tz
+import os
 import pytz
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline
+import time
 
-tz_lookup = dict([(pytz.timezone(x).localize(datetime.now()).tzname(), pytz.timezone(x))
+import discord
+from redbot.core import commands
+
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
+
+
+tz_lookup = dict([(pytz.timezone(x).localize(datetime.datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])
 
 
 class TimeCog(commands.Cog):
     """Utilities to convert time"""
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="time", pass_context=True)
+    @commands.command()
     async def time(self, ctx, *, tz: str):
         """Displays the current time in the supplied timezone"""
         try:
             tz_obj = tzStrToObj(tz)
         except Exception as e:
-            await self.bot.say("Failed to parse tz: " + tz)
+            await ctx.send("Failed to parse tz: " + tz)
             return
 
-        now = datetime.now(tz_obj)
+        now = datetime.datetime.now(tz_obj)
         msg = "The time in " + now.strftime('%Z') + " is " + fmtTimeShort(now).strip()
-        await self.bot.say(inline(msg))
+        await ctx.send(inline(msg))
 
-    @commands.command(name="timeto", pass_context=True)
+    @commands.command()
     async def timeto(self, ctx, tz: str, *, time: str):
         """Compute the time remaining until the [timezone] [time]"""
         try:
             tz_obj = tzStrToObj(tz)
         except Exception as e:
-            await self.bot.say("Failed to parse tz: " + tz)
+            await ctx.send("Failed to parse tz: " + tz)
             return
 
         try:
             time_obj = timeStrToObj(time)
         except Exception as e:
             print(e)
-            await self.bot.say("Failed to parse time: " + time)
+            await ctx.send("Failed to parse time: " + time)
             return
 
-        now = datetime.now(tz_obj)
+        now = datetime.datetime.now(tz_obj)
         req_time = now.replace(hour=time_obj.tm_hour, minute=time_obj.tm_min)
 
         if req_time < now:
@@ -54,8 +59,8 @@ class TimeCog(commands.Cog):
         delta = req_time - now
 
         msg = "There are " + fmtHrsMins(delta.seconds).strip() + \
-              " until " + time.strip() + " in " + now.strftime('%Z')
-        await self.bot.say(inline(msg))
+            " until " + time.strip() + " in " + now.strftime('%Z')
+        await ctx.send(inline(msg))
 
 
 def timeStrToObj(timestr):
@@ -100,8 +105,3 @@ def tzStrToObj(tz):
 
     tz_obj = pytz.timezone(tz)
     return tz_obj
-
-
-def setup(bot):
-    n = TimeCog(bot)
-    bot.add_cog(n)

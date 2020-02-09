@@ -1,5 +1,4 @@
-from .padinfo import PadInfo
-
+from .padinfo import *
 
 def setup(bot):
     n = PadInfo(bot)

@@ -1,23 +1,34 @@
 import asyncio
+from collections import defaultdict
 import concurrent.futures
+import csv
+from datetime import datetime, date
+import decimal
+import io
 import json
+import logging
+import os
+import re
 import subprocess
+import sys
 
 import discord
+from redbot.core import commands
+import prettytable
 import pymysql
-from __main__ import send_cmd_help
-from discord.ext import commands
 
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
+from rpadutils import rpadutils
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
+
 
 PADGUIDEDB_COG = None
 
 
 def is_padguidedb_admin_check(ctx):
-    is_owner = PADGUIDEDB_COG.bot.settings.owner == ctx.message.author.id
-    return is_owner or PADGUIDEDB_COG.settings.checkAdmin(ctx.message.author.id)
+    is_owner = PADGUIDEDB_COG.bot.owner_id == ctx.author.id
+    return is_owner or PADGUIDEDB_COG.settings.checkAdmin(ctx.author.id)
 
 
 def is_padguidedb_admin():
@@ -54,39 +65,37 @@ class PadGuideDb(commands.Cog):
                                cursorclass=pymysql.cursors.DictCursor,
                                autocommit=True)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @is_padguidedb_admin()
     async def padguidedb(self, context):
         """PadGuide database manipulation."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @checks.is_owner()
     async def addadmin(self, ctx, user: discord.Member):
         """Adds a user to the padguide db admin"""
         self.settings.addAdmin(user.id)
-        await self.bot.say("done")
+        await ctx.send("done")
 
     @padguidedb.command(pass_context=True)
     @checks.is_owner()
     async def rmadmin(self, ctx, user: discord.Member):
         """Removes a user from the padguide db admin"""
         self.settings.rmAdmin(user.id)
-        await self.bot.say("done")
+        await ctx.send("done")
 
     @padguidedb.command(pass_context=True)
     @checks.is_owner()
     async def setconfigfile(self, ctx, *, config_file):
         """Set the database config file."""
         self.settings.setConfigFile(config_file)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @is_padguidedb_admin()
     async def searchdungeon(self, ctx, *, search_text):
         """Search"""
-        search_text = search_text.replace("@#$%^&*;/<>?\|`~-=", " ")
+        search_text = re.sub(r"[@#\$%\^&\*;\/<>?\\|`~\-\=]", " ", search_text)
         with self.get_connection() as cursor:
             sql = ("select dungeon_id, name_na, name_jp, visible from dungeons"
                    " where (lower(name_na) like '%{}%' or lower(name_jp) like '%{}%')"
@@ -94,25 +103,25 @@ class PadGuideDb(commands.Cog):
             cursor.execute(sql)
             results = list(cursor.fetchall())
             msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
-            await self.bot.say(inline(sql))
+            await ctx.send(inline(sql))
             for page in pagify(msg):
-                await self.bot.say(box(page))
+                await ctx.send(box(page))
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @checks.is_owner()
     async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
         """Set the dungeon script."""
         self.settings.setDungeonScriptFile(dungeon_script_file)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @checks.is_owner()
     async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
         """Set the dungeon script."""
         self.settings.setUserInfo(server, user_uuid, user_intid)
-        await self.bot.say(inline('Done'))
+        await ctx.send(inline('Done'))
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @is_padguidedb_admin()
     async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int):
         event_loop = asyncio.get_event_loop()
@@ -122,10 +131,10 @@ class PadGuideDb(commands.Cog):
             server.upper(), dungeon_id, dungeon_floor_id)
 
         self.queue_size += 1
-        await self.bot.say(inline('queued load in slot {}'.format(self.queue_size)))
+        await ctx.send(inline('queued load in slot {}'.format(self.queue_size)))
         await running_load
         self.queue_size -= 1
-        await self.bot.say(inline('load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+        await ctx.send(inline('load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
 
     def do_dungeon_load(self, server, dungeon_id, dungeon_floor_id):
         args = [
@@ -140,7 +149,7 @@ class PadGuideDb(commands.Cog):
         ]
         subprocess.run(args)
 
-    @padguidedb.command(pass_context=True)
+    @padguidedb.command()
     @is_padguidedb_admin()
     async def dungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
         with self.get_connection() as cursor:
@@ -155,31 +164,29 @@ class PadGuideDb(commands.Cog):
             for row in results:
                 msg += '\n{},{},{}'.format(row['stage'], row['drop_monster_id'], row['count'])
             for page in pagify(msg):
-                await self.bot.say(box(page))
+                await ctx.send(box(page))
 
-    @padguidedb.group(pass_context=True)
+    @padguidedb.group()
     @is_padguidedb_admin()
     async def pipeline(self, context):
         """PadGuide pipeline utilities."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
-    @pipeline.command(pass_context=True)
+    @pipeline.command()
     @is_padguidedb_admin()
     async def fulletl(self, ctx):
         """Runs a job which downloads pad data, and updates the padguide database."""
         if self.full_etl_running:
-            await self.bot.say(inline('Full ETL already running'))
+            await ctx.send(inline('Full ETL already running'))
             return
 
         event_loop = asyncio.get_event_loop()
         running_load = event_loop.run_in_executor(self.executor, self.do_full_etl)
 
         self.full_etl_running = True
-        await self.bot.say(inline('Running full ETL pipeline: this could take a while'))
+        await ctx.send(inline('Running full ETL pipeline: this could take a while'))
         await running_load
         self.full_etl_running = False
-        await self.bot.say(inline('Full ETL finished'))
+        await ctx.send(inline('Full ETL finished'))
 
     def do_full_etl(self):
         args = [
@@ -188,22 +195,22 @@ class PadGuideDb(commands.Cog):
         ]
         subprocess.run(args)
 
-    @pipeline.command(pass_context=True)
+    @pipeline.command()
     @is_padguidedb_admin()
     async def extractimages(self, ctx):
         """Runs a job which downloads image updates, generates full images, and portraits."""
         if self.extract_images_running:
-            await self.bot.say(inline('Extract images already running'))
+            await ctx.send(inline('Extract images already running'))
             return
 
         event_loop = asyncio.get_event_loop()
         running_load = event_loop.run_in_executor(self.executor, self.do_extract_images)
 
         self.extract_images_running = True
-        await self.bot.say(inline('Running image extract pipeline: this could take a while'))
+        await ctx.send(inline('Running image extract pipeline: this could take a while'))
         await running_load
         self.extract_images_running = False
-        await self.bot.say(inline('Image extract finished'))
+        await ctx.send(inline('Image extract finished'))
 
     def do_extract_images(self):
         args = [
@@ -211,11 +218,6 @@ class PadGuideDb(commands.Cog):
             '/home/tactical0retreat/dadguide/dadguide-jobs/media/update_image_files.sh',
         ]
         subprocess.run(args)
-
-
-def setup(bot):
-    n = PadGuideDb(bot)
-    bot.add_cog(n)
 
 
 class PadGuideDbSettings(CogSettings):

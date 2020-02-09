@@ -1,33 +1,25 @@
-from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import *
+import discord
+from discord.ext import commands
+import os
 
-from rpadutils import CogSettings, get_role_from_id
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 
 class VoiceRole(commands.Cog):
-    """Gives a custom to anyone who enters a voice channel.
+    """Gives a custom to anyone who enters a voice channel. THIS ROLE MUST EXIST AND THE BOT MUST HAVE THE RIGHTS TO CHANGE ROLES FOR IT TO WORK!"""
 
-    THIS ROLE MUST EXIST AND THE BOT MUST HAVE THE RIGHTS TO CHANGE ROLES FOR IT TO WORK!
-    """
-
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
         self.settings = VoiceRoleSettings("voicerole")
 
-    async def on_voice_state_update(self, before, after):
-        if before.voice_channel is None and after.voice_channel is not None:
-            member_to_modify = after
-            do_add = True
-        elif before.voice_channel is not None and after.voice_channel is None:
-            member_to_modify = before
-            do_add = False
-        else:
-            return
-
-        server = member_to_modify.server
+    @commands.Cog.listener("on_voice_state_update")
+    async def _on_voice_state_update(self, member, before, after):
+        server = member.guild
         server_id = server.id
-        channel_id = member_to_modify.voice_channel.id
+        channel_id = (before.channel or after.channel).id
 
         channel_roles = self.settings.getChannelRoles(server_id)
         if channel_id not in channel_roles:
@@ -36,22 +28,23 @@ class VoiceRole(commands.Cog):
         role_id = channel_roles[channel_id]
         try:
             role = get_role_from_id(self.bot, server, role_id)
-            if do_add:
-                await self.bot.add_roles(member_to_modify, role)
+            if member.voice:
+                await member.add_roles(role)
             else:
-                await self.bot.remove_roles(member_to_modify, role)
+                await member.remove_roles(role)
         except Exception as ex:
             print('voicerole failure {} {} {}'.format(server_id, channel_id, role_id))
             print(ex)
 
-    @commands.group(no_pm=True)
+    @commands.group()
+    @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
-    async def voicerole(self, ctx: commands.Context) -> None:
+    async def voicerole(self, ctx):
         """Automatic role adjustment on VC enter/exit."""
-        pass
 
-    @voicerole.command(pass_context=True, no_pm=True)
-    async def set(self, ctx, channel: discord.TextChannel, role: discord.Role):
+    @voicerole.command()
+    @commands.guild_only()
+    async def set(self, ctx, channel: discord.VoiceChannel, role: discord.Role):
         """Associate a channel with a role.
 
         To reference a voice channel, use this syntax:
@@ -62,25 +55,29 @@ class VoiceRole(commands.Cog):
 
         To reference a role, either make it pingable.
         """
-        if channel.type != discord.ChannelType.voice:
-            await self.bot.say('Not a voice channel')
+        if not isinstance(channel, discord.VoiceChannel):
+            await ctx.send('Not a voice channel')
             return
-        self.settings.addChannelRole(ctx.message.server.id, channel.id, role.id)
-        await self.bot.say('done')
 
-    @voicerole.command(pass_context=True, no_pm=True)
-    async def clear(self, ctx, channel: discord.TextChannel):
+        self.settings.addChannelRole(ctx.guild.id, channel.id, role.id)
+        await ctx.send('done')
+
+    @voicerole.command()
+    @commands.guild_only()
+    async def clear(self, ctx, channel: discord.VoiceChannel):
         """Clear the role associated with a channel"""
-        self.settings.rmChannelRole(ctx.message.server.id, channel.id)
-        await self.bot.say('done')
+        self.settings.rmChannelRole(ctx.guild.id, channel.id)
+        await ctx.send('done')
 
-    @voicerole.command(pass_context=True, no_pm=True)
+    @voicerole.command()
+    @commands.guild_only()
     async def list(self, ctx):
         """List the channel/role associations for this server."""
         msg = 'Channel -> Role:'
-        for channel_id, role_id in self.settings.getChannelRoles(ctx.message.server.id).items():
-            msg += '\n\t{} : {}'.format(channel_id, role_id)
-        await self.bot.say(box(msg))
+        for channel_id, role_id in self.settings.getChannelRoles(ctx.guild.id).items():
+            if isinstance(channel_id, int):
+                    msg += '\n\t{} : {}'.format(channel_id, role_id)
+        await ctx.send(box(msg))
 
 
 class VoiceRoleSettings(CogSettings):

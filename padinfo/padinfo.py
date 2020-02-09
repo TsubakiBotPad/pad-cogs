@@ -1,12 +1,22 @@
+import asyncio
+from collections import OrderedDict, defaultdict
+import os
+import io
+import json
+import re
+import traceback
 import urllib.parse
-from builtins import filter
-from collections import OrderedDict
 
+from dateutil import tz
+import discord
+from discord.ext import commands
+from enum import Enum
 import prettytable
 
-from dadguide import *
-from rpadutils import rpadutils
 from rpadutils.rpadutils import *
+from rpadutils import rpadutils
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 HELP_MSG = """
 ^helpid : shows this message
@@ -57,7 +67,7 @@ def get_pic_url(m):
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: dadguide.DgMonster = None,
+    def __init__(self, emoji_to_embed, m:"DgMonster"=None,
                  pad_info=None, selected_emoji=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -102,7 +112,7 @@ class IdEmojiUpdater(EmojiUpdater):
             return True
         self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
         return True
-
+        
 
 def _validate_json(fp):
     try:
@@ -111,10 +121,8 @@ def _validate_json(fp):
     except:
         return False
 
-
 class PadInfo(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
         self.bot = bot
 
         self.settings = PadInfoSettings("padinfo")
@@ -338,7 +346,7 @@ class PadInfo(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                                                                   starting_menu_emoji, timeout=timeout)
+                starting_menu_emoji, timeout=timeout)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
@@ -465,8 +473,6 @@ class PadInfo(commands.Cog):
     @checks.is_owner()
     async def padinfo(self, ctx):
         """PAD info management"""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
 
     @padinfo.command()
     @checks.is_owner()
@@ -518,6 +524,28 @@ class PadInfo(commands.Cog):
         monster_index = self.index_na if na_only else self.index_all
         return monster_index.find_monster2(query)
 
+    @padinfo.command()
+    @checks.is_owner()
+    async def setanimationdir(self, ctx, *, animation_dir=''):
+        """Set a directory containing animated images"""
+        self.settings.setAnimationDir(animation_dir)
+        await ctx.send(inline('Done'))
+
+    def check_monster_animated(self, monster_id: int):
+        if not self.settings.animationDir():
+            return False
+
+        try:
+            animated_ids = set()
+            for f in os.listdir(self.settings.animationDir()):
+                f = f.replace('.mp4', '')
+                if f.isdigit() and int(f) == monster_id:
+                    return True
+        except:
+            pass
+
+        return False
+
 
 class PadInfoSettings(CogSettings):
     def make_default_settings(self):
@@ -539,12 +567,12 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
 
-def monsterToHeader(m: dadguide.DgMonster, link=False):
+def monsterToHeader(m: "DgMonster", link=False):
     msg = 'No. {} {}'.format(m.monster_no_na, m.name_na)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJpSuffix(m: dadguide.DgMonster):
+def monsterToJpSuffix(m: "DgMonster"):
     suffix = ""
     if m.roma_subname:
         suffix += ' [{}]'.format(m.roma_subname)
@@ -553,23 +581,23 @@ def monsterToJpSuffix(m: dadguide.DgMonster):
     return suffix
 
 
-def monsterToLongHeader(m: dadguide.DgMonster, link=False):
+def monsterToLongHeader(m: "DgMonster", link=False):
     msg = monsterToHeader(m) + monsterToJpSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToEvoText(m: dadguide.DgMonster):
+def monsterToEvoText(m: "DgMonster"):
     output = monsterToLongHeader(m)
     for ae in sorted(m.alt_evos, key=lambda x: int(x.monster_id)):
         output += "\n\t- {}".format(monsterToLongHeader(ae))
     return output
 
 
-def monsterToThumbnailUrl(m: dadguide.DgMonster):
+def monsterToThumbnailUrl(m: "DgMonster"):
     return get_portrait_url(m)
 
 
-def monsterToBaseEmbed(m: dadguide.DgMonster):
+def monsterToBaseEmbed(m: "DgMonster"):
     header = monsterToLongHeader(m)
     embed = discord.Embed()
     embed.set_thumbnail(url=monsterToThumbnailUrl(m))
@@ -590,7 +618,7 @@ def printEvoListFields(list_of_monsters, embed, name):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoEmbed(m: dadguide.DgMonster):
+def monsterToEvoEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
 
     if not len(m.alt_evos) and not m.evo_gem:
@@ -618,7 +646,7 @@ def printMonsterEvoOfList(monster_list, embed, field_name):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: dadguide.DgMonster):
+def monsterToEvoMatsEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
 
     mats_for_evo = m.mats_for_evo
@@ -639,7 +667,7 @@ def monsterToEvoMatsEmbed(m: dadguide.DgMonster):
     return embed
 
 
-def monsterToPantheonEmbed(m: dadguide.DgMonster):
+def monsterToPantheonEmbed(m: "DgMonster"):
     full_pantheon = m.series.monsters
     pantheon_list = list(filter(lambda x: x.evo_from is None, full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
@@ -656,7 +684,7 @@ def monsterToPantheonEmbed(m: dadguide.DgMonster):
     return embed
 
 
-def monsterToSkillupsEmbed(m: dadguide.DgMonster):
+def monsterToSkillupsEmbed(m: "DgMonster"):
     skillups_list = m.active_skill.skillups if m.active_skill else []
     if len(skillups_list) == 0:
         return None
@@ -680,11 +708,11 @@ def monsterToSkillupsEmbed(m: dadguide.DgMonster):
     return embed
 
 
-def monsterToPicUrl(m: dadguide.DgMonster):
+def monsterToPicUrl(m: "DgMonster"):
     return get_pic_url(m)
 
 
-def monsterToPicEmbed(m: dadguide.DgMonster, animated=False):
+def monsterToPicEmbed(m: "DgMonster", animated=False):
     embed = monsterToBaseEmbed(m)
     url = monsterToPicUrl(m)
     embed.set_image(url=url)
@@ -701,23 +729,23 @@ def monsterToPicEmbed(m: dadguide.DgMonster, animated=False):
     return embed
 
 
-def monsterToVideoUrl(m: dadguide.DgMonster, link_text='(MP4)'):
+def monsterToVideoUrl(m: "DgMonster", link_text='(MP4)'):
     return '[{}]({})'.format(link_text, VIDEO_TEMPLATE.format(m.monster_no_jp))
 
 
-def monsterToGifUrl(m: dadguide.DgMonster, link_text='(GIF)'):
+def monsterToGifUrl(m: "DgMonster", link_text='(GIF)'):
     return '[{}]({})'.format(link_text, GIF_TEMPLATE.format(m.monster_no_jp))
 
 
-def monsterToOrbSkinUrl(m: dadguide.DgMonster, link_text='Regular'):
+def monsterToOrbSkinUrl(m: "DgMonster", link_text='Regular'):
     return '[{}]({})'.format(link_text, ORB_SKIN_TEMPLATE.format(m.orb_skin_id))
 
 
-def monsterToOrbSkinCBUrl(m: dadguide.DgMonster, link_text='Color Blind'):
+def monsterToOrbSkinCBUrl(m: "DgMonster", link_text='Color Blind'):
     return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
 
 
-def monsterToGifEmbed(m: dadguide.DgMonster):
+def monsterToGifEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
     url = monsterToGifUrl(m)
     embed.set_image(url=url)
@@ -726,7 +754,7 @@ def monsterToGifEmbed(m: dadguide.DgMonster):
     return embed
 
 
-def monstersToLsEmbed(left_m: dadguide.DgMonster, right_m: dadguide.DgMonster):
+def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
     lhp, latk, lrcv, lresist = left_m.leader_skill.data
     rhp, ratk, rrcv, rresist = right_m.leader_skill.data
     multiplier_text = createMultiplierText(lhp, latk, lrcv, lresist, rhp, ratk, rrcv, rresist)
@@ -745,18 +773,18 @@ def monstersToLsEmbed(left_m: dadguide.DgMonster, right_m: dadguide.DgMonster):
     return embed
 
 
-def monsterToHeaderEmbed(m: dadguide.DgMonster):
+def monsterToHeaderEmbed(m: "DgMonster"):
     header = monsterToLongHeader(m, link=True)
     embed = discord.Embed()
     embed.description = header
     return embed
 
 
-def monsterToTypeString(m: dadguide.DgMonster):
+def monsterToTypeString(m: "DgMonster"):
     return '/'.join([t.name for t in m.types])
 
 
-def monsterToAcquireString(m: dadguide.DgMonster):
+def monsterToAcquireString(m: "DgMonster"):
     acquire_text = None
     if m.farmable and not m.mp_evo:
         # Some MP shop monsters 'drop' in PADR
@@ -785,7 +813,7 @@ def match_emoji(emoji_list, name):
     return name
 
 
-def monsterToEmbed(m: dadguide.DgMonster, emoji_list):
+def monsterToEmbed(m: "DgMonster", emoji_list):
     embed = monsterToBaseEmbed(m)
 
     info_row_1 = monsterToTypeString(m)
@@ -855,7 +883,7 @@ def monsterToEmbed(m: dadguide.DgMonster, emoji_list):
     return embed
 
 
-def monsterToOtherInfoEmbed(m: dadguide.DgMonster):
+def monsterToOtherInfoEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
     # Clear the thumbnail, takes up too much space
     embed.set_thumbnail(url='')

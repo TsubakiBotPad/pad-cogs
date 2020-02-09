@@ -1,5 +1,6 @@
 from .schoolidol import *
 
-
 def setup(bot):
-    bot.add_cog(SchoolIdol(bot))
+    n = SchoolIdol(bot)
+    bot.add_cog(n)
+    bot.loop.create_task(n.reload_sif())
