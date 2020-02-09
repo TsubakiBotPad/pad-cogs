@@ -225,7 +225,7 @@ class RemMonster(object):
 
 
 class PgRemWrapper:
-    def __init__(self, database: dadguide.PgRawDatabase, id_to_boost_map: dict, skip_load=False):
+    def __init__(self, database, id_to_boost_map: dict, skip_load=False):
         self.server_to_config = {}
         if skip_load:
             return

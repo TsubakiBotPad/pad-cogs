@@ -12,14 +12,11 @@ import time
 
 from dateutil import tz
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
-from __main__ import user_allowed, send_cmd_help
-
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import *
-from .utils.dataIO import fileIO
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 
 if os.name != 'nt':
@@ -175,52 +172,44 @@ class PadTwitch(commands.Cog):
         self.settings.rmCustomCommand(channel, cmd_name)
         self.stream.send_chat_message(channel, 'Done deleting ' + cmd_name)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
     async def padtwitch(self, ctx):
         """Manage twitter feed mirroring"""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def setUserName(self, ctx, user_name: str):
         self.settings.setUserName(user_name)
-        await self.bot.say(inline('done, reload the cog'))
+        await ctx.send(inline('done, reload the cog'))
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def setOauthCode(self, ctx, oauth_code: str):
         self.settings.setOauthCode(oauth_code)
-        await self.bot.say(inline('done, reload the cog'))
+        await ctx.send(inline('done, reload the cog'))
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def setEnabled(self, ctx, twitch_channel: str, enabled: bool):
         self.settings.setChannelEnabled(twitch_channel, enabled)
-        await self.bot.say(inline('done, reload the cog'))
+        await ctx.send(inline('done, reload the cog'))
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def join(self, ctx, twitch_channel):
         self.stream.join_channel(twitch_channel)
-        await self.bot.say(inline('done'))
+        await ctx.send(inline('done'))
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def send(self, ctx, twitch_channel, *, msg_text):
         self.stream.send_chat_message(twitch_channel, msg_text)
-        await self.bot.say(inline('done'))
+        await ctx.send(inline('done'))
 
-    @padtwitch.command(pass_context=True)
+    @padtwitch.command()
     async def list(self, ctx):
         msg = 'UserName: {}'.format(self.settings.getUserName())
         msg += '\nChannels:'
         for channel, cs in self.settings.channels().items():
             msg += '\n\t({}) {}'.format('+' if cs['enabled'] else '-', cs['name'])
 
-        await self.bot.say(box(msg))
-
-
-def setup(bot):
-    n = PadTwitch(bot)
-    asyncio.get_event_loop().create_task(n.on_connect())
-    bot.add_cog(n)
+        await ctx.send(box(msg))
 
 
 class PadTwitchSettings(CogSettings):
@@ -346,8 +335,7 @@ class TwitchChatStream(object):
         :type data: list of bytes
         :return: True when there is a request to ping, False otherwise
         """
-        return re.match(
-            r'^PING :tmi\.twitch\.tv$', data)
+        return re.match(r'^PING :tmi\.twitch\.tv$', data)
 
     @staticmethod
     def _check_has_channel(data):

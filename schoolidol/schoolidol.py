@@ -6,15 +6,13 @@ from time import time
 
 import aiohttp
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
-from __main__ import send_cmd_help, set_cog
-from cogs.utils import checks
-from cogs.utils.chat_formatting import pagify, box
-from cogs.utils.dataIO import dataIO
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import pagify, box
 
-from .rpadutils import Menu, EmojiUpdater, char_to_emoji
-from .utils.chat_formatting import *
+from rpadutils.rpadutils import Menu, EmojiUpdater, char_to_emoji
+from redbot.core.utils.chat_formatting import *
 
 
 FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
@@ -58,7 +56,7 @@ class SchoolIdol(commands.Cog):
             ** collection_firstname_to_card,
         }
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def sifid(self, ctx, *, query: str):
         """SIF query."""
         query = query.lower().strip()
@@ -76,7 +74,7 @@ class SchoolIdol(commands.Cog):
         if c:
             await self.do_menu(ctx, c)
         else:
-            await self.bot.say(inline('no matches'))
+            await ctx.send(inline('no matches'))
 
     async def do_menu(self, ctx, c):
         emoji_to_embed = OrderedDict()
@@ -91,8 +89,8 @@ class SchoolIdol(commands.Cog):
             starting_menu_emoji = self.idol_emoji
 
         if starting_menu_emoji is None:
-            await self.bot.say(inline('no images found'))
-            return None
+            await ctx.send(inline('no images found'))
+            return
 
         return await self._do_menu(ctx, starting_menu_emoji, emoji_to_embed)
 
@@ -143,19 +141,3 @@ def toHeader(c):
 
 def get_info_url(c):
     return 'https://schoolido.lu/cards/{}/'.format(c['id'])
-
-
-def check_folders():
-    pass
-
-
-def check_files():
-    pass
-
-
-def setup(bot):
-    check_folders()
-    check_files()
-    n = SchoolIdol(bot)
-    bot.add_cog(n)
-    bot.loop.create_task(n.reload_sif())

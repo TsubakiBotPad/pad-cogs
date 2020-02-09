@@ -5,15 +5,14 @@ import re
 import traceback
 
 import discord
-from discord.ext import commands
+from redbot.core import commands
 from google.oauth2 import service_account
 
 from google.cloud import texttospeech
 
-from redbot.core.rpadutils import *
-from redbot.core.rpadutils import CogSettings
-from redbot.core.utils import checks
-from redbot.core.utils.dataIO import dataIO
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
 
 
 try:
@@ -52,8 +51,6 @@ class Speech(commands.Cog):
     @checks.is_owner()
     async def speech(self, ctx):
         """Speech utilities."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
 
     @commands.command()
     @checks.is_owner()

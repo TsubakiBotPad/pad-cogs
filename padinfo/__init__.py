@@ -1,4 +1,5 @@
-from .padinfo import PadInfo
+raise ValueError()
+from .padinfo import *
 
 def setup(bot):
     n = PadInfo(bot)

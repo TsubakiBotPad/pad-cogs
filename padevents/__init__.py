@@ -1,7 +1,9 @@
 from .padevents import *
+import warnings
 
 def setup(bot):
-    raise Exception("padevents is borked")
+    warnings.warn("PadEvents is borked.")
+    return
     n = PadEvents(bot)
     bot.add_cog(n)
     bot.loop.create_task(n.reload_padevents())

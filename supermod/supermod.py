@@ -9,17 +9,12 @@ import re
 from time import time
 
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
-from __main__ import send_cmd_help
-from __main__ import settings
-
-from .rpadutils import *
-from .rpadutils import CogSettings
-from .utils import checks
-from .utils.chat_formatting import *
-from .utils.dataIO import fileIO
-from .utils.settings import Settings
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 
 MOD_HELP = """
@@ -208,13 +203,7 @@ SUPERMOD_COG = None
 
 
 def is_supermod_check(ctx):
-    server = ctx.message.server
-    author = ctx.message.author
-    supermod_role = SUPERMOD_COG.get_supermod_role(server)
-    if supermod_role is None:
-        return False
-    else:
-        return supermod_role in author.roles
+    return SUPERMOD_COG.get_supermod_role(ctx.guild) in ctx.author.roles
 
 
 def is_supermod():
@@ -270,8 +259,8 @@ class SuperMod(commands.Cog):
     async def add_supermod(self, member: discord.Member, supermod_role: discord.Role):
         if supermod_role and not self.check_supermod(member, supermod_role):
             try:
-                await self.bot.add_roles(member, supermod_role)
-                await self.bot.send_message(member, SUPERMOD_MESSAGE)
+                await member.add_roles(supermod_role)
+                await member.send(SUPERMOD_MESSAGE)
             except Exception as e:
                 print('Failed to supermod', member.name)
                 print(e)
@@ -279,7 +268,7 @@ class SuperMod(commands.Cog):
     async def remove_supermod(self, member: discord.Member, supermod_role: discord.Role):
         if supermod_role and self.check_supermod(member, supermod_role):
             try:
-                await self.bot.remove_roles(member, supermod_role)
+                await member.remove_roles(supermod_role)
             except Exception as e:
                 print("failed to remove supermod", member.name, e)
 
@@ -300,12 +289,13 @@ class SuperMod(commands.Cog):
         mod_log_channel_id = self.settings.getModlogChannel(server_id)
         if mod_log_channel_id:
             try:
-                await self.bot.send_message(discord.Object(mod_log_channel_id), log_text)
+                await self.bot.get_channel(mod_log_channel_id).send(log_text)
             except:
                 print("Couldn't log to " + mod_log_channel_id)
 
         if do_say:
-            await self.bot.say(log_text)
+            #await self.bot.say(log_text)
+            pass
 
     async def do_refresh_supermod(self):
         print('REFRESH STARTING')
@@ -466,8 +456,6 @@ class SuperMod(commands.Cog):
     @commands.group(pass_context=True)
     async def supermod(self, context):
         """Automagical selection of moderators for your server."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
 
     @supermod.command(pass_context=True)
     @checks.is_owner()
@@ -528,7 +516,7 @@ class SuperMod(commands.Cog):
 
     @supermod.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_guild=True)
-    async def setModLogChannel(self, ctx, channel: discord.Channel):
+    async def setModLogChannel(self, ctx, channel: discord.TextChannel):
         """Sets the channel used for printing moderation logs."""
         self.settings.setModlogChannel(ctx.message.server.id, channel.id)
         await self.bot.say(DONE)
@@ -557,7 +545,7 @@ class SuperMod(commands.Cog):
 
     @supermod.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_guild=True)
-    async def addDiscussionChannel(self, ctx, channel: discord.Channel):
+    async def addDiscussionChannel(self, ctx, channel: discord.TextChannel):
         """Marks a channel as containing discussion.
 
         Discussion channels are automatically monitored for activity. Users active in these
@@ -572,7 +560,7 @@ class SuperMod(commands.Cog):
 
     @supermod.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmDiscussionChannel(self, ctx, channel: discord.Channel):
+    async def rmDiscussionChannel(self, ctx, channel: discord.TextChannel):
         """Clears the discussion status from a channel."""
         self.settings.rmDiscussionChannel(ctx.message.server.id, channel.id)
         msg = CHANNEL_DISABLED.format(self.text_to_emoji(channel.name))
@@ -773,14 +761,6 @@ class SuperMod(commands.Cog):
         author = ctx.message.author
         self.settings.rmIgnoreUser(author.id)
         await self.bot.say(USER_CLEARED_IGNORE.format(author.name))
-
-
-def setup(bot):
-    n = SuperMod(bot)
-    bot.loop.create_task(n.refresh_supermod())
-    bot.add_listener(n.log_message, "on_message")
-    bot.add_listener(n.no_thinking, "on_message")
-    bot.add_cog(n)
 
 
 class SuperModSettings(CogSettings):

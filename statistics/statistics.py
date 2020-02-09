@@ -6,12 +6,9 @@
 import datetime
 import os
 
-from __main__ import send_cmd_help
 import discord
-from discord.ext import commands
-
-from .utils import checks
-from .utils.dataIO import dataIO
+from redbot.core import commands
+from redbot.core import checks
 
 
 try:
@@ -27,6 +24,8 @@ class Statistics(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.setting = {}
+        self.refresh_rate = 30
 
     def redapi_hook(self, data=None):
         if not data:
@@ -49,16 +48,16 @@ class Statistics(commands.Cog):
 
     @commands.command()
     @checks.is_owner()
-    async def botstats(self):
+    async def botstats(self, ctx):
         """
         Retreive statistics
         """
         message = await self.embed_statistics()
-        await self.bot.say(embed=message)
+        await ctx.send(embed=message)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
-    async def statsrefresh(self, context, seconds: int=0):
+    async def statsrefresh(self, ctx, seconds: int=0):
         """
         Set the refresh rate by which the statistics are updated
 
@@ -71,17 +70,19 @@ class Statistics(commands.Cog):
             self.refresh_rate = 5
 
         if seconds == 0:
-            message = 'Current refresh rate is {}'.format(self.refresh_rate)
-            await send_cmd_help(context)
+            message = ('Set the refresh rate by which the statistics are updated\n\n'
+                       'Example: [p]statsrefresh 42\n\n'
+                       'Default: 5\n\n'
+                       'Current refresh rate is {}'.format(self.refresh_rate))
         elif seconds < 5:
             message = '`I can\'t do that, the refresh rate has to be above 5 seconds`'
         else:
             self.refresh_rate = seconds
             self.settings['REFRESH_RATE'] = self.refresh_rate
-            dataIO.save_json('data/statistics/settings.json', self.settings)
+            json.dump(self.settings, open('data/statistics/settings.json','w+'))
             message = '`Changed refresh rate to {} seconds`'.format(
                 self.refresh_rate)
-        await self.bot.say(message)
+        await ctx.send(message)
 
     async def embed_statistics(self):
         stats = self.retrieve_statistics()
@@ -116,7 +117,7 @@ class Statistics(commands.Cog):
     def retrieve_statistics(self):
         name = self.bot.user.name
         users = str(len(set(self.bot.get_all_members())))
-        servers = str(len(self.bot.servers))
+        servers = str(len(self.bot.guilds))
         commands_run = self.bot.counter['processed_commands']
         read_messages = self.bot.counter['messages_read']
         text_channels = 0
@@ -167,29 +168,3 @@ class Statistics(commands.Cog):
                 fmt = '{d} D - ' + fmt
 
         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
-
-
-def check_folder():
-    if not os.path.exists('data/statistics'):
-        print('Creating data/statistics folder...')
-        os.makedirs('data/statistics')
-
-
-def check_file():
-    data = {}
-    data['CHANNEL_ID'] = None
-    data['REFRESH_RATE'] = 5
-    f = 'data/statistics/settings.json'
-    if not dataIO.is_valid_json(f):
-        print('Creating default settings.json...')
-        dataIO.save_json(f, data)
-
-
-def setup(bot):
-    if psutil is False:
-        raise RuntimeError('psutil is not installed. Run `pip3 install psutil --upgrade` to use this cog.')
-    else:
-        check_folder()
-        check_file()
-        n = Statistics(bot)
-        bot.add_cog(n)

@@ -194,8 +194,5 @@ class PadBuildSettings(CogSettings):
     def set_key(self, key, value):
         self.bot_settings[key] = value
 
-    def del_key(self, key):
-        del self.bot_settings[key]
-
     def __contains__(self, item):
         return item in self.bot_settings

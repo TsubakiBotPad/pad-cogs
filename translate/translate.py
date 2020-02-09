@@ -3,13 +3,12 @@ import os
 import re
 
 import discord
-from discord.ext import commands
+from redbot.core import commands
 from googleapiclient.discovery import build
 
-from redbot.core.rpadutils import *
-from redbot.core.rpadutils import CogSettings
-from redbot.core.utils import checks
-from redbot.core.utils.dataIO import dataIO
+from rpadutils.rpadutils import *
+from rpadutils.rpadutils import CogSettings
+from redbot.core import checks
 
 
 class Translate(commands.Cog):
@@ -49,9 +48,7 @@ class Translate(commands.Cog):
     @checks.is_owner()
     async def translate(self, context):
         """Translation utilities."""
-        if context.invoked_subcommand is None:
-            await self.bot.send_cmd_help(context)
-
+        
     @commands.command(aliases=['jaus', 'jpen', 'jpus'])
     async def jaen(self, ctx, *, query):
         """Translates from Japanese to English"""

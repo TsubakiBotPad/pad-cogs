@@ -53,7 +53,6 @@ class Dadguide(commands.Cog):
         self._is_ready = asyncio.Event(loop=self.bot.loop)
 
         self.settings = DadguideSettings("dadguide")
-        self.reload_task = None
 
         # A string -> int mapping, nicknames to monster_id_na
         self.nickname_overrides = {}
@@ -89,9 +88,6 @@ class Dadguide(commands.Cog):
     def get_monster_by_no(self, monster_no: int):
         """Exported function that allows a client cog to get a full PgMonster by monster_no"""
         return self.database.get_monster(monster_no)
-
-    def register_tasks(self):
-        self.reload_task = self.bot.loop.create_task(self.reload_data_task())
 
     def __unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

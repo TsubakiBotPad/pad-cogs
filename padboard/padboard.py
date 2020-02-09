@@ -7,15 +7,13 @@ from zipfile import ZipFile
 import aiohttp
 import cv2
 import discord
-from discord.ext import commands
+from redbot.core import commands
 import numpy as np
 
-from __main__ import send_cmd_help
-
-from . import padvision
-from . import rpadutils
-from .utils import checks
-from .utils.chat_formatting import *
+from padvision import padvision
+from rpadutils import rpadutils
+from redbot.core import checks
+from redbot.core.utils.chat_formatting import *
 
 
 DATA_DIR = os.path.join('data', 'padboard')
@@ -29,18 +27,16 @@ class PadBoard(commands.Cog):
         self.bot = bot
         self.logs = defaultdict(lambda: deque(maxlen=1))
 
+    @commands.Cog.listener("on_message")
     async def log_message(self, message):
         url = rpadutils.extract_image_url(message)
         if url:
             self.logs[message.author.id].append(url)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.is_owner()
-    async def padboard(self, context):
+    async def padboard(self, ctx):
         """PAD board utilities."""
-        if context.invoked_subcommand is None:
-            await send_cmd_help(context)
-
 
     def find_image(self, user_id):
         urls = list(self.logs[user_id])
@@ -49,13 +45,14 @@ class PadBoard(commands.Cog):
         return None
 
     async def download_image(self, image_url):
-        async with aiohttp.get(image_url) as r:
-            if r.status == 200:
-                image_data = await r.read()
-                return image_data
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as r:
+                if r.status == 200:
+                    image_data = await r.read()
+                    return image_data
         return None
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def dawnglare(self, ctx, user: discord.Member=None):
         """Converts your most recent image to a dawnglare link
 
@@ -77,10 +74,10 @@ class PadBoard(commands.Cog):
 
         msg = '{}\n{}'.format(img_url, img_url2)
 
-        await self.bot.say(msg)
+        await ctx.send(msg)
 
     async def get_recent_image(self, ctx, user: discord.Member=None, message: discord.Message=None):
-        user_id = user.id if user else ctx.message.author.id
+        user_id = user.id if user else ctx.author.id
 
         image_url = rpadutils.extract_image_url(message)
         if image_url is None:
@@ -88,37 +85,22 @@ class PadBoard(commands.Cog):
 
         if not image_url:
             if user:
-                await self.bot.say(inline("Couldn't find an image in that user's recent messages."))
+                await ctx.send(inline("Couldn't find an image in that user's recent messages."))
             else:
-                await self.bot.say(inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
+                await ctx.send(inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
             return None
 
         image_data = await self.download_image(image_url)
         if not image_data:
-            await self.bot.say(inline("failed to download"))
+            await ctx.send(inline("failed to download"))
             return None
 
         return image_data
 
     def nc_classify(self, image_data):
+        #TODO: Test this (for TR to do)
         nparr = np.fromstring(image_data, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         model_path = '/home/tactical0retreat/git/pad-models/ICN3582626462823189160/model.tflite'
         img_extractor = padvision.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()
-
-def check_folder():
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-
-def check_file():
-    pass
-
-
-def setup(bot):
-    check_folder()
-    check_file()
-    n = PadBoard(bot)
-    bot.add_listener(n.log_message, "on_message")
-    bot.add_cog(n)
