@@ -37,7 +37,7 @@ SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest e
 
 
 def is_padglobal_admin_check(ctx):
-    return checks.is_owner() #or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
+    return checks.is_owner() or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
 
 
 def is_padglobal_admin():
