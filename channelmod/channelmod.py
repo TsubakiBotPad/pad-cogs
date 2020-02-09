@@ -23,7 +23,8 @@ ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
 class ChannelMod(commands.Cog):
     """Channel moderation tools."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ChannelModSettings("channelmod")
         self.channel_last_spoke = {}

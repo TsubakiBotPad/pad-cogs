@@ -3,7 +3,7 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, containsJp
 
 
 class Translate(commands.Cog):

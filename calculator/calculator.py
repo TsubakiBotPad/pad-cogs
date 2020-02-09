@@ -9,7 +9,6 @@ import shlex
 import subprocess
 import sys
 
-import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
@@ -23,7 +22,8 @@ pow(x, y) instead of x^y. Here is the full symbol whitelist:
 
 
 class Calculator(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     @commands.group()

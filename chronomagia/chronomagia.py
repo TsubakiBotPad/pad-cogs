@@ -35,7 +35,8 @@ class CmCard(object):
 class ChronoMagia(commands.Cog):
     """ChronoMagia."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ChronoMagiaSettings("chronomagia")
         self.card_data = []

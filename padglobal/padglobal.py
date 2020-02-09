@@ -1,16 +1,19 @@
+import asyncio
 import csv
 import difflib
 import io
 import json
+import re
 from collections import defaultdict
 
+import aiohttp
 import prettytable
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
-from rpadutils import CogSettings, safe_read_json
+from rpadutils import CogSettings, safe_read_json, replace_emoji_names_with_code, clean_global_mentions
 
 global PADGLOBAL_COG
 

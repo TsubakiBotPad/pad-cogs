@@ -113,7 +113,7 @@ class StreamCopy(commands.Cog):
                 await user.add_roles(streamer_role)
             elif not user_is_playing and user_has_streamer_role:
                 await user.remove_roles(streamer_role)
-        except ex:
+        except Exception as ex:
             pass
 
     async def do_refresh(self):

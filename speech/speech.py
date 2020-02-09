@@ -1,3 +1,5 @@
+import asyncio
+
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 from redbot.core import checks
@@ -63,9 +65,9 @@ class Speech(commands.Cog):
             await ctx.send(inline('Command is too long'))
             return
 
-        await self.speak(channel, text)
+        await self.speak(ctx, channel, text)
 
-    async def speak(self, channel, text: str):
+    async def speak(self, ctx, channel, text: str):
         if self.busy:
             await ctx.send(inline('Sorry, saying something else right now'))
             return False

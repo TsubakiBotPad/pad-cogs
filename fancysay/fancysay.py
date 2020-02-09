@@ -1,7 +1,10 @@
-from redbot.core import checks
+import asyncio
 
+from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
+
+from rpadutils import char_to_emoji
 
 
 class FancySay(commands.Cog):

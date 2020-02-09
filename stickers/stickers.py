@@ -1,8 +1,9 @@
+import re
 from collections import defaultdict
 
-import discord
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings
 

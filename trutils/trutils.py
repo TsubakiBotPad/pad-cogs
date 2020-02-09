@@ -1,3 +1,7 @@
+import asyncio
+import json
+import re
+
 try:
     from google.cloud import vision
 except:
@@ -7,7 +11,7 @@ from redbot.core import checks, modlog
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, extract_image_url, get_role, ReportableError
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc

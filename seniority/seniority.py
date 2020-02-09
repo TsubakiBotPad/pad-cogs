@@ -11,6 +11,7 @@ import prettytable
 import pytz
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.commands import Context
 from redbot.core.utils.chat_formatting import inline, pagify, box
 
 import rpadutils
@@ -269,7 +270,7 @@ class Seniority(commands.Cog):
         """List users below the remove amount."""
         server = ctx.guild
         lookback_days = self.settings.remove_lookback(server.id)
-        await self.do_print_overages(server, lookback_days, 'remove_amount', False)
+        await self.do_print_overages(ctx, server, lookback_days, 'remove_amount', False)
 
     @grant.command()
     @commands.guild_only()
@@ -277,7 +278,7 @@ class Seniority(commands.Cog):
         """List users above the warn amount."""
         server = ctx.guild
         lookback_days = self.settings.grant_lookback(server.id)
-        await self.do_print_overages(server, lookback_days, 'warn_amount', True)
+        await self.do_print_overages(ctx, server, lookback_days, 'warn_amount', True)
 
     @grant.command()
     @commands.guild_only()
@@ -285,7 +286,7 @@ class Seniority(commands.Cog):
         """List users above the grant amount."""
         server = ctx.guild
         lookback_days = self.settings.grant_lookback(server.id)
-        await self.do_print_overages(server, lookback_days, 'grant_amount', True)
+        await self.do_print_overages(ctx, server, lookback_days, 'grant_amount', True)
 
     @grant.command()
     @commands.guild_only()
@@ -344,6 +345,7 @@ class Seniority(commands.Cog):
                         raise rpadutils.ReportableError(str(ex))
 
     async def do_print_overages(self,
+                                ctx: Context,
                                 server: discord.Guild,
                                 lookback_days: int,
                                 check_name: str,

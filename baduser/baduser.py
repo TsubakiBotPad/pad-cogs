@@ -11,7 +11,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
-from rpadutils import CogSettings
+from rpadutils import CogSettings, get_role, get_role_from_id
 
 LOGS_PER_USER = 10
 

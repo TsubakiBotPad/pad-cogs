@@ -4,7 +4,8 @@ or blacklists to a channel.
 
 If a violation occurs, the message will be deleted and the user notified.
 """
-
+import asyncio
+import re
 from _datetime import datetime
 from collections import defaultdict
 from collections import deque
@@ -15,7 +16,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
-from rpadutils import CogSettings
+from rpadutils import CogSettings, boxPagifySay
 
 LOGS_PER_CHANNEL_USER = 5
 
@@ -81,7 +82,8 @@ class CtxWrapper:
 
 
 class AutoMod2(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
         self.settings = AutoMod2Settings("automod2")

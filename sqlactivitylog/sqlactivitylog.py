@@ -203,7 +203,7 @@ class SqlActivityLogger(commands.Cog):
     @commands.command()
     @checks.is_owner()
     async def rawquery(self, ctx, *, query: str):
-        await self.queryAndPrint(ctx.guild, query, {}, {})
+        await self.queryAndPrint(ctx, ctx.guild, query, {}, {})
 
     @commands.command()
     @checks.is_owner()
@@ -252,7 +252,7 @@ class SqlActivityLogger(commands.Cog):
             ('clean_content', 'Message'),
         ]
 
-        await self.queryAndPrint(server, USER_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, USER_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -278,7 +278,7 @@ class SqlActivityLogger(commands.Cog):
             ('clean_content', 'Message'),
         ]
 
-        await self.queryAndPrint(server, CHANNEL_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, CHANNEL_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -302,7 +302,7 @@ class SqlActivityLogger(commands.Cog):
             ('clean_content', 'Message'),
         ]
 
-        await self.queryAndPrint(server, USER_CHANNEL_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, USER_CHANNEL_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -334,7 +334,7 @@ class SqlActivityLogger(commands.Cog):
             ('clean_content', 'Message'),
         ]
 
-        await self.queryAndPrint(server, CONTENT_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, CONTENT_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -362,7 +362,7 @@ class SqlActivityLogger(commands.Cog):
             ('user_id', 'User'),
         ]
 
-        await self.queryAndPrint(server, WHOSAYS_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, WHOSAYS_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -381,7 +381,7 @@ class SqlActivityLogger(commands.Cog):
         }
         column_data = []
 
-        await self.queryAndPrint(server, DAILY_REPORT_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, DAILY_REPORT_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -407,7 +407,7 @@ class SqlActivityLogger(commands.Cog):
         }
         column_data = []
 
-        await self.queryAndPrint(server, PERIOD_REPORT_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, PERIOD_REPORT_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -436,7 +436,7 @@ class SqlActivityLogger(commands.Cog):
         }
         column_data = []
 
-        await self.queryAndPrint(server, CHANNEL_REPORT_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, CHANNEL_REPORT_QUERY, values, column_data)
 
     @exlog.command()
     @commands.guild_only()
@@ -465,9 +465,9 @@ class SqlActivityLogger(commands.Cog):
         }
         column_data = []
 
-        await self.queryAndPrint(server, USER_REPORT_QUERY, values, column_data)
+        await self.queryAndPrint(ctx, server, USER_REPORT_QUERY, values, column_data)
 
-    async def queryAndPrint(self, server, query, values, column_data, max_rows=MAX_LOGS * 2):
+    async def queryAndPrint(self, ctx, server, query, values, column_data, max_rows=MAX_LOGS * 2):
         before_time = timeit.default_timer()
         cursor = self.con.execute(query, values)
         rows = cursor.fetchall()

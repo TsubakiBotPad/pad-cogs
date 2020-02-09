@@ -189,7 +189,8 @@ class DamageConfig(object):
 class DamageCalc(commands.Cog):
     """Damage calculator."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     @commands.group()

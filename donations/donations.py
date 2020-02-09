@@ -1,10 +1,12 @@
+import json
 import random
+import re
 
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, clean_global_mentions
 
 DONATE_MSG = """
 To donate to cover bot hosting fees you can use one of:
@@ -45,7 +47,8 @@ def roll(chance: int):
 class Donations(commands.Cog):
     """Manages donations and perks."""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = DonationsSettings("donations")
 
