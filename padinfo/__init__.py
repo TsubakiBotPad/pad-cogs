@@ -1,4 +1,3 @@
-raise ValueError()
 from .padinfo import *
 
 def setup(bot):

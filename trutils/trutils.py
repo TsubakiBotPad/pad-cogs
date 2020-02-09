@@ -379,16 +379,14 @@ class TrUtils(commands.Cog):
                 'PadBoard', 'Profile', 'Stickers', 'StreamCopy', 'Translate', 'VoiceRole',
                 'Dadguide', 'PadEvents', 'PadGlobal', 'PadInfo', 'PadRem']
 
-        owner_cog = self.bot.get_cog('Owner')
+        owner_cog = self.bot.get_cog('Core')
 
         for cog_name in cogs:
             cog = self.bot.get_cog(cog_name)
             if cog is None:
                 await ctx.send('{} not loaded, trying to load it...'.format(cog_name))
                 try:
-                    module = 'cogs.{}'.format(cog_name.lower())
-                    owner_cog._load_cog(module)
-                    self.bot.add_cog(module)
+                    await ctx.invoke(owner_cog.load, cog_name.lower())
                 except Exception as e:
                     await ctx.send(box("Loading cog failed: {}: {}".format(e.__class__.__name__, str(e))))
         await ctx.send('Done!')
