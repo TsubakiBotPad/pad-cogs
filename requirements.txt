@@ -1,18 +1,18 @@
-python-dateutil
-pytz
-twython
-feedparser
-tabulate
-pypng
-padtools
+# LEGACY DEPS - WILL UNCOMMENT AS THINGS ARE CONFIRMED NECESSARY
+setuptools
+wheel
+Red-DiscordBot[postgres]
+backoff
+prettytable
+romkan
+google-api
+google-api-python-client
+google-cloud
+google-cloud-texttospeech
+pymysql
+ply
+aioodbc # might require: sudo apt-get install unixodbc-dev python3.8-dev
 opencv-python
 Pillow
-setuptools
-google-cloud
-google-api
-backoff
-dill
-prettytable
-ply
+pytz
 aiohttp
-discord

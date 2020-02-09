@@ -1,17 +1,166 @@
-# rpad-cogs
+# miru-v3cogs
 
-Cogs developed for Miru Bot.
+Red v3 Cogs developed for Miru Bot.
 
 Code should be pep8 formatted with a 100 character line limit.
+
+# Cog status
+
+### Completed and tested
+
+```
+
+```
+
+### First pass completed
+
+```
+automod2
+azurelane
+baduser
+calculator
+channelmod
+chronomagia
+dadguide
+damagecalc
+donations
+fancysay
+memes
+modnotes
+padboard
+padbuilds
+padevents
+padglobal
+padguidedb
+padinfo
+padmonitor
+padrem
+padsearch
+padvision
+profile
+rpadutils
+schoolidol
+seniority
+sqlactivitylog
+stickers
+streamcopy
+timecog
+translate
+trutils
+voicerole
+```
+
+```
+# annoying
+speech
+```
+
+
+
+
+
 
 # Setting up your own Miru instance for contributing code
 
 ## Installing Tools
-* Install Git (see the Red install link below if you need help doing this, or read any tutorial)
-* Install Python (see the Red install link below if you need help doing this, or read any tutorial)
-* Familiarize yourself with how to use a command prompt and Git Bash (if you can't do this you will have a baaaaaaad time) (though in Git all you have to do is git clone so you don't actually need to know everything)
 
-## Installing Miru Dependencies
+* Install Git (see the Red install link below if you need help doing this, or read any tutorial)
+* Install Python 3.8 (see the Red install link below if you need help doing this, or read any tutorial)
+* Familiarize yourself with how to use a command prompt and Git Bash (if you can't do this you will have a bad time)
+
+
+## Check out the repo
+
+Fork this repo (you are probably already on the page, but if not [go here](https://github.com/nachoapps/miru-v3cogs). 
+You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
+
+I suggest using [PyCharm Community(https://www.jetbrains.com/pycharm/download) for development. Change into the
+`PycharmProjects` directory and clone your fork of the repo:
+
+```shell script
+# Clone your repo, not this one.
+git clone https://github.com/nachoapps/miru-v3cogs.git
+
+# If you're just setting up a production bot, no need to do this. But you should create a directory and do:
+wget https://raw.githubusercontent.com/nachoapps/miru-v3cogs/master/requirements.txt
+```
+
+## Set up a virtualenv
+
+One way to install python 3.8:
+
+```shell script
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.8
+```
+
+Then set up your 3.8 venv:
+
+```shell script
+# Get inside your cloned repo.
+cd miru-v3cogs
+
+# Set up the venv.
+virtualenv --python=/usr/bin/python3.8 venv
+
+# Atlernatively, install python3.8-venv (possibly python3.8-distutils) and do:
+python3.8 -m venv venv
+
+# Activate your venv
+source venv/bin/activate
+
+# Install python deps, including Red.
+pip install -r requirements.txt
+```
+
+## Set up Red Bot
+
+```
+# You will use the output from pwd in the next steps, so copy it
+pwd
+
+# Initial setup of bot
+redbot-setup
+
+# Use whatever you like below, this is my example
+bot name> miru_bot_test 
+
+# Replace current_dir with output from pwd
+data location> (current_dir)/bot_data
+
+# Pick json for now
+storage backend> 1
+
+# Now start the bot, replace the bot name below
+redbot miru_bot_test
+
+# Follow the directions to get your bot token
+# If copying from a v2 bot, the token is in data/red/settings.json
+bot token>  MjQxdzM53TE3MAM2NzA3NTg2.Xc4VVA.RIcv2Ndkxb<truncated>
+
+# Pick whatever you want but consider not overlapping with miru which uses ^
+prefix> !
+```
+
+Once the bot is launched, set it to use your repo directory as a cog path. Type this in Discord where the bot is:
+
+```
+!addpath (pwd output)
+```
+
+
+
+
+
+
+
+
+
+## TODOs
+
+fork romkan and fix this so people don't keep having to do this
+
 * For Romanji/Kana conversion you will use Romkan. This is a bit tricky to install so we'll go over it first.
     * If you want to skip this, you can locally comment out all calls to it, but this might be annoying when syncing your code if you're editing files that import it, so you should probably just do it. But if figuring this out is a barrier to entry to start actually coding, feel free to skip at least at the start.
     * git clone [this repo](https://github.com/soimort/python-romkan) into any folder you want.
@@ -24,35 +173,9 @@ Code should be pep8 formatted with a 100 character line limit.
     VERSION = imp.load_source('version', os.path.join(here, 'src/%s/version.py' % PACKAGE_NAME)).__version__
     ```
     * Open a command line in this same directory and run `py setup.py install`
-* You may have to install some or all of the following libraries, just use `pip install` or `py -m pip install` in a command prompt for these (note this may be an incomplete list still):
-    * python-dateutil
-    * pytz
-    * twython
-    * feedparser
-    * tabulate
-    * pypng
-    * padtools
-    * opencv-python
-    * Pillow
-    * setuptools
-    * google-cloud
-    * google-api
-    * backoff
-    * dill
-    * prettytable
-    * ply
-    * aiohttp
-    * discord
-* Or you can do this via `pip install -r requirements.txt`
+
 ## Setting up the bot
-* Install Red - [Windows Install](https://twentysix26.github.io/Red-Docs/red_install_windows/) (or switch to whichever OS you want)
-* Create your bot account & have it join a private server with just you and the bot, for testing. Probably don't name it Miru to avoid confusion. This step is also explained in the above instructions.
-* By now I'm assuming you have a running bot in a server.
-* If you ever need to restart the bot, press Ctrl+C in the command prompt where she is running from, and then you can restart it if needed.
-* Fork this repo (you are probably already on the page, but if not [go here](https://github.com/nachoapps/rpad-cogs). You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
-* Install Miru cogs - [Link to instructions](https://twentysix26.github.io/Red-Docs/red_getting_started/#community-cogs). Install your fork of it, not the original!
-* All cogs must be directly in the folder `Red-DiscordBot\cogs`, so if you aren't on Linux you will likely have to copy-paste the Python files into your fork manually any time you want to commit / make a pull request.
-* If you forgot one of the dependencies covered above then you may have to restart the bot after fixing it, if the error doesn't go away immediately.
+
 * Some cogs will have cross dependencies on each other. Check the command prompt that Miru is running from if you encounter any errors.
 * Common dependencies include:
     * rpadutils
@@ -109,7 +232,5 @@ Cogs not intended for normal use, or superceded.
 
 | Cog            | Purpose                                                     |
 | ---            | ---                                                         |
-| adminlog       | In-memory storage of user messages and lookup               |
 | donations      | Tracks users who have donated for hosting fees              |
-| supermod       | April fools joke, random moderator selection                |
 
