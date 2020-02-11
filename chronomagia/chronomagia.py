@@ -1,15 +1,21 @@
 import asyncio
 import csv
 import difflib
+import os
 import traceback
 import urllib.parse
 from collections import OrderedDict
 
-from redbot.core import commands
+from redbot.core import commands, data_manager
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
 from rpadutils import CogSettings, Menu, EmojiUpdater
+
+
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)
+
 
 SUMMARY_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsO9Xi9cKaUQWPvDjjIKpHotZ036LCTN66PuNoQwvb8qZi4LmEUEOYmHDyqUJUzghI28aPrQHfRSYd/pub?gid=1488138129&single=true&output=csv'
 PIC_URL = 'https://storage.googleapis.com/mirubot-chronomagia/cards/{}.png'
@@ -60,7 +66,7 @@ class ChronoMagia(commands.Cog):
 
         standard_expiry_secs = 2 * 60 * 60
         summary_text = await rpadutils.makeAsyncCachedPlainRequest(
-            'data/chronomagia/summary.csv', SUMMARY_SHEET, standard_expiry_secs)
+            _data_file('summary.csv'), SUMMARY_SHEET, standard_expiry_secs)
         file_reader = csv.reader(summary_text.splitlines(), delimiter=',')
         next(file_reader, None)  # skip header
         self.card_data.clear()

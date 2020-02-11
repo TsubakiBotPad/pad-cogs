@@ -21,29 +21,34 @@ from enum import Enum
 
 import pytz
 import romkan
-from redbot.core import checks
+from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
 
-CSV_FILE_PATTERN = 'data/dadguide/{}.csv'
-NAMES_EXPORT_PATH = 'data/dadguide/computed_names.json'
-BASENAMES_EXPORT_PATH = 'data/dadguide/base_names.json'
-TRANSLATEDNAMES_EXPORT_PATH = 'data/dadguide/translated_names.json'
+
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
+
+
+CSV_FILE_PATTERN = '{}.csv'
+NAMES_EXPORT_PATH = _data_file('computed_names.json')
+BASENAMES_EXPORT_PATH = _data_file('base_names.json')
+TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
 GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
-NICKNAME_FILE_PATTERN = CSV_FILE_PATTERN.format('nicknames')
-BASENAME_FILE_PATTERN = CSV_FILE_PATTERN.format('basenames')
-PANTHNAME_FILE_PATTERN = CSV_FILE_PATTERN.format('panthnames')
+NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
+BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
+PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
 DB_DUMP_URL = 'https://f002.backblazeb2.com/file/dadguide-data/db/dadguide.sqlite'
-DB_DUMP_FILE = 'data/dadguide/dadguide.sqlite'
-DB_DUMP_WORKING_FILE = 'data/dadguide/dadguide_working.sqlite'
+DB_DUMP_FILE = _data_file('dadguide.sqlite')
+DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
 
 
 class Dadguide(commands.Cog):

@@ -7,17 +7,19 @@ from datetime import datetime, timedelta
 
 import prettytable
 import pytz
-from redbot.core import checks, commands
+from redbot.core import checks, commands, data_manager
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
 from rpadutils import CogSettings
 
+
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='sqlactivitylog')), file_name)
+
+
 TIMESTAMP_FORMAT = '%Y-%m-%d %X'  # YYYY-MM-DD HH:MM:SS
-PATH_LIST = ['data', 'sqlactivitylog']
-PATH = os.path.join(*PATH_LIST)
-JSON = os.path.join(*PATH_LIST, "settings.json")
-DB = os.path.join(*PATH_LIST, "log.db")
+DB_FILE = _data_file("log.db")
 
 ALL_COLUMNS = [
     ('timestamp', 'Time (PT)'),
@@ -186,7 +188,7 @@ class SqlActivityLogger(commands.Cog):
         self.bot = bot
         self.settings = SQLSettings("sqlactivitylog")
         self.lock = False
-        self.con = lite.connect(DB, detect_types=lite.PARSE_DECLTYPES)
+        self.con = lite.connect(DB_FILE, detect_types=lite.PARSE_DECLTYPES)
         self.con.row_factory = lite.Row
         self.con.execute(CREATE_TABLE)
         self.con.execute(CREATE_INDEX_1)

@@ -3,12 +3,13 @@ import csv
 import difflib
 import io
 import json
+import os
 import re
 from collections import defaultdict
 
 import aiohttp
 import prettytable
-from redbot.core import checks
+from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
@@ -17,7 +18,12 @@ from rpadutils import CogSettings, safe_read_json, replace_emoji_names_with_code
 
 global PADGLOBAL_COG
 
-DATA_EXPORT_PATH = 'data/padglobal/pad global_data.json'
+
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)
+
+
+DATA_EXPORT_PATH = _data_file('pad global_data.json')
 
 PAD_CMD_HEADER = """
 PAD Global Commands
