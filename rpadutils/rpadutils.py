@@ -12,7 +12,7 @@ import aiohttp
 import backoff
 import pytz
 from discord.ext.commands import CommandNotFound
-from redbot.core import commands
+from redbot.core import commands, data_manager
 from redbot.core.utils.chat_formatting import *
 
 
@@ -589,12 +589,11 @@ def intify(iterable):
 
 
 class CogSettings(object):
-    BASE_DATA_PATH = "data"
-    SETTINGS_FILE_NAME = "settings.json"
+    SETTINGS_FILE_NAME = "legacy_settings.json"
 
     def __init__(self, cog_name):
-        self.folder = CogSettings.BASE_DATA_PATH + "/" + cog_name
-        self.file_path = self.folder + "/" + CogSettings.SETTINGS_FILE_NAME
+        self.folder = str(data_manager.cog_data_path(raw_name=cog_name))
+        self.file_path = os.path.join(self.folder, CogSettings.SETTINGS_FILE_NAME)
 
         self.check_folder()
 
