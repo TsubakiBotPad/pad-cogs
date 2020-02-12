@@ -6,7 +6,7 @@ import urllib.parse
 from collections import OrderedDict
 
 import prettytable
-from redbot.core import checks
+from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
@@ -61,6 +61,10 @@ def get_pic_url(m):
     return RPAD_PIC_TEMPLATE.format(m.monster_id)
 
 
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='padinfo')), file_name)
+
+
 class IdEmojiUpdater(EmojiUpdater):
     def __init__(self, emoji_to_embed, m: "DgMonster" = None,
                  pad_info=None, selected_emoji=None, bot=None):
@@ -73,20 +77,21 @@ class IdEmojiUpdater(EmojiUpdater):
     def on_update(self, ctx, selected_emoji):
         if self.pad_info.settings.checkEvoID(ctx.author.id):
             DGCOG = self.bot.get_cog('Dadguide')
-            evos = list(map(lambda x: [x['from_id'], x['to_id']], DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
-            evos = list(set(sum(evos,[])))
+            evos = list(map(lambda x: [x['from_id'], x['to_id']],
+                            DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
+            evos = list(set(sum(evos, [])))
             evos.sort()
             index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 if index == 0:
                     self.m = DGCOG.get_monster_by_no(evos[-1])
                 else:
-                    self.m = DGCOG.get_monster_by_no(evos[index-1])
+                    self.m = DGCOG.get_monster_by_no(evos[index - 1])
             elif selected_emoji == self.pad_info.next_monster_emoji:
-                if index == len(evos)-1:
+                if index == len(evos) - 1:
                     self.m = DGCOG.get_monster_by_no(evos[0])
                 else:
-                    self.m = DGCOG.get_monster_by_no(evos[index+1])
+                    self.m = DGCOG.get_monster_by_no(evos[index + 1])
             else:
                 self.selected_emoji = selected_emoji
                 return True
@@ -133,10 +138,10 @@ class PadInfo(commands.Cog):
         self.next_monster_emoji = '\N{HEAVY PLUS SIGN}'
         self.remove_emoji = self.menu.emoji['no']
 
-        self.historic_lookups_file_path = "data/padinfo/historic_lookups.json"
+        self.historic_lookups_file_path = _data_file('historic_lookups.json')
         self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
 
-        self.historic_lookups_file_path_id2 = "data/padinfo/historic_lookups_id2.json"
+        self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
     def __unload(self):
@@ -452,14 +457,13 @@ class PadInfo(commands.Cog):
                 await ctx.send(inline("Done"))
             else:
                 await ctx.send(inline("You're already using evo mode"))
-        elif id_type in ['number','default']:
+        elif id_type in ['number', 'default']:
             if self.settings.rmEvoID(ctx.author.id):
                 await ctx.send(inline("Done"))
             else:
                 await ctx.send(inline("You're already using number mode"))
         else:
             await ctx.send(inline("id_type must be 'number' or 'evo'"))
-
 
     @commands.group()
     @checks.is_owner()
