@@ -17,7 +17,6 @@ class PadMonitor(commands.Cog):
         while self == self.bot.get_cog('PadMonitor'):
             try:
                 await self.check_seen()
-                print('Done refreshing PadMonitor')
             except Exception as ex:
                 print("check seen loop caught exception " + str(ex))
 
@@ -54,7 +53,6 @@ class PadMonitor(commands.Cog):
                         msg += ' ({})'.format(m.name_na_override)
                 return msg
             else:
-                print('no monsters')
                 return None
 
         jp_results = process(self.settings.jp_seen(), jp_monster_map, 'JP')
@@ -68,38 +66,33 @@ class PadMonitor(commands.Cog):
 
     async def announce(self, channel_id, message):
         try:
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(int(channel_id))
             for page in pagify(message):
-                await self.bot.send_message(channel, box(page))
+                await channel.send(box(page))
         except Exception as ex:
             print('failed to send message to', channel_id, ' : ', ex)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     @checks.mod_or_permissions(manage_guild=True)
     async def padmonitor(self, ctx):
         """PAD info monitoring"""
         pass
 
-    @padmonitor.command(pass_context=True, no_pm=True)
+    @padmonitor.command()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def addnewchannel(self, ctx):
         """Sets announcements for the current channel."""
-        self.settings.add_new_monster_channel(ctx.message.channel.id)
-        await self.bot.say(inline('done'))
+        self.settings.add_new_monster_channel(ctx.channel.id)
+        await ctx.send(inline('done'))
 
-    @padmonitor.command(pass_context=True, no_pm=True)
+    @padmonitor.command()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def rmnewchannel(self, ctx):
         """Removes announcements for the current channel."""
-        self.settings.rm_new_monster_channel(ctx.message.channel.id)
-        await self.bot.say(inline('done'))
-
-
-def setup(bot):
-    n = PadMonitor(bot)
-    bot.add_cog(n)
-    bot.loop.create_task(n.check_seen_loop())
-    print('done adding padinfo bot')
+        self.settings.rm_new_monster_channel(ctx.channel.id)
+        await ctx.send(inline('done'))
 
 
 class PadMonitorSettings(rpadutils.CogSettings):

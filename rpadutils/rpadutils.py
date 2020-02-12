@@ -7,6 +7,9 @@ import re
 import time
 import unicodedata
 import urllib
+from functools import wraps
+import errno
+import signal
 
 import aiohttp
 import backoff
@@ -268,7 +271,7 @@ class EmojiUpdater(object):
         self.emoji_dict = emoji_to_embed
         self.selected_emoji = None
 
-    def on_update(self, selected_emoji):
+    def on_update(self, ctx, selected_emoji):
         self.selected_emoji = selected_emoji
         return True
 
@@ -411,7 +414,7 @@ class Menu():
 
         # update the emoji mapping however we need to, or just pass through and do nothing
 
-        allowed_action = emoji_to_message.on_update(react_emoji)
+        allowed_action = emoji_to_message.on_update(ctx, react_emoji)
         return await self._custom_menu(
             ctx, emoji_to_message, emoji_to_message.selected_emoji,
             timeout=timeout,
@@ -724,3 +727,24 @@ def validate_json(fp):
         return True
     except:
         return False
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def timeout_after(seconds=10, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.setitimer(signal.ITIMER_REAL,seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+        return wraps(func)(wrapper)
+    return decorator

@@ -1380,6 +1380,16 @@ class MonsterIndex(object):
             match = matches[0]
             return self.all_na_name_to_monsters[match], None, 'Close name match ({})'.format(match)
 
+        # About to give up, try matching all words
+        matches = set()
+        for nickname, m in self.all_entries.items():
+            if (all(map(lambda x: x in m.name_na.lower(), query.split())) or
+                all(map(lambda x: x in m.name_jp.lower(), query.split()))):
+                matches.add(m)
+        if len(matches):
+            return self.pickBestMonster(matches), None, 'All word match on full name, max of {}'.format(
+                len(matches))
+
         # couldn't find anything
         return None, "Could not find a match for: " + query, None
 

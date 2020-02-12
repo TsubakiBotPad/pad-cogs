@@ -70,41 +70,38 @@ class IdEmojiUpdater(EmojiUpdater):
         self.selected_emoji = selected_emoji
         self.bot = bot
 
-    def on_update(self, selected_emoji):
-        # TODO: River Suggestion
-        """
-        DGCOG = self.bot.get_cog('Dadguide')
-        evos = list(map(lambda x: [x['from_id'], x['to_id']], DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
-        evos = list(set(sum(evos,[])))
-        evos.sort()
-        index = evos.index(self.m.monster_id)
-        if selected_emoji == self.pad_info.previous_monster_emoji:
-            if index == 0:
-                self.m = DGCOG.get_monster_by_no(evos[-1])
+    def on_update(self, ctx, selected_emoji):
+        if self.pad_info.settings.checkEvoID(ctx.author.id):
+            DGCOG = self.bot.get_cog('Dadguide')
+            evos = list(map(lambda x: [x['from_id'], x['to_id']], DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
+            evos = list(set(sum(evos,[])))
+            evos.sort()
+            index = evos.index(self.m.monster_id)
+            if selected_emoji == self.pad_info.previous_monster_emoji:
+                if index == 0:
+                    self.m = DGCOG.get_monster_by_no(evos[-1])
+                else:
+                    self.m = DGCOG.get_monster_by_no(evos[index-1])
+            elif selected_emoji == self.pad_info.next_monster_emoji:
+                if index == len(evos)-1:
+                    self.m = DGCOG.get_monster_by_no(evos[0])
+                else:
+                    self.m = DGCOG.get_monster_by_no(evos[index+1])
             else:
-                self.m = DGCOG.get_monster_by_no(evos[index-1])
-        elif selected_emoji == self.pad_info.next_monster_emoji:
-            if index == len(evos)-1:
-                self.m = DGCOG.get_monster_by_no(evos[0])
+                self.selected_emoji = selected_emoji
+                return True
+        else:
+            if selected_emoji == self.pad_info.previous_monster_emoji:
+                if self.m.prev_monster is None:
+                    return False
+                self.m = self.m.prev_monster
+            elif selected_emoji == self.pad_info.next_monster_emoji:
+                if self.m.next_monster is None:
+                    return False
+                self.m = self.m.next_monster
             else:
-                self.m = DGCOG.get_monster_by_no(evos[index+1])
-        else:
-            self.selected_emoji = selected_emoji
-            return True
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
-        return True
-        """
-        if selected_emoji == self.pad_info.previous_monster_emoji:
-            if self.m.prev_monster is None:
-                return False
-            self.m = self.m.prev_monster
-        elif selected_emoji == self.pad_info.next_monster_emoji:
-            if self.m.next_monster is None:
-                return False
-            self.m = self.m.next_monster
-        else:
-            self.selected_emoji = selected_emoji
-            return True
+                self.selected_emoji = selected_emoji
+                return True
         self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
         return True
 
@@ -447,6 +444,23 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
+    @commands.command()
+    async def idmode(self, ctx, id_type):
+        """Switch between number mode and evo mode"""
+        if id_type in ['evo']:
+            if self.settings.setEvoID(ctx.author.id):
+                await ctx.send(inline("Done"))
+            else:
+                await ctx.send(inline("You're already using evo mode"))
+        elif id_type in ['number','default']:
+            if self.settings.rmEvoID(ctx.author.id):
+                await ctx.send(inline("Done"))
+            else:
+                await ctx.send(inline("You're already using number mode"))
+        else:
+            await ctx.send(inline("id_type must be 'number' or 'evo'"))
+
+
     @commands.group()
     @checks.is_owner()
     async def padinfo(self, ctx):
@@ -462,8 +476,8 @@ class PadInfo(commands.Cog):
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
 
     def get_emojis(self):
-        server_ids = self.settings.emojiServers()
-        return [e for s in self.bot.guilds if s.id in server_ids for e in s.emojis]
+        server_ids = [int(sid) for sid in self.settings.emojiServers()]
+        return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     def makeFailureMsg(self, err):
         msg = 'Lookup failed: {}.\n'.format(err)
@@ -507,6 +521,7 @@ class PadInfoSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'animation_dir': '',
+            'evo_id_users': [],
         }
         return config
 
@@ -521,6 +536,23 @@ class PadInfoSettings(CogSettings):
         es.clear()
         es.extend(emoji_servers)
         self.save_settings()
+
+    def setEvoID(self, user_id):
+        if user_id not in self.bot_settings['evo_id_users']:
+            self.bot_settings['evo_id_users'].append(user_id)
+            self.save_settings()
+            return True
+        return False
+
+    def rmEvoID(self, user_id):
+        if user_id in self.bot_settings['evo_id_users']:
+            self.bot_settings['evo_id_users'].remove(user_id)
+            self.save_settings()
+            return True
+        return False
+
+    def checkEvoID(self, user_id):
+        return user_id in self.bot_settings['evo_id_users']
 
 
 def monsterToHeader(m: "DgMonster", link=False):

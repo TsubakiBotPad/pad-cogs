@@ -1,4 +1,5 @@
 import json
+import re
 
 from ply import lex
 from redbot.core import checks
@@ -37,18 +38,28 @@ Single instance filters
 * shield(n)   : Reduce damage taken by n%
 * resolve     : Leader skill where you survive when HP reduced to 0
 
-Multiple instance filters 
+Multiple instance filters
 * active(str)     : Active skill name/description
 * board(colors,)  : Board change to a comma-sep list of colors
 * color(color)    : Primary monster color
 * column(color)   : Creates a column of a color
 * hascolor(color) : Primary or secondary monster color
 * leader(str)     : Leader skill description
-* name(str)       : Monster name 
+* name(str)       : Monster name
 * row(color)      : Creates a row of a color
 * type(str)       : Monster type
 * convert(c1, c2) : Convert from color 1 to color 2, accepts any as entry as well
 """
+
+@rpadutils.timeout_after(1)
+def re_timeout(re_funcs, ms):
+    print('in')
+    for ref in re_funcs:
+        ms = [m for m in ms if ref(m)]
+    print('out')
+    return ms
+
+
 
 COLORS = [
     'fire',
@@ -147,6 +158,9 @@ def replace_colors_in_text(text: str):
 def clean_name(txt, name):
     return txt.replace(name, '').strip('() ')
 
+def re_clean_name(txt, name):
+    print (clean_name(txt, name)[2:-1])
+    return clean_name(txt, name)[2:-1]
 
 def board_filter(colors):
     def fn(m, colors=colors):
@@ -203,11 +217,19 @@ class PadSearchLexer(object):
         'ATK',
         'RCV',
         'WEIGHTED',
+        'REACTIVE',
+        'RELEADER',
     ]
 
     def t_ACTIVE(self, t):
-        r'active\(.+?\)'
+        r'\bactive\(.+?\)'
         t.value = clean_name(t.value, 'active')
+        t.value = replace_colors_in_text(t.value)
+        return t
+
+    def t_REACTIVE(self, t):
+        r"reactive\(r'.+?'\)"
+        t.value = re_clean_name(t.value, 'reactive')
         t.value = replace_colors_in_text(t.value)
         return t
 
@@ -260,9 +282,16 @@ class PadSearchLexer(object):
         return t
 
     def t_LEADER(self, t):
-        r'leader\(.+?\)'
+        r'\bleader\(.+?\)'
         t.value = clean_name(t.value, 'leader')
         t.value = replace_colors_in_text(t.value)
+        return t
+
+    def t_RELEADER(self, t):
+        r"releader\(r'.+?'\)"
+        t.value = re_clean_name(t.value, 'releader')
+        t.value = replace_colors_in_text(t.value)
+        print(t)
         return t
 
     def t_NAME(self, t):
@@ -391,11 +420,13 @@ class SearchConfig(object):
         self.weighted = None
 
         self.active = []
+        self.reactive = []
         self.board = []
         self.column = []
         self.color = []
         self.hascolor = []
         self.leader = []
+        self.releader = []
         self.name = []
         self.row = []
         self.types = []
@@ -425,6 +456,8 @@ class SearchConfig(object):
 
             if type == 'ACTIVE':
                 self.active.append(value)
+            if type == 'REACTIVE':
+                self.reactive.append(value)
             if type == 'BOARD':
                 self.board.append(split_csv_orbcolors(value))
             if type == 'COLOR':
@@ -435,6 +468,8 @@ class SearchConfig(object):
                 self.hascolor.append(assert_color(value))
             if type == 'LEADER':
                 self.leader.append(value)
+            if type == 'RELEADER':
+                self.releader.append(value)
             if type == 'NAME':
                 self.name.append(value)
             if type == 'ROW':
@@ -450,6 +485,8 @@ class SearchConfig(object):
                 self.convert.append(value)
 
         self.filters = list()
+        self.re_filters = list()
+        self.regeces = list()
 
         # Single
         if self.cd:
@@ -529,6 +566,14 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: t in m.search.active)
             self.filters.append(self.or_filters(filters))
 
+        if self.reactive:
+            filters = []
+            for ft in self.reactive:
+                text = ft.lower()
+                filters.append(lambda m, t=text: re.search(t, m.search.active))
+                self.regeces.append(text)
+            self.re_filters.extend(filters)
+
         if self.board:
             filters = []
             for colors in self.board:
@@ -566,6 +611,14 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: t in m.search.leader)
             self.filters.append(self.or_filters(filters))
 
+        if self.releader:
+            filters = []
+            for ft in self.releader:
+                text = ft.lower()
+                filters.append(lambda m, t=text: re.search(t, m.search.leader))
+                self.regeces.append(text)
+            self.re_filters.extend(filters)
+
         if self.name:
             filters = []
             for ft in self.name:
@@ -597,7 +650,7 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: t not in m.search.name)
             self.filters.append(self.or_filters(filters))
 
-        if not self.filters:
+        if not self.filters and not self.re_filters:
             raise rpadutils.ReportableError('You need to specify at least one filter')
 
     def check_filters(self, m):
@@ -605,6 +658,18 @@ class SearchConfig(object):
             if not f(m):
                 return False
         return True
+
+    async def check_re_filters(self, ms, ctx):
+        try:
+            return re_timeout(self.re_filters, ms)
+        except rpadutils.TimeoutError:
+            await ctx.send("Regex took too long to compile.  Skipping regex matching.")
+            print("Timeout with patttern: \"{}\" by user {} ({})".format('", "'.join(self.regeces), ctx.author.name, ctx.author.id))
+            return ms
+        except re.error as e:
+            await ctx.send("Regex search threw error '{}'.  Skipping regex matching.".format(e.msg))
+            return ms
+
 
     def or_filters(self, filters):
         def fn(m, filters=filters):
@@ -648,18 +713,31 @@ class PadSearch(commands.Cog):
             except:
                 # If it still failed, raise the original exception
                 raise ex
+        print(1)
         dg_cog = self.bot.get_cog('Dadguide')
+        if dg_cog == None:
+            await ctx.send("Dadguide cog not loaded.")
+            return
         monsters = dg_cog.database.get_all_monsters()
-        matched_monsters = list(filter(config.check_filters, monsters))
 
-        # Removing entry with names that have gems in it
         rmvGemFilter = self._make_search_config('remove( gem)')
-        matched_monsters = list(filter(rmvGemFilter.check_filters, matched_monsters))
+        monsters = list(filter(rmvGemFilter.check_filters, monsters))
+
+        print(2)
+        matched_monsters = [m for m in monsters if config.check_filters(m)]
+        print(3)
+        # Running regeces on a timer
+        matched_monsters = await config.check_re_filters(matched_monsters, ctx)
+        print(4)
+        # Removing entry with names that have gems in it
 
         matched_monsters.sort(key=lambda m: m.monster_no_na, reverse=True)
 
         msg = 'Matched {} monsters'.format(len(matched_monsters))
         dm_required = False
+        if len(matched_monsters) == len(monsters):
+            await ctx.send("All monsters were matched.  Try with a more specific query.")
+            return
         if len(matched_monsters) > 10:
             if not config.all:
                 msg += " (limited to 10, use 'all' to get more)"

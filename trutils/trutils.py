@@ -15,7 +15,7 @@ from rpadutils import CogSettings, extract_image_url, get_role, ReportableError
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
-Unlike the private Miru used by larger community servers, public Miru has lower stability requirements, 
+Unlike the private Miru used by larger community servers, public Miru has lower stability requirements,
 so I will install a variety of random entertainment plugins.
 
 To invite public Miru to your server, use the following link:
@@ -201,7 +201,7 @@ class TrUtils(commands.Cog):
     @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
     async def dumpchannel(self, ctx, channel: discord.TextChannel, msg_id: int = None):
-        """Given a channel and an ID for a message printed in that channel, dumps it 
+        """Given a channel and an ID for a message printed in that channel, dumps it
         boxed with formatting escaped and some issues cleaned up.
 
         To find a message ID, enable developer mode in Discord settings and
@@ -233,7 +233,7 @@ class TrUtils(commands.Cog):
 
     @commands.command()
     async def dumpmsgexact(self, ctx, msg_id: int):
-        """Given an ID for a message printed in the current channel, dumps it 
+        """Given an ID for a message printed in the current channel, dumps it
         boxed with formatting escaped.
 
         To find a message ID, enable developer mode in Discord settings and
@@ -377,7 +377,6 @@ class TrUtils(commands.Cog):
     @commands.command()
     @checks.is_owner()
     async def loadallcogs(self, ctx):
-        # TODO: Test this when done!
         cogs = ['RpadUtils', 'AutoMod2', 'ChannelMod', 'Donations', 'FancySay', 'Memes',
                 'PadBoard', 'Profile', 'Stickers', 'StreamCopy', 'Translate', 'VoiceRole',
                 'Dadguide', 'PadEvents', 'PadGlobal', 'PadInfo', 'PadRem']

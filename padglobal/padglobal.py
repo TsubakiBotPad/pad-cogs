@@ -46,6 +46,12 @@ MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards wi
               ', check ^mpdra? for specific recommendations.')
 SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution.'
 
+def mod_help(self, ctx, help_type):
+    hs = getattr(self, help_type)
+    return self.format_text_for_context(ctx, hs).format(ctx) if hs else hs
+
+commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
+commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 def is_padglobal_admin_check(ctx):
     return checks.is_owner() or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
@@ -469,7 +475,7 @@ class PadGlobal(commands.Cog):
     async def glossaryto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a glossary entry
 
-        ^glossaryto @tactical_retreat godfest
+        ^glossaryto @{0.author.name} godfest
         """
         if await self._check_disabled(ctx):
             return
@@ -480,7 +486,7 @@ class PadGlobal(commands.Cog):
     async def padto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a pad/padfaq entry
 
-        ^padto @tactical_retreat jewels?
+        ^padto @{0.author.name} jewels?
         """
         if await self._check_disabled(ctx):
             return
@@ -705,7 +711,7 @@ class PadGlobal(commands.Cog):
     async def whichto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a which monster entry.
 
-        ^whichto @tactical_retreat saria
+        ^whichto @{0.author.name} saria
         """
         if await self._check_disabled(ctx):
             return
@@ -1026,7 +1032,7 @@ class PadGlobal(commands.Cog):
     async def guideto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a dungeon/leader guide entry.
 
-        ^guideto @tactical_retreat osc10
+        ^guideto @{0.author.name} osc10
         """
         if await self._check_disabled(ctx):
             return

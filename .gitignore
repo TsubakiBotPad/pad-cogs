@@ -133,3 +133,6 @@ dmypy.json
 
 # Red Bot stuff
 bot_data/
+
+# 3way Merge
+.orig
