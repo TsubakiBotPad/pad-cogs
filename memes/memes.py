@@ -2,11 +2,15 @@ import json
 import os
 import re
 
-from redbot.core import checks
+from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings, get_role_from_id, get_role, validate_json, safe_read_json
+from rpadutils import CogSettings, get_role_from_id, get_role, safe_read_json
+
+
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='memes')), file_name)
 
 
 class Memes(commands.Cog):
@@ -15,7 +19,7 @@ class Memes(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.file_path = "data/memes/commands.json"
+        self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
         self.settings = MemesSettings("memes")
 
@@ -195,19 +199,6 @@ class Memes(commands.Cog):
         else:
             return raw_result
         return str(getattr(first, second, raw_result))
-
-
-def check_folders():
-    if not os.path.exists("data/memes"):
-        print("Creating data/memes folder...")
-        os.makedirs("data/memes")
-
-
-def check_files():
-    f = "data/memes/commands.json"
-    if not validate_json(f):
-        print("Creating empty commands.json...")
-        json.dump({}, open(f, 'w+'))
 
 
 class MemesSettings(CogSettings):
