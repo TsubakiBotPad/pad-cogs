@@ -297,11 +297,11 @@ class AutoMod2(commands.Cog):
 
     @commands.Cog.listener('on_message')
     async def mod_message(self, message):
-        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
+        if isinstance(message.channel, discord.abc.PrivateChannel):
             return
-
-        ctx = CtxWrapper(message, self.bot)
-        if message.channel.permissions_for(message.author).manage_messages:
+        author = message.author
+        valid_user = isinstance(author, discord.Member) and not author.bot
+        if not valid_user:
             return
 
         whitelists, blacklists = self.settings.getRulesForChannel(ctx)
