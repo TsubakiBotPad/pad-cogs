@@ -304,6 +304,7 @@ class AutoMod2(commands.Cog):
         if not valid_user:
             return
 
+        ctx = CtxWrapper(message, self.bot)
         whitelists, blacklists = self.settings.getRulesForChannel(ctx)
 
         msg_template = box('Your message in {} was deleted for violating the following policy: {}\n'
