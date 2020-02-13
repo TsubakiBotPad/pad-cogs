@@ -46,12 +46,15 @@ MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards wi
               ', check ^mpdra? for specific recommendations.')
 SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution.'
 
+
 def mod_help(self, ctx, help_type):
     hs = getattr(self, help_type)
     return self.format_text_for_context(ctx, hs).format(ctx) if hs else hs
 
+
 commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
+
 
 def is_padglobal_admin_check(ctx):
     return checks.is_owner() or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
@@ -84,7 +87,7 @@ class PadGlobal(commands.Cog):
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
         self.bot = bot
-        self.file_path = "data/padglobal/commands.json"
+        self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
 
