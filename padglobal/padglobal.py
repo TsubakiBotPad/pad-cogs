@@ -24,7 +24,7 @@ def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)
 
 
-DATA_EXPORT_PATH = _data_file('pad global_data.json')
+DATA_EXPORT_PATH = _data_file('pad_global_data.json')
 
 PAD_CMD_HEADER = """
 PAD Global Commands
