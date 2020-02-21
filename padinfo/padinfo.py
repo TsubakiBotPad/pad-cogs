@@ -482,7 +482,7 @@ class PadInfo(commands.Cog):
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
-        return [e for g in self.bot.get_guild if g.id in server_ids for e in g.emojis]
+        return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     def makeFailureMsg(self, err):
         msg = 'Lookup failed: {}.\n'.format(err)
