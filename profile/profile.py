@@ -1,12 +1,12 @@
 import re
 
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings
 
 
-# from copy import deepcopy
 def normalizeServer(server):
     server = server.upper().strip()
     return 'NA' if server == 'US' else server
@@ -38,7 +38,7 @@ def computeOldGroup(str_id):
 
 
 class Profile(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ProfileSettings("profile")
@@ -195,7 +195,6 @@ class Profile(commands.Cog):
             await ctx.send(inline('Cleared your profile for ' + server))
 
     @profile.command(name="search")
-    @commands.guild_only()
     async def search(self, ctx, server, *search_text):
         """profile search <server> <search text>
 

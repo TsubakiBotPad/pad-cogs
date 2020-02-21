@@ -4,13 +4,14 @@ Utilities for managing moderator notes about users.
 
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings
 
 
 class ModNotes(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ModNotesSettings("modnotes")
@@ -25,7 +26,6 @@ class ModNotes(commands.Cog):
         """
 
     @usernotes.command(name="print")
-    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def _print(self, ctx, user: discord.User):
         """Print the notes for a user."""
@@ -39,7 +39,6 @@ class ModNotes(commands.Cog):
             await ctx.send(box(note))
 
     @usernotes.command()
-    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def add(self, ctx, user: discord.User, *, note_text: str):
         """Add a note to a user."""
@@ -50,7 +49,6 @@ class ModNotes(commands.Cog):
         await ctx.send(inline('Done. User {} now has {} notes'.format(user.name, len(notes))))
 
     @usernotes.command()
-    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def delete(self, ctx, user: discord.User, note_num: int):
         """Delete a specific note for a user."""
@@ -66,7 +64,6 @@ class ModNotes(commands.Cog):
         await ctx.send(box(note))
 
     @usernotes.command()
-    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def list(self, ctx):
         """Lists all users and note counts for the server."""

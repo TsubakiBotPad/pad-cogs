@@ -4,27 +4,28 @@ import textwrap
 import timeit
 from collections import deque
 from datetime import datetime, timedelta
-import yaml
-import traceback
-import asyncio
 
 import prettytable
 import pytz
 from redbot.core import checks, commands, data_manager
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
-from rpadutils import CogSettings
+
 
 def mod_help(self, ctx, help_type):
     hs = getattr(self, help_type)
     return self.format_text_for_context(ctx, hs).format(ctx) if hs else hs
 
+
 commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
+
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='sqlactivitylog')), file_name)
+
 
 TIMESTAMP_FORMAT = '%Y-%m-%d %X'  # YYYY-MM-DD HH:MM:SS
 DB_FILE = _data_file("log.db")
@@ -128,55 +129,19 @@ SELECT * FROM (
 ORDER BY timestamp ASC
 '''
 
-PERIOD_REPORT_QUERY = '''
-SELECT COUNT(DISTINCT user_id) AS distinct_users, count(*) AS total_messages
-FROM messages INDEXED BY idx_messages_server_id_timestamp
-WHERE server_id = :server_id
-  AND timestamp between :start_timestamp and :end_timestamp
-'''
-
-CHANNEL_REPORT_QUERY = '''
-SELECT user_id, count(*) AS total_messages
-FROM messages INDEXED BY idx_messages_server_id_channel_id_timestamp
-WHERE server_id = :server_id
-  AND channel_id = :channel_id
-  AND timestamp between :start_timestamp and :end_timestamp
-GROUP BY 1
-ORDER BY 2 DESC
-LIMIT :row_count
-'''
-
-USER_REPORT_QUERY = '''
-SELECT channel_id, count(*) AS total_messages
-FROM messages INDEXED BY idx_messages_server_id_user_id_timestamp
-WHERE server_id = :server_id
-  AND user_id = :user_id
-  AND timestamp between :start_timestamp and :end_timestamp
-GROUP BY 1
-ORDER BY 2 DESC
-LIMIT :row_count
-'''
-
-SENIORITY_BACKFILL_QUERY = '''
-SELECT user_id, content
-FROM messages INDEXED BY idx_messages_server_id_channel_id_timestamp
-WHERE server_id = :server_id
-  AND channel_id = :channel_id
-  AND timestamp between :start_timestamp and :end_timestamp
-'''
-
 DELETE_BEFORE_QUERY = '''
 DELETE
 FROM messages
 WHERE timestamp  < :before
 '''
+
+
 class SqlActivityLogger(commands.Cog):
     """Log activity seen by bot"""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.settings = SQLSettings("sqlactivitylog")
         self.lock = False
         self.con = lite.connect(DB_FILE, detect_types=lite.PARSE_DECLTYPES)
         self.con.row_factory = lite.Row
@@ -187,6 +152,7 @@ class SqlActivityLogger(commands.Cog):
         self.con.execute(CREATE_INDEX_4)
         self.con.execute(CREATE_INDEX_5)
         self.insert_timing = deque(maxlen=1000)
+        self.purge()
 
     def __unload(self):
         self.lock = True
@@ -209,6 +175,11 @@ class SqlActivityLogger(commands.Cog):
     @commands.command()
     @checks.is_owner()
     async def togglelock(self, ctx):
+        """Prevents the bot from inserting into the db.
+
+        This is useful if you need to use sqlite3 to access the database for some reason.
+        Will keep the bot from locking up trying to insert records.
+        """
         self.lock = not self.lock
         await ctx.send(inline('Locked is now {}'.format(self.lock)))
 
@@ -218,8 +189,7 @@ class SqlActivityLogger(commands.Cog):
     async def exlog(self, context):
         """Extra log querying tools.
 
-        Uses the bot's local SQL message storage to retrieve messages
-        seen in the current server since the cog was installed.
+        Uses the bot's local SQL message storage to retrieve deleted/edited messages.
         """
 
     @exlog.command()
@@ -328,91 +298,7 @@ class SqlActivityLogger(commands.Cog):
 
         await self.queryAndPrint(ctx, server, CONTENT_QUERY, values, column_data)
 
-    @exlog.command()
-    @commands.guild_only()
-    async def periodreport(self, ctx, start_date, end_date):
-        """exlog periodreport 2017-01-01 2017-01-10
-
-        Prints a report on user activity for the specified time period.
-        Be careful how you specify your dates, must match the YYYY-MM-DD format
-        described above.
-        Start date is inclusive, end date is exclusive.
-        """
-        start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-
-        start_date = start_date.replace(tzinfo=pytz.utc)
-        end_date = end_date.replace(tzinfo=pytz.utc)
-
-        server = ctx.guild
-        values = {
-            'server_id': server.id,
-            'start_timestamp': start_date,
-            'end_timestamp': end_date,
-        }
-        column_data = []
-
-        await self.queryAndPrint(ctx, server, PERIOD_REPORT_QUERY, values, column_data)
-
-    @exlog.command()
-    @commands.guild_only()
-    async def channelreport(self, ctx, channel: discord.TextChannel, start_date: str, end_date: str, count=10):
-        """exlog channelreport #general_chat 2017-01-01 2017-01-10
-
-        Prints a report on user activity for the specified time period in a channel.
-        Be careful how you specify your dates, must match the YYYY-MM-DD format
-        described above.
-        Start date is inclusive, end date is exclusive.
-        """
-        count = min(count, 30)
-        start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-
-        start_date = start_date.replace(tzinfo=pytz.utc)
-        end_date = end_date.replace(tzinfo=pytz.utc)
-
-        server = ctx.guild
-        values = {
-            'server_id': server.id,
-            'channel_id': channel.id,
-            'start_timestamp': start_date,
-            'end_timestamp': end_date,
-            'row_count': count,
-        }
-        column_data = []
-
-        await self.queryAndPrint(ctx, server, CHANNEL_REPORT_QUERY, values, column_data)
-
-    @exlog.command()
-    @commands.guild_only()
-    async def userreport(self, ctx, user: discord.User, start_date: str, end_date: str, count=10):
-        """exlog userreport "{0.author.name}" 2017-01-01 2017-01-10
-
-        Prints a report on channel activity in the specified time period for a user.
-        Be careful how you specify your dates, must match the YYYY-MM-DD format
-        described above.
-        Start date is inclusive, end date is exclusive.
-        """
-        count = min(count, 30)
-        start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-
-        start_date = start_date.replace(tzinfo=pytz.utc)
-        end_date = end_date.replace(tzinfo=pytz.utc)
-
-        server = ctx.guild
-        values = {
-            'server_id': server.id,
-            'user_id': user.id,
-            'start_timestamp': start_date,
-            'end_timestamp': end_date,
-            'row_count': count,
-        }
-        column_data = []
-
-        await self.queryAndPrint(ctx, server, USER_REPORT_QUERY, values, column_data)
-
-    async def queryAndPrint(self, ctx, server, query, values, column_data, max_rows=MAX_LOGS * 2, verbose = True):
+    async def queryAndPrint(self, ctx, server, query, values, column_data, max_rows=MAX_LOGS * 2, verbose=True):
         before_time = timeit.default_timer()
         cursor = self.con.execute(query, values)
         rows = cursor.fetchall()
@@ -458,7 +344,7 @@ class SqlActivityLogger(commands.Cog):
                     member = server.get_member(value) if server else None
                     value = member.name if member else value
                 if col == 'server_id':
-                    server_obj = self.bot.get_server(value)
+                    server_obj = self.bot.get_guild(value)
                     value = server_obj.name if server_obj else value
                 if col == 'clean_content':
                     value = value.replace('```', '~~~')
@@ -472,10 +358,7 @@ class SqlActivityLogger(commands.Cog):
             result_text = "{} results fetched in {}s\n{}".format(
                 len(rows), round(execution_time, 2), tbl.get_string())
             for p in pagify(result_text):
-                await ctx.send(box(self.dirtyformat(p), 'diff'))
-
-    def save_json(self):
-        self.settings.save_settings()
+                await ctx.send(box(p))
 
     @commands.Cog.listener("on_message_edit")
     async def on_message_edit(self, before, after):
@@ -528,64 +411,10 @@ class SqlActivityLogger(commands.Cog):
         execution_time = timeit.default_timer() - before_time
         self.insert_timing.append(execution_time)
 
-    def get_server_channel_date_msgs(self, server_id, channel_id, start_date_str):
-        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d")
-        start_date = start_date.replace(tzinfo=rpadutils.NA_TZ_OBJ)
-        end_date = start_date + timedelta(days=1)
-
-        values = {
-            'server_id': server_id,
-            'channel_id': channel_id,
-            'start_timestamp': start_date,
-            'end_timestamp': end_date,
-        }
-
-        cursor = self.con.execute(SENIORITY_BACKFILL_QUERY, values)
-        rows = cursor.fetchall()
-        return [(str(r['user_id']), str(r['content'])) for r in rows]
-
-    def dirtyformat(self, text):
-        lines = text.split('\n')
-        output = []
-        for line in lines:
-            if self.dirty_string(line) and line[0] == ' ':
-                line = '-' + line[1:]
-            output.append(line)
-        return '\n'.join(output)
-
-    def dirty_string(self, text):
-        bwpath = os.path.join(str(data_manager.bundled_data_path(self)), "badwords.yaml")
-
-        BADWORDS = yaml.safe_load(open(bwpath).read())
-
-        for swear in BADWORDS:
-            if swear in text:
-                return True
-        return False
-
     def purge(self):
-        before = datetime.datetime.today() - timedelta(days = (7 * 3))
+        before = datetime.datetime.today() - timedelta(days=(7 * 3))
         values = dict(before=before)
+        print('Purging old logs')
         cursor = self.con.execute(DELETE_BEFORE_QUERY, values)
-
-    async def ongoing(self):
-        await self.bot.wait_until_ready()
-
-        while self == self.bot.get_cog('SqlActivityLogger'):
-            try:
-                self.purge()
-            except Exception as ex:
-                print("sqlactivitylog purge failed", ex)
-                traceback.print_exc()
-
-            try:
-                await asyncio.sleep(60 * 60 * 24)
-            except Exception as ex:
-                print("sqlactivitylog data wait loop failed", ex)
-                traceback.print_exc()
-                raise ex
-
-class SQLSettings(CogSettings):
-    def make_default_settings(self):
-        config = {}
-        return config
+        self.con.commit()
+        print('Purged', cursor.rowcount)

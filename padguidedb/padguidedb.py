@@ -7,6 +7,7 @@ import subprocess
 import pymysql
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings
@@ -26,7 +27,7 @@ def is_padguidedb_admin():
 class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = PadGuideDbSettings("padguidedb")
@@ -180,7 +181,7 @@ class PadGuideDb(commands.Cog):
     def do_full_etl(self):
         args = [
             'bash',
-            '/home/tactical0retreat/rpad-cogs-utils/pad_api_data/utils/miru_etl_load.sh',
+            '/home/tactical0retreat/dadguide/dadguide-jobs/run_loader.sh',
         ]
         subprocess.run(args)
 

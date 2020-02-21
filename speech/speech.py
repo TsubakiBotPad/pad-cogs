@@ -4,6 +4,7 @@ from google.cloud import texttospeech
 from google.oauth2 import service_account
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings
@@ -23,17 +24,17 @@ SPOOL_PATH = "data/speech/spool.mp3"
 class Speech(commands.Cog):
     """Speech utilities."""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = SpeechSettings("speech")
 
         self.service = None
-        self.trySetupService()
+        self.try_setup_api()
         self.busy = False
 
-    def trySetupService(self):
-        api_key_file = self.settings.getKeyFile()
+    def try_setup_api(self):
+        api_key_file = self.settings.get_key_file()
         if api_key_file:
             try:
                 credentials = service_account.Credentials.from_service_account_file(api_key_file)
@@ -125,7 +126,7 @@ class Speech(commands.Cog):
     @checks.is_owner()
     async def setkeyfile(self, ctx, api_key_file):
         """Sets the google api key file."""
-        self.settings.setKeyFile(api_key_file)
+        self.settings.set_key_file(api_key_file)
         await ctx.send("done, make sure the key file is in the data/speech directory")
 
 
@@ -136,9 +137,9 @@ class SpeechSettings(CogSettings):
         }
         return config
 
-    def getKeyFile(self):
+    def get_key_file(self):
         return self.bot_settings.get('google_api_key_file')
 
-    def setKeyFile(self, api_key_file):
+    def set_key_file(self, api_key_file):
         self.bot_settings['google_api_key_file'] = api_key_file
         self.save_settings()

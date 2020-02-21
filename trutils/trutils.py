@@ -1,6 +1,7 @@
 import asyncio
-import json
 import re
+
+from redbot.core.bot import Red
 
 try:
     from google.cloud import vision
@@ -11,7 +12,7 @@ from redbot.core import checks, modlog
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings, extract_image_url, get_role
+from rpadutils import CogSettings
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
@@ -23,8 +24,8 @@ https://discordapp.com/oauth2/authorize?client_id=296443771229569026&scope=bot
 
 The following commands might come in handy:
 `^modhelp`       - information on how to set up Miru's moderation commands
-`^userhelp`     - a user-focused guide to Miru's commands
-`^help`             - the full list of Miru commands
+`^userhelp`      - a user-focused guide to Miru's commands
+`^help`          - the full list of Miru commands
 
 If you want to be notified of updates to Miru, suggest features, or ask for help, join the Miru Support server:
 https://discord.gg/zB4QHgn
@@ -57,17 +58,11 @@ General:
 ^serverinfo      stats for the current server
 ^userinfo        stats for a specific user
 
-Events:
-^[events|eventsna]  Prints pending/active PAD events for NA
-^eventsjp           Prints pending/active PAD events for JP
-
 Monster Info:
 ^id        search for a monster by ID, full name, nickname, etc
-^idz       text-only version if id (the legacy version, for mobile users)
 ^helpid    gets more info on how monster lookup works, including the nickname submission link
-^pantheon  given a monster, print all the members of the pantheon
-^pic       prints a link to a a monster image on puzzledragonx, which discord will inline
-^img       same as pic
+^evolist   list all the evolutions for a monster, tabbed
+^pic       display the image for a monster
 
 Profile:
 Miru will store your personal PAD details, and provide them on request.
@@ -90,8 +85,6 @@ Translation:
 MOD_HELP = """
 Bot Moderator Help
 ~~~~~~~~~~~~~~~~~~~~~~
-
-If you need help setting your server up, feel free to ping me (tactical_retreat).
 
 Miru is a set of plugins inside the Red Discord bot, running on discord.py. There
 are some custom ones, but a lot of them are generic to all Red Discord bots, so
@@ -120,9 +113,6 @@ Message logs:
 Discord doesn't save deleted/edited messages anywhere. Using ^exlog you can pull
 messages for a user, channel, or search for a term.
 
-Contrast this with ^logs which uses the Discord API, and can retrieve a significantly
-larger log history, but it reflects what you would see in Discord by scrolling back.
-
 Auto Moderation:
 The ^automod2 command allows you to configure a set of rules (defined as regular expressions)
 that match messages. You can then apply these rules as either a blacklist or a whitelist to
@@ -144,18 +134,7 @@ Custom commands:
 Miru supports three types of custom commands, you can find the list of associated commands via ^help.
 * CustomCommands: Added by server mods, executable by anyone
 * Memes: Added by server mods, executable only by people with a specific Role (configured by mods)
-* Pad: Added by specific users (configured by tactical_retreat) and executable by users in any server
-
-PAD Event announcement:
-You can use the ^padevents commands to configure PAD related announcements for specific channels.
-
-Using '^padevents addchannel NA' you can enable guerrilla announcements for the current channel.
-Using '^padevents addchanneldaily NA' you can enable a dump of the currently active events,
-including things like skillup rate, daily descends, daily guerrillas, etc. This typically ticks
-over twice daily.
-
-Use the rmchannel* commands to disable those subscriptions. ^padevents listchannels shows the
-set of subscriptions for the current server. You can also subscribe to JP events if desired.
+* Pad: Added by Miru PAD admins and executable by users in any server
 
 Limiting command execution:
 The '^p' command can be used to prevent users from executing specific commands on the server,
@@ -164,7 +143,7 @@ in specific channels, or unless they have specific roles. Read the documentation
 
 
 class TrUtils(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = TrUtilsSettings("trutils")
@@ -245,141 +224,11 @@ class TrUtils(commands.Cog):
         await ctx.send(content)
 
     @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def imagecopy(self, ctx, source_channel: discord.TextChannel, dest_channel: discord.TextChannel):
-        self.settings.setImageCopy(ctx.guild.id, source_channel.id, dest_channel.id)
-        await ctx.send('`done`')
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def clearimagecopy(self, ctx, channel: discord.TextChannel):
-        self.settings.clearImageCopy(ctx.guild.id, channel.id)
-        await ctx.send('`done`')
-
-    async def copy_image_to_channel(self, img_url, author_name, channel_name, img_copy_channel_id):
-        embed = discord.Embed()
-        embed.set_footer(text='Posted by {} in {}'.format(author_name, channel_name))
-        embed.set_image(url=img_url)
-
-        try:
-            await self.bot.get_channel(img_copy_channel_id).send(embed=embed)
-        except Exception as e:
-            print('Failed to copy msg to', img_copy_channel_id, e)
-
-    async def copy_attachment_to_channel(self, msg, in_attachment, img_copy_channel_id):
-        embed = discord.Embed()
-        embed.set_footer(text='Posted by {} in {}'.format(msg.author.name, msg.channel.name))
-        embed.set_image(url=in_attachment.url)
-        try:
-            await self.bot.get_channel(img_copy_channel_id).send(embed=embed)
-        except Exception as e:
-            print('Failed to copy attachment to', img_copy_channel_id, e)
-
-    async def copy_embed_to_channel(self, msg, in_embed, img_copy_channel_id):
-        embed = discord.Embed()
-        embed.description = in_embed.url
-        embed.title = in_embed.title if hasattr(in_embed, 'title') else None
-        embed.set_image(url=in_embed.thumbnail.proxy_url)
-        embed.set_footer(text='Posted by {} in {}'.format(msg.author.name, msg.channel.name))
-        try:
-            await self.bot.get_channel(img_copy_channel_id).send(embed=embed)
-        except Exception as e:
-            print('Failed to copy embed to', img_copy_channel_id, e)
-
-    @commands.Cog.listener('on_message')
-    async def on_imgcopy_message(self, message):
-        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
-            return
-
-        img_copy_channel_id = self.settings.getImageCopy(message.guild.id, message.channel.id)
-        if img_copy_channel_id is None:
-            return
-
-        if message.attachments:
-            for a in message.attachments:
-                await self.copy_attachment_to_channel(message, a, img_copy_channel_id)
-            return
-
-        if message.embeds:
-            for e in message.embeds:
-                await self.copy_embed_to_channel(message, e, img_copy_channel_id)
-            return
-
-    @commands.Cog.listener('on_message_edit')
-    async def on_imgcopy_edit_message(self, old_message, new_message):
-        if len(old_message.embeds) == 0 and len(new_message.embeds) > 0:
-            await self.on_imgcopy_message(new_message)
-
-    @commands.Cog.listener('on_message')
-    async def on_imgblacklist_message(self, message):
-        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
-            return
-        img_blacklist = self.settings.getImageTypeBlacklist(message.guild.id, message.channel.id)
-        if img_blacklist is None:
-            return
-
-        if message.attachments:
-            for a in message.attachments:
-                if self._check_labels_for_blacklist(a.url, img_blacklist):
-                    await message.channel.send(inline('Hey, is there a {} in that picture!!!'.format(img_blacklist)))
-                    return
-            return
-
-        if message.embeds:
-            for e in message.embeds:
-                if self._check_labels_for_blacklist(e.thumbnail.proxy_url, img_blacklist):
-                    await message.channel.send(inline('Hey, is there a {} in that picture!!!'.format(img_blacklist)))
-                    return
-            return
-
-    @commands.Cog.listener('on_message_edit')
-    async def on_imgblacklist_edit_message(self, old_message, new_message):
-        if len(old_message.embeds) == 0 and len(new_message.embeds) > 0:
-            await self.on_imgblacklist_message(new_message)
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def bulkimagecopy(self, ctx, source_channel: discord.TextChannel, dest_channel: discord.TextChannel,
-                            number: int):
-        copy_items = []
-        async for message in source_channel.history(limit=number):
-            if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
-                continue
-            img_url = extract_image_url(message)
-            if img_url:
-                copy_items.append((img_url, message.author.name,
-                                   message.channel.name, dest_channel.id))
-
-        copy_items.reverse()
-        for item in copy_items:
-            try:
-                await self.copy_image_to_channel(item[0], item[1], item[2], item[3])
-            except Exception as error:
-                print(error)
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def imagetypeblacklist(self, ctx, channel: discord.TextChannel, image_type: str):
-        self.settings.setImageTypeBlacklist(ctx.guild.id, channel.id, image_type)
-        await ctx.send('`done`')
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def clearimagetypeblacklist(self, ctx, channel: discord.TextChannel, image_type: str):
-        self.settings.clearImageTypeBlacklist(ctx.guild.id, channel.id)
-        await ctx.send('`done`')
-
-    @commands.command()
     @checks.is_owner()
     async def loadallcogs(self, ctx):
         cogs = ['RpadUtils', 'AutoMod2', 'ChannelMod', 'Donations', 'FancySay', 'Memes',
                 'PadBoard', 'Profile', 'Stickers', 'StreamCopy', 'Translate', 'VoiceRole',
-                'Dadguide', 'PadEvents', 'PadGlobal', 'PadInfo', 'PadRem']
+                'Dadguide', 'PadGlobal', 'PadInfo']
 
         owner_cog = self.bot.get_cog('Core')
 
@@ -423,6 +272,7 @@ class TrUtils(commands.Cog):
             "This is an instance of [the Red Discord bot]({}), "
             "use the 'info' command for more info. "
             "The various PAD related cogs were created by tactical_retreat. "
+            "Massive overhaul of the bot to Red v3 by Aradia Megido. "
             "This bot was created for the [PAD Community Server Discord]({}) but "
             "is available for other servers on request."
             "".format(red_repo, rpad_invite))
@@ -463,13 +313,21 @@ class TrUtils(commands.Cog):
     @commands.command(hidden=True)
     @checks.is_owner()
     async def supersecretdebug(self, ctx, *, code):
+        """Executes superdebug and then deletes the message that triggered it.
+
+        This is useful if you want to make the bot appear to say or do something that can't
+        otherwise be easily done.
+        """
         await self._superdebug(ctx, code=code)
         await ctx.message.delete()
 
     @commands.command(hidden=True)
     @checks.is_owner()
     async def superdebug(self, ctx, *, code):
-        """Evaluates code"""
+        """Evaluates code, with a helper for asynchronous results (like ctx.send()).
+
+        If you just want to evaluate variables, repl is a better alternative.
+        """
         await self._superdebug(ctx, code=code)
 
     async def _superdebug(self, ctx, *, code):
@@ -508,124 +366,9 @@ class TrUtils(commands.Cog):
                     result = await result
                 except Exception as e:
                     await ctx.send(box('{}: {}'.format(type(e).__name__, str(e)),
-                                        lang="py"))
+                                       lang="py"))
             else:
                 await ctx.send(result)
-    @commands.command()
-    @checks.is_owner()
-    async def checkimg(self, ctx, img: str):
-        """Classify the given image and display the results."""
-        if img.startswith('https://cdn.discordapp'):
-            await ctx.send(inline('That URL probably wont work because Discord blocks non-browser requests'))
-
-        labels = self._get_image_labels(img)
-        if labels is None:
-            await ctx.send(inline('failed to classify, check your URL'))
-            return
-
-        if len(labels):
-            formatted_labels = map(lambda l: '({} {:.0%})'.format(l.description, l.score), labels)
-            await ctx.send(inline('looks like: ' + ' '.join(formatted_labels)))
-        else:
-            await ctx.send(inline('not sure what that is'))
-
-    def _get_image_labels(self, img: str):
-        # TODO: Fix this.  I don't have a google API
-        client = vision.ImageAnnotatorClient()  # project='rpad-discord')
-        image = vision.types.Image()
-        image.source.image_uri = img
-
-        try:
-            return client.label_detection(image=image).label_annotations
-        except Exception as e:
-            print(str(e))
-            return None
-
-    def _check_labels_for_blacklist(self, img: str, blacklist: str):
-        blacklist = blacklist.lower()
-        labels = self._get_image_labels(img)
-        if labels is None:
-            return False
-        for l in labels:
-            if blacklist in l.description.lower():
-                return True
-        return False
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def addroleall(self, ctx, rolename: str):
-        """Ensures that everyone in the server has a role."""
-        role = get_role(ctx.guild.roles, rolename)
-        guild = ctx.guild
-        members = guild.members
-
-        def ignore_role_fn(m: discord.Member):
-            return role in m.roles
-
-        async def change_role_fn(m: discord.Member):
-            await m.add_roles(role)
-
-        await ctx.send(
-            inline("About to ensure that all {} members in the server have role: {}".format(len(members), role.name)))
-        await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
-        await ctx.send("done")
-
-    @commands.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def rmroleall(self, ctx, rolename: str):
-        """Ensures that everyone in the server does not have a role."""
-        role = get_role(ctx.guild.roles, rolename)
-        guild = ctx.guild
-        members = guild.members
-
-        def ignore_role_fn(m: discord.Member):
-            return role not in m.roles
-
-        async def change_role_fn(m: discord.Member):
-            await m.remove_roles(role)
-
-        await ctx.send(inline(
-            "About to ensure that all {} members in the server do not have role: {}".format(len(members), role.name)))
-        await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
-        await ctx.send("done")
-
-    @commands.command(pass_context=True, no_pm=True)
-    @checks.is_owner()
-    async def addroleallrole(self, ctx, srcrolename: str, newrolename: str):
-        """Ensures that everyone in the with srcrolename server has a newrolename."""
-        srcrole = get_role(ctx.guild.roles, srcrolename)
-        newrole = get_role(ctx.guild.roles, newrolename)
-        guild = ctx.guild
-        members = guild.members
-
-        def ignore_role_fn(m: discord.Member):
-            return srcrole not in m.roles or newrole in m.roles
-
-        async def change_role_fn(m: discord.Member):
-            await m.add_roles(newrole)
-
-        await ctx.send(inline(
-            "About to ensure that all members in the server with role {} have role: {}".format(srcrole.name,
-                                                                                               newrole.name)))
-        await self._do_all_members(ctx, members, ignore_role_fn, change_role_fn)
-        await ctx.send("done")
-
-    async def _do_all_members(self, ctx, members, ignore_role_fn, per_member_asyncfn):
-        changed, ignored, errors = 0, 0, 0
-        for m in members:
-            if ignore_role_fn(m):
-                ignored += 1
-            else:
-                try:
-                    await per_member_asyncfn(m)
-                    await asyncio.sleep(1)
-                    changed += 1
-                except:
-                    errors += 1
-            if (changed + ignored + errors) % 10 == 0:
-                await ctx.send(inline('Status: changed={} ignored={} errors={}'.format(changed, ignored, errors)))
 
     @commands.command()
     @checks.is_owner()
@@ -713,10 +456,9 @@ class TrUtils(commands.Cog):
     async def feedback(self, ctx, *, message: str):
         """Provide feedback on the bot.
 
-        Use this command to provide feedback on the bot, including new features, changes
-        to commands, requests for new ^pad/^which entries, etc.
+        Use this command to provide public feedback on the bot.
         """
-        feedback_channel = self.bot.get_channel(int(self.settings.getFeedbackChannel()))
+        feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
                                   " Join the Miru Server to see any responses (^miruserver).")
 
@@ -725,7 +467,7 @@ class TrUtils(commands.Cog):
     @checks.is_owner()
     async def setfeedbackchannel(self, ctx, channel: discord.TextChannel):
         """Set the feedback destination channel."""
-        self.settings.setFeedbackChannel(channel.id)
+        self.settings.set_feedback_channel(channel.id)
         await ctx.send(inline('Done'))
 
     @commands.command(aliases=['mamafeedback'])
@@ -735,7 +477,7 @@ class TrUtils(commands.Cog):
 
         Use this command to submit feedback on https://pad.protic.site or the JP translations.
         """
-        feedback_channel = self.bot.get_channel(int(self.settings.getBlogFeedbackChannel()))
+        feedback_channel = self.bot.get_channel(int(self.settings.get_blog_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses (^pdx).")
 
     @commands.command()
@@ -743,7 +485,7 @@ class TrUtils(commands.Cog):
     @checks.is_owner()
     async def setblogfeedbackchannel(self, ctx, channel: discord.TextChannel):
         """Set the blog feedback destination channel."""
-        self.settings.setBlogFeedbackChannel(channel.id)
+        self.settings.set_blog_feedback_channel(channel.id)
         await ctx.send(inline('Done'))
 
     @commands.command()
@@ -758,126 +500,33 @@ class TrUtils(commands.Cog):
         except Exception as ex:
             await ctx.send(inline('Error: failed to alter role'))
 
-    @commands.command()
-    @checks.is_owner()
-    async def trackuser(self, ctx, user: discord.User = None):
-        """Track/untrack a user, list track info."""
-        if user:
-            if user.id in self.settings.trackedUsers().keys():
-                self.settings.rmTrackedUser(user.id)
-                await ctx.send(inline('No longer tracking user'))
-            else:
-                self.settings.addTrackedUser(user.id)
-                await ctx.send(inline('Tracking user'))
-                for guild in self.bot.guilds:
-                    member = guild.get_member(user.id)
-                    if member and str(member.status) != 'offline':
-                        self.settings.updateTrackedUser(user.id)
-                        await ctx.send(inline('User currently online'))
-                        break
-        else:
-            msg = 'Tracked users:\n'
-            for user_id, track_info in self.settings.trackedUsers().items():
-                user = await self.bot.fetch_user(user_id)
-                user_name = user.name if user else user_id
-                msg += '\t{} : {}'.format(user_name, json.dumps(track_info))
-
-            await ctx.send(box(msg))
-
-    @commands.Cog.listener('on_member_update')
-    async def on_trackuser_update(self, old_member: discord.Member, new_member: discord.Member):
-        if new_member and str(new_member.status) != 'offline' and new_member.id in self.settings.trackedUsers():
-            self.settings.updateTrackedUser(new_member.id)
-
 
 class TrUtilsSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'servers': {},
-            'tracked_users': {},
         }
         return config
 
-    def servers(self):
+    def guilds(self):
         return self.bot_settings['servers']
 
-    def getServer(self, server_id):
-        servers = self.servers()
+    def get_guild(self, server_id):
+        servers = self.guilds()
         if server_id not in servers:
             servers[server_id] = {}
         return servers[server_id]
 
-    def imagecopy(self, server_id):
-        server = self.getServer(server_id)
-        if 'imgcopy' not in server:
-            server['imgcopy'] = {}
-        return server['imgcopy']
-
-    def setImageCopy(self, server_id, source_channel_id, dest_channel_id):
-        imagecopy = self.imagecopy(server_id)
-        imagecopy[source_channel_id] = dest_channel_id
-        self.save_settings()
-
-    def getImageCopy(self, server_id, channel_id):
-        imagecopy = self.imagecopy(server_id)
-        return imagecopy.get(channel_id)
-
-    def clearImageCopy(self, server_id, channel_id):
-        imagecopy = self.imagecopy(server_id)
-        if channel_id in imagecopy:
-            imagecopy.pop(channel_id)
-            self.save_settings()
-
-    def imagetypeblacklist(self, server_id):
-        key = 'imgtypeblacklist'
-        server = self.getServer(server_id)
-        if key not in server:
-            server[key] = {}
-        return server[key]
-
-    def setImageTypeBlacklist(self, server_id, channel_id, image_type):
-        imagebl = self.imagetypeblacklist(server_id)
-        imagebl[channel_id] = image_type
-        self.save_settings()
-
-    def getImageTypeBlacklist(self, server_id, channel_id):
-        imagebl = self.imagetypeblacklist(server_id)
-        return imagebl.get(channel_id)
-
-    def clearImageTypeBlacklist(self, server_id, channel_id):
-        imagebl = self.imagetypeblacklist(server_id)
-        if channel_id in imagebl:
-            imagebl.pop(channel_id)
-            self.save_settings()
-
-    def getFeedbackChannel(self):
+    def get_feedback_channel(self):
         return self.bot_settings.get('feedback_channel')
 
-    def setFeedbackChannel(self, channel_id: int):
+    def set_feedback_channel(self, channel_id: int):
         self.bot_settings['feedback_channel'] = str(channel_id)
         self.save_settings()
 
-    def getBlogFeedbackChannel(self):
+    def get_blog_feedback_channel(self):
         return self.bot_settings.get('blog_feedback_channel')
 
-    def setBlogFeedbackChannel(self, channel_id: int):
+    def set_blog_feedback_channel(self, channel_id: int):
         self.bot_settings['blog_feedback_channel'] = str(channel_id)
-        self.save_settings()
-
-    def curtimestr(self):
-        return datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-
-    def trackedUsers(self):
-        return self.bot_settings['tracked_users']
-
-    def addTrackedUser(self, user_id):
-        self.trackedUsers()[user_id] = {'last_seen': 'never', 'tracked_on': self.curtimestr()}
-        self.save_settings()
-
-    def updateTrackedUser(self, user_id):
-        self.trackedUsers()[user_id]['last_seen'] = self.curtimestr()
-        self.save_settings()
-
-    def rmTrackedUser(self, user_id):
-        self.trackedUsers().pop(user_id)
         self.save_settings()

@@ -5,13 +5,13 @@ import io
 import json
 import os
 import re
-import datetime
 from collections import defaultdict
 
 import aiohttp
 import prettytable
 from redbot.core import checks, data_manager
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
@@ -58,7 +58,7 @@ commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "shor
 
 
 def is_padglobal_admin_check(ctx):
-    return checks.is_owner() or PADGLOBAL_COG.settings.checkAdmin(ctx.author.id)
+    return checks.is_owner() or PADGLOBAL_COG.settings.check_admin(ctx.author.id)
 
 
 def is_padglobal_admin():
@@ -80,8 +80,6 @@ def monster_no_to_monster(monster_no):
     return padinfo_cog.get_monster_by_no(monster_no)
 
 
-
-
 async def check_enabled(ctx):
     """If the server is disabled, print a warning and return False"""
     if PADGLOBAL_COG.settings.checkDisabled(ctx.message):
@@ -95,7 +93,7 @@ async def check_enabled(ctx):
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
@@ -189,7 +187,7 @@ class PadGlobal(commands.Cog):
         await write_send(mi.all_entries, 'all_entries.csv')
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
-    @commands.command(aliases = ['iddebug'])
+    @commands.command(aliases=['iddebug'])
     @is_padglobal_admin()
     async def debugid(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
@@ -276,7 +274,7 @@ class PadGlobal(commands.Cog):
         await padinfo_cog.refresh_index()
         await ctx.send('finished reload')
 
-    @commands.group(aliases = ['pdg'])
+    @commands.group(aliases=['pdg'])
     @is_padglobal_admin()
     async def padglobal(self, ctx):
         """PAD global custom commands."""
@@ -823,7 +821,7 @@ class PadGlobal(commands.Cog):
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align = "l"
-        for mon in sorted(monsters, key = lambda x: x[1]):
+        for mon in sorted(monsters, key=lambda x: x[1]):
             tbl.add_row(mon)
 
         msg = rpadutils.strip_right_multiline(tbl.get_string())
@@ -1161,10 +1159,6 @@ class PadGlobalSettings(CogSettings):
             'dungeon_guide': {},
             'leader_guide': {},
             'emoji_servers': [],
-            'faq': [],
-            'boards': {},
-            'glossary': {},
-            'dungeon_guide': {},
         }
         return config
 

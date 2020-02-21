@@ -1,10 +1,11 @@
 import json
 import re
-
 from fnmatch import fnmatch
+
 from ply import lex
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, pagify
 
 from rpadutils import rpadutils
@@ -51,6 +52,7 @@ Multiple instance filters
 * type(str)       : Monster type
 * convert(c1, c2) : Convert from color 1 to color 2, accepts any as entry as well
 """
+
 
 @rpadutils.timeout_after(1)
 def filt_timeout(filts, ms):
@@ -156,8 +158,10 @@ def replace_colors_in_text(text: str):
 def clean_name(txt, name):
     return txt.replace(name, '').strip('() ')
 
+
 def re_clean_name(txt, name):
     return clean_name(txt, name)[2:-1]
+
 
 def board_filter(colors):
     def fn(m, colors=colors):
@@ -576,13 +580,6 @@ class SearchConfig(object):
                 lambda m: m.search.weighted_stats and m.search.weighted_stats >= self.weighted)
 
         # Multiple
-        #if self.active:
-        #    filters = []
-        #    for ft in self.active:
-        #        text = ft.lower()
-        #        filters.append(lambda m, t=text: t in m.search.active)
-        #    self.filters.append(self.or_filters(filters))
-
         if self.reactive:
             filters = []
             for ft in self.reactive:
@@ -594,7 +591,7 @@ class SearchConfig(object):
         if self.active:
             filters = []
             for ft in self.active:
-                text = "*"+ft.lower()+"*"
+                text = "*" + ft.lower() + "*"
                 filters.append(lambda m, t=text: fnmatch(m.search.active, t))
                 self.globs.append(text)
             self.gl_filters.extend(filters)
@@ -629,13 +626,6 @@ class SearchConfig(object):
                 filters.append(lambda m, c=text: c in m.search.hascolor)
             self.filters.append(self.or_filters(filters))
 
-        #if self.leader:
-        #    filters = []
-        #    for ft in self.leader:
-        #        text = ft.lower()
-        #        filters.append(lambda m, t=text: t in m.search.leader)
-        #    self.filters.append(self.or_filters(filters))
-
         if self.releader:
             filters = []
             for ft in self.releader:
@@ -647,7 +637,7 @@ class SearchConfig(object):
         if self.leader:
             filters = []
             for ft in self.leader:
-                text = "*"+ft.lower()+"*"
+                text = "*" + ft.lower() + "*"
                 filters.append(lambda m, t=text: fnmatch(m.search.leader, t))
                 self.globs.append(text)
             self.gl_filters.extend(filters)
@@ -695,7 +685,8 @@ class SearchConfig(object):
         try:
             return filt_timeout(self.re_filters, ms)
         except TimeoutError:
-            print("Timeout with patttern: \"{}\" by user {} ({})".format('", "'.join(self.regeces), ctx.author.name, ctx.author.id))
+            print("Timeout with patttern: \"{}\" by user {} ({})".format(
+                '", "'.join(self.regeces), ctx.author.name, ctx.author.id))
             raise commands.UserFeedbackCheckFailure("Regex took too long to compile.  Stop trying to break the bot")
         except re.error as e:
             raise commands.UserFeedbackCheckFailure("Regex search threw error '{}'".format(e.msg))
@@ -704,7 +695,8 @@ class SearchConfig(object):
         try:
             return filt_timeout(self.gl_filters, ms)
         except TimeoutError:
-            print("Timeout with patttern: \"{}\" by user {} ({})".format('", "'.join(self.globs), ctx.author.name, ctx.author.id))
+            print("Timeout with patttern: \"{}\" by user {} ({})".format(
+                '", "'.join(self.globs), ctx.author.name, ctx.author.id))
             raise commands.UserFeedbackCheckFailure("Glob took too long to compile.  Stop trying to break the bot")
 
     def or_filters(self, filters):
@@ -727,7 +719,8 @@ class SearchConfig(object):
 class PadSearch(commands.Cog):
     """PAD data searching."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
 
     @commands.command()

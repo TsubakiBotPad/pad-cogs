@@ -1,133 +1,138 @@
-import time
-import re
 import asyncio
+import re
+import time
 import traceback
 from datetime import timedelta, datetime
 
 import pytz
-import dateutil.tz.tz as tzt
-
 from redbot.core import commands, Config
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
-
-from rpadutils import CogSettings
 
 tz_lookup = dict([(pytz.timezone(x).localize(datetime.datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])
-
 
 time_at_regeces = [
     r'^\s*(?P<year>\d{4})[-/](?P<month>\d+)[-/](?P<day>\d+) (?P<hour>\d+):(?P<minute>\d\d) ?(?P<merid>pm|am)? ?(?P<input>.*)$',
     r'^\s*(?P<year>\d{4})[-/](?P<month>\d+)[-/](?P<day>\d+) ?(?P<input>.*)$',
     r'^\s*(?P<month>\d+)[-/](?P<day>\d+) ?(?P<input>.*)$',
-    r'^\s*(?P<hour>\d+):(?P<minute>\d\d) ?(?P<merid>pm|am)? ?(?P<input>.*)$',
+    r'^\s*(?P<hour>\d+):(?P<minute>\d\d) ?(?P<merid>\d?pm|am)? ?(?P<input>.*)$',
 ]
 
 time_in_regeces = [
     r'((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$'
 ]
 
-
 DT_FORMAT = "%b %-d, %Y at %-I:%M %p"
 
-TZ_NAMES = {
 
-}
 class TimeCog(commands.Cog):
     """Utilities pertaining to time"""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = Config.get_conf(self, identifier=7173306)
-        self.config.register_user(reminders = [], tz = '')
+        self.config.register_user(reminders=[], tz='')
 
         self.bot = bot
 
-    @commands.group(aliases=['remindmeat', 'remindmein', 'rmdme', 'rmme'],invoke_without_command=True)
+    @commands.group(aliases=['remindmeat', 'remindmein'], invoke_without_command=True)
     async def remindme(self, ctx, *, time):
         """Reminds you to do something at a specified time
+
         [p]remindme 2020-04-13 06:12 Do something!
         [p]remindme 5 weeks Do something!
         [p]remindme 4:13 PM Do something!
         [p]remindme 2020-05-03 Do something!
-        [p]remindme 04-13 Do something!"""
+        [p]remindme 04-13 Do something!
+        """
         if time is None:
             return
-        utz_str = await self.config.user(ctx.author).tz()
-        if not utz_str:
-            await ctx.send("Please configure your timezone with `{0.clean_prefix}remindme settimezone` first.".format(ctx))
-            return
-        D_TZ = tzStrToObj(utz_str)
+
+        user_tz_str = await self.config.user(ctx.author).tz()
+        user_timezone = tzstr_to_tz(user_tz_str or 'UTC')
 
         for ar in time_at_regeces:
-            gs = re.search(ar, time, re.IGNORECASE)
-            if not gs: continue
-            gs = gs.groupdict()
-            tz = D_TZ
-            now = datetime.datetime.now(tz=tz)
-            defaults = dict(
-                year   = now.year,
-                month  = now.month,
-                day    = now.day,
-                hour   = now.hour,
-                minute = now.minute,
-                merid  = 'NONE',
-            )
-            defaults.update({k:v for k,v in gs.items() if v})
+            match = re.search(ar, time, re.IGNORECASE)
+            if not match:
+                continue
+            match = match.groupdict()
+
+            if not user_tz_str:
+                await ctx.send(
+                    "Please configure your timezone with `{0.clean_prefix}remindme settimezone` first.".format(ctx))
+                return
+
+            now = datetime.datetime.now(tz=user_timezone)
+            defaults = {
+                'year': now.year,
+                'month': now.month,
+                'day': now.day,
+                'hour': now.hour,
+                'minute': now.minute,
+                'merid': 'NONE'
+            }
+            defaults.update({k: v for k, v in match.items() if v})
             input = defaults.pop('input')
             for key in defaults:
                 if key not in ['merid']:
                     defaults[key] = int(defaults[key])
-            if  defaults['merid'] == 'pm' and defaults['hour'] <= 12:
+            if defaults['merid'] == 'pm' and defaults['hour'] <= 12:
                 defaults['hour'] += 12
             elif defaults['merid'] == 'NONE' and defaults['hour'] < now.hour:
                 defaults['hour'] += 12
             if defaults['hour'] >= 24:
                 defaults['day'] += int(defaults['hour'] // 24)
-                defaults['hour'] = defaults['hour']%24
+                defaults['hour'] = defaults['hour'] % 24
             del defaults['merid']
             try:
-                rmtime = D_TZ.localize(datetime.datetime(**defaults))
+                rmtime = user_timezone.localize(datetime.datetime(**defaults))
             except ValueError as e:
                 await ctx.send(inline(str(e).capitalize()))
                 return
             if rmtime < now:
                 rmtime += timedelta(days=1)
-            rmtime = rmtime.astimezone(pytz.utc).replace(tzinfo = None)
+            rmtime = rmtime.astimezone(pytz.utc).replace(tzinfo=None)
             break
         else:
             for ir in time_in_regeces:
-                gs = re.search(ir, time, re.IGNORECASE)
-                if not gs:
+                match = re.search(ir, time, re.IGNORECASE)
+                if not match:
                     continue
-                tinstrs, input = gs.groups()
+                tinstrs, input = match.groups()
                 rmtime = datetime.datetime.utcnow()
                 try:
                     rmtime += tin2tdelta(tinstrs)
                 except OverflowError:
-                    raise commands.UserFeedbackCheckFailure(inline("That's way too far in the future!  Please keep it in your lifespan!"))
+                    raise commands.UserFeedbackCheckFailure(
+                        inline("That's way too far in the future!  Please keep it in your lifespan!"))
                 break
             else:
                 raise commands.UserFeedbackCheckFailure("Invalid time string: " + time)
+
         if rmtime < (datetime.datetime.utcnow() - timedelta(seconds=1)):
             raise commands.UserFeedbackCheckFailure(inline("You can't set a reminder in the past!  If only..."))
+
         async with self.config.user(ctx.author).reminders() as rms:
             rms.append((rmtime.timestamp(), input))
-        await ctx.send("I will tell you "+formatrm(rmtime, input, D_TZ))
 
+        response = "I will tell you " + format_rm_time(rmtime, input, user_timezone)
+        if not user_tz_str:
+            response += 'configure your timezone with `{0.clean_prefix}remindme settimezone` first.'.format(ctx)
+        await ctx.send(response)
 
-    @remindme.command(aliases = ["reminders","rms"])
+    @remindme.command(aliases=["list"])
     async def get(self, ctx):
         """Get a list of all pending reminders"""
         rlist = sorted((await self.config.user(ctx.author).reminders()), key=lambda x: x[0])
         if not rlist:
             await ctx.send(inline("You have no pending reminders!"))
             return
-        tz = tzStrToObj(await self.config.user(ctx.author).tz())
+        tz = tzstr_to_tz(await self.config.user(ctx.author).tz())
         o = []
         for c, (timestamp, input) in enumerate(rlist):
-            o.append(str(c+1)+": "+formatrm(datetime.datetime.fromtimestamp(float(timestamp)), input, tz))
-        o = "```\n"+'\n'.join(o)+"\n```"
+            o.append(str(c + 1) + ": " + format_rm_time(datetime.datetime.fromtimestamp(float(timestamp)), input, tz))
+        o = "```\n" + '\n'.join(o) + "\n```"
         await ctx.send(o)
 
     @remindme.command()
@@ -138,7 +143,7 @@ class TimeCog(commands.Cog):
             await ctx.send(inline("There is no reminder #{}".format(no)))
             return
         async with self.config.user(ctx.author).reminders() as rms:
-            rms.remove(rlist[no-1])
+            rms.remove(rlist[no - 1])
         await ctx.send(inline("Done"))
 
     @remindme.command()
@@ -147,15 +152,15 @@ class TimeCog(commands.Cog):
         await self.config.user(ctx.author).reminders.set([])
         await ctx.send(inline("Done"))
 
-    @remindme.command(aliases = ['settz'])
+    @remindme.command(aliases=['settz'])
     async def settimezone(self, ctx, tzstr):
         """Set your timezone."""
         try:
-            v = tzStrToObj(tzstr)
+            v = tzstr_to_tz(tzstr)
             await self.config.user(ctx.author).tz.set(tzstr)
-            await ctx.send(inline("Set timezone to {} ({})".format(str(v), gettzname(v))))
+            await ctx.send(inline("Set timezone to {} ({})".format(str(v), get_tz_name(v))))
         except IOError as e:
-            await ctx.send(inline("Invalid tzstr: "+tzstr))
+            await ctx.send(inline("Invalid tzstr: " + tzstr))
 
     async def reminderloop(self):
         await self.bot.wait_until_ready()
@@ -166,14 +171,14 @@ class TimeCog(commands.Cog):
             for u in urs:
                 for rm in urs[u]['reminders']:
                     if datetime.datetime.fromtimestamp(float(rm[0])) < now:
-                        await self.bot.get_user(u).send(rm[1])
                         async with self.config.user(self.bot.get_user(u)).reminders() as rms:
                             rms.remove(rm)
+                        await self.bot.get_user(u).send(rm[1])
 
             try:
-                await asyncio.sleep(60)
+                await asyncio.sleep(10)
             except Exception as ex:
-                print("sqlactivitylog data wait loop failed", ex)
+                print("remindme wait loop failed", ex)
                 traceback.print_exc()
                 raise ex
 
@@ -181,26 +186,26 @@ class TimeCog(commands.Cog):
     async def time(self, ctx, *, tz: str):
         """Displays the current time in the supplied timezone"""
         try:
-            tz_obj = tzStrToObj(tz)
+            tz_obj = tzstr_to_tz(tz)
         except Exception as e:
             await ctx.send("Failed to parse tz: " + tz)
             return
 
         now = datetime.datetime.now(tz_obj)
-        msg = "The time in " + now.strftime('%Z') + " is " + fmtTimeShort(now).strip()
+        msg = "The time in " + now.strftime('%Z') + " is " + fmt_time_short(now).strip()
         await ctx.send(inline(msg))
 
     @commands.command()
     async def timeto(self, ctx, tz: str, *, time: str):
         """Compute the time remaining until the [timezone] [time]"""
         try:
-            tz_obj = tzStrToObj(tz)
+            tz_obj = tzstr_to_tz(tz)
         except Exception as e:
             await ctx.send("Failed to parse tz: " + tz)
             return
 
         try:
-            time_obj = timeStrToObj(time)
+            time_obj = timestr_to_time(time)
         except Exception as e:
             await ctx.send("Failed to parse time: " + time)
             return
@@ -212,12 +217,12 @@ class TimeCog(commands.Cog):
             req_time = req_time + timedelta(days=1)
         delta = req_time - now
 
-        msg = "There are " + fmtHrsMins(delta.seconds).strip() + \
+        msg = "There are " + fmt_hrs_mins(delta.seconds).strip() + \
               " until " + time.strip() + " in " + now.strftime('%Z')
         await ctx.send(inline(msg))
 
 
-def timeStrToObj(timestr):
+def timestr_to_time(timestr):
     timestr = timestr.replace(" ", "")
     try:
         return time.strptime(timestr, "%H:%M")
@@ -231,20 +236,20 @@ def timeStrToObj(timestr):
         return time.strptime(timestr, "%I%p")
     except:
         pass
-    raise commands.UserFeedbackCheckFailure("Invalid Time: "+timestr)
+    raise commands.UserFeedbackCheckFailure("Invalid Time: " + timestr)
 
 
-def fmtHrsMins(seconds):
+def fmt_hrs_mins(seconds):
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     return '{}hrs {}mins'.format(int(hours), int(minutes))
 
 
-def fmtTimeShort(dt):
+def fmt_time_short(dt):
     return dt.strftime("%I:%M %p")
 
 
-def tzStrToObj(tz):
+def tzstr_to_tz(tz):
     tz = tz.lower().strip()
     if tz in ['edt', 'est', 'et']:
         tz = 'America/New_York'
@@ -269,7 +274,8 @@ def tzStrToObj(tz):
     try:
         return pytz.timezone(tz)
     except Exception as e:
-        raise commands.UserFeedbackCheckFailure("Invalid timezone: "+tz)
+        raise commands.UserFeedbackCheckFailure("Invalid timezone: " + tz)
+
 
 def tin2tdelta(tinstr):
     tins = re.findall(r'(-?\d+) ?([a-z]+) ?', tinstr.lower())
@@ -288,12 +294,16 @@ def tin2tdelta(tinstr):
             elif unit[0] == 'y':
                 o += timedelta(days=tin * 365)
             elif unit[0] == 's':
-                raise commands.UserFeedbackCheckFailure("We aren't exact enough to use seconds! If you need that precision, try this: https://www.timeanddate.com/timer/")
+                raise commands.UserFeedbackCheckFailure(
+                    "We aren't exact enough to use seconds! If you need that precision, try this: https://www.timeanddate.com/timer/")
             else:
-                raise commands.UserFeedbackCheckFailure(inline("Invalid unit: {}\nPlease use minutes, hours, days, weeks, months, or, if you're feeling especially zealous, years.".format(unit)))
+                raise commands.UserFeedbackCheckFailure(inline(
+                    "Invalid unit: {}\nPlease use minutes, hours, days, weeks, months, or, if you're feeling especially zealous, years.".format(
+                        unit)))
         except OverflowError:
             raise commands.UserFeedbackCheckFailure(inline("Come on... Be reasonable :/"))
     return o
+
 
 def ydhm(seconds):
     y = seconds // (60 * 60 * 24 * 365)
@@ -303,30 +313,32 @@ def ydhm(seconds):
     h = seconds // (60 * 60)
     seconds %= (60 * 60)
     m = seconds // (60)
-    y,d,h,m = [int(ydhm) for ydhm in (y,d,h,m)]
+    y, d, h, m = [int(ydhm) for ydhm in (y, d, h, m)]
     ydhm = []
-    if y: ydhm.append("{} yr" .format(y) + "s" if y>1 else '')
-    if d: ydhm.append("{} day".format(d) + "s" if d>1 else '')
-    if h: ydhm.append("{} hr" .format(h) + "s" if h>1 else '')
-    if m: ydhm.append("{} min".format(m) + "s" if m>1 else '')
+    if y: ydhm.append("{} yr".format(y) + "s" if y > 1 else '')
+    if d: ydhm.append("{} day".format(d) + "s" if d > 1 else '')
+    if h: ydhm.append("{} hr".format(h) + "s" if h > 1 else '')
+    if m: ydhm.append("{} min".format(m) + "s" if m > 1 else '')
     return " ".join(ydhm)
 
-def formatrm(rmtime, input, D_TZ):
+
+def format_rm_time(rmtime, input, D_TZ):
     return "'{}' on {} {} ({}{})".format(
         input,
         D_TZ.fromutc(rmtime).strftime(DT_FORMAT),
-        gettzname(D_TZ, rmtime),
-        ydhm((rmtime-datetime.datetime.utcnow()).total_seconds()+2),
-        " from now" if (rmtime-datetime.datetime.utcnow()).total_seconds() > 60 else "<1 minute from now"
+        get_tz_name(D_TZ, rmtime),
+        ydhm((rmtime - datetime.datetime.utcnow()).total_seconds() + 2),
+        " from now" if (rmtime - datetime.datetime.utcnow()).total_seconds() > 60 else "<1 minute from now"
     )
 
-def gettzname(tz, dt=None):
+
+def get_tz_name(tz, dt=None):
     if dt is None:
         dt = datetime.datetime.utcnow()
     else:
-        dt = dt.replace(tzinfo = None)
-    tzname = tz.tzname(datetime.datetime(year=dt.year,month=1,day=1))
+        dt = dt.replace(tzinfo=None)
+    tzname = tz.tzname(datetime.datetime(year=dt.year, month=1, day=1))
     tznowname = tz.tzname(dt)
     if tzname != tznowname and tznowname:
-        return "{} ({})".format(tzname,tznowname)
+        return "{} ({})".format(tzname, tznowname)
     return tzname

@@ -11,6 +11,7 @@ import prettytable
 import pytz
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.utils.chat_formatting import inline, pagify, box
 
@@ -107,7 +108,7 @@ WHERE record_date = ?
 class Seniority(commands.Cog):
     """Automatically promote people based on activity."""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = SenioritySettings("seniority")
@@ -156,41 +157,6 @@ class Seniority(commands.Cog):
         await self.queryAndPrint(ctx, ctx.guild, query, [])
 
     @seniority.command()
-    @commands.guild_only()
-    @checks.is_owner()
-    async def backfill(self, ctx, *, now_date_str: str):
-        sqllog_cog = self.bot.get_cog('SqlActivityLogger')
-        server = ctx.guild
-
-        await ctx.send(inline('Deleting any existing points on ' + now_date_str))
-        async with self.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(DELETE_DAY_QUERY, now_date_str, server.id)
-        await ctx.send(inline('Done deleting existing points'))
-
-        for channel_id in self.settings.channels(server.id).keys():
-            channel = self.bot.get_channel(int(channel_id))
-            if channel is None:
-                continue
-            await ctx.send(inline('About to process channel: ' + channel.name))
-            channel_msgs = sqllog_cog.get_server_channel_date_msgs(
-                server.id, channel.id, now_date_str)
-            await ctx.send(inline('Retrieved {} messages'.format(len(channel_msgs))))
-
-            points = 0
-            for user_msg in channel_msgs:
-                member = server.get_member(int(user_msg[0]))
-                if member is None:
-                    continue
-                msg_content = user_msg[1]
-                new_points = await self.process_message(
-                    server, channel, member, now_date_str, msg_content)
-                points += new_points or 0
-            await ctx.send(inline('{} points were earned'.format(points)))
-
-        await ctx.send(inline('Finished with backfill'))
-
-    @seniority.command()
     @checks.is_owner()
     async def inserttiming(self, ctx):
         size = len(self.insert_timing)
@@ -222,7 +188,6 @@ class Seniority(commands.Cog):
         msg += '\n\tremove_lookback: {}'.format(self.settings.remove_lookback(server_id))
         msg += '\n\n'
         msg += 'Acceptability:'
-        msg += '\n\tignore_impolite: {}'.format(self.settings.ignore_impolite(server_id))
         msg += '\n\tignore_commands: {}'.format(self.settings.ignore_commands(server_id))
         msg += '\n\tignore_emoji: {}'.format(self.settings.ignore_emoji(server_id))
         msg += '\n\tignore_mentions: {}'.format(self.settings.ignore_mentions(server_id))
@@ -606,15 +571,6 @@ class Seniority(commands.Cog):
 
     @acceptable.command()
     @commands.guild_only()
-    async def togglepolite(self, ctx):
-        """Toggle application of the politeness detector."""
-        server_id = ctx.guild.id
-        new_setting = not self.settings.ignore_commands(server_id)
-        self.settings.set_ignore_impolite(server_id, new_setting)
-        await ctx.send(inline('ignore_commands set to {}.'.format(new_setting)))
-
-    @acceptable.command()
-    @commands.guild_only()
     async def togglecommands(self, ctx):
         """Toggle rejection of bot commands."""
         server_id = ctx.guild.id
@@ -667,9 +623,6 @@ class Seniority(commands.Cog):
 
     def check_acceptable(self, server: discord.Guild, text: str):
         server_id = server.id
-        # Disabled
-        # self.settings.ignore_impolite(server_id)
-
         if self.settings.ignore_commands(server_id):
             if rpadutils.get_prefix(self.bot, server, text):
                 return False, text, 'Ignored command'
@@ -806,7 +759,7 @@ class Seniority(commands.Cog):
                     member = server.get_member(int(value)) if server else None
                     value = member.name if member else value
                 elif col == 'server_id':
-                    server_obj = self.bot.get_server(int(value))
+                    server_obj = self.bot.get_guild(int(value))
                     value = server_obj.name if server_obj else value
                 elif cidx + 1 == len(columns):
                     grand_total += force_number(value)
@@ -927,7 +880,6 @@ class SenioritySettings(CogSettings):
     def utterances(self, server_id: str):
         server = self.server(server_id)
         utterances = ensure_map(server, 'utterances', {})
-        ensure_map(utterances, 'ignore_impolite', False)
         ensure_map(utterances, 'ignore_commands', True)
         ensure_map(utterances, 'ignore_emoji', True)
         ensure_map(utterances, 'ignore_mentions', True)
@@ -935,9 +887,6 @@ class SenioritySettings(CogSettings):
         ensure_map(utterances, 'min_length', 30)
         ensure_map(utterances, 'min_words', 5)
         return utterances
-
-    def ignore_impolite(self, server_id: str):
-        return self.utterances(server_id)['ignore_impolite']
 
     def ignore_commands(self, server_id: str):
         return self.utterances(server_id)['ignore_commands']
@@ -956,10 +905,6 @@ class SenioritySettings(CogSettings):
 
     def min_words(self, server_id: str):
         return self.utterances(server_id)['min_words']
-
-    def set_ignore_impolite(self, server_id: str, ignore: bool):
-        self.utterances(server_id)['ignore_impolite'] = ignore
-        self.save_settings()
 
     def set_ignore_commands(self, server_id: str, ignore: bool):
         self.utterances(server_id)['ignore_commands'] = ignore

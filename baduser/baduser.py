@@ -8,16 +8,16 @@ from collections import deque
 
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
-import rpadutils
 from rpadutils import CogSettings, get_role, get_role_from_id
 
 LOGS_PER_USER = 10
 
 
 class BadUser(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -225,8 +225,6 @@ class BadUser(commands.Cog):
     async def report(self, ctx):
         """Displays a report of information on bad users for the server."""
         cur_server = ctx.guild
-        global_banned_users = await self._load_banned_users()
-
         user_id_to_ban_server = defaultdict(list)
         user_id_to_baduser_server = defaultdict(list)
         error_messages = list()
@@ -260,10 +258,8 @@ class BadUser(commands.Cog):
             local_strikes = self.settings.getUserStrikes(cur_server.id, member.id)
             other_baduser_servers = user_id_to_baduser_server[member.id]
             other_banned_servers = user_id_to_ban_server[member.id]
-            is_globally_banned = member.id in global_banned_users
 
-            if not len(local_strikes) and not len(other_baduser_servers) and not len(
-                    other_banned_servers) and not is_globally_banned:
+            if not len(local_strikes) and not len(other_baduser_servers) and not len(other_banned_servers):
                 continue
 
             tmp_msg = "{} ({})".format(member.name, member.id)
@@ -271,8 +267,6 @@ class BadUser(commands.Cog):
                 tmp_msg += "\n\tbad user in {} other servers".format(len(other_baduser_servers))
             if other_banned_servers:
                 tmp_msg += "\n\tbanned from {} other servers".format(len(other_banned_servers))
-            if is_globally_banned:
-                tmp_msg += "\n\tin global ban list!"
 
             if len(local_strikes):
                 tmp_msg += "\n\t{} strikes in this server".format(len(local_strikes))
@@ -347,33 +341,6 @@ class BadUser(commands.Cog):
                 msg += '\n\t\tLocal banned user: {} ({}) for: {}'.format(
                     member.name, member.id, local_bans[member.id])
         return msg
-
-    async def _load_banned_users(self):
-        if True:
-            # TODO: This thing is broken
-            return []
-
-        ban_file_path = 'data/baduser/global_ban_list.txt'
-        url = 'https://bans.discordlist.net/api'
-        expiry_secs = 60 * 60 * 24  # one day expiry
-        payload = {
-            "token": "1JemcZsNtk",
-        }
-
-        if rpadutils.should_download(ban_file_path, expiry_secs):
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=payload) as resp:
-                    ban_text = await resp.text()
-                    rpadutils.writePlainFile(ban_file_path, ban_text)
-        else:
-            ban_text = rpadutils.readPlainFile(ban_file_path)
-
-        bans = []
-        for ban in ban_text.split(','):
-            ban = ban.strip('[]"')
-            bans.append(ban)
-
-        return bans
 
     @commands.Cog.listener('on_message')
     async def mod_message(self, message):
@@ -629,10 +596,10 @@ class BadUserSettings(CogSettings):
     def bannedUsers(self):
         return self.bot_settings['banned_users']
 
-    def addBannedUser(self, user_id: str, reason: str):
+    def addBannedUser(self, user_id: int, reason: str):
         self.bannedUsers()[user_id] = reason
         self.save_settings()
 
-    def rmBannedUser(self, user_id: str):
+    def rmBannedUser(self, user_id: int):
         self.bannedUsers().pop(user_id, None)
         self.save_settings()

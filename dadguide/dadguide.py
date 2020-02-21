@@ -23,6 +23,7 @@ import pytz
 import romkan
 from redbot.core import checks, data_manager
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
@@ -52,7 +53,7 @@ DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
 
 
 class Dadguide(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self._is_ready = asyncio.Event(loop=self.bot.loop)
@@ -135,8 +136,8 @@ class Dadguide(commands.Cog):
         await self.download_and_refresh_nicknames()
 
     async def download_and_refresh_nicknames(self):
-        if self.settings.dataFile():
-            shutil.copy2(self.settings.dataFile(), DB_DUMP_FILE)
+        if self.settings.data_file():
+            shutil.copy2(self.settings.data_file(), DB_DUMP_FILE)
         else:
             await self._download_files()
         await self._download_override_files()
@@ -222,7 +223,7 @@ class Dadguide(commands.Cog):
     @checks.is_owner()
     async def setdatafile(self, ctx, *, data_file):
         """Set a local path to dadguide data instead of downloading it."""
-        self.settings.setDataFile(data_file)
+        self.settings.set_data_file(data_file)
         await ctx.send(inline('Done'))
 
 
@@ -233,10 +234,10 @@ class DadguideSettings(rpadutils.CogSettings):
         }
         return config
 
-    def dataFile(self):
+    def data_file(self):
         return self.bot_settings['data_file']
 
-    def setDataFile(self, data_file):
+    def set_data_file(self, data_file):
         self.bot_settings['data_file'] = data_file
         self.save_settings()
 
@@ -271,14 +272,6 @@ class EvoType(Enum):
     Evo = 1
     UvoAwoken = 2
     UuvoReincarnated = 3
-
-
-class DungeonType(Enum):
-    Unknown = -1
-    Normal = 0
-    CoinDailyOther = 1
-    Technical = 2
-    Etc = 3
 
 
 class Server(Enum):
@@ -390,7 +383,6 @@ class DadguideDatabase(object):
         cursor = self._con.cursor()
         cursor.execute("SELECT MAX(monster_id) FROM monsters WHERE monster_id < 10000")
         return cursor.fetchone()['MAX(monster_id)']
-
 
     def _select_one_entry_by_pk(self, pk, d_type):
         return self._query_one(
@@ -993,7 +985,7 @@ class DgMonster(DadguideItem):
         offset = 1
         while next is None and self.monster_no + offset <= self._database._max_id():
             next = self._database.get_monster(self.monster_no + offset)
-            offset+=1
+            offset += 1
         return next
 
     @property
@@ -1002,7 +994,7 @@ class DgMonster(DadguideItem):
         offset = 1
         while next is None and self.monster_no - offset >= 1:
             next = self._database.get_monster(self.monster_no - offset)
-            offset+=1
+            offset += 1
         return next
 
 
@@ -1397,7 +1389,7 @@ class MonsterIndex(object):
         matches = set()
         for nickname, m in self.all_entries.items():
             if (all(map(lambda x: x in m.name_na.lower(), query.split())) or
-                all(map(lambda x: x in m.name_jp.lower(), query.split()))):
+                    all(map(lambda x: x in m.name_jp.lower(), query.split()))):
                 matches.add(m)
         if len(matches):
             return self.pickBestMonster(matches), None, 'All word match on full name, max of {}'.format(

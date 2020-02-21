@@ -4,6 +4,7 @@ import re
 
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings, clean_global_mentions
@@ -47,7 +48,7 @@ def roll(chance: int):
 class Donations(commands.Cog):
     """Manages donations and perks."""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = DonationsSettings("donations")
@@ -295,7 +296,7 @@ class Donations(commands.Cog):
 
         msg += '\n\nDisabled servers:'
         for server_id in disabled_servers:
-            server = self.bot.get_server(int(server_id))
+            server = self.bot.get_guild(int(server_id))
             msg += '\n\t{} ({})'.format(server.name if server else 'unknown', server_id)
 
         msg += '\n\n{} personal commands are set'.format(len(cmds))

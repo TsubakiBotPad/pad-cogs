@@ -1,27 +1,26 @@
 import asyncio
 import concurrent.futures
+import errno
 import inspect
 import json
 import os
-import sys
 import re
+import signal
 import time
 import unicodedata
-import urllib
 from functools import wraps
-import errno
-import signal
 
 import aiohttp
 import backoff
 import pytz
 from discord.ext.commands import CommandNotFound
 from redbot.core import commands, data_manager
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 
 class RpadUtils(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -30,28 +29,6 @@ class RpadUtils(commands.Cog):
 
         if author.bot:
             return False
-        """
-        mod_cog = self.bot.get_cog('Mod')
-
-        if not isinstance(message.channel, discord.abc.PrivateChannel):
-            guild = message.guild
-            names = (self.bot.settings.get_server_admin(
-                guild), self.bot.settings.get_server_mod(guild))
-            results = map(
-                lambda name: discord.utils.get(author.roles, name=name),
-                names)
-            for r in results:
-                if r is not None:
-                    return True
-
-        if mod_cog is not None:
-            if not isinstance(message.channel, discord.abc.PrivateChannel):
-                if message.guild.id in mod_cog.ignore_list["SERVERS"]:
-                    return False
-
-                if message.channel.id in mod_cog.ignore_list["CHANNELS"]:
-                    return False
-        """
         return True
 
 
@@ -143,7 +120,7 @@ def get_role_from_id(bot, guild, roleid):
 
 
 def get_server_from_id(bot, serverid):
-    return discord.utils.get(bot.guilds, id=serverid)
+    return discord.utils.get(bot.get_guild, id=serverid)
 
 
 def normalizeServer(server):
@@ -219,12 +196,6 @@ def readPlainFile(file_path):
         return f.read()
 
 
-def makePlainRequest(file_url):
-    response = urllib.request.urlopen(file_url)
-    data = response.read()  # a `bytes` object
-    return data.decode('utf-8')
-
-
 async def makeAsyncPlainRequest(file_url):
     async with aiohttp.ClientSession() as session:
         async with session.get(file_url) as resp:
@@ -289,10 +260,6 @@ class Menu():
     # for use as an action
     async def reaction_delete_message(self, bot, ctx, message):
         await message.delete()
-
-    #     def perms(self, ctx):
-    #         user = ctx.guild.get_member(int(self.bot.user.id))
-    #         return ctx.channel.permissions_for(user)
 
     async def custom_menu(self, ctx, emoji_to_message, selected_emoji, **kwargs):
         """Creates and manages a new menu
@@ -432,45 +399,6 @@ def char_to_emoji(c):
     base = ord('\N{REGIONAL INDICATOR SYMBOL LETTER A}')
     adjustment = ord(c) - ord('a')
     return chr(base + adjustment)
-
-
-##############################
-# Hack to fix discord.py
-##############################
-# TODO: check if this is still needed
-# class UserConverter2(converter.IDConverter):
-#     @asyncio.coroutine
-#     def convert(self, ctx, argument):
-#         message = ctx.message
-#         bot = ctx.bot
-#         match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
-#         server = message.guild
-#         result = None
-#         if match is None:
-#             # not a mention...
-#             if server:
-#                 result = server.get_member_named(argument)
-#             else:
-#                 result = _get_from_servers(bot, 'get_member_named', argument)
-#         else:
-#             user_id = match.group(1)
-#             if server:
-#                 result = yield from bot.fetch_user(int(user_id))
-#             else:
-#                 result = _get_from_servers(bot, 'get_member', user_id)
-#
-#         if result is None:
-#             raise BadArgument('Member "{}" not found'.format(argument))
-#
-#         return result
-#
-#
-# converter.UserConverter = UserConverter2
-
-
-##############################
-# End hack to fix discord.py
-##############################
 
 
 def fix_emojis_for_server(emoji_list, msg_text):
@@ -614,17 +542,6 @@ class CogSettings(object):
     def make_default_settings(self):
         return {}
 
-    # TODO: maybe centralize get_server / get_server_channel stuff since i do that everywhere
-    def getServerSettings(self, server_id):
-        if 'cmd_whitelist_blacklist' not in self.bot_settings:
-            self.bot_settings['cmd_whitelist_blacklist'] = {}
-
-        settings = self.bot_settings['cmd_whitelist_blacklist']
-        if server_id not in settings:
-            settings[server_id] = {}
-
-        return settings[server_id]
-
 
 def get_prefix(bot, server, text):
     for p in bot.settings.get_prefixes(server):
@@ -715,6 +632,7 @@ def validate_json(fp):
     except:
         return False
 
+
 def timeout_after(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):
         def _handle_timeout(signum, frame):
@@ -722,11 +640,13 @@ def timeout_after(seconds=10, error_message=os.strerror(errno.ETIME)):
 
         def wrapper(*args, **kwargs):
             signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.setitimer(signal.ITIMER_REAL,seconds)
+            signal.setitimer(signal.ITIMER_REAL, seconds)
             try:
                 result = func(*args, **kwargs)
             finally:
                 signal.alarm(0)
             return result
+
         return wraps(func)(wrapper)
+
     return decorator

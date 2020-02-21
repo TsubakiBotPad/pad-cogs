@@ -7,10 +7,11 @@ import urllib.parse
 from collections import OrderedDict
 
 from redbot.core import commands, data_manager
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
-from rpadutils import CogSettings, Menu, EmojiUpdater
+from rpadutils import Menu, EmojiUpdater
 
 
 def _data_file(file_name: str) -> str:
@@ -41,10 +42,9 @@ class CmCard(object):
 class ChronoMagia(commands.Cog):
     """ChronoMagia."""
 
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.settings = ChronoMagiaSettings("chronomagia")
         self.card_data = []
         self.menu = Menu(bot)
         self.id_emoji = '\N{INFORMATION SOURCE}'
@@ -164,9 +164,3 @@ def make_img_embed(c: CmCard):
 
 def clean_name_for_query(name: str):
     return name.strip().lower().replace(',', '')
-
-
-class ChronoMagiaSettings(CogSettings):
-    def make_default_settings(self):
-        config = {}
-        return config

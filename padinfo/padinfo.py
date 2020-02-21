@@ -8,6 +8,7 @@ from collections import OrderedDict
 import prettytable
 from redbot.core import checks, data_manager
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 import rpadutils
@@ -112,7 +113,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
 
 class PadInfo(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -481,7 +482,7 @@ class PadInfo(commands.Cog):
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
-        return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
+        return [e for g in self.bot.get_guild if g.id in server_ids for e in g.emojis]
 
     def makeFailureMsg(self, err):
         msg = 'Lookup failed: {}.\n'.format(err)
@@ -918,8 +919,6 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
     body_text += '\n**XP to Max:** {}'.format(xp_text)
     body_text += '  **Max Level:**: {}'.format(m.level)
     body_text += '\n**Rarity:** {} **Cost:** {}'.format(m.rarity, m.cost)
-
-    # body_text += '\n**Google Translated:** {}'.format(tl_name)
 
     embed.description = body_text
 

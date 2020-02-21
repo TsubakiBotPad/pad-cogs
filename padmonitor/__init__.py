@@ -1,5 +1,6 @@
 from .padmonitor import *
 
+
 def setup(bot):
     n = PadMonitor(bot)
     bot.add_cog(n)

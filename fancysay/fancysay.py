@@ -2,13 +2,14 @@ import asyncio
 
 from redbot.core import checks
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import *
 
 from rpadutils import char_to_emoji
 
 
 class FancySay(commands.Cog):
-    def __init__(self, bot, *args, **kwargs):
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -19,7 +20,6 @@ class FancySay(commands.Cog):
         """Make the bot say fancy things (via embeds)."""
 
     @fancysay.command()
-    @commands.guild_only()
     async def pingrole(self, ctx, role: discord.Role, *, text):
         """^fancysay pingrole rolename this is the text to ping
 
@@ -56,7 +56,6 @@ class FancySay(commands.Cog):
             return
 
     @fancysay.command()
-    @commands.guild_only()
     async def emoji(self, ctx, *, text):
         """Speak the provided text as emojis, deleting the original request"""
         await ctx.message.delete()
@@ -73,7 +72,6 @@ class FancySay(commands.Cog):
             await ctx.send(new_msg)
 
     @fancysay.command()
-    @commands.guild_only()
     async def title_description_image_footer(self, ctx, title, description, image, footer):
         """[title] [description] [image_url] [footer_text]
 
