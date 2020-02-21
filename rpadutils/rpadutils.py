@@ -3,6 +3,7 @@ import concurrent.futures
 import inspect
 import json
 import os
+import sys
 import re
 import time
 import unicodedata
@@ -23,12 +24,6 @@ class RpadUtils(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-
-    async def on_command_error(self, ctx, error):
-        channel = ctx.channel
-        if isinstance(error, ReportableError):
-            msg = 'An error occurred while processing your command: {}'.format(error.message)
-            await channel.send(inline(msg))
 
     def user_allowed(self, message):
         author = message.author
@@ -88,14 +83,6 @@ def containsJp(txt):
     return JP_REGEX.search(txt)
 
 
-class ReportableError(commands.CheckFailure):
-    """Throw when an exception should be reported to the user."""
-
-    def __init__(self, message):
-        self.message = message
-        super(ReportableError, self).__init__(message)
-
-
 class PermissionsError(CommandNotFound):
     """
     Base exception for all others in this module
@@ -134,7 +121,7 @@ def get_role(roles, role_string):
 
     if role is None:
         print("Could not find role named " + role_string)
-        raise ReportableError("Could not find role named " + role_string)
+        raise commands.UserFeedbackCheckFailure("Could not find role named " + role_string)
 
     return role
 
@@ -151,7 +138,7 @@ def get_role_from_id(bot, guild, roleid):
 
     role = discord.utils.get(roles, id=roleid)
     if role is None:
-        raise ReportableError("Could not find role id {} in guild {}".format(roleid, guild.name))
+        raise commands.UserFeedbackCheckFailure("Could not find role id {} in guild {}".format(roleid, guild.name))
     return role
 
 
@@ -727,11 +714,6 @@ def validate_json(fp):
         return True
     except:
         return False
-
-
-class TimeoutError(Exception):
-    pass
-
 
 def timeout_after(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):

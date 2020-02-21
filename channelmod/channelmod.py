@@ -10,7 +10,7 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings, ReportableError
+from rpadutils import CogSettings
 
 log = logging.getLogger("red.admin")
 
@@ -342,9 +342,9 @@ class ChannelModSettings(CogSettings):
     def add_mirrored_channel(self, source_channel: str, dest_channel: str):
         channels = self.mirrored_channels()
         if source_channel == dest_channel:
-            raise ReportableError('Cannot mirror a channel to itself')
+            raise commands.UserFeedbackCheckFailure('Cannot mirror a channel to itself')
         if dest_channel in channels:
-            raise ReportableError('Destination channel is already a source channel')
+            raise commands.UserFeedbackCheckFailure('Destination channel is already a source channel')
         if source_channel not in channels:
             channels[source_channel] = {
                 'channels': [],

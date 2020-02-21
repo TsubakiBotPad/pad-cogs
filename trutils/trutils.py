@@ -11,7 +11,7 @@ from redbot.core import checks, modlog
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import *
 
-from rpadutils import CogSettings, extract_image_url, get_role, ReportableError
+from rpadutils import CogSettings, extract_image_url, get_role
 
 GETMIRU_HELP = """
 The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
@@ -504,8 +504,13 @@ class TrUtils(commands.Cog):
 
         for result in to_await:
             if asyncio.iscoroutine(result):
-                result = await result
-
+                try:
+                    result = await result
+                except Exception as e:
+                    await ctx.send(box('{}: {}'.format(type(e).__name__, str(e)),
+                                        lang="py"))
+            else:
+                await ctx.send(result)
     @commands.command()
     @checks.is_owner()
     async def checkimg(self, ctx, img: str):
@@ -673,7 +678,7 @@ class TrUtils(commands.Cog):
 
     async def _send_feedback(self, ctx, message: str, feedback_channel, success_message: str):
         if feedback_channel is None:
-            raise ReportableError("Feedback channel not set")
+            raise commands.UserFeedbackCheckFailure("Feedback channel not set")
 
         guild = ctx.guild
         author = ctx.author

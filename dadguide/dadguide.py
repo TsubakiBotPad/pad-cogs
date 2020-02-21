@@ -217,9 +217,6 @@ class Dadguide(commands.Cog):
     @checks.is_owner()
     async def dadguide(self, ctx):
         """Dadguide database settings"""
-        if ctx.invoked_subcommand is None:
-            # await ctx.send_help()
-            pass
 
     @dadguide.command()
     @checks.is_owner()
@@ -388,6 +385,12 @@ class DadguideDatabase(object):
                 return [d_type(res, self) for res in cursor.fetchall()]
             else:
                 return DictWithAttrAccess({res[idx_key]: d_type(res, self) for res in cursor.fetchall()})
+
+    def _max_id(self):
+        cursor = self._con.cursor()
+        cursor.execute("SELECT MAX(monster_id) FROM monsters WHERE monster_id < 10000")
+        return cursor.fetchone()['MAX(monster_id)']
+
 
     def _select_one_entry_by_pk(self, pk, d_type):
         return self._query_one(
@@ -986,11 +989,21 @@ class DgMonster(DadguideItem):
 
     @property
     def next_monster(self):
-        return self._database.get_monster(self.monster_no + 1)
+        next = None
+        offset = 1
+        while next is None and self.monster_no + offset <= self._database._max_id():
+            next = self._database.get_monster(self.monster_no + offset)
+            offset+=1
+        return next
 
     @property
     def prev_monster(self):
-        return self._database.get_monster(self.monster_no - 1)
+        next = None
+        offset = 1
+        while next is None and self.monster_no - offset >= 1:
+            next = self._database.get_monster(self.monster_no - offset)
+            offset+=1
+        return next
 
 
 class MonsterSearchHelper(object):
@@ -1144,7 +1157,7 @@ class MonsterIndex(object):
             139: ['new years', 'ny'],
             149: ['wedding', 'bride'],
             154: ['padr'],
-            175: ['valentines', 'vday'],
+            175: ['valentines', 'vday', 'v'],
         }
 
         monster_id_to_nicknames = defaultdict(set)
@@ -1245,7 +1258,7 @@ class MonsterIndex(object):
 
         awoken = lower_name.startswith('awoken') or '覚醒' in lower_name
         revo = lower_name.startswith('reincarnated') or '転生' in lower_name
-        mega = lower_name.startswith('mega woken') or '極醒' in lower_name
+        mega = lower_name.startswith('mega awoken') or '極醒' in lower_name
         awoken_or_revo_or_equip_or_mega = awoken or revo or m.is_equip or mega
 
         # These clauses need to be separate to handle things like 'Awoken Thoth' which are

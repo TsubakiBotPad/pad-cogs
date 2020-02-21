@@ -75,12 +75,6 @@ def linked_img_count(message):
     return len(message.embeds) + len(message.attachments)
 
 
-class CtxWrapper:
-    def __init__(self, msg, bot):
-        self.message = msg
-        self.bot = bot
-
-
 class AutoMod2(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -126,7 +120,7 @@ class AutoMod2(commands.Cog):
         except Exception as ex:
             await ctx.send(inline(str(ex)))
             return
-        self.settings.addPattern(ctx, name, include_pattern, exclude_pattern)
+        self.settings.addPattern(ctx.guild.id, name, include_pattern, exclude_pattern)
         await ctx.send(inline('Added pattern'))
 
     @automod2.command(name="rmpattern")
@@ -134,7 +128,7 @@ class AutoMod2(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def rmPattern(self, ctx, *, name):
         """Remove a pattern from this server. Pattern must not be in use."""
-        exit_code = self.settings.rmPattern(ctx, name)
+        exit_code = self.settings.rmPattern(ctx.guild.id, name)
         if exit_code == 1:
             await ctx.send(inline('Removed pattern'))
         elif exit_code == 0:
@@ -148,7 +142,7 @@ class AutoMod2(commands.Cog):
     async def addWhitelist(self, ctx, *, name):
         """Add the named pattern as a whitelist for this channel."""
         name = name.strip('"')
-        if self.settings.addWhitelist(ctx, name):
+        if self.settings.addWhitelist(ctx.guild.id, ctx.channel.id, name):
             await ctx.send(inline('Added whitelist config for: ' + name))
         else:
             await ctx.send(inline("Rule '{}' is undefined.".format(name)))
@@ -158,7 +152,7 @@ class AutoMod2(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def rmWhitelist(self, ctx, *, name):
         """Remove the named pattern as a whitelist for this channel."""
-        if self.settings.rmWhitelist(ctx, name):
+        if self.settings.rmWhitelist(ctx.guild.id, ctx.channel.id, name):
             await ctx.send(inline('Removed whitelist config for: ' + name))
         else:
             await ctx.send(inline("Rule '{}' is undefined.".format(name)))
@@ -169,7 +163,7 @@ class AutoMod2(commands.Cog):
     async def addBlacklist(self, ctx, *, name):
         """Add the named pattern as a blacklist for this channel."""
         name = name.strip('"')
-        if self.settings.addBlacklist(ctx, name):
+        if self.settings.addBlacklist(ctx.guild.id, ctx.channel.id, name):
             await ctx.send(inline('Added blacklist config for: ' + name))
         else:
             await ctx.send(inline("Rule '{}' is undefined.".format(name)))
@@ -179,7 +173,7 @@ class AutoMod2(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def rmBlacklist(self, ctx, *, name):
         """Remove the named pattern as a blacklist for this channel."""
-        if self.settings.rmBlacklist(ctx, name):
+        if self.settings.rmBlacklist(ctx.guild.id, ctx.channel.id, name):
             await ctx.send(inline('Removed blacklist config for: ' + name))
         else:
             await ctx.send(inline("Rule '{}' is undefined.".format(name)))
@@ -190,7 +184,7 @@ class AutoMod2(commands.Cog):
     async def list(self, ctx):
         """List the whitelist/blacklist configuration for the current channel."""
         output = 'AutoMod configs\n'
-        channels = self.settings.getChannels(ctx)
+        channels = self.settings.getChannels(ctx.guild.id)
         for channel_id, config in channels.items():
             channel = self.bot.get_channel(int(channel_id))
             if channel is None:
@@ -219,7 +213,7 @@ class AutoMod2(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def patterns(self, ctx):
         """List the registered patterns."""
-        patterns = self.settings.getPatterns(ctx)
+        patterns = self.settings.getPatterns(ctx.guild.id)
         output = 'AutoMod patterns for this server\n\n'
         output += self.patternsToTableText(patterns.values())
         await boxPagifySay(ctx.send, output)
@@ -237,7 +231,7 @@ class AutoMod2(commands.Cog):
 
         Set to -1 to enable image only.
         """
-        self.settings.setImageLimit(ctx, limit)
+        self.settings.setImageLimit(ctx.guild.id, ctx.channel.id, limit)
         if limit == 0:
             await ctx.send(inline('Limit cleared'))
         elif limit == -1:
@@ -249,8 +243,7 @@ class AutoMod2(commands.Cog):
     async def mod_message_images(self, message):
         if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        ctx = CtxWrapper(message, self.bot)
-        image_limit = self.settings.getImageLimit(ctx)
+        image_limit = self.settings.getImageLimit(message.guild.id, message.channel.id)
         if image_limit == 0:
             return
         elif image_limit > 0:
@@ -299,13 +292,14 @@ class AutoMod2(commands.Cog):
     async def mod_message(self, message):
         if isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        author = message.author
-        valid_user = isinstance(author, discord.Member) and not author.bot
-        if not valid_user:
+
+        if message.author.bot or not isinstance(message.author, discord.Member):
             return
 
-        ctx = CtxWrapper(message, self.bot)
-        whitelists, blacklists = self.settings.getRulesForChannel(ctx)
+        if message.channel.permissions_for(message.author).manage_messages:
+            return
+
+        whitelists, blacklists = self.settings.getRulesForChannel(message.guild.id, message.channel.id)
 
         msg_template = box('Your message in {} was deleted for violating the following policy: {}\n'
                            'Message content: {}')
@@ -348,22 +342,21 @@ class AutoMod2(commands.Cog):
         Include the text [noemojis] to suppress emoji addition
         """
         if not key:
-            self.settings.setAutoEmojis(ctx, None)
+            self.settings.setAutoEmojis(ctx.guild.id, ctx.channel.id, None)
             await ctx.send(inline('Auto emojis cleared'))
             return
         key = key.lower()
         if key not in EMOJIS:
             await ctx.send(inline('Unknown key'))
             return
-        self.settings.setAutoEmojis(ctx, key)
+        self.settings.setAutoEmojis(ctx.guild.id, ctx.channel.id, key)
         await ctx.send(inline('Auto Emojis for this channel configured!'))
 
     @commands.Cog.listener('on_message')
     async def add_auto_emojis(self, message):
         if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        ctx = CtxWrapper(message, self.bot)
-        key = self.settings.getAutoEmojis(ctx)
+        key = self.settings.getAutoEmojis(message.guild.id, message.channel.id)
         if not key:
             return
         if '[noemojis]' in message.content:
@@ -470,7 +463,7 @@ class AutoMod2(commands.Cog):
         try:
             re.compile(phrase)
         except Exception as ex:
-            raise rpadutils.ReportableError(str(ex))
+            raise commands.UserFeedbackCheckFailure(str(ex))
 
         if cooldown < 300:
             await ctx.send(inline('Overriding cooldown to minimum'))
@@ -650,9 +643,8 @@ class AutoMod2Settings(CogSettings):
     def serverConfigs(self):
         return self.bot_settings['configs']
 
-    def getServer(self, ctx, server_id=None):
+    def getServer(self, server_id):
         configs = self.serverConfigs()
-        server_id = server_id or ctx.message.guild.id
         if server_id not in configs:
             configs[server_id] = {
                 'patterns': {},
@@ -660,16 +652,15 @@ class AutoMod2Settings(CogSettings):
             }
         return configs[server_id]
 
-    def getChannels(self, ctx):
-        server = self.getServer(ctx)
+    def getChannels(self, server_id):
+        server = self.getServer(server_id)
         if 'channels' not in server:
             server['channels'] = {}
         return server['channels']
 
-    def getChannel(self, ctx):
-        channels = self.getChannels(ctx)
+    def getChannel(self, server_id, channel_id):
+        channels = self.getChannels(server_id)
 
-        channel_id = ctx.message.channel.id
         if channel_id not in channels:
             channels[channel_id] = {
                 'whitelist': [],
@@ -680,22 +671,22 @@ class AutoMod2Settings(CogSettings):
 
         return channels[channel_id]
 
-    def getRulesForChannel(self, ctx):
-        patterns = self.getPatterns(ctx)
-        channel = self.getChannel(ctx)
+    def getRulesForChannel(self, server_id, channel_id):
+        patterns = self.getPatterns(server_id)
+        channel = self.getChannel(server_id, channel_id)
 
         whitelist = [patterns[name] for name in channel['whitelist']]
         blacklist = [patterns[name] for name in channel['blacklist']]
         return whitelist, blacklist
 
-    def getPatterns(self, ctx):
-        server = self.getServer(ctx)
+    def getPatterns(self, server_id):
+        server = self.getServer(server_id)
         if 'patterns' not in server:
             server['patterns'] = {}
         return server['patterns']
 
-    def addPattern(self, ctx, name, include_pattern, exclude_pattern):
-        patterns = self.getPatterns(ctx)
+    def addPattern(self, server_id, name, include_pattern, exclude_pattern):
+        patterns = self.getPatterns(server_id)
         patterns[name] = {
             'name': name,
             'include_pattern': include_pattern,
@@ -703,8 +694,8 @@ class AutoMod2Settings(CogSettings):
         }
         self.save_settings()
 
-    def checkPatternUsed(self, ctx, name):
-        server = self.getServer(ctx)
+    def checkPatternUsed(self, server_id, name):
+        server = self.getServer(server_id)
         for channel_id, channel_config in server['channels'].items():
             if name in channel_config['whitelist']:
                 return True
@@ -712,9 +703,9 @@ class AutoMod2Settings(CogSettings):
                 return True
         return False
 
-    def rmPattern(self, ctx, name):
-        patterns = self.getPatterns(ctx)
-        if self.checkPatternUsed(ctx, name):
+    def rmPattern(self, server_id, name):
+        patterns = self.getPatterns(server_id)
+        if self.checkPatternUsed(server_id, name):
             return -1
         elif name not in patterns:
             return 0
@@ -722,16 +713,16 @@ class AutoMod2Settings(CogSettings):
         self.save_settings()
         return 1
 
-    def addRule(self, ctx, name, list_type):
-        patterns = self.getPatterns(ctx)
+    def addRule(self, server_id, channel_id, name, list_type):
+        patterns = self.getPatterns(server_id)
         if name not in patterns:
             return False
-        self.getChannel(ctx)[list_type].append(name)
+        self.getChannel(server_id, channel_id)[list_type].append(name)
         self.save_settings()
         return True
 
-    def rmRule(self, ctx, name, list_type):
-        chan_list = self.getChannel(ctx)[list_type]
+    def rmRule(self, server_id, channel_id, name, list_type):
+        chan_list = self.getChannel(server_id, channel_id)[list_type]
         if name in chan_list:
             chan_list.remove(name)
             self.save_settings()
@@ -739,38 +730,38 @@ class AutoMod2Settings(CogSettings):
         else:
             return False
 
-    def addWhitelist(self, ctx, name):
-        return self.addRule(ctx, name, 'whitelist')
+    def addWhitelist(self, server_id, channel_id, name):
+        return self.addRule(server_id, channel_id, name, 'whitelist')
 
-    def rmWhitelist(self, ctx, name):
-        return self.rmRule(ctx, name, 'whitelist')
+    def rmWhitelist(self, server_id, channel_id, name):
+        return self.rmRule(server_id, channel_id, name, 'whitelist')
 
-    def addBlacklist(self, ctx, name):
-        return self.addRule(ctx, name, 'blacklist')
+    def addBlacklist(self, server_id, channel_id, name):
+        return self.addRule(server_id, channel_id, name, 'blacklist')
 
-    def rmBlacklist(self, ctx, name):
-        return self.rmRule(ctx, name, 'blacklist')
+    def rmBlacklist(self, server_id, channel_id, name):
+        return self.rmRule(server_id, channel_id, name, 'blacklist')
 
-    def getImageLimit(self, ctx):
-        channel = self.getChannel(ctx)
+    def getImageLimit(self, server_id, channel_id):
+        channel = self.getChannel(server_id, channel_id)
         return channel.get('image_limit', 0)
 
-    def setImageLimit(self, ctx, image_limit):
-        channel = self.getChannel(ctx)
+    def setImageLimit(self, server_id, channel_id, image_limit):
+        channel = self.getChannel(server_id, channel_id)
         channel['image_limit'] = image_limit
         self.save_settings()
 
-    def getAutoEmojis(self, ctx):
-        channel = self.getChannel(ctx)
+    def getAutoEmojis(self, server_id, channel_id):
+        channel = self.getChannel(server_id, channel_id)
         return channel.get('auto_emojis_type', None)
 
-    def setAutoEmojis(self, ctx, key):
-        channel = self.getChannel(ctx)
+    def setAutoEmojis(self, server_id, channel_id, key):
+        channel = self.getChannel(server_id, channel_id)
         channel['auto_emojis_type'] = key
         self.save_settings()
 
     def getWatchdog(self, server_id):
-        server = self.getServer(None, server_id)
+        server = self.getServer(server_id)
         key = 'watchdog'
         if key not in server:
             server[key] = {}

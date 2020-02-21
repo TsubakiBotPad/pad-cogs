@@ -314,7 +314,7 @@ class Seniority(commands.Cog):
                     try:
                         await member.add_roles(role)
                     except Exception as ex:
-                        raise rpadutils.ReportableError(str(ex))
+                        raise commands.UserFeedbackCheckFailure(str(ex))
 
     @grant.command()
     @commands.guild_only()
@@ -342,7 +342,7 @@ class Seniority(commands.Cog):
                     try:
                         await member.remove_roles(role)
                     except Exception as ex:
-                        raise rpadutils.ReportableError(str(ex))
+                        raise commands.UserFeedbackCheckFailure(str(ex))
 
     async def do_print_overages(self,
                                 ctx: Context,
@@ -910,11 +910,11 @@ class SenioritySettings(CogSettings):
         if remove_amount == 0 and grant_amount == 0:
             roles.pop(role_id, None)
         elif remove_amount >= grant_amount:
-            raise rpadutils.ReportableError('remove_amount must be less than grant_amount')
+            raise commands.UserFeedbackCheckFailure('remove_amount must be less than grant_amount')
         elif warn_amount >= grant_amount:
-            raise rpadutils.ReportableError('warn_amount must be less than grant_amount')
+            raise commands.UserFeedbackCheckFailure('warn_amount must be less than grant_amount')
         elif remove_amount < 0 or warn_amount < 0 or grant_amount < 0:
-            raise rpadutils.ReportableError('role values must be >= 0')
+            raise commands.UserFeedbackCheckFailure('role values must be >= 0')
         else:
             roles[role_id] = {
                 'role_id': role_id,

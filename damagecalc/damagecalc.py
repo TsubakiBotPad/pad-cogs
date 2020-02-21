@@ -3,8 +3,6 @@ import math
 from ply import lex
 from redbot.core import commands
 
-from rpadutils import ReportableError
-
 
 class PadLexer(object):
     tokens = [
@@ -64,7 +62,7 @@ class PadLexer(object):
         t.value = t.value.strip('row').strip('(').strip(')')
         t.value = int(t.value) if t.value else 6
         if t.value < 6 or t.value > 30:
-            raise ReportableError('row must have 6-30 orbs, got ' + t.value)
+            raise commands.UserFeedbackCheckFailure('row must have 6-30 orbs, got ' + t.value)
 
         return t
 
@@ -78,7 +76,7 @@ class PadLexer(object):
         t.value = t.value.strip('orb').strip('s').strip('(').strip(')')
         t.value = int(t.value) if t.value else 3
         if t.value < 3 or t.value > 30:
-            raise ReportableError('match must have 3-30 orbs, got ' + t.value)
+            raise commands.UserFeedbackCheckFailure('match must have 3-30 orbs, got ' + t.value)
         return t
 
     def t_COMBO(self, t):
@@ -90,7 +88,7 @@ class PadLexer(object):
     t_ignore = ' \t\n'
 
     def t_error(self, t):
-        raise ReportableError("Invalid text: '%s'" % (t.value,))
+        raise commands.UserFeedbackCheckFailure("Invalid text: '%s'" % (t.value,))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
@@ -151,13 +149,13 @@ class DamageConfig(object):
             self.combos = 0
 
         if (len(self.row_matches) + len(self.tpa_matches) + len(self.orb_matches)) == 0:
-            raise ReportableError('You need to specify at least one attack match (orb, tpa, row)')
+            raise commands.UserFeedbackCheckFailure('You need to specify at least one attack match (orb, tpa, row)')
 
     def setIfType(self, expected_type, given_type, current_value, new_value):
         if expected_type != given_type:
             return current_value
         if current_value is not None:
-            raise ReportableError('You set {} more than once'.format(given_type))
+            raise commands.UserFeedbackCheckFailure('You set {} more than once'.format(given_type))
         return new_value
 
     def updateWithMonster(self, monster):
@@ -257,5 +255,5 @@ class DamageCalc(commands.Cog):
             enhanced_damage = config.calculate(all_enhanced=True)
             await ctx.send(
                 "```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
-        except ReportableError as e:
+        except commands.UserFeedbackCheckFailure as e:
             await ctx.send(e.message)

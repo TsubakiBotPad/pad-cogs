@@ -5,6 +5,7 @@ import io
 import json
 import os
 import re
+import datetime
 from collections import defaultdict
 
 import aiohttp
@@ -77,6 +78,18 @@ def monster_no_to_monster(monster_no):
     if padinfo_cog is None:
         return None
     return padinfo_cog.get_monster_by_no(monster_no)
+
+
+
+
+async def check_enabled(ctx):
+    """If the server is disabled, print a warning and return False"""
+    if PADGLOBAL_COG.settings.checkDisabled(ctx.message):
+        msg = await ctx.send(inline(DISABLED_MSG))
+        await asyncio.sleep(3)
+        await msg.delete()
+        return False
+    return True
 
 
 class PadGlobal(commands.Cog):
@@ -156,17 +169,8 @@ class PadGlobal(commands.Cog):
             self.settings.rmDisabledServer(server_id)
         else:
             self.settings.addDisabledServer(server_id)
-        status = 'disabled' if self.settings.checkDisabled(ctx) else 'enabled'
+        status = 'disabled' if self.settings.checkDisabled(ctx.message) else 'enabled'
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
-
-    async def _check_disabled(self, ctx):
-        """If the server is disabled, print a warning and return True"""
-        if self.settings.checkDisabled(ctx):
-            msg = await ctx.send(inline(DISABLED_MSG))
-            await asyncio.sleep(3)
-            await msg.delete_messasge()
-            return True
-        return False
 
     @commands.command()
     @is_padglobal_admin()
@@ -185,10 +189,10 @@ class PadGlobal(commands.Cog):
         await write_send(mi.all_entries, 'all_entries.csv')
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
-    @commands.command()
+    @commands.command(aliases = ['iddebug'])
     @is_padglobal_admin()
     async def debugid(self, ctx, *, query):
-        padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
+        padinfo_cog = self.bot.get_cog('PadInfo')
         # m is a named monster
         m, err, debug_info = lookup_named_monster(query)
 
@@ -272,13 +276,10 @@ class PadGlobal(commands.Cog):
         await padinfo_cog.refresh_index()
         await ctx.send('finished reload')
 
-    @commands.group()
+    @commands.group(aliases = ['pdg'])
     @is_padglobal_admin()
     async def padglobal(self, ctx):
         """PAD global custom commands."""
-        if ctx.invoked_subcommand is None:
-            # await ctx.send_help()
-            pass
 
     @padglobal.command()
     async def say(self, ctx, *, text: str):
@@ -385,27 +386,24 @@ class PadGlobal(commands.Cog):
             await ctx.send('{} is not a padglobal command. It might be a meme or a custom command.'.format(command))
 
     @commands.command()
+    @commands.check(check_enabled)
     async def pad(self, ctx):
         """Shows PAD global command list"""
-        if await self._check_disabled(ctx):
-            return
         configured = self.settings.faq() + self.settings.boards()
         cmdlist = {k: v for k, v in self.c_commands.items() if k not in configured}
         await self.print_cmdlist(ctx, cmdlist)
 
     @commands.command()
+    @commands.check(check_enabled)
     async def padfaq(self, ctx):
         """Shows PAD FAQ command list"""
-        if await self._check_disabled(ctx):
-            return
         cmdlist = {k: v for k, v in self.c_commands.items() if k in self.settings.faq()}
         await self.print_cmdlist(ctx, cmdlist)
 
     @commands.command()
+    @commands.check(check_enabled)
     async def boards(self, ctx):
         """Shows PAD Boards command list"""
-        if await self._check_disabled(ctx):
-            return
         cmdlist = {k: v for k, v in self.c_commands.items() if k in self.settings.boards()}
         await self.print_cmdlist(ctx, cmdlist)
 
@@ -475,24 +473,22 @@ class PadGlobal(commands.Cog):
             await ctx.author.send(box(page))
 
     @commands.command()
+    @commands.check(check_enabled)
     async def glossaryto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a glossary entry
 
         ^glossaryto @{0.author.name} godfest
         """
-        if await self._check_disabled(ctx):
-            return
         corrected_term, result = self.lookup_glossary(term)
         await self._do_send_term(ctx, to_user, term, corrected_term, result)
 
     @commands.command()
+    @commands.check(check_enabled)
     async def padto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a pad/padfaq entry
 
         ^padto @{0.author.name} jewels?
         """
-        if await self._check_disabled(ctx):
-            return
         corrected_term = self._lookup_command(term)
         result = self.c_commands.get(corrected_term, None)
         await self._do_send_term(ctx, to_user, term, corrected_term, result)
@@ -512,10 +508,9 @@ class PadGlobal(commands.Cog):
             await ctx.send(inline('No definition found'))
 
     @commands.command()
+    @commands.check(check_enabled)
     async def glossary(self, ctx, *, term: str = None):
         """Shows PAD Glossary entries"""
-        if await self._check_disabled(ctx):
-            return
 
         if term:
             term, definition = self.lookup_glossary(term)
@@ -586,10 +581,9 @@ class PadGlobal(commands.Cog):
         await ctx.send("done")
 
     @commands.command()
+    @commands.check(check_enabled)
     async def boss(self, ctx, *, term: str = None):
         """Shows boss skill entries"""
-        if await self._check_disabled(ctx):
-            return
         if term:
             term_new, definition = self.lookup_boss(term)
             if definition:
@@ -604,10 +598,9 @@ class PadGlobal(commands.Cog):
             await ctx.author.send(page)
 
     @commands.command()
+    @commands.check(check_enabled)
     async def bosslist(self, ctx):
         """Shows boss skill entries"""
-        if await self._check_disabled(ctx):
-            return
         msg = self.boss_to_text_index()
         for page in pagify(msg):
             await ctx.author.send(page)
@@ -667,10 +660,9 @@ class PadGlobal(commands.Cog):
         await ctx.send("done")
 
     @commands.command()
+    @commands.check(check_enabled)
     async def which(self, ctx, *, term: str = None):
         """Shows PAD Which Monster entries"""
-        if await self._check_disabled(ctx):
-            return
 
         if term is None:
             await ctx.author.send('__**PAD Which Monster**__ *(also check out ^pad / ^padfaq / ^boards / ^glossary)*')
@@ -679,10 +671,13 @@ class PadGlobal(commands.Cog):
                 await ctx.author.send(box(page))
             return
 
-        name, definition = await self._resolve_which(ctx, term)
+        name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        await ctx.send(inline('Which {}'.format(name)))
+        if not success:
+            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            return
+        await ctx.send(inline('Which {} - Last Updated {}'.format(name, timestamp)))
         await ctx.send(definition)
 
     async def _resolve_which(self, ctx, term):
@@ -690,45 +685,54 @@ class PadGlobal(commands.Cog):
         nm, _, _ = lookup_named_monster(term)
         if nm is None:
             await ctx.send(inline('No monster matched that query'))
-            return None, None
+            return None, None, None, None
 
         name = nm.group_computed_basename.title()
-        definition = self.settings.which().get(str(nm.base_monster_no), None)
+        id = nm.base_monster_no
+        definition = self.settings.which().get(str(id), None)
+        timestamp = "2000-01-01"
+
+        if isinstance(definition, list):
+            definition, timestamp = definition
 
         if definition is not None:
-            return name, definition
+            return name, definition, timestamp, True
 
-        monster = monster_no_to_monster(nm.base_monster_no)
+        monster = monster_no_to_monster(id)
 
         if monster.mp_evo:
-            return name, MP_BUY_MSG
+            return name, MP_BUY_MSG, None, False
         elif monster.farmable_evo:
-            return name, FARMABLE_MSG
+            return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster):
-            return name, SIMPLE_TREE_MSG
+            return name, SIMPLE_TREE_MSG, None, False
         else:
-            await ctx.send(inline('No which info for {}'.format(name)))
-            return None, None
+            await ctx.send(inline('No which info for {} (#{})'.format(name, id)))
+            return None, None, None, None
 
     @commands.command()
+    @commands.check(check_enabled)
     async def whichto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a which monster entry.
 
         ^whichto @{0.author.name} saria
         """
-        if await self._check_disabled(ctx):
-            return
-
-        name, definition = await self._resolve_which(ctx, term)
+        name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        await self._do_send_which(ctx, to_user, name, definition)
+
+        if not success:
+            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            return
+        await self._do_send_which(ctx, to_user, name, definition, timestamp)
 
     def which_to_text(self):
         items = list()
         monsters = defaultdict(list)
         for w in self.settings.which():
-            if w.isdigit():
+            if isinstance(w, int):
+                continue
+            elif w.isdigit():
                 nm, _, _ = lookup_named_monster(w)
                 name = nm.group_computed_basename.title()
                 m = monster_no_to_monster(nm.monster_id)
@@ -751,9 +755,10 @@ class PadGlobal(commands.Cog):
 
         return msg
 
-    async def _do_send_which(self, ctx, to_user: discord.Member, name, definition):
+    async def _do_send_which(self, ctx, to_user: discord.Member, name, definition, timestamp):
         """Does the heavy lifting for whichto."""
-        result_output = '**Which {}**\n{}'.format(name, definition)
+        result_output = '**Which {} - Last Updated {}**\n{}'.format(name, timestamp, definition)
+
         result = "{} asked me to send you this:\n{}".format(
             ctx.author.name, result_output)
         await to_user.send(result)
@@ -792,6 +797,39 @@ class PadGlobal(commands.Cog):
 
         self.settings.rmWhich(name)
         await ctx.send("done")
+
+    @padglobal.command()
+    async def getwhich(self, ctx):
+        items = list()
+        monsters = []
+        whiches = self.settings.which()
+        for w in whiches:
+            if isinstance(w, int):
+                continue
+            elif isinstance(whiches[w], list) and isinstance(whiches[w], int):
+                continue
+            elif isinstance(whiches[w], list):
+                nm, _, _ = lookup_named_monster(w)
+                name = nm.group_computed_basename.title()
+                monsters.append([name, whiches[w][1]])
+            elif w.isdigit():
+                nm, _, _ = lookup_named_monster(w)
+                name = nm.group_computed_basename.title()
+                monsters.append([name, "2000-01-01"])
+            else:
+                items.append([w, "2000-01-01"])
+
+        tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
+        tbl.hrules = prettytable.HEADER
+        tbl.vrules = prettytable.NONE
+        tbl.align = "l"
+        for mon in sorted(monsters, key = lambda x: x[1]):
+            tbl.add_row(mon)
+
+        msg = rpadutils.strip_right_multiline(tbl.get_string())
+
+        for page in pagify(msg):
+            await ctx.author.send(box(page))
 
     @padglobal.command()
     @checks.is_owner()
@@ -976,11 +1014,9 @@ class PadGlobal(commands.Cog):
         return str(getattr(first, second, raw_result))
 
     @commands.command(aliases=["guides"])
+    @commands.check(check_enabled)
     async def guide(self, ctx, *, term: str = None):
         """Shows Leader and Dungeon guide entries."""
-        if await self._check_disabled(ctx):
-            return
-
         if term is None:
             await self.send_guide(ctx)
             return
@@ -1032,14 +1068,12 @@ class PadGlobal(commands.Cog):
         return msg
 
     @commands.command()
+    @commands.check(check_enabled)
     async def guideto(self, ctx, to_user: discord.Member, *, term: str):
         """Send a user a dungeon/leader guide entry.
 
         ^guideto @{0.author.name} osc10
         """
-        if await self._check_disabled(ctx):
-            return
-
         term, text, err = self.get_guide_text(term)
         if text is None:
             await ctx.send(inline(err))
@@ -1124,6 +1158,13 @@ class PadGlobalSettings(CogSettings):
             'which': {},
             'boss': {},
             'disabled_servers': [],
+            'dungeon_guide': {},
+            'leader_guide': {},
+            'emoji_servers': [],
+            'faq': [],
+            'boards': {},
+            'glossary': {},
+            'dungeon_guide': {},
         }
         return config
 
@@ -1147,16 +1188,10 @@ class PadGlobalSettings(CogSettings):
             self.save_settings()
 
     def faq(self):
-        key = 'faq'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = []
-        return self.bot_settings[key]
+        return self.bot_settings['faq']
 
     def boards(self):
-        key = 'boards'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['boards']
 
     def clearCmd(self, cmd):
         if cmd in self.faq():
@@ -1179,10 +1214,7 @@ class PadGlobalSettings(CogSettings):
         self.save_settings()
 
     def glossary(self):
-        key = 'glossary'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['glossary']
 
     def addGlossary(self, term, definition):
         self.glossary()[term] = definition
@@ -1195,10 +1227,7 @@ class PadGlobalSettings(CogSettings):
             self.save_settings()
 
     def boss(self):
-        key = 'boss'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['boss']
 
     def addBoss(self, term, definition):
         self.boss()[term] = definition
@@ -1211,13 +1240,10 @@ class PadGlobalSettings(CogSettings):
             self.save_settings()
 
     def which(self):
-        key = 'which'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['which']
 
     def addWhich(self, name, text):
-        self.which()[name] = text
+        self.which()[name] = [text, datetime.date.today().isoformat()]
         self.save_settings()
 
     def rmWhich(self, name):
@@ -1227,10 +1253,7 @@ class PadGlobalSettings(CogSettings):
             self.save_settings()
 
     def emojiServers(self):
-        key = 'emoji_servers'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = []
-        return self.bot_settings[key]
+        return self.bot_settings['emoji_servers']
 
     def setEmojiServers(self, emoji_servers):
         es = self.emojiServers()
@@ -1239,10 +1262,7 @@ class PadGlobalSettings(CogSettings):
         self.save_settings()
 
     def leaderGuide(self):
-        key = 'leader_guide'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['leader_guide']
 
     def addLeaderGuide(self, name, text):
         self.leaderGuide()[name] = text
@@ -1255,10 +1275,7 @@ class PadGlobalSettings(CogSettings):
             self.save_settings()
 
     def dungeonGuide(self):
-        key = 'dungeon_guide'
-        if key not in self.bot_settings:
-            self.bot_settings[key] = {}
-        return self.bot_settings[key]
+        return self.bot_settings['dungeon_guide']
 
     def addDungeonGuide(self, name, text):
         self.dungeonGuide()[name] = text
@@ -1273,12 +1290,10 @@ class PadGlobalSettings(CogSettings):
     def disabledServers(self):
         return self.bot_settings['disabled_servers']
 
-    def checkDisabled(self, ctx_or_msg):
-        if hasattr(ctx_or_msg, 'message'):
-            ctx_or_msg = ctx_or_msg.message
-        if ctx_or_msg.guild is None:
+    def checkDisabled(self, msg):
+        if msg.guild is None:
             return False
-        return ctx_or_msg.guild.id in self.disabledServers()
+        return msg.guild.id in self.disabledServers()
 
     def addDisabledServer(self, server_id):
         disabled_servers = self.disabledServers()

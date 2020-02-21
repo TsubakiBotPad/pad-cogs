@@ -1,6 +1,7 @@
 import json
 import re
 
+from fnmatch import fnmatch
 from ply import lex
 from redbot.core import checks
 from redbot.core import commands
@@ -52,13 +53,10 @@ Multiple instance filters
 """
 
 @rpadutils.timeout_after(1)
-def re_timeout(re_funcs, ms):
-    print('in')
-    for ref in re_funcs:
-        ms = [m for m in ms if ref(m)]
-    print('out')
+def filt_timeout(filts, ms):
+    for f in filts:
+        ms = [m for m in ms if f(m)]
     return ms
-
 
 
 COLORS = [
@@ -102,7 +100,7 @@ ORB_TYPES = [
 def assert_color(value):
     value = replace_named_color(value)
     if value not in COLORS:
-        raise rpadutils.ReportableError(
+        raise commands.UserFeedbackCheckFailure(
             'Unexpected color {}, expected one of {}'.format(value, COLORS))
     return value
 
@@ -110,7 +108,7 @@ def assert_color(value):
 def assert_orbcolor(value):
     value = replace_named_color(value)
     if value not in ORB_TYPES:
-        raise rpadutils.ReportableError(
+        raise commands.UserFeedbackCheckFailure(
             'Unexpected orb {}, expected one of {}'.format(value, ORB_TYPES))
     return value
 
@@ -159,7 +157,6 @@ def clean_name(txt, name):
     return txt.replace(name, '').strip('() ')
 
 def re_clean_name(txt, name):
-    print (clean_name(txt, name)[2:-1])
     return clean_name(txt, name)[2:-1]
 
 def board_filter(colors):
@@ -218,7 +215,9 @@ class PadSearchLexer(object):
         'RCV',
         'WEIGHTED',
         'REACTIVE',
+        'GACTIVE',
         'RELEADER',
+        'GLEADER',
     ]
 
     def t_ACTIVE(self, t):
@@ -230,6 +229,12 @@ class PadSearchLexer(object):
     def t_REACTIVE(self, t):
         r"reactive\(r'.+?'\)"
         t.value = re_clean_name(t.value, 'reactive')
+        t.value = replace_colors_in_text(t.value)
+        return t
+
+    def t_GACTIVE(self, t):
+        r"gactive\(.+?\)"
+        t.value = clean_name(t.value, 'gactive')
         t.value = replace_colors_in_text(t.value)
         return t
 
@@ -291,7 +296,12 @@ class PadSearchLexer(object):
         r"releader\(r'.+?'\)"
         t.value = re_clean_name(t.value, 'releader')
         t.value = replace_colors_in_text(t.value)
-        print(t)
+        return t
+
+    def t_GLEADER(self, t):
+        r"gleader\(.+?\)"
+        t.value = clean_name(t.value, 'gleader')
+        t.value = replace_colors_in_text(t.value)
         return t
 
     def t_NAME(self, t):
@@ -390,7 +400,7 @@ class PadSearchLexer(object):
     t_ignore = ' \t\n'
 
     def t_error(self, t):
-        raise rpadutils.ReportableError("Unknown text '%s'" % (t.value,))
+        raise commands.UserFeedbackCheckFailure("Unknown text '%s'" % (t.value,))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
@@ -421,18 +431,19 @@ class SearchConfig(object):
 
         self.active = []
         self.reactive = []
+        self.gactive = []
         self.board = []
         self.column = []
         self.color = []
         self.hascolor = []
         self.leader = []
         self.releader = []
+        self.gleader = []
         self.name = []
         self.row = []
         self.types = []
         self.remove = []
         self.convert = []
-
         for tok in iter(lexer.token, None):
             type = tok.type
             value = tok.value
@@ -458,6 +469,8 @@ class SearchConfig(object):
                 self.active.append(value)
             if type == 'REACTIVE':
                 self.reactive.append(value)
+            if type == 'GACTIVE':
+                self.gactive.append(value)
             if type == 'BOARD':
                 self.board.append(split_csv_orbcolors(value))
             if type == 'COLOR':
@@ -470,13 +483,15 @@ class SearchConfig(object):
                 self.leader.append(value)
             if type == 'RELEADER':
                 self.releader.append(value)
+            if type == 'GLEADER':
+                self.gleader.append(value)
             if type == 'NAME':
                 self.name.append(value)
             if type == 'ROW':
                 self.row.append(assert_orbcolor(value))
             if type == 'TYPE':
                 if value not in TYPES:
-                    raise rpadutils.ReportableError(
+                    raise commands.UserFeedbackCheckFailure(
                         'Unexpected type {}, expected one of {}'.format(value, TYPES))
                 self.types.append(value)
             if type == 'REMOVE':
@@ -486,7 +501,9 @@ class SearchConfig(object):
 
         self.filters = list()
         self.re_filters = list()
+        self.gl_filters = list()
         self.regeces = list()
+        self.globs = list()
 
         # Single
         if self.cd:
@@ -559,12 +576,12 @@ class SearchConfig(object):
                 lambda m: m.search.weighted_stats and m.search.weighted_stats >= self.weighted)
 
         # Multiple
-        if self.active:
-            filters = []
-            for ft in self.active:
-                text = ft.lower()
-                filters.append(lambda m, t=text: t in m.search.active)
-            self.filters.append(self.or_filters(filters))
+        #if self.active:
+        #    filters = []
+        #    for ft in self.active:
+        #        text = ft.lower()
+        #        filters.append(lambda m, t=text: t in m.search.active)
+        #    self.filters.append(self.or_filters(filters))
 
         if self.reactive:
             filters = []
@@ -573,6 +590,14 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: re.search(t, m.search.active))
                 self.regeces.append(text)
             self.re_filters.extend(filters)
+
+        if self.active:
+            filters = []
+            for ft in self.active:
+                text = "*"+ft.lower()+"*"
+                filters.append(lambda m, t=text: fnmatch(m.search.active, t))
+                self.globs.append(text)
+            self.gl_filters.extend(filters)
 
         if self.board:
             filters = []
@@ -604,12 +629,12 @@ class SearchConfig(object):
                 filters.append(lambda m, c=text: c in m.search.hascolor)
             self.filters.append(self.or_filters(filters))
 
-        if self.leader:
-            filters = []
-            for ft in self.leader:
-                text = ft.lower()
-                filters.append(lambda m, t=text: t in m.search.leader)
-            self.filters.append(self.or_filters(filters))
+        #if self.leader:
+        #    filters = []
+        #    for ft in self.leader:
+        #        text = ft.lower()
+        #        filters.append(lambda m, t=text: t in m.search.leader)
+        #    self.filters.append(self.or_filters(filters))
 
         if self.releader:
             filters = []
@@ -618,6 +643,14 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: re.search(t, m.search.leader))
                 self.regeces.append(text)
             self.re_filters.extend(filters)
+
+        if self.leader:
+            filters = []
+            for ft in self.leader:
+                text = "*"+ft.lower()+"*"
+                filters.append(lambda m, t=text: fnmatch(m.search.leader, t))
+                self.globs.append(text)
+            self.gl_filters.extend(filters)
 
         if self.name:
             filters = []
@@ -649,9 +682,8 @@ class SearchConfig(object):
                 text = ft.lower()
                 filters.append(lambda m, t=text: t not in m.search.name)
             self.filters.append(self.or_filters(filters))
-
-        if not self.filters and not self.re_filters:
-            raise rpadutils.ReportableError('You need to specify at least one filter')
+        if not self.filters and not self.re_filters and not self.gl_filters:
+            raise commands.UserFeedbackCheckFailure('You need to specify at least one filter')
 
     def check_filters(self, m):
         for f in self.filters:
@@ -661,15 +693,19 @@ class SearchConfig(object):
 
     async def check_re_filters(self, ms, ctx):
         try:
-            return re_timeout(self.re_filters, ms)
-        except rpadutils.TimeoutError:
-            await ctx.send("Regex took too long to compile.  Skipping regex matching.")
+            return filt_timeout(self.re_filters, ms)
+        except TimeoutError:
             print("Timeout with patttern: \"{}\" by user {} ({})".format('", "'.join(self.regeces), ctx.author.name, ctx.author.id))
-            return ms
+            raise commands.UserFeedbackCheckFailure("Regex took too long to compile.  Stop trying to break the bot")
         except re.error as e:
-            await ctx.send("Regex search threw error '{}'.  Skipping regex matching.".format(e.msg))
-            return ms
+            raise commands.UserFeedbackCheckFailure("Regex search threw error '{}'".format(e.msg))
 
+    async def check_glob_filters(self, ms, ctx):
+        try:
+            return filt_timeout(self.gl_filters, ms)
+        except TimeoutError:
+            print("Timeout with patttern: \"{}\" by user {} ({})".format('", "'.join(self.globs), ctx.author.name, ctx.author.id))
+            raise commands.UserFeedbackCheckFailure("Glob took too long to compile.  Stop trying to break the bot")
 
     def or_filters(self, filters):
         def fn(m, filters=filters):
@@ -684,7 +720,7 @@ class SearchConfig(object):
         if expected_type != given_type:
             return current_value
         if current_value is not None:
-            raise rpadutils.ReportableError('You set {} more than once'.format(given_type))
+            raise commands.UserFeedbackCheckFailure('You set {} more than once'.format(given_type))
         return new_value
 
 
@@ -713,7 +749,6 @@ class PadSearch(commands.Cog):
             except:
                 # If it still failed, raise the original exception
                 raise ex
-        print(1)
         dg_cog = self.bot.get_cog('Dadguide')
         if dg_cog == None:
             await ctx.send("Dadguide cog not loaded.")
@@ -723,12 +758,11 @@ class PadSearch(commands.Cog):
         rmvGemFilter = self._make_search_config('remove( gem)')
         monsters = list(filter(rmvGemFilter.check_filters, monsters))
 
-        print(2)
         matched_monsters = [m for m in monsters if config.check_filters(m)]
-        print(3)
-        # Running regeces on a timer
+        # Running regeces/globs on a timer
         matched_monsters = await config.check_re_filters(matched_monsters, ctx)
-        print(4)
+        matched_monsters = await config.check_glob_filters(matched_monsters, ctx)
+
         # Removing entry with names that have gems in it
 
         matched_monsters.sort(key=lambda m: m.monster_no_na, reverse=True)
