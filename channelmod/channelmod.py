@@ -3,7 +3,7 @@ import io
 import logging
 import time
 import traceback
-from _datetime import datetime
+from datetime import datetime
 
 import aiohttp
 from redbot.core import checks

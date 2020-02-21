@@ -6,9 +6,9 @@ If a violation occurs, the message will be deleted and the user notified.
 """
 import asyncio
 import re
-from _datetime import datetime
 from collections import defaultdict
 from collections import deque
+from datetime import datetime
 
 import prettytable
 from redbot.core import checks
