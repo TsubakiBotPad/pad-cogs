@@ -9,7 +9,7 @@ from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 
-tz_lookup = dict([(pytz.timezone(x).localize(datetime.datetime.now()).tzname(), pytz.timezone(x))
+tz_lookup = dict([(pytz.timezone(x).localize(datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])
 
 time_at_regeces = [
@@ -63,7 +63,7 @@ class TimeCog(commands.Cog):
                     "Please configure your timezone with `{0.clean_prefix}remindme settimezone` first.".format(ctx))
                 return
 
-            now = datetime.datetime.now(tz=user_timezone)
+            now = datetime.now(tz=user_timezone)
             defaults = {
                 'year': now.year,
                 'month': now.month,
@@ -86,7 +86,7 @@ class TimeCog(commands.Cog):
                 defaults['hour'] = defaults['hour'] % 24
             del defaults['merid']
             try:
-                rmtime = user_timezone.localize(datetime.datetime(**defaults))
+                rmtime = user_timezone.localize(datetime(**defaults))
             except ValueError as e:
                 await ctx.send(inline(str(e).capitalize()))
                 return
@@ -100,7 +100,7 @@ class TimeCog(commands.Cog):
                 if not match:
                     continue
                 tinstrs, input = match.groups()
-                rmtime = datetime.datetime.utcnow()
+                rmtime = datetime.utcnow()
                 try:
                     rmtime += tin2tdelta(tinstrs)
                 except OverflowError:
@@ -110,7 +110,7 @@ class TimeCog(commands.Cog):
             else:
                 raise commands.UserFeedbackCheckFailure("Invalid time string: " + time)
 
-        if rmtime < (datetime.datetime.utcnow() - timedelta(seconds=1)):
+        if rmtime < (datetime.utcnow() - timedelta(seconds=1)):
             raise commands.UserFeedbackCheckFailure(inline("You can't set a reminder in the past!  If only..."))
 
         async with self.config.user(ctx.author).reminders() as rms:
@@ -131,7 +131,7 @@ class TimeCog(commands.Cog):
         tz = tzstr_to_tz(await self.config.user(ctx.author).tz())
         o = []
         for c, (timestamp, input) in enumerate(rlist):
-            o.append(str(c + 1) + ": " + format_rm_time(datetime.datetime.fromtimestamp(float(timestamp)), input, tz))
+            o.append(str(c + 1) + ": " + format_rm_time(datetime.fromtimestamp(float(timestamp)), input, tz))
         o = "```\n" + '\n'.join(o) + "\n```"
         await ctx.send(o)
 
@@ -167,10 +167,10 @@ class TimeCog(commands.Cog):
 
         while self == self.bot.get_cog('TimeCog'):
             urs = await self.config.all_users()
-            now = datetime.datetime.utcnow()
+            now = datetime.utcnow()
             for u in urs:
                 for rm in urs[u]['reminders']:
-                    if datetime.datetime.fromtimestamp(float(rm[0])) < now:
+                    if datetime.fromtimestamp(float(rm[0])) < now:
                         async with self.config.user(self.bot.get_user(u)).reminders() as rms:
                             rms.remove(rm)
                         await self.bot.get_user(u).send(rm[1])
@@ -191,7 +191,7 @@ class TimeCog(commands.Cog):
             await ctx.send("Failed to parse tz: " + tz)
             return
 
-        now = datetime.datetime.now(tz_obj)
+        now = datetime.now(tz_obj)
         msg = "The time in " + now.strftime('%Z') + " is " + fmt_time_short(now).strip()
         await ctx.send(inline(msg))
 
@@ -210,7 +210,7 @@ class TimeCog(commands.Cog):
             await ctx.send("Failed to parse time: " + time)
             return
 
-        now = datetime.datetime.now(tz_obj)
+        now = datetime.now(tz_obj)
         req_time = now.replace(hour=time_obj.tm_hour, minute=time_obj.tm_min)
 
         if req_time < now:
@@ -327,17 +327,17 @@ def format_rm_time(rmtime, input, D_TZ):
         input,
         D_TZ.fromutc(rmtime).strftime(DT_FORMAT),
         get_tz_name(D_TZ, rmtime),
-        ydhm((rmtime - datetime.datetime.utcnow()).total_seconds() + 2),
-        " from now" if (rmtime - datetime.datetime.utcnow()).total_seconds() > 60 else "<1 minute from now"
+        ydhm((rmtime - datetime.utcnow()).total_seconds() + 2),
+        " from now" if (rmtime - datetime.utcnow()).total_seconds() > 60 else "<1 minute from now"
     )
 
 
 def get_tz_name(tz, dt=None):
     if dt is None:
-        dt = datetime.datetime.utcnow()
+        dt = datetime.utcnow()
     else:
         dt = dt.replace(tzinfo=None)
-    tzname = tz.tzname(datetime.datetime(year=dt.year, month=1, day=1))
+    tzname = tz.tzname(datetime(year=dt.year, month=1, day=1))
     tznowname = tz.tzname(dt)
     if tzname != tznowname and tznowname:
         return "{} ({})".format(tzname, tznowname)
