@@ -12,11 +12,12 @@ from functools import wraps
 
 import aiohttp
 import backoff
+import discord
 import pytz
 from discord.ext.commands import CommandNotFound
 from redbot.core import commands, data_manager
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import box, pagify
 
 
 class RpadUtils(commands.Cog):

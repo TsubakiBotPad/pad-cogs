@@ -12,7 +12,7 @@ import prettytable
 from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 import rpadutils
 from rpadutils import CogSettings, safe_read_json, replace_emoji_names_with_code, clean_global_mentions

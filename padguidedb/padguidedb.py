@@ -4,11 +4,12 @@ import json
 import re
 import subprocess
 
+import discord
 import pymysql
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from rpadutils import CogSettings
 

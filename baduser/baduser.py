@@ -6,10 +6,11 @@ communication about role changes.
 from collections import defaultdict
 from collections import deque
 
+import discord
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import box, inline, pagify
 
 from rpadutils import CogSettings, get_role, get_role_from_id
 

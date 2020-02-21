@@ -7,7 +7,7 @@ from datetime import timedelta, datetime
 import pytz
 from redbot.core import commands, Config
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 tz_lookup = dict([(pytz.timezone(x).localize(datetime.datetime.now()).tzname(), pytz.timezone(x))
                   for x in pytz.all_timezones])

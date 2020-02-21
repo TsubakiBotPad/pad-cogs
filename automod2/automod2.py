@@ -10,10 +10,11 @@ from collections import defaultdict
 from collections import deque
 from datetime import datetime
 
+import discord
 import prettytable
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 import rpadutils
 from rpadutils import CogSettings, boxPagifySay

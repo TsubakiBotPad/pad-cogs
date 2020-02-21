@@ -2,9 +2,9 @@ import json
 import os
 import re
 
+import discord
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
 
 from rpadutils import CogSettings, get_role_from_id, get_role, safe_read_json
 

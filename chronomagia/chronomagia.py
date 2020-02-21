@@ -6,9 +6,10 @@ import traceback
 import urllib.parse
 from collections import OrderedDict
 
+import discord
 from redbot.core import commands, data_manager
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 import rpadutils
 from rpadutils import Menu, EmojiUpdater

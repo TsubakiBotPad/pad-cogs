@@ -2,10 +2,11 @@ import json
 import random
 import re
 
+import discord
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box
 
 from rpadutils import CogSettings, clean_global_mentions
 

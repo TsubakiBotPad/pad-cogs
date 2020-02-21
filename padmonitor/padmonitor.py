@@ -1,7 +1,7 @@
 import asyncio
 
 from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 import rpadutils
 

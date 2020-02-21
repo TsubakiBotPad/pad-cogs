@@ -3,8 +3,10 @@ import json
 from _collections import OrderedDict
 
 import aiohttp
+import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import inline
 
 from rpadutils import Menu, EmojiUpdater, char_to_emoji
 
@@ -15,7 +17,8 @@ DATA_URL = '{}/azure_lane.json'.format(BASE_URL)
 class AzureLane(commands.Cog):
     """AzureLane."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.card_data = []
         self.menu = Menu(bot)

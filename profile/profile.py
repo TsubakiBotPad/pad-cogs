@@ -1,8 +1,9 @@
 import re
 
+import discord
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from rpadutils import CogSettings
 
@@ -236,9 +237,9 @@ class Profile(commands.Cog):
             line2 = profile_text
             msg = msg + line1 + "\n" + line2 + "\n\n"
 
-        await self.pageOutput(msg)
+        await self.pageOutput(ctx, msg)
 
-    async def pageOutput(self, msg):
+    async def pageOutput(self, ctx, msg):
         msg = msg.strip()
         msg = pagify(msg, ["\n"], shorten_by=20)
         for page in msg:

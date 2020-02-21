@@ -1,9 +1,10 @@
 import asyncio
 
+import discord
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 from rpadutils import char_to_emoji
 

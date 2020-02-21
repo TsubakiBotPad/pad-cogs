@@ -3,8 +3,9 @@ import json
 from _collections import OrderedDict
 
 import aiohttp
+import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 from rpadutils import Menu, EmojiUpdater, char_to_emoji
 

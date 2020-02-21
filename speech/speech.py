@@ -1,11 +1,12 @@
 import asyncio
 
+import discord
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 from rpadutils import CogSettings
 

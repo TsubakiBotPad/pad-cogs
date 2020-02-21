@@ -5,11 +5,12 @@ import timeit
 from collections import deque
 from datetime import datetime, timedelta
 
+import discord
 import prettytable
 import pytz
 from redbot.core import checks, commands, data_manager
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 import rpadutils
 

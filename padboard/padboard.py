@@ -4,10 +4,11 @@ from collections import deque
 
 import aiohttp
 import cv2
+import discord
 import numpy as np
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
 from padvision import padvision
 from rpadutils import rpadutils

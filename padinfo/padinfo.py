@@ -5,11 +5,12 @@ import traceback
 import urllib.parse
 from collections import OrderedDict
 
+import discord
 import prettytable
 from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline, box
 
 import rpadutils
 from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics

@@ -6,11 +6,12 @@ import traceback
 from datetime import datetime
 
 import aiohttp
+import discord
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.utils.chat_formatting import inline
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, box
 
 log = logging.getLogger("red.admin")
 
