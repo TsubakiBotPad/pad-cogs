@@ -493,18 +493,17 @@ def clean_global_mentions(content):
     return re.sub(r'(@)(\w)', '\\g<1>\u200b\\g<2>', content)
 
 
-def intify(iterable):
-    if isinstance(iterable, dict):
-        for item in list(iterable):
-            try:
-                iterable[int(item)] = intify(iterable[item])
-            except:
-                iterable[item] = intify(iterable[item])
-    elif isinstance(iterable, (list, tuple)):
-        for item in iterable:
-            if intify(item) != item:
-                iterable.append(intify(item))
-    return iterable
+def intify(input):
+    if isinstance(input, dict):
+        return {intify(k): intify(v) for k, v in input.items()}
+    elif isinstance(input, (list, tuple)):
+        return [intify(x) for x in input]
+    elif isinstance(input, str) and input.isdigit():
+        return int(input)
+    elif isinstance(input, str) and input.replace('.', '', 1).isdigit():
+        return float(input)
+    else:
+        return input
 
 
 class CogSettings(object):
