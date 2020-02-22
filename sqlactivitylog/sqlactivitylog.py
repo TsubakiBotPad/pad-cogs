@@ -367,7 +367,7 @@ class SqlActivityLogger(commands.Cog):
 
     @commands.Cog.listener("on_message_delete")
     async def on_message_delete(self, message):
-        self.log('DELETE', message, datetime.datetime.utcnow())
+        self.log('DELETE', message, datetime.utcnow())
 
     def log(self, msg_type, message, timestamp):
         if self.lock:
@@ -380,7 +380,7 @@ class SqlActivityLogger(commands.Cog):
           INSERT INTO messages(timestamp, server_id, channel_id, user_id, msg_type, content, clean_content)
           VALUES(:timestamp, :server_id, :channel_id, :user_id, :msg_type, :content, :clean_content)
         '''
-        timestamp = timestamp or datetime.datetime.utcnow()
+        timestamp = timestamp or datetime.utcnow()
         server_id = message.guild.id if message.guild else -1
         channel_id = message.channel.id if message.channel else -1
 
@@ -413,7 +413,7 @@ class SqlActivityLogger(commands.Cog):
         self.insert_timing.append(execution_time)
 
     def purge(self):
-        before = datetime.datetime.today() - timedelta(days=(7 * 3))
+        before = datetime.today() - timedelta(days=(7 * 3))
         values = dict(before=before)
         print('Purging old logs')
         cursor = self.con.execute(DELETE_BEFORE_QUERY, values)
