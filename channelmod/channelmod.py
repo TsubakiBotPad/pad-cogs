@@ -1,4 +1,3 @@
-import asyncio
 import io
 import logging
 import time
@@ -15,8 +14,6 @@ from rpadutils import CogSettings, box
 
 log = logging.getLogger("red.admin")
 
-INACTIVE = '_inactive'
-
 # Three hour cooldown
 ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
 
@@ -31,97 +28,11 @@ class ChannelMod(commands.Cog):
         self.channel_last_spoke = {}
 
     @commands.group()
-    @commands.guild_only()
-    @checks.mod_or_permissions(manage_channels=True)
+    @checks.is_owner()
     async def channelmod(self, ctx):
         """Manage channel moderation settings"""
 
     @channelmod.command()
-    @checks.mod_or_permissions(manage_channels=True)
-    async def inactivemonitor(self, ctx, timeout: int):
-        """Enable/disable the activity monitor on this channel.
-
-        Timeout is in seconds. Set to 0 to disable.
-
-        Set the timeout >0 to have the bot automatically append '_inactive' to the channel
-        name when the oldest message in the channel is greater than the timeout.
-        """
-        channel = ctx.channel
-        server = channel.guild
-        has_permissions = channel.permissions_for(server.me).manage_channels
-        if not has_permissions:
-            await ctx.send(inline('I need manage channel permissions to do this'))
-            return
-
-        self.settings.set_inactivity_monitor_channel(server.id, channel.id, timeout)
-        await ctx.send(inline('done'))
-
-    @commands.Cog.listener('on_message')
-    async def log_channel_activity_check(self, message):
-        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
-            return
-
-        server = message.guild
-        channel = message.channel
-        timeout = self.settings.get_inactivity_monitor_channel_timeout(server.id, channel.id)
-
-        if timeout <= 0:
-            return
-
-        self.channel_last_spoke[channel.id] = datetime.utcnow()
-
-        if channel.name.endswith(INACTIVE):
-            new_name = channel.name[:-len(INACTIVE)]
-            await channel.edit(name=new_name)
-
-    async def check_inactive_channel(self, server_id: int, channel_id: int, timeout: int):
-        channel = self.bot.get_channel(int(channel_id))
-        if channel is None:
-            print('timeout check: cannot find channel', channel_id)
-            return
-
-        server = channel.guild
-
-        has_permissions = channel.permissions_for(server.me).manage_channels
-        if not has_permissions:
-            print('no manage channel permissions, disabling', channel_id)
-            self.settings.set_inactivity_monitor_channel(server_id, channel_id, 0)
-            return
-
-        now = datetime.utcnow()
-        last_spoke_at = self.channel_last_spoke.get(channel.id)
-        time_delta = (now - last_spoke_at).total_seconds() if last_spoke_at else 9999
-        time_exceeded = time_delta > timeout
-
-        if time_exceeded and not channel.name.endswith(INACTIVE):
-            new_name = channel.name + INACTIVE
-            try:
-                await channel.edit(name=new_name)
-            except Exception as ex:
-                print('failed to edit channel: ' + str(ex))
-
-    async def check_inactive_channels(self):
-        for server_id in self.settings.servers().keys():
-            for channel_id, channel_config in self.settings.get_inactivity_monitor_channels(server_id).items():
-                timeout = channel_config['timeout']
-                if timeout <= 0:
-                    continue
-                try:
-                    await self.check_inactive_channel(server_id, channel_id, timeout)
-                except Exception as ex:
-                    print('failed to check inactivity channel: ' + str(ex))
-
-    async def channel_inactivity_monitor(self):
-        await self.bot.wait_until_ready()
-        while self == self.bot.get_cog('ChannelMod'):
-            try:
-                await asyncio.sleep(20)
-                await self.check_inactive_channels()
-            except:
-                traceback.print_exc()
-
-    @channelmod.command()
-    @checks.is_owner()
     async def addmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Set mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
@@ -147,8 +58,6 @@ class ChannelMod(commands.Cog):
         mirrored_channels = self.settings.mirrored_channels()
         msg = 'Mirrored channels\n'
         for mc_id, config in mirrored_channels.items():
-            if isinstance(mc_id, str):
-                continue
             channel = self.bot.get_channel(mc_id)
             channel_name = channel.name if channel else 'unknown'
             msg += '\n{} ({})'.format(mc_id, channel_name)
@@ -174,8 +83,7 @@ class ChannelMod(commands.Cog):
         last_spoke_time = datetime.utcfromtimestamp(
             last_spoke_timestamp) if last_spoke_timestamp else now_time
         attribution_required = last_spoke != message.author.id
-        attribution_required |= (
-                                        now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
+        attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
         self.settings.set_last_spoke(channel.id, message.author.id)
 
         attachment_bytes = None
@@ -210,6 +118,7 @@ class ChannelMod(commands.Cog):
                     dest_message = await dest_channel.send(message.content)
                 else:
                     print('Failed to mirror message from ', channel.id, 'no action to take')
+                    continue
 
                 self.settings.add_mirrored_message(
                     channel.id, message.id, dest_channel.id, dest_message.id)
@@ -288,28 +197,11 @@ class ChannelModSettings(CogSettings):
     def servers(self):
         return self.bot_settings['servers']
 
-    def get_server(self, server_id: str):
+    def get_server(self, server_id: int):
         servers = self.servers()
         if server_id not in servers:
             servers[server_id] = {}
         return servers[server_id]
-
-    def get_inactivity_monitor_channels(self, server_id: str):
-        server = self.get_server(server_id)
-        key = 'inactivity_monitor_channels'
-        if key not in server:
-            server[key] = {}
-        return server[key]
-
-    def set_inactivity_monitor_channel(self, server_id: str, channel_id: str, timeout: int):
-        channels = self.get_inactivity_monitor_channels(server_id)
-        channels[channel_id] = {'timeout': timeout}
-        self.save_settings()
-
-    def get_inactivity_monitor_channel_timeout(self, server_id: str, channel_id: str):
-        channels = self.get_inactivity_monitor_channels(server_id)
-        channel = channels.get(channel_id, {})
-        return channel.get('timeout', 0)
 
     def max_mirrored_messages(self):
         return self.bot_settings['max_mirrored_messages']
@@ -332,7 +224,7 @@ class ChannelModSettings(CogSettings):
 
     def get_last_spoke(self, source_channel: str):
         spoke_values = self.mirrored_channels().get(source_channel, {})
-        return (spoke_values.get('last_spoke', None), spoke_values.get('last_spoke_timestamp', None))
+        return spoke_values.get('last_spoke', None), spoke_values.get('last_spoke_timestamp', None)
 
     def set_last_spoke(self, source_channel: str, last_spoke: str):
         spoke_values = self.mirrored_channels().get(source_channel)
@@ -340,7 +232,7 @@ class ChannelModSettings(CogSettings):
         spoke_values['last_spoke_timestamp'] = time.time()
         self.save_settings()
 
-    def add_mirrored_channel(self, source_channel: str, dest_channel: str):
+    def add_mirrored_channel(self, source_channel: int, dest_channel: int):
         channels = self.mirrored_channels()
         if source_channel == dest_channel:
             raise commands.UserFeedbackCheckFailure('Cannot mirror a channel to itself')
@@ -354,7 +246,7 @@ class ChannelModSettings(CogSettings):
         channels[source_channel]['channels'].append(dest_channel)
         self.save_settings()
 
-    def rm_mirrored_channel(self, source_channel: str, dest_channel: str):
+    def rm_mirrored_channel(self, source_channel: int, dest_channel: int):
         channels = self.mirrored_channels()
         config = channels.get(source_channel)
         if config and dest_channel in config['channels']:
@@ -364,7 +256,7 @@ class ChannelModSettings(CogSettings):
                 channels.pop(source_channel)
             self.save_settings()
 
-    def add_mirrored_message(self, source_channel: str, source_message: str, dest_channel: str, dest_message: str):
+    def add_mirrored_message(self, source_channel: int, source_message: str, dest_channel: int, dest_message: str):
         channel_config = self.mirrored_channels()[source_channel]
         messages = channel_config['messages']
         if source_message not in messages:
@@ -381,7 +273,7 @@ class ChannelModSettings(CogSettings):
             messages.pop(oldest_msg)
             self.save_settings()
 
-    def get_mirrored_messages(self, source_channel: str, source_message: str):
+    def get_mirrored_messages(self, source_channel: int, source_message: str):
         """Returns either None or [(channel_id, message_id), ...]"""
         channel_config = self.mirrored_channels().get(source_channel, None)
         if channel_config:
