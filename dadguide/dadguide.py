@@ -72,7 +72,7 @@ class Dadguide(commands.Cog):
         self.translated_names = {}
 
         self.database = load_database(None)
-        self.index = None
+        self.index = None  # type: MonsterIndex
 
     @asyncio.coroutine
     def wait_until_ready(self):
@@ -91,9 +91,9 @@ class Dadguide(commands.Cog):
                             self.panthname_overrides,
                             accept_filter=accept_filter)
 
-    def get_monster_by_no(self, monster_no: int):
-        """Exported function that allows a client cog to get a full PgMonster by monster_no"""
-        return self.database.get_monster(monster_no)
+    def get_monster_by_id(self, monster_id: int):
+        """Exported function that allows a client cog to get a full DgMonster by monster_id"""
+        return self.database.get_monster(monster_id)
 
     def __unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -1212,10 +1212,10 @@ class MonsterIndex(object):
         self.all_monsters = named_monsters
         self.all_na_name_to_monsters = {m.name_na.lower(): m for m in named_monsters}
         self.monster_no_na_to_named_monster = {m.monster_no_na: m for m in named_monsters}
-        self.monster_no_to_named_monster = {m.monster_id: m for m in named_monsters}
+        self.monster_id_to_named_monster = {m.monster_id: m for m in named_monsters}
 
         for nickname, monster_id in nickname_overrides.items():
-            nm = self.monster_no_to_named_monster.get(monster_id)
+            nm = self.monster_id_to_named_monster.get(monster_id)
             if nm:
                 self.all_entries[nickname] = nm
 

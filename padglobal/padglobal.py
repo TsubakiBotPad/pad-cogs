@@ -75,11 +75,18 @@ def lookup_named_monster(query: str):
     return nm, err, debug_info
 
 
-def monster_no_to_monster(monster_no):
-    padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
-    if padinfo_cog is None:
+def monster_id_to_monster(monster_id):
+    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dg_cog is None:
         return None
-    return padinfo_cog.get_monster_by_no(monster_no)
+    return dg_cog.get_monster_by_id(monster_id)
+
+
+def monster_id_to_named_monster(monster_id):
+    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dg_cog is None:
+        return None
+    return dg_cog.index.monster_id_to_named_monster.get(monster_id, None)
 
 
 async def check_enabled(ctx):
@@ -688,8 +695,8 @@ class PadGlobal(commands.Cog):
             return None, None, None, None
 
         name = nm.group_computed_basename.title()
-        id = nm.base_monster_no
-        definition = self.settings.which().get(str(id), None)
+        monster_id = nm.base_monster_no
+        definition = self.settings.which().get(monster_id, None)
         timestamp = "2000-01-01"
 
         if isinstance(definition, list):
@@ -698,7 +705,7 @@ class PadGlobal(commands.Cog):
         if definition is not None:
             return name, definition, timestamp, True
 
-        monster = monster_no_to_monster(id)
+        monster = monster_id_to_monster(monster_id)
 
         if monster.mp_evo:
             return name, MP_BUY_MSG, None, False
@@ -707,7 +714,7 @@ class PadGlobal(commands.Cog):
         elif check_simple_tree(monster):
             return name, SIMPLE_TREE_MSG, None, False
         else:
-            await ctx.send(inline('No which info for {} (#{})'.format(name, id)))
+            await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
             return None, None, None, None
 
     @commands.command()
@@ -727,21 +734,16 @@ class PadGlobal(commands.Cog):
         await self._do_send_which(ctx, to_user, name, definition, timestamp)
 
     def which_to_text(self):
-        items = list()
         monsters = defaultdict(list)
-        for w in self.settings.which():
-            if isinstance(w, int):
+        for monster_id in self.settings.which():
+            monster_id = int(monster_id)
+            m = monster_id_to_monster(monster_id)
+            nm = monster_id_to_named_monster(monster_id)
+            if m is None or nm is None:
                 continue
-            elif w.isdigit():
-                nm, _, _ = lookup_named_monster(w)
-                name = nm.group_computed_basename.title()
-                m = monster_no_to_monster(nm.monster_id)
-                grp = m.series.name
-                monsters[grp].append(name)
-            else:
-                items.append(w)
-
-        msg = '\nGeneral:\n{}'.format(', '.join(sorted(items)))
+            name = nm.group_computed_basename.title()
+            grp = m.series.name
+            monsters[grp].append(name)
 
         tbl = prettytable.PrettyTable(['Group', 'Members'])
         tbl.hrules = prettytable.HEADER
@@ -751,9 +753,7 @@ class PadGlobal(commands.Cog):
             tbl.add_row([grp, ', '.join(sorted(monsters[grp]))])
 
         tbl_string = rpadutils.strip_right_multiline(tbl.get_string())
-        msg += '\n\n{}'.format(tbl_string)
-
-        return msg
+        return tbl_string
 
     async def _do_send_which(self, ctx, to_user: discord.Member, name, definition, timestamp):
         """Does the heavy lifting for whichto."""
@@ -772,7 +772,7 @@ class PadGlobal(commands.Cog):
         If you provide a monster ID, the term will be entered for that monster tree.
         e.x. ^padglobal addwhich 3818 take the pixel one
         """
-        m = monster_no_to_monster(monster_id)
+        m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
@@ -785,7 +785,7 @@ class PadGlobal(commands.Cog):
     @padglobal.command()
     async def rmwhich(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
-        m = monster_no_to_monster(monster_id)
+        m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
@@ -1105,7 +1105,7 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
-        m = monster_no_to_monster(monster_id)
+        m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
@@ -1117,7 +1117,7 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     async def rmleaderguide(self, ctx, monster_id: int):
-        m = monster_no_to_monster(monster_id)
+        m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
