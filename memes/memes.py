@@ -21,6 +21,7 @@ class Memes(commands.Cog):
         self.bot = bot
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
+        self.c_commands = {int(k): v for k, v in self.c_commands.items()}  # Fix legacy issues
         self.settings = MemesSettings("memes")
 
     @commands.command()
@@ -150,8 +151,7 @@ class Memes(commands.Cog):
                 return
 
         # MEME CODE
-        rpadutilsCog = self.bot.get_cog('RpadUtils')
-        if guild.id in self.c_commands and rpadutilsCog.user_allowed(message):
+        if guild.id in self.c_commands and not message.author.bot:
             cmdlist = self.c_commands[guild.id]
             cmd = message.content[len(prefix):]
             if cmd in cmdlist.keys():
@@ -211,17 +211,17 @@ class MemesSettings(CogSettings):
     def guildConfigs(self):
         return self.bot_settings['configs']
 
-    def getGuild(self, guild_id):
+    def getGuild(self, guild_id: int):
         configs = self.guildConfigs()
         if guild_id not in configs:
             configs[guild_id] = {}
         return configs[guild_id]
 
-    def getPrivileged(self, guild_id):
+    def getPrivileged(self, guild_id: int):
         guild = self.getGuild(guild_id)
         return guild.get('privileged')
 
-    def setPrivileged(self, guild_id, role_id):
+    def setPrivileged(self, guild_id: int, role_id: int):
         guild = self.getGuild(guild_id)
         guild['privileged'] = role_id
         self.save_settings()

@@ -102,6 +102,7 @@ class PadGlobal(commands.Cog):
         self.bot = bot
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
+        self.c_commands = {int(k): v for k, v in self.c_commands.items()}  # Fix legacy issues
         self.settings = PadGlobalSettings("padglobal")
 
         self._export_data()
