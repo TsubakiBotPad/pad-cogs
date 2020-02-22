@@ -87,6 +87,7 @@ class ChannelMod(commands.Cog):
         self.settings.set_last_spoke(channel.id, message.author.id)
 
         attachment_bytes = None
+        filename = None
         if message.attachments:
             # If we know we're copying a message and that message has an attachment,
             # pre download it and reuse it for every upload.
@@ -110,8 +111,8 @@ class ChannelMod(commands.Cog):
                                                                    message.channel.name)
                     await dest_channel.send(msg)
 
-                if attachment_bytes:
-                    dest_message = await dest_channel.send(file=attachment_bytes, filename=filename,
+                if attachment_bytes and filename:
+                    dest_message = await dest_channel.send(file=discord.File(attachment_bytes, filename),
                                                            content=message.content)
                     attachment_bytes.seek(0)
                 elif message.content:
