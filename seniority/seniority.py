@@ -115,7 +115,6 @@ class Seniority(commands.Cog):
         self.db_path = self.settings.folder + '/log.db'
         self.lock = True
         self.insert_timing = deque(maxlen=1000)
-        print('Seniority: init complete')
 
     def cog_unload(self):
         print('Seniority: unloading')
@@ -645,6 +644,7 @@ class Seniority(commands.Cog):
 
         return True, text, 'Passed!'
 
+    @commands.Cog.listener("on_message")
     async def on_message(self, message: discord.Message):
         if message.guild is None:
             return
