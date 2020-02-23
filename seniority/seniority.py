@@ -16,7 +16,7 @@ from redbot.core.commands import Context
 from redbot.core.utils.chat_formatting import inline, pagify, box
 
 import rpadutils
-from rpadutils import CogSettings, NA_TZ_OBJ
+from rpadutils import CogSettings, NA_TZ_OBJ, intify
 
 CREATE_TABLE = '''
 CREATE TABLE IF NOT EXISTS seniority(
@@ -61,7 +61,7 @@ LIMIT ?
 '''
 
 GET_LOOKBACK_POINTS_QUERY = '''
-SELECT CAST(user_id AS INTEGER) as user_id, sum(points) as points
+SELECT user_id, sum(points) as points
 FROM seniority INDEXED BY idx_server_id_user_id_record_date
 WHERE server_id = ?
   AND record_date >= ?
@@ -69,7 +69,7 @@ GROUP BY 1
 '''
 
 GET_DATE_POINTS_QUERY = '''
-SELECT CAST(channel_id AS INTEGER) as channel_id, points
+SELECT channel_id, points
 FROM seniority INDEXED BY idx_server_id_record_date_user_id
 WHERE record_date = ?
   AND server_id = ?
@@ -114,12 +114,17 @@ class Seniority(commands.Cog):
         self.settings = SenioritySettings("seniority")
         self.db_path = self.settings.folder + '/log.db'
         self.lock = True
+        self.pool = None
         self.insert_timing = deque(maxlen=1000)
 
     def cog_unload(self):
         print('Seniority: unloading')
         self.lock = True
-        self.pool.close()
+        if self.pool:
+            self.pool.close()
+            self.pool = None
+        else:
+            print('unexpected error: pool was None')
         print('Seniority: unloading complete')
 
     async def init(self):
@@ -221,7 +226,7 @@ class Seniority(commands.Cog):
 
     def get_announce_channel(self, server_id):
         announce_channel_id = self.settings.announce_channel(server_id)
-        return self.bot.get_channel(int(announce_channel_id))
+        return self.bot.get_channel(announce_channel_id)
 
     @seniority.group()
     @commands.guild_only()
@@ -380,6 +385,7 @@ class Seniority(commands.Cog):
             async with conn.cursor() as cur:
                 await cur.execute(GET_LOOKBACK_POINTS_QUERY, server.id, lookback_date_str)
                 rows = await cur.fetchall()
+                rows = intify(rows)
         return rows
 
     def check_users_for_role(self,
