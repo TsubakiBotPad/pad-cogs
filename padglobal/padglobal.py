@@ -1056,14 +1056,13 @@ class PadGlobal(commands.Cog):
             definition = dungeon_guide[term]
             msg += '\n**{}** :\n{}\n'.format(term, definition)
 
-        leader_guide = self.settings.leaderGuide()
-        name_to_guide = {self.term_to_monster_name(
-            monster_id): definition for monster_id, definition in leader_guide.items()}
-
         msg += '\n\n__**Leader Guides**__'
-        for term in sorted(name_to_guide.keys()):
-            definition = name_to_guide[term]
-            msg += '\n**{}** :\n{}\n'.format(term, definition)
+        for monster_id, definition in self.settings.leaderGuide().items():
+            nm = monster_id_to_named_monster(monster_id)
+            if nm is None:
+                continue
+            name = nm.group_computed_basename.title()
+            msg += '\n**{}** :\n{}\n'.format(name, definition)
 
         return msg
 
