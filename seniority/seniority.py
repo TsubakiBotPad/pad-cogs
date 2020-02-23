@@ -454,7 +454,7 @@ class Seniority(commands.Cog):
     async def checktext(self, ctx, text: str):
         """Check if text is considered significant by the current config.
         """
-        is_good, cleaned_text, reason = self.check_acceptable(ctx.message, text)
+        is_good, cleaned_text, reason = await self.check_acceptable(ctx.message, text)
         if is_good:
             await ctx.send(box('Message accepted, cleaned text:\n{}'.format(cleaned_text)))
         else:
@@ -620,11 +620,11 @@ class Seniority(commands.Cog):
         self.settings.set_min_words(server_id, words)
         await ctx.send(inline('Min word count set to {}.'.format(words)))
 
-    def check_acceptable(self, message: discord.Message, text: str):
+    async def check_acceptable(self, message: discord.Message, text: str):
         server = message.guild
         server_id = server.id
         if self.settings.ignore_commands(server_id):
-            if rpadutils.get_prefix(self.bot, message):
+            if await rpadutils.get_prefix(self.bot, message):
                 return False, text, 'Ignored command'
 
         if self.settings.ignore_room_codes(server_id):
@@ -667,7 +667,7 @@ class Seniority(commands.Cog):
         if not channel_config:
             return
 
-        acceptable, _, _ = self.check_acceptable(message, message.content)
+        acceptable, _, _ = await self.check_acceptable(message, message.content)
         if not acceptable:
             return
 
