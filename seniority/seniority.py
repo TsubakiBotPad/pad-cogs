@@ -649,17 +649,10 @@ class Seniority(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.guild is None:
             return
-        server = message.guild
-        channel = message.channel
-        user = message.author
-        msg_content = message.content
         now_date_str = now_date()
-        await self.process_message(server, channel, user, now_date_str, msg_content)
+        await self.process_message(message, now_date_str)
 
-    async def process_message(self,
-                              message: discord.Message,
-                              now_date_str: str,
-                              msg_content: str):
+    async def process_message(self, message: discord.Message, now_date_str: str):
         if self.lock:
             return
 
@@ -674,7 +667,7 @@ class Seniority(commands.Cog):
         if not channel_config:
             return
 
-        acceptable, _, _ = self.check_acceptable(message, msg_content)
+        acceptable, _, _ = self.check_acceptable(message, message.content)
         if not acceptable:
             return
 
