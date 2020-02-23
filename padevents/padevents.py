@@ -27,7 +27,7 @@ class PadEvents(commands.Cog):
 
         self.fake_uid = -999
 
-    def __unload(self):
+    def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.events = list()
         self.started_events = set()

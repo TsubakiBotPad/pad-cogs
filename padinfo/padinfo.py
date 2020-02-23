@@ -146,7 +146,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
-    def __unload(self):
+    def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
         self.index_na = None

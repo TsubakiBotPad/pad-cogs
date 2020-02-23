@@ -95,7 +95,7 @@ class Dadguide(commands.Cog):
         """Exported function that allows a client cog to get a full DgMonster by monster_id"""
         return self.database.get_monster(monster_id)
 
-    def __unload(self):
+    def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         if self.database:
             self.database.close()

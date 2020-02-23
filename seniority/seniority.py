@@ -117,7 +117,7 @@ class Seniority(commands.Cog):
         self.insert_timing = deque(maxlen=1000)
         print('Seniority: init complete')
 
-    def __unload(self):
+    def cog_unload(self):
         print('Seniority: unloading')
         self.lock = True
         self.pool.close()

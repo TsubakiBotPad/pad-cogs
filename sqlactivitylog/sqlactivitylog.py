@@ -155,7 +155,7 @@ class SqlActivityLogger(commands.Cog):
         self.insert_timing = deque(maxlen=1000)
         self.purge()
 
-    def __unload(self):
+    def cog_unload(self):
         self.lock = True
         self.con.close()
 
