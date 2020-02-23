@@ -544,7 +544,7 @@ class CogSettings(object):
         return {}
 
 
-def get_prefix(bot: Red, message: discord.Message, text: str = None) -> Optional[str]:
+async def get_prefix(bot: Red, message: discord.Message, text: str = None) -> Optional[str]:
     text = text or message.content or ''
     for p in await get_prefixes(bot, message):
         if text.startswith(p):
