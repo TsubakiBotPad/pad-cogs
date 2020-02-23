@@ -16,7 +16,7 @@ from redbot.core.commands import Context
 from redbot.core.utils.chat_formatting import inline, pagify, box
 
 import rpadutils
-from rpadutils import CogSettings, NA_TZ_OBJ, intify
+from rpadutils import CogSettings, NA_TZ_OBJ
 
 CREATE_TABLE = '''
 CREATE TABLE IF NOT EXISTS seniority(
@@ -385,8 +385,7 @@ class Seniority(commands.Cog):
             async with conn.cursor() as cur:
                 await cur.execute(GET_LOOKBACK_POINTS_QUERY, server.id, lookback_date_str)
                 rows = await cur.fetchall()
-                rows = intify(rows)
-        return rows
+                return [(int(x[0]), x[1]) for x in rows]
 
     def check_users_for_role(self,
                              users_and_points,
