@@ -454,7 +454,7 @@ class Seniority(commands.Cog):
     async def checktext(self, ctx, text: str):
         """Check if text is considered significant by the current config.
         """
-        is_good, cleaned_text, reason = self.check_acceptable(ctx.guild, text)
+        is_good, cleaned_text, reason = self.check_acceptable(ctx.message, text)
         if is_good:
             await ctx.send(box('Message accepted, cleaned text:\n{}'.format(cleaned_text)))
         else:
@@ -620,10 +620,11 @@ class Seniority(commands.Cog):
         self.settings.set_min_words(server_id, words)
         await ctx.send(inline('Min word count set to {}.'.format(words)))
 
-    def check_acceptable(self, server: discord.Guild, text: str):
+    def check_acceptable(self, message: discord.Message, text: str):
+        server = message.guild
         server_id = server.id
         if self.settings.ignore_commands(server_id):
-            if rpadutils.get_prefix(self.bot, server, text):
+            if rpadutils.get_prefix(self.bot, message):
                 return False, text, 'Ignored command'
 
         if self.settings.ignore_room_codes(server_id):
@@ -655,44 +656,49 @@ class Seniority(commands.Cog):
         now_date_str = now_date()
         await self.process_message(server, channel, user, now_date_str, msg_content)
 
-    async def process_message(self, server: discord.Guild, channel: discord.TextChannel, user: discord.User,
-                              now_date_str: str, msg_content: str):
+    async def process_message(self,
+                              message: discord.Message,
+                              now_date_str: str,
+                              msg_content: str):
         if self.lock:
             return
-        if server is None:
-            return
-        if user == self.bot.user.id:
+
+        guild = message.guild
+        channel = message.channel
+        user = message.author
+
+        if guild is None or message.author.id == self.bot.user.id:
             return
 
-        channel_config = self.settings.channels(server.id).get(channel.id, None)
+        channel_config = self.settings.channels(guild.id).get(channel.id, None)
         if not channel_config:
             return
 
-        acceptable, _, _ = self.check_acceptable(server, msg_content)
+        acceptable, _, _ = self.check_acceptable(message, msg_content)
         if not acceptable:
             return
 
         max_points = channel_config['max_ppd']
-        current_points = await self.get_current_channel_points(now_date_str, server, channel, user)
+        current_points = await self.get_current_channel_points(now_date_str, guild, channel, user)
         current_points = current_points or 0
 
         if current_points >= max_points:
             return
 
-        server_point_cap = self.settings.server_point_cap(server.id)
-        current_server_points = await self.get_current_server_points(now_date_str, server, user)
+        server_point_cap = self.settings.server_point_cap(guild.id)
+        current_server_points = await self.get_current_server_points(now_date_str, guild, user)
         current_server_points = current_server_points or 0
 
         if current_server_points >= server_point_cap:
             return
 
-        message_cap = self.settings.message_cap(server.id)
+        message_cap = self.settings.message_cap(guild.id)
         incremental_points = max_points / message_cap
         new_points = current_points + incremental_points
         new_points = min(new_points, max_points)
 
         before_time = timeit.default_timer()
-        await self.save_current_points(now_date_str, server, channel, user, new_points)
+        await self.save_current_points(now_date_str, guild, channel, user, new_points)
         execution_time = timeit.default_timer() - before_time
         self.insert_timing.append(execution_time)
 

@@ -9,6 +9,7 @@ import signal
 import time
 import unicodedata
 from functools import wraps
+from typing import List, Optional
 
 import aiohttp
 import backoff
@@ -543,11 +544,24 @@ class CogSettings(object):
         return {}
 
 
-def get_prefix(bot, server, text):
-    for p in bot.settings.get_prefixes(server):
+def get_prefix(bot: Red, message: discord.Message, text: str = None) -> Optional[str]:
+    text = text or message.content or ''
+    for p in await get_prefixes(bot, message):
         if text.startswith(p):
             return p
-    return False
+    return None
+
+
+async def get_prefixes(bot: Red, message: discord.Message) -> List[str]:
+    prefixes = await bot.get_prefix(message)  # This returns all server prefixes
+    if isinstance(prefixes, str):
+        prefixes = [prefixes]
+
+    # In case some idiot sets a null prefix
+    if "" in prefixes:
+        prefixes.remove("")
+
+    return prefixes
 
 
 def strip_right_multiline(txt: str):
