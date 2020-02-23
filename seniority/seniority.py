@@ -61,7 +61,7 @@ LIMIT ?
 '''
 
 GET_LOOKBACK_POINTS_QUERY = '''
-SELECT user_id, sum(points) as points
+SELECT CAST(user_id AS INTEGER) as user_id, sum(points) as points
 FROM seniority INDEXED BY idx_server_id_user_id_record_date
 WHERE server_id = ?
   AND record_date >= ?
@@ -69,7 +69,7 @@ GROUP BY 1
 '''
 
 GET_DATE_POINTS_QUERY = '''
-SELECT channel_id, points
+SELECT CAST(channel_id AS INTEGER) as channel_id, points
 FROM seniority INDEXED BY idx_server_id_record_date_user_id
 WHERE record_date = ?
   AND server_id = ?
@@ -232,33 +232,30 @@ class Seniority(commands.Cog):
     @commands.guild_only()
     async def listbelow(self, ctx):
         """List users below the remove amount."""
-        server = ctx.guild
-        lookback_days = self.settings.remove_lookback(server.id)
-        await self.do_print_overages(ctx, server, lookback_days, 'remove_amount', False)
+        lookback_days = self.settings.remove_lookback(ctx.guild.id)
+        await self.do_print_overages(ctx, ctx.guild, lookback_days, 'remove_amount', False)
 
     @grant.command()
     @commands.guild_only()
     async def listnear(self, ctx):
         """List users above the warn amount."""
-        server = ctx.guild
-        lookback_days = self.settings.grant_lookback(server.id)
-        await self.do_print_overages(ctx, server, lookback_days, 'warn_amount', True)
+        lookback_days = self.settings.grant_lookback(ctx.guild.id)
+        await self.do_print_overages(ctx, ctx.guild, lookback_days, 'warn_amount', True)
 
     @grant.command()
     @commands.guild_only()
     async def listover(self, ctx):
         """List users above the grant amount."""
-        server = ctx.guild
-        lookback_days = self.settings.grant_lookback(server.id)
-        await self.do_print_overages(ctx, server, lookback_days, 'grant_amount', True)
+        lookback_days = self.settings.grant_lookback(ctx.guild.id)
+        await self.do_print_overages(ctx, ctx.guild, lookback_days, 'grant_amount', True)
 
     @grant.command()
     @commands.guild_only()
     async def grantnow(self, ctx):
         """List users above the grant amount."""
-        server = ctx.guild
-        lookback_days = self.settings.grant_lookback(server.id)
-        for role_id, role, amount in self.roles_and_amounts(server, 'grant_amount'):
+        guild = ctx.guild
+        lookback_days = self.settings.grant_lookback(guild.id)
+        for role_id, role, amount in self.roles_and_amounts(guild, 'grant_amount'):
             if role is None or amount <= 0:
                 continue
 
@@ -266,8 +263,8 @@ class Seniority(commands.Cog):
             await ctx.send(inline(msg))
 
             grant_users, ignored_users = await self.get_grant_ignore_users(
-                server, role, amount, lookback_days, True)
-            grant_users = [server.get_member(int(x[0])) for x in grant_users]
+                guild, role, amount, lookback_days, True)
+            grant_users = [guild.get_member(int(x[0])) for x in grant_users]
 
             cs = 5
             user_chunks = [grant_users[i:i + cs] for i in range(0, len(grant_users), cs)]
