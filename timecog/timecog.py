@@ -118,7 +118,8 @@ class TimeCog(commands.Cog):
 
         response = "I will tell you " + format_rm_time(rmtime, input, user_timezone)
         if not user_tz_str:
-            response += 'configure your timezone with `{0.clean_prefix}remindme settimezone` first.'.format(ctx)
+            response += '. Configure your timezone with `{0.clean_prefix}remindme settimezone` for accurate times.'.format(
+                ctx)
         await ctx.send(response)
 
     @remindme.command(aliases=["list"])
