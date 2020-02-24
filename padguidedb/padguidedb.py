@@ -129,7 +129,7 @@ class PadGuideDb(commands.Cog):
 
     def do_dungeon_load(self, server, dungeon_id, dungeon_floor_id):
         args = [
-            'python3',
+            '/usr/bin/python3',
             self.settings.dungeonScriptFile(),
             '--db_config={}'.format(self.settings.configFile()),
             '--server={}'.format(server),
