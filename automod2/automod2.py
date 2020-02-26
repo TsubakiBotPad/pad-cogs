@@ -480,7 +480,7 @@ class AutoMod2(commands.Cog):
         """Set the announcement channel."""
         server_id = ctx.guild.id
         self.settings.setWatchdogChannel(server_id, channel.id)
-        await self.bot.say(inline('Watchdog channel set'))
+        await ctx.send(inline('Watchdog channel set'))
 
     @commands.Cog.listener('on_message')
     async def mod_message_watchdog(self, message):
@@ -558,7 +558,7 @@ class AutoMod2(commands.Cog):
     async def _watchdog_print(self, watchdog_channel_id, output_msg):
         try:
             watchdog_channel = self.bot.get_channel(watchdog_channel_id)
-            await self.bot.send_message(watchdog_channel, output_msg)
+            await watchdog_channel.send(output_msg)
         except Exception as ex:
             print('failed to watchdog', str(ex))
 
