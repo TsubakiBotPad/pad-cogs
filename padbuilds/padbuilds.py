@@ -23,9 +23,9 @@ class PadBuilds(commands.Cog):
     async def builds(self, ctx):
         """PAD Builds management"""
 
-    @builds.command(name="add")
+    @builds.command()
     @checks.mod_or_permissions(administrator=True)
-    async def cc_add(self, ctx, command: str, *, text):
+    async def add(self, ctx, command: str, *, text):
         """Adds a PAD Build
 
         Example:
@@ -53,9 +53,9 @@ class PadBuilds(commands.Cog):
                            "`{}builds edit` to edit it."
                            "".format(ctx.prefix))
 
-    @builds.command(name="edit")
+    @builds.command()
     @checks.mod_or_permissions(administrator=True)
-    async def cc_edit(self, ctx, command: str, *, text):
+    async def edit(self, ctx, command: str, *, text):
         """Edits a PAD Build
 
         Example:
@@ -80,9 +80,9 @@ class PadBuilds(commands.Cog):
                            " Use `{}builds add` to start adding some."
                            "".format(ctx.prefix))
 
-    @builds.command(name="delete")
+    @builds.command()
     @checks.mod_or_permissions(administrator=True)
-    async def cc_delete(self, ctx, command: str):
+    async def delete(self, ctx, command: str):
         """Deletes a PAD Build
 
         Example:
@@ -103,8 +103,8 @@ class PadBuilds(commands.Cog):
                            " Use `{}builds add` to start adding some."
                            "".format(ctx.prefix))
 
-    @builds.command(name="list")
-    async def cc_list(self, ctx):
+    @builds.command()
+    async def list(self, ctx):
         """Shows PAD Builds list"""
         server = ctx.guild
         commands = self.c_commands.get_key(server.id, default={})

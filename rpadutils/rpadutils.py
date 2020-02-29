@@ -328,10 +328,10 @@ class Menu():
                     pass
 
         def check(payload):
-            return kwargs.get('check', default_check)(payload) and \
-                   str(payload.emoji.name) in list(emoji_to_message.emoji_dict.keys()) and \
-                   payload.user_id == ctx.author.id and \
-                   payload.message_id == message.id
+            return (kwargs.get('check', default_check)(payload) and
+                    str(payload.emoji.name) in list(emoji_to_message.emoji_dict.keys()) and
+                    payload.user_id == ctx.author.id and 
+                    payload.message_id == message.id)
 
         if not message:
             raise ValueError(message, ctx)
@@ -339,7 +339,7 @@ class Menu():
 
         try:
             p = await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)
-        except Exception as e:
+        except asyncio.TimeoutError:
             p = None
 
         if p is None:
@@ -607,7 +607,7 @@ async def await_and_remove(bot, react_msg, listen_user, delete_msgs=None, emoji=
 
     try:
         p = await bot.wait_for('add_reaction', check=check, timeout=timeout)
-    except:
+    except asyncio.TimeoutError:
         # Expected after {timeout} seconds
         p = None
 
@@ -664,3 +664,24 @@ def timeout_after(seconds=10, error_message=os.strerror(errno.ETIME)):
         return wraps(func)(wrapper)
 
     return decorator
+
+
+async def confirm_message(ctx, text, yemoji = "✅", nemoji = "❌", timeout = 10):
+    msg = await ctx.send(text)
+    await msg.add_reaction(yemoji)
+    await msg.add_reaction(nemoji)
+    def check(reaction, user):
+        return (str(reaction.emoji) in [yemoji, nemoji]
+                and user.id == ctx.author.id
+                and reaction.message.id == msg.id)
+
+    ret = False
+    try:
+        r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=timeout)
+        if r.emoji == yemoji:
+            ret = True
+    except asyncio.TimeoutError:
+        pass
+
+    await msg.delete()
+    return ret
