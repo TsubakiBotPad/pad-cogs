@@ -244,6 +244,25 @@ class TrUtils(commands.Cog):
                     await ctx.send(box("Loading cog failed: {}: {}".format(e.__class__.__name__, str(e))))
         await ctx.send('Done!')
 
+    @commands.command(hidden=True)
+    async def traceback2(self, ctx: commands.Context, public: bool = False):
+        """Sends to the owner the last command exception that has occurred
+
+        If public (yes is specified), it will be sent to the chat instead"""
+        if ctx.author.id not in [144250811315257344, 86605480876601344]:
+            return
+
+        if not public:
+            destination = ctx.author
+        else:
+            destination = ctx.channel
+
+        if self.bot._last_exception:
+            for page in pagify(self.bot._last_exception, shorten_by=10):
+                await destination.send(box(page, lang="py"))
+        else:
+            await ctx.send("No exception has occurred yet")
+
     @commands.command()
     async def getmiru(self, ctx):
         """Tells you how to get Miru into your server"""
