@@ -74,7 +74,7 @@ speech
 Fork this repo (you are probably already on the page, but if not [go here](https://github.com/nachoapps/miru-v3cogs). 
 You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
 
-I suggest using [PyCharm Community(https://www.jetbrains.com/pycharm/download) for development. Change into the
+I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) for development. Change into the
 `PycharmProjects` directory and clone your fork of the repo:
 
 ```shell script
