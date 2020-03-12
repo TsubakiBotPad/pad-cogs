@@ -42,7 +42,6 @@ class ChannelMod(commands.Cog):
         await ctx.send(inline('Done'))
 
     @channelmod.command()
-    @checks.is_owner()
     async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Remove mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
@@ -52,7 +51,6 @@ class ChannelMod(commands.Cog):
         await ctx.send(inline('Done'))
 
     @channelmod.command()
-    @checks.is_owner()
     async def mirrorconfig(self, ctx):
         """List mirror config."""
         mirrored_channels = self.settings.mirrored_channels()
@@ -110,6 +108,7 @@ class ChannelMod(commands.Cog):
                                                                    message.guild.name,
                                                                    message.channel.name)
                     await dest_channel.send(msg)
+                    await dest_channel.send(message.jump_url)
 
                 if attachment_bytes and filename:
                     dest_message = await dest_channel.send(file=discord.File(attachment_bytes, filename),

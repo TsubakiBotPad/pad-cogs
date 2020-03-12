@@ -6,6 +6,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 
+from rpadutils import rpadutils
 from rpadutils import char_to_emoji
 
 
@@ -102,3 +103,42 @@ class FancySay(commands.Cog):
             await ctx.message.delete()
         except Exception as error:
             print("failed to fancysay", error)
+
+
+
+
+
+    @commands.command(aliases = ["parrot", "repeat"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def say(self, ctx, *, message):
+        """Make Miru parrot a phrase."""
+        message = self.emojify(message)
+        await ctx.send(message)
+
+    @commands.command(aliases = ["testparrot", "testrepeat"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def testsay(self, ctx, *, message):
+        """Make Miru parrot a phrase without smart emoji replacements."""
+        await ctx.send(message)
+
+    @commands.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def mask(self, ctx, *, message):
+        """Sends a message as Miru."""
+        message = self.emojify(message)
+        await ctx.message.delete()
+        await ctx.send(message)
+
+    @commands.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def yell(self, ctx, *, message):
+        """Yells some text."""
+        message = self.emojify(message)
+        await ctx.send(message.upper().rstrip(",.!?")+"!!!!!!")
+
+    def emojify(self, message):
+        emojis = list()
+        for guild in self.bot.guilds:
+            emojis.extend(guild.emojis)
+        message = rpadutils.replace_emoji_names_with_code(emojis, message)
+        return rpadutils.fix_emojis_for_server(emojis, message)

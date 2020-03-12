@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import re
+import io
 import signal
 import time
 import unicodedata
@@ -137,11 +138,11 @@ def should_download(file_path, expiry_secs):
 
     ftime = os.path.getmtime(file_path)
     file_age = time.time() - ftime
-    print("for " + file_path + " got " + str(ftime) + ", age " +
-          str(file_age) + " against expiry of " + str(expiry_secs))
+    #print("for " + file_path + " got " + str(ftime) + ", age " +
+    #      str(file_age) + " against expiry of " + str(expiry_secs))
 
     if file_age > expiry_secs:
-        print("file too old, download it")
+        print("file {} too old, download it".format(file_path))
         return True
     else:
         return False
@@ -330,7 +331,7 @@ class Menu():
         def check(payload):
             return (kwargs.get('check', default_check)(payload) and
                     str(payload.emoji.name) in list(emoji_to_message.emoji_dict.keys()) and
-                    payload.user_id == ctx.author.id and 
+                    payload.user_id == ctx.author.id and
                     payload.message_id == message.id)
 
         if not message:
@@ -421,7 +422,7 @@ def fix_emojis_for_server(emoji_list, msg_text):
     # For each unique looking emoji thing
     for m in set(matches):
         # Create a regex for that emoji replacing the digit
-        m_re = re.sub(r'\d', r'\d', m)
+        m_re = re.sub(r'\d', r'&', m).rstrip("~")
         for em in emoji_list:
             # If the current emoji matches the regex, force a replacement
             emoji_code = str(em)
@@ -685,3 +686,14 @@ async def confirm_message(ctx, text, yemoji = "✅", nemoji = "❌", timeout = 1
 
     await msg.delete()
     return ret
+
+class CtxIO(io.IOBase):
+    def __init__(self, ctx):
+        self.ctx = ctx
+        super(CtxIO, self).__init__()
+
+    def read(self):
+        raise io.UnsupportedOperation("read")
+
+    def write(self, data):
+        asyncio.ensure_future(self.ctx.send(data))

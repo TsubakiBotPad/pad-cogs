@@ -192,12 +192,12 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command(name="id")
-    async def _do_id_all(self, ctx, *, query: str):
+    async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await self._do_id(ctx, query)
 
-    @commands.command(name="idna")
-    async def _do_id_na(self, ctx, *, query: str):
+    @commands.command()
+    async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id(ctx, query, na_only=True)
 
@@ -208,13 +208,13 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="id2")
-    async def _do_id2_all(self, ctx, *, query: str):
+    @commands.command()
+    async def id2(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await self._do_id2(ctx, query)
 
-    @commands.command(name="id2na")
-    async def _do_id2_na(self, ctx, *, query: str):
+    @commands.command()
+    async def id2na(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id2(ctx, query, na_only=True)
 
@@ -224,6 +224,7 @@ class PadInfo(commands.Cog):
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
+
 
     @commands.command(name="evos")
     async def evos(self, ctx, *, query: str):
@@ -482,6 +483,31 @@ class PadInfo(commands.Cog):
         if emoji_servers:
             self.settings.setEmojiServers(emoji_servers.split(','))
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+
+    @checks.is_owner()
+    @padinfo.command()
+    async def iddiff(self, ctx):
+        """Runs the diff checker for id and id2"""
+        await ctx.send("Running diff checker...")
+        hist_aggreg = list(self.historic_lookups) + list(self.historic_lookups_id2)
+        s = 0
+        f = []
+        for query in hist_aggreg:
+            m1, err1, debug_info1 = self.findMonster(query)
+            m2, err2, debug_info2 = self.findMonster2(query)
+            if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
+                s+=1
+                continue
+
+            f.append((query,
+                      [m1.monster_id if m1 else None, m2.monster_id if m2 else None],
+                      [err1, err2],
+                      [debug_info1, debug_info2]
+                    ))
+            if m1 and m2:
+                ctx.send("Major Discrepency: {} -> {}/{}".format(query, m1.name_na, m2.name_na))
+        await ctx.send("Done running diff checker.  {}/{} passed.".format(s,len(hist_aggreg)))
+        print(f)
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
@@ -801,7 +827,6 @@ def monsterToAcquireString(m: "DgMonster"):
         acquire_text = 'MP Shop Evo'
     return acquire_text
 
-
 def match_emoji(emoji_list, name):
     for e in emoji_list:
         if e.name == name:
@@ -814,6 +839,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
 
     info_row_1 = monsterToTypeString(m)
     acquire_text = monsterToAcquireString(m)
+    tet_text = m.true_evo_type.value
 
     info_row_2 = '**Rarity** {}\n**Cost** {}'.format(m.rarity, m.cost)
     if acquire_text:
@@ -822,6 +848,8 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
         info_row_2 += '\n**Inheritable**'
     else:
         info_row_2 += '\n**Not inheritable**'
+    if tet_text:
+        info_row_2 += '\n**{}**'.format(tet_text)
 
     embed.add_field(name=info_row_1, value=info_row_2)
 

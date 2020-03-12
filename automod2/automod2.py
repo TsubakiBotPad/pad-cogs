@@ -436,7 +436,7 @@ class AutoMod2(commands.Cog):
                 await ctx.send(inline('Watchdog set with cooldown of {} seconds'.format(existing_cd)))
         else:
             self.settings.setWatchdogUser(
-                server_id, user.id, ctx.message.author.id, cooldown, reason)
+                server_id, user.id, ctx.author.id, cooldown, reason)
             if cooldown == 0:
                 await ctx.send(inline('Watchdog cleared for {}'.format(user.name)))
             else:

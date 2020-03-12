@@ -437,7 +437,7 @@ class Seniority(commands.Cog):
     async def blacklist(self, ctx, user: discord.User, reason: str):
         """Ensure a user never gets a role auto granted."""
         server = ctx.guild
-        by = ctx.message.author
+        by = ctx.author
         self.settings.add_blacklist(server.id, user.id, by.id, reason)
         await ctx.send(inline('Set blacklist'))
 
@@ -531,7 +531,7 @@ class Seniority(commands.Cog):
         """Set the configuration for a role.
 
         role_name: Role name to configure
-        remove_amount: Automatic role removal threshold. Set to 0 to disable. 
+        remove_amount: Automatic role removal threshold. Set to 0 to disable.
         warn_amount: Print a warning in the announcement channel when exceeded. Set to 0 to disable.
         grant_amount: Automatic role grant threshold. Set to 0 to disable.
 

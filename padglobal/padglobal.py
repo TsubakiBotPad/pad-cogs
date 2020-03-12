@@ -72,7 +72,7 @@ def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = padinfo_cog._findMonster(query)
+    nm, err, debug_info = padinfo_cog._findMonster(str(query))
     return nm, err, debug_info
 
 
@@ -284,7 +284,7 @@ class PadGlobal(commands.Cog):
         await padinfo_cog.refresh_index()
         await ctx.send('finished reload')
 
-    @commands.group()
+    @commands.group(aliases = ['pdg'])
     @is_padglobal_admin()
     async def padglobal(self, ctx):
         """PAD global custom commands."""
@@ -767,13 +767,12 @@ class PadGlobal(commands.Cog):
     def which_to_text(self):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
-            monster_id = int(monster_id)
             m = monster_id_to_monster(monster_id)
             nm = monster_id_to_named_monster(monster_id)
             if m is None or nm is None:
                 continue
             name = nm.group_computed_basename.title()
-            grp = m.series.name 
+            grp = m.series.name
             monsters[grp].append(name)
 
         tbl = prettytable.PrettyTable(['Group', 'Members'])
@@ -834,30 +833,41 @@ class PadGlobal(commands.Cog):
         """Gets a list of all which commands."""
         items = list()
         monsters = []
-        whiches = self.settings.which()
-        for w in whiches:
-            if isinstance(whiches[w], list):
-                nm, _, _ = lookup_named_monster(w)
-                name = nm.group_computed_basename.title()
-                monsters.append([name, whiches[w][1]])
-            elif isinstance(w, int):
-                nm, _, _ = lookup_named_monster(w)
-                name = nm.group_computed_basename.title()
-                monsters.append([name, "2000-01-01"])
+        for w in self.settings.which():
+            w %= 10000
+            
+            nm = monster_id_to_named_monster(w)
+            name = nm.group_computed_basename.title()
+
+            result = self.settings.which()[w]
+            if isinstance(result, list):
+                monsters.append([name, result[1]])
             else:
-                items.append([w, "2000-01-01"])
+                monsters.append([name, "2000-01-01"])
 
         tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align = "l"
-        for mon in sorted(monsters, key=lambda x: x[1]):
+        for mon in sorted(sorted(monsters), key=lambda x: x[1]):
             tbl.add_row(mon)
 
         msg = rpadutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
             await ctx.send(box(page))
+
+    @padglobal.command()
+    async def debuglookup(self, ctx, *, term: str):
+        """Shows why a query matches to a monster"""
+        term = term.lower().replace('?', '')
+        nm, err, deb = lookup_named_monster(term)
+        base = nm.group_computed_basename.title() if nm else nm
+        name = nm.name_na if nm else nm
+        monster_id = nm.monster_id if nm else nm
+        definition = self.settings.which().get(monster_id, None)
+        await ctx.send('Which Debug:\n```Base: {}\nName: {}\nID: {}\nError: {}\nDebug: {}```'
+                                    .format(base, name, monster_id, err, deb))
 
     @padglobal.command()
     @checks.is_owner()
@@ -1016,7 +1026,7 @@ class PadGlobal(commands.Cog):
         return False
 
     def format_cc(self, command, message):
-        results = re.findall("\{([^}]+)\}", command)
+        results = re.findall(r"\{([^}]+)\}", command)
         for result in results:
             param = self.transform_parameter(result, message)
             command = command.replace("{" + result + "}", param)
