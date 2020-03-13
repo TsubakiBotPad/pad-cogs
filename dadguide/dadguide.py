@@ -272,7 +272,7 @@ class EvoType(Enum):
     UvoAwoken = 2
     UuvoReincarnated = 3
 
-class TrueEvoType(Enum):
+class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
     Base = ""
     Normal = ""
