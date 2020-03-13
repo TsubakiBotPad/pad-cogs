@@ -885,19 +885,19 @@ class DgMonster(DadguideItem):
     @property
     def true_evo_type(self):
         if self == self.base_monster:
-            return TrueEvoType.Base
+            return InternalEvoType.Base
         elif 5077 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return TrueEvoType.Super_Reincarnated
+            return InternalEvoType.SuperReincarnated
         elif 3826 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return TrueEvoType.Pixel
+            return InternalEvoType.Pixel
         elif self.is_equip:
-            return TrueEvoType.Assist
+            return InternalEvoType.Assist
         elif self.cur_evo_type == EvoType.UuvoReincarnated:
-            return TrueEvoType.Reincarnated
+            return InternalEvoType.Reincarnated
         elif self.cur_evo_type == EvoType.UvoAwoken:
-            return TrueEvoType.Ultimate
+            return InternalEvoType.Ultimate
         else:
-            return TrueEvoType.Normal
+            return InternalEvoType.Normal
 
 
 
