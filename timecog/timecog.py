@@ -21,7 +21,8 @@ time_at_regeces = [
 ]
 
 time_in_regeces = [
-    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$'
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$',
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$',
 ]
 
 DT_FORMAT = "%b %-d, %Y at %-I:%M %p"
@@ -34,8 +35,45 @@ class TimeCog(commands.Cog):
         super().__init__(*args, **kwargs)
         self.config = Config.get_conf(self, identifier=7173306)
         self.config.register_user(reminders=[], tz='')
+        self.config.register_channel(schedules=[])
+
+        """
+        CONFIG: Config
+        |   USERS: Config
+        |   |   REMINDERS: list
+        |   |   |   REMINDER: tuple
+        |   |   |   |   TIME: int (timestamp)
+        |   |   |   |   TEXT: str
+        |   |   TZ: str (tzstr)
+        |   CHANNELS: Config
+        |   |   SCHEDULES: list
+        |   |   |   SCHEDULE: tuple
+        |   |   |   |   START: int (timestamp)
+        |   |   |   |   INTERVAL: int (seconds)
+        |   |   |   |   TEXT: str
+        """
 
         self.bot = bot
+
+    #@commands.group(invoke_without_command=True)
+    async def schedule(self, ctx, *, text):
+        raise ValueError()
+        match = re.search(time_in_regeces[0], text, re.IGNORECASE)
+        if match:
+            tinstart = "now"
+            tinstrs, input = match.groups()
+        else:
+            match = re.search(time_in_regeces[1], text, re.IGNORECASE)
+            if not match:
+                await ctx.send("Invalid interval")
+                return
+            tinstart, tinstrs, input = match.groups()
+        start = (datetime.utcnow() + tin2tdelta(tinstart)).timestamp()
+        async with self.config.channel(ctx.channel).schedules() as scs:
+            scs.append((start, tin2tdelta(tinstrs).seconds, input))
+        m = await ctx.send("Schedule created.  I will send a message on my next cycle (10s or less)")
+        await asyncio.sleep(5.)
+        await m.delete()
 
     @commands.group(aliases=['remindmeat', 'remindmein'], invoke_without_command=True)
     async def remindme(self, ctx, *, time):
@@ -61,7 +99,7 @@ class TimeCog(commands.Cog):
 
             if not user_tz_str:
                 await ctx.send(
-                    "Please configure your timezone with `{0.clean_prefix}remindme settimezone` first.".format(ctx))
+                    "Please configure your timezone with `{0.clean_prefix}settimezone` first.".format(ctx))
                 return
 
             now = datetime.now(tz=user_timezone)
@@ -99,7 +137,7 @@ class TimeCog(commands.Cog):
             for ir in time_in_regeces:
                 match = re.search(ir, time, re.IGNORECASE)
                 if not match:
-                    continue
+                    break # Only use the first one
                 tinstrs, input = match.groups()
                 rmtime = datetime.utcnow()
                 try:
@@ -119,7 +157,7 @@ class TimeCog(commands.Cog):
 
         response = "I will tell you " + format_rm_time(rmtime, input, user_timezone)
         if not user_tz_str:
-            response += '. Configure your timezone with `{0.clean_prefix}remindme settimezone` for accurate times.'.format(
+            response += '. Configure your timezone with `{0.clean_prefix}settimezone` for accurate times.'.format(
                 ctx)
         await ctx.send(response)
 
@@ -154,7 +192,7 @@ class TimeCog(commands.Cog):
         await self.config.user(ctx.author).reminders.set([])
         await ctx.send(inline("Done"))
 
-    @remindme.command(aliases=['settz'])
+    @commands.command(aliases=['settz'])
     async def settimezone(self, ctx, tzstr):
         """Set your timezone."""
         try:
@@ -169,6 +207,7 @@ class TimeCog(commands.Cog):
 
         while self == self.bot.get_cog('TimeCog'):
             urs = await self.config.all_users()
+            chs = await self.config.all_channels()
             now = datetime.utcnow()
             for u in urs:
                 for rm in urs[u]['reminders']:
@@ -176,6 +215,14 @@ class TimeCog(commands.Cog):
                         async with self.config.user(self.bot.get_user(u)).reminders() as rms:
                             rms.remove(rm)
                         await self.bot.get_user(u).send(rm[1])
+            for c in chs:
+                for sc in chs[c]['schedules']:
+                    if datetime.fromtimestamp(float(sc[0])) < now:
+                        async with self.config.channel(self.bot.get_channel(c)).schedules() as sco:
+                            scind = sco.index(sc)
+                            sco[scind][0] += sco[scind][1]
+                            print(sco, scind, datetime.utcnow())
+                        await self.bot.get_channel(c).send(sc[2])
 
             try:
                 await asyncio.sleep(10)
@@ -280,6 +327,8 @@ def tzstr_to_tz(tz):
 
 
 def tin2tdelta(tinstr):
+    if tinstr.lower().strip() == "now":
+        return timedelta(0)
     tins = re.findall(r'(-?\d+) ?([a-z]+) ?', tinstr.lower())
     o = timedelta()
     for tin, unit in tins:
