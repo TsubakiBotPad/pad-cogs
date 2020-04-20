@@ -73,7 +73,8 @@ class BadUser(commands.Cog):
         self.settings.addPositiveRole(ctx.guild.id, role.id)
         await ctx.send(inline('Added positive role "' + role.name + '"'))
 
-    @baduser.command(name="rmpositiverole", pass_context=True, no_pm=True)
+    @baduser.command(name="rmpositiverole")
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def rmPositiveRole(self, ctx, *, role):
         """Cancels a role from 'benefit' status."""
@@ -81,7 +82,8 @@ class BadUser(commands.Cog):
         self.settings.rmPositiveRole(ctx.guild.id, role.id)
         await ctx.send(inline('Removed positive role "' + role.name + '"'))
 
-    @baduser.command(name="addneutralrole", pass_context=True, no_pm=True)
+    @baduser.command(name="addneutralrole")
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def addNeutralRole(self, ctx, *, role):
         """Designate a role as a notable but not ping-worthy role."""

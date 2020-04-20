@@ -10,15 +10,15 @@ import subprocess
 import sys
 
 import discord
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import inline, box
 from functools import reduce
 
 from rpadutils.rpadutils import CtxIO
 
-ACCEPTED_TOKENS = r'[\[\]\-()*+/0-9=.,% ]|>|<|==|>=|<=|\||&|~|!=|factorial|randrange|isfinite|copysign|radians|isclose|degrees|randint|lgamma|choice|random|round|log1p|log10|ldexp|isnan|isinf|hypot|gamma|frexp|floor|expm1|atanh|atan2|asinh|acosh|False|range|tanh|sqrt|sinh|modf|log2|fmod|fabs|erfc|cosh|ceil|atan|asin|acos|else|True|fsum|tan|sin|pow|nan|log|inf|gcd|sum|exp|erf|cos|for|not|and|pi|in|is|or|if|e|x'
+ACCEPTED_TOKENS = r'[\[\]\-()*+/0-9=.,% |&<>~_^]|>=|<=|==|!=|factorial|randrange|isfinite|copysign|radians|isclose|degrees|randint|lgamma|choice|random|round|log1p|log10|ldexp|isnan|isinf|hypot|gamma|frexp|floor|expm1|atanh|atan2|asinh|acosh|False|range|tanh|sqrt|sinh|modf|log2|fmod|fabs|erfc|cosh|ceil|atan|asin|acos|else|True|fsum|tan|sin|pow|nan|log|inf|gcd|sum|exp|erf|cos|for|not|and|ans|pi|in|is|or|if|e|x'
 
-ALTERED_TOKENS = {'^': '**'}
+ALTERED_TOKENS = {'^': '**', '_':'ans'}
 
 HELP_MSG = '''
 This calculator works by first validating the content of your query against a whitelist, and then
@@ -30,7 +30,14 @@ class Calculator(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+        self.config = Config.get_conf(self, identifier=857907)
+        self.config.register_user(ans={})
 
+        """
+        CONFIG: Config
+        |   GUILDS: Config
+        |   |   ans: channel_id -> Any
+        """
     @commands.group()
     async def helpcalc(self, ctx):
         '''Whispers info on how to use the calculator.'''
@@ -41,21 +48,22 @@ class Calculator(commands.Cog):
     async def calculator(self, ctx, *, inp):
         '''Evaluate equations. Use helpcalc for more info.'''
         unaccepted = list(filter(None, re.split(ACCEPTED_TOKENS, inp)))
-        bad_inp = []
-        for token in unaccepted:
-            if token in ALTERED_TOKENS:
-                inp = inp.replace(token, ALTERED_TOKENS[token])
-            else:
-                bad_inp.append(token)
+        for token in ALTERED_TOKENS:
+            inp = inp.replace(token, ALTERED_TOKENS[token])
 
-        if bad_inp:
-            err_msg = 'Found unexpected symbols inside the input: {}'.format(bad_inp)
+        if unaccepted:
+            err_msg = 'Found unexpected symbols inside the input: {}'.format(", ".join(unaccepted))
             help_msg = 'Use {0.prefix}helpcalc for info on how to use this command'
             await ctx.send(inline(err_msg + '\n' + help_msg.format(ctx)))
             return
 
-        cmd = """{} -c "from math import *;from random import *;print(eval('{}'), end='', flush=True)" """.format(
-            sys.executable, inp)
+        ans = (await self.config.user(ctx.author).ans()).get(str(ctx.channel.id))
+        if re.search(r'\bans\b', inp) and ans is None:
+            await ctx.send("You don't have a previous result saved.")
+            return
+
+        cmd = """{} -c "from math import *;from random import *;ans = {};print(eval('{}'), end='', flush=True)" """.format(
+            sys.executable, ans, inp)
 
         try:
             if os.name != 'nt' and sys.platform != 'win32':
@@ -80,6 +88,9 @@ class Calculator(commands.Cog):
             em = discord.Embed(color=discord.Color.greyple())
             em.add_field(name='Input', value='`{}`'.format(inp))
             em.add_field(name='Result', value=calc_result)
+            async with self.config.user(ctx.author).ans() as ans:
+                if calc_result is not None:
+                    ans[ctx.channel.id] = calc_result
             await ctx.send(embed=em)
 
     @commands.command()

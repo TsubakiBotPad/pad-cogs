@@ -24,9 +24,9 @@ Options for <query>
     <id> : Find a monster by ID
         ^id 1234 (picks sun quan)
     <name> : Take the best guess for a monster, picks the most recent monster
-        ^id kali (picks uvo d kali)
+        ^id kali (picks mega awoken d kali)
     <prefix> <name> : Limit by element or awoken, e.g.
-        ^id ares  (selects the most recent, awoken ares)
+        ^id ares  (selects the most recent, revo ares)
         ^id aares (explicitly selects awoken ares)
         ^id a ares (spaces work too)
         ^id rd ares (select a specific evo for ares, the red/dark one)
@@ -191,9 +191,11 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(name="id")
+    @commands.command(name="id", aliases="iD Id ID".split())
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
+        prefix = ctx.prefix+"id"
+        query = prefix.join(filter(None, query.split(prefix)))
         await self._do_id(ctx, query)
 
     @commands.command()
@@ -416,8 +418,8 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(name="helpid", aliases=['helppic', 'helpimg'])
-    async def _helpid(self, ctx):
+    @commands.command(aliases=['helppic', 'helpimg'])
+    async def helpid(self, ctx):
         """Whispers you info on how to craft monster queries for ^id"""
         await ctx.author.send(box(HELP_MSG))
 

@@ -109,7 +109,7 @@ class Stickers(commands.Cog):
         self.settings.add_admin(user.id)
         await ctx.send("done")
 
-    @sticker.command(pass_context=True)
+    @sticker.command()
     @checks.is_owner()
     async def rmadmin(self, ctx, user: discord.Member):
         """Removes a user from the stickers admin"""

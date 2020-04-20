@@ -159,7 +159,8 @@ class PadEvents(commands.Cog):
 
         await ctx.send("Fake event injected.")
 
-    @padevents.command(name="addchannel", pass_context=True, no_pm=True)
+    @padevents.command(name="addchannel")
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def _addchannel(self, ctx, server):
         server = normalizeServer(server)
@@ -380,12 +381,12 @@ class PadEvents(commands.Cog):
         header = "Times are PT below\n\n"
         return header + tbl.get_string() + "\n"
 
-    @commands.command(pass_context=True, aliases=['events'])
+    @commands.command(aliases=['events'])
     async def eventsna(self, ctx):
         """Print upcoming daily events for NA."""
         await self.doPartial(ctx, 'NA')
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def eventsjp(self, ctx):
         """Print upcoming daily events for JP."""
         await self.doPartial(ctx, 'JP')

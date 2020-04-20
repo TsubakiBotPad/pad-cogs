@@ -21,11 +21,11 @@ time_at_regeces = [
 ]
 
 time_in_regeces = [
-    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$',
-    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$',
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.+)$', # One tinstr
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$', #Unused
 ]
 
-DT_FORMAT = "%b %-d, %Y at %-I:%M %p"
+DT_FORMAT = "%A, %b %-d, %Y at %-I:%M %p"
 
 
 class TimeCog(commands.Cog):
@@ -134,20 +134,17 @@ class TimeCog(commands.Cog):
             rmtime = rmtime.astimezone(pytz.utc).replace(tzinfo=None)
             break
         else:
-            for ir in time_in_regeces:
-                match = re.search(ir, time, re.IGNORECASE)
-                if not match:
-                    break # Only use the first one
-                tinstrs, input = match.groups()
-                rmtime = datetime.utcnow()
-                try:
-                    rmtime += tin2tdelta(tinstrs)
-                except OverflowError:
-                    raise commands.UserFeedbackCheckFailure(
-                        inline("That's way too far in the future!  Please keep it in your lifespan!"))
-                break
-            else:
+            ir = time_in_regeces[0]
+            match = re.search(ir, time, re.IGNORECASE)
+            if not match: # Only use the first one
                 raise commands.UserFeedbackCheckFailure("Invalid time string: " + time)
+            tinstrs, input = match.groups()
+            rmtime = datetime.utcnow()
+            try:
+                rmtime += tin2tdelta(tinstrs)
+            except OverflowError:
+                raise commands.UserFeedbackCheckFailure(
+                    inline("That's way too far in the future!  Please keep it in your lifespan!"))
 
         if rmtime < (datetime.utcnow() - timedelta(seconds=1)):
             raise commands.UserFeedbackCheckFailure(inline("You can't set a reminder in the past!  If only..."))
@@ -160,6 +157,10 @@ class TimeCog(commands.Cog):
             response += '. Configure your timezone with `{0.clean_prefix}settimezone` for accurate times.'.format(
                 ctx)
         await ctx.send(response)
+
+    @remindme.command(hidden=True)
+    async def now(self, ctx, *, input):
+        await ctx.author.send(input)
 
     @remindme.command(aliases=["list"])
     async def get(self, ctx):

@@ -8,7 +8,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, corowrap
 
 try:
     if not discord.opus.is_loaded():
@@ -96,24 +96,19 @@ class Speech(commands.Cog):
         return False
 
     async def play_path(self, channel, audio_path: str):
-        existing_vc = self.bot.voice_client_in(channel.guild)
+        existing_vc = channel.guild.voice_client
         if existing_vc:
-            await existing_vc.disconnect()
+            await existing_vc.disconnect(force=True)
 
         voice_client = None
         try:
             voice_client = await channel.connect()
 
-            options = "-filter \"volume=volume=0.3\""
+            b_options = '-guess_layout_max 0 -v 16'
+            a_options = ''
 
-            audio_source = discord.FFmpegPCMAudio(audio_path, options=options)
-            voice_client.play(audio_source)
-
-            while not audio_player.is_done():
-                await asyncio.sleep(0.01)
-
-            await voice_client.disconnect()
-
+            audio_source = discord.FFmpegPCMAudio(audio_path, options=a_options, before_options=b_options)
+            voice_client.play(audio_source, after = corowrap(voice_client.disconnect(), self.bot.loop))
             return True
         except Exception as e:
             if voice_client:

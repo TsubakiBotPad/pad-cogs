@@ -21,11 +21,15 @@ from redbot.core import commands, data_manager
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, pagify
 
+RPADCOG = None
 
 class RpadUtils(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+
+        global RPADCOG
+        RPADCOG = self
 
     def user_allowed(self, message):
         author = message.author
@@ -697,3 +701,19 @@ class CtxIO(io.IOBase):
 
     def write(self, data):
         asyncio.ensure_future(self.ctx.send(data))
+
+def corowrap(coro, loop):
+    def func(*args, **kwargs):
+        fut = asyncio.run_coroutine_threadsafe(coro, loop)
+        try:
+            fut.result()
+        except:
+            pass
+    return func
+
+def fawait(coro, loop):
+    fut = asyncio.run_coroutine_threadsafe(coro, loop)
+    try:
+        fut.result()
+    except:
+        pass
