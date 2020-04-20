@@ -341,4 +341,4 @@ class ChannelModSettings(CogSettings):
     def get_mirrored_messages(self, source_channel: int, source_message: str):
         """Returns [(channel_id, message_id), ...]"""
         channel_config = self.mirrored_channels().get(source_channel, {})
-        return channel_config['messages'].get(source_message, [])
+        return channel_config.get('messages', {}).get(source_message, [])
