@@ -12,7 +12,7 @@ from rpadutils import CogSettings, corowrap
 
 try:
     if not discord.opus.is_loaded():
-        discord.opus.load_opus('libopus-0.dll')
+        discord.opus.load_opus('libopus.so.0')
 except:  # Missing opus
     print('Failed to load opus')
     opus = None
