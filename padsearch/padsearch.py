@@ -11,7 +11,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 from rpadutils import rpadutils
 
 HELP_MSG = """
-^search <specification string>
+{0.prefix}search <specification string>
 
 To get more than 10 results, include the word 'all' in your search.
 
@@ -726,12 +726,12 @@ class PadSearch(commands.Cog):
     @commands.command()
     async def helpsearch(self, ctx):
         """Help info for the search command."""
-        await ctx.author.send(box(HELP_MSG))
+        await ctx.author.send(box(HELP_MSG.format(ctx)))
 
     @commands.command()
     async def search(self, ctx, *, filter_spec: str):
         """Searches for monsters based on a filter you specify.
-        Use ^helpsearch for more info.
+        Use [p]helpsearch for more info.
         """
         try:
             config = self._make_search_config(filter_spec)

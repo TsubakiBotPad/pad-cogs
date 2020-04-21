@@ -195,7 +195,7 @@ class DamageCalc(commands.Cog):
     async def helpdamage(self, ctx):
         """Help info for the damage command
 
-        ^damage <specification string>
+        [p]damage <specification string>
 
         The specification string consists of:
             1) Optional card modifiers
@@ -223,10 +223,10 @@ class DamageCalc(commands.Cog):
         ---------------------------
         Examples
 
-        ^damage atk(100) orb() tpa
+        [p]damage atk(100) orb() tpa
         3-orb match and a 4-orb match with 100 attack, no tpas/row enhance, no multiplier
 
-        ^damage atk(100) mult(2.5) rows(1) tpas(2) row row() row(8) tpa tpa() orb orb() orb(5) combo(2)
+        [p]damage atk(100) mult(2.5) rows(1) tpas(2) row row() row(8) tpa tpa() orb orb() orb(5) combo(2)
         100 attack, 2.5x,  1 row enhance, 2 tpas
         2x 6-orb rows
         8-orb row
@@ -245,7 +245,7 @@ class DamageCalc(commands.Cog):
         The specification string consists of a series of optional modifiers, followed by
         a minimum of at least one orb match.
 
-        Use ^helpdamage for more info
+        Use [p]helpdamage for more info
         """
         try:
             lexer = PadLexer().build()

@@ -23,7 +23,7 @@ class FancySay(commands.Cog):
 
     @fancysay.command()
     async def pingrole(self, ctx, role: discord.Role, *, text):
-        """^fancysay pingrole rolename this is the text to ping
+        """[p]fancysay pingrole rolename this is the text to ping
 
         1) Converts a role to mentionable
         2) Posts the message + ping in the current channel

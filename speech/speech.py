@@ -103,7 +103,7 @@ class Speech(commands.Cog):
         voice_client = None
         try:
             voice_client = await channel.connect()
-
+            await asyncio.sleep(.5)
             b_options = '-guess_layout_max 0 -v 16'
             a_options = ''
 

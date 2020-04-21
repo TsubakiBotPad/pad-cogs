@@ -16,21 +16,21 @@ import rpadutils
 from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
 HELP_MSG = """
-^helpid : shows this message
-^id <query> : look up a monster and print a link to puzzledragonx
-^pic <query> : Look up a monster and display its image inline
+{0.prefix}helpid : shows this message
+{0.prefix}id <query> : look up a monster and print a link to puzzledragonx
+{0.prefix}pic <query> : Look up a monster and display its image inline
 
 Options for <query>
     <id> : Find a monster by ID
-        ^id 1234 (picks sun quan)
+        {0.prefix}id 1234 (picks sun quan)
     <name> : Take the best guess for a monster, picks the most recent monster
-        ^id kali (picks mega awoken d kali)
+        {0.prefix}id kali (picks mega awoken d kali)
     <prefix> <name> : Limit by element or awoken, e.g.
-        ^id ares  (selects the most recent, revo ares)
-        ^id aares (explicitly selects awoken ares)
-        ^id a ares (spaces work too)
-        ^id rd ares (select a specific evo for ares, the red/dark one)
-        ^id r/d ares (slashes, spaces work too)
+        {0.prefix}id ares  (selects the most recent, revo ares)
+        {0.prefix}id aares (explicitly selects awoken ares)
+        {0.prefix}id a ares (spaces work too)
+        {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
+        {0.prefix}id r/d ares (slashes, spaces work too)
 
 computed nickname list and overrides: https://docs.google.com/spreadsheets/d/1EyzMjvf8ZCQ4K-gJYnNkiZlCEsT9YYI9dUd-T5qCirc/pubhtml
 submit an override suggestion: https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
@@ -383,7 +383,7 @@ class PadInfo(commands.Cog):
         """Display the multiplier and leaderskills for two monsters
 
         If either your left or right query contains spaces, wrap in quotes.
-        e.g.: ^leaderskill "r sonia" "b sonia"
+        e.g.: [p]leaderskill "r sonia" "b sonia"
         """
         if bad:
             await ctx.send(inline('Too many inputs. Try wrapping your queries in quotes.'))
@@ -420,8 +420,8 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=['helppic', 'helpimg'])
     async def helpid(self, ctx):
-        """Whispers you info on how to craft monster queries for ^id"""
-        await ctx.author.send(box(HELP_MSG))
+        """Whispers you info on how to craft monster queries for [p]id"""
+        await ctx.author.send(box(HELP_MSG.format(ctx)))
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -516,8 +516,9 @@ class PadInfo(commands.Cog):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     def makeFailureMsg(self, err):
-        msg = 'Lookup failed: {}.\n'.format(err)
-        msg += 'Try one of <id>, <name>, [argbld]/[rgbld] <name>. Unexpected results? Use ^helpid for more info.'
+        msg = ('Lookup failed: {}.\n'
+               'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
+               'Unexpected results? Use {}helpid for more info.').format(err, (await self.bot.get_valid_prefixes())[0])
         return box(msg)
 
     def findMonster(self, query, na_only=False):

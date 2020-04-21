@@ -25,9 +25,9 @@ To invite public Miru to your server, use the following link:
 https://discordapp.com/oauth2/authorize?client_id=296443771229569026&scope=bot
 
 The following commands might come in handy:
-`^modhelp`       - information on how to set up Miru's moderation commands
-`^userhelp`      - a user-focused guide to Miru's commands
-`^help`          - the full list of Miru commands
+`{0.prefix}modhelp`       - information on how to set up Miru's moderation commands
+`{0.prefix}userhelp`      - a user-focused guide to Miru's commands
+`{0.prefix}help`          - the full list of Miru commands
 
 If you want to be notified of updates to Miru, suggest features, or ask for help, join the Miru Support server:
 https://discord.gg/zB4QHgn
@@ -41,47 +41,47 @@ commands, with an emphasis on the ones unique to this bot.
 Join the Miru Support Server for info, update, and bot support:
 https://discord.gg/zB4QHgn
 
-Use ^help to get a full list of help commands. Execute any command with no
+Use {0.prefix}help to get a full list of help commands. Execute any command with no
 arguments to get more details on how they work.
 
 Info commands:
-^credits   some info about the bot
-^donate    info on how to donate to cover hosting fees
-^userhelp  this message
-^modhelp   bot help specifically for mods
+{0.prefix}credits   some info about the bot
+{0.prefix}donate    info on how to donate to cover hosting fees
+{0.prefix}userhelp  this message
+{0.prefix}modhelp   bot help specifically for mods
 
 General:
-^pad             lists the pad-specific global commands
-^padfaq          lists pad-specific FAQ commands
-^boards          lists common leader optimal board commands
-^glossary        looks up a pad term in the glossary
-^customcommands  lists the custom commands added by the administrators of your server
-^memes           works the same way, but is restricted per-server to a privileged memer-only group
-^serverinfo      stats for the current server
-^userinfo        stats for a specific user
+{0.prefix}pad             lists the pad-specific global commands
+{0.prefix}padfaq          lists pad-specific FAQ commands
+{0.prefix}boards          lists common leader optimal board commands
+{0.prefix}glossary        looks up a pad term in the glossary
+{0.prefix}customcommands  lists the custom commands added by the administrators of your server
+{0.prefix}memes           works the same way, but is restricted per-server to a privileged memer-only group
+{0.prefix}serverinfo      stats for the current server
+{0.prefix}userinfo        stats for a specific user
 
 Monster Info:
-^id        search for a monster by ID, full name, nickname, etc
-^helpid    gets more info on how monster lookup works, including the nickname submission link
-^evolist   list all the evolutions for a monster, tabbed
-^pic       display the image for a monster
+{0.prefix}id        search for a monster by ID, full name, nickname, etc
+{0.prefix}helpid    gets more info on how monster lookup works, including the nickname submission link
+{0.prefix}evolist   list all the evolutions for a monster, tabbed
+{0.prefix}pic       display the image for a monster
 
 Profile:
 Miru will store your personal PAD details, and provide them on request.
-Use the series of commands starting with ^profile to configure your own profile.
+Use the series of commands starting with {0.prefix}profile to configure your own profile.
 
 Use one of the following commands to retrieve data.
-^idme            print your profile to the current channel
-^idfor           get profile data for a specific user
-^idto            have Miru DM your profile to a user
-^profile search  search the list of configured (visible) profiles
+{0.prefix}idme            print your profile to the current channel
+{0.prefix}idfor           get profile data for a specific user
+{0.prefix}idto            have Miru DM your profile to a user
+{0.prefix}profile search  search the list of configured (visible) profiles
 
 Time conversion:
-^time    get the current time in a different timezone
-^timeto  calculate the how long until another time in another timezone
+{0.prefix}time    get the current time in a different timezone
+{0.prefix}timeto  calculate the how long until another time in another timezone
 
 Translation:
-^[jpen|jpus|jaen|jaus] <text>  translate text from japanese to english
+{0.prefix}[jpen|jpus|jaen|jaus] <text>  translate text from japanese to english
 """
 
 MOD_HELP = """
@@ -98,10 +98,10 @@ write it.
 
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Check out the ^help command from inside your server. You'll see a wider list of
+Check out the {0.prefix}help command from inside your server. You'll see a wider list of
 commands than normal users do.
 
-If you've just added Miru to your server, start with the ^modset command. You
+If you've just added Miru to your server, start with the {0.prefix}modset command. You
 might want to configure an Admin and a Mod role (they can be the same thing).
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -109,14 +109,14 @@ Interesting features
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Self applied roles:
-You can configure which roles a user can add to themself using ^selfrole via ^adminset
+You can configure which roles a user can add to themself using {0.prefix}selfrole via {0.prefix}adminset
 
 Message logs:
-Discord doesn't save deleted/edited messages anywhere. Using ^exlog you can pull
+Discord doesn't save deleted/edited messages anywhere. Using {0.prefix}exlog you can pull
 messages for a user, channel, or search for a term.
 
 Auto Moderation:
-The ^automod2 command allows you to configure a set of rules (defined as regular expressions)
+The {0.prefix}automod2 command allows you to configure a set of rules (defined as regular expressions)
 that match messages. You can then apply these rules as either a blacklist or a whitelist to
 a specific channel. This allows you to force users to format their messages a specific way,
 or to prevent them from saying certain things (the bot deletes violators, and notifies them
@@ -133,13 +133,13 @@ You can configure a channel where Miru will log when these moderation events occ
 server, and when they rejoin the server (as this is generally done to evade negative roles).
 
 Custom commands:
-Miru supports three types of custom commands, you can find the list of associated commands via ^help.
+Miru supports three types of custom commands, you can find the list of associated commands via {0.prefix}help.
 * CustomCommands: Added by server mods, executable by anyone
 * Memes: Added by server mods, executable only by people with a specific Role (configured by mods)
 * Pad: Added by Miru PAD admins and executable by users in any server
 
 Limiting command execution:
-The '^p' command can be used to prevent users from executing specific commands on the server,
+The '{0.prefix}p' command can be used to prevent users from executing specific commands on the server,
 in specific channels, or unless they have specific roles. Read the documentation carefully.
 """
 
@@ -266,20 +266,20 @@ class TrUtils(commands.Cog):
     @commands.command()
     async def getmiru(self, ctx):
         """Tells you how to get Miru into your server"""
-        for page in pagify(GETMIRU_HELP, delims=['\n'], shorten_by=8):
+        for page in pagify(GETMIRU_HELP.format(ctx), delims=['\n'], shorten_by=8):
             await ctx.author.send(box(page))
 
     @commands.command()
     async def userhelp(self, ctx):
         """Shows a summary of the useful user features"""
-        for page in pagify(USER_HELP, delims=['\n'], shorten_by=8):
+        for page in pagify(USER_HELP.format(ctx), delims=['\n'], shorten_by=8):
             await ctx.author.send(box(page))
 
     @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
     async def modhelp(self, ctx):
         """Shows a summary of the useful moderator features"""
-        for page in pagify(MOD_HELP, delims=['\n'], shorten_by=8):
+        for page in pagify(MOD_HELP.format(ctx), delims=['\n'], shorten_by=8):
             await ctx.author.send(box(page))
 
     @commands.command()
@@ -314,15 +314,15 @@ class TrUtils(commands.Cog):
                       bot_miru_url, bot_miru_author))
 
         using = (
-            "You can use `^help` to get a full list of commands.\n"
-            "Use `^userhelp` to get a summary of useful user features.\n"
-            "Use `^modhelp` to get info on moderator-only features."
+            "You can use `{0.prefix}help` to get a full list of commands.\n"
+            "Use `{0.prefix}userhelp` to get a summary of useful user features.\n"
+            "Use `{0.prefix}modhelp` to get info on moderator-only features."
         )
 
         embed = discord.Embed()
         embed.add_field(name="Instance owned by", value='tactical_retreat')
         embed.add_field(name="About the bot", value=about, inline=False)
-        embed.add_field(name="Using the bot", value=using, inline=False)
+        embed.add_field(name="Using the bot", value=using.format(ctx), inline=False)
         embed.add_field(name="Avatar credits", value=avatar, inline=False)
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
@@ -481,7 +481,8 @@ class TrUtils(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                                  " Join the Miru Server to see any responses (^miruserver).")
+                                  " Join the Miru Server to see any responses "
+                                  "({0.prefix}miruserver).".format(ctx))
 
     @commands.command()
     @commands.guild_only()
@@ -491,7 +492,7 @@ class TrUtils(commands.Cog):
         self.settings.set_feedback_channel(channel.id)
         await ctx.send(inline('Done'))
 
-    @commands.command(aliases=['mamafeedback'])
+    @commands.command(aliases=['mamafeedback', 'renifeedback'])
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def blogfeedback(self, ctx, *, message: str):
         """Provide feedback on Reni's blog or translations.
@@ -499,7 +500,8 @@ class TrUtils(commands.Cog):
         Use this command to submit feedback on https://pad.protic.site or the JP translations.
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_blog_feedback_channel()))
-        await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses (^pdx).")
+        await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses
+                                                                  "({0.prefix}pdx).".format(ctx))
 
     @commands.command()
     @commands.guild_only()

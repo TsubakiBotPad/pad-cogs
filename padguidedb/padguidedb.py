@@ -13,7 +13,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from rpadutils import CogSettings
+from rpadutils import CogSettings, rpadutils
 
 PADGUIDEDB_COG = None
 
@@ -130,7 +130,7 @@ class PadGuideDb(commands.Cog):
         await ctx.send(inline('queued load in slot {}'.format(self.queue_size)))
         await running_load
         self.queue_size -= 1
-        await ctx.send(inline('load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+        await rpadutils.doubleup(ctx, inline('load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
 
     def do_dungeon_load(self, server, dungeon_id, dungeon_floor_id):
         args = [

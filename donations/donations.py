@@ -99,13 +99,13 @@ class Donations(commands.Cog):
 
         This lets you create a fancier image message. For example you can set up
         a simple inline image without a link using:
-        ^myembed lewd "" "http://i0.kym-cdn.com/photos/images/original/000/731/885/751.jpg" ""
+        [p]myembed lewd "" "http://i0.kym-cdn.com/photos/images/original/000/731/885/751.jpg" ""
 
         Want a title on that image? Fill in the first argument:
-        ^myembed lewd "L-lewd!" "<snip, see above>" ""
+        [p]myembed lewd "L-lewd!" "<snip, see above>" ""
 
         Want a footer? Fill in the last argument:
-        ^myembed lewd "L-lewd!" "<snip, see above>" "source: some managa i read"
+        [p]myembed lewd "L-lewd!" "<snip, see above>" "source: some managa i read"
         """
         user_id = ctx.author.id
         if user_id not in self.settings.donors():

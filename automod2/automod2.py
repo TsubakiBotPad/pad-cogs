@@ -53,7 +53,7 @@ argument with quotes, as above.
 
 Once you've added a pattern, you need to enable it in a channel using one
 of [p]addwhitelist or [p]addblacklist, e.g.:
-  ^automod2 addwhitelist "messages must start with a room code"
+  {0.prefix}automod2 addwhitelist "messages must start with a room code"
 
 If a channel has any whitelists, then text typed in the channel must match
 AT LEAST one whitelist, or it will be deleted. If ANY blacklist is matched
@@ -92,7 +92,7 @@ class AutoMod2(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def automodhelp(self, ctx):
         """Sends you info on how to use automod."""
-        for page in pagify(AUTOMOD_HELP, delims=['\n'], shorten_by=8):
+        for page in pagify(AUTOMOD_HELP.format(ctx.prefix), delims=['\n'], shorten_by=8):
             await ctx.author.send(box(page))
 
     @commands.group()

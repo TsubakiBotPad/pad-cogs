@@ -717,3 +717,13 @@ def fawait(coro, loop):
         fut.result()
     except:
         pass
+
+async def doubleup(ctx, message):
+    lmessage = await ctx.history().__anext__()
+    fullmatch = re.escape(message) + r"(?: x(\d+))?"
+    match = re.match(fullmatch, lmessage.content)
+    if match and lmessage.author == ctx.bot.user:
+        n = match.group(1) or 1
+        await lmessage.edit(content=message+" x"+str(n+1))
+    else:
+        await ctx.send("Done!")
