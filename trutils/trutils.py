@@ -500,7 +500,7 @@ class TrUtils(commands.Cog):
         Use this command to submit feedback on https://pad.protic.site or the JP translations.
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_blog_feedback_channel()))
-        await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses
+        await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses "
                                                                   "({0.prefix}pdx).".format(ctx))
 
     @commands.command()
