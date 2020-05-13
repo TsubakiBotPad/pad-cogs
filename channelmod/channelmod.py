@@ -232,6 +232,7 @@ class ChannelMod(commands.Cog):
 
 
     async def mformat(self, text, from_channel, dest_channel):
+        # LINKS
         for link, mid in re.findall(frMESSAGE_LINK.format(from_channel), text):
             from_link = await from_channel.fetch_message(mid)
             if not from_link:
@@ -247,7 +248,18 @@ class ChannelMod(commands.Cog):
 
             newlink = MESSAGE_LINK.format(dest_link)
             text = text.replace(link, newlink)
-
+        # ROLES
+        for rtext, rid in re.findall(r'(<@&(\d+)>)', text):
+            target = from_channel.guild.get_role(int(rid))
+            if target is None:
+                print('could not locate role to mod')
+                continue
+            dest = discord.utils.get(dest_channel.guild.roles, name=target.name)
+            if dest is None:
+                repl = "\\@"+target.name
+            else:
+                repl = "<@&{}>".format(dest.id)
+            text = text.replace(rtext, repl)
         return text
 
 class ChannelModSettings(CogSettings):
