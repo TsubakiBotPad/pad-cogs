@@ -518,7 +518,7 @@ class PadInfo(commands.Cog):
     def makeFailureMsg(self, err):
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
-               'Unexpected results? Use {}helpid for more info.').format(err, (await self.bot.get_valid_prefixes())[0])
+               'Unexpected results? Use ^helpid for more info.').format(err)
         return box(msg)
 
     def findMonster(self, query, na_only=False):
