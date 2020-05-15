@@ -113,6 +113,11 @@ class ChannelMod(commands.Cog):
         if message.author.id == self.bot.user.id:
             return
 
+        prefixes = await self.bot.get_prefix(message)
+        for prefix in prefixes if isinstance(prefixes, list) else [prefixes]:
+            if message.content.strip().startswith(prefix):
+                return
+
         channel = message.channel
         mirrored_channels = self.settings.get_mirrored_channels(channel.id)
 
