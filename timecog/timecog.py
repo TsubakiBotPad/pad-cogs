@@ -99,7 +99,7 @@ class TimeCog(commands.Cog):
 
             if not user_tz_str:
                 await ctx.send(
-                    "Please configure your timezone with `{0.clean_prefix}settimezone` first.".format(ctx))
+                    "Please configure your personal timezone with `{0.clean_prefix}settimezone` first.".format(ctx))
                 return
 
             now = datetime.now(tz=user_timezone)
