@@ -154,7 +154,7 @@ class TimeCog(commands.Cog):
 
         response = "I will tell you " + format_rm_time(rmtime, input, user_timezone)
         if not user_tz_str:
-            response += '. Configure your timezone with `{0.clean_prefix}settimezone` for accurate times.'.format(
+            response += '. Configure your personal timezone with `{0.clean_prefix}settimezone` for accurate times.'.format(
                 ctx)
         await ctx.send(response)
 
@@ -199,7 +199,7 @@ class TimeCog(commands.Cog):
         try:
             v = tzstr_to_tz(tzstr)
             await self.config.user(ctx.author).tz.set(tzstr)
-            await ctx.send(inline("Set timezone to {} ({})".format(str(v), get_tz_name(v))))
+            await ctx.send(inline("Set personal timezone to {} ({})".format(str(v), get_tz_name(v))))
         except IOError as e:
             await ctx.send(inline("Invalid tzstr: " + tzstr))
 
