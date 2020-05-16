@@ -16,7 +16,7 @@ from redbot.core.utils.chat_formatting import inline, box
 import rpadutils
 from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('red.miruv3.padinfo')
 
 HELP_MSG = """
 {0.prefix}helpid : shows this message
@@ -189,7 +189,7 @@ class PadInfo(commands.Cog):
         logger.info('Loading NA index')
         self.index_na = dg_cog.create_index(lambda m: m.on_na)
         await asyncio.sleep(1)
-        
+
         logger.info('Done refreshing indexes')
 
     def get_monster_by_id(self, monster_id: int):

@@ -29,7 +29,7 @@ from redbot.core.utils.chat_formatting import inline
 
 import rpadutils
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('red.miruv3.dadguide')
 
 
 def _data_file(file_name: str) -> str:
