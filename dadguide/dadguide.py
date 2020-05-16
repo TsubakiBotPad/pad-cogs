@@ -10,6 +10,7 @@ import asyncio
 import csv
 import difflib
 import json
+import logging
 import os
 import re
 import shutil
@@ -27,6 +28,8 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 
 import rpadutils
+
+logger = logging.getLogger(__name__)
 
 
 def _data_file(file_name: str) -> str:
@@ -106,25 +109,25 @@ class Dadguide(commands.Cog):
 
         # We already had a copy of the database at startup, signal that we're ready now.
         if self.database.has_database():
-            print('Using stored database at load')
+            logger.info('Using stored database at load')
             self._is_ready.set()
 
         while self == self.bot.get_cog('Dadguide'):
             short_wait = False
             try:
                 await self.download_and_refresh_nicknames()
-                print('Done refreshing Dadguide, triggering ready')
+                logger.info('Done refreshing Dadguide, triggering ready')
                 self._is_ready.set()
             except Exception as ex:
                 short_wait = True
-                print("dadguide data download/refresh failed", ex)
+                logger.info("dadguide data download/refresh failed: %s", ex)
                 traceback.print_exc()
 
             try:
                 wait_time = 60 if short_wait else 60 * 60 * 4
                 await asyncio.sleep(wait_time)
             except Exception as ex:
-                print("dadguide data wait loop failed", ex)
+                logger.info("dadguide data wait loop failed: %s", ex)
                 traceback.print_exc()
                 raise ex
 
@@ -136,11 +139,16 @@ class Dadguide(commands.Cog):
 
     async def download_and_refresh_nicknames(self):
         if self.settings.data_file():
+            logger.info('Copying dg data file')
             shutil.copy2(self.settings.data_file(), DB_DUMP_FILE)
         else:
+            logger.info('Downloading dg data files')
             await self._download_files()
+
+        logger.info('Downloading dg name override files')
         await self._download_override_files()
 
+        logger.info('Loading dg name overrides')
         nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN)
         basename_overrides = self._csv_to_tuples(BASENAME_FILE_PATTERN)
         panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN)
@@ -157,11 +165,16 @@ class Dadguide(commands.Cog):
         self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
 
+        logger.info('Loading dg database')
         self.database = load_database(self.database)
+        logger.info('Building dg monster index')
         self.index = MonsterIndex(self.database, self.nickname_overrides, self.basename_overrides,
                                   self.panthname_overrides)
 
+        logger.info('Writing dg monster computed names')
         self.write_monster_computed_names()
+
+        logger.info('Done refreshing dg data')
 
     def write_monster_computed_names(self):
         results = {}
@@ -272,6 +285,7 @@ class EvoType(Enum):
     UvoAwoken = 2
     UuvoReincarnated = 3
 
+
 class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
     Base = ""
@@ -281,6 +295,7 @@ class InternalEvoType(Enum):
     Assist = "Assist"
     Pixel = "Pixel"
     SuperReincarnated = "Super Reincarnated"
+
 
 class Server(Enum):
     JP = 0
@@ -898,8 +913,6 @@ class DgMonster(DadguideItem):
             return InternalEvoType.Ultimate
         else:
             return InternalEvoType.Normal
-
-
 
     @property
     def mats_for_evo(self):
