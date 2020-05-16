@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import traceback
 import urllib.parse
@@ -14,6 +15,8 @@ from redbot.core.utils.chat_formatting import inline, box
 
 import rpadutils
 from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
+
+logger = logging.getLogger(__name__)
 
 HELP_MSG = """
 {0.prefix}helpid : shows this message
@@ -173,9 +176,21 @@ class PadInfo(commands.Cog):
         if not dg_cog:
             print("Cog 'Dadguide' not loaded")
             return
+        logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
+
+        # Putting some sleeps in here to give the bot time to respond to Discord.
+        await asyncio.sleep(1)
+
+        logger.info('Loading ALL index')
         self.index_all = dg_cog.create_index()
+        await asyncio.sleep(1)
+
+        logger.info('Loading NA index')
         self.index_na = dg_cog.create_index(lambda m: m.on_na)
+        await asyncio.sleep(1)
+        
+        logger.info('Done refreshing indexes')
 
     def get_monster_by_id(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
@@ -194,7 +209,7 @@ class PadInfo(commands.Cog):
     @commands.command(name="id", aliases="iD Id ID".split())
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        prefix = ctx.prefix+"id"
+        prefix = ctx.prefix + "id"
         query = prefix.join(filter(None, query.split(prefix)))
         await self._do_id(ctx, query)
 
@@ -226,7 +241,6 @@ class PadInfo(commands.Cog):
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
-
 
     @commands.command(name="evos")
     async def evos(self, ctx, *, query: str):
@@ -498,17 +512,17 @@ class PadInfo(commands.Cog):
             m1, err1, debug_info1 = self.findMonster(query)
             m2, err2, debug_info2 = self.findMonster2(query)
             if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
-                s+=1
+                s += 1
                 continue
 
             f.append((query,
                       [m1.monster_id if m1 else None, m2.monster_id if m2 else None],
                       [err1, err2],
                       [debug_info1, debug_info2]
-                    ))
+                      ))
             if m1 and m2:
                 ctx.send("Major Discrepency: {} -> {}/{}".format(query, m1.name_na, m2.name_na))
-        await ctx.send("Done running diff checker.  {}/{} passed.".format(s,len(hist_aggreg)))
+        await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
         print(f)
 
     def get_emojis(self):
@@ -829,6 +843,7 @@ def monsterToAcquireString(m: "DgMonster"):
     elif m.mp_evo:
         acquire_text = 'MP Shop Evo'
     return acquire_text
+
 
 def match_emoji(emoji_list, name):
     for e in emoji_list:
