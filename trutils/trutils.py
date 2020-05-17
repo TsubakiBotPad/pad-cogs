@@ -481,8 +481,7 @@ class TrUtils(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                                  " Join the Miru Server to see any responses "
-                                  "({0.prefix}miruserver).".format(ctx))
+                    " Join the Miru Server to see any responses ({0.prefix}miruserver).".format(ctx))
 
     @commands.command()
     @commands.guild_only()
@@ -500,8 +499,8 @@ class TrUtils(commands.Cog):
         Use this command to submit feedback on https://pad.protic.site or the JP translations.
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_blog_feedback_channel()))
-        await self._send_feedback(ctx, message, feedback_channel, " Join the PDX Server to see any responses "
-                                                                  "({0.prefix}pdx).".format(ctx))
+        await self._send_feedback(ctx, message, feedback_channel,
+            " Join the PDX Server to see any responses ({0.prefix}pdx).".format(ctx))
 
     @commands.command()
     @commands.guild_only()
@@ -522,6 +521,20 @@ class TrUtils(commands.Cog):
             await ctx.send(inline('Role is now {}'.format('mentionable' if new_mentionable else 'unmentionable')))
         except Exception as ex:
             await ctx.send(inline('Error: failed to alter role'))
+
+    @commands.command()
+    @checks.is_owner()
+    async def freload(self, ctx, cmd, *, args=""):
+        """Run a command after reloading its base cog."""
+        full_cmd = "{}{} {}".format(ctx.prefix, cmd, args)
+        cmd = self.bot.get_command(cmd)
+        if cmd is None:
+            await ctx.send("Invalid Command: {}".format(full_cmd))
+            return
+        await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[-1])
+        ctx.message.content = full_cmd
+        await self.bot.process_commands(ctx.message)
+
 
 
 class TrUtilsSettings(CogSettings):

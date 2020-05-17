@@ -1,5 +1,5 @@
 from .dadguide import *
- 
+
 
 def setup(bot):
     n = Dadguide(bot)

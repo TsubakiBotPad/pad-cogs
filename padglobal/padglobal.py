@@ -446,10 +446,12 @@ class PadGlobal(commands.Cog):
         await self.print_cmdlist(ctx, cmdlist)
 
     async def print_cmdlist(self, ctx, cmdlist, inline=False):
+        #TODO: Write a docstring once I figure out what this does
         if not cmdlist:
             await ctx.send("There are no padglobal commands yet")
             return
 
+        prefix = ctx.prefix
         cmds = list(cmdlist.keys())
         prefixes = defaultdict(int)
 
@@ -835,7 +837,7 @@ class PadGlobal(commands.Cog):
         monsters = []
         for w in self.settings.which():
             w %= 10000
-            
+
             nm = monster_id_to_named_monster(w)
             name = nm.group_computed_basename.title()
 

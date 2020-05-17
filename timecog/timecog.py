@@ -5,7 +5,7 @@ import traceback
 from datetime import timedelta, datetime
 
 import pytz
-from redbot.core import commands, Config
+from redbot.core import commands, Config, checks
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 
@@ -22,7 +22,7 @@ time_at_regeces = [
 
 time_in_regeces = [
     r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.+)$', # One tinstr
-    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.*)$', #Unused
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b (.*)$', #Unused
 ]
 
 DT_FORMAT = "%A, %b %-d, %Y at %-I:%M %p"
@@ -44,6 +44,7 @@ class TimeCog(commands.Cog):
         |   |   |   REMINDER: tuple
         |   |   |   |   TIME: int (timestamp)
         |   |   |   |   TEXT: str
+        |   |   |   |   INTERVAL: Optional[int]
         |   |   TZ: str (tzstr)
         |   CHANNELS: Config
         |   |   SCHEDULES: list
@@ -161,6 +162,28 @@ class TimeCog(commands.Cog):
     @remindme.command(hidden=True)
     async def now(self, ctx, *, input):
         await ctx.author.send(input)
+
+    @remindme.command()
+    @checks.is_owner() #Command is unfinished
+    async def every(self, ctx, *, text):
+        await ctx.send("Test")
+        match = re.search(time_in_regeces[1], text, re.IGNORECASE)
+        if match:
+            tinstrs, tinstart, input = match.groups()
+        else:
+            match = re.search(time_in_regeces[0], text, re.IGNORECASE)
+            if not match:
+                await ctx.send("Invalid interval")
+                return
+            tinstart = "now"
+            tinstrs, input = match.groups()
+        print(tinstrs, tinstart, input)
+        start = (datetime.utcnow() + tin2tdelta(tinstart)).timestamp()
+        async with self.config.channel(ctx.channel).schedules() as scs:
+            scs.append((start, tin2tdelta(tinstrs).seconds, input))
+        m = await ctx.send("Schedule created.  I will send a message on my next cycle (10s or less)")
+        await asyncio.sleep(5.)
+        await m.delete()
 
     @remindme.command(aliases=["list"])
     async def get(self, ctx):

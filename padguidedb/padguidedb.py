@@ -1,10 +1,10 @@
 import asyncio
-import concurrent.futures
 import json
 import re
 import subprocess
 import io
 import csv
+import sys
 
 import discord
 import pymysql
@@ -35,19 +35,16 @@ class PadGuideDb(commands.Cog):
         self.bot = bot
         self.settings = PadGuideDbSettings("padguidedb")
 
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.queue_size = 0
-        self.full_etl_running = False
-        self.extract_images_running = False
-
+        self.full_etl_lock = asyncio.Lock()
+        self.extract_images_lock = asyncio.Lock()
+        self.dungeon_load_lock = asyncio.Lock()
         global PADGUIDEDB_COG
         PADGUIDEDB_COG = self
 
     def get_connection(self):
-        with open(self.settings.configFile(), 'a+') as f:
-            f.seek(0)
-            db_config = json.load(f)
-        return self.connect(db_config)
+        with open(self.settings.configFile(), 'r') as db_config:
+            return self.connect(json.load(db_config))
 
     def connect(self, db_config):
         return pymysql.connect(host=db_config['host'],
@@ -116,34 +113,46 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @is_padguidedb_admin()
-    async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int):
-        event_loop = asyncio.get_event_loop()
-
-        running_load = event_loop.run_in_executor(
-            self.executor, self.do_dungeon_load,
-            server.upper(), dungeon_id, dungeon_floor_id)
-
-        self.queue_size += 1
-        if not self.settings.hasUserInfo(server):
+    async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int, queues: int = 1):
+        if queues > 5:
+            await ctx.send("You must send less than 5 queues.")
+            return
+        elif self.queue_size + queues > 60:
+            await ctx.send("The size of the queue cannot exceed 60.  It is currently {}.".format(self.queue_size))
+            return
+        elif not self.settings.hasUserInfo(server):
             await ctx.send("There is no account associated with server '{}'.".format(server.upper()))
             return
-        await ctx.send(inline('queued load in slot {}'.format(self.queue_size)))
-        await running_load
-        self.queue_size -= 1
-        await rpadutils.doubleup(ctx, inline('load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
 
-    def do_dungeon_load(self, server, dungeon_id, dungeon_floor_id):
-        args = [
-            '/usr/bin/python3',
-            self.settings.dungeonScriptFile(),
-            '--db_config={}'.format(self.settings.configFile()),
-            '--server={}'.format(server),
-            '--dungeon_id={}'.format(dungeon_id),
-            '--floor_id={}'.format(dungeon_floor_id),
-            '--user_uuid={}'.format(self.settings.userUuidFor(server)),
-            '--user_intid={}'.format(self.settings.userIntidFor(server)),
-        ]
-        subprocess.run(args)
+        self.queue_size += queues
+        if queues == 1:
+            await ctx.send(inline('Queueing load in slot {}'.format(self.queue_size)))
+        else:
+            await ctx.send(inline('Queueing loads in slots {}-{}'.format(self.queue_size-queues+1, self.queue_size)))
+
+        event_loop = asyncio.get_event_loop()
+        for queue in range(queues):
+            event_loop.create_task(self.do_dungeon_load(ctx, server.upper(), dungeon_id, dungeon_floor_id))
+
+    async def do_dungeon_load(self, ctx, server, dungeon_id, dungeon_floor_id):
+        async with self.dungeon_load_lock:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable,
+                self.settings.dungeonScriptFile(),
+                '--db_config={}'.format(self.settings.configFile()),
+                '--server={}'.format(server),
+                '--dungeon_id={}'.format(dungeon_id),
+                '--floor_id={}'.format(dungeon_floor_id),
+                '--user_uuid={}'.format(self.settings.userUuidFor(server)),
+                '--user_intid={}'.format(self.settings.userIntidFor(server)),
+
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await process.wait()
+            await rpadutils.doubleup(ctx, inline('Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+            self.queue_size -= 1
+
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -161,6 +170,14 @@ class PadGuideDb(commands.Cog):
                 msg += '\n{},{},{}'.format(row['stage'], row['drop_monster_id'], row['count'])
             for page in pagify(msg):
                 await ctx.send(box(page))
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def cleardungeon(self, ctx, dungeon_id: int):
+        with self.get_connection() as cursor:
+            sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(dungeon_id)
+            cursor.execute(sql)
+        await ctx.send(inline("Done"))
 
     #@padguidedb.command()
     @is_padguidedb_admin()
@@ -189,51 +206,42 @@ class PadGuideDb(commands.Cog):
     @is_padguidedb_admin()
     async def fulletl(self, ctx):
         """Runs a job which downloads pad data, and updates the padguide database."""
-        if self.full_etl_running:
+        if self.full_etl_lock.locked():
             await ctx.send(inline('Full ETL already running'))
             return
 
-        event_loop = asyncio.get_event_loop()
-        running_load = event_loop.run_in_executor(self.executor, self.do_full_etl)
+        async with self.full_etl_lock:
+            await ctx.send(inline('Running full ETL pipeline: this could take a while'))
+            process = await asyncio.create_subprocess_exec(
+                'bash',
+                '/home/tactical0retreat/dadguide/dadguide-jobs/run_loader.sh',
 
-        self.full_etl_running = True
-        await ctx.send(inline('Running full ETL pipeline: this could take a while'))
-        try:
-            await running_load
-        finally:
-            self.full_etl_running = False
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await process.wait()
         await ctx.send(inline('Full ETL finished'))
-
-    def do_full_etl(self):
-        args = [
-            'bash',
-            '/home/tactical0retreat/dadguide/dadguide-jobs/run_loader.sh',
-        ]
-        subprocess.run(args)
 
     @pipeline.command()
     @is_padguidedb_admin()
     async def extractimages(self, ctx):
         """Runs a job which downloads image updates, generates full images, and portraits."""
-        if self.extract_images_running:
+        if self.extract_images_lock.locked():
             await ctx.send(inline('Extract images already running'))
             return
 
-        event_loop = asyncio.get_event_loop()
-        running_load = event_loop.run_in_executor(self.executor, self.do_extract_images)
+        async with self.extract_images_lock:
+            await ctx.send(inline('Running image extract pipeline: this could take a while'))
+            process = await asyncio.create_subprocess_exec(
+                'bash',
+                '/home/tactical0retreat/dadguide/dadguide-jobs/media/update_image_files.sh',
 
-        self.extract_images_running = True
-        await ctx.send(inline('Running image extract pipeline: this could take a while'))
-        await running_load
-        self.extract_images_running = False
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await process.wait()
         await ctx.send(inline('Image extract finished'))
 
-    def do_extract_images(self):
-        args = [
-            'bash',
-            '/home/tactical0retreat/dadguide/dadguide-jobs/media/update_image_files.sh',
-        ]
-        subprocess.run(args)
 
 
 class PadGuideDbSettings(CogSettings):

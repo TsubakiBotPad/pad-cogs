@@ -723,7 +723,7 @@ async def doubleup(ctx, message):
     fullmatch = re.escape(message) + r"(?: x(\d+))?"
     match = re.match(fullmatch, lmessage.content)
     if match and lmessage.author == ctx.bot.user:
-        n = match.group(1) or 1
-        await lmessage.edit(content=message+" x"+str(n+1))
+        n = match.group(1) or "1"
+        await lmessage.edit(content=message+" x"+str(int(n)+1))
     else:
-        await ctx.send("Done!")
+        await ctx.send(message)
