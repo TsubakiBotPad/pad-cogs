@@ -149,8 +149,13 @@ class PadGuideDb(commands.Cog):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            await process.wait()
-            await rpadutils.doubleup(ctx, inline('Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+            stdout, stderr = await process.communicate()
+
+            if stderr:
+                print("Dungeon Load Error:\n"+stderr.decode())
+                await rpadutils.doubleup(ctx, inline('Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
+            else:
+                await rpadutils.doubleup(ctx, inline('Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
 
 
@@ -219,7 +224,12 @@ class PadGuideDb(commands.Cog):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            await process.wait()
+            stdout, stderr = await process.communicate()
+
+            if stderr:
+                print("Full ETL Error:\n"+stderr.decode())
+                await ctx.send(inline('Full ETL failed'))
+                return
         await ctx.send(inline('Full ETL finished'))
 
     @pipeline.command()
@@ -239,7 +249,12 @@ class PadGuideDb(commands.Cog):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            await process.wait()
+            stdout, stderr = await process.communicate()
+
+            if stderr:
+                print("Image Extract Error:\n"+stderr.decode())
+                await ctx.send(inline('Image extract failed'))
+                return
         await ctx.send(inline('Image extract finished'))
 
 
