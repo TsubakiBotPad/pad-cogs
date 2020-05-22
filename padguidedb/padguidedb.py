@@ -1,10 +1,8 @@
 import asyncio
+import csv
+import io
 import json
 import re
-import subprocess
-import io
-import csv
-import sys
 
 import discord
 import pymysql
@@ -128,7 +126,8 @@ class PadGuideDb(commands.Cog):
         if queues == 1:
             await ctx.send(inline('Queueing load in slot {}'.format(self.queue_size)))
         else:
-            await ctx.send(inline('Queueing loads in slots {}-{}'.format(self.queue_size-queues+1, self.queue_size)))
+            await ctx.send(
+                inline('Queueing loads in slots {}-{}'.format(self.queue_size - queues + 1, self.queue_size)))
 
         event_loop = asyncio.get_event_loop()
         for queue in range(queues):
@@ -137,7 +136,7 @@ class PadGuideDb(commands.Cog):
     async def do_dungeon_load(self, ctx, server, dungeon_id, dungeon_floor_id):
         async with self.dungeon_load_lock:
             process = await asyncio.create_subprocess_exec(
-                sys.executable,
+                '/usr/bin/python3',
                 self.settings.dungeonScriptFile(),
                 '--db_config={}'.format(self.settings.configFile()),
                 '--server={}'.format(server),
@@ -152,12 +151,13 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Dungeon Load Error:\n"+stderr.decode())
-                await rpadutils.doubleup(ctx, inline('Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
+                print("Dungeon Load Error:\n" + stderr.decode())
+                await rpadutils.doubleup(ctx, inline(
+                    'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
-                await rpadutils.doubleup(ctx, inline('Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+                await rpadutils.doubleup(ctx, inline(
+                    'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
-
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -184,7 +184,7 @@ class PadGuideDb(commands.Cog):
             cursor.execute(sql)
         await ctx.send(inline("Done"))
 
-    #@padguidedb.command()
+    # @padguidedb.command()
     @is_padguidedb_admin()
     async def dungeondata(self, ctx, dungeon_id: int):
         with ctx.typing(), self.get_connection() as cursor:
@@ -227,7 +227,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Full ETL Error:\n"+stderr.decode())
+                print("Full ETL Error:\n" + stderr.decode())
                 await ctx.send(inline('Full ETL failed'))
                 return
         await ctx.send(inline('Full ETL finished'))
@@ -252,11 +252,10 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Image Extract Error:\n"+stderr.decode())
+                print("Image Extract Error:\n" + stderr.decode())
                 await ctx.send(inline('Image extract failed'))
                 return
         await ctx.send(inline('Image extract finished'))
-
 
 
 class PadGuideDbSettings(CogSettings):
