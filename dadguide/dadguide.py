@@ -657,17 +657,6 @@ class DadguideDatabase(object):
                                 as_generator=as_generator)
 
 
-class aobject(object):
-    """Inheriting this class allows you to define an async __init__."""
-    async def __new__(cls, *a, **kw):
-        self = super().__new__(cls)
-        await self.__init__(*a, **kw)
-        return self
-
-    async def __init__(self):
-        pass
-
-
 def enum_or_none(enum, value, default=None):
     if value is not None:
         return enum(value)
@@ -1172,7 +1161,7 @@ def float_or_none(maybe_float: str):
     return float(maybe_float) if maybe_float else None
 
 
-class MonsterIndex(aobject):
+class MonsterIndex(rpadutils.aobject):
     async def __init__(self, monster_database, nickname_overrides, basename_overrides,
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory

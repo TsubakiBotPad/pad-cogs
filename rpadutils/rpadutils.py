@@ -727,3 +727,13 @@ async def doubleup(ctx, message):
         await lmessage.edit(content=message+" x"+str(int(n)+1))
     else:
         await ctx.send(message)
+
+class aobject(object):
+    """Inheriting this class allows you to define an async __init__."""
+    async def __new__(cls, *args, **kwargs):
+        self = super().__new__(cls)
+        await self.__init__(*args, **kwargs)
+        return self
+
+    async def __init__(self):
+        pass
