@@ -265,6 +265,8 @@ class ChannelMod(commands.Cog):
             else:
                 repl = "<@&{}>".format(dest.id)
             text = text.replace(rtext, repl)
+        #EVERYONE
+        text = re.sub(r"@everyone\b", "\\@everyone", text)
         return text
 
 class ChannelModSettings(CogSettings):
