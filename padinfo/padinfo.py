@@ -183,11 +183,11 @@ class PadInfo(commands.Cog):
         await asyncio.sleep(1)
 
         logger.info('Loading ALL index')
-        self.index_all = dg_cog.create_index()
+        self.index_all = await dg_cog.create_index()
         await asyncio.sleep(1)
 
         logger.info('Loading NA index')
-        self.index_na = dg_cog.create_index(lambda m: m.on_na)
+        self.index_na = await dg_cog.create_index(lambda m: m.on_na)
         await asyncio.sleep(1)
 
         logger.info('Done refreshing indexes')
