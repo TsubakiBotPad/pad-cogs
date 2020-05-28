@@ -265,8 +265,23 @@ class ChannelMod(commands.Cog):
             else:
                 repl = "<@&{}>".format(dest.id)
             text = text.replace(rtext, repl)
+        # MENTIONS
+        for utext, uid in re.findall(r'(<@!(\d+)>)', text):
+            target = from_channel.guild.get_member(int(uid))
+            if target is None:
+                print('could not locate user to mod')
+                continue
+            text = text.replace(utext, target.name)
+        # CHANNELS
+        for ctext, cid in re.findall(r'(<#(\d+)>)', text):
+            target = from_channel.guild.get_channel(int(cid))
+            if target is None:
+                print('could not locate channel to mod')
+                continue
+            text = text.replace(ctext, "\\#"+target.name)
         #EVERYONE
-        text = re.sub(r"@everyone\b", "\\@everyone", text)
+        text = re.sub(r"@everyone\b", "@\u200beveryone", text)
+        text = re.sub(r"@here\b", "@\u200bhere", text)
         return text
 
 class ChannelModSettings(CogSettings):
