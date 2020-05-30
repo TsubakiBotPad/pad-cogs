@@ -47,6 +47,7 @@ class Calculator(commands.Cog):
     @commands.command(aliases=['calc'])
     async def calculator(self, ctx, *, inp):
         '''Evaluate equations. Use helpcalc for more info.'''
+        inp = inp.lower()
         unaccepted = list(filter(None, re.split(ACCEPTED_TOKENS, inp)))
         for token in ALTERED_TOKENS:
             inp = inp.replace(token, ALTERED_TOKENS[token])
