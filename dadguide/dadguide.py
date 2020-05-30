@@ -26,6 +26,7 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
+from redbot.core.utils import AsyncIter
 
 import rpadutils
 
@@ -85,13 +86,13 @@ class Dadguide(commands.Cog):
         """
         return await self._is_ready.wait()
 
-    def create_index(self, accept_filter=None):
+    async def create_index(self, accept_filter=None):
         """Exported function that allows a client cog to create a monster index"""
-        return MonsterIndex(self.database,
-                            self.nickname_overrides,
-                            self.basename_overrides,
-                            self.panthname_overrides,
-                            accept_filter=accept_filter)
+        return await MonsterIndex(self.database,
+                                  self.nickname_overrides,
+                                  self.basename_overrides,
+                                  self.panthname_overrides,
+                                  accept_filter=accept_filter)
 
     def get_monster_by_id(self, monster_id: int):
         """Exported function that allows a client cog to get a full DgMonster by monster_id"""
@@ -168,8 +169,8 @@ class Dadguide(commands.Cog):
         logger.info('Loading dg database')
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
-        self.index = MonsterIndex(self.database, self.nickname_overrides, self.basename_overrides,
-                                  self.panthname_overrides)
+        self.index = await MonsterIndex(self.database, self.nickname_overrides,
+                                        self.basename_overrides, self.panthname_overrides)
 
         logger.info('Writing dg monster computed names')
         self.write_monster_computed_names()
@@ -1160,9 +1161,9 @@ def float_or_none(maybe_float: str):
     return float(maybe_float) if maybe_float else None
 
 
-class MonsterIndex(object):
-    def __init__(self, monster_database, nickname_overrides, basename_overrides, panthname_overrides,
-                 accept_filter=None):
+class MonsterIndex(rpadutils.aobject):
+    async def __init__(self, monster_database, nickname_overrides, basename_overrides,
+                       panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         base_monster_ids = monster_database.get_base_monster_ids()
 
@@ -1197,7 +1198,7 @@ class MonsterIndex(object):
             monster_id_to_nicknames[monster_id].add(nickname)
 
         named_monsters = []
-        for base_mon in base_monster_ids:
+        async for base_mon in AsyncIter(base_monster_ids):
             base_id = base_mon.monster_id
             group_basename_overrides = basename_overrides.get(base_id, [])
             evolution_tree = [monster_database.get_monster(m) for m in
