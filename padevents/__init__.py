@@ -4,6 +4,7 @@ from .padevents import *
 
 
 def setup(bot):
+    #FIXME
     warnings.warn("PadEvents is borked.")
     return
     n = PadEvents(bot)
