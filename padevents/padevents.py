@@ -1,21 +1,27 @@
 import traceback
+import asyncio
+import re
+import datetime
+import pytz
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
 
 import prettytable
+import discord
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import *
+from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from dadguide import dadguide
 from rpadutils import CogSettings
 
-SUPPORTED_SERVERS = ["NA", "JP", "FAKE"]
+SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
 
 
 class PadEvents(commands.Cog):
-    def __init__(self, bot: object, args: object, kwargs: object) -> object:
+    def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -47,8 +53,7 @@ class PadEvents(commands.Cog):
     async def refresh_data(self):
         dg_cog = self.bot.get_cog('Dadguide')
         await dg_cog.wait_until_ready()
-        database = dg_cog.database
-        scheduled_events = database.all_scheduled_events()
+        scheduled_events = dg_cog.database.get_all_events()
 
         new_events = []
         for se in scheduled_events:
@@ -57,27 +62,23 @@ class PadEvents(commands.Cog):
             except Exception as ex:
                 print(ex)
 
-        new_started_events = set([ev.key for ev in new_events if ev.is_started()])
-
         self.events = new_events
-        self.started_events = new_started_events
-        print('done refreshing padevents')
+        self.started_events = {ev.key for ev in new_events if ev.is_started()}
 
     async def check_started(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadEvents'):
             try:
-                events = filter(lambda e: e.is_started()
-                                          and not e.key in self.started_events, self.events)
+                events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
 
                 daily_refresh_servers = set()
                 for e in events:
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek]:
                         for gr in list(self.settings.listGuerrillaReg()):
-                            if e.server == gr['server']:
+                            if SUPPORTED_SERVERS[e.server_id] == gr['server']:
                                 try:
-                                    message = box("Server " + e.server + ", group " +
+                                    message = box("Server " + SUPPORTED_SERVERS[e.server_id] + ", group " +
                                                   e.groupLongName() + " : " + e.name_and_modifier)
                                     channel = self.bot.get_channel(int(gr['channel_id']))
 
@@ -132,13 +133,13 @@ class PadEvents(commands.Cog):
     async def padevents(self, ctx):
         """PAD event tracking"""
 
-    @padevents.command(name="testevent")
+    @padevents.command()
     @checks.is_owner()
-    async def _testevent(self, ctx, server):
-        # TODO: Fix this (it's borked)
+    async def testevent(self, ctx, server):
+        # FIXME: (it's VERY borked)
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         te = dadguide.DgScheduledEvent([], None)
@@ -155,17 +156,17 @@ class PadEvents(commands.Cog):
         te.close_datetime = te.open_datetime + timedelta(minutes=1)
         te.dungeon_name = 'fake_dungeon_name'
         te.event_modifier = 'fake_event_modifier'
-        self.events.append(te)
+        self.events.append(Event(te))
 
         await ctx.send("Fake event injected.")
 
-    @padevents.command(name="addchannel")
+    @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _addchannel(self, ctx, server):
+    async def addchannel(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -176,10 +177,10 @@ class PadEvents(commands.Cog):
         self.settings.addGuerrillaReg(channel_id, server)
         await ctx.send("Channel now active.")
 
-    @padevents.command(name="rmchannel")
+    @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _rmchannel(self, ctx, server):
+    async def rmchannel(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
@@ -193,10 +194,10 @@ class PadEvents(commands.Cog):
         self.settings.removeGuerrillaReg(channel_id, server)
         await ctx.send("Channel deactivated.")
 
-    @padevents.command(name="addchanneldaily")
+    @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _addchanneldaily(self, ctx, server):
+    async def addchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
@@ -210,10 +211,10 @@ class PadEvents(commands.Cog):
         self.settings.addDailyReg(channel_id, server)
         await ctx.send("Channel now active.")
 
-    @padevents.command(name="rmchanneldaily")
+    @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _rmchanneldaily(self, ctx, server):
+    async def rmchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
@@ -247,9 +248,9 @@ class PadEvents(commands.Cog):
             msg += "   " + cr['server'] + " : " + server_name + '(' + channel_name + ')\n'
         return msg
 
-    @padevents.command(name="active")
+    @padevents.command()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _active(self, ctx, server):
+    async def active(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
@@ -391,6 +392,11 @@ class PadEvents(commands.Cog):
         """Print upcoming daily events for JP."""
         await self.doPartial(ctx, 'JP')
 
+    @commands.command()
+    async def eventskr(self, ctx):
+        """Print upcoming daily events for KR."""
+        await self.doPartial(ctx, 'KR')
+
     async def doPartial(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
@@ -482,12 +488,12 @@ class PadEventSettings(CogSettings):
 class Event:
     def __init__(self, scheduled_event: dadguide.DgScheduledEvent):
         self.key = scheduled_event.key()
-        self.server = scheduled_event.server
+        self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime
-        self.group = scheduled_event.group
-        self.dungeon_name = scheduled_event.dungeon.name if scheduled_event.dungeon else 'unknown_dungeon'
-        self.event_name = scheduled_event.event.name if scheduled_event.event else ''
+        self.group = scheduled_event.group_name
+        self.dungeon_name = scheduled_event.dungeon.name_na if scheduled_event.dungeon else 'unknown_dungeon'
+        self.event_name = '' # scheduled_event.event.name if scheduled_event.event else ''
 
         self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
         self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')
@@ -496,7 +502,7 @@ class Event:
         if self.clean_event_name != '':
             self.name_and_modifier += ', ' + self.clean_event_name
 
-        self.event_type = EventType(scheduled_event.event_type)
+        self.event_type = EventType(scheduled_event.event_type_id)
         self.dungeon_type = DungeonType(
             scheduled_event.dungeon.dungeon_type) if scheduled_event.dungeon else DungeonType.Unknown
 
@@ -639,6 +645,9 @@ class DungeonType(Enum):
     CoinDailyOther = 1
     Technical = 2
     Etc = 3
+    Unknown4 = 4
+    Unknown7 = 7
+    Unknown9 = 9
 
 
 def fmtTime(dt):

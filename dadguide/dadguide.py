@@ -240,6 +240,8 @@ class Dadguide(commands.Cog):
         await ctx.send(inline('Done'))
 
 
+
+
 class DadguideSettings(rpadutils.CogSettings):
     def make_default_settings(self):
         config = {
@@ -657,6 +659,18 @@ class DadguideDatabase(object):
                                 as_generator=as_generator)
 
 
+    def get_all_events(self, as_generator=True):
+        return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (), DgScheduledEvent,
+                                as_generator=as_generator)
+
+    def get_dungeon_by_id(self, dungeon_id: int):
+        return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
+
+    def get_dungeon_by_id(self, dungeon_id: int):
+        return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
+
+
+
 def enum_or_none(enum, value, default=None):
     if value is not None:
         return enum(value)
@@ -795,13 +809,26 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
+    def __init__(self, item, database):
+        super(DgScheduledEvent, self).__init__(item, database)
+        self.dungeon = self._database.get_dungeon_by_id(self.dungeon_id)
+
     @property
     def open_datetime(self):
         return datetime.utcfromtimestamp(self.start_timestamp).replace(tzinfo=pytz.UTC)
 
+    @open_datetime.setter
+    def open_datetime(self, value):
+        self.start_timestamp = int(value.timestamp())
+
     @property
     def close_datetime(self):
         return datetime.utcfromtimestamp(self.end_timestamp).replace(tzinfo=pytz.UTC)
+
+    @close_datetime.setter
+    def close_datetime(self, value):
+        self.end_timestamp = int(value.timestamp())
+
 
 
 class DgMonster(DadguideItem):
