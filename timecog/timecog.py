@@ -24,8 +24,8 @@ time_at_regeces = [
 ]
 
 time_in_regeces = [
-    r'^\s*((?:-?\d+ ?(?:mo|m|h|d|w|y|s)\w* ?)+)\b (.+)$', # One tinstr
-    r'^\s*((?:-?\d+ ?(?:mo|m|h|d|w|y|s)\w* ?)+)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b (.*)$', #Unused
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b (.+)$', # One tinstr
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b (.*)$', #Unused
 ]
 
 DT_FORMAT = "%A, %b %-d, %Y at %-I:%M %p"
@@ -231,7 +231,7 @@ class TimeCog(commands.Cog):
 
     async def reminderloop(self):
         await self.bot.wait_until_ready()
-        async for rpadutils.repeating_timer(10, lambda: self == self.bot.get_cog('TimeCog')):
+        async for _ in rpadutils.repeating_timer(10, lambda: self == self.bot.get_cog('TimeCog')):
             urs = await self.config.all_users()
             chs = await self.config.all_channels()
             now = datetime.utcnow()
@@ -353,7 +353,9 @@ def tin2tdelta(tinstr):
     for tin, unit in tins:
         try:
             tin = int(tin)
-            if unit[0] == 'm':
+            if unit[:2] == 'mo':
+                o += relativedelta(months=+1)
+            elif unit[0] == 'm':
                 o += timedelta(minutes=tin)
             elif unit[0] == 'h':
                 o += timedelta(hours=tin)
@@ -361,8 +363,6 @@ def tin2tdelta(tinstr):
                 o += timedelta(days=tin)
             elif unit[0] == 'w':
                 o += timedelta(weeks=tin)
-            elif unit[0] == 'mo':
-                o += relativedelta(months=+1)
             elif unit[0] == 'y':
                 o += relativedelta(years=+1)
             elif unit[0] == 's':
@@ -388,16 +388,15 @@ def ydhm(seconds):
     if d: ydhm.append("{} day".format(d) + ("s" if d > 1 else ''))
     if h: ydhm.append("{} hr" .format(h) + ("s" if h > 1 else ''))
     if m: ydhm.append("{} min".format(m) + ("s" if m > 1 else ''))
-    return " ".join(ydhm)
+    return " ".join(ydhm) or "<1 minute"
 
 
 def format_rm_time(rmtime, input, D_TZ):
-    return "'{}' on {} {} ({}{})".format(
+    return "'{}' on {} {} ({} from now)".format(
         input,
         D_TZ.fromutc(rmtime).strftime(DT_FORMAT),
         get_tz_name(D_TZ, rmtime),
-        ydhm((rmtime - datetime.utcnow()).total_seconds() + 2),
-        " from now" if (rmtime - datetime.utcnow()).total_seconds() > 60 else "<1 minute from now"
+        ydhm((rmtime - datetime.utcnow()).total_seconds() + 2)
     )
 
 
