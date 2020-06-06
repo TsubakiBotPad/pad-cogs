@@ -727,3 +727,10 @@ async def doubleup(ctx, message):
         await lmessage.edit(content=message+" x"+str(int(n)+1))
     else:
         await ctx.send(message)
+
+async def repeating_timer(seconds, condition=lambda:True, start_immediately=True):
+    if start_immediately:
+        yield
+    while True and condition():
+        await asyncio.sleep(seconds)
+        yield
