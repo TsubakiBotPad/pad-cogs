@@ -794,8 +794,15 @@ def monsterToGifEmbed(m: "DgMonster"):
 
 
 def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
-    lhp, latk, lrcv, lresist = left_m.leader_skill.data
-    rhp, ratk, rrcv, rresist = right_m.leader_skill.data
+    lls = left_m.leader_skill
+    rls = right_m.leader_skill
+
+    if lls: lhp, latk, lrcv, lresist = lls.data
+    else:   lhp, latk, lrcv, lresist = 1, 1, 1, 0
+
+    if rls: rhp, ratk, rrcv, rresist = rls.data
+    else:   rhp, ratk, rrcv, rresist = 1, 1, 1, 0
+    
     multiplier_text = createMultiplierText(lhp, latk, lrcv, lresist, rhp, ratk, rrcv, rresist)
 
     embed = discord.Embed()
