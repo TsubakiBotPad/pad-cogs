@@ -1217,6 +1217,7 @@ class MonsterIndex(object):
             149: ['wedding', 'bride'],
             154: ['padr'],
             175: ['valentines', 'vday', 'v'],
+            183: ['gh', 'gungho'],
         }
 
         monster_id_to_nicknames = defaultdict(set)
