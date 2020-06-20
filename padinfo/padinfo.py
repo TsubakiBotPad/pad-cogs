@@ -54,6 +54,7 @@ ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/{0:03d}cb.png'
 YT_SEARCH_TEMPLATE = 'https://www.youtube.com/results?search_query={}'
 SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
 
+
 class ServerFilter(Enum):
     any = 0
     na = 1
@@ -133,7 +134,6 @@ class PadInfo(commands.Cog):
         self.index_na = None
         self.index_jp = None
 
-
         self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
@@ -200,7 +200,7 @@ class PadInfo(commands.Cog):
         await asyncio.sleep(1)
 
         logger.info('Loading JP index')
-        self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
+        self.index_jp = dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
 
@@ -833,12 +833,16 @@ def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
     lls = left_m.leader_skill
     rls = right_m.leader_skill
 
-    if lls: lhp, latk, lrcv, lresist = lls.data
-    else:   lhp, latk, lrcv, lresist = 1, 1, 1, 0
+    if lls:
+        lhp, latk, lrcv, lresist = lls.data
+    else:
+        lhp, latk, lrcv, lresist = 1, 1, 1, 0
 
-    if rls: rhp, ratk, rrcv, rresist = rls.data
-    else:   rhp, ratk, rrcv, rresist = 1, 1, 1, 0
-    
+    if rls:
+        rhp, ratk, rrcv, rresist = rls.data
+    else:
+        rhp, ratk, rrcv, rresist = 1, 1, 1, 0
+
     multiplier_text = createMultiplierText(lhp, latk, lrcv, lresist, rhp, ratk, rrcv, rresist)
 
     embed = discord.Embed()
