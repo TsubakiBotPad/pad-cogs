@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import re
+import sys
 
 import discord
 from redbot.core.bot import Red
@@ -462,10 +463,38 @@ class TrUtils(commands.Cog):
         if cmd is None:
             await ctx.send("Invalid Command: {}".format(full_cmd))
             return
-        await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[-1])
+        await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[0])
         ctx.message.content = full_cmd
         await self.bot.process_commands(ctx.message)
 
+    @commands.command()
+    @checks.is_owner()
+    async def pipupdate(self, ctx, module="Red-DiscordBot", updatepip=True):
+        async with ctx.typing():
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "pip", "install", "-U", module,
+
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = (bts.decode() if bts else "" for bts in await process.communicate())
+
+        if stderr.startswith("WARNING: You are using pip version"):
+            if updatepip:
+                await ctx.send(stderr.split('You should consider')[0]+'\n\nUpdating pip...')
+                await self.pipupdate(ctx, 'pip', False)
+            stderr = ""
+
+        if stderr:
+            await ctx.author.send("Error updating:\n" + stderr)
+            await ctx.send(inline("Error (sent via DM)"))
+        else:
+            await ctx.send(inline('Done'))
+
+    @commands.command(hidden=True, aliases=["make_aa", "makearadia"])
+    async def makeaa(self, ctx, *, task):
+        await self.bot.get_user(144250811315257344).send(task)
 
 
 class TrUtilsSettings(CogSettings):
