@@ -1,6 +1,7 @@
 import discord
 import romkan
 
+from googleapiclient.discovery import build
 from redbot.core import commands, Config, checks
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
@@ -21,6 +22,14 @@ class Translate(commands.Cog):
     @checks.is_owner()
     async def translate(self, context):
         """Translation utilities."""
+
+    async def build_service(self):
+        api_key = await self.config.api_key()
+        try:
+            assert api_key
+            self.service = build('translate', 'v2', developerKey=api_key)
+        except:
+            print("Google API key not found or invalid")
 
     @commands.command(aliases=['jaus', 'jpen', 'jpus'])
     async def jaen(self, ctx, *, query):
