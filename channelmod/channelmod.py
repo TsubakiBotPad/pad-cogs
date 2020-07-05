@@ -152,11 +152,11 @@ class ChannelMod(commands.Cog):
                     continue
 
                 if attribution_required:
-                    msg = 'Posted by **{}** in *{} - #{}*:'.format(message.author.name,
-                                                                   message.guild.name,
-                                                                   message.channel.name)
+                    msg = 'Posted by **{}** in *{} - #{}*:\n{}'.format(message.author.name,
+                                                                       message.guild.name,
+                                                                       message.channel.name,
+                                                                       message.jump_url)
                     await dest_channel.send(msg)
-                    await dest_channel.send(message.jump_url)
 
                 fmessage = await self.mformat(message.content, message.channel, dest_channel)
 
