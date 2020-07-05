@@ -1,12 +1,9 @@
 import discord
 import romkan
 
-from googleapiclient.discovery import build
 from redbot.core import commands, Config, checks
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
-
-from rpadutils import CogSettings
 
 
 class Translate(commands.Cog):
@@ -20,22 +17,10 @@ class Translate(commands.Cog):
 
         self.service = None
 
-
     @commands.group()
     @checks.is_owner()
     async def translate(self, context):
         """Translation utilities."""
-
-
-    @translate.command()
-    async def build_service(self):
-        api_key = await self.config.api_key()
-        try:
-            assert api_key
-            self.service = build('translate', 'v2', developerKey=api_key)
-        except:
-            print("Google API key not found or invalid")
-
 
     @commands.command(aliases=['jaus', 'jpen', 'jpus'])
     async def jaen(self, ctx, *, query):
@@ -61,7 +46,6 @@ class Translate(commands.Cog):
     async def kanrom(self, ctx, *, query):
         """Transliterates Kanji to Romanji"""
         await ctx.send(romkan.to_roma(query))
-
 
     def translate_lang(self, source, target, query):
         result = self.service.translations().list(source=source, target=target, format='text', q=query).execute()
