@@ -1179,13 +1179,6 @@ def make_roma_subname(name_jp):
     return adjusted_subname.strip()
 
 
-def int_or_none(maybe_int: str):
-    return int(maybe_int) if maybe_int else None
-
-
-def float_or_none(maybe_float: str):
-    return float(maybe_float) if maybe_float else None
-
 
 class MonsterIndex(object):
     def __init__(self, monster_database, nickname_overrides, basename_overrides, panthname_overrides,

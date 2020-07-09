@@ -2,7 +2,6 @@ import asyncio
 import csv
 import io
 import json
-import re
 
 import discord
 import pymysql
@@ -83,13 +82,12 @@ class PadGuideDb(commands.Cog):
     @is_padguidedb_admin()
     async def searchdungeon(self, ctx, *, search_text):
         """Search"""
-        search_text = re.sub(r"[@#\$%\^&\*;\/<>?\\|`~\-\=]", " ", search_text)
-        conn = self.get_connection()
-        with conn as cursor:
-            sql = ("select dungeon_id, name_na, name_jp, visible from dungeons"
-                   " where (lower(name_na) like {0} or lower(name_jp) like {0})"
-                   " order by dungeon_id desc limit 20".format(conn.escape("%"+search_text+"%"))
-            cursor.execute(sql)
+        search_text = '%{}%'.format(search_text)
+        with self.get_connection() as cursor:
+            sql = ('select dungeon_id, name_na, name_jp, visible from dungeons'
+                   ' where lower(name_na) like %s or lower(name_jp) like %s'
+                   ' order by dungeon_id desc limit 20')
+            cursor.execute(sql, [search_text, search_text])
             results = list(cursor.fetchall())
             msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
             await ctx.send(inline(sql))
