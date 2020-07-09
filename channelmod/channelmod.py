@@ -152,11 +152,8 @@ class ChannelMod(commands.Cog):
                     continue
 
                 if attribution_required:
-                    msg = 'Posted by **{}** in *{} - #{}*:'.format(message.author.name,
-                                                                   message.guild.name,
-                                                                   message.channel.name)
+                    msg = self.makeheader(message)
                     await dest_channel.send(msg)
-                    await dest_channel.send(message.jump_url)
 
                 fmessage = await self.mformat(message.content, message.channel, dest_channel)
 
@@ -235,6 +232,11 @@ class ChannelMod(commands.Cog):
                 print('Failed to mirror message edit from ',
                       channel.id, 'to', dest_channel_id, ':', ex)
 
+    def makeheader(self, message):
+        return 'Posted by **{}** in *{} - #{}*:\n{}'.format(message.author.name,
+                                                            message.guild.name,
+                                                            message.channel.name,
+                                                            message.jump_url)
 
     async def mformat(self, text, from_channel, dest_channel):
         # LINKS
