@@ -110,5 +110,5 @@ class SelfRoleOverride(commands.Cog):
             await ctx.send("There are currently no selfroles.")
             return
 
-        msg = _("Available Selfroles:\n{selfroles}").format(selfroles=fmt_selfroles)
+        msg = "Available Selfroles:\n{selfroles}".format(selfroles=fmt_selfroles)
         await ctx.send(box(msg, "diff"))

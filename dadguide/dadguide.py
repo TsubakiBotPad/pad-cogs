@@ -1353,6 +1353,9 @@ class MonsterIndex(object):
             prefixes.add('uuvo')
             prefixes.add('uuevo')
 
+        if m.farmable:
+            prefixes.add('farmable')
+
         # If any monster in the group is a pixel, add 'nonpixel' to all the versions
         # without pixel in the name. Add 'pixel' as a prefix to the ones with pixel in the name.
         def is_pixel(n):

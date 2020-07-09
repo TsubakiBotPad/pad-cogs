@@ -859,7 +859,8 @@ class PadGlobal(commands.Cog):
         for page in pagify(msg):
             await ctx.send(box(page))
 
-    @padglobal.command()
+    @commands.command(aliases=['lookupdebug'])
+    @is_padglobal_admin()
     async def debuglookup(self, ctx, *, term: str):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
