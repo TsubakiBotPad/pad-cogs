@@ -53,6 +53,7 @@ ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/{0:03d}cb.png'
 
 YT_SEARCH_TEMPLATE = 'https://www.youtube.com/results?search_query={}'
 SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
+ILMINA_TEMPLATE = 'https://ilmina.com/#/CARD/{}'
 
 
 class ServerFilter(Enum):
@@ -383,6 +384,23 @@ class PadInfo(commands.Cog):
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
+        else:
+            await ctx.send(self.makeFailureMsg(err))
+
+    @commands.command()
+    async def links(self, ctx, *, query: str):
+        """Monster links"""
+        m, err, debug_info = self.findMonster(query)
+        if m is not None:
+            embed = monsterToBaseEmbed(m)
+            embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
+                                    YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+                                    SKYOZORA_TEMPLATE.format(m.monster_no_jp),
+                                    INFO_PDX_TEMPLATE.format(m.monster_no_jp),
+                                    ILMINA_TEMPLATE.format(m.monster_no_jp))
+            embed.set_footer(text='')
+            await ctx.send(embed=embed)
+
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -995,10 +1013,12 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
                 tbl.add_row([row_name.format(plus), hp, atk, rcv])
         body_text += box(tbl.get_string())
 
-    search_text = YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp))
-    skyozora_text = SKYOZORA_TEMPLATE.format(m.monster_no_jp)
-    body_text += "\n**JP Name**: {} | [YouTube]({}) | [Skyozora]({})".format(
-        m.name_jp, search_text, skyozora_text)
+    body_text += "\n**JP Name**: {}".format(m.name_jp)
+    body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
+                    YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+                    SKYOZORA_TEMPLATE.format(m.monster_no_jp),
+                    INFO_PDX_TEMPLATE.format(m.monster_no_jp),
+                    ILMINA_TEMPLATE.format(m.monster_no_jp))
 
     if m.history_us:
         body_text += '\n**History:** {}'.format(m.history_us)
