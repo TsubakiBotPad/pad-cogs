@@ -30,7 +30,7 @@ class SelfRoleConverterOverride(commands.Converter):
         else:
             if len(pool) > 1:
                 await ctx.send("This selfrole has more than one capitalization"
-                           "possibilities.  Please inform a moderator.")
+                               "possibilities.  Please inform a moderator.")
             role = pool[0]
 
 
