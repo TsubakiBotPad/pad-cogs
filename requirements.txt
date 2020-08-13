@@ -4,7 +4,7 @@ wheel
 Red-DiscordBot[postgres]
 backoff
 prettytable
-romkan
+# romkan - commented out because this has to be manually installed
 google-api
 google-api-python-client
 google-cloud

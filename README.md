@@ -86,6 +86,7 @@ wget https://raw.githubusercontent.com/nachoapps/miru-v3cogs/master/requirements
 ```
 
 ## Set up a virtualenv
+If using Windows, just follow the Redbot setup guide's instructions to install dependencies (which includes Python 3.8).
 
 One way to install python 3.8:
 
@@ -108,7 +109,11 @@ virtualenv --python=/usr/bin/python3.8 venv
 python3.8 -m venv venv
 
 # Activate your venv
+Linux/OS X:
 source venv/bin/activate
+
+Windows:
+venv\Scripts\activate.bat
 
 # Install python deps, including Red.
 pip install -r requirements.txt
@@ -118,7 +123,11 @@ pip install -r requirements.txt
 
 ```
 # You will use the output from pwd in the next steps, so copy it
+Linux/OS X:
 pwd
+
+Windows:
+echo %cd%
 
 # Initial setup of bot
 redbot-setup
@@ -128,6 +137,7 @@ bot name> miru_bot_test
 
 # Replace current_dir with output from pwd
 data location> (current_dir)/bot_data
+replace / with \ if on Windows
 
 # Pick json for now
 storage backend> 1
@@ -151,28 +161,13 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 
 
 
-
-
-
-
-
-
-## TODOs
-
-fork romkan and fix this so people don't keep having to do this
-
 * For Romanji/Kana conversion you will use Romkan. This is a bit tricky to install so we'll go over it first.
     * If you want to skip this, you can locally comment out all calls to it, but this might be annoying when syncing your code if you're editing files that import it, so you should probably just do it. But if figuring this out is a barrier to entry to start actually coding, feel free to skip at least at the start.
-    * git clone [this repo](https://github.com/soimort/python-romkan) into any folder you want.
-    * Open setup.py in the text editor or IDE of your choice. Make the following replacement (basically add `encoding='utf8'` in 3 places):
-    ```python
-    here = os.path.abspath(os.path.dirname(__file__))
-    proj_info = json.loads(open(os.path.join(here, PROJ_METADATA), encoding='utf8').read())
-    README = open(os.path.join(here, 'README.rst'), encoding='utf8').read()
-    CHANGELOG = open(os.path.join(here, 'CHANGELOG.rst'), encoding='utf8').read()
-    VERSION = imp.load_source('version', os.path.join(here, 'src/%s/version.py' % PACKAGE_NAME)).__version__
-    ```
+    * git clone [this repo](https://github.com/tejstead/python-romkan) into any folder you want.
     * Open a command line in this same directory and run `py setup.py install`
+    * Locate the folder named romkan-0.2.1-py3.8.egg
+    * Copy the folder inside that folder, named `romkan`, and copy it to your virtual environment's lib folder (on Windows this is named `venv\lib\site-packages`)
+
 
 ## Setting up the bot
 
@@ -185,6 +180,9 @@ fork romkan and fix this so people don't keep having to do this
 * After you have done all of this, restart the bot again. Hopefully by now `^id ` should work!
 
 ## Other
+
+#TODO: update this lol
+
 
 ### Emoji
 * If you want emojis in `^id` commands, and you are setting this up for DEV PURPOSES ONLY, you can talk to tactical_retreat about getting your bot invited to the emoji servers. If you want to make your own separate Miru instance though, you're on your own for that.
