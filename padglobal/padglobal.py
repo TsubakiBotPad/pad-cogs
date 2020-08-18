@@ -452,10 +452,9 @@ class PadGlobal(commands.Cog):
             return
 
         prefix = ctx.prefix
-        cmds = list(cmdlist.keys())
         prefixes = defaultdict(int)
 
-        for c in cmds:
+        for c in cmdlist:
             m = re.match(r'^([a-zA-Z]+)\d+$', c)
             if m:
                 grp = m.group(1)
@@ -616,7 +615,8 @@ class PadGlobal(commands.Cog):
         if term not in self.settings.glossary():
             await ctx.send("Glossary item doesn't exist.")
             return
-
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the glossary data for {}?".format(term)):
+            return
         self.settings.rmGlossary(term)
         await ctx.send("done")
 
@@ -694,6 +694,8 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         if term not in self.settings.boss():
             await ctx.send("Boss mechanics item doesn't exist.")
+            return
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the boss data for {}?".format(term)):
             return
 
         self.settings.rmBoss(term)
@@ -821,6 +823,8 @@ class PadGlobal(commands.Cog):
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the which data for {}?".format(m.name_na)):
+            return
         name = m.monster_id
 
         if name not in self.settings.which():
@@ -1143,7 +1147,8 @@ class PadGlobal(commands.Cog):
         if term not in self.settings.dungeonGuide():
             await ctx.send("DungeonGuide doesn't exist.")
             return
-
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the dungeonguide data for {}?".format(term)):
+            return
         self.settings.rmDungeonGuide(term)
         await ctx.send("done")
 
@@ -1167,6 +1172,8 @@ class PadGlobal(commands.Cog):
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the leaderguide data for {}?".format(m.name_na)):
+            return
         name = m.monster_id
 
         if name not in self.settings.leaderGuide():
