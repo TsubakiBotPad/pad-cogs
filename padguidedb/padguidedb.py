@@ -16,7 +16,7 @@ PADGUIDEDB_COG = None
 
 
 def is_padguidedb_admin_check(ctx):
-    is_owner = PADGUIDEDB_COG.bot.owner_id == ctx.author.id
+    is_owner = ctx.author.id in PADGUIDEDB_COG.bot.owner_ids
     return is_owner or PADGUIDEDB_COG.settings.checkAdmin(ctx.author.id)
 
 
