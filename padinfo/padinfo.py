@@ -224,21 +224,18 @@ class PadInfo(commands.Cog):
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
 
-        # Putting some sleeps in here to give the bot time to respond to Discord.
-        await asyncio.sleep(1)
-
         logger.info('Loading ALL index')
-        self.index_all = dg_cog.create_index()
-        await asyncio.sleep(1)
+        self.index_all = await dg_cog.create_index()
 
         logger.info('Loading NA index')
-        self.index_na = dg_cog.create_index(lambda m: m.on_na)
-        await asyncio.sleep(1)
+        self.index_na = await dg_cog.create_index(lambda m: m.on_na)
 
         logger.info('Loading JP index')
-        self.index_jp = dg_cog.create_index(lambda m: m.on_jp)
+        self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
+        if ctx is not None:
+            await ctx.send(inline("Done."))
 
     def get_monster_by_id(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')

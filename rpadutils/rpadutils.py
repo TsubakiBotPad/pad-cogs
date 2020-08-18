@@ -728,9 +728,21 @@ async def doubleup(ctx, message):
     else:
         await ctx.send(message)
 
+
 async def repeating_timer(seconds, condition=lambda:True, start_immediately=True):
     if start_immediately:
         yield
     while True and condition():
         await asyncio.sleep(seconds)
         yield
+
+
+class aobject(object):
+    """Inheriting this class allows you to define an async __init__."""
+    async def __new__(cls, *args, **kwargs):
+        self = super().__new__(cls)
+        await self.__init__(*args, **kwargs)
+        return self
+
+    async def __init__(self):
+        pass
