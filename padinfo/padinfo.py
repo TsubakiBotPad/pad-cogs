@@ -124,6 +124,39 @@ class IdEmojiUpdater(EmojiUpdater):
         return True
 
 
+class ScrollEmojiUpdater(EmojiUpdater):
+    def __init__(self, emoji_to_embed, m: "DgMonster" = None,
+                 ms: "List[int]" = None, selected_emoji=None, pad_info=None, bot=None):
+        self.emoji_dict = emoji_to_embed
+        self.m = m
+        self.ms = ms
+        self.pad_info = pad_info
+        self.selected_emoji = selected_emoji
+        self.bot = bot
+
+    def on_update(self, ctx, selected_emoji):
+        DGCOG = self.bot.get_cog('Dadguide')
+        index = self.ms.index(self.m.monster_id)
+
+        if selected_emoji == self.pad_info.first_monster_emoji:
+            self.m = DGCOG.get_monster_by_id(self.ms[0])
+        elif selected_emoji == self.pad_info.previous_monster_emoji:
+            self.m = DGCOG.get_monster_by_id(self.ms[index - 1])
+        elif selected_emoji == self.pad_info.next_monster_emoji:
+            if index == len(self.ms) - 1:
+                self.m = DGCOG.get_monster_by_id(self.ms[0])
+            else:
+                self.m = DGCOG.get_monster_by_id(self.ms[index + 1])
+        elif selected_emoji == self.pad_info.last_monster_emoji:
+            self.m = DGCOG.get_monster_by_id(self.ms[-1])
+        else:
+            self.selected_emoji = selected_emoji
+            return True
+
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=True)
+        return True
+
+
 class PadInfo(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -148,8 +181,10 @@ class PadInfo(commands.Cog):
         self.skillups_emoji = '\N{MEAT ON BONE}'
         self.pic_emoji = '\N{FRAME WITH PICTURE}'
         self.other_info_emoji = '\N{SCROLL}'
-        self.previous_monster_emoji = '\N{HEAVY MINUS SIGN}'
-        self.next_monster_emoji = '\N{HEAVY PLUS SIGN}'
+        self.first_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+        self.previous_monster_emoji = '\N{BLACK LEFT-POINTING TRIANGLE}'
+        self.next_monster_emoji = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+        self.last_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
         self.remove_emoji = self.menu.emoji['no']
 
         self.historic_lookups_file_path = _data_file('historic_lookups.json')
@@ -314,7 +349,16 @@ class PadInfo(commands.Cog):
                            m=m, selected_emoji=starting_menu_emoji, bot=self.bot)
         )
 
-    def get_id_emoji_options(self, m=None):
+    async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=True)
+        return await self._do_menu(
+            ctx,
+            starting_menu_emoji,
+            ScrollEmojiUpdater(emoji_to_embed, pad_info=self, bot=self.bot,
+                           m=m, ms=ms, selected_emoji=starting_menu_emoji)
+        )
+
+    def get_id_emoji_options(self, m=None, scroll=False):
         id_embed = monsterToEmbed(m, self.get_emojis())
         evo_embed = monsterToEvoEmbed(m)
         mats_embed = monsterToEvoMatsEmbed(m)
@@ -341,12 +385,15 @@ class PadInfo(commands.Cog):
         # IdEmojiUpdater won't allow it, however they have to be defined
         # so that the buttons print in the first place
 
+        if scroll:    emoji_to_embed[self.first_monster_emoji] = None
         emoji_to_embed[self.previous_monster_emoji] = None
         emoji_to_embed[self.next_monster_emoji] = None
+        if scroll:    emoji_to_embed[self.last_monster_emoji] = None
 
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
         return emoji_to_embed
+
 
     async def _do_evolistmenu(self, ctx, sm):
         monsters = sm.alt_evos
@@ -431,6 +478,30 @@ class PadInfo(commands.Cog):
             await self._do_evolistmenu(ctx, m)
         else:
             await ctx.send(self.makeFailureMsg(err))
+
+    @commands.command()
+    async def collabscroll(self, ctx, *, query: str):
+        """Scroll through the monsters in a collab"""
+        DGCOG = self.bot.get_cog("Dadguide")
+        m, err, debug_info = self.findMonster(query)
+        ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
+
+        ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
+        ms = [m._alt_evo_id_list for m in ms
+                                 if m._base_monster_id == m.monster_id
+                                    and m.sell_mp >= 3000]
+        ms = [m for ml in ms for m in ml]
+
+        if m._base_monster_id != m.monster_id:
+            m = self.get_monster_by_id(m._base_monster_id)
+        if m.monster_id not in ms:
+            m = m if m.monster_id in ms else self.get_monster_by_id(ms[0])
+
+        if m is not None:
+            await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
+        else:
+            await ctx.send(self.makeFailureMsg(err))
+
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
     async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
@@ -924,7 +995,9 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     acquire_text = monsterToAcquireString(m)
     tet_text = m.true_evo_type.value
 
-    info_row_2 = '**Rarity** {}\n**Cost** {}'.format(m.rarity, m.cost)
+    os = "" if m.orb_skin_id is None else " (Orb Skin)"
+
+    info_row_2 = '**Rarity** {}{}\n**Cost** {}'.format(m.rarity, os, m.cost)
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
     if m.is_inheritable:

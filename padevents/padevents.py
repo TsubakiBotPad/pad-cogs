@@ -482,7 +482,7 @@ class PadEventSettings(CogSettings):
 class Event:
     def __init__(self, scheduled_event: dadguide.DgScheduledEvent):
         self.key = scheduled_event.key()
-        self.server = scheduled_event.server
+        self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
