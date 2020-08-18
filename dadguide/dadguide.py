@@ -665,9 +665,6 @@ class DadguideDatabase(object):
     def get_dungeon_by_id(self, dungeon_id: int):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
-    def get_dungeon_by_id(self, dungeon_id: int):
-        return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
-
 
 
 def enum_or_none(enum, value, default=None):

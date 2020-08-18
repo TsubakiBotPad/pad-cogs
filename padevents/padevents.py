@@ -76,9 +76,9 @@ class PadEvents(commands.Cog):
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek]:
                         for gr in list(self.settings.listGuerrillaReg()):
-                            if SUPPORTED_SERVERS[e.server_id] == gr['server']:
+                            if e.server == gr['server']:
                                 try:
-                                    message = box("Server " + SUPPORTED_SERVERS[e.server_id] + ", group " +
+                                    message = box("Server " + e.server + ", group " +
                                                   e.groupLongName() + " : " + e.name_and_modifier)
                                     channel = self.bot.get_channel(int(gr['channel_id']))
 
@@ -96,9 +96,8 @@ class PadEvents(commands.Cog):
                                 except Exception as ex:
                                     # deregister gr
                                     traceback.print_exc()
-                                    #                                     self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
-                                    print(
-                                        "caught exception while sending guerrilla msg" + str(ex))
+                                    # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
+                                    print("caught exception while sending guerrilla msg:\n" + str(ex))
 
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
@@ -112,47 +111,42 @@ class PadEvents(commands.Cog):
                                 await self.pageOutput(ctx, msg, channel_id=daily_registration['channel_id'])
                         except Exception as ex:
                             traceback.print_exc()
-                            #                             self.settings.removeDailyReg(
-                            #                                 daily_registration['channel_id'], daily_registration['server'])
-                            print("caught exception while sending daily msg " + str(ex))
+                            # self.settings.removeDailyReg(
+                            #   daily_registration['channel_id'], daily_registration['server'])
+                            print("caught exception while sending daily msg:\n" + str(ex))
 
             except Exception as ex:
                 traceback.print_exc()
-                print("caught exception while checking guerrillas " + str(ex))
+                print("caught exception while checking guerrillas:\n" + str(ex))
 
-            try:
-                await asyncio.sleep(10)
-            except Exception as ex:
-                traceback.print_exc()
-                print("check event loop caught exception " + str(ex))
-                raise ex
+            await asyncio.sleep(10)
         print("done check_started")
 
-    @commands.group()
+    @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
     async def padevents(self, ctx):
         """PAD event tracking"""
 
     @padevents.command()
     @checks.is_owner()
-    async def testevent(self, ctx, server):
-        # FIXME: (it's VERY borked)
+    async def testevent(self, ctx, server, seconds: int = 0):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        te = dadguide.DgScheduledEvent([], None)
+        dg_cog = self.bot.get_cog('Dadguide')
+        await dg_cog.wait_until_ready()
+        te = dadguide.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
+
         te.server = server
-
-        te.dungeon_code = 1
-        te.event_type = EventType.Guerrilla
+        te.event_type_id = EventType.Guerrilla.value
         te.event_seq = 0
-        self.fake_uid = self.fake_uid - 1
-        te.key = self.fake_uid
-        te.group = 'F'
+        fuid = self.fake_uid = self.fake_uid - 1
+        te.key = lambda: fuid
+        te.group_name = 'Yellow'
 
-        te.open_datetime = datetime.datetime.now(pytz.utc)
+        te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)
         te.close_datetime = te.open_datetime + timedelta(minutes=1)
         te.dungeon_name = 'fake_dungeon_name'
         te.event_modifier = 'fake_event_modifier'
@@ -665,11 +659,9 @@ def fmtHrsMins(seconds):
 
 
 def fmtDaysHrsMinsShort(sec):
-    days = sec // 86400
-    sec -= 86400 * days
-    hours = sec // 3600
-    sec -= 3600 * hours
-    minutes = sec // 60
+    days, sec = divmod(sec, 86400)
+    hours, sec = divmod(sec, 3600)
+    minutes, sec = divmod(sec, 60)
 
     if days > 0:
         return '{:2}d {:2}h'.format(int(days), int(hours))
@@ -694,6 +686,7 @@ def isEventWanted(event):
 
 
 def cleanDungeonNames(name):
+    # TODO: Make this info internally stored
     if 'tamadra invades in some tech' in name.lower():
         return 'Latents invades some Techs & 20x +Eggs'
     if '1.5x Bonus Pal Point in multiplay' in name:
