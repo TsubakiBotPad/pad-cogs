@@ -1,64 +1,8 @@
-# miru-v3cogs
+# padbot-cogs
 
-Red v3 Cogs developed for Miru Bot.
+Red v3 Cogs developed originally for Miru Bot, now for Tsubaki Bot.
 
 Code should be pep8 formatted with a 100 character line limit.
-
-# Cog status
-
-### Completed and tested
-
-```
-
-```
-
-### First pass completed
-
-```
-automod2
-azurelane
-baduser
-calculator
-channelmod
-chronomagia
-dadguide
-damagecalc
-donations
-fancysay
-memes
-modnotes
-padboard
-padbuilds
-padevents
-padglobal
-padguidedb
-padinfo
-padmonitor
-padrem
-padsearch
-padvision
-profile
-rpadutils
-schoolidol
-seniority
-sqlactivitylog
-stickers
-streamcopy
-timecog
-translate
-trutils
-voicerole
-```
-
-```
-# annoying
-speech
-```
-
-
-
-
-
 
 # Setting up your own Miru instance for contributing code
 
@@ -71,7 +15,7 @@ speech
 
 ## Check out the repo
 
-Fork this repo (you are probably already on the page, but if not [go here](https://github.com/nachoapps/miru-v3cogs). 
+Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/padbot-cogs). 
 You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
 
 I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) for development. Change into the
@@ -85,91 +29,33 @@ git clone https://github.com/nachoapps/miru-v3cogs.git
 wget https://raw.githubusercontent.com/nachoapps/miru-v3cogs/master/requirements.txt
 ```
 
-## Set up a virtualenv
-If using Windows, just follow the Redbot setup guide's instructions to install dependencies (which includes Python 3.8).
+## Set up your bot
+The installation instructions in Red's official documentation are pretty good. You will need to be prepared to do the following:
+* Create a venv
+* Install the Red library
+* Create a Discord API key, make a bot, and associate it to your installation
 
-One way to install python 3.8:
+Installation instruction links:
+* [Windows install instructions](https://docs.discord.red/en/stable/install_windows.html)
+* [Linux/Mac install instructions](https://docs.discord.red/en/stable/install_linux_mac.html)
 
+
+## Installing additional dependencies
+* For Romanji/Kana conversion we use a library called Romkan. There are some problems with the version in PyPI, so it's commented from `requirements.txt`. Instead use pip *inside your venv* to install it separately:
 ```shell script
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install python3.8
+pip install git+git://github.com/tejstead/python-romkan
 ```
 
-Then set up your 3.8 venv:
+The rest of the guide takes place from inside Discord.
 
-```shell script
-# Get inside your cloned repo.
-cd miru-v3cogs
-
-# Set up the venv.
-virtualenv --python=/usr/bin/python3.8 venv
-
-# Atlernatively, install python3.8-venv (possibly python3.8-distutils) and do:
-python3.8 -m venv venv
-
-# Activate your venv
-Linux/OS X:
-source venv/bin/activate
-
-Windows:
-venv\Scripts\activate.bat
-
-# Install python deps, including Red.
-pip install -r requirements.txt
-```
-
-## Set up Red Bot
-
-```
-# You will use the output from pwd in the next steps, so copy it
-Linux/OS X:
-pwd
-
-Windows:
-echo %cd%
-
-# Initial setup of bot
-redbot-setup
-
-# Use whatever you like below, this is my example
-bot name> miru_bot_test 
-
-# Replace current_dir with output from pwd
-data location> (current_dir)/bot_data
-replace / with \ if on Windows
-
-# Pick json for now
-storage backend> 1
-
-# Now start the bot, replace the bot name below
-redbot miru_bot_test
-
-# Follow the directions to get your bot token
-# If copying from a v2 bot, the token is in data/red/settings.json
-bot token>  MjQxdzM53TE3MAM2NzA3NTg2.Xc4VVA.RIcv2Ndkxb<truncated>
-
-# Pick whatever you want but consider not overlapping with miru which uses ^
-prefix> !
-```
-
+## Configuring development version
 Once the bot is launched, set it to use your repo directory as a cog path. Type this in Discord where the bot is:
 
 ```
 !addpath (pwd output)
 ```
 
-
-
-* For Romanji/Kana conversion you will use Romkan. This is a bit tricky to install so we'll go over it first.
-    * If you want to skip this, you can locally comment out all calls to it, but this might be annoying when syncing your code if you're editing files that import it, so you should probably just do it. But if figuring this out is a barrier to entry to start actually coding, feel free to skip at least at the start.
-    * git clone [this repo](https://github.com/tejstead/python-romkan) into any folder you want.
-    * Open a command line in this same directory and run `py setup.py install`
-    * Locate the folder named romkan-0.2.1-py3.8.egg
-    * Copy the folder inside that folder, named `romkan`, and copy it to your virtual environment's lib folder (on Windows this is named `venv\lib\site-packages`)
-
-
-## Setting up the bot
+## Loading cogs
 
 * Some cogs will have cross dependencies on each other. Check the command prompt that Miru is running from if you encounter any errors.
 * Common dependencies include:
@@ -179,13 +65,8 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 * Note that when you edit cogs with dependencies, you might need to do multiple reloads. For example, if updating dadguide, you will need to reload padinfo as well.
 * After you have done all of this, restart the bot again. Hopefully by now `^id ` should work!
 
-## Other
-
-#TODO: update this lol
-
-
 ### Emoji
-* If you want emojis in `^id` commands, and you are setting this up for DEV PURPOSES ONLY, you can talk to tactical_retreat about getting your bot invited to the emoji servers. If you want to make your own separate Miru instance though, you're on your own for that.
+* If you want emojis in `^id` commands, and you are setting this up for DEV PURPOSES ONLY, you can talk to River about getting your bot invited to the emoji servers. If you want to make your own separate Miru instance though, you're on your own for that.
 * Give t_r your bot's invite link & ask him for the server IDs
 * Then use `^padinfo setemojiservers` with the IDs he gives you. The main Miru server is one of them, you can get that ID yourself.
 
