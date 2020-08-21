@@ -51,7 +51,7 @@ NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
 BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
 PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
-DB_DUMP_URL = 'https://f002.backblazeb2.com/file/dadguide-data/db/dadguide.sqlite'
+DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
 DB_DUMP_FILE = _data_file('dadguide.sqlite')
 DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
 
