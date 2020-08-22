@@ -4,7 +4,7 @@ Red v3 Cogs developed originally for Miru Bot, now for Tsubaki Bot.
 
 Code should be pep8 formatted with a 100 character line limit.
 
-# Setting up your own Miru instance for contributing code
+# Setting up your own Tsubaki instance for contributing code
 
 ## Installing Tools
 
@@ -15,7 +15,7 @@ Code should be pep8 formatted with a 100 character line limit.
 
 ## Check out the repo
 
-Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/padbot-cogs). 
+Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/padbot-cogs).
 You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
 
 I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) for development. Change into the
@@ -23,10 +23,10 @@ I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) 
 
 ```shell script
 # Clone your repo, not this one.
-git clone https://github.com/nachoapps/miru-v3cogs.git
+git clone https://github.com/TsubakiBotPad/padbot-cogs.git
 
 # If you're just setting up a production bot, no need to do this. But you should create a directory and do:
-wget https://raw.githubusercontent.com/nachoapps/miru-v3cogs/master/requirements.txt
+wget https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/requirements.txt
 ```
 
 ## Set up your bot
@@ -100,7 +100,7 @@ contain utility libraries.
 | memes          | CustomCommands except role-limited                          |    
 | rpadutils      | Utility library shared by many other libraries              |    
 | sqlactivitylog | Archives messages in sqlite, allows for lookup              |    
-| timecog        | Convert/print time in different timezones                   | 
+| timecog        | Convert/print time in different timezones                   |
 | trutils        | Misc utilities intended for my usage only                   |
 | twitter2       | Mirrors a twitter feed to a channel                         |
 
@@ -112,4 +112,3 @@ Cogs not intended for normal use, or superceded.
 | Cog            | Purpose                                                     |
 | ---            | ---                                                         |
 | donations      | Tracks users who have donated for hosting fees              |
-

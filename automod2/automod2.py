@@ -21,7 +21,7 @@ from rpadutils import CogSettings, boxPagifySay
 
 LOGS_PER_CHANNEL_USER = 5
 
-AUTOMOD_HELP = """
+AUTOMOD_HELP = r"""
 Automod works by creating named global patterns, and then applying them in
 specific channels as either whitelist or blacklist rules. This allows you
 to customize what text can be typed in a channel. Text from moderators is
