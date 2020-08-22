@@ -23,7 +23,7 @@ Unlike the private Miru used by larger community servers, public Miru has lower 
 so I will install a variety of random entertainment plugins.
 
 To invite public Miru to your server, use the following link:
-https://discordapp.com/oauth2/authorize?client_id=296443771229569026&scope=bot
+https://discord.com/oauth2/authorize?client_id=744768152201854987&scope=bot&permissions=536870920
 
 The following commands might come in handy:
 `{0.prefix}modhelp`       - information on how to set up Miru's moderation commands
@@ -151,6 +151,8 @@ class TrUtils(commands.Cog):
         self.bot = bot
         self.settings = TrUtilsSettings("trutils")
 
+        self.sessions = set()
+
     @commands.command()
     async def revertname(self, ctx):
         """Unsets your nickname"""
@@ -195,9 +197,11 @@ class TrUtils(commands.Cog):
         else:
             await ctx.send("No exception has occurred yet")
 
-    @commands.command()
+    @commands.command(aliases=["gettsubaki", "getsubaki"])
     async def getmiru(self, ctx):
-        """Tells you how to get Miru into your server"""
+        """Tells you how to get Tsubaki into your server"""
+        await ctx.send(inline("Unfortunately, you can't (yet)."))
+        return
         for page in pagify(GETMIRU_HELP.format(ctx), delims=['\n'], shorten_by=8):
             await ctx.author.send(box(page))
 
@@ -230,20 +234,9 @@ class TrUtils(commands.Cog):
             "is available for other servers on request."
             "".format(red_repo, rpad_invite))
 
-        baby_miru_url = "http://www.pixiv.net/member_illust.php?illust_id=57613867&mode=medium"
-        baby_miru_author = "BOW @ Pixiv"
-        cute_miru_url = "https://www.dropbox.com/s/0wlfx3g4mk8c8bg/Screenshot%202016-12-03%2018.39.37.png?dl=0"
-        cute_miru_author = "Pancaaake18 on discord"
-        bot_miru_url = "https://puu.sh/urTm8/c3bdf993bd.png"
-        bot_miru_author = "graps on discord"
         avatar = (
             "Bot avatars supplied by:\n"
-            "\t[Baby Miru]({}): {}\n"
-            "\t[Cute Miru]({}): {}\n"
-            "\t[Bot Miru]({}): {}"
-            "".format(baby_miru_url, baby_miru_author,
-                      cute_miru_url, cute_miru_author,
-                      bot_miru_url, bot_miru_author))
+            "\t[Tsubaki]({}): {}").format("www.example.com", "Gungho")
 
         using = (
             "You can use `{0.prefix}help` to get a full list of commands.\n"
@@ -252,7 +245,7 @@ class TrUtils(commands.Cog):
         )
 
         embed = discord.Embed()
-        embed.add_field(name="Instance owned by", value='tactical_retreat')
+        embed.add_field(name="Instance owned by", value='The Tsubaki Team')
         embed.add_field(name="About the bot", value=about, inline=False)
         embed.add_field(name="Using the bot", value=using.format(ctx), inline=False)
         embed.add_field(name="Avatar credits", value=avatar, inline=False)

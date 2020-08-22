@@ -108,7 +108,9 @@ class PadEvents(commands.Cog):
                     for daily_registration in list(self.settings.listDailyReg()):
                         try:
                             if server == daily_registration['server']:
-                                await self.pageOutput(ctx, msg, channel_id=daily_registration['channel_id'])
+                                await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
+                                                      msg, channel_id=daily_registration['channel_id'])
+                                print("daily_reg server")
                         except Exception as ex:
                             traceback.print_exc()
                             # self.settings.removeDailyReg(
