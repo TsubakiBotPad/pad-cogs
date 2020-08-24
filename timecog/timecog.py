@@ -180,7 +180,6 @@ class TimeCog(commands.Cog):
                 return
             tinstart = "now"
             tinstrs, input = match.groups()
-        print(tinstrs, tinstart, input)
         start = (datetime.utcnow() + tin2tdelta(tinstart)).timestamp()
         async with self.config.channel(ctx.channel).schedules() as scs:
             scs.append((start, tin2tdelta(tinstrs).seconds, input))
@@ -247,7 +246,6 @@ class TimeCog(commands.Cog):
                         async with self.config.channel(self.bot.get_channel(c)).schedules() as sco:
                             scind = sco.index(sc)
                             sco[scind][0] += sco[scind][1]
-                            print(sco, scind, datetime.utcnow())
                         await self.bot.get_channel(c).send(sc[2])
 
     @commands.command()
