@@ -48,7 +48,7 @@ class Scheduler(commands.Cog):
 
         self.settings = SchedulerSettings("scheduler")
         self.events = self.settings.getevents()
-        self.queue = asyncio.PriorityQueue(loop=bot.loop)
+        self.queue = asyncio.PriorityQueue()
         self.queue_lock = asyncio.Lock()
         self.to_kill = {}
         self._load_events()

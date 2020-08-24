@@ -30,7 +30,7 @@ from redbot.core.utils import AsyncIter
 
 import rpadutils
 
-logger = logging.getLogger('red.miruv3.dadguide')
+logger = logging.getLogger('red.tsubaki.dadguide')
 
 
 def _data_file(file_name: str) -> str:

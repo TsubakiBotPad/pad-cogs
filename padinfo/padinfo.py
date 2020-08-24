@@ -17,7 +17,7 @@ from redbot.core.utils.chat_formatting import inline, box
 import rpadutils
 from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
-logger = logging.getLogger('red.miruv3.padinfo')
+logger = logging.getLogger('red.tsubaki.padinfo')
 
 HELP_MSG = """
 {0.prefix}helpid : shows this message
@@ -206,9 +206,9 @@ class PadInfo(commands.Cog):
         while self == self.bot.get_cog('PadInfo'):
             try:
                 await self.refresh_index()
-                print('Done refreshing PadInfo')
+                logger.info('Done refreshing PadInfo')
             except Exception as ex:
-                print("reload padinfo loop caught exception " + str(ex))
+                logger.exception("reload padinfo loop caught exception " + str(ex))
                 traceback.print_exc()
 
             await asyncio.sleep(60 * 60 * 1)
