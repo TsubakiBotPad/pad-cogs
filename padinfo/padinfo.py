@@ -567,7 +567,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
-            base_dir = '/home/tactical0retreat/dadguide/data/media/voices'
+            base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
             header = '{} ({})'.format(monsterToHeader(m), server)
             if not os.path.exists(voice_file):
@@ -607,6 +607,13 @@ class PadInfo(commands.Cog):
         if emoji_servers:
             self.settings.setEmojiServers(emoji_servers.split(','))
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+
+    @padinfo.command()
+    @checks.is_owner()
+    async def setvoicepath(self, ctx, *, path=''):
+        """Set path to the voice direcory"""
+        self.settings.setVoiceDir(path)
+        await ctx.send(inline('Done'))
 
     @checks.is_owner()
     @padinfo.command()
@@ -695,6 +702,7 @@ class PadInfoSettings(CogSettings):
         config = {
             'animation_dir': '',
             'evo_id_users': [],
+            'voice_dir_path': '',
         }
         return config
 
@@ -726,6 +734,13 @@ class PadInfoSettings(CogSettings):
 
     def checkEvoID(self, user_id):
         return user_id in self.bot_settings['evo_id_users']
+
+    def setVoiceDir(self, path):
+        self.bot_settings['voice_dir_path'] = path
+        self.save_settings()
+
+    def voiceDir(self):
+        return self.bot_settings['voice_dir_path']
 
 
 def monsterToHeader(m: "DgMonster", link=False):
