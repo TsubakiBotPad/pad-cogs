@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import ctypes.util
 
 import discord
 from google.cloud import texttospeech
@@ -15,7 +16,7 @@ logger = logging.getLogger('red.tsubaki.speech')
 
 try:
     if not discord.opus.is_loaded():
-        discord.opus.load_opus('libopus.so.0')
+        discord.opus.load_opus(ctypes.util.find_library('opus'))
 except:  # Missing opus
     logger.warning('Failed to load opus')
     opus = None
