@@ -17,22 +17,6 @@ from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from rpadutils import CogSettings
 
-GETMIRU_HELP = """
-The new public Miru is open for invite to any server: personal, private, secret-handshake-entry-only, etc
-Unlike the private Miru used by larger community servers, public Miru has lower stability requirements,
-so I will install a variety of random entertainment plugins.
-
-To invite public Miru to your server, use the following link:
-https://discord.com/oauth2/authorize?client_id=744768152201854987&scope=bot&permissions=536870920
-
-The following commands might come in handy:
-`{0.prefix}modhelp`       - information on how to set up Miru's moderation commands
-`{0.prefix}userhelp`      - a user-focused guide to Miru's commands
-`{0.prefix}help`          - the full list of Miru commands
-
-If you want to be notified of updates to Miru, suggest features, or ask for help, join the Miru Support server:
-https://discord.gg/zB4QHgn
-"""
 
 USER_HELP = """
 Bot user help
@@ -72,7 +56,7 @@ Miru will store your personal PAD details, and provide them on request.
 Use the series of commands starting with {0.prefix}profile to configure your own profile.
 
 Use one of the following commands to retrieve data.
-{0.prefix}idme            print your profile to the current channel
+{0.prefix}idme            send your profile to the current channel
 {0.prefix}idfor           get profile data for a specific user
 {0.prefix}idto            have Miru DM your profile to a user
 {0.prefix}profile search  search the list of configured (visible) profiles
@@ -197,14 +181,6 @@ class TrUtils(commands.Cog):
         else:
             await ctx.send("No exception has occurred yet")
 
-    @commands.command(aliases=["gettsubaki", "getsubaki"])
-    async def getmiru(self, ctx):
-        """Tells you how to get Tsubaki into your server"""
-        await ctx.send(inline("Unfortunately, you can't (yet)."))
-        return
-        for page in pagify(GETMIRU_HELP.format(ctx), delims=['\n'], shorten_by=8):
-            await ctx.author.send(box(page))
-
     @commands.command()
     async def userhelp(self, ctx):
         """Shows a summary of the useful user features"""
@@ -228,7 +204,7 @@ class TrUtils(commands.Cog):
         about = (
             "This is an instance of [the Red Discord bot]({}), "
             "use the 'info' command for more info. "
-            "The various PAD related cogs were created by tactical_retreat. "
+            "The various PAD related cogs were created by Aradia Megido and tactical_retreat. "
             "Massive overhaul of the bot to Red v3 by Aradia Megido. "
             "This bot was created for the [PAD Community Server Discord]({}) but "
             "is available for other servers on request."
@@ -236,7 +212,7 @@ class TrUtils(commands.Cog):
 
         avatar = (
             "Bot avatars supplied by:\n"
-            "\t[Tsubaki]({}): {}").format("www.example.com", "Gungho")
+            "\t[Tsubaki]({}): {}").format("https://www.example.com", "Gungho")
 
         using = (
             "You can use `{0.prefix}help` to get a full list of commands.\n"
