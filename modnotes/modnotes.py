@@ -25,10 +25,10 @@ class ModNotes(commands.Cog):
         This module allows you to create notes to share between moderators.
         """
 
-    @usernotes.command(name="print")
+    @usernotes.command()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _print(self, ctx, user: discord.User):
-        """Print the notes for a user."""
+    async def get(self, ctx, user: discord.User):
+        """Sends the notes for a user."""
         notes = self.settings.getNotesForUser(ctx.guild.id, user.id)
         if not notes:
             await ctx.send(box('No notes for {}'.format(user.name)))

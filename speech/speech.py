@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import discord
 from google.cloud import texttospeech
@@ -10,11 +11,13 @@ from redbot.core.utils.chat_formatting import inline
 
 from rpadutils import CogSettings, corowrap
 
+logger = logging.getLogger('red.tsubaki.speech')
+
 try:
     if not discord.opus.is_loaded():
         discord.opus.load_opus('libopus.so.0')
 except:  # Missing opus
-    print('Failed to load opus')
+    logger.warning('Failed to load opus')
     opus = None
 else:
     opus = True
