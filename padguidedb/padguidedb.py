@@ -186,7 +186,7 @@ class PadGuideDb(commands.Cog):
     # @padguidedb.command()
     @is_padguidedb_admin()
     async def dungeondata(self, ctx, dungeon_id: int):
-        with ctx.typing(), self.get_connection() as cursor:
+        with self.get_connection() as cursor:
             sql = "SELECT * FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
             cursor.execute(sql)
             results = list(cursor.fetchall())
