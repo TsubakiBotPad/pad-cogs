@@ -167,6 +167,7 @@ class PadInfo(commands.Cog):
         self.index_all = None
         self.index_na = None
         self.index_jp = None
+        self.index_lock = asyncio.Lock()
 
         self.menu = Menu(bot)
 
@@ -224,14 +225,15 @@ class PadInfo(commands.Cog):
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
 
-        logger.info('Loading ALL index')
-        self.index_all = await dg_cog.create_index()
+        async with self.index_lock:
+            logger.info('Loading ALL index')
+            self.index_all = await dg_cog.create_index()
 
-        logger.info('Loading NA index')
-        self.index_na = await dg_cog.create_index(lambda m: m.on_na)
+            logger.info('Loading NA index')
+            self.index_na = await dg_cog.create_index(lambda m: m.on_na)
 
-        logger.info('Loading JP index')
-        self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
+            logger.info('Loading JP index')
+            self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
         if ctx is not None:
@@ -567,6 +569,9 @@ class PadInfo(commands.Cog):
         m, err, debug_info = self.findMonster(query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
+            if voice_id is None:
+                await ctx.send(inline("No voice file found for "+m.name))
+                return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
             header = '{} ({})'.format(monsterToHeader(m), server)
