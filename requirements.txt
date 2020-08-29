@@ -4,7 +4,7 @@ wheel
 Red-DiscordBot[postgres]
 backoff
 prettytable
-romkan
+git+https://github.com/tejstead/python-romkan
 google-api
 google-api-python-client
 google-cloud
