@@ -22,11 +22,8 @@ I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) 
 `PycharmProjects` directory and clone your fork of the repo:
 
 ```shell script
-# Clone your repo, not this one.
+# Clone your repo, not this one!!!!!!!! You will want to load your own changes!!!!
 git clone https://github.com/TsubakiBotPad/padbot-cogs.git
-
-# If you're just setting up a production bot, no need to do this. But you should create a directory and do:
-wget https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/requirements.txt
 ```
 
 ## Set up your bot
@@ -39,25 +36,30 @@ Installation instruction links:
 * [Windows install instructions](https://docs.discord.red/en/stable/install_windows.html)
 * [Linux/Mac install instructions](https://docs.discord.red/en/stable/install_linux_mac.html)
 
+If you are running on a cloud server for the first time and aren't sure what Linux distro to pick, please, please, please, please, please pick Ubuntu. Their docs aren't well-tested on other distros.
 
-## Installing additional dependencies
-* For Romanji/Kana conversion we use a library called Romkan. There are some problems with the version in PyPI, so it's commented from `requirements.txt`. Instead use pip *inside your venv* to install it separately:
+## Installing dependencies
+First download `requirements.txt` so that you can run it from your Red venv. In Linux this is done by running the following from the directory holding the folder `name-of-bot` that you created during the Red setup process:
 ```shell script
-pip install git+git://github.com/tejstead/python-romkan
+wget https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/requirements.txt
 ```
-
+Then run:
+```shell script
+source name-of-bot/bin/activate
+pip install -r requirements.txt
+deactivate
+```
 The rest of the guide takes place from inside Discord.
 
 ## Configuring development version
 Once the bot is launched, set it to use your repo directory as a cog path. Type this in Discord where the bot is:
 
 ```
-!addpath (pwd output)
+!addpath $pathToYourRepoThatYouClonedBefore
 ```
-
 ## Loading cogs
 
-* Some cogs will have cross dependencies on each other. Check the command prompt that Miru is running from if you encounter any errors.
+* Some cogs will have cross dependencies on each other. Check the command prompt that Tsubaki is running from or type `^traceback 1` if you encounter any errors.
 * Common dependencies include:
     * rpadutils
     * dadguide
@@ -66,9 +68,9 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 * After you have done all of this, restart the bot again. Hopefully by now `^id ` should work!
 
 ### Emoji
-* If you want emojis in `^id` commands, and you are setting this up for DEV PURPOSES ONLY, you can talk to River about getting your bot invited to the emoji servers. If you want to make your own separate Miru instance though, you're on your own for that.
-* Give t_r your bot's invite link & ask him for the server IDs
-* Then use `^padinfo setemojiservers` with the IDs he gives you. The main Miru server is one of them, you can get that ID yourself.
+* You probably don't actually need emoji to be working in order to do development for Tsubaki.
+* There are three emoji servers: the main Tsubaki support server, `miru_extra_emoji`, and `miru_monsters_1`. River has access to these, talk to her if you think you need access to them. HOSTING YOUR OWN TSUBAKI/MIRU CLONE IS NOT REASON TO GET ACCESS TO THEM. In-depth development of the `^id` command may be reason to get access to them.
+* You will use use `^padinfo setemojiservers` with the IDs she gives you.
 
 # Puzzle and Dragons
 
