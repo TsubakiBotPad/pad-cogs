@@ -49,54 +49,48 @@ class BadUser(commands.Cog):
     @baduser.command(name="addnegativerole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addNegativeRole(self, ctx, *, role):
+    async def addNegativeRole(self, ctx, *, role: discord.Role):
         """Designate a role as a 'punishment' role."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.addPunishmentRole(ctx.guild.id, role.id)
         await ctx.send(inline('Added punishment role "' + role.name + '"'))
 
     @baduser.command(name="rmnegativerole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmNegativeRole(self, ctx, *, role):
+    async def rmNegativeRole(self, ctx, *, role: discord.Role):
         """Cancels a role from 'punishment' status."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.rmPunishmentRole(ctx.guild.id, role.id)
         await ctx.send(inline('Removed punishment role "' + role.name + '"'))
 
     @baduser.command(name="addpositiverole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addPositiveRole(self, ctx, *, role):
+    async def addPositiveRole(self, ctx, *, role: discord.Role):
         """Designate a role as a 'benefit' role."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.addPositiveRole(ctx.guild.id, role.id)
         await ctx.send(inline('Added positive role "' + role.name + '"'))
 
     @baduser.command(name="rmpositiverole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmPositiveRole(self, ctx, *, role):
+    async def rmPositiveRole(self, ctx, *, role: discord.Role):
         """Cancels a role from 'benefit' status."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.rmPositiveRole(ctx.guild.id, role.id)
         await ctx.send(inline('Removed positive role "' + role.name + '"'))
 
     @baduser.command(name="addneutralrole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addNeutralRole(self, ctx, *, role):
+    async def addNeutralRole(self, ctx, *, role: discord.Role):
         """Designate a role as a notable but not ping-worthy role."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.addNeutralRole(ctx.guild.id, role.id)
         await ctx.send(inline('Added neutral role "' + role.name + '"'))
 
     @baduser.command(name="rmneutralrole")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmNeutralRole(self, ctx, *, role):
+    async def rmNeutralRole(self, ctx, *, role: discord.Role):
         """Cancels a role from notable but not ping-worthy status."""
-        role = get_role(ctx.guild.roles, role)
         self.settings.rmNeutralRole(ctx.guild.id, role.id)
         await ctx.send(inline('Removed neutral role "' + role.name + '"'))
 
