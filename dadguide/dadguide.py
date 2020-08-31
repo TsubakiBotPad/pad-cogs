@@ -323,12 +323,10 @@ def load_database(existing_db):
 
 
 class DadguideDatabase(object):
-    def __init__(self, data_file=None):
+    def __init__(self, data_file):
         self._con = None
-
-        if data_file is not None:
-            self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
-            self._con.row_factory = lite.Row
+        self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
+        self._con.row_factory = lite.Row
 
     def has_database(self):
         return self._con is not None

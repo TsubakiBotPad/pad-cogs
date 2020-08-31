@@ -205,14 +205,17 @@ class PadInfo(commands.Cog):
     async def reload_nicknames(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadInfo'):
+            wait_time = 60 * 60 * 1
             try:
                 await self.refresh_index()
                 logger.info('Done refreshing PadInfo')
             except Exception as ex:
+                wait_time = 60
+                print(self.bot.get_cog('Dadguide').database._con)
                 logger.exception("reload padinfo loop caught exception " + str(ex))
                 traceback.print_exc()
 
-            await asyncio.sleep(60 * 60 * 1)
+            await asyncio.sleep(wait_time)
 
     @commands.command()
     @checks.is_owner()
