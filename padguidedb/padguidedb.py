@@ -97,8 +97,22 @@ class PadGuideDb(commands.Cog):
     @padguidedb.command()
     @checks.is_owner()
     async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
-        """Set the dungeon script."""
+        """Set the dungeon script file."""
         self.settings.setDungeonScriptFile(dungeon_script_file)
+        await ctx.send(inline('Done'))
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setfulletlfile(self, ctx, *, full_etl_file):
+        """Set the full ETL file."""
+        self.settings.setFullETLFile(full_etl_file)
+        await ctx.send(inline('Done'))
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setimageupdatefile(self, ctx, *, image_update_file):
+        """Set the image update file."""
+        self.settings.setImageUpdateFile(image_update_file)
         await ctx.send(inline('Done'))
 
     @padguidedb.command()
@@ -218,7 +232,7 @@ class PadGuideDb(commands.Cog):
             await ctx.send(inline('Running full ETL pipeline: this could take a while'))
             process = await asyncio.create_subprocess_exec(
                 'bash',
-                '/home/tactical0retreat/dadguide/dadguide-jobs/run_loader.sh',
+                self.settings.fullETLFile(),
 
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -243,7 +257,7 @@ class PadGuideDb(commands.Cog):
             await ctx.send(inline('Running image extract pipeline: this could take a while'))
             process = await asyncio.create_subprocess_exec(
                 'bash',
-                '/home/tactical0retreat/dadguide/dadguide-jobs/media/update_image_files.sh',
+                self.settings.imageUpdateFile(),
 
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -263,7 +277,9 @@ class PadGuideDbSettings(CogSettings):
             'admins': [],
             'config_file': '',
             'dungeon_script_file': '',
-            'users': {}
+            'full_etl_file': '',
+            'update_image_file': '',
+            'users': {},
         }
         return config
 
@@ -298,6 +314,20 @@ class PadGuideDbSettings(CogSettings):
 
     def setDungeonScriptFile(self, dungeon_script_file):
         self.bot_settings['dungeon_script_file'] = dungeon_script_file
+        self.save_settings()
+
+    def fullETLFile(self):
+        return self.bot_settings.get('dungeon_script_file', '')
+
+    def setFullETLFile(self, full_etl_file):
+        self.bot_settings['full_etl_file'] = full_etl_file
+        self.save_settings()
+
+    def updateImageFile(self):
+        return self.bot_settings.get('dungeon_script_file', '')
+
+    def setUpdateImageFile(self, update_image_file):
+        self.bot_settings['update_image_file'] = update_image_file
         self.save_settings()
 
     def setUserInfo(self, server, user_uuid, user_intid):
