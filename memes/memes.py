@@ -1,12 +1,15 @@
 import json
 import os
 import re
+import base64
+import io
 
 import discord
-from redbot.core import checks, data_manager
-from redbot.core import commands
+from redbot.core import checks, data_manager, commands
+from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from rpadutils import CogSettings, get_role_from_id, get_role, safe_read_json
+
+from rpadutils import CogSettings, get_role_from_id, safe_read_json
 
 
 def _data_file(file_name: str) -> str:
@@ -100,15 +103,14 @@ class Memes(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
-    async def setmemerole(self, ctx, rolename: str):
+    async def setmemerole(self, ctx, role: discord.Role):
         """Sets the meme role
 
         Example:
         [p]setmemerole Regular"""
 
-        role = get_role(ctx.guild.roles, rolename)
         self.settings.setPrivileged(ctx.guild.id, role.id)
-        await ctx.send("done")
+        await ctx.send(inline("Done"))
 
     @commands.command()
     @commands.guild_only()
