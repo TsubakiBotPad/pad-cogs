@@ -23,8 +23,8 @@ Bot user help
 This command gives you an overview of the most commonly used user-focused
 commands, with an emphasis on the ones unique to this bot.
 
-Join the Miru Support Server for info, update, and bot support:
-https://discord.gg/zB4QHgn
+Join the Tsubaki Support Server for info, update, and bot support:
+https://discord.gg/tVPmeG8
 
 Use {0.prefix}help to get a full list of help commands. Execute any command with no
 arguments to get more details on how they work.
@@ -52,13 +52,13 @@ Monster Info:
 {0.prefix}pic       display the image for a monster
 
 Profile:
-Miru will store your personal PAD details, and provide them on request.
+Tsubaki will store your personal PAD details, and provide them on request.
 Use the series of commands starting with {0.prefix}profile to configure your own profile.
 
 Use one of the following commands to retrieve data.
 {0.prefix}idme            send your profile to the current channel
 {0.prefix}idfor           get profile data for a specific user
-{0.prefix}idto            have Miru DM your profile to a user
+{0.prefix}idto            have Tsubaki DM your profile to a user
 {0.prefix}profile search  search the list of configured (visible) profiles
 
 Time conversion:
@@ -73,7 +73,7 @@ MOD_HELP = """
 Bot Moderator Help
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Miru is a set of plugins inside the Red Discord bot, running on discord.py. There
+Tsubaki is a set of plugins inside the Red Discord bot, running on discord.py. There
 are some custom ones, but a lot of them are generic to all Red Discord bots, so
 things you've used elsewhere will probably also work here.
 
@@ -86,7 +86,7 @@ write it.
 Check out the {0.prefix}help command from inside your server. You'll see a wider list of
 commands than normal users do.
 
-If you've just added Miru to your server, start with the {0.prefix}modset command. You
+If you've just added Tsubaki to your server, start with the {0.prefix}modset command. You
 might want to configure an Admin and a Mod role (they can be the same thing).
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -113,15 +113,15 @@ restricting them from seeing or speaking in certain channels. If a punishment ro
 applied to a user, the last 10 things they said (and where they said it) are recorded, and
 a strike is added to their record.
 
-You can configure a channel where Miru will log when these moderation events occur, and ping
+You can configure a channel where Tsubaki will log when these moderation events occur, and ping
 @here asking for an explanation. She will also track when a user with a strike leaves the
 server, and when they rejoin the server (as this is generally done to evade negative roles).
 
 Custom commands:
-Miru supports three types of custom commands, you can find the list of associated commands via {0.prefix}help.
+Tsubaki supports three types of custom commands, you can find the list of associated commands via {0.prefix}help.
 * CustomCommands: Added by server mods, executable by anyone
 * Memes: Added by server mods, executable only by people with a specific Role (configured by mods)
-* Pad: Added by Miru PAD admins and executable by users in any server
+* Pad: Added by Tsubaki PAD admins and executable by users in any server
 
 Limiting command execution:
 The '{0.prefix}p' command can be used to prevent users from executing specific commands on the server,
@@ -203,16 +203,16 @@ class TrUtils(commands.Cog):
 
         about = (
             "This is an instance of [the Red Discord bot]({}), "
-            "use the 'info' command for more info. "
+            "use the '{}info' command for more info. "
             "The various PAD related cogs were created by Aradia Megido and tactical_retreat. "
             "Massive overhaul of the bot to Red v3 by Aradia Megido. "
             "This bot was created for the [PAD Community Server Discord]({}) but "
             "is available for other servers on request."
-            "".format(red_repo, rpad_invite))
+            "".format(red_repo, ctx.prefix, rpad_invite))
 
         avatar = (
             "Bot avatars supplied by:\n"
-            "\t[Tsubaki]({}): {}").format("https://www.example.com", "Gungho")
+            "\t[Tsubaki]({}): {}").format("https://twitter.com/_violebot", "Violebot")
 
         using = (
             "You can use `{0.prefix}help` to get a full list of commands.\n"
@@ -382,7 +382,7 @@ class TrUtils(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                    " Join the Miru Server to see any responses ({0.prefix}miruserver).".format(ctx))
+                    " Join the Tsubaki Server to see any responses ({0.prefix}miruserver).".format(ctx))
 
     @commands.command()
     @commands.guild_only()
