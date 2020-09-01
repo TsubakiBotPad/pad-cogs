@@ -28,13 +28,13 @@ class DataTransfer(commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
     async def _export(self, ctx):
-        """Get a .enc file to load data on another bot via the import command."""
+        """Get a .enc file to load data on another bot via the [p]import command."""
 
     @commands.group(name="import")
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
     async def _import(self, ctx):
-        """Load data from another bot via an attatched .enc file."""
+        """Load data from another bot via an attatched .enc file. (Obtain this with [p]export)"""
 
     @_import.command(name="alias")
     async def import_alias(self, ctx, bot_mention: discord.User, link_or_attatchment=None):
