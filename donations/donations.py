@@ -233,8 +233,8 @@ class Donations(commands.Cog):
         prefix = (await self.bot.get_prefix(message))[0]
 
         user_id = message.author.id
-        if user_id not in [user.id for user in self.tsubaki_guild if self.donor_role in user.roles] and \
-           user_id not in [user.id for user in self.tsubaki_guild if self.patron_role in user.roles]:
+        if user_id not in [user.id for user in self.tsubaki_guild.members if self.donor_role in user.roles] and \
+           user_id not in [user.id for user in self.tsubaki_guild.members if self.patron_role in user.roles]:
             return
 
         if message.guild and message.guild.id in self.settings.disabledServers():
