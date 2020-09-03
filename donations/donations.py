@@ -12,11 +12,10 @@ from rpadutils import CogSettings, clean_global_mentions
 
 DONATE_MSG = """
 To donate to cover bot hosting fees you can use one of:
-  Patreon : https://www.patreon.com/miru_bot
-  Venmo   : https://venmo.com/TacticalRetreat
+  Patreon : https://www.patreon.com/tsubaki_bot
 
-Read the Patreon or join the Miru Support Server for more details:
-  https://discord.gg/zB4QHgn
+Read the Patreon or join the Tsubaki Support Server for more details:
+  https://discord.gg/tVPmeG8
 
 You permanently get some special perks for donating even $1.
 
@@ -45,6 +44,22 @@ DEFAULT_LOVE = {
 def roll(chance: int):
     return random.randrange(100) < chance
 
+def is_patron(ctx):
+    tsubaki_guild = ctx.bot.get_guild(746131494875168770)
+    patron_role = tsubaki_guild.get_role(749849451769757726)
+    author = tsubaki_guild.get_member(ctx.author.id)
+    if author is None or patron_role not in author.roles:
+        return False
+    return True
+
+def is_donor(ctx):
+    tsubaki_guild = ctx.bot.get_guild(746131494875168770)
+    donor_role = tsubaki_guild.get_role(749849518467580015)
+    patron_role = tsubaki_guild.get_role(749849451769757726)
+    author = tsubaki_guild.get_member(ctx.author.id)
+    if author is None or (donor_role not in author.roles and patron_role not in author.roles):
+        return False
+    return True
 
 class Donations(commands.Cog):
     """Manages donations and perks."""
@@ -69,33 +84,34 @@ class Donations(commands.Cog):
         self.sexy_list = love_json.get('sexy', DEFAULT_LOVE['sexy'])
         self.perverted_list = love_json.get('perverted', DEFAULT_LOVE['perverted'])
 
+        self.tsubaki_guild = self.bot.get_guild(746131494875168770)
+        self.donor_role = self.tsubaki_guild.get_role(749849518467580015)
+        self.patron_role = self.tsubaki_guild.get_role(749849451769757726)
+
     @commands.command()
     async def donate(self, ctx):
         """Prints information about donations."""
-        donors = self.settings.donors()
         donor_names = set()
-        for user in self.bot.get_all_members():
-            if user.id in donors:
+        for user in self.tsubaki_guild.members:
+            if self.donor_role in user.roles or self.patron_role in user.roles:
                 donor_names.add(user.name)
 
-        msg = DONATE_MSG.format(count=len(donors), donors=', '.join(sorted(donor_names)))
+        msg = DONATE_MSG.format(count=len(donor_names), donors=', '.join(sorted(donor_names)))
         await ctx.send(box(msg))
 
     @commands.command()
+    @commands.check(is_donor)
     async def mycommand(self, ctx, command: str, *, text: str):
-        """Sets your custom command (donor only)."""
-        user_id = ctx.author.id
+        """Sets your custom command."""
         text = clean_global_mentions(text)
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Only donors can set a personal command'))
-            return
 
-        self.settings.addCustomCommand(user_id, command, text)
+        self.settings.addCustomCommand(ctx.author.id, command, text)
         await ctx.send(inline('I set up your command: ' + command))
 
     @commands.command()
+    @commands.check(is_donor)
     async def myembed(self, ctx, command: str, title: str, url: str, footer: str):
-        """Sets your custom embed command (donor only).
+        """Sets your custom embed command.
 
         This lets you create a fancier image message. For example you can set up
         a simple inline image without a link using:
@@ -107,107 +123,43 @@ class Donations(commands.Cog):
         Want a footer? Fill in the last argument:
         [p]myembed lewd "L-lewd!" "<snip, see above>" "source: some managa i read"
         """
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Only donors can set a personal command'))
-            return
 
-        self.settings.addCustomEmbed(user_id, command, title, url, footer)
+        self.settings.addCustomEmbed(ctx.author.id, command, title, url, footer)
         await ctx.send(inline('I set up your embed: ' + command))
 
     @commands.command()
+    @commands.check(is_donor)
     async def spankme(self, ctx):
-        """You are trash (donor only)."""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
-
+        """You are trash."""
         await ctx.send(ctx.author.mention + ' ' + random.choice(self.insults_list))
 
     @commands.command()
+    @commands.check(is_donor)
     async def insultme(self, ctx):
-        """You are consistently trash (donor only)."""
+        """You are consistently trash."""
         user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
 
         self.settings.addInsultsEnabled(user_id)
         await ctx.send(ctx.author.mention + ' ' 'Oh, I will.\n' + random.choice(self.insults_list))
 
-    @commands.command(hidden=True)
-    async def insultripper(self, ctx):
-        """Fuck ripper."""
-        ripper_id = '123529484476350467'
-        ripper = ctx.guild.get_member(ripper_id)
-        insult = random.choice(self.insults_list)
-        if ripper:
-            await ctx.send(ripper.mention + ' ' + insult)
-        else:
-            await ctx.send('Ripper is not in this server but I let him know anyway')
-            ripper = discord.utils.get(self.bot.get_all_members(), id=ripper_id)
-            await ripper.send('{} asked me to send you this:\n{}'.format(ctx.author.name, insult))
-
     @commands.command()
-    async def vcinsultripper(self, ctx):
-        """Fuck ripper (verbally)"""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
-
-        ripper_id = '123529484476350467'
-        ripper = ctx.guild.get_member(ripper_id)
-
-        if ripper is None:
-            await ctx.send(inline('Ripper must be in this server to use this command'))
-
-        voice = ripper.voice
-        if not voice:
-            await ctx.send(inline('Ripper must be in a voice channel on this server to use this command'))
-            return
-
-        channel = voice.channel
-
-        insult = random.choice(self.insults_list)
-        speech_cog = self.bot.get_cog('Speech')
-        if not speech_cog:
-            await ctx.send(inline('Speech seems to be offline'))
-            return
-
-        await ctx.send(ripper.mention + ' ' + insult)
-        await speech_cog.speak(channel, 'Hey Ripper, ' + insult)
-
-    @commands.command()
+    @commands.check(is_donor)
     async def plsno(self, ctx):
-        """I am merciful (donor only)."""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
+        """I am merciful."""
 
-        self.settings.rmInsultsEnabled(user_id)
+        self.settings.rmInsultsEnabled(ctx.author.id)
         await ctx.send('I will let you off easy this time.')
 
     @commands.command()
+    @commands.check(is_donor)
     async def kissme(self, ctx):
-        """You are so cute! (donor only)."""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
-
+        """You are so cute!."""
         await ctx.send(ctx.author.mention + ' ' + random.choice(self.cute_list))
 
     @commands.command()
+    @commands.check(is_donor)
     async def lewdme(self, ctx):
-        """So nsfw. (donor only)."""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
-
+        """So nsfw.."""
         if 'nsfw' in ctx.channel.name.lower():
             await ctx.send(ctx.author.mention + ' ' + random.choice(self.sexy_list))
         else:
@@ -215,13 +167,9 @@ class Donations(commands.Cog):
             await ctx.author.send(random.choice(self.sexy_list))
 
     @commands.command()
+    @commands.check(is_donor)
     async def pervme(self, ctx):
-        """Hentai!!! (donor only)."""
-        user_id = ctx.author.id
-        if user_id not in self.settings.donors():
-            await ctx.send(inline('Donor-only command'))
-            return
-
+        """Hentai!!!."""
         if 'nsfw' in ctx.channel.name.lower():
             await ctx.send(ctx.author.mention + ' ' + random.choice(self.perverted_list))
         else:
@@ -234,7 +182,6 @@ class Donations(commands.Cog):
         """Manage donation options."""
 
     @donations.command()
-    @checks.admin_or_permissions(manage_guild=True)
     async def togglePerks(self, ctx):
         """Enable or disable donor-specific perks for the server."""
         server_id = ctx.guild.id
@@ -247,38 +194,11 @@ class Donations(commands.Cog):
 
     @donations.command()
     @checks.is_owner()
-    async def addDonor(self, ctx, user: discord.User):
-        """Adds a a user as a donor."""
-        self.settings.addDonor(user.id)
-        await ctx.send(inline('Done'))
-
-    @donations.command()
-    @checks.is_owner()
-    async def rmDonor(self, ctx, user: discord.User):
-        """Removes a user as a donor."""
-        self.settings.rmDonor(user.id)
-        await ctx.send(inline('Done'))
-
-    @donations.command()
-    @checks.is_owner()
-    async def addPatron(self, ctx, user: discord.User):
-        """Adds a a user as a patron."""
-        self.settings.addPatron(user.id)
-        await ctx.send(inline('Done'))
-
-    @donations.command()
-    @checks.is_owner()
-    async def rmPatron(self, ctx, user: discord.User):
-        """Removes a user as a patron."""
-        self.settings.rmPatron(user.id)
-        await ctx.send(inline('Done'))
-
-    @donations.command()
-    @checks.is_owner()
     async def info(self, ctx):
         """Print donation related info."""
-        patrons = self.settings.patrons()
-        donors = self.settings.donors()
+        patrons = [user for user in self.tsubaki_guild.members if self.patron_role in user.roles]
+        donors = [user for user in self.tsubaki_guild.members if self.donor_role in user.roles
+                                                             and self.patron_role not in user.roles]
         cmds = self.settings.customCommands()
         embeds = self.settings.customEmbeds()
         disabled_servers = self.settings.disabledServers()
@@ -288,12 +208,12 @@ class Donations(commands.Cog):
         msg = 'Donations Info'
 
         msg += '\n\nPatrons:'
-        for user_id in patrons:
-            msg += '\n\t{} ({})'.format(id_to_name.get(user_id, 'unknown'), user_id)
+        for user in patrons:
+            msg += '\n\t{} ({})'.format(user.name, user.id)
 
         msg += '\n\nDonors:'
-        for user_id in donors:
-            msg += '\n\t{} ({})'.format(id_to_name.get(user_id, 'unknown'), user_id)
+        for user in donors:
+            msg += '\n\t{} ({})'.format(user.name, user.id)
 
         msg += '\n\nDisabled servers:'
         for server_id in disabled_servers:
@@ -313,7 +233,8 @@ class Donations(commands.Cog):
         prefix = (await self.bot.get_prefix(message))[0]
 
         user_id = message.author.id
-        if user_id not in self.settings.donors():
+        if user_id not in [user.id for user in self.tsubaki_guild if self.donor_role in user.roles] and \
+           user_id not in [user.id for user in self.tsubaki_guild if self.patron_role in user.roles]:
             return
 
         if message.guild and message.guild.id in self.settings.disabledServers():
@@ -359,10 +280,10 @@ class Donations(commands.Cog):
         msg = message.author.mention
 
         # Pretty frequently respond to direct messages
-        mentions_bot = re.search(r'(miru|myr) bot', content, re.IGNORECASE) and roll(40)
+        mentions_bot = re.search(r'(miru|myr|tsubaki) bot', content, re.IGNORECASE) and roll(40)
         # Semi-frequently respond to miru in msg
         mentions_miru_and_roll = re.search(
-            r'\b(miru|myr)\b', content, re.IGNORECASE) and roll(20)
+            r'\b(miru|myr|tsubaki)\b', content, re.IGNORECASE) and roll(20)
 
         if mentions_bot or mentions_miru_and_roll:
             msg += ' ' + random.choice(self.insults_miru_reference)
@@ -390,44 +311,12 @@ class Donations(commands.Cog):
 class DonationsSettings(CogSettings):
     def make_default_settings(self):
         config = {
-            'patrons': [],
-            'donors': [],
             'custom_commands': {},
             'custom_embeds': {},
             'disabled_servers': [],
             'insults_enabled': [],
         }
         return config
-
-    def patrons(self):
-        return self.bot_settings['patrons']
-
-    def addPatron(self, user_id):
-        patrons = self.patrons()
-        if user_id not in patrons:
-            patrons.append(user_id)
-            self.save_settings()
-
-    def rmPatron(self, user_id):
-        patrons = self.patrons()
-        if user_id in patrons:
-            patrons.remove(user_id)
-            self.save_settings()
-
-    def donors(self):
-        return self.bot_settings['donors']
-
-    def addDonor(self, user_id):
-        donors = self.donors()
-        if user_id not in donors:
-            donors.append(user_id)
-            self.save_settings()
-
-    def rmDonor(self, user_id):
-        donors = self.donors()
-        if user_id in donors:
-            donors.remove(user_id)
-            self.save_settings()
 
     def customCommands(self):
         return self.bot_settings['custom_commands']
