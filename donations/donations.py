@@ -84,6 +84,7 @@ class Donations(commands.Cog):
         self.sexy_list = love_json.get('sexy', DEFAULT_LOVE['sexy'])
         self.perverted_list = love_json.get('perverted', DEFAULT_LOVE['perverted'])
 
+        await bot.wait_until_ready()
         self.tsubaki_guild = self.bot.get_guild(746131494875168770)
         self.donor_role = self.tsubaki_guild.get_role(749849518467580015)
         self.patron_role = self.tsubaki_guild.get_role(749849451769757726)
