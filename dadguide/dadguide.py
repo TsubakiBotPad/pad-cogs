@@ -324,7 +324,6 @@ def load_database(existing_db):
 
 class DadguideDatabase(object):
     def __init__(self, data_file):
-        self._con = None
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
