@@ -1,5 +1,7 @@
 from .donations import *
- 
+
 
 def setup(bot):
-    bot.add_cog(Donations(bot))
+    n = Donations(bot)
+    bot.add_cog(n)
+    bot.loop.create_task(n.set_server_attributes())
