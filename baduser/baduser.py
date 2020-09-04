@@ -16,6 +16,8 @@ from rpadutils import CogSettings, get_role, get_role_from_id
 
 LOGS_PER_USER = 10
 
+def opted_in(ctx):
+    return ctx.guild.id in ctx.bot.get_cog("BadUser").settings.buEnabled()
 
 class BadUser(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
@@ -48,6 +50,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="addnegativerole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def addNegativeRole(self, ctx, *, role: discord.Role):
         """Designate a role as a 'punishment' role."""
@@ -56,6 +59,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="rmnegativerole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def rmNegativeRole(self, ctx, *, role: discord.Role):
         """Cancels a role from 'punishment' status."""
@@ -64,6 +68,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="addpositiverole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def addPositiveRole(self, ctx, *, role: discord.Role):
         """Designate a role as a 'benefit' role."""
@@ -72,6 +77,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="rmpositiverole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def rmPositiveRole(self, ctx, *, role: discord.Role):
         """Cancels a role from 'benefit' status."""
@@ -80,6 +86,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="addneutralrole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def addNeutralRole(self, ctx, *, role: discord.Role):
         """Designate a role as a notable but not ping-worthy role."""
@@ -88,6 +95,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="rmneutralrole")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def rmNeutralRole(self, ctx, *, role: discord.Role):
         """Cancels a role from notable but not ping-worthy status."""
@@ -96,6 +104,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="setchannel")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def setChannel(self, ctx, channel: discord.TextChannel):
         """Set the channel for moderation announcements."""
@@ -104,6 +113,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="clearchannel")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def clearChannel(self, ctx):
         """Clear the channel for moderation announcements."""
@@ -112,6 +122,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def togglestrikeprivacy(self, ctx):
         """Change strike existance policy."""
@@ -123,6 +134,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def config(self, ctx):
         """Print the baduser configuration."""
@@ -159,6 +171,7 @@ class BadUser(commands.Cog):
 
     @baduser.command(name="strikes")
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def strikes(self, ctx, user: discord.User):
         """Print the strike count for a user."""
@@ -167,6 +180,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def addstrike(self, ctx, user: discord.User, *, strike_text: str):
         """Manually add a strike to a user."""
@@ -180,6 +194,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def clearstrikes(self, ctx, user: discord.User):
         """Clear all strikes for a user."""
@@ -188,6 +203,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def printstrikes(self, ctx, user: discord.User):
         """Print all strikes for a user."""
@@ -202,6 +218,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def deletestrike(self, ctx, user: discord.User, strike_num: int):
         """Delete a specific strike for a user."""
@@ -218,6 +235,7 @@ class BadUser(commands.Cog):
 
     @baduser.command()
     @commands.guild_only()
+    @commands.check(opted_in)
     @checks.mod_or_permissions(manage_guild=True)
     async def report(self, ctx):
         """Displays a report of information on bad users for the server."""
@@ -306,42 +324,23 @@ class BadUser(commands.Cog):
         await ctx.send(inline('Done'))
 
     @baduser.command()
-    @commands.guild_only()
     @checks.is_owner()
-    async def globalcheckbanlist(self, ctx):
-        bans = await self._load_banned_users()
-        msg = 'Checking for banned users in {} guilds'.format(len(self.bot.guilds))
-        for cur_server in self.bot.guilds:
-            msg += await self._check_ban_list(cur_server)
-
-        for page in pagify(msg):
-            await ctx.send(box(page))
+    async def opt_in(self, ctx):
+        self.settings.addBuEnabled(ctx.guild.id)
+        await ctx.send(inline('Done'))
 
     @baduser.command()
-    @commands.guild_only()
-    @checks.mod_or_permissions(manage_guild=True)
-    async def checkbanlist(self, ctx):
-        msg = 'Checking for banned users'
-        msg += await self._check_ban_list(ctx.guild)
-        await ctx.send(box(msg))
-
-    async def _check_ban_list(self, server: discord.Guild):
-        # external_ban_list is [user_id]
-        # local_ban_list is {user.id : reason}
-        external_bans = await self._load_banned_users()
-        local_bans = self.settings.bannedUsers()
-        msg = '\n\tChecking {}'.format(server.name)
-        for member in server.members:
-            if member.id in external_bans:
-                msg += '\n\t\tExternal banned user: {} ({})'.format(member.name, member.id)
-            if member.id in local_bans:
-                msg += '\n\t\tLocal banned user: {} ({}) for: {}'.format(
-                    member.name, member.id, local_bans[member.id])
-        return msg
+    @checks.is_owner()
+    async def opt_out(self, ctx):
+        self.settings.rmBuEnabled(ctx.guild.id)
+        await ctx.send(inline('Done'))
 
     @commands.Cog.listener('on_message')
-    async def mod_message(self, message):
+    async def log_message(self, message):
         if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
+            return
+
+        if message.guild.id not in self.settings.buEnabled():
             return
 
         author = message.author
@@ -354,10 +353,14 @@ class BadUser(commands.Cog):
 
     @commands.Cog.listener('on_member_ban')
     async def mod_ban(self, guild, user):
+        if guild.id not in self.settings.buEnabled():
+            return
         await self.recordBadUser(user, 'BANNED')
 
     @commands.Cog.listener('on_member_remove')
     async def mod_user_left(self, member):
+        if member.guild.id not in self.settings.buEnabled():
+            return
         strikes = self.settings.countUserStrikes(member.guild.id, member.id)
         if strikes:
             msg = 'FYI: A user with {} strikes just left the server: {}'.format(
@@ -369,6 +372,8 @@ class BadUser(commands.Cog):
 
     @commands.Cog.listener('on_member_join')
     async def mod_user_join(self, member):
+        if member.guild.id not in self.settings.buEnabled():
+            return
         update_channel = self.settings.getChannel(member.guild.id)
         if update_channel is None:
             return
@@ -388,6 +393,9 @@ class BadUser(commands.Cog):
 
     @commands.Cog.listener('on_member_update')
     async def check_punishment(self, before, after):
+        if before.guild.id not in self.settings.buEnabled():
+            return
+
         if before.roles == after.roles:
             return
 
@@ -464,7 +472,8 @@ class BadUserSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'servers': {},
-            'banned_users': {}
+            'banned_users': {},
+            'opted_in': [],
         }
         return config
 
@@ -599,4 +608,16 @@ class BadUserSettings(CogSettings):
 
     def rmBannedUser(self, user_id: int):
         self.bannedUsers().pop(user_id, None)
+        self.save_settings()
+
+    def buEnabled(self):
+        return [int(gid) for gid in self.bot_settings['opted_in']]
+
+    def addBuEnabled(self, gid: int):
+        self.bot_settings['opted_in'].append(gid)
+        self.save_settings()
+
+    def rmBuEnabled(self, gid: int):
+        if str(gid) in self.bot_settings['opted_in']:
+            self.bot_settings['opted_in'].remove(str(gid))
         self.save_settings()
