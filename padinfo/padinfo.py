@@ -208,7 +208,6 @@ class PadInfo(commands.Cog):
             wait_time = 60 * 60 * 1
             try:
                 await self.refresh_index()
-                logger.info('Done refreshing PadInfo')
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
@@ -244,7 +243,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def jpname(self, ctx, *, query: str):
         """Print the Japanese name of a monster"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await ctx.send(monsterToHeader(m))
             await ctx.send(box(m.name_jp))
@@ -269,7 +268,7 @@ class PadInfo(commands.Cog):
         await self._do_id(ctx, query, server_filter=ServerFilter.jp)
 
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = self.findMonster(query, server_filter=server_filter)
+        m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
@@ -291,7 +290,7 @@ class PadInfo(commands.Cog):
         await self._do_id2(ctx, query, server_filter=ServerFilter.jp)
 
     async def _do_id2(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = self.findMonster2(query, server_filter=server_filter)
+        m, err, debug_info = await self.findMonster2(query, server_filter=server_filter)
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
@@ -300,7 +299,7 @@ class PadInfo(commands.Cog):
     @commands.command(name="evos")
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
@@ -309,7 +308,7 @@ class PadInfo(commands.Cog):
     @commands.command(name="mats", aliases=['evomats', 'evomat'])
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
@@ -318,7 +317,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
             if menu == EMBED_NOT_GENERATED:
@@ -329,7 +328,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def skillups(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.skillups_emoji)
             if menu == EMBED_NOT_GENERATED:
@@ -425,7 +424,7 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['img'])
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
@@ -434,7 +433,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def links(self, ctx, *, query: str):
         """Monster links"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             embed = monsterToBaseEmbed(m)
             embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
@@ -451,7 +450,7 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['stats'])
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
@@ -460,7 +459,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             embed = monsterToHeaderEmbed(m)
             await ctx.send(embed=embed)
@@ -470,7 +469,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
@@ -480,7 +479,7 @@ class PadInfo(commands.Cog):
     async def collabscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
         ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
@@ -514,14 +513,14 @@ class PadInfo(commands.Cog):
         # Handle a very specific failure case, user typing something like "uuvo ragdra"
         if ' ' not in left_query and right_query is not None and ' ' not in right_query and bad is None:
             combined_query = left_query + ' ' + right_query
-            nm, err, debug_info = self._findMonster(combined_query)
+            nm, err, debug_info = await self._findMonster(combined_query)
             if nm and left_query in nm.prefixes:
                 left_query = combined_query
                 right_query = None
 
-        left_m, left_err, _ = self.findMonster(left_query)
+        left_m, left_err, _ = await self.findMonster(left_query)
         if right_query:
-            right_m, right_err, _ = self.findMonster(right_query)
+            right_m, right_err, _ = await self.findMonster(right_query)
         else:
             right_m, right_err, = left_m, left_err
 
@@ -564,7 +563,7 @@ class PadInfo(commands.Cog):
             server = 'na'
         query = query.strip().lower()
 
-        m, err, debug_info = self.findMonster(query)
+        m, err, debug_info = await self.findMonster(query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
@@ -627,8 +626,8 @@ class PadInfo(commands.Cog):
         s = 0
         f = []
         for query in hist_aggreg:
-            m1, err1, debug_info1 = self.findMonster(query)
-            m2, err2, debug_info2 = self.findMonster2(query)
+            m1, err1, debug_info1 = await self.findMonster(query)
+            m2, err2, debug_info2 = await self.findMonster2(query)
             if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
                 s += 1
                 continue
@@ -653,9 +652,9 @@ class PadInfo(commands.Cog):
                'Unexpected results? Use ^helpid for more info.').format(err)
         return box(msg)
 
-    def findMonster(self, query, server_filter=ServerFilter.any):
+    async def findMonster(self, query, server_filter=ServerFilter.any):
         query = rmdiacritics(query)
-        nm, err, debug_info = self._findMonster(query, server_filter)
+        nm, err, debug_info = await self._findMonster(query, server_filter)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups[query] = monster_no
@@ -665,7 +664,10 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    def _findMonster(self, query, server_filter=ServerFilter.any):
+    async def _findMonster(self, query, server_filter=ServerFilter.any):
+        while self.index_lock.locked():
+            await asyncio.sleep(1)
+
         if server_filter == ServerFilter.any:
             monster_index = self.index_all
         elif server_filter == ServerFilter.na:
@@ -676,9 +678,9 @@ class PadInfo(commands.Cog):
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster(query)
 
-    def findMonster2(self, query, server_filter=ServerFilter.any):
+    async def findMonster2(self, query, server_filter=ServerFilter.any):
         query = rmdiacritics(query)
-        nm, err, debug_info = self._findMonster2(query, server_filter)
+        nm, err, debug_info = await self._findMonster2(query, server_filter)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups_id2[query] = monster_no
@@ -688,7 +690,10 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    def _findMonster2(self, query, server_filter=ServerFilter.any):
+    async def _findMonster2(self, query, server_filter=ServerFilter.any):
+        while self.index_lock.locked():
+            await asyncio.sleep(1)
+            
         if server_filter == ServerFilter.any:
             monster_index = self.index_all
         elif server_filter == ServerFilter.na:
