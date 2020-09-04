@@ -39,9 +39,9 @@ class PadGuideDb(commands.Cog):
         global PADGUIDEDB_COG
         PADGUIDEDB_COG = self
 
-    def get_connection(self):
+    def get_cursor(self):
         with open(self.settings.configFile(), 'r') as db_config:
-            return self.connect(json.load(db_config))
+            return self.connect(json.load(db_config)).cursor()
 
     def connect(self, db_config):
         return pymysql.connect(host=db_config['host'],
@@ -83,7 +83,7 @@ class PadGuideDb(commands.Cog):
     async def searchdungeon(self, ctx, *, search_text):
         """Search"""
         search_text = '%{}%'.format(search_text)
-        with self.get_connection() as cursor:
+        with self.get_cursor() as cursor:
             sql = ('select dungeon_id, name_na, name_jp, visible from dungeons'
                    ' where lower(name_na) like %s or lower(name_jp) like %s'
                    ' order by dungeon_id desc limit 20')
@@ -175,7 +175,7 @@ class PadGuideDb(commands.Cog):
     @padguidedb.command()
     @is_padguidedb_admin()
     async def dungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
-        with self.get_connection() as cursor:
+        with self.get_cursor() as cursor:
             sql = ("SELECT stage, drop_monster_id, COUNT(*) AS count"
                    " FROM wave_data"
                    " WHERE dungeon_id = {} AND floor_id = {}"
@@ -192,7 +192,7 @@ class PadGuideDb(commands.Cog):
     @padguidedb.command()
     @checks.is_owner()
     async def cleardungeon(self, ctx, dungeon_id: int):
-        with self.get_connection() as cursor:
+        with self.get_cursor() as cursor:
             sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
             cursor.execute(sql)
         await ctx.send(inline("Done"))
@@ -200,7 +200,7 @@ class PadGuideDb(commands.Cog):
     # @padguidedb.command()
     @is_padguidedb_admin()
     async def dungeondata(self, ctx, dungeon_id: int):
-        with self.get_connection() as cursor:
+        with self.get_cursor() as cursor:
             sql = "SELECT * FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
             cursor.execute(sql)
             results = list(cursor.fetchall())
