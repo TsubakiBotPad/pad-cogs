@@ -797,7 +797,7 @@ class PadSearch(commands.Cog):
     @checks.is_owner()
     async def debugsearch(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
-        m, err, debug_info = padinfo_cog.findMonster(query)
+        m, err, debug_info = await padinfo_cog.findMonster(query)
 
         if m is None:
             await ctx.send(box('No match: ' + err))
