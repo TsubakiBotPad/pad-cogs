@@ -174,7 +174,7 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @is_padguidedb_admin()
-    async def dungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
+    async def olddungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
         with self.get_cursor() as cursor:
             sql = ("SELECT stage, drop_monster_id, COUNT(*) AS count"
                    " FROM wave_data"
@@ -186,6 +186,38 @@ class PadGuideDb(commands.Cog):
             msg = 'stage,drop_monster_id,count'
             for row in results:
                 msg += '\n{},{},{}'.format(row['stage'], row['drop_monster_id'], row['count'])
+            for page in pagify(msg):
+                await ctx.send(box(page))
+
+    @padguidedb.command()
+    @is_padguidedb_admin()
+    async def dungeondrops(self, ctx, dungeon_id: int):
+        with self.get_cursor() as cursor:
+            sql = ("SELECT `floor_id`, COUNT(DISTINCT `entry_id`)"
+                   " FROM `dadguide`.`wave_data`"
+                   " WHERE `dungeon_id` = {}"
+                   " GROUP BY `floor_id`"
+                   " ORDER BY `wave_data`.`floor_id`  DESC;").format(dungeon_id)
+            cursor.execute(sql)
+            results1 = list(cursor.fetchall())
+
+            sql = ("SELECT `floor_id`, `drop_monster_id`, COUNT(id)"
+                   " FROM `dadguide`.`wave_data`"
+                   " WHERE `dungeon_id` = {} AND `drop_monster_id` != 9900 AND `drop_monster_id` != 0"
+                   " GROUP BY `floor_id`, `drop_monster_id`"
+                   " ORDER BY `wave_data`.`floor_id`  DESC;").format(dungeon_id)
+            cursor.execute(sql)
+            results2 = list(cursor.fetchall())
+
+            msg = 'floor_id,count\n'
+            for row in results1:
+                print(row)
+                msg += ','.join(map(str,row.values()))+"\n"
+            msg += '\n\nfloor_id,monster_id,count\n'
+            for row in results2:
+                print(row)
+                msg += ','.join(map(str,row.values()))+"\n"
+
             for page in pagify(msg):
                 await ctx.send(box(page))
 
