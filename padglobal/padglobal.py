@@ -68,11 +68,11 @@ def is_padglobal_admin():
     return commands.check(is_padglobal_admin_check)
 
 
-def lookup_named_monster(query: str):
+async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = padinfo_cog._findMonster(str(query))
+    nm, err, debug_info = await padinfo_cog._findMonster(str(query))
     return nm, err, debug_info
 
 
@@ -202,7 +202,7 @@ class PadGlobal(commands.Cog):
     async def debugid(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
         # m is a named monster
-        m, err, debug_info = lookup_named_monster(query)
+        m, err, debug_info = await lookup_named_monster(query)
 
         if m is None:
             await ctx.send(box('No match: ' + err))
@@ -724,7 +724,7 @@ class PadGlobal(commands.Cog):
 
     async def _resolve_which(self, ctx, term):
         term = term.lower().replace('?', '')
-        nm, _, _ = lookup_named_monster(term)
+        nm, _, _ = await lookup_named_monster(term)
         if nm is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
@@ -868,7 +868,7 @@ class PadGlobal(commands.Cog):
     async def debuglookup(self, ctx, *, term: str):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
-        nm, err, deb = lookup_named_monster(term)
+        nm, err, deb = await lookup_named_monster(term)
         base = nm.group_computed_basename.title() if nm else nm
         name = nm.name_na if nm else nm
         monster_id = nm.monster_id if nm else nm
@@ -1068,19 +1068,19 @@ class PadGlobal(commands.Cog):
             await self.send_guide(ctx)
             return
 
-        term, text, err = self.get_guide_text(term)
+        term, text, err = await self.get_guide_text(term)
         if text is None:
             await ctx.send(inline(err))
             return
 
         await ctx.send(text)
 
-    def get_guide_text(self, term: str):
+    async def get_guide_text(self, term: str):
         term = term.lower()
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        nm, _, _ = lookup_named_monster(term)
+        nm, _, _ = await lookup_named_monster(term)
         if nm is None:
             return None, None, 'No dungeon or monster matched that query'
 
@@ -1120,7 +1120,7 @@ class PadGlobal(commands.Cog):
 
         [p]guideto @{0.author.name} osc10
         """
-        term, text, err = self.get_guide_text(term)
+        term, text, err = await self.get_guide_text(term)
         if text is None:
             await ctx.send(inline(err))
             return
@@ -1182,10 +1182,6 @@ class PadGlobal(commands.Cog):
 
         self.settings.rmLeaderGuide(name)
         await ctx.send("done")
-
-    def term_to_monster_name(self, term):
-        nm, _, _ = lookup_named_monster(term)
-        return nm.group_computed_basename.title()
 
 
 def check_simple_tree(monster):

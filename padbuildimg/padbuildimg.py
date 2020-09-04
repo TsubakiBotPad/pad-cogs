@@ -401,7 +401,7 @@ class PadBuildImageGenerator(object):
         }
         self.build_img = None
 
-    def process_build(self, input_str):
+    async def process_build(self, input_str):
         team_strings = [row for row in csv.reader(re.split('[;\n]', input_str), delimiter='/') if len(row) > 0]
         if len(team_strings) > 3:
             team_strings = team_strings[0:3]
@@ -409,13 +409,13 @@ class PadBuildImageGenerator(object):
             team_sublist = []
             for slot in team:
                 try:
-                    team_sublist.extend(self.process_card(slot))
+                    team_sublist.extend(await self.process_card(slot))
                 except Exception as ex:
                     self.build['TEAM'] = []
                     raise ex
             self.build['TEAM'].append(team_sublist)
 
-    def process_card(self, card_str, is_assist=False):
+    async def process_card(self, card_str, is_assist=False):
         if not is_assist:
             result_card = {
                 '+ATK': 99,
@@ -468,7 +468,7 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card, err, debug_info = self.padinfo_cog.findMonster(tok.value)
+                    card, err, debug_info = await self.padinfo_cog.findMonster(tok.value)
                     if card is None:
                         raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
                     if not card.is_inheritable:
@@ -522,7 +522,7 @@ class PadBuildImageGenerator(object):
         else:
             parsed_cards = [result_card]
             if isinstance(assist_str, str):
-                assist_card, assist_att = self.process_card(assist_str, is_assist=True)
+                assist_card, assist_att = await self.process_card(assist_str, is_assist=True)
                 if card_att is not None and assist_att is not None:
                     assist_card['ON_COLOR'] = card_att == assist_att
                 parsed_cards.append(assist_card)
@@ -732,7 +732,7 @@ class PadBuildImage(commands.Cog):
         try:
             pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'))
             # print('PARSE: {}'.format(time.perf_counter() - start))
-            pbg.process_build(build_str)
+            await pbg.process_build(build_str)
             # start = time.perf_counter()
             pbg.generate_build_image()
             # print('DRAW: {}'.format(time.perf_counter() - start))
