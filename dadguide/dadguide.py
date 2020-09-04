@@ -88,6 +88,7 @@ class Dadguide(commands.Cog):
 
     async def create_index(self, accept_filter=None):
         """Exported function that allows a client cog to create a monster index"""
+        print("DEBUG:",self.database._con)
         return await MonsterIndex(self.database,
                                   self.nickname_overrides,
                                   self.basename_overrides,
@@ -100,6 +101,7 @@ class Dadguide(commands.Cog):
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
+        logger.info('Unloading Dadguide')
         if self.database:
             self.database.close()
         self.database = None

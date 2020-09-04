@@ -382,7 +382,7 @@ class TrUtils(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                    " Join the Tsubaki Server to see any responses ({0.prefix}miruserver).".format(ctx))
+                    " Join the Tsubaki Server to see any responses ({0.prefix}tsubakiserver).".format(ctx))
 
     @commands.command()
     @commands.guild_only()

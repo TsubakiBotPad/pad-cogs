@@ -61,7 +61,7 @@ commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "shor
 
 
 def is_padglobal_admin_check(ctx):
-    return checks.is_owner() or PADGLOBAL_COG.settings.check_admin(ctx.author.id)
+    return checks.is_owner() or ctx.bot.get_cog("PadGlobal").settings.check_admin(ctx.author.id)
 
 
 def is_padglobal_admin():
