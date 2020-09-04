@@ -420,6 +420,7 @@ class PadInfo(commands.Cog):
                 await result_msg.edit(embed=result_embed)
         except Exception as ex:
             print('Menu failure', ex)
+            traceback.print_exc()
 
     @commands.command(aliases=['img'])
     async def pic(self, ctx, *, query: str):
@@ -693,7 +694,7 @@ class PadInfo(commands.Cog):
     async def _findMonster2(self, query, server_filter=ServerFilter.any):
         while self.index_lock.locked():
             await asyncio.sleep(1)
-            
+
         if server_filter == ServerFilter.any:
             monster_index = self.index_all
         elif server_filter == ServerFilter.na:
