@@ -670,6 +670,9 @@ class PadInfo(commands.Cog):
         return m, err, debug_info
 
     async def _findMonster(self, query, server_filter=ServerFilter.any):
+        while self.index_lock.locked():
+            await asyncio.sleep(1)
+
         if server_filter == ServerFilter.any:
             monster_index = self.index_all
         elif server_filter == ServerFilter.na:
@@ -693,6 +696,9 @@ class PadInfo(commands.Cog):
         return m, err, debug_info
 
     async def _findMonster2(self, query, server_filter=ServerFilter.any):
+        while self.index_lock.locked():
+            await asyncio.sleep(1)
+            
         if server_filter == ServerFilter.any:
             monster_index = self.index_all
         elif server_filter == ServerFilter.na:
