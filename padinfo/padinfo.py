@@ -210,16 +210,13 @@ class PadInfo(commands.Cog):
                 await self.refresh_index()
                 logger.info('Done refreshing PadInfo')
             except Exception as ex:
-                wait_time = 60
-                print(self.bot.get_cog('Dadguide').database._con)
+                wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
                 traceback.print_exc()
 
             await asyncio.sleep(wait_time)
 
-    @commands.command()
-    @checks.is_owner()
-    async def refresh_index(self, ctx=None):
+    async def refresh_index(self):
         """Refresh the monster indexes."""
         await ctx.send(inline("Okay, starting"))
         dg_cog = self.bot.get_cog('Dadguide')
@@ -240,8 +237,6 @@ class PadInfo(commands.Cog):
             self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
-        if ctx is not None:
-            await ctx.send(inline("Done."))
 
     def get_monster_by_id(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
