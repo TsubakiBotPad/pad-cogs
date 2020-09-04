@@ -218,7 +218,6 @@ class PadInfo(commands.Cog):
 
     async def refresh_index(self):
         """Refresh the monster indexes."""
-        await ctx.send(inline("Okay, starting"))
         dg_cog = self.bot.get_cog('Dadguide')
         if not dg_cog:
             print("Cog 'Dadguide' not loaded")
