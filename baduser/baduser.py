@@ -252,13 +252,13 @@ class BadUser(commands.Cog):
                 continue
 
             try:
-                ban_list = await self.bot.get_bans(server)
+                ban_list = await server.bans()
             except:
                 ban_list = list()
                 error_messages.append("Server '{}' refused access to ban list".format(server.name))
 
-            for user in ban_list:
-                user_id_to_ban_server[user.id].append(server.id)
+            for banentry in ban_list:
+                user_id_to_ban_server[banentry.user.id].append(server.id)
 
             baduser_list = self.settings.getBadUsers(server.id)
             for user_id in baduser_list:
