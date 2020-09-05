@@ -1018,7 +1018,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 
-    info_row_2 = '**Rarity** {}{}\n**Cost** {}'.format(m.rarity, os, m.cost)
+    info_row_2 = '**Rarity** {} (**Tree** {}){}\n**Cost** {}'.format(m.rarity, m.base_monster.rarity, os, m.cost)
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
     if m.is_inheritable:
