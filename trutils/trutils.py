@@ -468,10 +468,7 @@ class TrUtils(commands.Cog):
     @commands.command()
     @checks.is_owner()
     async def onlinecount(self, ctx):
-        gonline = 0
-        gmobile = 0
-        conline = 0
-        cmobile = 0
+        gonline = gmobile = conline = cmobile = 0
         for member in ctx.guild.members:
             gonline += member.status.name == "online"
             gmobile += member.is_on_mobile()
