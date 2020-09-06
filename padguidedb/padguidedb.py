@@ -66,9 +66,18 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
-    async def rmadmin(self, ctx, user: discord.Member):
+    async def rmadmin(self, ctx, user):
         """Removes a user from the padguide db admin"""
-        self.settings.rmAdmin(user.id)
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rmAdmin(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rmAdmin(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send("done")
 
     @padguidedb.command()
