@@ -466,12 +466,9 @@ class TrUtils(commands.Cog):
         await self.bot.get_user(144250811315257344).send(task)
 
     @commands.command()
-    @checks.is_owner()
+    @checks.mod_or_permissions(manage_guild=True)
     async def onlinecount(self, ctx):
-        gonline = 0
-        gmobile = 0
-        conline = 0
-        cmobile = 0
+        gonline = gmobile = conline = cmobile = 0
         for member in ctx.guild.members:
             gonline += member.status.name == "online"
             gmobile += member.is_on_mobile()
@@ -481,6 +478,10 @@ class TrUtils(commands.Cog):
         await ctx.send(box("There are {} members online ({} online on mobile).\n"
                            "There are {} members online in this channel ({} online on mobile).")
                             .format(gonline, gmobile, conline, cmobile))
+
+    @commands.command()
+    async def servercount(self, ctx):
+        await ctx.send("{} is in {} servers.".format(self.bot.user.name, len(self.bot.guilds)))
 
 
 
