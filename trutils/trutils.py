@@ -432,7 +432,13 @@ class TrUtils(commands.Cog):
         if cmd is None:
             await ctx.send("Invalid Command: {}".format(full_cmd))
             return
+        _send = ctx.send
+        async def fakesend(*args, **kwargs): pass
+
+        ctx.send = fakesend
         await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[0])
+
+        ctx.send = _send
         ctx.message.content = full_cmd
         await self.bot.process_commands(ctx.message)
 
