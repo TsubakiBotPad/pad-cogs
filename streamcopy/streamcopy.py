@@ -63,8 +63,17 @@ class StreamCopy(commands.Cog):
 
     @streamcopy.command(name="rmuser")
     @checks.is_owner()
-    async def rmUser(self, ctx, user: discord.User):
-        self.settings.rm_user(user.id)
+    async def rmUser(self, ctx, user):
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rm_user(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rm_user(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send(inline('Done'))
 
     @streamcopy.command(name="list")

@@ -432,7 +432,13 @@ class TrUtils(commands.Cog):
         if cmd is None:
             await ctx.send("Invalid Command: {}".format(full_cmd))
             return
+        _send = ctx.send
+        async def fakesend(*args, **kwargs): pass
+
+        ctx.send = fakesend
         await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[0])
+
+        ctx.send = _send
         ctx.message.content = full_cmd
         await self.bot.process_commands(ctx.message)
 
@@ -466,7 +472,7 @@ class TrUtils(commands.Cog):
         await self.bot.get_user(144250811315257344).send(task)
 
     @commands.command()
-    @checks.is_owner()
+    @checks.mod_or_permissions(manage_guild=True)
     async def onlinecount(self, ctx):
         gonline = gmobile = conline = cmobile = 0
         for member in ctx.guild.members:
@@ -478,6 +484,10 @@ class TrUtils(commands.Cog):
         await ctx.send(box("There are {} members online ({} online on mobile).\n"
                            "There are {} members online in this channel ({} online on mobile).")
                             .format(gonline, gmobile, conline, cmobile))
+
+    @commands.command()
+    async def servercount(self, ctx):
+        await ctx.send("{} is in {} servers.".format(self.bot.user.name, len(self.bot.guilds)))
 
 
 
