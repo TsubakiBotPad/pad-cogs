@@ -597,7 +597,7 @@ class TriggerObj:
         # Using the is_owner_check would be better but I don't always have
         # context here, nor I feel like mocking it
         is_owner = user.id in self.bot.owner_ids
-        is_admin = user.guild.permissions_for(user).administrator
+        is_admin = user.guild_permissions.administrator
         is_trigger_owner = user.id == self.owner
         trigger_is_global = self.server is None
         if trigger_is_global:
