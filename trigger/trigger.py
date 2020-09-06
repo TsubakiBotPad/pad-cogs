@@ -447,7 +447,7 @@ class Trigger(commands.Cog):
             msg += "{}. {}\n".format(i, r)
             i += 1
         if msg != "":
-            return box(msg, lang="py")
+            return box(msg)
         else:
             return None
 
