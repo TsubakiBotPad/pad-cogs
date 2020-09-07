@@ -879,6 +879,7 @@ class AutoMod2Settings(CogSettings):
             for phr in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases'], []):
                 if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases', phr, 'request_user_id'], -2141):
                     self.bot_settings['configs'][gid]['watchdog']['phrases'][phr]['request_user_id'] = -1
+        self.save_settings()
 
     def clearUserDataFull(self, user_id):
         self.clearUserData(user_id)
@@ -887,3 +888,4 @@ class AutoMod2Settings(CogSettings):
         for gid in self.bot_settings['configs']:
             if user_id in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
                 del self.bot_settings['configs'][gid]['watchdog']['users'][user_id]
+        self.save_settings()

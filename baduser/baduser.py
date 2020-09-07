@@ -676,3 +676,4 @@ class BadUserSettings(CogSettings):
         for gid in self.bot_settings['servers']:
             if str(uid) in self.bot_settings['servers'][gid]["badusers"]:
                 del self.bot_settings['servers'][gid]["badusers"][str(uid)]
+        self.save_settings()
