@@ -133,10 +133,11 @@ class Seniority(commands.Cog):
             print('Seniority: bailing on unlock')
             return
 
-        if os.name != 'nt' and sys.platform != 'win32':
-            dsn = 'Driver=ODBC Driver 17 for SQL Server;Database=' + self.db_path
-        else:
-            dsn = 'Driver=SQLite3 ODBC Driver;Database=' + self.db_path
+        dsn = self.settings.get_db_string().format(self.db_path)
+
+        if not dsn:
+            print("DB_string not configured.  Seniority will not initialize.")
+
         self.pool = await aioodbc.create_pool(dsn=dsn, autocommit=True)
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -431,6 +432,13 @@ class Seniority(commands.Cog):
         server = ctx.guild
         args = [now_date(), server.id, user.id]
         await self.queryAndPrint(ctx, server, GET_DATE_POINTS_QUERY, args)
+
+    @seniority.command()
+    @checks.is_owner()
+    async def set_dbstr(self, ctx, dbstr):
+        """Print the current day's points for a user."""
+        self.settings.set_db_string(dbstr)
+        await ctx.send(inline("Done"))
 
     @seniority.command()
     @commands.guild_only()
@@ -791,7 +799,8 @@ def now_date():
 class SenioritySettings(CogSettings):
     def make_default_settings(self):
         config = {
-            'servers': {}
+            'servers': {},
+            'dbstring': ''
         }
         return config
 
@@ -964,6 +973,13 @@ class SenioritySettings(CogSettings):
                 'channel_id': channel_id,
                 'max_ppd': max_ppd,
             }
+        self.save_settings()
+
+    def get_db_string(self):
+        return self.bot_settings['dbstring']
+
+    def set_db_string(self, dbstr):
+        self.bot_settings['dbstring'] = dbstr
         self.save_settings()
 
 
