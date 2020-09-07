@@ -30,10 +30,7 @@ class BadUser(commands.Cog):
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
         udata = self.settings.getUserData(user_id)
-o = {
-    "gban": "",
-    "baduser": 0,
-}
+
         data = "Stored data for user with ID {}:\n".format(user_id)
         if udata['gban']:
             data += (" - You are on the global banlist. "
