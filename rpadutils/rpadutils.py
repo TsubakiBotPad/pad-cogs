@@ -515,9 +515,11 @@ def intify(input):
 class CogSettings(object):
     SETTINGS_FILE_NAME = "legacy_settings.json"
 
-    def __init__(self, cog_name):
+    def __init__(self, cog_name, bot=None):
         self.folder = str(data_manager.cog_data_path(raw_name=cog_name))
         self.file_path = os.path.join(self.folder, CogSettings.SETTINGS_FILE_NAME)
+
+        self.bot = bot
 
         self.check_folder()
 
@@ -736,6 +738,14 @@ async def repeating_timer(seconds, condition=lambda:True, start_immediately=True
         await asyncio.sleep(seconds)
         yield
 
+def deepget(mapping, keys, default):
+    o = mapping
+    for key in keys:
+        try:
+            o = o[key]
+        except KeyError:
+            return default
+    return o
 
 class aobject(object):
     """Inheriting this class allows you to define an async __init__."""
