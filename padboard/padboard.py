@@ -42,6 +42,7 @@ class PadBoard(commands.Cog):
     @padboard.command()
     async def set_tflite_path(self, ctx, *, path):
         await self.config.tflite_path.set(path)
+        await ctx.send(inline("Done"))
 
 
     def find_image(self, user_id):
@@ -110,7 +111,7 @@ class PadBoard(commands.Cog):
 
     async def nc_classify(self, image_data):
         # TODO: Test this (for TR to do)
-        nparr = np.fromstring(image_data, np.uint8)
+        nparr = np.frombuffer(image_data, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         model_path = await self.config.tflite_path()
         if not model_path:

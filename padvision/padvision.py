@@ -126,7 +126,7 @@ class NeuralClassifierBoardExtractor(object):
         oe = OrbExtractor(self.np_img)
 
         # Load TFLite model and allocate tensors.
-        interpreter = tf.contrib.lite.Interpreter(model_path=self.model_path)
+        interpreter = tf.lite.Interpreter(model_path=self.model_path)
         interpreter.allocate_tensors()
 
         # Get input and output tensors.
