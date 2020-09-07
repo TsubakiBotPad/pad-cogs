@@ -1,3 +1,5 @@
 {
-    "author" : ["The Miru Bot Team"]
+    "author": ["The Miru Bot Team"],
+    "description": "A collection of cogs, primarily related to the mobile game Puzzle and Dragons, along with miscellaneous moderation and other utilities.",
+    "short": "The main Tsubotki repo."
 }
