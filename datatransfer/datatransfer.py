@@ -19,11 +19,6 @@ class DataTransfer(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
-        """
-        self._import = bot.get_cog("Alias").alias.command(name="import")(self._import)
-        self.export = bot.get_cog("Alias").alias.command()(self.export)
-        """
-
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
         data = "No data is stored for user with ID {}.\n".format(user_id)
