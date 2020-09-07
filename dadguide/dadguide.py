@@ -16,7 +16,7 @@ import re
 import shutil
 import sqlite3 as lite
 import traceback
-from _collections import defaultdict, deque, OrderedDict
+from collections import defaultdict, deque, OrderedDict
 from datetime import datetime
 from enum import Enum
 
@@ -85,6 +85,18 @@ class Dadguide(commands.Cog):
         for the first time.
         """
         return await self._is_ready.wait()
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     async def create_index(self, accept_filter=None):
         """Exported function that allows a client cog to create a monster index"""
