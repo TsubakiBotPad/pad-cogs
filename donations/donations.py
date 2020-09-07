@@ -88,6 +88,30 @@ class Donations(commands.Cog):
         self.donor_role = None
         self.patron_role = None
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = self.settings.getUserData(user_id)
+
+        data = "Stored data for user with ID {}:\n".format(user_id)
+        if udata['command']:
+            data += " - You have setup the command '{}'.\n".format(udata['command'])
+        if udata['embed']:
+            data += " - You have setup the embed '{}'.\n".format(udata['embed'])
+        if udata['insult']:
+            data += " - You have asked the bot to insult you occasionally.\n"
+
+        if not any(udata.values()):
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        if requester not in ("discord_deleted_user", "owner"):
+            self.settings.clearUserData(user_id)
+        else:
+            self.settings.clearUserDataFull(user_id)
+
     async def set_server_attributes(self):
         await self.bot.wait_until_ready()
         self.tsubaki_guild = self.bot.get_guild(746131494875168770)
@@ -389,3 +413,32 @@ class DonationsSettings(CogSettings):
         if user_id in insults_enabled:
             insults_enabled.remove(user_id)
             self.save_settings()
+
+    # GDPR Compliance Functions
+    def getUserData(self, user_id):
+        o = {
+            'command': "",
+            'embed': "",
+            'insult': False,
+        }
+
+        if user_id in self.bot_settings['custom_commands']:
+            o['command'] = self.bot_settings['custom_commands'][user_id]["command"]
+        if user_id in self.bot_settings['custom_embeds']:
+            o['embed'] = self.bot_settings['custom_embeds'][user_id]["command"]
+        if user_id in self.bot_settings['insults_enabled']:
+            o['insult'] = True
+
+        return o
+
+    def clearUserData(self, user_id):
+        if user_id in self.bot_settings['custom_commands']:
+            del self.bot_settings['custom_commands'][user_id]
+        if user_id in self.bot_settings['custom_embeds']:
+            del self.bot_settings['custom_embeds'][user_id]
+        if user_id in self.bot_settings['insults_enabled']:
+            self.bot_settings['insults_enabled'].remove(user_id)
+        self.save_settings()
+
+    def clearUserDataFull(self, user_id):
+        self.clearUserData(user_id)
