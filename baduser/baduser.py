@@ -27,6 +27,41 @@ class BadUser(commands.Cog):
         self.settings = BadUserSettings("baduser")
         self.logs = defaultdict(lambda: deque(maxlen=LOGS_PER_USER))
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = self.settings.getUserData(user_id)
+o = {
+    "gban": "",
+    "baduser": 0,
+}
+        data = "Stored data for user with ID {}:\n".format(user_id)
+        if udata['gban']:
+            data += (" - You are on the global banlist. "
+                     "(This data is sensitive and cannot be cleared automatically due to abuse. "
+                     "Please contact a bot owner to get this data cleared.)\n")
+        if udata['baduser']:
+            data += (" - You have been punished/banned in {} servers: "
+                     "(This data is sensitive and cannot be cleared automatically due to abuse. "
+                     "Please contact a bot owner to get this data cleared.)\n"
+                     "").format(len(udata['baduser']))
+
+        if not any(udata.values()):
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        The personal data stored in this cog is for essential moderation use,
+        so some data deletion requests can only be made by the bot owner and
+        Discord itself.  If this is an issue, please contact a bot owner.
+        """
+        if requester not in ("discord_deleted_user", "owner"):
+            self.settings.clearUserData(user_id)
+        else:
+            self.settings.clearUserDataFull(user_id)
+
     @commands.group()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
@@ -621,3 +656,26 @@ class BadUserSettings(CogSettings):
         if str(gid) in self.bot_settings['opted_in']:
             self.bot_settings['opted_in'].remove(str(gid))
         self.save_settings()
+
+    def getUserData(self, uid):
+        o = {
+            "gban": "",
+            "baduser": 0,
+        }
+        if str(uid) in self.bot_settings['banned_users']:
+            o['gban'] = self.bot_settings['banned_users'][str(uid)]
+        for gid in self.bot_settings['servers']:
+            if str(uid) in self.bot_settings['servers'][gid]["badusers"]:
+                o['baduser'] += 1
+        return o
+
+    def clearUserData(self, uid):
+        # Do nothing
+        return
+
+    def clearUserDataFull(self, uid):
+        if str(uid) in self.bot_settings['banned_users']:
+            del self.bot_settings['banned_users'][str(uid)]
+        for gid in self.bot_settings['servers']:
+            if str(uid) in self.bot_settings['servers'][gid]["badusers"]:
+                del self.bot_settings['servers'][gid]["badusers"][str(uid)]

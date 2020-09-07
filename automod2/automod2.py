@@ -90,6 +90,7 @@ class AutoMod2(commands.Cog):
         self.server_phrase_last = defaultdict(dict)
 
     async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
         udata = self.settings.getUserData(user_id)
 
         data = "Stored data for user with ID {}:\n".format(user_id)
@@ -98,12 +99,10 @@ class AutoMod2(commands.Cog):
         if udata['phrases']:
             data += " - You have created {} phrase(s).\n".format(udata['phrases'])
         if udata['baduser']:
-            data += (" - You have been watchlisted in {} servers for the following reasons:  "
-                     "(This data is sensitive cannot be cleared automatically due to abuse.  "
+            data += (" - You have been watchlisted in {} servers. "
+                     "(This data is sensitive and cannot be cleared automatically due to abuse. "
                      "Please contact a bot owner to get this data cleared.)\n"
                      "").format(len(udata['baduser']))
-            for reason in udata['baduser']:
-                data += "   - {}\n".format(reason)
 
         if not any(udata.values()):
             data = "No data is stored for user with ID {}.\n".format(user_id)
@@ -111,17 +110,16 @@ class AutoMod2(commands.Cog):
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
-        """Delete a user's data.
+        """Delete a user's personal data.
 
         The personal data stored in this cog is for essential moderation use,
-        so data deletion requests can only be made by the bot owner and Discord
-        itself.  If this is an issue, please contact a bot owner.
+        so some data deletion requests can only be made by the bot owner and
+        Discord itself.  If this is an issue, please contact a bot owner.
         """
         if requester not in ("discord_deleted_user", "owner"):
             self.settings.clearUserData(user_id)
         else:
             self.settings.clearUserDataFull(user_id)
-
 
 
     @commands.command()
