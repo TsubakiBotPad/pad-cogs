@@ -226,7 +226,12 @@ class Forbidden():
 
 
 def default_check(payload):
-    return not payload.member.bot
+    try:
+        return not payload.member.bot
+    except Exception as e:
+        print("DEBUG: "+e)
+        print(payload)
+        raise e
 
 
 class EmojiUpdater(object):
