@@ -134,7 +134,7 @@ class Seniority(commands.Cog):
             return
 
         if os.name != 'nt' and sys.platform != 'win32':
-            dsn = 'Driver=SQLite3;Database=' + self.db_path
+            dsn = 'Driver=ODBC Driver 17 for SQL Server;Database=' + self.db_path
         else:
             dsn = 'Driver=SQLite3 ODBC Driver;Database=' + self.db_path
         self.pool = await aioodbc.create_pool(dsn=dsn, autocommit=True)
