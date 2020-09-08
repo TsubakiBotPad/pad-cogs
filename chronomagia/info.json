@@ -11,5 +11,5 @@
     "disabled": false,
     "require_cogs": {"rpadutils": "https://github.com/TsubakiBotPad/padbot-cogs"},
     "requirements": ["aiohttp"],
-    "tags": ["chronomagia"],
+    "tags": ["chronomagia"]
 }
