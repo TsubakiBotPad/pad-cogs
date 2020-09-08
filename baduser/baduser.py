@@ -415,13 +415,13 @@ class BadUser(commands.Cog):
         if strikes:
             msg = 'Hey @here a user with {} strikes just joined the server: {}'.format(
                 strikes, member.mention)
-            await channel_obj.send(msg)
+            await channel_obj.send(msg, allowed_mentions=discord.AllowedMentions(everyone=True))
 
         local_ban = self.settings.bannedUsers().get(member.id, None)
         if local_ban:
             msg = 'Hey @here locally banned user {} (for: {}) just joined the server'.format(
                 member.mention, local_ban)
-            await channel_obj.send(msg)
+            await channel_obj.send(msg, allowed_mentions=discord.AllowedMentions(everyone=True))
 
     @commands.Cog.listener('on_member_update')
     async def check_punishment(self, before, after):
