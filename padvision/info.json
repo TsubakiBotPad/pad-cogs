@@ -1,0 +1,15 @@
+{
+    "author": ["The Tsubaki Bot Team"],
+    "description": "A beefy helper cog for neural networks.",
+    "end_user_data_statement": "No personal data is stored.",
+    "install_msg": "",
+    "short": "Neural net helper",
+    "min_bot_version": "3.4.0",
+    "max_bot_version": "3.4.0",
+    "min_python_version" : [3,8,1],
+    "hidden": false,
+    "disabled": false,
+    "require_cogs": {},
+    "requirements": ["numpy", "tensorflow", "Pillow"],
+    "tags": ["PAD"]
+}

@@ -31,13 +31,17 @@ class RpadUtils(commands.Cog):
         global RPADCOG
         RPADCOG = self
 
-    def user_allowed(self, message):
-        author = message.author
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
 
-        if author.bot:
-            return False
-        return True
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
 
+        No personal data is stored in this cog.
+        """
+        return
 
 # TZ used for PAD NA
 # NA_TZ_OBJ = pytz.timezone('America/Los_Angeles')
@@ -67,35 +71,6 @@ def containsJp(txt):
     return JP_REGEX.search(txt)
 
 
-class PermissionsError(CommandNotFound):
-    """
-    Base exception for all others in this module
-    """
-
-
-class BadCommand(PermissionsError):
-    """
-    Thrown when we can't decipher a command from string into a command object.
-    """
-    pass
-
-
-class RoleNotFound(PermissionsError):
-    """
-    Thrown when we can't get a valid role from a list and given name
-    """
-    pass
-
-
-class SpaceNotation(BadCommand):
-    """
-    Throw when, with some certainty, we can say that a command was space
-        notated, which would only occur when some idiot...fishy...tries to
-        surround a command in quotes.
-    """
-    pass
-
-
 def get_role(roles, role_string):
     if role_string.lower() == "everyone":
         role_string = "@everyone"
@@ -118,7 +93,7 @@ def get_role_from_id(bot, guild, roleid):
         try:
             roles = guild.roles
         except AttributeError:
-            raise RoleNotFound(guild, roleid)
+            raise ValueError("Role with id {} not found.".format(roleid))
 
     role = discord.utils.get(roles, id=roleid)
     if role is None:
@@ -219,10 +194,6 @@ async def makeAsyncCachedPlainRequest(file_path, file_url, expiry_secs):
 async def boxPagifySay(say_fn, msg):
     for page in pagify(msg, delims=["\n"]):
         await say_fn(box(page))
-
-
-class Forbidden():
-    pass
 
 
 def default_check(payload):
@@ -642,13 +613,6 @@ async def run_in_loop(bot, task, *args):
     event_loop = asyncio.get_event_loop()
     running_task = event_loop.run_in_executor(loop_executor, task, *args)
     return await running_task
-
-
-async def translate_jp_en(bot, jp_text):
-    translate_cog = bot.get_cog('Translate')
-    if not translate_cog:
-        return None
-    return await run_in_loop(bot, translate_cog.translate_jp_en, jp_text)
 
 
 def validate_json(fp):
