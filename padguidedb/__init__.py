@@ -1,7 +1,7 @@
 from .padguidedb import *
 
+__red_end_user_data_statement__ = "No personal data is stored."
 
 def setup(bot):
-    # TODO: Test this! I don't have the databases
     pdb = PadGuideDb(bot)
     bot.add_cog(pdb)

@@ -1,6 +1,6 @@
 {
     "author": ["The Tsubaki Bot Team"],
-    "description": "Uses regex pattern matching to filter message content",
+    "description": "Uses regex pattern matching to filter message content and set limits on users",
     "end_user_data_statement": "This cog stores id of users manually marked as problematic.",
     "install_msg": "",
     "short": "Filter messages via regex",

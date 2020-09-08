@@ -34,7 +34,7 @@ def formatId(id):
 
 
 def computeOldGroup(str_id):
-    old_id_digit = str_id[2]
+    old_id_digit = str(str_id)[2]
     return chr(ord('A') + (int(old_id_digit) % 5))
 
 
@@ -44,9 +44,28 @@ class Profile(commands.Cog):
         self.bot = bot
         self.settings = ProfileSettings("profile")
 
-    async def on_ready(self):
-        """ready"""
-        print("started profile")
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = self.settings.getUserData(user_id)
+
+        data = "Stored data for user with ID {}:\n".format(user_id)
+        if udata['servers']:
+            data += " - You have a profile on the following server(s): {}.\n".format(', '.join(udata['servers']))
+        if udata['default_server']:
+            data += " - Your default server is {}.\n".format(udata['default_server'])
+
+        if not any(udata.values()):
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+
+        if requester not in ("discord_deleted_user", "owner"):
+            self.settings.clearUserData(user_id)
+        else:
+            self.settings.clearUserDataFull(user_id)
 
     @commands.command(name="idme")
     async def idMe(self, ctx, server=None):
@@ -307,3 +326,26 @@ class ProfileSettings(CogSettings):
         else:
             self.getProfile(user, server).clear()
         self.save_settings()
+
+    # GDPR Compliance Functions
+    def getUserData(self, user_id):
+        o = {
+            'servers': [],
+            'default_server': '',
+        }
+
+        if user_id in self.bot_settings['default_servers']:
+            o['default_server'] = self.bot_settings['default_servers'][user_id]
+        if user_id in self.bot_settings['user_profiles']:
+            o['servers'] = list(self.bot_settings['user_profiles'][user_id])
+        return o
+
+    def clearUserData(self, user_id):
+        if user_id in self.bot_settings['default_servers']:
+            del self.bot_settings['default_servers'][user_id]
+        if user_id in self.bot_settings['user_profiles']:
+            del self.bot_settings['user_profiles'][user_id]
+        self.save_settings()
+
+    def clearUserDataFull(self, user_id):
+        self.clearUserData(user_id)

@@ -1,6 +1,8 @@
 """
 Utilities for managing moderator notes about users.
 """
+import re
+
 import discord
 from redbot.core import checks
 from redbot.core import commands
@@ -24,6 +26,18 @@ class ModNotes(commands.Cog):
 
         This module allows you to create notes to share between moderators.
         """
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     @usernotes.command()
     @checks.mod_or_permissions(manage_guild=True)
