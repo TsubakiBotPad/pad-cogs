@@ -3,7 +3,6 @@ import re
 import discord.utils
 import asyncio
 
-from ply import lex
 from redbot.core import checks, Config
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
@@ -61,6 +60,17 @@ class SelfRoleOverride(commands.Cog):
                 pass
             self.bot.add_command(cmd)
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     @commands.guild_only()
     @commands.group()
