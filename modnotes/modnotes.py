@@ -27,6 +27,18 @@ class ModNotes(commands.Cog):
         This module allows you to create notes to share between moderators.
         """
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     @usernotes.command()
     @checks.mod_or_permissions(manage_guild=True)
     async def get(self, ctx, user: discord.User):
@@ -45,7 +57,7 @@ class ModNotes(commands.Cog):
     async def add(self, ctx, user: discord.User, *, note_text: str):
         """Add a note to a user."""
         timestamp = str(ctx.message.created_at)[:-7]
-        msg = 'Added by {} ({}): {}'.format(ctx.author.id, timestamp, note_text)
+        msg = 'Added by {} ({}): {}'.format(ctx.author.name, timestamp, note_text)
         server_id = ctx.guild.id
         notes = self.settings.addNoteForUser(server_id, user.id, msg)
         await ctx.send(inline('Done. User {} now has {} notes'.format(user.name, len(notes))))
@@ -122,38 +134,3 @@ class ModNotesSettings(CogSettings):
         notes.append(note)
         self.setNotesForUser(server_id, user_id, notes)
         return notes
-
-    # GDPR Compliance Functions
-    def getUserData(self, user_id):
-        o = {
-            'notes': 0
-        }
-
-        for gid in self.bot_settings['servers']:
-            for uid in rpadutils.deepget(self.bot_settings, ['servers', gid, 'user_notes'], []):
-                for c in range(len(self.bot_settings['servers'][gid]['user_notes'][uid])):
-                    self.bot_settings['servers'][gid]['user_notes'][uid][c] = re.sub(
-                                                        r'^Added by {} \('.format(uid),
-                                                        'Added by ANONYMOUS (',
-                                                        self.bot_settings['servers'][gid]['user_notes'][uid][c])
-        return o
-
-    def clearUserData(self, user_id):
-        # Anonymize requesting banners and phrasemakers
-        for gid in self.bot_settings['configs']:
-            for uid in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
-                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users', uid, 'request_user_id'], -2141):
-                    self.bot_settings['configs'][gid]['watchdog']['users'][uid]['request_user_id'] = -1
-            for phr in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases'], []):
-                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases', phr, 'request_user_id'], -2141):
-                    self.bot_settings['configs'][gid]['watchdog']['phrases'][phr]['request_user_id'] = -1
-        self.save_settings()
-
-    def clearUserDataFull(self, user_id):
-        self.clearUserData(user_id)
-
-        # Remove bannees
-        for gid in self.bot_settings['configs']:
-            if user_id in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
-                del self.bot_settings['configs'][gid]['watchdog']['users'][user_id]
-        self.save_settings()

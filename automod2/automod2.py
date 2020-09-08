@@ -121,7 +121,6 @@ class AutoMod2(commands.Cog):
         else:
             self.settings.clearUserDataFull(user_id)
 
-
     @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
     async def automodhelp(self, ctx):

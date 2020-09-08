@@ -12,6 +12,18 @@ class PadMonitor(commands.Cog):
         self.bot = bot
         self.settings = PadMonitorSettings("padmonitor")
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     async def check_seen_loop(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadMonitor'):
