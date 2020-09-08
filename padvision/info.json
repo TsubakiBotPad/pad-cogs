@@ -10,6 +10,6 @@
     "hidden": false,
     "disabled": false,
     "require_cogs": {},
-    "requirements": ["numpy", "tensorflow", "Pillow"],
+    "requirements": ["Pillow"],
     "tags": ["PAD"]
 }
