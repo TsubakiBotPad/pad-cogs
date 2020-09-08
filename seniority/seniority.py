@@ -104,6 +104,15 @@ WHERE record_date = ?
   AND server_id = ?
 '''
 
+DELETE_USER_DATA = '''
+DELETE FROM seniority
+WHERE user_id = ?
+'''
+
+GET_USER_DATA = '''
+SELECT * FROM seniority
+WHERE user_id = ?
+'''
 
 class Seniority(commands.Cog):
     """Automatically promote people based on activity."""
@@ -117,11 +126,30 @@ class Seniority(commands.Cog):
         self.pool = None
         self.insert_timing = deque(maxlen=1000)
 
+    @commands.command()
+    @checks.is_owner()
+    async def red_get_data_for_user(self, ctx, *, user_id: int):
+        """Get a user's personal data."""
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(GET_USER_DATA, user_id)
+                rows = await cur.fetchall()
+                columns = [x[0] for x in cur.description]
+                print(columns)
+                print(rows)
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(REPLACE_POINTS_QUERY, user_id)
+
     def cog_unload(self):
         print('Seniority: unloading')
         self.lock = True
         if self.pool:
             self.pool.close()
+            self.bot.loop.create_task(self.pool.wait_closed())
             self.pool = None
         else:
             print('unexpected error: pool was None')
