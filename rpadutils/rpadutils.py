@@ -200,7 +200,7 @@ def default_check(payload):
     try:
         return not payload.member.bot
     except Exception as e:
-        print("DEBUG: "+e)
+        print("DEBUG:",e)
         print(payload)
         raise e
 
