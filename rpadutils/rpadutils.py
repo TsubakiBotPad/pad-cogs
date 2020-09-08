@@ -197,12 +197,7 @@ async def boxPagifySay(say_fn, msg):
 
 
 def default_check(payload):
-    try:
-        return not payload.member.bot
-    except Exception as e:
-        print("DEBUG:",e)
-        print(payload)
-        raise e
+    return payload.user_id != RPADCOG.bot.user.id and not (payload.guild_id and payload.member.bot)
 
 
 class EmojiUpdater(object):
