@@ -61,7 +61,7 @@ class Profile(commands.Cog):
 
     async def red_delete_data_for_user(self, *, requester, user_id):
         """Delete a user's personal data."""
-        
+
         if requester not in ("discord_deleted_user", "owner"):
             self.settings.clearUserData(user_id)
         else:
@@ -344,7 +344,7 @@ class ProfileSettings(CogSettings):
         if user_id in self.bot_settings['default_servers']:
             del self.bot_settings['default_servers'][user_id]
         if user_id in self.bot_settings['user_profiles']:
-            del list(self.bot_settings['user_profiles'][user_id])
+            del self.bot_settings['user_profiles'][user_id]
         self.save_settings()
 
     def clearUserDataFull(self, user_id):
