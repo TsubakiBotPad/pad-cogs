@@ -100,7 +100,7 @@ class Dadguide(commands.Cog):
 
     async def create_index(self, accept_filter=None):
         """Exported function that allows a client cog to create a monster index"""
-        print("DEBUG:",self.database._con)
+        await self.wait_until_ready()
         return await MonsterIndex(self.database,
                                   self.nickname_overrides,
                                   self.basename_overrides,
