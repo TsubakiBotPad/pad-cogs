@@ -114,6 +114,18 @@ class PadGlobal(commands.Cog):
 
         self._export_data()
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     def _export_data(self):
 
         faq_and_boards = self.settings.faq() + self.settings.boards()
