@@ -126,17 +126,15 @@ class Seniority(commands.Cog):
         self.pool = None
         self.insert_timing = deque(maxlen=1000)
 
-    @commands.command()
-    @checks.is_owner()
-    async def red_get_data_for_user(self, ctx, *, user_id: int):
+    async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(GET_USER_DATA, user_id)
                 rows = await cur.fetchall()
-                columns = [x[0] for x in cur.description]
-                print(columns)
-                print(rows)
+        guilds = len({r[1] for r in rows})
+        data = "You have activity data stored in {} guilds.\n".format(guilds)
+        return {"user_data.txt": BytesIO("data".encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
         """Delete a user's personal data."""
