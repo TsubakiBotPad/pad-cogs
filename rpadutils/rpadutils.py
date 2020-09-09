@@ -322,7 +322,7 @@ class Menu():
             try:
                 await message.clear_reactions()
             except Exception as e:
-                # This is expected when miru doesn't have manage messages
+                # This is expected when bot doesn't have manage messages
                 pass
             return message, new_message_content
 
@@ -341,7 +341,7 @@ class Menu():
         try:
             await message.remove_reaction(react_emoji, p.member)
         except:
-            # This is expected when miru doesn't have manage messages
+            # This is expected when bot doesn't have manage messages
             pass
 
         # update the emoji mapping however we need to, or just pass through and do nothing

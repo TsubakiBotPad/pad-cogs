@@ -1404,6 +1404,15 @@ class MonsterIndex(rpadutils.aobject):
 
         # TODO: this should be a length-limited priority queue
         matches = set()
+
+        print(query)
+        # prefix search for ids, take max id
+        for nickname, m in self.all_entries.items():
+            if query.endswith("base "+str(m.monster_id)):
+                matches.add([mo for mo in self.all_entries.values() if mo.monster_id == m.base_monster_no][0])
+        if len(matches):
+            return self.pickBestMonster(matches), None, "Space nickname prefix, max of {}".format(len(matches))
+
         # prefix search for nicknames, space-preceeded, take max id
         for nickname, m in self.all_entries.items():
             if nickname.startswith(query + ' '):
@@ -1511,6 +1520,12 @@ class MonsterIndex(rpadutils.aobject):
             return self.find_monster(query)
 
         matches = PotentialMatches()
+
+        # prefix search for ids, take max id
+        for nickname, m in self.all_entries.items():
+            if query.endswith("base "+str(m.monster_id)):
+                matches.add([mo for mo in self.all_entries.values() if mo.monster_id == m.base_monster_no][0])
+        matches.remove_potential_matches_without_all_prefixes(query_prefixes)
 
         # first try to get matches from nicknames
         for nickname, m in self.all_entries.items():
