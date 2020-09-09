@@ -1207,7 +1207,7 @@ class PadGlobal(commands.Cog):
 
     def emojify(self, message):
         emojis = list()
-        for guild in self.settings.emojiServers:
+        for guild in self.settings.emojiServers():
             if self.bot.get_guild(int(guild)):
                 emojis.extend(self.bot.get_guild(int(guild)).emojis)
         for guild in self.bot.guilds:
