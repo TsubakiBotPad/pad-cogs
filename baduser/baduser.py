@@ -472,7 +472,8 @@ class BadUser(commands.Cog):
             channel_obj = member.guild.get_channel(update_channel)
             await channel_obj.send(inline('Detected bad user'))
             await channel_obj.send(box(msg))
-            await channel_obj.send('Hey @here please leave a note explaining why this user is punished')
+            followup_msg = 'Hey @here please leave a note explaining why this user is punished'
+            await channel_obj.send(followup_msg, allowed_mentions=discord.AllowedMentions(everyone=True))
             await channel_obj.send('This user now has {} strikes'.format(strikes))
 
             try:
@@ -495,7 +496,8 @@ class BadUser(commands.Cog):
             try:
                 await channel_obj.send(inline(msg))
                 if send_ping:
-                    await channel_obj.send('Hey @here please leave a note explaining why this role was modified')
+                    followup_msg = 'Hey @here please leave a note explaining why this role was modified'
+                    await channel_obj.send(followup_msg, allowed_mentions=discord.AllowedMentions(everyone=True))
             except:
                 print('Failed to notify in', update_channel, msg)
 
