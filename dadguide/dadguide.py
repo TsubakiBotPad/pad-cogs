@@ -1405,7 +1405,6 @@ class MonsterIndex(rpadutils.aobject):
         # TODO: this should be a length-limited priority queue
         matches = set()
 
-        print(query)
         # prefix search for ids, take max id
         for nickname, m in self.all_entries.items():
             if query.endswith("base "+str(m.monster_id)):
