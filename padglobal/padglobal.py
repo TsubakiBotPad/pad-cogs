@@ -1207,10 +1207,13 @@ class PadGlobal(commands.Cog):
 
     def emojify(self, message):
         emojis = list()
-        for guild in self.settings.emojiServers:
+        emoteservers = self.settings.emojiServers()
+        for guild in emoteservers:
             if self.bot.get_guild(int(guild)):
                 emojis.extend(self.bot.get_guild(int(guild)).emojis)
         for guild in self.bot.guilds:
+            if guild.id in emoteservers:
+                continue
             emojis.extend(guild.emojis)
         message = rpadutils.replace_emoji_names_with_code(emojis, message)
         return rpadutils.fix_emojis_for_server(emojis, message)
