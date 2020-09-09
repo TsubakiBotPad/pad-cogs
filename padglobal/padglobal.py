@@ -567,7 +567,7 @@ class PadGlobal(commands.Cog):
             term, definition = self.lookup_glossary(term)
             if definition:
                 definition_output = '**{}** : {}'.format(term, definition)
-                await ctx.send(definition_output)
+                await ctx.send(self.emojify(definition_output))
             else:
                 await ctx.send(inline('No definition found'))
             return
@@ -641,7 +641,7 @@ class PadGlobal(commands.Cog):
             if definition:
                 if term_new != term.lower():
                     await ctx.send('No entry for {} found, corrected to {}'.format(term, term_new))
-                await ctx.send(definition)
+                await ctx.send(self.emojify(definition))
             else:
                 await ctx.send(inline('No mechanics found'))
             return
@@ -732,7 +732,7 @@ class PadGlobal(commands.Cog):
             await ctx.send('`Which {}`\n{}'.format(name, definition))
             return
         await ctx.send(inline('Which {} - Last Updated {}'.format(name, timestamp)))
-        await ctx.send(definition)
+        await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
         term = term.lower().replace('?', '')
@@ -917,7 +917,7 @@ class PadGlobal(commands.Cog):
         """Set the emoji servers by ID (csv)"""
         self.settings.emojiServers().clear()
         if emoji_servers:
-            self.settings.setEmojiServers(emoji_servers.split(','))
+            self.settings.setEmojiServers(re.findall(r'\d+',emoji_servers))
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
 
     def _get_emojis(self):
@@ -1094,7 +1094,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(inline(err))
             return
 
-        await ctx.send(text)
+        await ctx.send(self.emojify(text))
 
     async def get_guide_text(self, term: str):
         term = term.lower()
@@ -1204,6 +1204,15 @@ class PadGlobal(commands.Cog):
         self.settings.rmLeaderGuide(name)
         await ctx.send("done")
 
+    def emojify(self, message):
+        emojis = list()
+        for guild in self.settings.emojiServers:
+            if self.bot.get_guild(int(guild)):
+                emojis.extend(self.bot.get_guild(int(guild)).emojis)
+        for guild in self.bot.guilds:
+            emojis.extend(guild.emojis)
+        message = rpadutils.replace_emoji_names_with_code(emojis, message)
+        return rpadutils.fix_emojis_for_server(emojis, message)
 
 def check_simple_tree(monster):
     attr1 = monster.attr1
