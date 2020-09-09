@@ -130,7 +130,7 @@ AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
 REMOTE_ASSET_URL = 'https://github.com/chasehult/pdchu-cog/raw/master/assets/'
-REMOTE_AWK_URL = 'https://f002.backblazeb2.com/file/dadguide-data/media/awakenings/{0:03d}.png'
+REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
 
 class DictWithAttributeAccess(dict):
