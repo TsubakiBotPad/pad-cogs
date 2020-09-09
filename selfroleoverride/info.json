@@ -9,7 +9,7 @@
     "min_python_version" : [3,8,1],
     "hidden": false,
     "disabled": false,
-    "require_cogs": {},
+    "require_cogs": {"admin": "https://github.com/Cog-Creators/Red-DiscordBot"},
     "requirements": [],
     "tags": ["patch"]
 }
