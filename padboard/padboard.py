@@ -90,7 +90,7 @@ class PadBoard(commands.Cog):
         board_text_nc = ''.join([''.join(r) for r in img_board_nc])
         # Convert O (used by padvision code) to X (used by Puzzled for bombs)
         board_text_nc = board_text_nc.replace('o', 'x')
-        msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc))
+        msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
 
         await ctx.send(msg)
 
