@@ -1,0 +1,15 @@
+{
+    "author": ["Twentysix26", "Aradia Megido#2552"],
+    "description": "Setup commands that trigger certain behaviors.",
+    "end_user_data_statement": "Triggers are stored persistantly.",
+    "install_msg": "",
+    "short": "You're an eyesore!",
+    "min_bot_version": "3.4.0",
+    "max_bot_version": "3.4.0",
+    "min_python_version" : [3,8,1],
+    "hidden": false,
+    "disabled": false,
+    "require_cogs": {},
+    "requirements": [],
+    "tags": ["general", "customcommands"]
+}

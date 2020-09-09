@@ -17,6 +17,18 @@ class VoiceRole(commands.Cog):
         self.bot = bot
         self.settings = VoiceRoleSettings("voicerole")
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     @commands.Cog.listener("on_voice_state_update")
     async def _on_voice_state_update(self, member, before, after):
         guild = member.guild

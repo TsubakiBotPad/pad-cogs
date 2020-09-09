@@ -4,15 +4,7 @@ import re
 import sys
 
 import discord
-from redbot.core.bot import Red
-
-try:
-    from google.cloud import vision
-except:
-    print('google cloud vision not found, some features unavailable')
-
-from redbot.core import checks, modlog
-from redbot.core import commands
+from redbot.core import checks, modlog, commands
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from rpadutils import CogSettings
@@ -130,12 +122,24 @@ in specific channels, or unless they have specific roles. Read the documentation
 
 
 class TrUtils(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = TrUtilsSettings("trutils")
 
         self.sessions = set()
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     @commands.command()
     async def revertname(self, ctx):

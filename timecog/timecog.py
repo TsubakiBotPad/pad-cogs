@@ -78,6 +78,21 @@ class TimeCog(commands.Cog):
 
         self.bot = bot
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = await self.config.user_from_id(user_id).reminders()
+
+        data = "You have {} reminder(s) set.\n".format(len(udata))
+
+        if not udata:
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
+
     @commands.group(aliases=['remindmeat', 'remindmein'], invoke_without_command=True)
     async def remindme(self, ctx, *, time):
         """Reminds you to do something at a specified time
@@ -215,7 +230,9 @@ class TimeCog(commands.Cog):
         await self.config.user(ctx.author).reminders.set([])
         await ctx.send(inline("Done"))
 
+
     @commands.group(invoke_without_command=True)
+    @checks.mod_or_permissions(administrator=True)
     async def schedule(self, ctx, name, *, text):
         """Sets up a schedule to fire at the specified interval
 
