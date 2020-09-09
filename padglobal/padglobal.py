@@ -289,12 +289,13 @@ class PadGlobal(commands.Cog):
     @commands.command()
     @is_padglobal_admin()
     async def forceindexreload(self, ctx):
-        await ctx.send('starting reload')
-        dadguide_cog = self.bot.get_cog('Dadguide')
-        await dadguide_cog.reload_config_files()
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        await padinfo_cog.refresh_index()
-        await ctx.send('finished reload')
+        async with ctx.typing():
+            await ctx.send('starting reload')
+            dadguide_cog = self.bot.get_cog('Dadguide')
+            await dadguide_cog.reload_config_files()
+            padinfo_cog = self.bot.get_cog('PadInfo')
+            await padinfo_cog.refresh_index()
+            await ctx.send('finished reload')
 
     @commands.group(aliases = ['pdg'])
     @is_padglobal_admin()
