@@ -15,8 +15,6 @@ from rpadutils import rpadutils
 DATA_DIR = os.path.join('data', 'padboard')
 
 DAWNGLARE_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
-MIRUGLARE_BOARD_TEMPLATE = "https://storage.googleapis.com/mirubot/websites/padsim/index.html?patt={}"
-
 
 class PadBoard(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -92,10 +90,7 @@ class PadBoard(commands.Cog):
         board_text_nc = ''.join([''.join(r) for r in img_board_nc])
         # Convert O (used by padvision code) to X (used by Puzzled for bombs)
         board_text_nc = board_text_nc.replace('o', 'x')
-        img_url = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
-        img_url2 = MIRUGLARE_BOARD_TEMPLATE.format(board_text_nc)
-
-        msg = '{}\n{}'.format(img_url, img_url2)
+        msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc))
 
         await ctx.send(msg)
 

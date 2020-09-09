@@ -41,7 +41,7 @@ PAD Global Commands
 
 BLACKLISTED_CHARACTERS = '^[]*`~_'
 
-PORTRAIT_TEMPLATE = 'https://storage.googleapis.com/mirubot/padimages/{}/portrait/{}.png'
+PORTRAIT_TEMPLATE = 'https://d1kpnpud0qoyxf.cloudfront.net/media/portraits/{0:05d}.png'
 
 DISABLED_MSG = 'PAD Global info disabled on this server'
 
@@ -955,7 +955,7 @@ class PadGlobal(commands.Cog):
         server_ids = self.settings.emojiServers()
         all_emojis = self._get_emojis()
 
-        source_url = PORTRAIT_TEMPLATE.format(server, monster_id)
+        source_url = PORTRAIT_TEMPLATE.format(monster_id)
         emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
 
         for e in all_emojis:
