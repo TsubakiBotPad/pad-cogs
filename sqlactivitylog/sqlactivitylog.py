@@ -136,6 +136,21 @@ FROM messages
 WHERE timestamp  < :before
 '''
 
+GET_USER_DATA_QUERY = '''
+SELECT * FROM (
+    SELECT timestamp, channel_id, msg_type, clean_content
+    FROM messages INDEXED BY idx_messages_server_id_user_id_timestamp
+    WHERE user_id = :user_id
+    ORDER BY timestamp DESC
+)
+ORDER BY timestamp ASC
+'''
+
+DELETE_USER_DATA_QUERY = '''
+DELETE
+FROM messages
+WHERE user_id = :user_id
+'''
 
 class SqlActivityLogger(commands.Cog):
     """Log activity seen by bot"""
@@ -158,6 +173,38 @@ class SqlActivityLogger(commands.Cog):
     def cog_unload(self):
         self.lock = True
         self.con.close()
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        values = {
+            'user_id': user.id,
+        }
+        column_data = [
+            ('timestamp', 'Time (PT)'),
+            ('channel_id', 'Channel'),
+            ('msg_type', 'Type'),
+            ('clean_content', 'Message'),
+        ]
+
+        data = ("NOTE: Data stored by this cog is essential for moderator use "
+                "so data deletion requests can only be made by the bot owner and "
+                "Discord itself.  If you need your data deleted, please contact a "
+                "bot owner.\n\n\n")
+        data += await self.queryAndSave(None, None, USER_QUERY, values, column_data)
+
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        The personal data stored in this cog is for essential moderation use,
+        so some data deletion requests can only be made by the bot owner and
+        Discord itself.  If this is an issue, please contact a bot owner.
+        """
+        if requester not in ("discord_deleted_user", "owner"):
+            return
+        cursor = self.con.execute(DELETE_USER_DATA_QUERY, {'user_id': user_id})
+        self.con.commit()
 
     @commands.command()
     @checks.is_owner()
@@ -296,6 +343,11 @@ class SqlActivityLogger(commands.Cog):
         await self.queryAndPrint(ctx, server, CONTENT_QUERY, values, column_data)
 
     async def queryAndPrint(self, ctx, server, query, values, column_data, max_rows=MAX_LOGS * 2, verbose=True):
+        result_text = queryAndSave(self, ctx, server, query, values, column_data, max_rows, verbose)
+        for p in pagify(result_text):
+            await ctx.send(box(p))
+
+    async def queryAndSave(self, ctx, server, query, values, column_data, max_rows=MAX_LOGS * 2, verbose=True):
         before_time = timeit.default_timer()
         cursor = self.con.execute(query, values)
         rows = cursor.fetchall()
@@ -351,11 +403,11 @@ class SqlActivityLogger(commands.Cog):
 
             tbl.add_row(table_row)
 
+        result_text = ""
         if verbose:
             result_text = "{} results fetched in {}s\n{}".format(
                 len(rows), round(execution_time, 2), tbl.get_string())
-            for p in pagify(result_text):
-                await ctx.send(box(p))
+        return result_text
 
     @commands.Cog.listener("on_message_edit")
     async def on_message_edit(self, before, after):
