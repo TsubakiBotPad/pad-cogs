@@ -35,6 +35,21 @@ class Trigger(commands.Cog):
 
         self.triggers = []
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        c = 0
+        for trigger in self.triggers:
+            if trigger.owner == user_id:
+                c += 1
+        data = "You own {} triggers.\n".format(c)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        for trigger in self.triggers:
+            if trigger.owner == user_id:
+                trigger.owner = None
+
     @commands.group()
     @commands.guild_only()
     async def trigger(self, ctx):
