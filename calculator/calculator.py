@@ -39,7 +39,7 @@ class Calculator(commands.Cog):
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
-        udata = await self.config.user(ctx.author).ans()
+        udata = await self.config.user_from_id(user_id).ans()
 
         data = "You have previous answers stored in {} channels.\n".format(len(udata))
 
