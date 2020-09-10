@@ -292,7 +292,7 @@ class ChannelMod(commands.Cog):
         text = re.sub(r"@everyone\b", "@\u200beveryone", text)
         text = re.sub(r"@here\b", "@\u200bhere", text)
         #EMOJI
-        text = self.emojify(text)
+        # text = self.emojify(text)
         return text
 
     def emojify(self, message):
