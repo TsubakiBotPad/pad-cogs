@@ -14,8 +14,6 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import inline, box
 from functools import reduce
 
-from rpadutils.rpadutils import CtxIO
-
 ACCEPTED_TOKENS = r'[\[\]\-()*+/0-9=.,% |&<>~_^]|>=|<=|==|!=|factorial|randrange|isfinite|copysign|radians|isclose|degrees|randint|lgamma|choice|random|round|log1p|log10|ldexp|isnan|isinf|hypot|gamma|frexp|floor|expm1|atanh|atan2|asinh|acosh|False|range|tanh|sqrt|sinh|modf|log2|fmod|fabs|erfc|cosh|ceil|atan|asin|acos|else|True|fsum|tan|sin|pow|nan|log|inf|gcd|sum|exp|erf|cos|for|not|and|ans|pi|in|is|or|if|e|x'
 
 ALTERED_TOKENS = {'^': '**', '_':'ans'}
@@ -38,6 +36,22 @@ class Calculator(commands.Cog):
         |   GUILDS: Config
         |   |   ans: channel_id -> Any
         """
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = await self.config.user_from_id(user_id).ans()
+
+        data = "You have previous answers stored in {} channels.\n".format(len(udata))
+
+        if not udata:
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
+
     @commands.group()
     async def helpcalc(self, ctx):
         '''Whispers info on how to use the calculator.'''

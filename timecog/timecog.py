@@ -5,10 +5,11 @@ import traceback
 from datetime import timedelta, datetime
 from dateutil.relativedelta import relativedelta
 
+import discord
 import pytz
 from redbot.core import commands, Config, checks
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import inline
+from redbot.core.utils.chat_formatting import inline, pagify, box
 
 import rpadutils
 
@@ -28,7 +29,21 @@ time_in_regeces = [
     r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)\b\s*\|\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+|now)\b (.*)$', #Unused
 ]
 
+exact_tats = [
+    r'^\s*(?P<year>\d{4})[-/](?P<month>\d+)[-/](?P<day>\d+) (?P<hour>\d+):(?P<minute>\d\d) ?(?P<merid>pm|am)?\s*$',
+    r'^\s*(?P<year>\d{4})[-/](?P<month>\d+)[-/](?P<day>\d+)\s*$',
+    r'^\s*(?P<month>\d+)[-/](?P<day>\d+)\s*$',
+    r'^\s*(?P<hour>\d+):(?P<minute>\d\d) ?(?P<merid>\d?pm|am)?\s*$',
+    r'^\s*(?P<hour>\d+) ?(?P<merid>\d?pm|am)\s*$',
+]
+
+exact_tins = [
+    r'^\s*((?:-?\d+ ?(?:m|h|d|w|y|s)\w* ?)+)$', # One tinstr
+]
+
 DT_FORMAT = "%A, %b %-d, %Y at %-I:%M %p"
+SHORT_DT_FORMAT = "%b %-d, %Y at %-I:%M %p"
+
 
 
 class TimeCog(commands.Cog):
@@ -38,46 +53,45 @@ class TimeCog(commands.Cog):
         super().__init__(*args, **kwargs)
         self.config = Config.get_conf(self, identifier=7173306)
         self.config.register_user(reminders=[], tz='')
-        self.config.register_channel(schedules=[])
+        self.config.register_guild(schedules={})
 
         """
         CONFIG: Config
         |   USERS: Config
-        |   |   REMINDERS: list
+        |   |   reminders: list
         |   |   |   REMINDER: tuple
         |   |   |   |   TIME: int (timestamp)
         |   |   |   |   TEXT: str
         |   |   |   |   INTERVAL: Optional[int]
-        |   |   TZ: str (tzstr)
+        |   |   tz: str (tzstr)
         |   CHANNELS: Config
-        |   |   SCHEDULES: list
-        |   |   |   SCHEDULE: tuple
-        |   |   |   |   START: int (timestamp)
-        |   |   |   |   INTERVAL: int (seconds)
-        |   |   |   |   TEXT: str
+        |   |   schedules: dict
+        |   |   |   NAME: dict
+        |   |   |   |   start: int (timestamp) (unused)
+        |   |   |   |   time: int (timestamp)
+        |   |   |   |   end: int (timestamp)
+        |   |   |   |   interval: int (seconds)
+        |   |   |   |   enabled: bool
+        |   |   |   |   channels: list (cids)
+        |   |   |   |   message: str
         """
 
         self.bot = bot
 
-    #@commands.group(invoke_without_command=True)
-    async def schedule(self, ctx, *, text):
-        raise ValueError()
-        match = re.search(time_in_regeces[0], text, re.IGNORECASE)
-        if match:
-            tinstart = "now"
-            tinstrs, input = match.groups()
-        else:
-            match = re.search(time_in_regeces[1], text, re.IGNORECASE)
-            if not match:
-                await ctx.send("Invalid interval")
-                return
-            tinstart, tinstrs, input = match.groups()
-        start = (datetime.utcnow() + tin2tdelta(tinstart)).timestamp()
-        async with self.config.channel(ctx.channel).schedules() as scs:
-            scs.append((start, tin2tdelta(tinstrs).seconds, input))
-        m = await ctx.send("Schedule created.  I will send a message on my next cycle (10s or less)")
-        await asyncio.sleep(5.)
-        await m.delete()
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = await self.config.user_from_id(user_id).reminders()
+
+        data = "You have {} reminder(s) set.\n".format(len(udata))
+
+        if not udata:
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
 
     @commands.group(aliases=['remindmeat', 'remindmein'], invoke_without_command=True)
     async def remindme(self, ctx, *, time):
@@ -89,8 +103,6 @@ class TimeCog(commands.Cog):
         [p]remindme 2020-05-03 Do something!
         [p]remindme 04-13 Do something!
         """
-        if time is None:
-            return
 
         user_tz_str = await self.config.user(ctx.author).tz()
         user_timezone = tzstr_to_tz(user_tz_str or 'UTC')
@@ -201,8 +213,8 @@ class TimeCog(commands.Cog):
         o = "```\n" + '\n'.join(o) + "\n```"
         await ctx.send(o)
 
-    @remindme.command()
-    async def remove(self, ctx, no: int):
+    @remindme.command(name="remove")
+    async def remindme_remove(self, ctx, no: int):
         """Remove a specific pending reminder"""
         rlist = sorted(await self.config.user(ctx.author).reminders(), key=lambda x: x[0])
         if len(rlist) < no:
@@ -218,6 +230,206 @@ class TimeCog(commands.Cog):
         await self.config.user(ctx.author).reminders.set([])
         await ctx.send(inline("Done"))
 
+
+    @commands.group(invoke_without_command=True)
+    @checks.mod_or_permissions(administrator=True)
+    async def schedule(self, ctx, name, *, text):
+        """Sets up a schedule to fire at the specified interval
+
+        [p]schedule name 1d Do something!
+        [p]schedule name 5 hours Do something!
+        """
+        match = re.search(time_in_regeces[0], text, re.IGNORECASE)
+        if match:
+            tinstart = "now"
+            tinstrs, input = match.groups()
+        else:
+            match = re.search(time_in_regeces[1], text, re.IGNORECASE)
+            if not match:
+                if name.isdigit() or re.search(time_in_regeces[0], name+" .", re.IGNORECASE):
+                    await ctx.send("Invalid interval.  Remember to put 'name' as the first argument.")
+                else:
+                    await ctx.send_help()
+                return
+            tinstart, tinstrs, input = match.groups()
+        start = (datetime.utcnow() + tin2tdelta(tinstart)).timestamp()
+
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name in schedules:
+                await ctx.send("There is already a schedule with this name.")
+                return
+            schedules[name] = {
+                "start": start,
+                "time": start,
+                "end": 2e11,
+                "interval": tin2tdelta(tinstrs).seconds,
+                "enabled": True,
+                "channels": [ctx.channel.id],
+                "message": input,
+            }
+        m = await ctx.send("Schedule created.")
+        await asyncio.sleep(5.)
+        await m.delete()
+
+    @schedule.command()
+    async def begin(self, ctx, name, *, time):
+        """Sets the start time for a schedule."""
+        time = await self.exact_tartintodt(ctx, time)
+        if time is None:
+            return
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['start'] = time.timestamp()
+            schedules[name]['time'] = time.timestamp()
+        await ctx.send(inline("Done."))
+
+    @schedule.command()
+    async def end(self, ctx, name, *, time):
+        """Sets the end time for a schedule."""
+        time = await self.exact_tartintodt(ctx, time)
+        if time is None:
+            return
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['end'] = time.timestamp()
+        await ctx.send(inline("Done."))
+
+    @schedule.command()
+    async def interval(self, ctx, name, *, time):
+        """Sets the interval for a schedule."""
+        if not re.match(exact_tins[0], time):
+            await ctx.send("Invalid interval.")
+            return
+        interval = tin2tdelta(time)
+        if interval is None:
+            return
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['interval'] = interval.seconds
+        await ctx.send(inline("Done."))
+
+    @schedule.command()
+    async def message(self, ctx, name, *, message):
+        """Sets the message for a schedule."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['message'] = message
+        await ctx.send(inline("Done."))
+
+    @schedule.group()
+    async def channel(self, ctx):
+        """Set or remove channels for a schedule."""
+
+    @channel.command()
+    async def add(self, ctx, name, channel: discord.TextChannel):
+        """Add a channel."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            if channel.id in schedules[name]['channels']:
+                await ctx.send("This channel is already registered.")
+                return
+            schedules[name]['channels'].append(channel.id)
+        await ctx.send(inline("Done"))
+
+    @channel.command(name="remove")
+    async def channel_remove(self, ctx, name, channel):
+        """Remove a channel."""
+        c = bot.get_channel()
+        if c is None and channel.isdigit():
+            channel_id = channel
+        elif c:
+            channel_id = channel.id
+        else:
+            await ctx.send("Invalid channel.")
+            return
+
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            if channel_id not in schedules[name]['channels']:
+                await ctx.send("This channel is not registered.")
+                return
+            schedules[name]['channels'].remove(channel_id)
+        await ctx.send(inline("Done"))
+
+    @channel.command(name="list")
+    async def channel_list(self, ctx, name):
+        """List the registered channels."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            if not schedules[name]['channels']:
+                await ctx.send("This schedule has no channels.")
+                return
+            o = ""
+            for c in schedules[name]['channels']:
+                ch = self.bot.get_channel(c)
+                if ch:
+                    o += "{} ({})\n".format(ch.name, c)
+                else:
+                    o += "deleted-channel ({})\n".format(c)
+        for p in pagify(o):
+            await ctx.send(box(p))
+
+    @schedule.command()
+    async def enable(self, ctx, name):
+        """Enable a schedule."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['enabled'] = True
+        await ctx.send(inline("Done."))
+
+    @schedule.command()
+    async def disable(self, ctx, name):
+        """Disable a schedule."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            schedules[name]['enabled'] = False
+        await ctx.send(inline("Done."))
+
+    @schedule.command(name="remove")
+    async def schedule_remove(self, ctx, name):
+        """Remove a schedule."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            if name not in schedules:
+                await ctx.send("There is no schedule with this name.")
+                return
+            del schedules[name]
+        await ctx.send(inline("Deleted schedule {}.".format(name)))
+
+    @schedule.command(name="list")
+    async def schedule_list(self, ctx):
+        """List the guild's schedules."""
+        async with self.config.guild(ctx.guild).schedules() as schedules:
+            o = ""
+            for n,s in schedules.items():
+                o += " - {}{}\n".format(n, " (disabled)" if not s['enabled'] else " (expired)" if s['end'] < datetime.utcnow().timestamp() else "")
+                o += "   - Start Time: {}\n".format(datetime.fromtimestamp(s['start']).strftime(SHORT_DT_FORMAT))
+                o += "   - Next Time: {}\n".format(datetime.fromtimestamp(s['time']).strftime(SHORT_DT_FORMAT))
+                o += "   - End Time: {}\n".format(datetime.fromtimestamp(s['end']).strftime(SHORT_DT_FORMAT))
+                o += "   - Interval: {}\n".format(timedelta(seconds=s['interval']))
+                o += "   - Message: {}\n".format(s['message'])
+        if not o:
+            await ctx.send(inline("There are no schedules for this guild."))
+        for page in pagify(o):
+            await ctx.send(box(page))
+
     @commands.command(aliases=['settz'])
     async def settimezone(self, ctx, tzstr):
         """Set your timezone."""
@@ -232,7 +444,7 @@ class TimeCog(commands.Cog):
         await self.bot.wait_until_ready()
         async for _ in rpadutils.repeating_timer(10, lambda: self == self.bot.get_cog('TimeCog')):
             urs = await self.config.all_users()
-            chs = await self.config.all_channels()
+            gds = await self.config.all_guilds()
             now = datetime.utcnow()
             for u in urs:
                 for rm in urs[u]['reminders']:
@@ -240,13 +452,15 @@ class TimeCog(commands.Cog):
                         async with self.config.user(self.bot.get_user(u)).reminders() as rms:
                             rms.remove(rm)
                         await self.bot.get_user(u).send(rm[1])
-            for c in chs:
-                for sc in chs[c]['schedules']:
-                    if datetime.fromtimestamp(float(sc[0])) < now:
-                        async with self.config.channel(self.bot.get_channel(c)).schedules() as sco:
-                            scind = sco.index(sc)
-                            sco[scind][0] += sco[scind][1]
-                        await self.bot.get_channel(c).send(sc[2])
+            for g in gds:
+                for n, sc in gds[g]['schedules'].items():
+                    if datetime.fromtimestamp(sc['end']) < now or not sc['enabled']:
+                        continue
+                    if datetime.fromtimestamp(float(sc['time'])) < now:
+                        async with self.config.guild(self.bot.get_guild(g)).schedules() as scs:
+                            scs[n]['time'] += scs[n]['interval']
+                        for ch in sc['channels']:
+                            await self.bot.get_channel(ch).send(sc['message'])
 
     @commands.command()
     async def time(self, ctx, *, tz: str):
@@ -286,6 +500,68 @@ class TimeCog(commands.Cog):
         msg = ("There are " + fmt_hrs_mins(delta.seconds).strip() +
               " until " + time.strip() + " in " + now.strftime('%Z'))
         await ctx.send(inline(msg))
+
+    async def exact_tartintodt(self, ctx, time, allowtat=True):
+        user_tz_str = await self.config.user(ctx.author).tz()
+        user_timezone = tzstr_to_tz(user_tz_str or 'UTC')
+
+        for ar in exact_tats:
+            if not allowtat:
+                continue
+            match = re.match(ar, time, re.IGNORECASE)
+            if not match:
+                continue
+            match = match.groupdict()
+
+            if not user_tz_str:
+                await ctx.send(
+                    "Please configure your personal timezone with `{0.clean_prefix}settimezone` first.".format(ctx))
+                return
+
+            now = datetime.now(tz=user_timezone)
+            defaults = {
+                'year': now.year,
+                'month': now.month,
+                'day': now.day,
+                'hour': now.hour,
+                'minute': now.minute,
+                'merid': 'NONE'
+            }
+            defaults.update({k: v for k, v in match.items() if v})
+            for key in defaults:
+                if key not in ['merid']:
+                    defaults[key] = int(defaults[key])
+            if defaults['merid'] == 'pm' and defaults['hour'] <= 12:
+                defaults['hour'] += 12
+            elif defaults['merid'] == 'NONE' and defaults['hour'] < now.hour:
+                defaults['hour'] += 12
+            if defaults['hour'] >= 24:
+                defaults['day'] += int(defaults['hour'] // 24)
+                defaults['hour'] = defaults['hour'] % 24
+            del defaults['merid']
+            try:
+                rmtime = user_timezone.localize(datetime(**defaults))
+            except ValueError as e:
+                await ctx.send(inline(str(e).capitalize()))
+                return
+            if rmtime < now:
+                rmtime += timedelta(days=1)
+            rmtime = rmtime.astimezone(pytz.utc).replace(tzinfo=None)
+            break
+        else:
+            ir = exact_tins[0]
+            match = re.search(ir, time, re.IGNORECASE)
+            if not match: # Only use the first one
+                raise commands.UserFeedbackCheckFailure("Invalid time string: " + time)
+            tinstrs, = match.groups()
+            rmtime = datetime.utcnow()
+            try:
+                rmtime += tin2tdelta(tinstrs)
+            except OverflowError:
+                raise commands.UserFeedbackCheckFailure(
+                    inline("That's way too far in the future!  Please keep it in your lifespan!"))
+
+        return rmtime
 
 
 def timestr_to_time(timestr):

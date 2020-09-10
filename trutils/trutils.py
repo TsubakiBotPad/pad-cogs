@@ -4,15 +4,7 @@ import re
 import sys
 
 import discord
-from redbot.core.bot import Red
-
-try:
-    from google.cloud import vision
-except:
-    print('google cloud vision not found, some features unavailable')
-
-from redbot.core import checks, modlog
-from redbot.core import commands
+from redbot.core import checks, modlog, commands
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from rpadutils import CogSettings
@@ -130,12 +122,24 @@ in specific channels, or unless they have specific roles. Read the documentation
 
 
 class TrUtils(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = TrUtilsSettings("trutils")
 
         self.sessions = set()
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     @commands.command()
     async def revertname(self, ctx):
@@ -432,7 +436,13 @@ class TrUtils(commands.Cog):
         if cmd is None:
             await ctx.send("Invalid Command: {}".format(full_cmd))
             return
+        _send = ctx.send
+        async def fakesend(*args, **kwargs): pass
+
+        ctx.send = fakesend
         await self.bot.get_cog("Core").reload(ctx, cmd.cog.__module__.split('.')[0])
+
+        ctx.send = _send
         ctx.message.content = full_cmd
         await self.bot.process_commands(ctx.message)
 
@@ -464,6 +474,25 @@ class TrUtils(commands.Cog):
     @commands.command(hidden=True, aliases=["make_aa", "makearadia"])
     async def makeaa(self, ctx, *, task):
         await self.bot.get_user(144250811315257344).send(task)
+
+    @commands.command()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def onlinecount(self, ctx):
+        gonline = gmobile = conline = cmobile = 0
+        for member in ctx.guild.members:
+            gonline += member.status.name == "online"
+            gmobile += member.is_on_mobile()
+        for member in ctx.channel.members:
+            conline += member.status.name == "online"
+            cmobile += member.is_on_mobile()
+        await ctx.send(box("There are {} members online ({} online on mobile).\n"
+                           "There are {} members online in this channel ({} online on mobile).")
+                            .format(gonline, gmobile, conline, cmobile))
+
+    @commands.command()
+    async def servercount(self, ctx):
+        await ctx.send("{} is in {} servers.".format(self.bot.user.name, len(self.bot.guilds)))
+
 
 
 class TrUtilsSettings(CogSettings):

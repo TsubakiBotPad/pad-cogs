@@ -18,6 +18,18 @@ class StreamCopy(commands.Cog):
         self.settings = StreamCopySettings("streamcopy")
         self.current_user_id = None
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     async def refresh_stream(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('StreamCopy'):
@@ -63,8 +75,17 @@ class StreamCopy(commands.Cog):
 
     @streamcopy.command(name="rmuser")
     @checks.is_owner()
-    async def rmUser(self, ctx, user: discord.User):
-        self.settings.rm_user(user.id)
+    async def rmUser(self, ctx, user):
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rm_user(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rm_user(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send(inline('Done'))
 
     @streamcopy.command(name="list")

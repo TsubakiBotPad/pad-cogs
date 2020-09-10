@@ -129,8 +129,8 @@ TYPE_TO_KILLERS_MAP = {
 AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
-REMOTE_ASSET_URL = 'https://github.com/Mushymato/pdchu-cog/raw/master/assets/'
-REMOTE_AWK_URL = 'https://f002.backblazeb2.com/file/dadguide-data/media/awakenings/{0:03d}.png'
+REMOTE_ASSET_URL = 'https://github.com/chasehult/pdchu-cog/raw/master/assets/'
+REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
 
 class DictWithAttributeAccess(dict):
@@ -145,7 +145,7 @@ class PadBuildImgSettings(CogSettings):
     def make_default_build_img_params(self):
         build_img_params = DictWithAttributeAccess({
             'ASSETS_DIR': './assets/',
-            'PORTRAIT_DIR': 'https://f002.backblazeb2.com/file/dadguide-data/media/icons/{monster_id:05d}.png',
+            'PORTRAIT_DIR': 'https://d1kpnpud0qoyxf.cloudfront.net/media/icons/{monster_id:05d}.png',
             # 'OUTPUT_DIR': './data/padbuildimg/output/',
             'PORTRAIT_WIDTH': 100,
             'PADDING': 10,
@@ -157,6 +157,18 @@ class PadBuildImgSettings(CogSettings):
         # if not os.path.exists(build_img_params.OUTPUT_DIR):
         #     os.mkdir(build_img_params.OUTPUT_DIR)
         return build_img_params
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     def buildImgParams(self):
         if 'build_img_params' not in self.bot_settings:

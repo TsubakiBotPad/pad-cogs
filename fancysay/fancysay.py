@@ -15,6 +15,18 @@ class FancySay(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     @commands.group()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
@@ -111,20 +123,20 @@ class FancySay(commands.Cog):
     @commands.command(aliases = ["parrot", "repeat"])
     @checks.mod_or_permissions(manage_messages=True)
     async def say(self, ctx, *, message):
-        """Make Miru parrot a phrase."""
+        """Make the bot parrot a phrase."""
         message = self.emojify(message)
         await ctx.send(message)
 
     @commands.command(aliases = ["testparrot", "testrepeat"])
     @checks.mod_or_permissions(manage_messages=True)
     async def testsay(self, ctx, *, message):
-        """Make Miru parrot a phrase without smart emoji replacements."""
+        """Make the bot parrot a phrase without smart emoji replacements."""
         await ctx.send(message)
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
     async def mask(self, ctx, *, message):
-        """Sends a message as Miru."""
+        """Sends a message as the bot."""
         message = self.emojify(message)
         await ctx.message.delete()
         await ctx.send(message)

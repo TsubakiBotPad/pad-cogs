@@ -31,6 +31,18 @@ class Stickers(commands.Cog):
         global STICKER_COG
         STICKER_COG = self
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     @commands.group()
     @is_sticker_admin()
     async def sticker(self, context):
@@ -111,9 +123,18 @@ class Stickers(commands.Cog):
 
     @sticker.command()
     @checks.is_owner()
-    async def rmadmin(self, ctx, user: discord.Member):
+    async def rmadmin(self, ctx, user):
         """Removes a user from the stickers admin"""
-        self.settings.rm_admin(user.id)
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rmAdmin(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rmAdmin(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send("done")
 
     @commands.Cog.listener("on_message")

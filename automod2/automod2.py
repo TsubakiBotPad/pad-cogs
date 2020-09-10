@@ -9,6 +9,7 @@ import re
 from collections import defaultdict
 from collections import deque
 from datetime import datetime
+from io import BytesIO
 
 import discord
 import prettytable
@@ -81,12 +82,44 @@ class AutoMod2(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
-        self.settings = AutoMod2Settings("automod2")
+        self.settings = AutoMod2Settings("automod2", bot)
         self.settings.cleanup()
         self.channel_user_logs = defaultdict(lambda: deque(maxlen=LOGS_PER_CHANNEL_USER))
 
         self.server_user_last = defaultdict(dict)
         self.server_phrase_last = defaultdict(dict)
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        udata = self.settings.getUserData(user_id)
+
+        data = "Stored data for user with ID {}:\n".format(user_id)
+        if udata['bannings']:
+            data += " - You have setup watchdogs for {} user(s).\n".format(udata['bannings'])
+        if udata['phrases']:
+            data += " - You have created {} phrase(s).\n".format(udata['phrases'])
+        if udata['baduser']:
+            data += (" - You have been watchlisted in {} servers. "
+                     "(This data is sensitive and cannot be cleared automatically due to abuse. "
+                     "Please contact a bot owner to get this data cleared.)\n"
+                     "").format(len(udata['baduser']))
+
+        if not any(udata.values()):
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        The personal data stored in this cog is for essential moderation use,
+        so some data deletion requests can only be made by the bot owner and
+        Discord itself.  If this is an issue, please contact a bot owner.
+        """
+        if requester not in ("discord_deleted_user", "owner"):
+            self.settings.clearUserData(user_id)
+        else:
+            self.settings.clearUserDataFull(user_id)
 
     @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
@@ -814,4 +847,44 @@ class AutoMod2Settings(CogSettings):
             }
         else:
             watchdog_phrases.pop(name, None)
+        self.save_settings()
+
+    # GDPR Compliance Functions
+    def getUserData(self, user_id):
+        o = {
+            'bannings': 0,
+            'phrases': 0,
+            'baduser': [],
+        }
+
+        for gid in self.bot_settings['configs']:
+            for uid in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
+                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users', uid, 'request_user_id'], -2141):
+                    o['bannings'] += 1
+            for phr in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases'], []):
+                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases', phr, 'request_user_id'], -2141):
+                    o['phrases'] += 1
+            if user_id in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
+                o['baduser'].append(self.bot_settings['configs'][gid]['watchdog']['users'][user_id]['reason'])
+
+        return o
+
+    def clearUserData(self, user_id):
+        # Anonymize requesting banners and phrasemakers
+        for gid in self.bot_settings['configs']:
+            for uid in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
+                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users', uid, 'request_user_id'], -2141):
+                    self.bot_settings['configs'][gid]['watchdog']['users'][uid]['request_user_id'] = -1
+            for phr in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases'], []):
+                if user_id == rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'phrases', phr, 'request_user_id'], -2141):
+                    self.bot_settings['configs'][gid]['watchdog']['phrases'][phr]['request_user_id'] = -1
+        self.save_settings()
+
+    def clearUserDataFull(self, user_id):
+        self.clearUserData(user_id)
+
+        # Remove bannees
+        for gid in self.bot_settings['configs']:
+            if user_id in rpadutils.deepget(self.bot_settings, ['configs', gid, 'watchdog', 'users'], []):
+                del self.bot_settings['configs'][gid]['watchdog']['users'][user_id]
         self.save_settings()

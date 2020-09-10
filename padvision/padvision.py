@@ -12,6 +12,18 @@ class PadVision(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO("data".encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
 
 EXTRACTABLE = 'rbgldhjpmo'
 
@@ -126,7 +138,7 @@ class NeuralClassifierBoardExtractor(object):
         oe = OrbExtractor(self.np_img)
 
         # Load TFLite model and allocate tensors.
-        interpreter = tf.contrib.lite.Interpreter(model_path=self.model_path)
+        interpreter = tf.lite.Interpreter(model_path=self.model_path)
         interpreter.allocate_tensors()
 
         # Get input and output tensors.
