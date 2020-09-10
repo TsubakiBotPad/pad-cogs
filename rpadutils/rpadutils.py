@@ -498,6 +498,7 @@ class CogSettings(object):
 
         self.default_settings = self.make_default_settings()
         if not os.path.isfile(self.file_path):
+            print("CogSettings config for {} not found.  Creating default...".format(self.file_path))
             self.bot_settings = self.default_settings
             self.save_settings()
         else:
