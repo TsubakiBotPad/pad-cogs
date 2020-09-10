@@ -11,7 +11,7 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline
 
-from rpadutils import CogSettings, box
+from rpadutils import rpadutils, CogSettings, box
 
 # Three hour cooldown
 ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
@@ -291,7 +291,16 @@ class ChannelMod(commands.Cog):
         #EVERYONE
         text = re.sub(r"@everyone\b", "@\u200beveryone", text)
         text = re.sub(r"@here\b", "@\u200bhere", text)
+        #EMOJI
+        text = self.emojify(text)
         return text
+
+    def emojify(self, message):
+        emojis = list()
+        for guild in self.bot.guilds:
+            emojis.extend(guild.emojis)
+        message = rpadutils.replace_emoji_names_with_code(emojis, message)
+        return rpadutils.fix_emojis_for_server(emojis, message)
 
 class ChannelModSettings(CogSettings):
     def make_default_settings(self):
