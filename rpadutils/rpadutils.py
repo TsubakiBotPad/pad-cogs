@@ -426,10 +426,12 @@ def replace_emoji_names_with_code(emoji_list, msg_text):
         return msg_text
 
     # For each unique looking emoji thing
+    finished_names = []
     for m in set(matches):
         emoji_name = m.strip(':')
         for e in emoji_list:
-            if e.name == emoji_name:
+            if e.name == emoji_name and e.name not in finished_names:
+                finished_names.append(e.name)
                 msg_text = msg_text.replace(m, str(e))
     return msg_text
 
