@@ -1381,6 +1381,21 @@ class MonsterIndex(rpadutils.aobject):
     def find_monster(self, query):
         query = rpadutils.rmdiacritics(query).lower().strip()
 
+        # if the first word in the query is 'base', look for the base monster.
+        if 'base' == query.split()[0]:
+            original_query = query.split()
+            original_query.remove('base')
+            original_query = ' '.join(original_query)
+
+            nm, err, debug_info = self.find_monster(original_query)
+
+            # does not exist, return original error message
+            if nm is None:
+                return nm, err, debug_info
+            # does exist, continue using base monster's id
+            else:
+                query = str(nm.base_monster_no_na)
+
         # id search
         if query.isdigit():
             m = self.monster_no_na_to_named_monster.get(int(query))
