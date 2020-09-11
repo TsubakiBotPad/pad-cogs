@@ -9,7 +9,7 @@
     "min_python_version" : [3,8,1],
     "hidden": false,
     "disabled": false,
-    "require_cogs": {"rpadutils": "https://github.com/TsubakiBotPad/padbot-cogs"},
+    "require_cogs": {"rpadutils": "https://github.com/TsubakiBotPad/misc-cogs"},
     "requirements": ["aiohttp"],
     "tags": ["azurlane", "azurelane"]
 }
