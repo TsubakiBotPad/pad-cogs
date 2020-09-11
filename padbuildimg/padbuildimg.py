@@ -131,13 +131,13 @@ LATENTS_MAP = {
 }
 REVERSE_LATENTS_MAP = {v: k for k, v in LATENTS_MAP.items()}
 TYPE_TO_KILLERS_MAP = {
-    'God': [7],  # devil
-    'Devil': [5],  # god
-    'Machine': [5, 1],  # god balanced
-    'Dragon': [8, 3],  # machine healer
-    'Physical': [8, 3],  # machine healer
-    'Attacker': [7, 2],  # devil physical
-    'Healer': [4, 6],  # dragon attacker
+    'God': [207],  # devil
+    'Devil': [205],  # god
+    'Machine': [205, 201],  # god balanced
+    'Dragon': [208, 320],  # machine healer
+    'Physical': [208, 203],  # machine healer
+    'Attacker': [207, 202],  # devil physical
+    'Healer': [204, 206],  # dragon attacker
 }
 
 AWK_CIRCLE = 'circle'
@@ -604,6 +604,7 @@ class PadBuildImageGenerator(object):
         return latents_bar
 
     def combine_portrait(self, card, show_stats=True, show_supers=False):
+        if card['ID'] == DELAY_BUFFER:
         if card['ID'] == DELAY_BUFFER:
             return Image.open(self.params.ASSETS_DIR + DELAY_BUFFER + '.png')
         if 'http' in self.params.PORTRAIT_DIR:
