@@ -10,7 +10,7 @@
     "hidden": false,
     "disabled": false,
     "require_cogs": {
-        "rpadutils": "https://github.com/TsubakiBotPad/padbot-cogs",
+        "rpadutils": "https://github.com/TsubakiBotPad/misc-cogs",
         "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs"
     },
     "requirements": [],
