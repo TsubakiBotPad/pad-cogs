@@ -688,6 +688,7 @@ class PadInfo(commands.Cog):
         elif server_filter == ServerFilter.jp:
             monster_index = self.index_jp
         else:
+            print(server_filter)
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster(query)
 
