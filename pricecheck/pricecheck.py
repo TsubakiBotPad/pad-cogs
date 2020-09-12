@@ -21,6 +21,7 @@ class PriceCheck(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=9213337337)
         self.config.register_global(pcs={})
+        self.config.register_channel(dm=False)
         self.bot.get_cog("GlobalAdmin").register_perm("pricecheck")
 
     async def red_get_data_for_user(self, *, user_id):
@@ -53,11 +54,15 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(nm.name_na))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-            pct = PC_TEXT.format(name = nm.name_na,
-                                 stam_cost = sc,
-                                 pp_val = sc*83/50,
-                                 points = sc*83/50/297,
-                                 foot = foot)
+        pct = PC_TEXT.format(name = nm.name_na,
+                             stam_cost = sc,
+                             pp_val = sc*83/50,
+                             points = sc*83/50/297,
+                             foot = foot)
+        if await self.config.channel(ctx.channel).dm():
+            for page in pagify(pct):
+                await ctx.author.send(box(page))
+        else:
             for page in pagify(pct):
                 await ctx.send(box(page))
 
@@ -125,3 +130,9 @@ class PriceCheck(commands.Cog):
                 return
             del pcs[str(nm.base_monster_no)]
         await ctx.send(inline("Removed PC data from {}.".format(nm.name_na)))
+
+    @pcadmin.command(aliases=['set-demon-ly'])
+    async def setdmonly(self, ctx, value: bool = True):
+        """Tells a channel to send [p]pricecheck in dms."""
+        await self.config.channel(ctx.channel).dm.set(value)
+        await ctx.tick()
