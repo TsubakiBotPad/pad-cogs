@@ -143,7 +143,7 @@ TYPE_TO_KILLERS_MAP = {
 AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
-REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/chasehult/pdchu-cog/master/padbuildimg/assets/'
+REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/padbuildimg/assets/'
 REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
 
