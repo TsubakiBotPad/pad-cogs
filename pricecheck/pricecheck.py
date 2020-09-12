@@ -67,7 +67,7 @@ class PriceCheck(commands.Cog):
                 await ctx.send(box(page))
 
     @commands.group()
-    @auth_check('pricecheck')
+    @auth_check('pcadmin')
     async def pcadmin(self, ctx):
         """Creates custom commands for [p]pricecheck."""
 
