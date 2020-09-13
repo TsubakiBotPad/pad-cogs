@@ -39,6 +39,18 @@ class PadGuideDb(commands.Cog):
         global PADGUIDEDB_COG
         PADGUIDEDB_COG = self
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     def get_cursor(self):
         with open(self.settings.configFile(), 'r') as db_config:
             return self.connect(json.load(db_config)).cursor()
@@ -66,9 +78,18 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
-    async def rmadmin(self, ctx, user: discord.Member):
+    async def rmadmin(self, ctx, user):
         """Removes a user from the padguide db admin"""
-        self.settings.rmAdmin(user.id)
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rmAdmin(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rmAdmin(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send("done")
 
     @padguidedb.command()

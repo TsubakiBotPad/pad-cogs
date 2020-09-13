@@ -1,6 +1,6 @@
 import difflib
 import json
-from _collections import OrderedDict
+from collections import OrderedDict
 
 import aiohttp
 import discord
@@ -22,6 +22,18 @@ class SchoolIdol(commands.Cog):
         self.menu = Menu(bot)
         self.regular_emoji = char_to_emoji('r')
         self.idol_emoji = char_to_emoji('i')
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     async def reload_sif(self):
         await self.bot.wait_until_ready()

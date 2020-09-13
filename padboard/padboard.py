@@ -6,8 +6,7 @@ import aiohttp
 import cv2
 import discord
 import numpy as np
-from redbot.core import checks
-from redbot.core import commands
+from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
 
 from padvision import padvision
@@ -16,14 +15,28 @@ from rpadutils import rpadutils
 DATA_DIR = os.path.join('data', 'padboard')
 
 DAWNGLARE_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
-MIRUGLARE_BOARD_TEMPLATE = "https://storage.googleapis.com/mirubot/websites/padsim/index.html?patt={}"
-
 
 class PadBoard(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+
+        self.config = Config.get_conf(self, identifier=94080420)
+        self.config.register_global(tflite_path="")
+
         self.logs = defaultdict(lambda: deque(maxlen=1))
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     @commands.Cog.listener("on_message")
     async def log_message(self, message):
@@ -35,6 +48,12 @@ class PadBoard(commands.Cog):
     @checks.is_owner()
     async def padboard(self, ctx):
         """PAD board utilities."""
+
+    @padboard.command()
+    async def set_tflite_path(self, ctx, *, path):
+        await self.config.tflite_path.set(path)
+        await ctx.send(inline("Done"))
+
 
     def find_image(self, user_id):
         urls = list(self.logs[user_id])
@@ -62,15 +81,16 @@ class PadBoard(commands.Cog):
         if not image_data:
             return
 
-        img_board_nc = self.nc_classify(image_data)
+        img_board_nc = await self.nc_classify(image_data)
+
+        if not img_board_nc:
+            await ctx.send(inline("TFLite path not set."))
+            return
 
         board_text_nc = ''.join([''.join(r) for r in img_board_nc])
         # Convert O (used by padvision code) to X (used by Puzzled for bombs)
         board_text_nc = board_text_nc.replace('o', 'x')
-        img_url = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
-        img_url2 = MIRUGLARE_BOARD_TEMPLATE.format(board_text_nc)
-
-        msg = '{}\n{}'.format(img_url, img_url2)
+        msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
 
         await ctx.send(msg)
 
@@ -96,10 +116,12 @@ class PadBoard(commands.Cog):
 
         return image_data
 
-    def nc_classify(self, image_data):
+    async def nc_classify(self, image_data):
         # TODO: Test this (for TR to do)
-        nparr = np.fromstring(image_data, np.uint8)
+        nparr = np.frombuffer(image_data, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        model_path = '/home/tactical0retreat/git/pad-models/ICN3582626462823189160/model.tflite'
+        model_path = await self.config.tflite_path()
+        if not model_path:
+            return None
         img_extractor = padvision.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()

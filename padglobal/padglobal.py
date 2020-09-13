@@ -41,7 +41,7 @@ PAD Global Commands
 
 BLACKLISTED_CHARACTERS = '^[]*`~_'
 
-PORTRAIT_TEMPLATE = 'https://storage.googleapis.com/mirubot/padimages/{}/portrait/{}.png'
+PORTRAIT_TEMPLATE = 'https://d1kpnpud0qoyxf.cloudfront.net/media/portraits/{0:05d}.png'
 
 DISABLED_MSG = 'PAD Global info disabled on this server'
 
@@ -113,6 +113,18 @@ class PadGlobal(commands.Cog):
         self.settings = PadGlobalSettings("padglobal")
 
         self._export_data()
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     def _export_data(self):
 
@@ -277,12 +289,13 @@ class PadGlobal(commands.Cog):
     @commands.command()
     @is_padglobal_admin()
     async def forceindexreload(self, ctx):
-        await ctx.send('starting reload')
-        dadguide_cog = self.bot.get_cog('Dadguide')
-        await dadguide_cog.reload_config_files()
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        await padinfo_cog.refresh_index()
-        await ctx.send('finished reload')
+        async with ctx.typing():
+            await ctx.send('starting reload')
+            dadguide_cog = self.bot.get_cog('Dadguide')
+            await dadguide_cog.reload_config_files()
+            padinfo_cog = self.bot.get_cog('PadInfo')
+            await padinfo_cog.refresh_index()
+            await ctx.send('finished reload')
 
     @commands.group(aliases = ['pdg'])
     @is_padglobal_admin()
@@ -555,7 +568,7 @@ class PadGlobal(commands.Cog):
             term, definition = self.lookup_glossary(term)
             if definition:
                 definition_output = '**{}** : {}'.format(term, definition)
-                await ctx.send(definition_output)
+                await ctx.send(self.emojify(definition_output))
             else:
                 await ctx.send(inline('No definition found'))
             return
@@ -629,7 +642,7 @@ class PadGlobal(commands.Cog):
             if definition:
                 if term_new != term.lower():
                     await ctx.send('No entry for {} found, corrected to {}'.format(term, term_new))
-                await ctx.send(definition)
+                await ctx.send(self.emojify(definition))
             else:
                 await ctx.send(inline('No mechanics found'))
             return
@@ -720,7 +733,7 @@ class PadGlobal(commands.Cog):
             await ctx.send('`Which {}`\n{}'.format(name, definition))
             return
         await ctx.send(inline('Which {} - Last Updated {}'.format(name, timestamp)))
-        await ctx.send(definition)
+        await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
         term = term.lower().replace('?', '')
@@ -885,9 +898,18 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     @checks.is_owner()
-    async def rmadmin(self, ctx, user: discord.Member):
+    async def rmadmin(self, ctx, user):
         """Removes a user from the pad global admin"""
-        self.settings.rmAdmin(user.id)
+        try:
+            u = await commands.MemberConverter().convert(ctx, user)
+            self.settings.rmAdmin(u.id)
+        except commands.BadArgument as e:
+            try:
+                u = int(user)
+                self.settings.rmAdmin(u)
+            except ValueError:
+                await ctx.send(inline("Invalid user id."))
+                return
         await ctx.send(inline("Done"))
 
     @padglobal.command()
@@ -896,7 +918,7 @@ class PadGlobal(commands.Cog):
         """Set the emoji servers by ID (csv)"""
         self.settings.emojiServers().clear()
         if emoji_servers:
-            self.settings.setEmojiServers(emoji_servers.split(','))
+            self.settings.setEmojiServers(re.findall(r'\d+',emoji_servers))
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
 
     def _get_emojis(self):
@@ -934,7 +956,7 @@ class PadGlobal(commands.Cog):
         server_ids = self.settings.emojiServers()
         all_emojis = self._get_emojis()
 
-        source_url = PORTRAIT_TEMPLATE.format(server, monster_id)
+        source_url = PORTRAIT_TEMPLATE.format(monster_id)
         emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
 
         for e in all_emojis:
@@ -1073,7 +1095,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(inline(err))
             return
 
-        await ctx.send(text)
+        await ctx.send(self.emojify(text))
 
     async def get_guide_text(self, term: str):
         term = term.lower()
@@ -1183,6 +1205,18 @@ class PadGlobal(commands.Cog):
         self.settings.rmLeaderGuide(name)
         await ctx.send("done")
 
+    def emojify(self, message):
+        emojis = list()
+        emoteservers = self.settings.emojiServers()
+        for guild in emoteservers:
+            if self.bot.get_guild(int(guild)):
+                emojis.extend(self.bot.get_guild(int(guild)).emojis)
+        for guild in self.bot.guilds:
+            if guild.id in emoteservers:
+                continue
+            emojis.extend(guild.emojis)
+        message = rpadutils.replace_emoji_names_with_code(emojis, message)
+        return rpadutils.fix_emojis_for_server(emojis, message)
 
 def check_simple_tree(monster):
     attr1 = monster.attr1

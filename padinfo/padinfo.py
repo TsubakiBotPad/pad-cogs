@@ -203,6 +203,18 @@ class PadInfo(commands.Cog):
         self.historic_lookups = {}
         self.historic_lookups_id2 = {}
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
+
     async def reload_nicknames(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadInfo'):
@@ -1080,7 +1092,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 
-    info_row_2 = '**Rarity** {} (**Tree** {}){}\n**Cost** {}'.format(m.rarity, m.base_monster.rarity, os, m.cost)
+    info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(m.rarity, m.base_monster.rarity, os, m.cost)
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
     if m.is_inheritable:

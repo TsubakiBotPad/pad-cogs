@@ -38,6 +38,7 @@ Latent Acronyms:
              evk(evo mat), rek(redeemable), awk(awoken mat), enk(enhance)
     Stats (+ for 2 slot): hp, atk, rcv, all(all stat), hp+, atk+, rcv+
     Resists (+ for 2 slot): rres, bres, gres, lres, dres, rres+, bres+, gres+, lres+, dres+
+    AA4: ls(leader swap), jsf(jammer skyfall), psf(poison skyfall), attr(attribute absorb res), vdp(void damage penatration)
     Others: sdr, ah(autoheal)
 Repeat:
     *# defines number of times to repeat this particular card
@@ -81,56 +82,69 @@ Stats Validation:
 
 MAX_LATENTS = 8
 LATENTS_MAP = {
-    1: 'bak',
-    2: 'phk',
-    3: 'hek',
-    4: 'drk',
-    5: 'gok',
-    6: 'aak',
-    7: 'dek',
-    8: 'mak',
-    9: 'evk',
-    10: 'rek',
-    11: 'awk',
-    12: 'enk',
-    13: 'all',
-    14: 'hp+',
-    15: 'atk+',
-    16: 'rcv+',
-    17: 'rres+',
-    18: 'bres+',
-    19: 'gres+',
-    20: 'lres+',
-    21: 'dres+',
-    22: 'hp',
-    23: 'atk',
-    24: 'rcv',
-    25: 'rres',
-    26: 'bres',
-    27: 'gres',
-    28: 'lres',
-    29: 'dres',
-    30: 'ah',
-    31: 'sdr',
-    32: 'te',
-    33: 'te+'
+    # NOT APPLICABLE
+    1: 'emp',
+
+    # ONE SLOT
+    101: 'hp',
+    102: 'atk',
+    103: 'rcv',
+    104: 'rres',
+    105: 'bres',
+    106: 'gres',
+    107: 'lres',
+    108: 'dres',
+    109: 'ah',
+    110: 'sdr',
+    111: 'te',
+
+    # TWO SLOTS
+    201: 'bak',
+    202: 'phk',
+    203: 'hek',
+    204: 'drk',
+    205: 'gok',
+    206: 'aak',
+    207: 'dek',
+    208: 'mak',
+    209: 'evk',
+    210: 'rek',
+    211: 'awk',
+    212: 'enk',
+    213: 'all',
+    214: 'hp+',
+    215: 'atk+',
+    216: 'rcv+',
+    217: 'rres+',
+    218: 'bres+',
+    219: 'gres+',
+    220: 'lres+',
+    221: 'dres+',
+    222: 'te+',
+
+    # SIX SLOTS
+    601: 'psf',
+    602: 'jsf',
+    603: 'ls',
+    604: 'vdp',
+    605: 'attr',
 }
 REVERSE_LATENTS_MAP = {v: k for k, v in LATENTS_MAP.items()}
 TYPE_TO_KILLERS_MAP = {
-    'God': [7],  # devil
-    'Devil': [5],  # god
-    'Machine': [5, 1],  # god balanced
-    'Dragon': [8, 3],  # machine healer
-    'Physical': [8, 3],  # machine healer
-    'Attacker': [7, 2],  # devil physical
-    'Healer': [4, 6],  # dragon attacker
+    'God': [207],  # devil
+    'Devil': [205],  # god
+    'Machine': [205, 201],  # god balanced
+    'Dragon': [208, 320],  # machine healer
+    'Physical': [208, 203],  # machine healer
+    'Attacker': [207, 202],  # devil physical
+    'Healer': [204, 206],  # dragon attacker
 }
 
 AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
-REMOTE_ASSET_URL = 'https://github.com/chasehult/pdchu-cog/raw/master/assets/'
-REMOTE_AWK_URL = 'https://f002.backblazeb2.com/file/dadguide-data/media/awakenings/{0:03d}.png'
+REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/padbuildimg/assets/'
+REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
 
 class DictWithAttributeAccess(dict):
@@ -157,6 +171,18 @@ class PadBuildImgSettings(CogSettings):
         # if not os.path.exists(build_img_params.OUTPUT_DIR):
         #     os.mkdir(build_img_params.OUTPUT_DIR)
         return build_img_params
+
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        data = "No data is stored for user with ID {}.\n".format(user_id)
+        return {"user_data.txt": BytesIO(data.encode())}
+
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data.
+
+        No personal data is stored in this cog.
+        """
+        return
 
     def buildImgParams(self):
         if 'build_img_params' not in self.bot_settings:
@@ -356,7 +382,7 @@ def validate_latents(latents, card_types):
     if 'Balance' in card_types:
         return latents
     for idx, l in enumerate(latents):
-        if 0 < l < 9:
+        if 200 < l < 209:
             if not any([l in TYPE_TO_KILLERS_MAP[t] for t in card_types if t is not None]):
                 latents[idx] = None
     latents = [l for l in latents if l is not None]
@@ -429,7 +455,8 @@ class PadBuildImageGenerator(object):
                 'LATENT': None,
                 'LV': 99,
                 'SLV': 0,
-                'ON_COLOR': True
+                'ON_COLOR': True,
+                'EXTRA_SLOTS': False
             }
         else:
             result_card = {
@@ -445,7 +472,8 @@ class PadBuildImageGenerator(object):
                 'LV': 1,
                 'SLV': 0,
                 'MAX_SLV': 0,
-                'ON_COLOR': False
+                'ON_COLOR': False,
+                'EXTRA_SLOTS': False
             }
         if len(card_str) == 0:
             if is_assist:
@@ -542,17 +570,22 @@ class PadBuildImageGenerator(object):
         x_offset = 0
         y_offset = 0
         row_count = 0
-        one_slot, two_slot = [], []
+        one_slot, two_slot, six_slot = [], [], []
         for l in latents:
-            if l < 22:
-                two_slot.append(l)
-            else:
+            if 100 <= l < 200:
                 one_slot.append(l)
+            elif 200 <= l < 300:
+                two_slot.append(l)
+            elif 600 <= l < 700:
+                six_slot.append(l)
+                six_slot.append(1)
         sorted_latents = []
         if len(one_slot) > len(two_slot):
+            sorted_latents.extend(six_slot)
             sorted_latents.extend(one_slot)
             sorted_latents.extend(two_slot)
         else:
+            sorted_latents.extend(six_slot)
             sorted_latents.extend(two_slot)
             sorted_latents.extend(one_slot)
         last_height = 0
@@ -728,17 +761,18 @@ class PadBuildImage(commands.Cog):
         # print('BUILD_STR: {}'.format(build_str))
 
         # start = time.perf_counter()
-        params = self.settings.buildImgParams()
-        try:
-            pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'))
-            # print('PARSE: {}'.format(time.perf_counter() - start))
-            await pbg.process_build(build_str)
-            # start = time.perf_counter()
-            pbg.generate_build_image()
-            # print('DRAW: {}'.format(time.perf_counter() - start))
-        except commands.UserFeedbackCheckFailure as ex:
-            await ctx.send(box(str(ex) + '\nSee ^helpbuildimg for syntax'))
-            return -1
+        async with ctx.typing():
+            params = self.settings.buildImgParams()
+            try:
+                pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'))
+                # print('PARSE: {}'.format(time.perf_counter() - start))
+                await pbg.process_build(build_str)
+                # start = time.perf_counter()
+                pbg.generate_build_image()
+                # print('DRAW: {}'.format(time.perf_counter() - start))
+            except commands.UserFeedbackCheckFailure as ex:
+                await ctx.send(box(str(ex) + '\nSee ^helpbuildimg for syntax'))
+                return -1
 
         # start = time.perf_counter()
         if pbg.build_img is not None:
