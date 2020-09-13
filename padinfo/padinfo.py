@@ -4,6 +4,7 @@ import logging
 import os
 import traceback
 import urllib.parse
+import re
 from collections import OrderedDict
 from enum import Enum
 
@@ -500,24 +501,85 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
 
+    async def _parse_ls_query(self, query : str) -> (str, str): 
+        '''Helper function for leaderskill. Takes in a query 
+        and returns the left or right'''
+        if not query: 
+            raise Exception('Query seems to be empty.')
+
+        # i assume neither '"' nor '/' will be used as part of card search
+        # this handles splitting with quotewrapping and /
+        # also comma splitting if there are quotes
+        if '"' or '/' or ',' in query: 
+            p = r'(?:(?:([^"/,]*))|(?:"([^"/]*)"))\s*(?:/|,)?\s*(?:(?:(?:([^"/,]*))|(?:"([^"/]*)")))?'
+            m = re.fullmatch(p, query)
+            if m: 
+                match = [ma.strip() for ma in m.groups() if (ma and ma.strip() != '')]
+
+                if len(match) in (1,2): 
+                    return (match[0], match[len(match)-1])
+                
+                #otherwise match is totally empty, ie ^ls "" ""
+                raise Exception('Queries seem to be empty.')
+
+            # incorrectly fails to match if there is are commas with slash as primary separator 
+            if '/' in query and ',' in query: #repeat regex search 
+                pp = r'(?:(?:([^"/]*))|(?:"([^"/]*)"))\s*/\s*(?:(?:(?:([^"/]*))|(?:"([^"/]*)")))?'
+                mm = re.fullmatch(pp, query)
+                if mm: 
+                    mmatch = [ma.strip() for ma in mm.groups() if (ma and ma.strip() != '')]
+                    if len(mmatch) in (1,2): 
+                        return (mmatch[0], mmatch[len(mmatch)-1])
+                    #otherwise match is totally empty, ie ^ls "" ""
+                    raise Exception('Queries seem to be empty.')
+
+            raise Exception('Query format is invalid. Only use 1 separator (slash or comma) \
+or surround arguments in quotes.')
+
+        # need separate handling for slashes and commas since slashes take priority
+        #n = query.count(',')
+        #if n >= 2: 
+        #    raise Exception('Too many commas.')
+
+        #if n == 1: 
+        #    words = [word.strip() for word in query.split(',')]
+        #    return (words[0], words[1])
+
+        ##No commas. Only words. 
+        #if ' ' not in query: #if literally just 1 word
+        #    return (query, query)
+
+        #space exists, this is multiple words
+        #first check if leading words are prefixes 
+        words = query.split()
+        nm, err, debug_info = await self._findMonster(query)
+        if nm and all(word in nm.prefixes for word in words[:-1]): 
+            return (query, query)
+
+        #leading words are not prefixes, spaces exist. 
+        if len(words) >= 3: 
+            raise Exception('Too many inputs given. Limit to 1 or 2, or use quote wrappers or a separator (/ or ,) \
+to separate.') 
+        
+        #it's 2 words, no prefix
+        return (words[0], words[1])
+
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
-    async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
+    async def leaderskill(self, ctx, *, query : str):
         """Display the multiplier and leaderskills for two monsters
+
+        Can take in 2 queries with either one wrapped in quotes or 
+        the two separated by comma or slash (in which case occurences can only be 1 of). 
 
         If either your left or right query contains spaces, wrap in quotes.
         e.g.: [p]leaderskill "r sonia" "b sonia"
         """
-        if bad:
-            await ctx.send(inline('Too many inputs. Try wrapping your queries in quotes.'))
+        try: 
+            left_query, right_query = await self._parse_ls_query(query.strip())
+        except Exception as e: 
+            await ctx.send(e)
             return
 
-        # Handle a very specific failure case, user typing something like "uuvo ragdra"
-        if ' ' not in left_query and right_query is not None and ' ' not in right_query and bad is None:
-            combined_query = left_query + ' ' + right_query
-            nm, err, debug_info = await self._findMonster(combined_query)
-            if nm and left_query in nm.prefixes:
-                left_query = combined_query
-                right_query = None
 
         left_m, left_err, _ = await self.findMonster(left_query)
         if right_query:
@@ -525,7 +587,7 @@ class PadInfo(commands.Cog):
         else:
             right_m, right_err, = left_m, left_err
 
-        err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, wrap it in quotes.'
+        err_msg = '{} query failed to match a monster: [ {} ].'
         if left_err:
             await ctx.send(inline(err_msg.format('Left', left_query)))
             return

@@ -136,3 +136,4 @@ bot_data/
 
 # 3way Merge
 .orig
+padinfo/toy.py
