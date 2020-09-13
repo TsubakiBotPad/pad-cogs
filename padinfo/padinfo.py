@@ -548,19 +548,6 @@ class PadInfo(commands.Cog):
             raise Exception('Query format is invalid. Only use 1 separator (slash or comma) \
 or surround arguments in quotes.')
 
-        # need separate handling for slashes and commas since slashes take priority
-        #n = query.count(',')
-        #if n >= 2: 
-        #    raise Exception('Too many commas.')
-
-        #if n == 1: 
-        #    words = [word.strip() for word in query.split(',')]
-        #    return (words[0], words[1])
-
-        ##No commas. Only words. 
-        #if ' ' not in query: #if literally just 1 word
-        #    return (query, query)
-
         #space exists, this is multiple words
         #first check if leading words are prefixes 
         words = query.split()
