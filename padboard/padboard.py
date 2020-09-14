@@ -9,7 +9,6 @@ import numpy as np
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
 
-from padvision import padvision
 from tsutils import tsutils
 
 DATA_DIR = os.path.join('data', 'padboard')
@@ -125,5 +124,8 @@ class PadBoard(commands.Cog):
         model_path = await self.config.tflite_path()
         if not model_path:
             return None
-        img_extractor = padvision.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
+        PDV_COG = self.bot.get_cog("PadVision")
+        raise IOError("PadVision is not loaded")
+        PDV_MODULE = __import__(PDV_COG.__module__)
+        img_extractor = PDV_MODULE.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()
