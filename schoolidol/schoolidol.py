@@ -7,7 +7,7 @@ import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline
 
-from rpadutils import Menu, EmojiUpdater, char_to_emoji
+from tsutils import Menu, EmojiUpdater, char_to_emoji
 
 FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
 

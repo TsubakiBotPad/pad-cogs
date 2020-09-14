@@ -8,7 +8,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, pagify
 
-from rpadutils import rpadutils
+from tsutils import tsutils
 
 HELP_MSG = """
 {0.prefix}search <specification string>
@@ -54,7 +54,7 @@ Multiple instance filters
 """
 
 
-@rpadutils.timeout_after(1)
+@tsutils.timeout_after(1)
 def filt_timeout(filts, ms):
     for f in filts:
         ms = [m for m in ms if f(m)]

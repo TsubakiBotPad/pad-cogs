@@ -23,13 +23,12 @@ from enum import Enum
 import pytz
 import romkan
 import discord
+import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 from redbot.core.utils import AsyncIter
-
-import rpadutils
 
 logger = logging.getLogger('red.tsubaki.dadguide')
 
@@ -195,7 +194,7 @@ class Dadguide(commands.Cog):
     def write_monster_computed_names(self):
         results = {}
         for name, nm in self.index.all_entries.items():
-            results[name] = int(rpadutils.get_pdx_id_dadguide(nm))
+            results[name] = int(tsutils.get_pdx_id_dadguide(nm))
 
         with open(NAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
             json.dump(results, f)
@@ -205,7 +204,7 @@ class Dadguide(commands.Cog):
             entry = {'bn': list(nm.group_basenames)}
             if nm.extra_nicknames:
                 entry['nn'] = list(nm.extra_nicknames)
-            results[int(rpadutils.get_pdx_id_dadguide(nm))] = entry
+            results[int(tsutils.get_pdx_id_dadguide(nm))] = entry
 
         with open(BASENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
             json.dump(results, f)
@@ -231,15 +230,15 @@ class Dadguide(commands.Cog):
 
     async def _download_files(self):
         one_hour_secs = 1 * 60 * 60
-        await rpadutils.async_cached_dadguide_request(DB_DUMP_FILE, DB_DUMP_URL, one_hour_secs)
+        await tsutils.async_cached_dadguide_request(DB_DUMP_FILE, DB_DUMP_URL, one_hour_secs)
 
     async def _download_override_files(self):
         one_hour_secs = 1 * 60 * 60
-        await rpadutils.makeAsyncCachedPlainRequest(
+        await tsutils.makeAsyncCachedPlainRequest(
             NICKNAME_FILE_PATTERN, NICKNAME_OVERRIDES_SHEET, one_hour_secs)
-        await rpadutils.makeAsyncCachedPlainRequest(
+        await tsutils.makeAsyncCachedPlainRequest(
             BASENAME_FILE_PATTERN, GROUP_BASENAMES_OVERRIDES_SHEET, one_hour_secs)
-        await rpadutils.makeAsyncCachedPlainRequest(
+        await tsutils.makeAsyncCachedPlainRequest(
             PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
     @commands.group()
@@ -257,7 +256,7 @@ class Dadguide(commands.Cog):
 
 
 
-class DadguideSettings(rpadutils.CogSettings):
+class DadguideSettings(tsutils.CogSettings):
     def make_default_settings(self):
         config = {
             'data_file': '',
@@ -853,7 +852,7 @@ class DgMonster(DadguideItem):
             self.roma_subname = make_roma_subname(self.name_jp)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
-            self.name_na = rpadutils.rmdiacritics(self.name_na)
+            self.name_na = tsutils.rmdiacritics(self.name_na)
 
         self.name_na = self.name_na_override or self.name_na
 
@@ -1184,13 +1183,13 @@ def make_roma_subname(name_jp):
     adjusted_subname = ''
     for part in subname.split('・'):
         roma_part = romkan.to_roma(part)
-        if part != roma_part and not rpadutils.containsJp(roma_part):
+        if part != roma_part and not tsutils.containsJp(roma_part):
             adjusted_subname += ' ' + roma_part.strip('-')
     return adjusted_subname.strip()
 
 
 
-class MonsterIndex(rpadutils.aobject):
+class MonsterIndex(tsutils.aobject):
     async def __init__(self, monster_database, nickname_overrides, basename_overrides,
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
@@ -1380,7 +1379,7 @@ class MonsterIndex(rpadutils.aobject):
         return prefixes
 
     def find_monster(self, query):
-        query = rpadutils.rmdiacritics(query).lower().strip()
+        query = tsutils.rmdiacritics(query).lower().strip()
 
         # id search
         if query.isdigit():
@@ -1397,7 +1396,7 @@ class MonsterIndex(rpadutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_jp = rpadutils.containsJp(query)
+        contains_jp = tsutils.containsJp(query)
         if len(query) < 2 and contains_jp:
             return None, 'Japanese queries must be at least 2 characters', None
         elif len(query) < 4 and not contains_jp:
@@ -1484,7 +1483,7 @@ class MonsterIndex(rpadutils.aobject):
         Follows a similar logic to the regular id but after each check, will remove any potential match that doesn't
         contain every single specified prefix.
         """
-        query = rpadutils.rmdiacritics(query).lower().strip()
+        query = tsutils.rmdiacritics(query).lower().strip()
         # id search
         if query.isdigit():
             m = self.monster_no_na_to_named_monster.get(int(query))
@@ -1497,7 +1496,7 @@ class MonsterIndex(rpadutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_jp = rpadutils.containsJp(query)
+        contains_jp = tsutils.containsJp(query)
         if len(query) < 2 and contains_jp:
             return None, 'Japanese queries must be at least 2 characters', None
         elif len(query) < 4 and not contains_jp:

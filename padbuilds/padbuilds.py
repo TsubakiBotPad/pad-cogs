@@ -1,11 +1,10 @@
 import re
 
 import discord
+from tsutils import CogSettings
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify, box
-
-from rpadutils import CogSettings
 
 
 class PadBuilds(commands.Cog):

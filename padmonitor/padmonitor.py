@@ -3,7 +3,7 @@ import asyncio
 from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-import rpadutils
+import tsutils
 
 
 class PadMonitor(commands.Cog):
@@ -60,7 +60,7 @@ class PadMonitor(commands.Cog):
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
                     msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_na)
-                    if rpadutils.containsJp(
+                    if tsutils.containsJp(
                             m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
                         msg += ' ({})'.format(m.name_na_override)
                 return msg
@@ -107,7 +107,7 @@ class PadMonitor(commands.Cog):
         await ctx.send(inline('done'))
 
 
-class PadMonitorSettings(rpadutils.CogSettings):
+class PadMonitorSettings(tsutils.CogSettings):
     def make_default_settings(self):
         config = {
             'jp_seen_ids': [],
