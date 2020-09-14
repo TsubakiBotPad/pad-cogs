@@ -1071,7 +1071,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     if not len(awakenings_row):
         awakenings_row = 'No Awakenings'
 
-    killers_row = '**Available Killers:** {}'.format(' '.join(m.killers))
+    killers_row = '**Available Killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
 
     embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
