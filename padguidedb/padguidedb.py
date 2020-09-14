@@ -10,7 +10,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from rpadutils import CogSettings, rpadutils
+from tsutils import CogSettings, tsutils
 
 PADGUIDEDB_COG = None
 
@@ -186,10 +186,10 @@ class PadGuideDb(commands.Cog):
 
             if stderr:
                 print("Dungeon Load Error:\n" + stderr.decode())
-                await rpadutils.doubleup(ctx, inline(
+                await tsutils.doubleup(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
-                await rpadutils.doubleup(ctx, inline(
+                await tsutils.doubleup(ctx, inline(
                     'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
 

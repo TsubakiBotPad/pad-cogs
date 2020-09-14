@@ -7,12 +7,11 @@ import urllib.parse
 from collections import OrderedDict
 
 import discord
+import tsutils
+from tsutils import Menu, EmojiUpdater
 from redbot.core import commands, data_manager
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
-
-import rpadutils
-from rpadutils import Menu, EmojiUpdater
 
 
 def _data_file(file_name: str) -> str:
@@ -78,7 +77,7 @@ class ChronoMagia(commands.Cog):
         await self.bot.wait_until_ready()
 
         standard_expiry_secs = 2 * 60 * 60
-        summary_text = await rpadutils.makeAsyncCachedPlainRequest(
+        summary_text = await tsutils.makeAsyncCachedPlainRequest(
             _data_file('summary.csv'), SUMMARY_SHEET, standard_expiry_secs)
         file_reader = csv.reader(summary_text.splitlines(), delimiter=',')
         next(file_reader, None)  # skip header

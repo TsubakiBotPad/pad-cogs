@@ -13,11 +13,8 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from PIL import ImageChops
-
-from redbot.core import commands
-
-from rpadutils.rpadutils import CogSettings
-from redbot.core import checks
+from tsutils import CogSettings
+from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
 
 HELP_MSG = """
