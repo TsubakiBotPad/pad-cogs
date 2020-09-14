@@ -251,7 +251,7 @@ class Dadguide(commands.Cog):
     async def setdatafile(self, ctx, *, data_file):
         """Set a local path to dadguide data instead of downloading it."""
         self.settings.set_data_file(data_file)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
 
 

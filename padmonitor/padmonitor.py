@@ -96,7 +96,7 @@ class PadMonitor(commands.Cog):
     async def addnewchannel(self, ctx):
         """Sets announcements for the current channel."""
         self.settings.add_new_monster_channel(ctx.channel.id)
-        await ctx.send(inline('done'))
+        await ctx.tick()
 
     @padmonitor.command()
     @commands.guild_only()
@@ -104,7 +104,7 @@ class PadMonitor(commands.Cog):
     async def rmnewchannel(self, ctx):
         """Removes announcements for the current channel."""
         self.settings.rm_new_monster_channel(ctx.channel.id)
-        await ctx.send(inline('done'))
+        await ctx.tick()
 
 
 class PadMonitorSettings(tsutils.CogSettings):

@@ -819,7 +819,7 @@ class PadBuildImage(commands.Cog):
         await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
         awk_ids = self.bot.get_cog('Dadguide').database.get_awoken_skill_ids()
         await self.settings.downloadAllAssets(awk_ids)
-        await ctx.send('Done')
+        await ctx.tick()
 
     @commands.command()
     @commands.guild_only()

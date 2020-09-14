@@ -53,7 +53,7 @@ class PadBoard(commands.Cog):
     @padboard.command()
     async def set_tflite_path(self, ctx, *, path):
         await self.config.tflite_path.set(path)
-        await ctx.send(inline("Done"))
+        await ctx.tick()
 
 
     def find_image(self, user_id):

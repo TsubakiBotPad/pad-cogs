@@ -631,7 +631,7 @@ class PadGlobal(commands.Cog):
         if not await confirm_message(ctx, "Are you sure you want to globally remove the glossary data for {}?".format(term)):
             return
         self.settings.rmGlossary(term)
-        await ctx.send("done")
+        await ctx.tick()
 
     @commands.command()
     @commands.check(check_enabled)
@@ -712,7 +712,7 @@ class PadGlobal(commands.Cog):
             return
 
         self.settings.rmBoss(term)
-        await ctx.send("done")
+        await ctx.tick()
 
     @commands.command()
     @commands.check(check_enabled)
@@ -845,7 +845,7 @@ class PadGlobal(commands.Cog):
             return
 
         self.settings.rmWhich(name)
-        await ctx.send("done")
+        await ctx.tick()
 
     @padglobal.command()
     async def getwhich(self, ctx):
@@ -894,7 +894,7 @@ class PadGlobal(commands.Cog):
     async def addadmin(self, ctx, user: discord.Member):
         """Adds a user to the pad global admin"""
         self.settings.addAdmin(user.id)
-        await ctx.send(inline("Done!"))
+        await ctx.tick()
 
     @padglobal.command()
     @checks.is_owner()
@@ -910,7 +910,7 @@ class PadGlobal(commands.Cog):
             except ValueError:
                 await ctx.send(inline("Invalid user id."))
                 return
-        await ctx.send(inline("Done"))
+        await ctx.tick()
 
     @padglobal.command()
     @checks.is_owner()
@@ -1172,7 +1172,7 @@ class PadGlobal(commands.Cog):
         if not await confirm_message(ctx, "Are you sure you want to globally remove the dungeonguide data for {}?".format(term)):
             return
         self.settings.rmDungeonGuide(term)
-        await ctx.send("done")
+        await ctx.tick()
 
     @padglobal.command()
     async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
@@ -1203,7 +1203,7 @@ class PadGlobal(commands.Cog):
             return
 
         self.settings.rmLeaderGuide(name)
-        await ctx.send("done")
+        await ctx.tick()
 
     def emojify(self, message):
         emojis = list()
