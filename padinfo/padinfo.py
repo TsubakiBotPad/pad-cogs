@@ -598,12 +598,12 @@ class PadInfo(commands.Cog):
         """Switch between number mode and evo mode"""
         if id_type in ['evo']:
             if self.settings.setEvoID(ctx.author.id):
-                await ctx.send(inline("Done"))
+                await ctx.tick()
             else:
                 await ctx.send(inline("You're already using evo mode"))
         elif id_type in ['number', 'default']:
             if self.settings.rmEvoID(ctx.author.id):
-                await ctx.send(inline("Done"))
+                await ctx.tick()
             else:
                 await ctx.send(inline("You're already using number mode"))
         else:
@@ -628,7 +628,7 @@ class PadInfo(commands.Cog):
     async def setvoicepath(self, ctx, *, path=''):
         """Set path to the voice direcory"""
         self.settings.setVoiceDir(path)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @checks.is_owner()
     @padinfo.command()
