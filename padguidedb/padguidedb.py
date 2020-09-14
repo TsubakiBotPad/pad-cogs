@@ -74,7 +74,7 @@ class PadGuideDb(commands.Cog):
     async def addadmin(self, ctx, user: discord.Member):
         """Adds a user to the padguide db admin"""
         self.settings.addAdmin(user.id)
-        await ctx.send("done")
+        await ctx.tick()
 
     @padguidedb.command()
     @checks.is_owner()
@@ -90,14 +90,14 @@ class PadGuideDb(commands.Cog):
             except ValueError:
                 await ctx.send(inline("Invalid user id."))
                 return
-        await ctx.send("done")
+        await ctx.tick()
 
     @padguidedb.command()
     @checks.is_owner()
     async def setconfigfile(self, ctx, *, config_file):
         """Set the database config file."""
         self.settings.setConfigFile(config_file)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -120,28 +120,28 @@ class PadGuideDb(commands.Cog):
     async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
         """Set the dungeon script file."""
         self.settings.setDungeonScriptFile(dungeon_script_file)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @padguidedb.command()
     @checks.is_owner()
     async def setfulletlfile(self, ctx, *, full_etl_file):
         """Set the full ETL file."""
         self.settings.setFullETLFile(full_etl_file)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @padguidedb.command()
     @checks.is_owner()
     async def setimageupdatefile(self, ctx, *, image_update_file):
         """Set the image update file."""
         self.settings.setImageUpdateFile(image_update_file)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @padguidedb.command()
     @checks.is_owner()
     async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
         """Set the dungeon script."""
         self.settings.setUserInfo(server, user_uuid, user_intid)
-        await ctx.send(inline('Done'))
+        await ctx.tick()
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -248,7 +248,7 @@ class PadGuideDb(commands.Cog):
         with self.get_cursor() as cursor:
             sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
             cursor.execute(sql)
-        await ctx.send(inline("Done"))
+        await ctx.tick()
 
     # @padguidedb.command()
     @is_padguidedb_admin()
