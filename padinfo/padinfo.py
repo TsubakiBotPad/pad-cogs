@@ -44,7 +44,7 @@ EMBED_NOT_GENERATED = -1
 INFO_PDX_TEMPLATE = 'http://www.puzzledragonx.com/en/monster.asp?n={}'
 
 MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
-RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png'
+RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
 RPAD_PORTRAIT_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'
 VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'
 GIF_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.gif'
