@@ -130,8 +130,7 @@ class NeuralClassifierBoardExtractor(object):
         try:
             self._process()
         except Exception as ex:
-            print("orb extractor failed " + str(ex))
-            traceback.print_exc()
+            logger.error("orb extractor failed ", exc_info=1)
 
     def _process(self):
         import numpy as np
