@@ -1,12 +1,13 @@
 import re
+import logging
 
 import discord
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from tsutils import CogSettings
 
+logger = logging.getLogger('red.padbot-cogs.profile')
 
 def normalizeServer(server):
     server = server.upper().strip()
@@ -39,7 +40,7 @@ def computeOldGroup(str_id):
 
 
 class Profile(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ProfileSettings("profile")
@@ -69,7 +70,7 @@ class Profile(commands.Cog):
 
     @commands.command(name="idme")
     async def idMe(self, ctx, server=None):
-        """Prints out your profile to the current channel
+        """Displays your profile to the current channel
 
         If you do not provide a server, your default is used
         """
@@ -97,7 +98,7 @@ class Profile(commands.Cog):
 
     @commands.command(name="idfor")
     async def idFor(self, ctx, user: discord.Member, server=None):
-        """Prints out the profile of the specified user
+        """Displays the profile of the specified user
 
         If you do not provide a server, your default is used.
         """
@@ -265,8 +266,7 @@ class Profile(commands.Cog):
             try:
                 await ctx.author.send(box(page))
             except Exception as e:
-                print("page output failed " + str(e))
-                print("tried to print: " + page)
+                logger.exception("page output failed " + str(e))
 
 
 class ProfileSettings(CogSettings):

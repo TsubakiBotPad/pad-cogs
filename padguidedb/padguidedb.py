@@ -2,22 +2,22 @@ import asyncio
 import csv
 import io
 import json
+import logging
 
 import discord
 import pymysql
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from tsutils import CogSettings, tsutils
 
-PADGUIDEDB_COG = None
+logger = logging.getLogger('red.padbot-cogs.padguidedb')
 
 
 def is_padguidedb_admin_check(ctx):
-    is_owner = ctx.author.id in PADGUIDEDB_COG.bot.owner_ids
-    return is_owner or PADGUIDEDB_COG.settings.checkAdmin(ctx.author.id)
+    is_owner = ctx.author.id in ctx.bot.owner_ids
+    return is_owner or ctx.bot.get_cog("PadGuideDb").settings.checkAdmin(ctx.author.id)
 
 
 def is_padguidedb_admin():
@@ -27,7 +27,7 @@ def is_padguidedb_admin():
 class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
 
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = PadGuideDbSettings("padguidedb")
@@ -36,8 +36,6 @@ class PadGuideDb(commands.Cog):
         self.full_etl_lock = asyncio.Lock()
         self.extract_images_lock = asyncio.Lock()
         self.dungeon_load_lock = asyncio.Lock()
-        global PADGUIDEDB_COG
-        PADGUIDEDB_COG = self
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -185,7 +183,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Dungeon Load Error:\n" + stderr.decode())
+                logger.error("Dungeon Load Error:\n" + stderr.decode())
                 await tsutils.doubleup(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
@@ -232,11 +230,9 @@ class PadGuideDb(commands.Cog):
 
             msg = 'floor_id,count\n'
             for row in results1:
-                print(row)
                 msg += ','.join(map(str,row.values()))+"\n"
             msg += '\n\nfloor_id,monster_id,count\n'
             for row in results2:
-                print(row)
                 msg += ','.join(map(str,row.values()))+"\n"
 
             for page in pagify(msg):
@@ -293,7 +289,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Full ETL Error:\n" + stderr.decode())
+                logger.error("Full ETL Error:\n" + stderr.decode())
                 await ctx.send(inline('Full ETL failed'))
                 return
         await ctx.send(inline('Full ETL finished'))
@@ -318,7 +314,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                print("Image Extract Error:\n" + stderr.decode())
+                logger.error("Image Extract Error:\n" + stderr.decode())
                 await ctx.send(inline('Image extract failed'))
                 return
         await ctx.send(inline('Image extract finished'))

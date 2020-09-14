@@ -3,6 +3,7 @@ import asyncio
 import re
 import datetime
 import pytz
+import logging
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
@@ -12,16 +13,15 @@ import discord
 from tsutils import CogSettings
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from dadguide import dadguide
+logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
 
 
 class PadEvents(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -55,10 +55,9 @@ class PadEvents(commands.Cog):
         while self == self.bot.get_cog('PadEvents'):
             try:
                 await self.refresh_data()
-                print('Done refreshing PadEvents')
+                logger.info('Done refreshing PadEvents')
             except Exception as ex:
-                print("reload padevents loop caught exception " + str(ex))
-                traceback.print_exc()
+                logger.exception("reload padevents loop caught exception " + str(ex))
 
             await asyncio.sleep(60 * 60 * 1)
 
@@ -72,7 +71,7 @@ class PadEvents(commands.Cog):
             try:
                 new_events.append(Event(se))
             except Exception as ex:
-                print(ex)
+                logger.exception("Refresh error:")
 
         self.events = new_events
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
@@ -106,10 +105,8 @@ class PadEvents(commands.Cog):
 
                                     await channel.send(message)
                                 except Exception as ex:
-                                    # deregister gr
-                                    traceback.print_exc()
                                     # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
-                                    print("caught exception while sending guerrilla msg:\n" + str(ex))
+                                    logger.exception("caught exception while sending guerrilla msg:")
 
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
@@ -122,19 +119,17 @@ class PadEvents(commands.Cog):
                             if server == daily_registration['server']:
                                 await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
                                                       msg, channel_id=daily_registration['channel_id'])
-                                print("daily_reg server")
+                                logger.info("daily_reg server")
                         except Exception as ex:
-                            traceback.print_exc()
                             # self.settings.removeDailyReg(
                             #   daily_registration['channel_id'], daily_registration['server'])
-                            print("caught exception while sending daily msg:\n" + str(ex))
+                            logger.exception("caught exception while sending daily msg:")
 
             except Exception as ex:
-                traceback.print_exc()
-                print("caught exception while checking guerrillas:\n" + str(ex))
+                logger.exception("caught exception while checking guerrillas:")
 
             await asyncio.sleep(10)
-        print("done check_started")
+        logger.info("done check_started")
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -151,7 +146,9 @@ class PadEvents(commands.Cog):
 
         dg_cog = self.bot.get_cog('Dadguide')
         await dg_cog.wait_until_ready()
-        te = dadguide.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
+        dg_module = __import__(dg_cog.__module__)
+
+        te = dg_module.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
 
         te.server = server
         te.event_type_id = EventType.Guerrilla.value
@@ -324,8 +321,7 @@ class PadEvents(commands.Cog):
                 else:
                     await self.bot.get_channel(int(channel_id)).send(format_type(page))
             except Exception as e:
-                print("page output failed " + str(e))
-                print("tried to print: " + page)
+                logger.exception("page output failed " + str(e), "tried to output: " + page)
 
     def makeActiveOutput(self, table_name, event_list):
         tbl = prettytable.PrettyTable(["Time", table_name])
@@ -392,17 +388,17 @@ class PadEvents(commands.Cog):
 
     @commands.command(aliases=['events'])
     async def eventsna(self, ctx):
-        """Print upcoming daily events for NA."""
+        """Display upcoming daily events for NA."""
         await self.doPartial(ctx, 'NA')
 
     @commands.command()
     async def eventsjp(self, ctx):
-        """Print upcoming daily events for JP."""
+        """Display upcoming daily events for JP."""
         await self.doPartial(ctx, 'JP')
 
     @commands.command()
     async def eventskr(self, ctx):
-        """Print upcoming daily events for KR."""
+        """Display upcoming daily events for KR."""
         await self.doPartial(ctx, 'KR')
 
     async def doPartial(self, ctx, server):
@@ -494,7 +490,7 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: dadguide.DgScheduledEvent):
+    def __init__(self, scheduled_event: "DgScheduledEvent"):
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime

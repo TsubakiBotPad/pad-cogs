@@ -6,6 +6,7 @@ import io
 import json
 import os
 import re
+import logging
 from collections import defaultdict
 
 import aiohttp
@@ -16,9 +17,9 @@ from tsutils import CogSettings, safe_read_json, replace_emoji_names_with_code,\
                       clean_global_mentions, confirm_message
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
+logger = logging.getLogger('red.padbot-cogs.padglobal')
 
 global PADGLOBAL_COG
 
@@ -91,7 +92,7 @@ def monster_id_to_named_monster(monster_id):
 
 
 async def check_enabled(ctx):
-    """If the server is disabled, print a warning and return False"""
+    """If the server is disabled, raise a warning and return False"""
     if PADGLOBAL_COG.settings.checkDisabled(ctx.message):
         msg = await ctx.send(inline(DISABLED_MSG))
         await asyncio.sleep(3)
@@ -103,7 +104,7 @@ async def check_enabled(ctx):
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
 
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
@@ -168,7 +169,7 @@ class PadGlobal(commands.Cog):
         msg = '------------------------\n'
         msg += '{} shut down the bot because: {}\n'.format(ctx.author.name, reason)
         msg += '------------------------\n'
-        print(msg)
+        logger.critical(msg)
 
         try:
             app_info = await self.bot.application_info()
@@ -176,7 +177,7 @@ class PadGlobal(commands.Cog):
             await owner.send(msg)
             await ctx.send("Owner has been notified, shutting down...")
         except Exception as ex:
-            print('Failed to notifiy for breakglass: ' + str(ex))
+            logger.exception('Failed to notifiy for breakglass: ' + str(ex))
 
         await self.bot.shutdown()
 
@@ -442,24 +443,23 @@ class PadGlobal(commands.Cog):
         """Shows PAD global command list"""
         configured = self.settings.faq() + self.settings.boards()
         cmdlist = {k: v for k, v in self.c_commands.items() if k not in configured}
-        await self.print_cmdlist(ctx, cmdlist)
+        await self.send_cmdlist(ctx, cmdlist)
 
     @commands.command()
     @commands.check(check_enabled)
     async def padfaq(self, ctx):
         """Shows PAD FAQ command list"""
         cmdlist = {k: v for k, v in self.c_commands.items() if k in self.settings.faq()}
-        await self.print_cmdlist(ctx, cmdlist)
+        await self.send_cmdlist(ctx, cmdlist)
 
     @commands.command()
     @commands.check(check_enabled)
     async def boards(self, ctx):
         """Shows PAD Boards command list"""
         cmdlist = {k: v for k, v in self.c_commands.items() if k in self.settings.boards()}
-        await self.print_cmdlist(ctx, cmdlist)
+        await self.send_cmdlist(ctx, cmdlist)
 
-    async def print_cmdlist(self, ctx, cmdlist, inline=False):
-        #TODO: Write a docstring once I figure out what this does
+    async def send_cmdlist(self, ctx, cmdlist, inline=False):
         if not cmdlist:
             await ctx.send("There are no padglobal commands yet")
             return
