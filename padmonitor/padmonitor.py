@@ -1,10 +1,12 @@
 import asyncio
+import logging
 
 from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 import tsutils
 
+logger = logging.getLogger('red.padbot-cogs.padmonitor')
 
 class PadMonitor(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -30,7 +32,7 @@ class PadMonitor(commands.Cog):
             try:
                 await self.check_seen()
             except Exception as ex:
-                print("check seen loop caught exception " + str(ex))
+                logger.exception("check seen loop caught exception " + str(ex))
 
             await asyncio.sleep(60 * 5)
 
@@ -44,7 +46,7 @@ class PadMonitor(commands.Cog):
 
         def process(existing, new_map, name):
             if not existing:
-                print('preloading', len(new_map))
+                logger.info('preloading', len(new_map))
                 existing.extend(new_map.keys())
                 self.settings.save_settings()
                 return None
@@ -82,7 +84,7 @@ class PadMonitor(commands.Cog):
             for page in pagify(message):
                 await channel.send(box(page))
         except Exception as ex:
-            print('failed to send message to', channel_id, ' : ', ex)
+            logger.exception('failed to send message to', channel_id, ' : ', ex)
 
     @commands.group()
     @checks.mod_or_permissions(manage_guild=True)

@@ -1,13 +1,16 @@
 import difflib
 import json
+import logging
 from collections import OrderedDict
 
 import aiohttp
 import discord
-from redbot.core import commands
+from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline
 
 from tsutils import Menu, EmojiUpdater, char_to_emoji
+
+logger = logging.getLogger('red.padbot-cogs.schoolidol')
 
 FIRST_REQ = 'https://schoolido.lu/api/cards/?page_size=100'
 
@@ -41,13 +44,12 @@ class SchoolIdol(commands.Cog):
         next_req = FIRST_REQ
         async with aiohttp.ClientSession() as session:
             while next_req:
-                print(next_req)
                 async with session.get(next_req) as resp:
                     raw_resp = await resp.text()
                     js_resp = json.loads(raw_resp)
                     next_req = js_resp['next']
                     self.card_data.extend(js_resp['results'])
-        print('done retrieving cards: {}'.format(len(self.card_data)))
+        logger.info('done retrieving cards: {}'.format(len(self.card_data)))
 
         self.id_to_card = {c['id']: c for c in self.card_data}
         name_to_card = {'{}'.format(c['idol']['name']).lower(): c for c in self.card_data}
@@ -64,6 +66,7 @@ class SchoolIdol(commands.Cog):
         }
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def sifid(self, ctx, *, query: str):
         """SIF query."""
         query = query.lower().strip()
@@ -114,7 +117,7 @@ class SchoolIdol(commands.Cog):
                 result_embed.set_footer(text=discord.Embed.Empty)
                 await self.bot.edit_message(result_msg, embed=result_embed)
         except Exception as ex:
-            print('Menu failure', ex)
+            logger.exception('Menu failure')
 
 
 def make_card_embed(c, url_field):

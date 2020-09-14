@@ -1,13 +1,15 @@
 import difflib
 import json
+import logging
 from collections import OrderedDict
 
 import aiohttp
 import discord
 from tsutils import Menu, EmojiUpdater, char_to_emoji
-from redbot.core import commands
-from redbot.core.bot import Red
+from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline
+
+logger = logging.getLogger('red.padbot-cogs.azurelane')
 
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
@@ -17,7 +19,7 @@ DATA_URL = '{}/azure_lane.json'.format(BASE_URL)
 class AzureLane(commands.Cog):
     """AzureLane."""
 
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.card_data = []
@@ -42,7 +44,7 @@ class AzureLane(commands.Cog):
             async with session.get(DATA_URL) as resp:
                 raw_resp = await resp.text()
                 self.card_data = json.loads(raw_resp)['items']
-        print('done retrieving cards: {}'.format(len(self.card_data)))
+        logger.info('done retrieving cards: {}'.format(len(self.card_data)))
 
         self.id_to_card = {c['id']: c for c in self.card_data}
         name_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
@@ -54,6 +56,7 @@ class AzureLane(commands.Cog):
         }
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def alid(self, ctx, *, query: str):
         """Azure Lane query."""
         query = query.lower().strip()
@@ -94,13 +97,12 @@ class AzureLane(commands.Cog):
                 result_embed.set_footer(text=discord.Embed.Empty)
                 await result_msg.edit(embed=result_embed)
         except Exception as ex:
-            print('Menu failure', ex)
+            logger.exception('Menu failure')
 
 
 def make_card_embed(c, image_idx):
     cid = c['id']
     name = c['name_en']
-    print(c)
     info_url = c['url']
     image = c['images'][image_idx]
     image_title = image['title']

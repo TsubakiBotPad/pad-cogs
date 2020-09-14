@@ -9,19 +9,17 @@ from enum import Enum
 
 import discord
 import prettytable
-from redbot.core import checks, data_manager
-from redbot.core import commands
-from redbot.core.bot import Red
+from redbot.core import checks, data_manager, commands
 from redbot.core.utils.chat_formatting import inline, box
 
 import tsutils
 from tsutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
-logger = logging.getLogger('red.tsubaki.padinfo')
+logger = logging.getLogger('red.padbot-cogs.padinfo')
 
 HELP_MSG = """
 {0.prefix}helpid : shows this message
-{0.prefix}id <query> : look up a monster and print a link to puzzledragonx
+{0.prefix}id <query> : look up a monster and show a link to puzzledragonx
 {0.prefix}pic <query> : Look up a monster and display its image inline
 
 Options for <query>
@@ -158,7 +156,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
 
 
 class PadInfo(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
@@ -223,7 +221,6 @@ class PadInfo(commands.Cog):
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
-                traceback.print_exc()
 
             await asyncio.sleep(wait_time)
 
@@ -231,7 +228,7 @@ class PadInfo(commands.Cog):
         """Refresh the monster indexes."""
         dg_cog = self.bot.get_cog('Dadguide')
         if not dg_cog:
-            print("Cog 'Dadguide' not loaded")
+            logger.warning("Cog 'Dadguide' not loaded")
             return
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
@@ -254,7 +251,7 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
-        """Print the Japanese name of a monster"""
+        """Show the Japanese name of a monster"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await ctx.send(monsterToHeader(m))
@@ -263,6 +260,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command(name="id", aliases="iD Id ID".split())
+    @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
         prefix = ctx.prefix + "id"
@@ -270,11 +268,13 @@ class PadInfo(commands.Cog):
         await self._do_id(ctx, query)
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id(ctx, query, server_filter=ServerFilter.na)
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
         await self._do_id(ctx, query, server_filter=ServerFilter.jp)
@@ -287,16 +287,19 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def id2(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await self._do_id2(ctx, query)
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def id2na(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
         await self._do_id2(ctx, query, server_filter=ServerFilter.na)
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def id2jp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
         await self._do_id2(ctx, query, server_filter=ServerFilter.jp)
@@ -309,6 +312,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command(name="evos")
+    @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -318,6 +322,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command(name="mats", aliases=['evomats', 'evomat'])
+    @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -327,6 +332,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -338,6 +344,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def skillups(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -391,7 +398,7 @@ class PadInfo(commands.Cog):
 
         # it's impossible for the previous/next ones to be accessed because
         # IdEmojiUpdater won't allow it, however they have to be defined
-        # so that the buttons print in the first place
+        # so that the buttons display in the first place
 
         if scroll:    emoji_to_embed[self.first_monster_emoji] = None
         emoji_to_embed[self.previous_monster_emoji] = None
@@ -431,10 +438,10 @@ class PadInfo(commands.Cog):
                 result_embed.set_footer(text=discord.Embed.Empty)
                 await result_msg.edit(embed=result_embed)
         except Exception as ex:
-            print('Menu failure', ex)
-            traceback.print_exc()
+            logger.error('Menu failure', exc_info=1)
 
     @commands.command(aliases=['img'])
+    @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -444,6 +451,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def links(self, ctx, *, query: str):
         """Monster links"""
         m, err, debug_info = await self.findMonster(query)
@@ -461,6 +469,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command(aliases=['stats'])
+    @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
         m, err, debug_info = await self.findMonster(query)
@@ -470,6 +479,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
         m, err, debug_info = await self.findMonster(query)
@@ -480,6 +490,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
         m, err, debug_info = await self.findMonster(query)
@@ -489,6 +500,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def collabscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
@@ -513,6 +525,7 @@ class PadInfo(commands.Cog):
 
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
+    @checks.bot_has_permissions(embed_links=True)
     async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
         """Display the multiplier and leaderskills for two monsters
 
@@ -553,11 +566,13 @@ class PadInfo(commands.Cog):
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
     @commands.command(aliases=['helppic', 'helpimg'])
+    @checks.bot_has_permissions(embed_links=True)
     async def helpid(self, ctx):
         """Whispers you info on how to craft monster queries for [p]id"""
         await ctx.author.send(box(HELP_MSG.format(ctx)))
 
     @commands.command()
+    @checks.bot_has_permissions(speak=True)
     async def padsay(self, ctx, server, *, query: str = None):
         """Speak the voice line of a monster into your current chat"""
         voice = ctx.author.voice
@@ -653,7 +668,6 @@ class PadInfo(commands.Cog):
             if m1 and m2:
                 ctx.send("Major Discrepency: {} -> {}/{}".format(query, m1.name_na, m2.name_na))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
-        print(f)
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
@@ -804,7 +818,7 @@ def monsterToBaseEmbed(m: "DgMonster"):
     return embed
 
 
-def printEvoListFields(list_of_monsters, embed, name):
+def addEvoListFields(list_of_monsters, embed, name):
     if not len(list_of_monsters):
         return
     field_name = name.format(len(list_of_monsters))
@@ -822,15 +836,15 @@ def monsterToEvoEmbed(m: "DgMonster"):
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    printEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
+    addEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
     if not m.evo_gem:
         return embed
-    printEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
+    addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
 
     return embed
 
 
-def printMonsterEvoOfList(monster_list, embed, field_name):
+def addMonsterEvoOfList(monster_list, embed, field_name):
     if not len(monster_list):
         return
     field_data = ''
@@ -857,10 +871,10 @@ def monsterToEvoMatsEmbed(m: "DgMonster"):
         field_data = 'None'
     embed.add_field(name=field_name, value=field_data)
 
-    printMonsterEvoOfList(m.material_of, embed, 'Material for')
+    addMonsterEvoOfList(m.material_of, embed, 'Material for')
     if not m.evo_gem:
         return embed
-    printMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
+    addMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
     return embed
 
 

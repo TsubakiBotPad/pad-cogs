@@ -1,4 +1,5 @@
 import io
+import logging
 import traceback
 
 import PIL.Image
@@ -6,6 +7,7 @@ from redbot.core import commands
 
 ORB_IMG_SIZE = 40
 
+logger = logging.getLogger('red.padbot-cogs.padvision')
 
 class PadVision(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -128,8 +130,7 @@ class NeuralClassifierBoardExtractor(object):
         try:
             self._process()
         except Exception as ex:
-            print("orb extractor failed " + str(ex))
-            traceback.print_exc()
+            logger.error("orb extractor failed ", exc_info=1)
 
     def _process(self):
         import numpy as np

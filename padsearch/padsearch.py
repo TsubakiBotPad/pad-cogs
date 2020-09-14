@@ -1,14 +1,16 @@
 import json
 import re
+import logging
 from fnmatch import fnmatch
 
 from ply import lex
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, pagify
 
 from tsutils import tsutils
+
+logger = logging.getLogger('red.padbot-cogs.padsearch')
 
 HELP_MSG = """
 {0.prefix}search <specification string>
@@ -37,7 +39,7 @@ Single instance filters
 * attabsorb   : Attribute Absorb shield null
 * absorbnull  : Damage Abasorb shield null
 * combo(n)    : Increase combo count by n
-* shield(n)   : Reduce damage taken by n%
+* shield(n)   uce damage taken by n%
 * resolve     : Leader skill where you survive when HP reduced to 0
 
 Multiple instance filters
@@ -685,7 +687,7 @@ class SearchConfig(object):
         try:
             return filt_timeout(self.re_filters, ms)
         except TimeoutError:
-            print("Timeout with patttern: \"{}\" by user {} ({})".format(
+            logger.error("Timeout with patttern: \"{}\" by user {} ({})".format(
                 '", "'.join(self.regeces), ctx.author.name, ctx.author.id))
             raise commands.UserFeedbackCheckFailure("Regex took too long to compile.  Stop trying to break the bot")
         except re.error as e:
@@ -695,7 +697,7 @@ class SearchConfig(object):
         try:
             return filt_timeout(self.gl_filters, ms)
         except TimeoutError:
-            print("Timeout with patttern: \"{}\" by user {} ({})".format(
+            logger.error("Timeout with patttern: \"{}\" by user {} ({})".format(
                 '", "'.join(self.globs), ctx.author.name, ctx.author.id))
             raise commands.UserFeedbackCheckFailure("Glob took too long to compile.  Stop trying to break the bot")
 
@@ -719,7 +721,7 @@ class SearchConfig(object):
 class PadSearch(commands.Cog):
     """PAD data searching."""
 
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
 

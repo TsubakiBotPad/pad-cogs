@@ -26,11 +26,10 @@ import discord
 import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 from redbot.core.utils import AsyncIter
 
-logger = logging.getLogger('red.tsubaki.dadguide')
+logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
 def _data_file(file_name: str) -> str:
@@ -57,7 +56,7 @@ DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
 
 
 class Dadguide(commands.Cog):
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self._is_ready = asyncio.Event()
@@ -135,15 +134,13 @@ class Dadguide(commands.Cog):
                 self._is_ready.set()
             except Exception as ex:
                 short_wait = True
-                logger.info("dadguide data download/refresh failed: %s", ex)
-                traceback.print_exc()
+                logger.exception("dadguide data download/refresh failed: %s", ex)
 
             try:
                 wait_time = 60 if short_wait else 60 * 60 * 4
                 await asyncio.sleep(wait_time)
             except Exception as ex:
-                logger.info("dadguide data wait loop failed: %s", ex)
-                traceback.print_exc()
+                logger.exception("dadguide data wait loop failed: %s", ex)
                 raise ex
 
     async def reload_config_files(self):
