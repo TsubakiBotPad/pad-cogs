@@ -69,7 +69,7 @@ class Profile(commands.Cog):
 
     @commands.command(name="idme")
     async def idMe(self, ctx, server=None):
-        """Prints out your profile to the current channel
+        """Displays your profile to the current channel
 
         If you do not provide a server, your default is used
         """
@@ -97,7 +97,7 @@ class Profile(commands.Cog):
 
     @commands.command(name="idfor")
     async def idFor(self, ctx, user: discord.Member, server=None):
-        """Prints out the profile of the specified user
+        """Displays the profile of the specified user
 
         If you do not provide a server, your default is used.
         """

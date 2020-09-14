@@ -15,8 +15,6 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from dadguide import dadguide
-
 SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
 
 
@@ -151,7 +149,9 @@ class PadEvents(commands.Cog):
 
         dg_cog = self.bot.get_cog('Dadguide')
         await dg_cog.wait_until_ready()
-        te = dadguide.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
+        dg_module = __import__(dg_cog.__module__)
+
+        te = dg_module.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
 
         te.server = server
         te.event_type_id = EventType.Guerrilla.value
@@ -392,17 +392,17 @@ class PadEvents(commands.Cog):
 
     @commands.command(aliases=['events'])
     async def eventsna(self, ctx):
-        """Print upcoming daily events for NA."""
+        """Display upcoming daily events for NA."""
         await self.doPartial(ctx, 'NA')
 
     @commands.command()
     async def eventsjp(self, ctx):
-        """Print upcoming daily events for JP."""
+        """Display upcoming daily events for JP."""
         await self.doPartial(ctx, 'JP')
 
     @commands.command()
     async def eventskr(self, ctx):
-        """Print upcoming daily events for KR."""
+        """Display upcoming daily events for KR."""
         await self.doPartial(ctx, 'KR')
 
     async def doPartial(self, ctx, server):
@@ -494,7 +494,7 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: dadguide.DgScheduledEvent):
+    def __init__(self, scheduled_event: "DgScheduledEvent"):
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime

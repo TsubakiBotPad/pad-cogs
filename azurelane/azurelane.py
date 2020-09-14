@@ -100,7 +100,6 @@ class AzureLane(commands.Cog):
 def make_card_embed(c, image_idx):
     cid = c['id']
     name = c['name_en']
-    print(c)
     info_url = c['url']
     image = c['images'][image_idx]
     image_title = image['title']

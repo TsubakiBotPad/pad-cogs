@@ -86,29 +86,3 @@ DadGuide mobile app.
 | padrem     | Rare Egg Machine simulation                                     |
 | padvision  | Utilities relating to PAD image scanning                        |
 | profile    | Global user PAD profile storage and lookup                      |
-
-
-# Admin/util cogs
-
-Cogs that make server administration easier, do miscellaneous useful things, or
-contain utility libraries.
-
-| Cog            | Purpose                                                     |
-| ---            | ---                                                         |
-| baduser        | Tracks misbehaving users, other misc user tracking          |   
-| calculator     | Replacement for the calculator cog that doesnt suck         |  
-| fancysay       | Make the bot say special things                             |
-| memes          | CustomCommands except role-limited                          |    
-| sqlactivitylog | Archives messages in sqlite, allows for lookup              |    
-| timecog        | Convert/print time in different timezones                   |
-| trutils        | Misc utilities intended for my usage only                   |
-| twitter2       | Mirrors a twitter feed to a channel                         |
-
-
-# Other/deprecated cogs
-
-Cogs not intended for normal use, or superceded.
-
-| Cog            | Purpose                                                     |
-| ---            | ---                                                         |
-| donations      | Tracks users who have donated for hosting fees              |
