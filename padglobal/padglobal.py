@@ -11,14 +11,14 @@ from collections import defaultdict
 import aiohttp
 import discord
 import prettytable
+import tsutils
+from tsutils import CogSettings, safe_read_json, replace_emoji_names_with_code,\
+                      clean_global_mentions, confirm_message
 from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-import rpadutils
-from rpadutils import CogSettings, safe_read_json, replace_emoji_names_with_code,\
-                      clean_global_mentions, confirm_message
 
 global PADGLOBAL_COG
 
@@ -283,7 +283,7 @@ class PadGlobal(commands.Cog):
         sent_messages = []
         for page in pagify(msg):
             sent_messages.append(await ctx.send(box(page)))
-        await rpadutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
+        await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
                                          delete_msgs=sent_messages, timeout=30)
 
     @commands.command()
@@ -799,7 +799,7 @@ class PadGlobal(commands.Cog):
         for grp in sorted(monsters.keys()):
             tbl.add_row([grp, ', '.join(sorted(monsters[grp]))])
 
-        tbl_string = rpadutils.strip_right_multiline(tbl.get_string())
+        tbl_string = tsutils.strip_right_multiline(tbl.get_string())
         return tbl_string
 
     async def _do_send_which(self, ctx, to_user: discord.Member, name, definition, timestamp):
@@ -871,7 +871,7 @@ class PadGlobal(commands.Cog):
         for mon in sorted(sorted(monsters), key=lambda x: x[1]):
             tbl.add_row(mon)
 
-        msg = rpadutils.strip_right_multiline(tbl.get_string())
+        msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
             await ctx.send(box(page))
@@ -1215,8 +1215,8 @@ class PadGlobal(commands.Cog):
             if guild.id in emoteservers:
                 continue
             emojis.extend(guild.emojis)
-        message = rpadutils.replace_emoji_names_with_code(emojis, message)
-        return rpadutils.fix_emojis_for_server(emojis, message)
+        message = tsutils.replace_emoji_names_with_code(emojis, message)
+        return tsutils.fix_emojis_for_server(emojis, message)
 
 def check_simple_tree(monster):
     attr1 = monster.attr1

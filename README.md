@@ -61,7 +61,6 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 
 * Some cogs will have cross dependencies on each other. Check the command prompt that Tsubaki is running from or type `^traceback 1` if you encounter any errors.
 * Common dependencies include:
-    * rpadutils
     * dadguide
     * padinfo
 * Note that when you edit cogs with dependencies, you might need to do multiple reloads. For example, if updating dadguide, you will need to reload padinfo as well.
@@ -100,7 +99,6 @@ contain utility libraries.
 | calculator     | Replacement for the calculator cog that doesnt suck         |  
 | fancysay       | Make the bot say special things                             |
 | memes          | CustomCommands except role-limited                          |    
-| rpadutils      | Utility library shared by many other libraries              |    
 | sqlactivitylog | Archives messages in sqlite, allows for lookup              |    
 | timecog        | Convert/print time in different timezones                   |
 | trutils        | Misc utilities intended for my usage only                   |

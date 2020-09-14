@@ -10,7 +10,7 @@ from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
 
 from padvision import padvision
-from rpadutils import rpadutils
+from tsutils import tsutils
 
 DATA_DIR = os.path.join('data', 'padboard')
 
@@ -41,7 +41,7 @@ class PadBoard(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def log_message(self, message):
-        url = rpadutils.extract_image_url(message)
+        url = tsutils.extract_image_url(message)
         if url:
             self.logs[message.author.id].append(url)
 
@@ -99,7 +99,7 @@ class PadBoard(commands.Cog):
     async def get_recent_image(self, ctx, user: discord.Member = None, message: discord.Message = None):
         user_id = user.id if user else ctx.author.id
 
-        image_url = rpadutils.extract_image_url(message)
+        image_url = tsutils.extract_image_url(message)
         if image_url is None:
             image_url = self.find_image(user_id)
 

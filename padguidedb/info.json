@@ -9,9 +9,7 @@
     "min_python_version" : [3,8,1],
     "hidden": false,
     "disabled": false,
-    "require_cogs": {
-        "rpadutils": "https://github.com/TsubakiBotPad/misc-cogs"
-    },
-    "requirements": ["pymysql"],
+    "require_cogs": {},
+    "requirements": ["tsutils", "pymysql"],
     "tags": ["PAD"]
 }

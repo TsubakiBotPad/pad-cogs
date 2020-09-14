@@ -11,10 +11,9 @@
     "disabled": false,
     "require_cogs": {
         "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs",
-        "rpadutils": "https://github.com/TsubakiBotPad/misc-cogs",
         "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs",
         "padinfo": "https://github.com/TsubakiBotPad/padbot-cogs"
     },
-    "requirements": [],
+    "requirements": ["tsutils"],
     "tags": ["PAD"]
 }

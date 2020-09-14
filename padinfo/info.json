@@ -10,10 +10,9 @@
     "hidden": false,
     "disabled": false,
     "require_cogs": {
-        "rpadutils": "https://github.com/TsubakiBotPad/misc-cogs",
         "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs",
         "speech": "https://github.com/TsubakiBotPad/padbot-cogs"
     },
-    "requirements": ["prettytable"],
+    "requirements": ["tsutils", "prettytable"],
     "tags": ["PAD"]
 }

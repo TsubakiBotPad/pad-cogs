@@ -14,8 +14,8 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box
 
-import rpadutils
-from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
+import tsutils
+from tsutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
 logger = logging.getLogger('red.tsubaki.padinfo')
 
@@ -63,7 +63,7 @@ class ServerFilter(Enum):
 
 
 def get_pdx_url(m):
-    return INFO_PDX_TEMPLATE.format(rpadutils.get_pdx_id(m))
+    return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
 
 
 def get_portrait_url(m):

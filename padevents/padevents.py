@@ -9,13 +9,13 @@ from enum import Enum
 
 import prettytable
 import discord
+from tsutils import CogSettings
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
 from dadguide import dadguide
-from rpadutils import CogSettings
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
 
