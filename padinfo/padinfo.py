@@ -14,8 +14,8 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline, box
 
-import rpadutils
-from rpadutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
+import tsutils
+from tsutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
 
 logger = logging.getLogger('red.tsubaki.padinfo')
 
@@ -44,7 +44,7 @@ EMBED_NOT_GENERATED = -1
 INFO_PDX_TEMPLATE = 'http://www.puzzledragonx.com/en/monster.asp?n={}'
 
 MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
-RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png'
+RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
 RPAD_PORTRAIT_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'
 VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'
 GIF_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.gif'
@@ -63,7 +63,7 @@ class ServerFilter(Enum):
 
 
 def get_pdx_url(m):
-    return INFO_PDX_TEMPLATE.format(rpadutils.get_pdx_id(m))
+    return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
 
 
 def get_portrait_url(m):
@@ -1071,7 +1071,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     if not len(awakenings_row):
         awakenings_row = 'No Awakenings'
 
-    killers_row = '**Available Killers:** {}'.format(' '.join(m.killers))
+    killers_row = '**Available Killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
 
     embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 

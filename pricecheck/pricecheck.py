@@ -4,7 +4,7 @@ import discord
 from redbot.core import commands, checks, Config
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-from rpadutils import auth_check
+from tsutils import auth_check
 
 PC_TEXT = """{name} - Stamina Cost: {stam_cost}
 
