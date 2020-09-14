@@ -124,7 +124,6 @@ class Dadguide(commands.Cog):
         # We already had a copy of the database at startup, signal that we're ready now.
         if self.database.has_database():
             logger.info('Using stored database at load')
-            self._is_ready.set()
 
         while self == self.bot.get_cog('Dadguide'):
             short_wait = False
