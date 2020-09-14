@@ -4,15 +4,16 @@ import difflib
 import os
 import traceback
 import urllib.parse
+import logging
 from collections import OrderedDict
 
 import discord
 import tsutils
 from tsutils import Menu, EmojiUpdater
-from redbot.core import commands, data_manager
-from redbot.core.bot import Red
+from redbot.core import commands, data_manager, checks
 from redbot.core.utils.chat_formatting import inline
 
+logger = logging.getLogger('red.padbot-cogs.chronomagia')
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)
@@ -42,7 +43,7 @@ class CmCard(object):
 class ChronoMagia(commands.Cog):
     """ChronoMagia."""
 
-    def __init__(self, bot: Red, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.card_data = []
@@ -67,10 +68,9 @@ class ChronoMagia(commands.Cog):
         while self == self.bot.get_cog('ChronoMagia'):
             try:
                 await self.refresh_data()
-                print('Done refreshing ChronoMagia')
+                logger.info('Done refreshing ChronoMagia')
             except Exception as ex:
-                print("reload CM loop caught exception " + str(ex))
-                traceback.print_exc()
+                logger.exception("reload CM loop caught exception " + str(ex))
             await asyncio.sleep(60 * 60 * 1)
 
     async def refresh_data(self):
@@ -87,10 +87,11 @@ class ChronoMagia(commands.Cog):
                 # Ignore empty rows
                 continue
             if len(row) < 11:
-                print('bad row: ', row)
+                logger.error('bad row: ', row)
             self.card_data.append(CmCard(row))
 
     @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def cmid(self, ctx, *, query: str):
         """ChronoMagia query."""
         query = clean_name_for_query(query)
@@ -134,7 +135,7 @@ class ChronoMagia(commands.Cog):
                 result_embed.set_footer(text=discord.Embed.Empty)
                 await result_msg.edit(embed=result_embed)
         except Exception as ex:
-            print('Menu failure', ex)
+            logger.exception('Menu failure')
 
 
 def make_base_embed(c: CmCard):
@@ -169,7 +170,6 @@ def make_embed(c: CmCard):
 def make_img_embed(c: CmCard):
     embed = make_base_embed(c)
     url = PIC_URL.format(urllib.parse.quote(c.name))
-    print(url)
     embed.set_image(url=url)
     return embed
 

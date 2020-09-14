@@ -776,7 +776,10 @@ class PadBuildImage(commands.Cog):
                     except discord.errors.Forbidden as ex:
                         await ctx.send(inline('Failed to send build to {}'.format(ctx.author)))
                 else:
-                    await ctx.send(file=discord.File(build_io,'pad_build.png'))
+                    try:
+                        await ctx.send(file=discord.File(build_io,'pad_build.png'))
+                    except discord.errors.Forbidden as ex:
+                        await ctx.send(inline("Failed to send build. (Insufficient Permisisons)"))
         else:
             await ctx.send(box('Invalid build, see ^helpbuildimg'))
         return 0
