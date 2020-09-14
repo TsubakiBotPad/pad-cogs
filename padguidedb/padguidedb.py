@@ -232,11 +232,9 @@ class PadGuideDb(commands.Cog):
 
             msg = 'floor_id,count\n'
             for row in results1:
-                print(row)
                 msg += ','.join(map(str,row.values()))+"\n"
             msg += '\n\nfloor_id,monster_id,count\n'
             for row in results2:
-                print(row)
                 msg += ','.join(map(str,row.values()))+"\n"
 
             for page in pagify(msg):

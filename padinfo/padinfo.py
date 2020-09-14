@@ -804,7 +804,7 @@ def monsterToBaseEmbed(m: "DgMonster"):
     return embed
 
 
-def printEvoListFields(list_of_monsters, embed, name):
+def addEvoListFields(list_of_monsters, embed, name):
     if not len(list_of_monsters):
         return
     field_name = name.format(len(list_of_monsters))
@@ -822,15 +822,15 @@ def monsterToEvoEmbed(m: "DgMonster"):
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    printEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
+    addEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
     if not m.evo_gem:
         return embed
-    printEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
+    addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
 
     return embed
 
 
-def printMonsterEvoOfList(monster_list, embed, field_name):
+def addMonsterEvoOfList(monster_list, embed, field_name):
     if not len(monster_list):
         return
     field_data = ''
@@ -857,10 +857,10 @@ def monsterToEvoMatsEmbed(m: "DgMonster"):
         field_data = 'None'
     embed.add_field(name=field_name, value=field_data)
 
-    printMonsterEvoOfList(m.material_of, embed, 'Material for')
+    addMonsterEvoOfList(m.material_of, embed, 'Material for')
     if not m.evo_gem:
         return embed
-    printMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
+    addMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
     return embed
 
 

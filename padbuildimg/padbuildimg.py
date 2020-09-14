@@ -483,7 +483,6 @@ class PadBuildImageGenerator(object):
         card = None
         repeat = 1
         for tok in iter(self.lexer.token, None):
-            # print('{} - {}'.format(tok.type, tok.value))
             if tok.type == 'ASSIST':
                 assist_str = tok.value
             elif tok.type == 'REPEAT':
@@ -755,23 +754,17 @@ class PadBuildImage(commands.Cog):
         """Create a build image based on input.
         Use ^helpbuildimg for more info.
         """
-        # print('BUILD_STR: {}'.format(build_str))
 
-        # start = time.perf_counter()
         async with ctx.typing():
             params = self.settings.buildImgParams()
             try:
                 pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'))
-                # print('PARSE: {}'.format(time.perf_counter() - start))
                 await pbg.process_build(build_str)
-                # start = time.perf_counter()
                 pbg.generate_build_image()
-                # print('DRAW: {}'.format(time.perf_counter() - start))
             except commands.UserFeedbackCheckFailure as ex:
                 await ctx.send(box(str(ex) + '\nSee ^helpbuildimg for syntax'))
                 return -1
 
-        # start = time.perf_counter()
         if pbg.build_img is not None:
             with io.BytesIO() as build_io:
                 pbg.build_img.save(build_io, format='PNG')
