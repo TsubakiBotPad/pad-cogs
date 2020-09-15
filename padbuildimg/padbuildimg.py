@@ -1,21 +1,20 @@
-import math
+import aiohttp
 import csv
-import os
+import discord
 import io
-from shutil import rmtree
+import math
+import os
 import re
 import urllib
-
-import discord
-import aiohttp
-from ply import lex
 from PIL import Image
+from PIL import ImageChops
 from PIL import ImageDraw
 from PIL import ImageFont
-from PIL import ImageChops
-from tsutils import CogSettings
+from ply import lex
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
+from shutil import rmtree
+from tsutils import CogSettings
 
 HELP_MSG = """
 ^buildimg <build_shorthand>
@@ -142,6 +141,8 @@ AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
 REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/padbuildimg/assets/'
 REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
+
+
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
 
 class DictWithAttributeAccess(dict):
@@ -209,7 +210,8 @@ class PadBuildImgSettings(CogSettings):
         os.mkdir(params.ASSETS_DIR + 'lat/')
         os.mkdir(params.ASSETS_DIR + 'awk/')
         for lat in LATENTS_MAP.values():
-            await self.downloadAssets(REMOTE_ASSET_URL + 'lat/' + lat + '.png', params.ASSETS_DIR + 'lat/' + lat + '.png')
+            await self.downloadAssets(REMOTE_ASSET_URL + 'lat/' + lat + '.png',
+                                      params.ASSETS_DIR + 'lat/' + lat + '.png')
         for awk in awk_ids:
             await self.downloadAssets(REMOTE_AWK_URL.format(awk), params.ASSETS_DIR + 'awk/' + str(awk) + '.png')
         await self.downloadAssets(REMOTE_ASSET_URL + AWK_CIRCLE + '.png', params.ASSETS_DIR + AWK_CIRCLE + '.png')
@@ -234,10 +236,12 @@ class PadBuildImgSettings(CogSettings):
                 self.bot_settings['dm_only'].append(server_id)
         self.save_settings()
 
+
 def lstripalpha(s):
     while s and not s[0].isdigit():
-        s=s[1:]
+        s = s[1:]
     return s
+
 
 class PaDTeamLexer(object):
     tokens = [
@@ -363,7 +367,8 @@ class PaDTeamLexer(object):
     t_ignore = '\t\n'
 
     def t_error(self, t):
-        raise commands.UserFeedbackCheckFailure("Parse Error: Unknown text '{}' at position {}".format(t.value, t.lexpos))
+        raise commands.UserFeedbackCheckFailure(
+            "Parse Error: Unknown text '{}' at position {}".format(t.value, t.lexpos))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
@@ -500,7 +505,8 @@ class PadBuildImageGenerator(object):
                             return None, None
                         else:
                             result_card['GOLD_STAR'] = False
-                    result_card['MNO'] = card.monster_no_na if card.monster_no_na != card.monster_id else card.monster_no_jp
+                    result_card[
+                        'MNO'] = card.monster_no_na if card.monster_no_na != card.monster_id else card.monster_no_jp
                     result_card['ID'] = card.monster_id
             elif tok.type == 'P_ALL':
                 if tok.value >= 297:
@@ -591,7 +597,8 @@ class PadBuildImageGenerator(object):
                 row_count += 1
                 x_offset = 0
                 y_offset += last_height
-            if row_count >= MAX_LATENTS//4 and x_offset + latent_icon.size[0] >= self.params.LATENTS_WIDTH * (MAX_LATENTS%4):
+            if row_count >= MAX_LATENTS // 4 and x_offset + latent_icon.size[0] >= self.params.LATENTS_WIDTH * (
+                    MAX_LATENTS % 4):
                 break
             latents_bar.paste(latent_icon, (x_offset, y_offset))
             last_height = latent_icon.size[1]
@@ -720,9 +727,12 @@ class PadBuildImageGenerator(object):
                                     for ids in side]
                     for card in actives_used:
                         if 'http' in self.params.PORTRAIT_DIR:
-                            p_small = Image.open(urllib.request.urlopen(self.params.PORTRAIT_DIR.format(monster_id=card['ID']))).resize((self.params.PORTRAIT_WIDTH // 2, self.params.PORTRAIT_WIDTH // 2), Image.LINEAR)
+                            p_small = Image.open(
+                                urllib.request.urlopen(self.params.PORTRAIT_DIR.format(monster_id=card['ID']))).resize(
+                                (self.params.PORTRAIT_WIDTH // 2, self.params.PORTRAIT_WIDTH // 2), Image.LINEAR)
                         else:
-                            p_small = Image.open(self.params.PORTRAIT_DIR.format(monster_id=card['ID'])).resize((self.params.PORTRAIT_WIDTH // 2, self.params.PORTRAIT_WIDTH // 2), Image.LINEAR)
+                            p_small = Image.open(self.params.PORTRAIT_DIR.format(monster_id=card['ID'])).resize(
+                                (self.params.PORTRAIT_WIDTH // 2, self.params.PORTRAIT_WIDTH // 2), Image.LINEAR)
                         self.build_img.paste(p_small, (x_offset, y_offset))
                         x_offset += self.params.PORTRAIT_WIDTH // 2
                     x_offset += self.params.PADDING
@@ -746,7 +756,7 @@ class PadBuildImage(commands.Cog):
         await ctx.author.send(box(HELP_MSG))
         if checks.admin_or_permissions(manage_guild=True):
             await ctx.author.send(box('For Server Admins: Output location can be changed between current channel and '
-                                       'direct messages via ^togglebuildimgoutput'))
+                                      'direct messages via ^togglebuildimgoutput'))
         await ctx.author.send(EXAMPLE_MSG)
 
     @commands.command(aliases=['buildimg', 'pdchu'])
@@ -771,13 +781,13 @@ class PadBuildImage(commands.Cog):
                 build_io.seek(0)
                 if ctx.guild and self.settings.dmOnly(ctx.guild.id):
                     try:
-                        await ctx.author.send(file=discord.File(build_io,'pad_build.png'))
+                        await ctx.author.send(file=discord.File(build_io, 'pad_build.png'))
                         await ctx.send(inline('Sent build to {}'.format(ctx.author)))
                     except discord.errors.Forbidden as ex:
                         await ctx.send(inline('Failed to send build to {}'.format(ctx.author)))
                 else:
                     try:
-                        await ctx.send(file=discord.File(build_io,'pad_build.png'))
+                        await ctx.send(file=discord.File(build_io, 'pad_build.png'))
                     except discord.errors.Forbidden as ex:
                         await ctx.send(inline("Failed to send build. (Insufficient Permisisons)"))
         else:

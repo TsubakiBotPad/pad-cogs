@@ -1,16 +1,14 @@
+import aiohttp
 import difflib
+import discord
 import json
 import logging
 from collections import OrderedDict
-
-import aiohttp
-import discord
-from tsutils import Menu, EmojiUpdater, char_to_emoji
-from redbot.core import commands, checks
+from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import inline
+from tsutils import EmojiUpdater, Menu, char_to_emoji
 
 logger = logging.getLogger('red.padbot-cogs.azurelane')
-
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
 DATA_URL = '{}/azure_lane.json'.format(BASE_URL)

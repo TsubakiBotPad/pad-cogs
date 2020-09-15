@@ -1,15 +1,27 @@
 {
-    "author": ["The Tsubaki Bot Team"],
-    "description": "No commands, but loads all the monster data stored in Tsubaki.",
-    "end_user_data_statement": "No personal data is stored.",
-    "install_msg": "",
-    "short": "Loads monster data (LOAD THIS SECOND)",
-    "min_bot_version": "3.4.0",
-    "max_bot_version": "3.4.0",
-    "min_python_version" : [3,8,1],
-    "hidden": false,
-    "disabled": false,
-    "require_cogs": {},
-    "requirements": ["tsutils", "pytz", "romkan"],
-    "tags": ["PAD"]
+  "author": [
+    "The Tsubaki Bot Team"
+  ],
+  "description": "No commands, but loads all the monster data stored in Tsubaki.",
+  "end_user_data_statement": "No personal data is stored.",
+  "install_msg": "",
+  "short": "Loads monster data (LOAD THIS SECOND)",
+  "min_bot_version": "3.4.0",
+  "max_bot_version": "3.4.0",
+  "min_python_version": [
+    3,
+    8,
+    1
+  ],
+  "hidden": false,
+  "disabled": false,
+  "require_cogs": {},
+  "requirements": [
+    "tsutils",
+    "pytz",
+    "romkan"
+  ],
+  "tags": [
+    "PAD"
+  ]
 }

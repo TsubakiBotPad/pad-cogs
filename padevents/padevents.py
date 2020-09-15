@@ -1,19 +1,18 @@
-import traceback
 import asyncio
-import re
 import datetime
-import pytz
+import discord
 import logging
+import prettytable
+import pytz
+import re
+import traceback
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
-
-import prettytable
-import discord
-from tsutils import CogSettings
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline, box, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify
+from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
@@ -148,7 +147,7 @@ class PadEvents(commands.Cog):
         await dg_cog.wait_until_ready()
         dg_module = __import__(dg_cog.__module__)
 
-        te = dg_module.DgScheduledEvent({'dungeon_id':1}, dg_cog.database)
+        te = dg_module.DgScheduledEvent({'dungeon_id': 1}, dg_cog.database)
 
         te.server = server
         te.event_type_id = EventType.Guerrilla.value
@@ -497,7 +496,7 @@ class Event:
         self.close_datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
         self.dungeon_name = scheduled_event.dungeon.name_na if scheduled_event.dungeon else 'unknown_dungeon'
-        self.event_name = '' # scheduled_event.event.name if scheduled_event.event else ''
+        self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
         self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
         self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')

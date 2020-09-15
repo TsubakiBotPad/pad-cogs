@@ -1,21 +1,19 @@
 import asyncio
+import discord
+import io
 import json
 import logging
 import os
-import io
+import prettytable
 import traceback
+import tsutils
 import urllib.parse
 from collections import OrderedDict
 from enum import Enum
-
-import discord
-import prettytable
-from redbot.core import checks, data_manager, commands
-from redbot.core.utils.chat_formatting import inline, box
+from redbot.core import checks, commands, data_manager
 from redbot.core.utils import AsyncIter
-
-import tsutils
-from tsutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
+from redbot.core.utils.chat_formatting import box, inline
+from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -372,7 +370,7 @@ class PadInfo(commands.Cog):
             ctx,
             starting_menu_emoji,
             ScrollEmojiUpdater(emoji_to_embed, pad_info=self, bot=self.bot,
-                           m=m, ms=ms, selected_emoji=starting_menu_emoji)
+                               m=m, ms=ms, selected_emoji=starting_menu_emoji)
         )
 
     def get_id_emoji_options(self, m=None, scroll=False):
@@ -410,7 +408,6 @@ class PadInfo(commands.Cog):
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
         return emoji_to_embed
-
 
     async def _do_evolistmenu(self, ctx, sm):
         monsters = sm.alt_evos
@@ -460,10 +457,10 @@ class PadInfo(commands.Cog):
         if m is not None:
             embed = monsterToBaseEmbed(m)
             embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-                                    YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
-                                    SKYOZORA_TEMPLATE.format(m.monster_no_jp),
-                                    INFO_PDX_TEMPLATE.format(m.monster_no_jp),
-                                    ILMINA_TEMPLATE.format(m.monster_no_jp))
+                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+                SKYOZORA_TEMPLATE.format(m.monster_no_jp),
+                INFO_PDX_TEMPLATE.format(m.monster_no_jp),
+                ILMINA_TEMPLATE.format(m.monster_no_jp))
             embed.set_footer(text='')
             await ctx.send(embed=embed)
 
@@ -511,8 +508,8 @@ class PadInfo(commands.Cog):
 
         ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
         ms = [m._alt_evo_id_list for m in ms
-                                 if m._base_monster_id == m.monster_id
-                                    and m.sell_mp >= 3000]
+              if m._base_monster_id == m.monster_id
+              and m.sell_mp >= 3000]
         ms = [m for ml in ms for m in ml]
 
         if m._base_monster_id != m.monster_id:
@@ -524,7 +521,6 @@ class PadInfo(commands.Cog):
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
-
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
     @checks.bot_has_permissions(embed_links=True)
@@ -597,7 +593,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
-                await ctx.send(inline("No voice file found for "+m.name))
+                await ctx.send(inline("No voice file found for " + m.name))
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
@@ -674,7 +670,6 @@ class PadInfo(commands.Cog):
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
         file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
         await ctx.send(file=file)
-
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
@@ -1142,10 +1137,10 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
 
     body_text += "\n**JP Name**: {}".format(m.name_jp)
     body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-                    YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
-                    SKYOZORA_TEMPLATE.format(m.monster_no_jp),
-                    INFO_PDX_TEMPLATE.format(m.monster_no_jp),
-                    ILMINA_TEMPLATE.format(m.monster_no_jp))
+        YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+        SKYOZORA_TEMPLATE.format(m.monster_no_jp),
+        INFO_PDX_TEMPLATE.format(m.monster_no_jp),
+        ILMINA_TEMPLATE.format(m.monster_no_jp))
 
     if m.history_us:
         body_text += '\n**History:** {}'.format(m.history_us)

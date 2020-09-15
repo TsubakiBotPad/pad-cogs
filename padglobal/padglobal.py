@@ -1,23 +1,21 @@
+import aiohttp
 import asyncio
 import csv
 import datetime
 import difflib
+import discord
 import io
 import json
-import os
-import re
 import logging
-from collections import defaultdict
-
-import aiohttp
-import discord
+import os
 import prettytable
+import re
 import tsutils
-from tsutils import CogSettings, safe_read_json, replace_emoji_names_with_code,\
-                      clean_global_mentions, confirm_message
+from collections import defaultdict
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline, box, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify
+from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -285,7 +283,7 @@ class PadGlobal(commands.Cog):
         for page in pagify(msg):
             sent_messages.append(await ctx.send(box(page)))
         await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
-                                         delete_msgs=sent_messages, timeout=30)
+                                       delete_msgs=sent_messages, timeout=30)
 
     @commands.command()
     @is_padglobal_admin()
@@ -298,7 +296,7 @@ class PadGlobal(commands.Cog):
             await padinfo_cog.refresh_index()
             await ctx.send('finished reload')
 
-    @commands.group(aliases = ['pdg'])
+    @commands.group(aliases=['pdg'])
     @is_padglobal_admin()
     async def padglobal(self, ctx):
         """PAD global custom commands."""
@@ -319,7 +317,7 @@ class PadGlobal(commands.Cog):
         """Edit a custom command or alias"""
         await self._add(ctx, command, text, False)
 
-    async def _add(self, ctx, command, text, confirm = True):
+    async def _add(self, ctx, command, text, confirm=True):
         command = command.lower()
         text = clean_global_mentions(text)
         text = text.replace(u'\u200b', '')
@@ -349,8 +347,8 @@ class PadGlobal(commands.Cog):
                 ted = self.c_commands[ted]
                 alias = True
             if confirm:
-                conf = await confirm_message(ctx,"Are you sure you want to edit the {}command {}?" \
-                                                .format("alias to " if alias else "", ted))
+                conf = await confirm_message(ctx, "Are you sure you want to edit the {}command {}?" \
+                                             .format("alias to " if alias else "", ted))
                 if not conf:
                     return
         else:
@@ -628,7 +626,8 @@ class PadGlobal(commands.Cog):
         if term not in self.settings.glossary():
             await ctx.send("Glossary item doesn't exist.")
             return
-        if not await confirm_message(ctx, "Are you sure you want to globally remove the glossary data for {}?".format(term)):
+        if not await confirm_message(ctx,
+                                     "Are you sure you want to globally remove the glossary data for {}?".format(term)):
             return
         self.settings.rmGlossary(term)
         await ctx.tick()
@@ -677,7 +676,8 @@ class PadGlobal(commands.Cog):
 
     def boss_to_text(self, ctx):
         bosses = self.settings.boss()
-        msg = '__**PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(ctx.prefix)
+        msg = '__**PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
+            ctx.prefix)
         for term in sorted(bosses.keys()):
             definition = bosses[term]
             msg += '\n**{}**\n{}'.format(term, definition)
@@ -685,7 +685,8 @@ class PadGlobal(commands.Cog):
 
     def boss_to_text_index(self, ctx):
         bosses = self.settings.boss()
-        msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(ctx.prefix)
+        msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
+            ctx.prefix)
         msg = msg + '\n' + ',\n'.join(sorted(bosses.keys()))
         return msg
 
@@ -708,7 +709,8 @@ class PadGlobal(commands.Cog):
         if term not in self.settings.boss():
             await ctx.send("Boss mechanics item doesn't exist.")
             return
-        if not await confirm_message(ctx, "Are you sure you want to globally remove the boss data for {}?".format(term)):
+        if not await confirm_message(ctx,
+                                     "Are you sure you want to globally remove the boss data for {}?".format(term)):
             return
 
         self.settings.rmBoss(term)
@@ -720,7 +722,9 @@ class PadGlobal(commands.Cog):
         """Shows PAD Which Monster entries"""
 
         if term is None:
-            await ctx.author.send('__**PAD Which Monster**__ *(also check out {0}pad / {0}padfaq / {0}boards / {0}glossary)*'.format(ctx.prefix))
+            await ctx.author.send(
+                '__**PAD Which Monster**__ *(also check out {0}pad / {0}padfaq / {0}boards / {0}glossary)*'.format(
+                    ctx.prefix))
             msg = self.which_to_text()
             for page in pagify(msg):
                 await ctx.author.send(box(page))
@@ -836,7 +840,8 @@ class PadGlobal(commands.Cog):
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
-        if not await confirm_message(ctx, "Are you sure you want to globally remove the which data for {}?".format(m.name_na)):
+        if not await confirm_message(ctx, "Are you sure you want to globally remove the which data for {}?".format(
+                m.name_na)):
             return
         name = m.monster_id
 
@@ -887,7 +892,7 @@ class PadGlobal(commands.Cog):
         monster_id = nm.monster_id if nm else nm
         definition = self.settings.which().get(monster_id, None)
         await ctx.send('Which Debug:\n```Base: {}\nName: {}\nID: {}\nError: {}\nDebug: {}```'
-                                    .format(base, name, monster_id, err, deb))
+                       .format(base, name, monster_id, err, deb))
 
     @padglobal.command()
     @checks.is_owner()
@@ -918,7 +923,7 @@ class PadGlobal(commands.Cog):
         """Set the emoji servers by ID (csv)"""
         self.settings.emojiServers().clear()
         if emoji_servers:
-            self.settings.setEmojiServers(re.findall(r'\d+',emoji_servers))
+            self.settings.setEmojiServers(re.findall(r'\d+', emoji_servers))
         await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
 
     def _get_emojis(self):
@@ -1169,7 +1174,9 @@ class PadGlobal(commands.Cog):
         if term not in self.settings.dungeonGuide():
             await ctx.send("DungeonGuide doesn't exist.")
             return
-        if not await confirm_message(ctx, "Are you sure you want to globally remove the dungeonguide data for {}?".format(term)):
+        if not await confirm_message(ctx,
+                                     "Are you sure you want to globally remove the dungeonguide data for {}?".format(
+                                             term)):
             return
         self.settings.rmDungeonGuide(term)
         await ctx.tick()
@@ -1194,7 +1201,9 @@ class PadGlobal(commands.Cog):
         if m != m.base_monster:
             m = m.base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
-        if not await confirm_message(ctx, "Are you sure you want to globally remove the leaderguide data for {}?".format(m.name_na)):
+        if not await confirm_message(ctx,
+                                     "Are you sure you want to globally remove the leaderguide data for {}?".format(
+                                             m.name_na)):
             return
         name = m.monster_id
 
@@ -1217,6 +1226,7 @@ class PadGlobal(commands.Cog):
             emojis.extend(guild.emojis)
         message = tsutils.replace_emoji_names_with_code(emojis, message)
         return tsutils.fix_emojis_for_server(emojis, message)
+
 
 def check_simple_tree(monster):
     attr1 = monster.attr1
