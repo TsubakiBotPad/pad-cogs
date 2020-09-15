@@ -1,19 +1,19 @@
 import asyncio
 import csv
 import difflib
+import discord
+import logging
 import os
 import traceback
-import urllib.parse
-import logging
-from collections import OrderedDict
-
-import discord
 import tsutils
-from tsutils import Menu, EmojiUpdater
-from redbot.core import commands, data_manager, checks
+import urllib.parse
+from collections import OrderedDict
+from redbot.core import checks, commands, data_manager
 from redbot.core.utils.chat_formatting import inline
+from tsutils import EmojiUpdater, Menu
 
 logger = logging.getLogger('red.padbot-cogs.chronomagia')
+
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)

@@ -1,15 +1,13 @@
 import asyncio
 import csv
+import discord
 import io
 import json
 import logging
-
-import discord
 import pymysql
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline, box, pagify
-
+from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, tsutils
 
 logger = logging.getLogger('red.padbot-cogs.padguidedb')
@@ -230,10 +228,10 @@ class PadGuideDb(commands.Cog):
 
             msg = 'floor_id,count\n'
             for row in results1:
-                msg += ','.join(map(str,row.values()))+"\n"
+                msg += ','.join(map(str, row.values())) + "\n"
             msg += '\n\nfloor_id,monster_id,count\n'
             for row in results2:
-                msg += ','.join(map(str,row.values()))+"\n"
+                msg += ','.join(map(str, row.values())) + "\n"
 
             for page in pagify(msg):
                 await ctx.send(box(page))

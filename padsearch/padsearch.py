@@ -1,13 +1,11 @@
 import json
-import re
 import logging
+import re
 from fnmatch import fnmatch
-
 from ply import lex
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
-
 from tsutils import tsutils
 
 logger = logging.getLogger('red.padbot-cogs.padsearch')

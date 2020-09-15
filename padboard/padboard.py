@@ -1,20 +1,19 @@
-import os
-from collections import defaultdict
-from collections import deque
-
 import aiohttp
 import cv2
 import discord
 import numpy as np
-from redbot.core import checks, commands, Config
+import os
+from collections import defaultdict
+from collections import deque
+from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import inline
-
 from tsutils import tsutils
 
 DATA_DIR = os.path.join('data', 'padboard')
 
 DAWNGLARE_BOARD_TEMPLATE = "https://pad.dawnglare.com/?patt={}"
 CNINJA_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
+
 
 class PadBoard(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -53,7 +52,6 @@ class PadBoard(commands.Cog):
     async def set_tflite_path(self, ctx, *, path):
         await self.config.tflite_path.set(path)
         await ctx.tick()
-
 
     def find_image(self, user_id):
         urls = list(self.logs[user_id])
@@ -95,7 +93,7 @@ class PadBoard(commands.Cog):
         # Convert O (used by padvision code) to X (used by Puzzled for bombs)
         board_text_nc = board_text_nc.replace('o', 'x')
         msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
-        msg += '\n'+CNINJA_BOARD_TEMPLATE.format(board_text_nc)
+        msg += '\n' + CNINJA_BOARD_TEMPLATE.format(board_text_nc)
 
         await ctx.send(msg)
 

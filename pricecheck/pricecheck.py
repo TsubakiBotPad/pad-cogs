@@ -1,9 +1,7 @@
-import re
-
 import discord
-from redbot.core import commands, checks, Config
-from redbot.core.utils.chat_formatting import inline, box, pagify
-
+import re
+from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
 
 PC_TEXT = """{name} - Stamina Cost: {stam_cost}
@@ -54,11 +52,11 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(nm.name_na))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name = nm.name_na,
-                             stam_cost = sc,
-                             pp_val = sc*83/50,
-                             points = sc*83/50/297,
-                             foot = foot)
+        pct = PC_TEXT.format(name=nm.name_na,
+                             stam_cost=sc,
+                             pp_val=sc * 83 / 50,
+                             points=sc * 83 / 50 / 297,
+                             foot=foot)
         if await self.config.channel(ctx.channel).dm():
             for page in pagify(pct):
                 await ctx.author.send(box(page))

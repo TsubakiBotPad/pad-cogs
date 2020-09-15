@@ -1,13 +1,12 @@
-import re
-import logging
-
 import discord
+import logging
+import re
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline, box, pagify
-
+from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.profile')
+
 
 def normalizeServer(server):
     server = server.upper().strip()

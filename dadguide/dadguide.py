@@ -9,25 +9,24 @@ entire database could be leaked when the module is reloaded.
 import asyncio
 import csv
 import difflib
+import discord
 import json
 import logging
 import os
+import pytz
 import re
+import romkan
 import shutil
 import sqlite3 as lite
 import traceback
-from collections import defaultdict, deque, OrderedDict
+import tsutils
+from collections import OrderedDict, defaultdict, deque
 from datetime import datetime
 from enum import Enum
-
-import pytz
-import romkan
-import discord
-import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline
 from redbot.core.utils import AsyncIter
+from redbot.core.utils.chat_formatting import inline
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -248,8 +247,6 @@ class Dadguide(commands.Cog):
         """Set a local path to dadguide data instead of downloading it."""
         self.settings.set_data_file(data_file)
         await ctx.tick()
-
-
 
 
 class DadguideSettings(tsutils.CogSettings):
@@ -665,14 +662,13 @@ class DadguideDatabase(object):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
                                 as_generator=as_generator)
 
-
     def get_all_events(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (), DgScheduledEvent,
+        return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
+                                DgScheduledEvent,
                                 as_generator=as_generator)
 
     def get_dungeon_by_id(self, dungeon_id: int):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
-
 
 
 def enum_or_none(enum, value, default=None):
@@ -832,7 +828,6 @@ class DgScheduledEvent(DadguideItem):
     @close_datetime.setter
     def close_datetime(self, value):
         self.end_timestamp = int(value.timestamp())
-
 
 
 class DgMonster(DadguideItem):
@@ -1184,7 +1179,6 @@ def make_roma_subname(name_jp):
     return adjusted_subname.strip()
 
 
-
 class MonsterIndex(tsutils.aobject):
     async def __init__(self, monster_database, nickname_overrides, basename_overrides,
                        panthname_overrides, accept_filter=None):
@@ -1404,7 +1398,8 @@ class MonsterIndex(tsutils.aobject):
         # prefix search for ids, take max id
         for nickname, m in self.all_entries.items():
             if query.endswith("base {}".format(m.monster_id)):
-                matches.add(discord.utils.find(lambda mo: m.base_monster_no==mo.monster_id, self.all_entries.values()))
+                matches.add(
+                    discord.utils.find(lambda mo: m.base_monster_no == mo.monster_id, self.all_entries.values()))
         if len(matches):
             return self.pickBestMonster(matches), None, "Base ID match, max of 1".format()
 
@@ -1519,7 +1514,8 @@ class MonsterIndex(tsutils.aobject):
         # prefix search for ids, take max id
         for nickname, m in self.all_entries.items():
             if query.endswith("base {}".format(m.monster_id)):
-                matches.add(discord.utils.find(lambda mo: m.base_monster_no==mo.monster_id, self.all_entries.values()))
+                matches.add(
+                    discord.utils.find(lambda mo: m.base_monster_no == mo.monster_id, self.all_entries.values()))
         matches.remove_potential_matches_without_all_prefixes(query_prefixes)
 
         # first try to get matches from nicknames

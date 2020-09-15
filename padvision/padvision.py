@@ -1,13 +1,13 @@
+import PIL.Image
 import io
 import logging
 import traceback
-
-import PIL.Image
 from redbot.core import commands
 
 ORB_IMG_SIZE = 40
 
 logger = logging.getLogger('red.padbot-cogs.padvision')
+
 
 class PadVision(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
