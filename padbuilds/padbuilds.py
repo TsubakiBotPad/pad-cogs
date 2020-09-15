@@ -1,9 +1,10 @@
-import discord
 import re
+
+import discord
+from tsutils import CogSettings
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify, box
-from tsutils import CogSettings
 
 
 class PadBuilds(commands.Cog):
@@ -136,8 +137,7 @@ class PadBuilds(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def on_message(self, message):
-        if len(message.content) < 2 or isinstance(message.channel,
-                                                  discord.abc.PrivateChannel):
+        if len(message.content) < 2 or isinstance(message.channel, discord.abc.PrivateChannel):
             return
 
         server = message.guild

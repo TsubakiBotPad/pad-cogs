@@ -1,11 +1,13 @@
-import aiohttp
 import difflib
-import discord
 import json
 import logging
 from collections import OrderedDict
+
+import aiohttp
+import discord
 from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline
+
 from tsutils import Menu, EmojiUpdater, char_to_emoji
 
 logger = logging.getLogger('red.padbot-cogs.schoolidol')
@@ -50,17 +52,12 @@ class SchoolIdol(commands.Cog):
         logger.info('done retrieving cards: {}'.format(len(self.card_data)))
 
         self.id_to_card = {c['id']: c for c in self.card_data}
-        name_to_card = {'{}'.format(c['idol']['name']).lower(): c for c in
-                        self.card_data}
-        firstname_to_card = {c['idol']['name'].lower().split(' ')[-1]: c for c
-                             in self.card_data}
+        name_to_card = {'{}'.format(c['idol']['name']).lower(): c for c in self.card_data}
+        firstname_to_card = {c['idol']['name'].lower().split(' ')[-1]: c for c in self.card_data}
         collection_name_to_card = {'{} {}'.format(
-            c['translated_collection'], c['idol']['name']).lower(): c for c in
-                                   self.card_data}
+            c['translated_collection'], c['idol']['name']).lower(): c for c in self.card_data}
         collection_firstname_to_card = {'{} {}'.format(
-            c['translated_collection'],
-            c['idol']['name'].split(' ')[-1]).lower(): c for c in
-                                        self.card_data}
+            c['translated_collection'], c['idol']['name'].split(' ')[-1]).lower(): c for c in self.card_data}
         self.names_to_card = {
             **name_to_card,
             **firstname_to_card,
@@ -113,9 +110,7 @@ class SchoolIdol(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx,
-                                                                   EmojiUpdater(
-                                                                       emoji_to_embed),
-                                                                   starting_menu_emoji,
+                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
                                                                    timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
@@ -137,8 +132,7 @@ def make_card_embed(c, url_field):
     embed.title = toHeader(c)
     embed.url = get_info_url(c)
     embed.set_image(url=base_url.format(cid, url_field))
-    embed.set_footer(
-        text='Requester may click the reactions below to switch tabs')
+    embed.set_footer(text='Requester may click the reactions below to switch tabs')
     return embed
 
 
