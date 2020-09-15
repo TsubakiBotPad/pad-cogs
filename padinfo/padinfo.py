@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import io
 import traceback
 import urllib.parse
 from collections import OrderedDict
@@ -11,6 +12,7 @@ import discord
 import prettytable
 from redbot.core import checks, data_manager, commands
 from redbot.core.utils.chat_formatting import inline, box
+from redbot.core.utils import AsyncIter
 
 import tsutils
 from tsutils import char_to_emoji, Menu, EmojiUpdater, safe_read_json, CogSettings, rmdiacritics
@@ -650,12 +652,14 @@ class PadInfo(commands.Cog):
     async def iddiff(self, ctx):
         """Runs the diff checker for id and id2"""
         await ctx.send("Running diff checker...")
-        hist_aggreg = list(self.historic_lookups) + list(self.historic_lookups_id2)
+        hist_aggreg = list(self.historic_lookups)
         s = 0
         f = []
-        for query in hist_aggreg:
+        async for c, query in AsyncIter(enumerate(hist_aggreg)):
             m1, err1, debug_info1 = await self.findMonster(query)
             m2, err2, debug_info2 = await self.findMonster2(query)
+            if c % 50 == 0:
+                await ctx.send(inline("{}/{} complete.".format(c, len(hist_aggreg))))
             if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
                 s += 1
                 continue
@@ -666,8 +670,11 @@ class PadInfo(commands.Cog):
                       [debug_info1, debug_info2]
                       ))
             if m1 and m2:
-                ctx.send("Major Discrepency: {} -> {}/{}".format(query, m1.name_na, m2.name_na))
+                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_na, m2.name_na))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
+        file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
+        await ctx.send(file=file)
+
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
