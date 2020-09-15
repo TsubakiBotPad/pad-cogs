@@ -1,11 +1,12 @@
 import asyncio
 import logging
-import tsutils
+
 from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline, box, pagify
 
-logger = logging.getLogger('red.padbot-cogs.padmonitor')
+import tsutils
 
+logger = logging.getLogger('red.padbot-cogs.padmonitor')
 
 class PadMonitor(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
