@@ -1,16 +1,14 @@
+import aiohttp
 import difflib
+import discord
 import json
 import logging
 from collections import OrderedDict
-
-import aiohttp
-import discord
-from tsutils import Menu, EmojiUpdater, char_to_emoji
 from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import inline
+from tsutils import Menu, EmojiUpdater, char_to_emoji
 
 logger = logging.getLogger('red.padbot-cogs.azurelane')
-
 
 BASE_URL = 'https://storage.googleapis.com/mirubot/alimages/raw'
 DATA_URL = '{}/azure_lane.json'.format(BASE_URL)
@@ -47,7 +45,8 @@ class AzureLane(commands.Cog):
         logger.info('done retrieving cards: {}'.format(len(self.card_data)))
 
         self.id_to_card = {c['id']: c for c in self.card_data}
-        name_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
+        name_to_card = {'{}'.format(c['name_en']).lower(): c for c in
+                        self.card_data}
         #         collection_name_to_card = {'{} {}'.format(
         #             i['title'], c['name_en']).lower(): c for i in c['images'] for c in self.card_data}
         self.names_to_card = {
@@ -90,7 +89,9 @@ class AzureLane(commands.Cog):
 
         try:
             result_msg, result_embed = await self.menu.custom_menu(ctx,
-                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
+                                                                   EmojiUpdater(
+                                                                       emoji_to_embed),
+                                                                   starting_menu_emoji,
                                                                    timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
@@ -111,11 +112,13 @@ def make_card_embed(c, image_idx):
     file_name = url[url.rfind("/") + 1:]
 
     header = 'No. {} {} - {}'.format(cid, name, image_title)
-    image_url = 'https://storage.googleapis.com/mirubot/alimages/raw/{}'.format(file_name)
+    image_url = 'https://storage.googleapis.com/mirubot/alimages/raw/{}'.format(
+        file_name)
 
     embed = discord.Embed()
     embed.title = header
     embed.url = info_url
     embed.set_image(url=image_url)
-    embed.set_footer(text='Requester may click the reactions below to switch tabs')
+    embed.set_footer(
+        text='Requester may click the reactions below to switch tabs')
     return embed
