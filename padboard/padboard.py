@@ -1,20 +1,19 @@
-import os
-from collections import defaultdict
-from collections import deque
-
 import aiohttp
 import cv2
 import discord
 import numpy as np
+import os
+from collections import defaultdict
+from collections import deque
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
-
 from tsutils import tsutils
 
 DATA_DIR = os.path.join('data', 'padboard')
 
 DAWNGLARE_BOARD_TEMPLATE = "https://pad.dawnglare.com/?patt={}"
 CNINJA_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
+
 
 class PadBoard(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -53,7 +52,6 @@ class PadBoard(commands.Cog):
     async def set_tflite_path(self, ctx, *, path):
         await self.config.tflite_path.set(path)
         await ctx.tick()
-
 
     def find_image(self, user_id):
         urls = list(self.logs[user_id])
@@ -95,11 +93,12 @@ class PadBoard(commands.Cog):
         # Convert O (used by padvision code) to X (used by Puzzled for bombs)
         board_text_nc = board_text_nc.replace('o', 'x')
         msg = DAWNGLARE_BOARD_TEMPLATE.format(board_text_nc)
-        msg += '\n'+CNINJA_BOARD_TEMPLATE.format(board_text_nc)
+        msg += '\n' + CNINJA_BOARD_TEMPLATE.format(board_text_nc)
 
         await ctx.send(msg)
 
-    async def get_recent_image(self, ctx, user: discord.Member = None, message: discord.Message = None):
+    async def get_recent_image(self, ctx, user: discord.Member = None,
+                               message: discord.Message = None):
         user_id = user.id if user else ctx.author.id
 
         image_url = tsutils.extract_image_url(message)
@@ -108,10 +107,12 @@ class PadBoard(commands.Cog):
 
         if not image_url:
             if user:
-                await ctx.send(inline("Couldn't find an image in that user's recent messages."))
+                await ctx.send(inline(
+                    "Couldn't find an image in that user's recent messages."))
             else:
                 await ctx.send(
-                    inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
+                    inline(
+                        "Couldn't find an image in your recent messages. Upload or link to one and try again"))
             return None
 
         image_data = await self.download_image(image_url)
@@ -132,5 +133,7 @@ class PadBoard(commands.Cog):
         if not PDV_COG:
             raise IOError("PadVision is not loaded")
         PDV_MODULE = __import__(PDV_COG.__module__)
-        img_extractor = PDV_MODULE.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
+        img_extractor = PDV_MODULE.NeuralClassifierBoardExtractor(model_path,
+                                                                  img_np,
+                                                                  image_data)
         return img_extractor.get_board()

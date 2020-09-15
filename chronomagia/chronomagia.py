@@ -1,22 +1,23 @@
 import asyncio
 import csv
 import difflib
+import discord
+import logging
 import os
 import traceback
-import urllib.parse
-import logging
-from collections import OrderedDict
-
-import discord
 import tsutils
-from tsutils import Menu, EmojiUpdater
+import urllib.parse
+from collections import OrderedDict
 from redbot.core import commands, data_manager, checks
 from redbot.core.utils.chat_formatting import inline
+from tsutils import Menu, EmojiUpdater
 
 logger = logging.getLogger('red.padbot-cogs.chronomagia')
 
+
 def _data_file(file_name: str) -> str:
-    return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')), file_name)
+    return os.path.join(str(data_manager.cog_data_path(raw_name='padglobal')),
+                        file_name)
 
 
 SUMMARY_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsO9Xi9cKaUQWPvDjjIKpHotZ036LCTN66PuNoQwvb8qZi4LmEUEOYmHDyqUJUzghI28aPrQHfRSYd/pub?gid=1488138129&single=true&output=csv'
@@ -102,11 +103,13 @@ class ChronoMagia(commands.Cog):
         names_to_card = {x.name_clean: x for x in self.card_data}
 
         # Check if the card name starts with the query
-        matches = list(filter(lambda x: x.startswith(query), names_to_card.keys()))
+        matches = list(
+            filter(lambda x: x.startswith(query), names_to_card.keys()))
 
         # Find a card that closely matches the query
         if not matches:
-            matches = difflib.get_close_matches(query, names_to_card.keys(), n=1, cutoff=.6)
+            matches = difflib.get_close_matches(query, names_to_card.keys(),
+                                                n=1, cutoff=.6)
 
         # Find a card that contains the query text
         if not matches:
@@ -128,8 +131,11 @@ class ChronoMagia(commands.Cog):
         emoji_to_embed[remove_emoji] = self.menu.reaction_delete_message
 
         try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx, EmojiUpdater(emoji_to_embed),
-                                                                   starting_menu_emoji, timeout=20)
+            result_msg, result_embed = await self.menu.custom_menu(ctx,
+                                                                   EmojiUpdater(
+                                                                       emoji_to_embed),
+                                                                   starting_menu_emoji,
+                                                                   timeout=20)
             if result_msg and result_embed:
                 # Message is finished but not deleted, clear the footer
                 result_embed.set_footer(text=discord.Embed.Empty)
@@ -141,7 +147,8 @@ class ChronoMagia(commands.Cog):
 def make_base_embed(c: CmCard):
     embed = discord.Embed()
     embed.title = c.name
-    embed.set_footer(text='Requester may click the reactions below to switch tabs')
+    embed.set_footer(
+        text='Requester may click the reactions below to switch tabs')
     return embed
 
 
@@ -149,10 +156,14 @@ def make_embed(c: CmCard):
     embed = make_base_embed(c)
 
     embed.add_field(
-        name=c.monspell, value='{}\nCost {}'.format(c.rarity, c.cost), inline=True)
+        name=c.monspell, value='{}\nCost {}'.format(c.rarity, c.cost),
+        inline=True)
     if c.monspell == 'Monster':
-        mtype = '\n{}/{} '.format(c.type1, c.type2) if c.type2 else '{} '.format(c.type1)
-        embed.add_field(name=mtype, value='Atk {}\nDef {}'.format(c.atk, c.defn), inline=True)
+        mtype = '\n{}/{} '.format(c.type1,
+                                  c.type2) if c.type2 else '{} '.format(c.type1)
+        embed.add_field(name=mtype,
+                        value='Atk {}\nDef {}'.format(c.atk, c.defn),
+                        inline=True)
         if c.expansion:
             embed.add_field(name='Expansion', value=c.expansion, inline=False)
 

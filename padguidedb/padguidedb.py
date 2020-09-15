@@ -1,15 +1,13 @@
 import asyncio
 import csv
+import discord
 import io
 import json
 import logging
-
-import discord
 import pymysql
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline, box, pagify
-
 from tsutils import CogSettings, tsutils
 
 logger = logging.getLogger('red.padbot-cogs.padguidedb')
@@ -17,7 +15,8 @@ logger = logging.getLogger('red.padbot-cogs.padguidedb')
 
 def is_padguidedb_admin_check(ctx):
     is_owner = ctx.author.id in ctx.bot.owner_ids
-    return is_owner or ctx.bot.get_cog("PadGuideDb").settings.checkAdmin(ctx.author.id)
+    return is_owner or ctx.bot.get_cog("PadGuideDb").settings.checkAdmin(
+        ctx.author.id)
 
 
 def is_padguidedb_admin():
@@ -108,7 +107,8 @@ class PadGuideDb(commands.Cog):
                    ' order by dungeon_id desc limit 20')
             cursor.execute(sql, [search_text, search_text])
             results = list(cursor.fetchall())
-            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
+            msg = 'Results\n' + json.dumps(results, indent=2,
+                                           ensure_ascii=False)
             await ctx.send(inline(sql))
             for page in pagify(msg):
                 await ctx.send(box(page))
@@ -136,34 +136,44 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
-    async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
+    async def setuserinfo(self, ctx, server: str, user_uuid: str,
+                          user_intid: str):
         """Set the dungeon script."""
         self.settings.setUserInfo(server, user_uuid, user_intid)
         await ctx.tick()
 
     @padguidedb.command()
     @is_padguidedb_admin()
-    async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int, queues: int = 1):
+    async def loaddungeon(self, ctx, server: str, dungeon_id: int,
+                          dungeon_floor_id: int, queues: int = 1):
         if queues > 5:
             await ctx.send("You must send less than 5 queues.")
             return
         elif self.queue_size + queues > 60:
-            await ctx.send("The size of the queue cannot exceed 60.  It is currently {}.".format(self.queue_size))
+            await ctx.send(
+                "The size of the queue cannot exceed 60.  It is currently {}.".format(
+                    self.queue_size))
             return
         elif not self.settings.hasUserInfo(server):
-            await ctx.send("There is no account associated with server '{}'.".format(server.upper()))
+            await ctx.send(
+                "There is no account associated with server '{}'.".format(
+                    server.upper()))
             return
 
         self.queue_size += queues
         if queues == 1:
-            await ctx.send(inline('Queueing load in slot {}'.format(self.queue_size)))
+            await ctx.send(
+                inline('Queueing load in slot {}'.format(self.queue_size)))
         else:
             await ctx.send(
-                inline('Queueing loads in slots {}-{}'.format(self.queue_size - queues + 1, self.queue_size)))
+                inline('Queueing loads in slots {}-{}'.format(
+                    self.queue_size - queues + 1, self.queue_size)))
 
         event_loop = asyncio.get_event_loop()
         for queue in range(queues):
-            event_loop.create_task(self.do_dungeon_load(ctx, server.upper(), dungeon_id, dungeon_floor_id))
+            event_loop.create_task(
+                self.do_dungeon_load(ctx, server.upper(), dungeon_id,
+                                     dungeon_floor_id))
 
     async def do_dungeon_load(self, ctx, server, dungeon_id, dungeon_floor_id):
         async with self.dungeon_load_lock:
@@ -185,26 +195,31 @@ class PadGuideDb(commands.Cog):
             if stderr:
                 logger.error("Dungeon Load Error:\n" + stderr.decode())
                 await tsutils.doubleup(ctx, inline(
-                    'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
+                    'Load for {} {} {} failed'.format(server, dungeon_id,
+                                                      dungeon_floor_id)))
             else:
                 await tsutils.doubleup(ctx, inline(
-                    'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+                    'Load for {} {} {} finished'.format(server, dungeon_id,
+                                                        dungeon_floor_id)))
             self.queue_size -= 1
 
     @padguidedb.command()
     @is_padguidedb_admin()
-    async def olddungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
+    async def olddungeondrops(self, ctx, dungeon_id: int,
+                              dungeon_floor_id: int):
         with self.get_cursor() as cursor:
             sql = ("SELECT stage, drop_monster_id, COUNT(*) AS count"
                    " FROM wave_data"
                    " WHERE dungeon_id = {} AND floor_id = {}"
                    " GROUP BY 1, 2"
-                   " ORDER BY 1, 2").format(int(dungeon_id), int(dungeon_floor_id))
+                   " ORDER BY 1, 2").format(int(dungeon_id),
+                                            int(dungeon_floor_id))
             cursor.execute(sql)
             results = list(cursor.fetchall())
             msg = 'stage,drop_monster_id,count'
             for row in results:
-                msg += '\n{},{},{}'.format(row['stage'], row['drop_monster_id'], row['count'])
+                msg += '\n{},{},{}'.format(row['stage'], row['drop_monster_id'],
+                                           row['count'])
             for page in pagify(msg):
                 await ctx.send(box(page))
 
@@ -230,10 +245,10 @@ class PadGuideDb(commands.Cog):
 
             msg = 'floor_id,count\n'
             for row in results1:
-                msg += ','.join(map(str,row.values()))+"\n"
+                msg += ','.join(map(str, row.values())) + "\n"
             msg += '\n\nfloor_id,monster_id,count\n'
             for row in results2:
-                msg += ','.join(map(str,row.values()))+"\n"
+                msg += ','.join(map(str, row.values())) + "\n"
 
             for page in pagify(msg):
                 await ctx.send(box(page))
@@ -242,7 +257,8 @@ class PadGuideDb(commands.Cog):
     @checks.is_owner()
     async def cleardungeon(self, ctx, dungeon_id: int):
         with self.get_cursor() as cursor:
-            sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
+            sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(
+                int(dungeon_id))
             cursor.execute(sql)
         await ctx.tick()
 
@@ -250,7 +266,8 @@ class PadGuideDb(commands.Cog):
     @is_padguidedb_admin()
     async def dungeondata(self, ctx, dungeon_id: int):
         with self.get_cursor() as cursor:
-            sql = "SELECT * FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
+            sql = "SELECT * FROM wave_data WHERE dungeon_id = {}".format(
+                int(dungeon_id))
             cursor.execute(sql)
             results = list(cursor.fetchall())
             order = sorted(results[0])
@@ -260,7 +277,8 @@ class PadGuideDb(commands.Cog):
             writer.writerow(order)
             writer.writerows(rows)
             fauxfile.seek(0)
-            m = await ctx.send(file=discord.File(fauxfile, filename="dungeondata.csv"))
+            m = await ctx.send(
+                file=discord.File(fauxfile, filename="dungeondata.csv"))
         await asyncio.sleep(10)
         await m.delete()
 
@@ -278,7 +296,8 @@ class PadGuideDb(commands.Cog):
             return
 
         async with self.full_etl_lock:
-            await ctx.send(inline('Running full ETL pipeline: this could take a while'))
+            await ctx.send(
+                inline('Running full ETL pipeline: this could take a while'))
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.fullETLFile(),
@@ -303,7 +322,8 @@ class PadGuideDb(commands.Cog):
             return
 
         async with self.extract_images_lock:
-            await ctx.send(inline('Running image extract pipeline: this could take a while'))
+            await ctx.send(inline(
+                'Running image extract pipeline: this could take a while'))
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.imageUpdateFile(),
