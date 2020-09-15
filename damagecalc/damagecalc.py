@@ -62,7 +62,8 @@ class PadLexer(object):
         t.value = t.value.strip('row').strip('(').strip(')')
         t.value = int(t.value) if t.value else 6
         if t.value < 6 or t.value > 30:
-            raise commands.UserFeedbackCheckFailure('row must have 6-30 orbs, got ' + t.value)
+            raise commands.UserFeedbackCheckFailure(
+                'row must have 6-30 orbs, got ' + t.value)
 
         return t
 
@@ -76,7 +77,8 @@ class PadLexer(object):
         t.value = t.value.strip('orb').strip('s').strip('(').strip(')')
         t.value = int(t.value) if t.value else 3
         if t.value < 3 or t.value > 30:
-            raise commands.UserFeedbackCheckFailure('match must have 3-30 orbs, got ' + t.value)
+            raise commands.UserFeedbackCheckFailure(
+                'match must have 3-30 orbs, got ' + t.value)
         return t
 
     def t_COMBO(self, t):
@@ -88,7 +90,8 @@ class PadLexer(object):
     t_ignore = ' \t\n'
 
     def t_error(self, t):
-        raise commands.UserFeedbackCheckFailure("Invalid text: '%s'" % (t.value,))
+        raise commands.UserFeedbackCheckFailure(
+            "Invalid text: '%s'" % (t.value,))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
@@ -148,14 +151,17 @@ class DamageConfig(object):
         if self.combos is None:
             self.combos = 0
 
-        if (len(self.row_matches) + len(self.tpa_matches) + len(self.orb_matches)) == 0:
-            raise commands.UserFeedbackCheckFailure('You need to specify at least one attack match (orb, tpa, row)')
+        if (len(self.row_matches) + len(self.tpa_matches) + len(
+                self.orb_matches)) == 0:
+            raise commands.UserFeedbackCheckFailure(
+                'You need to specify at least one attack match (orb, tpa, row)')
 
     def setIfType(self, expected_type, given_type, current_value, new_value):
         if expected_type != given_type:
             return current_value
         if current_value is not None:
-            raise commands.UserFeedbackCheckFailure('You set {} more than once'.format(given_type))
+            raise commands.UserFeedbackCheckFailure(
+                'You set {} more than once'.format(given_type))
         return new_value
 
     def updateWithMonster(self, monster):
@@ -166,7 +172,8 @@ class DamageConfig(object):
 
     def calculateMatchDamage(self, match, all_enhanced):
         orb_damage = (1 + (match - 3) * .25)
-        oe_damage = (1 + .06 * match) * (1 + .05 * self.oe) if all_enhanced else 1
+        oe_damage = (1 + .06 * match) * (
+                    1 + .05 * self.oe) if all_enhanced else 1
         tpa_damage = math.pow(1.5, self.tpas) if match == 4 else 1
         return self.atk * orb_damage * oe_damage * tpa_damage
 
@@ -175,7 +182,8 @@ class DamageConfig(object):
         for match in (self.row_matches + self.tpa_matches + self.orb_matches):
             base_damage += self.calculateMatchDamage(match, all_enhanced)
 
-        combo_count = len(self.row_matches) + len(self.tpa_matches) + len(self.orb_matches) + self.combos
+        combo_count = len(self.row_matches) + len(self.tpa_matches) + len(
+            self.orb_matches) + self.combos
         combo_mult = 1 + (combo_count - 1) * .25
         row_mult = 1 + self.rows / 10 * len(self.row_matches)
 
@@ -266,6 +274,7 @@ class DamageCalc(commands.Cog):
             damage = config.calculate(all_enhanced=False)
             enhanced_damage = config.calculate(all_enhanced=True)
             await ctx.send(
-                "```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(damage, enhanced_damage))
+                "```Damage (no enhanced) :  {}\nDamage (all enhanced) : {}```".format(
+                    damage, enhanced_damage))
         except commands.UserFeedbackCheckFailure as e:
             await ctx.send(e.message)

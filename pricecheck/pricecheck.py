@@ -1,9 +1,7 @@
-import re
-
 import discord
+import re
 from redbot.core import commands, checks, Config
 from redbot.core.utils.chat_formatting import inline, box, pagify
-
 from tsutils import auth_check
 
 PC_TEXT = """{name} - Stamina Cost: {stam_cost}
@@ -41,7 +39,8 @@ class PriceCheck(commands.Cog):
         """Displays pricing data for a tradable non-collab gem."""
         padinfo_cog = self.bot.get_cog('PadInfo')
         if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+            await ctx.send(inline(
+                "Error: PadInfo Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
@@ -54,11 +53,11 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(nm.name_na))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name = nm.name_na,
-                             stam_cost = sc,
-                             pp_val = sc*83/50,
-                             points = sc*83/50/297,
-                             foot = foot)
+        pct = PC_TEXT.format(name=nm.name_na,
+                             stam_cost=sc,
+                             pp_val=sc * 83 / 50,
+                             points=sc * 83 / 50 / 297,
+                             foot=foot)
         if await self.config.channel(ctx.channel).dm():
             for page in pagify(pct):
                 await ctx.author.send(box(page))
@@ -76,7 +75,8 @@ class PriceCheck(commands.Cog):
         """Adds stamina cost data to a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
         if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+            await ctx.send(inline(
+                "Error: PadInfo Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
@@ -89,14 +89,17 @@ class PriceCheck(commands.Cog):
             if str(nm.base_monster_no) in pcs:
                 foot = pcs[str(nm.base_monster_no)][1]
             pcs[str(nm.base_monster_no)] = (stam_cost, foot)
-        await ctx.send(box("Set {} ({}) to {}".format(nm.name_na, nm.base_monster_no, stam_cost)))
+        await ctx.send(box(
+            "Set {} ({}) to {}".format(nm.name_na, nm.base_monster_no,
+                                       stam_cost)))
 
     @pcadmin.command(aliases=['addfooter', 'addfoot', 'setfoot'])
     async def setfooter(self, ctx, query, *, footer=""):
         """Adds notes regarding the stamina cost of a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
         if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+            await ctx.send(inline(
+                "Error: PadInfo Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
@@ -109,14 +112,17 @@ class PriceCheck(commands.Cog):
             if str(nm.base_monster_no) in pcs:
                 sc = pcs[str(nm.base_monster_no)][0]
             pcs[str(nm.base_monster_no)] = (sc, footer.strip('`'))
-        await ctx.send(box("Set {} ({}) footer to '{}'".format(nm.name_na, nm.base_monster_no, footer)))
+        await ctx.send(box(
+            "Set {} ({}) footer to '{}'".format(nm.name_na, nm.base_monster_no,
+                                                footer)))
 
     @pcadmin.command(aliases=['delete', 'del', 'rm'])
     async def remove(self, ctx, *, query):
         """Removes stamina cost data from a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
         if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+            await ctx.send(inline(
+                "Error: PadInfo Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
