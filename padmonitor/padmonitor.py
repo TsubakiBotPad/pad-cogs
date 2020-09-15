@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import tsutils
-from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import inline, box, pagify
+from redbot.core import checks, commands
+from redbot.core.utils.chat_formatting import box, inline, pagify
 
 logger = logging.getLogger('red.padbot-cogs.padmonitor')
 

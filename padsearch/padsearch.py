@@ -404,8 +404,7 @@ class PadSearchLexer(object):
     t_ignore = ' \t\n'
 
     def t_error(self, t):
-        raise commands.UserFeedbackCheckFailure(
-            "Unknown text '%s'" % (t.value,))
+        raise commands.UserFeedbackCheckFailure("Unknown text '%s'" % (t.value,))
 
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
@@ -454,26 +453,21 @@ class SearchConfig(object):
             value = tok.value
             self.all |= type == 'ALL'
             self.cd = self.setIfType('CD', type, self.cd, value)
-            self.farmable = self.setIfType('FARMABLE', type, self.farmable,
-                                           value)
+            self.farmable = self.setIfType('FARMABLE', type, self.farmable, value)
             self.haste = self.setIfType('HASTE', type, self.haste, value)
-            self.inheritable = self.setIfType('INHERITABLE', type,
-                                              self.inheritable, value)
+            self.inheritable = self.setIfType('INHERITABLE', type, self.inheritable, value)
             self.shuffle = self.setIfType('SHUFFLE', type, self.shuffle, value)
             self.unlock = self.setIfType('UNLOCK', type, self.unlock, value)
             self.resolve = self.setIfType('RESOLVE', type, self.resolve, value)
             self.delay = self.setIfType('DELAY', type, self.delay, value)
             self.combo = self.setIfType('COMBO', type, self.combo, value)
-            self.absorbnull = self.setIfType('ABSORBNULL', type,
-                                             self.absorbnull, value)
-            self.attabsorb = self.setIfType('ATTABSORB', type, self.attabsorb,
-                                            value)
+            self.absorbnull = self.setIfType('ABSORBNULL', type, self.absorbnull, value)
+            self.attabsorb = self.setIfType('ATTABSORB', type, self.attabsorb, value)
             self.shield = self.setIfType('SHIELD', type, self.shield, value)
             self.atk = self.setIfType('ATK', type, self.atk, value)
             self.hp = self.setIfType('HP', type, self.hp, value)
             self.rcv = self.setIfType('RCV', type, self.rcv, value)
-            self.weighted = self.setIfType('WEIGHTED', type, self.weighted,
-                                           value)
+            self.weighted = self.setIfType('WEIGHTED', type, self.weighted, value)
 
             if type == 'ACTIVE':
                 self.active.append(value)
@@ -502,8 +496,7 @@ class SearchConfig(object):
             if type == 'TYPE':
                 if value not in TYPES:
                     raise commands.UserFeedbackCheckFailure(
-                        'Unexpected type {}, expected one of {}'.format(value,
-                                                                        TYPES))
+                        'Unexpected type {}, expected one of {}'.format(value, TYPES))
                 self.types.append(value)
             if type == 'REMOVE':
                 self.remove.append(value)
@@ -518,8 +511,7 @@ class SearchConfig(object):
 
         # Single
         if self.cd:
-            self.filters.append(lambda
-                                    m: m.search.active_min and m.search.active_min <= self.cd)
+            self.filters.append(lambda m: m.search.active_min and m.search.active_min <= self.cd)
 
         if self.farmable:
             self.filters.append(lambda m: m.farmable_evo)
@@ -557,12 +549,10 @@ class SearchConfig(object):
             self.filters.append(lambda m,
                                        tt=text_to,
                                        tf=text_from:
-                                [
-                                    tt] in m.search.orb_convert.values() if text_from == 'any' else
-                                (
-                                    tf in m.search.orb_convert.keys() if text_to == 'any' else
-                                    (tf in m.search.orb_convert.keys() and
-                                     tt in m.search.orb_convert[tf])))
+                                [tt] in m.search.orb_convert.values() if text_from == 'any' else
+                                (tf in m.search.orb_convert.keys() if text_to == 'any' else
+                                 (tf in m.search.orb_convert.keys() and
+                                  tt in m.search.orb_convert[tf])))
 
         if self.absorbnull:
             text = 'damage absorb shield'
@@ -577,21 +567,17 @@ class SearchConfig(object):
             self.filters.append(lambda m, t=text: t in m.search.active_desc)
 
         if self.atk:
-            self.filters.append(
-                lambda m: m.search.atk and m.search.atk >= self.atk)
+            self.filters.append(lambda m: m.search.atk and m.search.atk >= self.atk)
 
         if self.hp:
-            self.filters.append(
-                lambda m: m.search.hp and m.search.hp >= self.hp)
+            self.filters.append(lambda m: m.search.hp and m.search.hp >= self.hp)
 
         if self.rcv:
-            self.filters.append(
-                lambda m: m.search.rcv and m.search.rcv >= self.rcv)
+            self.filters.append(lambda m: m.search.rcv and m.search.rcv >= self.rcv)
 
         if self.weighted:
             self.filters.append(
-                lambda
-                    m: m.search.weighted_stats and m.search.weighted_stats >= self.weighted)
+                lambda m: m.search.weighted_stats and m.search.weighted_stats >= self.weighted)
 
         # Multiple
         if self.reactive:
@@ -630,8 +616,7 @@ class SearchConfig(object):
                 if text == 'any':
                     filters.append(lambda m: m.search.column_convert)
                 else:
-                    filters.append(
-                        lambda m, t=text: t in m.search.column_convert)
+                    filters.append(lambda m, t=text: t in m.search.column_convert)
             self.filters.append(self.or_filters(filters))
 
         if self.hascolor:
@@ -688,8 +673,7 @@ class SearchConfig(object):
                 filters.append(lambda m, t=text: t not in m.search.name)
             self.filters.append(self.or_filters(filters))
         if not self.filters and not self.re_filters and not self.gl_filters:
-            raise commands.UserFeedbackCheckFailure(
-                'You need to specify at least one filter')
+            raise commands.UserFeedbackCheckFailure('You need to specify at least one filter')
 
     def check_filters(self, m):
         for f in self.filters:
@@ -703,11 +687,9 @@ class SearchConfig(object):
         except TimeoutError:
             logger.error("Timeout with patttern: \"{}\" by user {} ({})".format(
                 '", "'.join(self.regeces), ctx.author.name, ctx.author.id))
-            raise commands.UserFeedbackCheckFailure(
-                "Regex took too long to compile.  Stop trying to break the bot")
+            raise commands.UserFeedbackCheckFailure("Regex took too long to compile.  Stop trying to break the bot")
         except re.error as e:
-            raise commands.UserFeedbackCheckFailure(
-                "Regex search threw error '{}'".format(e.msg))
+            raise commands.UserFeedbackCheckFailure("Regex search threw error '{}'".format(e.msg))
 
     async def check_glob_filters(self, ms, ctx):
         try:
@@ -715,8 +697,7 @@ class SearchConfig(object):
         except TimeoutError:
             logger.error("Timeout with patttern: \"{}\" by user {} ({})".format(
                 '", "'.join(self.globs), ctx.author.name, ctx.author.id))
-            raise commands.UserFeedbackCheckFailure(
-                "Glob took too long to compile.  Stop trying to break the bot")
+            raise commands.UserFeedbackCheckFailure("Glob took too long to compile.  Stop trying to break the bot")
 
     def or_filters(self, filters):
         def fn(m, filters=filters):
@@ -731,8 +712,7 @@ class SearchConfig(object):
         if expected_type != given_type:
             return current_value
         if current_value is not None:
-            raise commands.UserFeedbackCheckFailure(
-                'You set {} more than once'.format(given_type))
+            raise commands.UserFeedbackCheckFailure('You set {} more than once'.format(given_type))
         return new_value
 
 
@@ -786,8 +766,7 @@ class PadSearch(commands.Cog):
         matched_monsters = [m for m in monsters if config.check_filters(m)]
         # Running regeces/globs on a timer
         matched_monsters = await config.check_re_filters(matched_monsters, ctx)
-        matched_monsters = await config.check_glob_filters(matched_monsters,
-                                                           ctx)
+        matched_monsters = await config.check_glob_filters(matched_monsters, ctx)
 
         # Removing entry with names that have gems in it
 
@@ -796,8 +775,7 @@ class PadSearch(commands.Cog):
         msg = 'Matched {} monsters'.format(len(matched_monsters))
         dm_required = False
         if len(matched_monsters) == len(monsters):
-            await ctx.send(
-                "All monsters were matched.  Try with a more specific query.")
+            await ctx.send("All monsters were matched.  Try with a more specific query.")
             return
         if len(matched_monsters) > 10:
             if not config.all:
@@ -837,5 +815,4 @@ class PadSearch(commands.Cog):
             await ctx.send(box('No match: ' + err))
             return
 
-        await ctx.send(
-            box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))
+        await ctx.send(box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))

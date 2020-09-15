@@ -11,7 +11,7 @@ from datetime import timedelta
 from enum import Enum
 from redbot.core import checks
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import inline, box, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
@@ -56,8 +56,7 @@ class PadEvents(commands.Cog):
                 await self.refresh_data()
                 logger.info('Done refreshing PadEvents')
             except Exception as ex:
-                logger.exception(
-                    "reload padevents loop caught exception " + str(ex))
+                logger.exception("reload padevents loop caught exception " + str(ex))
 
             await asyncio.sleep(60 * 60 * 1)
 
@@ -80,42 +79,33 @@ class PadEvents(commands.Cog):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadEvents'):
             try:
-                events = filter(lambda
-                                    e: e.is_started() and not e.key in self.started_events,
-                                self.events)
+                events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
 
                 daily_refresh_servers = set()
                 for e in events:
                     self.started_events.add(e.key)
-                    if e.event_type in [EventType.Guerrilla,
-                                        EventType.GuerrillaNew,
-                                        EventType.SpecialWeek]:
+                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek]:
                         for gr in list(self.settings.listGuerrillaReg()):
                             if e.server == gr['server']:
                                 try:
-                                    message = box(
-                                        "Server " + e.server + ", group " +
-                                        e.groupLongName() + " : " + e.name_and_modifier)
-                                    channel = self.bot.get_channel(
-                                        int(gr['channel_id']))
+                                    message = box("Server " + e.server + ", group " +
+                                                  e.groupLongName() + " : " + e.name_and_modifier)
+                                    channel = self.bot.get_channel(int(gr['channel_id']))
 
                                     try:
                                         role_name = '{}_group_{}'.format(
                                             e.server, e.groupLongName())
-                                        role = get_role(channel.guild.roles,
-                                                        role_name)
+                                        role = get_role(channel.guild.roles, role_name)
                                         if role and role.mentionable:
                                             message = "{} `: {} is starting`".format(
-                                                role.mention,
-                                                e.name_and_modifier)
+                                                role.mention, e.name_and_modifier)
                                     except:
                                         pass  # do nothing if role is missing
 
                                     await channel.send(message)
                                 except Exception as ex:
                                     # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
-                                    logger.exception(
-                                        "caught exception while sending guerrilla msg:")
+                                    logger.exception("caught exception while sending guerrilla msg:")
 
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
@@ -123,21 +113,16 @@ class PadEvents(commands.Cog):
 
                 for server in daily_refresh_servers:
                     msg = self.makeActiveText(server)
-                    for daily_registration in list(
-                            self.settings.listDailyReg()):
+                    for daily_registration in list(self.settings.listDailyReg()):
                         try:
                             if server == daily_registration['server']:
-                                await self.pageOutput(self.bot.get_channel(
-                                    daily_registration['channel_id']),
-                                                      msg, channel_id=
-                                                      daily_registration[
-                                                          'channel_id'])
+                                await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
+                                                      msg, channel_id=daily_registration['channel_id'])
                                 logger.info("daily_reg server")
                         except Exception as ex:
                             # self.settings.removeDailyReg(
                             #   daily_registration['channel_id'], daily_registration['server'])
-                            logger.exception(
-                                "caught exception while sending daily msg:")
+                            logger.exception("caught exception while sending daily msg:")
 
             except Exception as ex:
                 logger.exception("caught exception while checking guerrillas:")
@@ -171,8 +156,7 @@ class PadEvents(commands.Cog):
         te.key = lambda: fuid
         te.group_name = 'Yellow'
 
-        te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(
-            seconds=seconds)
+        te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)
         te.close_datetime = te.open_datetime + timedelta(minutes=1)
         te.dungeon_name = 'fake_dungeon_name'
         te.event_modifier = 'fake_event_modifier'
@@ -265,8 +249,7 @@ class PadEvents(commands.Cog):
             channel = self.bot.get_channel(int(reg_channel_id))
             channel_name = channel.name if channel else 'Unknown(' + reg_channel_id + ')'
             server_name = channel.guild.name if channel else 'Unknown server'
-            msg += "   " + cr[
-                'server'] + " : " + server_name + '(' + channel_name + ')\n'
+            msg += "   " + cr['server'] + " : " + server_name + '(' + channel_name + ')\n'
         return msg
 
     @padevents.command()
@@ -291,8 +274,7 @@ class PadEvents(commands.Cog):
         special_events = active_events.withType(
             EventType.Special).itemsByCloseTime()
         if len(special_events) > 0:
-            msg += "\n\n" + self.makeActiveOutput('Special Events',
-                                                  special_events)
+            msg += "\n\n" + self.makeActiveOutput('Special Events', special_events)
 
         all_etc_events = active_events.withType(EventType.Etc)
 
@@ -302,37 +284,29 @@ class PadEvents(commands.Cog):
             msg += "\n\n" + self.makeActiveOutput('Etc Events', etc_events)
 
         # Old-style guerrillas
-        active_guerrilla_events = active_events.withType(
-            EventType.Guerrilla).items()
+        active_guerrilla_events = active_events.withType(EventType.Guerrilla).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveGuerrillaOutput('Active Guerrillas',
-                                                  active_guerrilla_events)
+                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
 
         guerrilla_events = pending_events.withType(EventType.Guerrilla).items()
         if len(guerrilla_events) > 0:
-            msg += "\n\n" + self.makeFullGuerrillaOutput('Guerrilla Events',
-                                                         guerrilla_events)
+            msg += "\n\n" + self.makeFullGuerrillaOutput('Guerrilla Events', guerrilla_events)
 
         # New-style guerrillas
-        active_guerrilla_events = active_events.withType(
-            EventType.SpecialWeek).items()
+        active_guerrilla_events = active_events.withType(EventType.SpecialWeek).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveGuerrillaOutput('Active Guerrillas',
-                                                  active_guerrilla_events)
+                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
 
-        guerrilla_events = pending_events.withType(
-            EventType.SpecialWeek).items()
+        guerrilla_events = pending_events.withType(EventType.SpecialWeek).items()
         if len(guerrilla_events) > 0:
             msg += "\n\n" + \
                    self.makeFullGuerrillaOutput(
-                       'Guerrilla Events', guerrilla_events,
-                       starter_guerilla=True)
+                       'Guerrilla Events', guerrilla_events, starter_guerilla=True)
 
         # clean up long headers
-        msg = msg.replace('-------------------------------------',
-                          '-----------------------')
+        msg = msg.replace('-------------------------------------', '-----------------------')
 
         return msg
 
@@ -344,11 +318,9 @@ class PadEvents(commands.Cog):
                 if channel_id is None:
                     await ctx.send(format_type(page))
                 else:
-                    await self.bot.get_channel(int(channel_id)).send(
-                        format_type(page))
+                    await self.bot.get_channel(int(channel_id)).send(format_type(page))
             except Exception as e:
-                logger.exception("page output failed " + str(e),
-                                 "tried to output: " + page)
+                logger.exception("page output failed " + str(e), "tried to output: " + page)
 
     def makeActiveOutput(self, table_name, event_list):
         tbl = prettytable.PrettyTable(["Time", table_name])
@@ -367,19 +339,16 @@ class PadEvents(commands.Cog):
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row(
-                [e.name_and_modifier, e.group, e.endFromNowFullMin().strip()])
+            tbl.add_row([e.name_and_modifier, e.group, e.endFromNowFullMin().strip()])
         return tbl.get_string()
 
-    def makeFullGuerrillaOutput(self, table_name, event_list,
-                                starter_guerilla=False):
+    def makeFullGuerrillaOutput(self, table_name, event_list, starter_guerilla=False):
         events_by_name = defaultdict(list)
         for e in event_list:
             events_by_name[e.name_and_modifier].append(e)
 
         rows = list()
-        grps = ["RED", "BLUE", "GREEN"] if starter_guerilla else ["A", "B", "C",
-                                                                  "D", "E"]
+        grps = ["RED", "BLUE", "GREEN"] if starter_guerilla else ["A", "B", "C", "D", "E"]
         for name, events in events_by_name.items():
             events = sorted(events, key=lambda e: e.open_datetime)
             events_by_group = defaultdict(list)
@@ -530,8 +499,7 @@ class Event:
         self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
         self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
-        self.clean_event_name = self.event_name.replace('!', '').replace(' ',
-                                                                         '')
+        self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')
 
         self.name_and_modifier = self.clean_dungeon_name
         if self.clean_event_name != '':
@@ -594,14 +562,11 @@ class Event:
         return fmtTimeShort(self.startPst())
 
     def toDateStr(self):
-        return self.server + "," + self.group + "," + fmtTime(
-            self.startPst()) + "," + fmtTime(
+        return self.server + "," + self.group + "," + fmtTime(self.startPst()) + "," + fmtTime(
             self.startEst()) + "," + self.startFromNow()
 
     def groupShortName(self):
-        return self.group.upper().replace('RED', 'R').replace('BLUE',
-                                                              'B').replace(
-            'GREEN', 'G')
+        return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
 
     def groupLongName(self):
         return self.group.upper()
@@ -611,8 +576,7 @@ class Event:
         if self.is_started():
             return group + " " + self.endFromNow() + "   " + self.name_and_modifier
         else:
-            return group + " " + fmtTimeShort(
-                self.startPst()) + " " + fmtTimeShort(
+            return group + " " + fmtTimeShort(self.startPst()) + " " + fmtTimeShort(
                 self.startEst()) + " " + self.startFromNow() + " " + self.name_and_modifier
 
 
@@ -639,8 +603,7 @@ class EventList:
         return self.withFunc(lambda e: e.dungeon_type == dungeon_type, exclude)
 
     def withNameContains(self, name, exclude=False):
-        return self.withFunc(lambda e: name.lower() in e.dungeon_name.lower(),
-                             exclude)
+        return self.withFunc(lambda e: name.lower() in e.dungeon_name.lower(), exclude)
 
     def excludeUnwantedEvents(self):
         return self.withFunc(isEventWanted)
@@ -661,14 +624,10 @@ class EventList:
         return self.withFunc(lambda e: e.is_available())
 
     def itemsByOpenTime(self, reverse=False):
-        return list(sorted(self.event_list,
-                           key=(lambda e: (e.open_datetime, e.dungeon_name)),
-                           reverse=reverse))
+        return list(sorted(self.event_list, key=(lambda e: (e.open_datetime, e.dungeon_name)), reverse=reverse))
 
     def itemsByCloseTime(self, reverse=False):
-        return list(sorted(self.event_list,
-                           key=(lambda e: (e.close_datetime, e.dungeon_name)),
-                           reverse=reverse))
+        return list(sorted(self.event_list, key=(lambda e: (e.close_datetime, e.dungeon_name)), reverse=reverse))
 
 
 # TIME_FMT = """%a %b %d %H:%M:%S %Y"""
