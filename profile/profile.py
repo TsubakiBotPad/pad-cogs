@@ -1,12 +1,13 @@
-import discord
-import logging
 import re
+import logging
+
+import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import inline, box, pagify
+
 from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.profile')
-
 
 def normalizeServer(server):
     server = server.upper().strip()
@@ -17,8 +18,7 @@ SUPPORTED_SERVERS = ["NA", "KR", "JP", "EU"]
 
 
 def validateAndCleanId(id):
-    id = id.replace('-', '').replace(' ', '').replace(',', '').replace('.',
-                                                                       '').strip()
+    id = id.replace('-', '').replace(' ', '').replace(',', '').replace('.', '').strip()
     if re.match(r'^\d{9}$', id):
         return id
     else:
@@ -27,8 +27,7 @@ def validateAndCleanId(id):
 
 def formatNameLine(server, pad_name, pad_id):
     group = computeOldGroup(pad_id)
-    return "[{}]: '{}' : {} (Group {})".format(server, pad_name,
-                                               formatId(pad_id), group)
+    return "[{}]: '{}' : {} (Group {})".format(server, pad_name, formatId(pad_id), group)
 
 
 def formatId(id):
@@ -52,11 +51,9 @@ class Profile(commands.Cog):
 
         data = "Stored data for user with ID {}:\n".format(user_id)
         if udata['servers']:
-            data += " - You have a profile on the following server(s): {}.\n".format(
-                ', '.join(udata['servers']))
+            data += " - You have a profile on the following server(s): {}.\n".format(', '.join(udata['servers']))
         if udata['default_server']:
-            data += " - Your default server is {}.\n".format(
-                udata['default_server'])
+            data += " - Your default server is {}.\n".format(udata['default_server'])
 
         if not any(udata.values()):
             data = "No data is stored for user with ID {}.\n".format(user_id)
@@ -93,9 +90,8 @@ class Profile(commands.Cog):
         if profile_msg is None:
             return
 
-        warning = inline(
-            "{} asked me to send you this message. Report any harassment to the mods.".format(
-                ctx.author.name))
+        warning = inline("{} asked me to send you this message. Report any harassment to the mods.".format(
+            ctx.author.name))
         msg = warning + "\n" + profile_msg
         await ctx.send(user, msg)
         await ctx.author.send(inline("Sent your profile to " + user.name))
@@ -168,14 +164,11 @@ class Profile(commands.Cog):
         id = " ".join(id)
         clean_id = validateAndCleanId(id)
         if clean_id is None:
-            await ctx.send(inline(
-                'Your ID looks invalid, expected a 9 digit code, got: {}'.format(
-                    id)))
+            await ctx.send(inline('Your ID looks invalid, expected a 9 digit code, got: {}'.format(id)))
             return
 
         self.settings.setId(ctx.author.id, server, clean_id)
-        await ctx.send(inline(
-            'Set your id for {} to: {}'.format(server, formatId(clean_id))))
+        await ctx.send(inline('Set your id for {} to: {}'.format(server, formatId(clean_id))))
 
     @profile.command(name="name")
     async def setName(self, ctx, server, *name):
@@ -186,8 +179,7 @@ class Profile(commands.Cog):
 
         name = " ".join(name)
         self.settings.setName(ctx.author.id, server, name)
-        await ctx.send(
-            inline('Set your name for {} to: {}'.format(server, name)))
+        await ctx.send(inline('Set your name for {} to: {}'.format(server, name)))
 
     @profile.command(name="text")
     async def setText(self, ctx, server, *text):
@@ -206,8 +198,7 @@ class Profile(commands.Cog):
             return
 
         self.settings.setProfileText(ctx.author.id, server, text)
-        await ctx.send(
-            inline('Set your profile for ' + server + ' to:\n' + text))
+        await ctx.send(inline('Set your profile for ' + server + ' to:\n' + text))
 
     @profile.command(name="clear")
     async def clear(self, ctx, server=None):
@@ -240,27 +231,23 @@ class Profile(commands.Cog):
             return
 
         # Get all profiles for server
-        profiles = [p[server] for p in self.settings.profiles().values() if
-                    server in p]
+        profiles = [p[server] for p in self.settings.profiles().values() if server in p]
         # Eliminate profiles without an ID set
         profiles = filter(lambda p: 'id' in p, profiles)
         profiles = list(profiles)
 
         # Match the profiles against the search text
-        matching_profiles = filter(
-            lambda p: search_text in p.get('text', '').lower(), profiles)
+        matching_profiles = filter(lambda p: search_text in p.get('text', '').lower(), profiles)
         matching_profiles = list(matching_profiles)
 
         template = 'Found {}/{} matching profiles in {} for : {}'
-        msg = template.format(len(matching_profiles), len(profiles), server,
-                              search_text)
+        msg = template.format(len(matching_profiles), len(profiles), server, search_text)
         await ctx.send(inline(msg))
 
         if len(matching_profiles) == 0:
             return
 
-        msg = 'Displaying {} matches for server {}:\n'.format(
-            len(matching_profiles), server)
+        msg = 'Displaying {} matches for server {}:\n'.format(len(matching_profiles), server)
         for p in matching_profiles:
             pad_id = formatId(p['id'])
             pad_name = p.get('name', 'unknown')
