@@ -81,7 +81,11 @@ class PadBoard(commands.Cog):
         if not image_data:
             return
 
-        img_board_nc = await self.nc_classify(image_data)
+        try:
+            img_board_nc = await self.nc_classify(image_data)
+        except IOError:
+            await ctx.send("PadVision not loaded.")
+            return
 
         if not img_board_nc:
             await ctx.send(inline("TFLite path not set."))
@@ -125,7 +129,8 @@ class PadBoard(commands.Cog):
         if not model_path:
             return None
         PDV_COG = self.bot.get_cog("PadVision")
-        raise IOError("PadVision is not loaded")
+        if not PDV_COG:
+            raise IOError("PadVision is not loaded")
         PDV_MODULE = __import__(PDV_COG.__module__)
         img_extractor = PDV_MODULE.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()
