@@ -49,10 +49,10 @@ class PriceCheck(commands.Cog):
             return
         async with self.config.pcs() as pcs:
             if str(nm.base_monster_no) not in pcs:
-                await ctx.send("{} does not have PC data.".format(nm.name_na))
+                await ctx.send("{} does not have PC data.".format(nm.name_en))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name=nm.name_na,
+        pct = PC_TEXT.format(name=nm.name_en,
                              stam_cost=sc,
                              pp_val=sc * 83 / 50,
                              points=sc * 83 / 50 / 297,
@@ -87,7 +87,7 @@ class PriceCheck(commands.Cog):
             if str(nm.base_monster_no) in pcs:
                 foot = pcs[str(nm.base_monster_no)][1]
             pcs[str(nm.base_monster_no)] = (stam_cost, foot)
-        await ctx.send(box("Set {} ({}) to {}".format(nm.name_na, nm.base_monster_no, stam_cost)))
+        await ctx.send(box("Set {} ({}) to {}".format(nm.name_en, nm.base_monster_no, stam_cost)))
 
     @pcadmin.command(aliases=['addfooter', 'addfoot', 'setfoot'])
     async def setfooter(self, ctx, query, *, footer=""):
@@ -107,7 +107,7 @@ class PriceCheck(commands.Cog):
             if str(nm.base_monster_no) in pcs:
                 sc = pcs[str(nm.base_monster_no)][0]
             pcs[str(nm.base_monster_no)] = (sc, footer.strip('`'))
-        await ctx.send(box("Set {} ({}) footer to '{}'".format(nm.name_na, nm.base_monster_no, footer)))
+        await ctx.send(box("Set {} ({}) footer to '{}'".format(nm.name_en, nm.base_monster_no, footer)))
 
     @pcadmin.command(aliases=['delete', 'del', 'rm'])
     async def remove(self, ctx, *, query):
@@ -124,10 +124,10 @@ class PriceCheck(commands.Cog):
             return
         async with self.config.pcs() as pcs:
             if str(nm.base_monster_no) not in pcs:
-                await ctx.send("{} does not have PC data.".format(nm.name_na))
+                await ctx.send("{} does not have PC data.".format(nm.name_en))
                 return
             del pcs[str(nm.base_monster_no)]
-        await ctx.send(inline("Removed PC data from {}.".format(nm.name_na)))
+        await ctx.send(inline("Removed PC data from {}.".format(nm.name_en)))
 
     @pcadmin.command(aliases=['set-demon-ly'])
     async def setdmonly(self, ctx, value: bool = True):
