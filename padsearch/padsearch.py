@@ -790,7 +790,7 @@ class PadSearch(commands.Cog):
                 matched_monsters = matched_monsters[0:200]
 
         for m in matched_monsters:
-            msg += '\n\tNo. {} {}'.format(m.monster_no_na, m.name_na)
+            msg += '\n\tNo. {} {}'.format(m.monster_no_na, m.name_en)
 
         if dm_required:
             header += '\nList too long to display; sent via DM'
