@@ -2,18 +2,16 @@
 setuptools
 wheel
 Red-DiscordBot[postgres]
-backoff
 prettytable
-git+https://github.com/tejstead/python-romkan
+romkan
 google-api
 google-api-python-client
 google-cloud
 google-cloud-texttospeech
 pymysql
-python-dateutil
 ply
-aioodbc # might require: sudo apt-get install unixodbc-dev python3.8-dev
 opencv-python
 Pillow
 pytz
 aiohttp
+oauth2client
