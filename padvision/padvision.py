@@ -91,8 +91,7 @@ class OrbExtractor(object):
         box_yend = box_ystart + self.orb_size
         box_xstart = x * self.orb_size + self.xstart
         box_xend = box_xstart + self.orb_size
-        return int(box_xstart + offset), int(box_ystart + offset), int(
-            box_xend - offset), int(box_yend - offset)
+        return int(box_xstart + offset), int(box_ystart + offset), int(box_xend - offset), int(box_yend - offset)
 
     def get_orb_coords(self, x, y):
         box_xstart, box_ystart, box_xend, box_yend = self.get_orb_vertices(x, y)
@@ -151,14 +150,12 @@ class NeuralClassifierBoardExtractor(object):
         input_tensor_idx = input_details['index']
         output_tensor_idx = output_details['index']
 
-        input_data = np.zeros((1, input_orb_size, input_orb_size, 3),
-                              dtype='uint8')
+        input_data = np.zeros((1, input_orb_size, input_orb_size, 3), dtype='uint8')
 
         for y, x in board_iterator():
             box_coords = oe.get_orb_vertices(x, y)
             orb_img = self.img.crop(box_coords)
-            orb_img = orb_img.resize((input_orb_size, input_orb_size),
-                                     PIL.Image.ANTIALIAS)
+            orb_img = orb_img.resize((input_orb_size, input_orb_size), PIL.Image.ANTIALIAS)
             input_data[0] = np.array(orb_img)
 
             interpreter.set_tensor(input_tensor_idx, input_data)
