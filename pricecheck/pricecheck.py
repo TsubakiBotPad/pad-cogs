@@ -26,7 +26,9 @@ class PriceCheck(commands.Cog):
         self.config = Config.get_conf(self, identifier=9213337337)
         self.config.register_global(pcs={})
         self.config.register_channel(dm=False)
-        self.bot.get_cog("GlobalAdmin").register_perm("pcadmin")
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("pcadmin")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
