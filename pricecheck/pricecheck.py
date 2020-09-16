@@ -4,14 +4,20 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
 
-PC_TEXT = """{name} - Stamina Cost: {stam_cost}
+DISCLAIMER = ("DISCLAIMER: This calculation is made by Lumon#6561 and is NOT"
+              " endorsed by the Tsubaki Bot Team. Please remember that this"
+              " value is meant to be a baseline and does not reflect the current"
+              " market value of the gem.")
 
-{name} - Plus Point Value: {pp_val}
-({points} 297 Plus Points)
+PC_TEXT = """{name}
+ - Stamina Cost: {stam_cost}
+ - Plus Point Value: {pp_val} ({points} 𝟤𝟫𝟩 Plus Points)
 
 {foot}
 """
 
+def rint(x, p):
+    return str(round(x, p)).rstrip('0').rstrip('.')
 
 class PriceCheck(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -53,16 +59,18 @@ class PriceCheck(commands.Cog):
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
         pct = PC_TEXT.format(name=nm.name_na,
-                             stam_cost=sc,
-                             pp_val=sc * 83 / 50,
-                             points=sc * 83 / 50 / 297,
+                             stam_cost=rint(sc, 2),
+                             pp_val=rint(sc * 83 / 50, 2),
+                             points=rint(sc * 83 / 50 / 297, 2),
                              foot=foot)
         if await self.config.channel(ctx.channel).dm():
+            await ctx.send(inline(DISCLAIMER))
             for page in pagify(pct):
-                await ctx.author.send(box(page))
+                await ctx.author.send(box(page.replace("'","ʼ"), lang='py'))
         else:
+            await ctx.send(inline(DISCLAIMER))
             for page in pagify(pct):
-                await ctx.send(box(page))
+                await ctx.send(box(page.replace("'","ʼ"), lang='py'))
 
     @commands.group()
     @auth_check('pcadmin')
