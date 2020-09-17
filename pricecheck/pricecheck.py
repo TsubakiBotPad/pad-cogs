@@ -4,14 +4,17 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
 
-PC_TEXT = """{name} - Stamina Cost: {stam_cost}
+DISCLAIMER = "**Disclaimer**: This is Lumon's data. Use at your own discretion."
 
-{name} - Plus Point Value: {pp_val}
-({points} 297 Plus Points)
+PC_TEXT = """{name}
+ - Stamina Cost: {stam_cost}
+ - Plus Point Value: {pp_val} ({points} 𝟤𝟫𝟩 Plus Points)
 
 {foot}
 """
 
+def rint(x, p):
+    return str(round(x, p)).rstrip('0').rstrip('.')
 
 class PriceCheck(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -20,7 +23,9 @@ class PriceCheck(commands.Cog):
         self.config = Config.get_conf(self, identifier=9213337337)
         self.config.register_global(pcs={})
         self.config.register_channel(dm=False)
-        self.bot.get_cog("GlobalAdmin").register_perm("pcadmin")
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("pcadmin")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -52,17 +57,19 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(nm.name_en))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name=nm.name_en,
-                             stam_cost=sc,
-                             pp_val=sc * 83 / 50,
-                             points=sc * 83 / 50 / 297,
+        pct = PC_TEXT.format(name=nm.name_na,
+                             stam_cost=rint(sc, 2),
+                             pp_val=rint(sc * 83 / 50, 2),
+                             points=rint(sc * 83 / 50 / 297, 2),
                              foot=foot)
         if await self.config.channel(ctx.channel).dm():
+            await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.author.send(box(page))
+                await ctx.author.send(box(page.replace("'","ʼ"), lang='py'))
         else:
+            await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.send(box(page))
+                await ctx.send(box(page.replace("'","ʼ"), lang='py'))
 
     @commands.group()
     @auth_check('pcadmin')
