@@ -201,7 +201,7 @@ class PadGlobal(commands.Cog):
             data_holder = io.StringIO()
             writer = csv.writer(data_holder)
             for nn, nm in nn_map.items():
-                writer.writerow([nn, nm.monster_no_na, nm.name_na])
+                writer.writerow([nn, nm.monster_no_na, nm.name_en])
             bytes_data = io.BytesIO(data_holder.getvalue().encode())
             await ctx.channel.send(file=discord.File(bytes_data, file_name))
 
@@ -219,7 +219,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(box('No match: ' + err))
             return
 
-        msg = "{}. {}".format(m.monster_no_na, m.name_na)
+        msg = "{}. {}".format(m.monster_no_na, m.name_en)
         msg += "\nLookup type: {}".format(debug_info)
 
         def list_or_none(l):
@@ -261,11 +261,11 @@ class PadGlobal(commands.Cog):
             lambda nn: (nn, padinfo_cog.index_all.two_word_entries[nn]), replaced_twnn)
 
         replaced_nn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_na),
+            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
                                     replaced_nn_info))
 
         replaced_twnn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_na),
+            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
                                       replaced_twnn_info))
 
         msg += "\n nicknames: {}".format(list_or_none(replaced_nn_text))
@@ -826,7 +826,7 @@ class PadGlobal(commands.Cog):
         m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
         op = 'EDITED' if name in self.settings.which() else 'ADDED'
@@ -839,9 +839,9 @@ class PadGlobal(commands.Cog):
         m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await confirm_message(ctx, "Are you sure you want to globally remove the which data for {}?".format(
-                m.name_na)):
+                m.name_en)):
             return
         name = m.monster_id
 
@@ -888,7 +888,7 @@ class PadGlobal(commands.Cog):
         term = term.lower().replace('?', '')
         nm, err, deb = await lookup_named_monster(term)
         base = nm.group_computed_basename.title() if nm else nm
-        name = nm.name_na if nm else nm
+        name = nm.name_en if nm else nm
         monster_id = nm.monster_id if nm else nm
         definition = self.settings.which().get(monster_id, None)
         await ctx.send('Which Debug:\n```Base: {}\nName: {}\nID: {}\nError: {}\nDebug: {}```'
@@ -1187,7 +1187,7 @@ class PadGlobal(commands.Cog):
         m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
         op = 'EDITED' if name in self.settings.leaderGuide() else 'ADDED'
@@ -1200,10 +1200,10 @@ class PadGlobal(commands.Cog):
         m = monster_id_to_monster(monster_id)
         if m != m.base_monster:
             m = m.base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_na))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await confirm_message(ctx,
                                      "Are you sure you want to globally remove the leaderguide data for {}?".format(
-                                             m.name_na)):
+                                             m.name_en)):
             return
         name = m.monster_id
 
@@ -1236,7 +1236,7 @@ def check_simple_tree(monster):
             return False
         if m.is_equip:
             return False
-        if 'awoken' in m.name_na.lower():
+        if 'awoken' in m.name_en.lower():
             return False
     return True
 

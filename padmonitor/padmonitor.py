@@ -60,10 +60,10 @@ class PadMonitor(commands.Cog):
 
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
-                    msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_na)
-                    if tsutils.containsJp(
-                            m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
-                        msg += ' ({})'.format(m.name_na_override)
+                    msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_en)
+                    if tsutils.containsJa(
+                            m.name_en) and m.name_en_override != m.name_en and m.name_en_override is not None:
+                        msg += ' ({})'.format(m.name_en_override)
                 return msg
             else:
                 return None
