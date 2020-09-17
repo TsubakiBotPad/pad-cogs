@@ -83,7 +83,7 @@ class PadMonitor(commands.Cog):
             for page in pagify(message):
                 await channel.send(box(page))
         except Exception as ex:
-            logger.exception('failed to send message to', channel_id, ' : ', ex)
+            logger.exception('failed to send message to {}:'.format(channel_id))
 
     @commands.group()
     @checks.mod_or_permissions(manage_guild=True)
