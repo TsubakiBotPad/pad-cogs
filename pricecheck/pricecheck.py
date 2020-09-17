@@ -4,10 +4,7 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
 
-DISCLAIMER = ("DISCLAIMER: This calculation is made by Lumon#6561 and is NOT"
-              " endorsed by the Tsubaki Bot Team. Please remember that this"
-              " value is meant to be a baseline and does not reflect the current"
-              " market value of the gem.")
+DISCLAIMER = "**Disclaimer**: This is Lumon's data. Use at your own discretion."
 
 PC_TEXT = """{name}
  - Stamina Cost: {stam_cost}
@@ -66,11 +63,11 @@ class PriceCheck(commands.Cog):
                              points=rint(sc * 83 / 50 / 297, 2),
                              foot=foot)
         if await self.config.channel(ctx.channel).dm():
-            await ctx.send(inline(DISCLAIMER))
+            await ctx.send(DISCLAIMER)
             for page in pagify(pct):
                 await ctx.author.send(box(page.replace("'","ʼ"), lang='py'))
         else:
-            await ctx.send(inline(DISCLAIMER))
+            await ctx.send(DISCLAIMER)
             for page in pagify(pct):
                 await ctx.send(box(page.replace("'","ʼ"), lang='py'))
 
