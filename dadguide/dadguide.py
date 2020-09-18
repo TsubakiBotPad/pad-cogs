@@ -654,8 +654,8 @@ class DadguideDatabase(object):
     def get_monster(self, monster_id: int):
         return self._select_one_entry_by_pk(monster_id, DgMonster)
 
-    def get_all_monster_jp_name(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_jp',)}), (), DictWithAttrAccess,
+    def get_all_monster_ja_name(self, as_generator=True):
+        return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
 
     def get_all_monsters(self, as_generator=True):
@@ -718,11 +718,11 @@ class DgActiveSkill(DadguideItem):
 
     @property
     def desc(self):
-        return self.desc_na or self.desc_jp
+        return self.desc_en or self.desc_ja
 
     @property
     def name(self):
-        return self.name_na or self.name_jp
+        return self.name_en or self.name_ja
 
 
 class DgLeaderSkill(DadguideItem):
@@ -735,11 +735,11 @@ class DgLeaderSkill(DadguideItem):
 
     @property
     def desc(self):
-        return self.desc_na or self.desc_jp
+        return self.desc_en or self.desc_ja
 
     @property
     def name(self):
-        return self.name_na or self.name_jp
+        return self.name_en or self.name_ja
 
 
 class DgAwakening(DadguideItem):
@@ -756,7 +756,7 @@ class DgAwakening(DadguideItem):
 
     @property
     def name(self):
-        return self.skill.name_na if self.skill.name_na is not None else self.skill.name_jp
+        return self.skill.name_en if self.skill.name_en is not None else self.skill.name_ja
 
 
 class DgAwokenSkill(DadguideItem):
@@ -787,7 +787,7 @@ class DgSeries(DadguideItem):
 
     @property
     def name(self):
-        return self.name_na if self.name_na is not None else self.name_jp
+        return self.name_en if self.name_en is not None else self.name_ja
 
 
 class DgDungeon(DadguideItem):
@@ -839,13 +839,13 @@ class DgMonster(DadguideItem):
         super(DgMonster, self).__init__(item, database)
 
         self.roma_subname = None
-        if self.name_na == self.name_jp:
-            self.roma_subname = make_roma_subname(self.name_jp)
+        if self.name_en == self.name_ja:
+            self.roma_subname = make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
-            self.name_na = tsutils.rmdiacritics(self.name_na)
+            self.name_en = tsutils.rmdiacritics(self.name_en)
 
-        self.name_na = self.name_na_override or self.name_na
+        self.name_en = self.name_en_override or self.name_en
 
         self.attr1 = enum_or_none(Attribute, self.attribute_1_id)
         self.attr2 = enum_or_none(Attribute, self.attribute_2_id)
@@ -950,7 +950,7 @@ class DgMonster(DadguideItem):
 
     @property
     def evo_gem(self):
-        return self._database.get_monster_evo_gem(self.name_jp)
+        return self._database.get_monster_evo_gem(self.name_ja)
 
     @property
     def material_of(self):
@@ -1068,7 +1068,7 @@ class DgMonster(DadguideItem):
 class MonsterSearchHelper(object):
     def __init__(self, m: DgMonster):
 
-        self.name = '{} {}'.format(m.name_na, m.name_jp).lower()
+        self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
         leader_skill = m.leader_skill
         self.leader = leader_skill.desc.lower() if leader_skill else ''
         active_skill = m.active_skill
@@ -1169,12 +1169,12 @@ class MonsterSearchHelper(object):
                             self.orb_convert[so].append(do)
 
 
-def make_roma_subname(name_jp):
-    subname = name_jp.replace('＝', '')
+def make_roma_subname(name_ja):
+    subname = name_ja.replace('＝', '')
     adjusted_subname = ''
     for part in subname.split('・'):
         roma_part = romkan.to_roma(part)
-        if part != roma_part and not tsutils.containsJp(roma_part):
+        if part != roma_part and not tsutils.containsJa(roma_part):
             adjusted_subname += ' ' + roma_part.strip('-')
     return adjusted_subname.strip()
 
@@ -1270,7 +1270,7 @@ class MonsterIndex(tsutils.aobject):
                         self.pantheons[pantheon.lower()].add(nm)
 
         self.all_monsters = named_monsters
-        self.all_na_name_to_monsters = {m.name_na.lower(): m for m in named_monsters}
+        self.all_en_name_to_monsters = {m.name_en.lower(): m for m in named_monsters}
         self.monster_no_na_to_named_monster = {m.monster_no_na: m for m in named_monsters}
         self.monster_id_to_named_monster = {m.monster_id: m for m in named_monsters}
 
@@ -1300,11 +1300,11 @@ class MonsterIndex(tsutils.aobject):
         # TODO: add prefixes based on type
 
         # Chibi monsters have the same NA name, except lowercased
-        lower_name = m.name_na.lower()
-        if m.name_na != m.name_jp:
-            if lower_name == m.name_na:
+        lower_name = m.name_en.lower()
+        if m.name_en != m.name_ja:
+            if lower_name == m.name_en:
                 prefixes.add('chibi')
-        elif 'ミニ' in m.name_jp:
+        elif 'ミニ' in m.name_ja:
             # Guarding this separately to prevent 'gemini' from triggering (e.g. 2645)
             prefixes.add('chibi')
 
@@ -1351,7 +1351,7 @@ class MonsterIndex(tsutils.aobject):
         # If any monster in the group is a pixel, add 'nonpixel' to all the versions
         # without pixel in the name. Add 'pixel' as a prefix to the ones with pixel in the name.
         def is_pixel(n):
-            n = n.name_na.lower()
+            n = n.name_en.lower()
             return n.startswith('pixel') or n.startswith('ドット')
 
         for gm in evotree:
@@ -1386,10 +1386,10 @@ class MonsterIndex(tsutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_jp = tsutils.containsJp(query)
-        if len(query) < 2 and contains_jp:
+        contains_ja = tsutils.containsJa(query)
+        if len(query) < 2 and contains_ja:
             return None, 'Japanese queries must be at least 2 characters', None
-        elif len(query) < 4 and not contains_jp:
+        elif len(query) < 4 and not contains_ja:
             return None, 'Your query must be at least 4 letters', None
 
         # TODO: this should be a length-limited priority queue
@@ -1415,13 +1415,13 @@ class MonsterIndex(tsutils.aobject):
             if nickname.startswith(query):
                 matches.add(m)
         if len(matches):
-            all_names = ",".join(map(lambda x: x.name_na, matches))
+            all_names = ",".join(map(lambda x: x.name_en, matches))
             return self.pickBestMonster(matches), None, "Nickname prefix, max of {}, matches=({})".format(
                 len(matches), all_names)
 
         # prefix search for full name, take max id
         for nickname, m in self.all_entries.items():
-            if (m.name_na.lower().startswith(query) or m.name_jp.lower().startswith(query)):
+            if (m.name_en.lower().startswith(query) or m.name_ja.lower().startswith(query)):
                 matches.add(m)
         if len(matches):
             return self.pickBestMonster(matches), None, "Full name, max of {}".format(len(matches))
@@ -1434,7 +1434,7 @@ class MonsterIndex(tsutils.aobject):
 
         # full name contains on nickname, take max id
         for nickname, m in self.all_entries.items():
-            if (query in m.name_na.lower() or query in m.name_jp.lower()):
+            if (query in m.name_en.lower() or query in m.name_ja.lower()):
                 matches.add(m)
         if len(matches):
             return self.pickBestMonster(matches), None, 'Nickname contains nickname match ({})'.format(
@@ -1448,16 +1448,16 @@ class MonsterIndex(tsutils.aobject):
 
         # Still no decent matches. Try near hits on full name instead
         matches = difflib.get_close_matches(
-            query, self.all_na_name_to_monsters.keys(), n=1, cutoff=.9)
+            query, self.all_en_name_to_monsters.keys(), n=1, cutoff=.9)
         if len(matches):
             match = matches[0]
-            return self.all_na_name_to_monsters[match], None, 'Close name match ({})'.format(match)
+            return self.all_en_name_to_monsters[match], None, 'Close name match ({})'.format(match)
 
         # About to give up, try matching all words
         matches = set()
         for nickname, m in self.all_entries.items():
-            if (all(map(lambda x: x in m.name_na.lower(), query.split())) or
-                    all(map(lambda x: x in m.name_jp.lower(), query.split()))):
+            if (all(map(lambda x: x in m.name_en.lower(), query.split())) or
+                    all(map(lambda x: x in m.name_ja.lower(), query.split()))):
                 matches.add(m)
         if len(matches):
             return self.pickBestMonster(matches), None, 'All word match on full name, max of {}'.format(
@@ -1487,10 +1487,10 @@ class MonsterIndex(tsutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_jp = tsutils.containsJp(query)
-        if len(query) < 2 and contains_jp:
+        contains_ja = tsutils.containsJa(query)
+        if len(query) < 2 and contains_ja:
             return None, 'Japanese queries must be at least 2 characters', None
-        elif len(query) < 4 and not contains_jp:
+        elif len(query) < 4 and not contains_ja:
             return None, 'Your query must be at least 4 letters', None
 
         # we want to look up only the main part of the query, and then verify that each result has the prefixes
@@ -1527,8 +1527,8 @@ class MonsterIndex(tsutils.aobject):
         # if we don't have any candidates yet, pick a new method
         if not matches.length():
             # try matching on exact names next
-            for nickname, m in self.all_na_name_to_monsters.items():
-                if new_query in m.name_na.lower() or new_query in m.name_jp.lower():
+            for nickname, m in self.all_en_name_to_monsters.items():
+                if new_query in m.name_en.lower() or new_query in m.name_ja.lower():
                     matches.add(m)
             matches.remove_potential_matches_without_all_prefixes(query_prefixes)
 
@@ -1609,7 +1609,7 @@ class NamedMonsterGroup(object):
         self.basenames = basename_overrides or self.computed_basenames
 
     def _compute_monster_basename(self, m: DgMonster):
-        basename = m.name_na.lower()
+        basename = m.name_en.lower()
         if ',' in basename:
             name_parts = basename.split(',')
             if name_parts[1].strip().startswith('the '):
@@ -1655,12 +1655,12 @@ class NamedMonsterGroup(object):
         lp_types = [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
         lp_substrings = ['tamadra']
         lp_min_rarity = 2
-        name = m.name_na.lower()
+        name = m.name_en.lower()
 
         failed_type = m.type1 in lp_types
         failed_ss = any([x in name for x in lp_substrings])
         failed_rarity = m.rarity < lp_min_rarity
-        failed_chibi = name == m.name_na and m.name_na != m.name_jp
+        failed_chibi = name == m.name_en and m.name_en != m.name_ja
         failed_equip = m.is_equip
         return failed_type or failed_ss or failed_rarity or failed_chibi or failed_equip
 
@@ -1697,8 +1697,8 @@ class NamedMonster(object):
         self.rarity = monster.rarity
 
         # Used in fallback searches
-        self.name_na = monster.name_na
-        self.name_jp = monster.name_jp
+        self.name_en = monster.name_en
+        self.name_ja = monster.name_ja
 
         # These are just extra metadata
         self.monster_basename = monster_group.monster_no_to_basename[self.monster_id]
