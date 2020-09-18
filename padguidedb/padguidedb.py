@@ -101,8 +101,8 @@ class PadGuideDb(commands.Cog):
         """Search"""
         search_text = '%{}%'.format(search_text)
         with self.get_cursor() as cursor:
-            sql = ('select dungeon_id, name_na, name_jp, visible from dungeons'
-                   ' where lower(name_na) like %s or lower(name_jp) like %s'
+            sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
+                   ' where lower(name_en) like %s or lower(name_ja) like %s'
                    ' order by dungeon_id desc limit 20')
             cursor.execute(sql, [search_text, search_text])
             results = list(cursor.fetchall())

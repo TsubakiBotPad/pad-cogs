@@ -255,7 +255,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await ctx.send(monsterToHeader(m))
-            await ctx.send(box(m.name_jp))
+            await ctx.send(box(m.name_ja))
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -457,7 +457,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             embed = monsterToBaseEmbed(m)
             embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
                 SKYOZORA_TEMPLATE.format(m.monster_no_jp),
                 INFO_PDX_TEMPLATE.format(m.monster_no_jp),
                 ILMINA_TEMPLATE.format(m.monster_no_jp))
@@ -666,7 +666,7 @@ class PadInfo(commands.Cog):
                       [debug_info1, debug_info2]
                       ))
             if m1 and m2:
-                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_na, m2.name_na))
+                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_en, m2.name_en))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
         file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
         await ctx.send(file=file)
@@ -781,11 +781,11 @@ class PadInfoSettings(CogSettings):
 
 
 def monsterToHeader(m: "DgMonster", link=False):
-    msg = 'No. {} {}'.format(m.monster_no_na, m.name_na)
+    msg = 'No. {} {}'.format(m.monster_no_na, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJpSuffix(m: "DgMonster"):
+def monsterToJaSuffix(m: "DgMonster"):
     suffix = ""
     if m.roma_subname:
         suffix += ' [{}]'.format(m.roma_subname)
@@ -795,7 +795,7 @@ def monsterToJpSuffix(m: "DgMonster"):
 
 
 def monsterToLongHeader(m: "DgMonster", link=False):
-    msg = monsterToHeader(m) + monsterToJpSuffix(m)
+    msg = monsterToHeader(m) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1135,9 +1135,9 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
                 tbl.add_row([row_name.format(plus), hp, atk, rcv])
         body_text += box(tbl.get_string())
 
-    body_text += "\n**JP Name**: {}".format(m.name_jp)
+    body_text += "\n**JP Name**: {}".format(m.name_ja)
     body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-        YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+        YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
         SKYOZORA_TEMPLATE.format(m.monster_no_jp),
         INFO_PDX_TEMPLATE.format(m.monster_no_jp),
         ILMINA_TEMPLATE.format(m.monster_no_jp))
