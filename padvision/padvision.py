@@ -122,7 +122,7 @@ class NeuralClassifierBoardExtractor(object):
     def __init__(self, model_path, np_img, img_bytes):
         self.model_path = model_path
         self.np_img = np_img
-        self.img = PIL.Image.open(io.BytesIO(img_bytes))
+        self.img = PIL.Image.open(io.BytesIO(img_bytes)).convert('RGB')
         self.processed = False
         self.results = [['u' for x in range(6)] for y in range(5)]
 
