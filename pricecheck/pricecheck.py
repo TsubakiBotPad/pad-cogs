@@ -57,7 +57,7 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(nm.name_en))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name=nm.name_na,
+        pct = PC_TEXT.format(name=nm.name_en,
                              stam_cost=rint(sc, 2),
                              pp_val=rint(sc * 83 / 50, 2),
                              points=rint(sc * 83 / 50 / 297, 2),
