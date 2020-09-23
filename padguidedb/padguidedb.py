@@ -188,7 +188,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                logger.error("Dungeon Load Error:\n" + stderr.decode())
+                logger.error("Dungeon Load Error:\n{}\n\n{}".format(stdout.decode(), stderr.decode()))
                 await tsutils.doubleup(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
