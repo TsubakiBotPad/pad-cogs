@@ -134,6 +134,13 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
+    async def setimageupdatefile(self, ctx, *, python_executable):
+        """Set the python executable file."""
+        self.settings.setPythonExecutable(python_executable)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
     async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
         """Set the dungeon script."""
         self.settings.setUserInfo(server, user_uuid, user_intid)
@@ -166,7 +173,7 @@ class PadGuideDb(commands.Cog):
     async def do_dungeon_load(self, ctx, server, dungeon_id, dungeon_floor_id):
         async with self.dungeon_load_lock:
             process = await asyncio.create_subprocess_exec(
-                '/usr/bin/python3',
+                self.settings.pythonExecutable(),
                 self.settings.dungeonScriptFile(),
                 '--db_config={}'.format(self.settings.configFile()),
                 '--server={}'.format(server),
@@ -326,6 +333,7 @@ class PadGuideDbSettings(CogSettings):
             'dungeon_script_file': '',
             'full_etl_file': '',
             'update_image_file': '',
+            'python_executable': '/usr/bin/python3',
             'users': {},
         }
         return config
@@ -375,6 +383,13 @@ class PadGuideDbSettings(CogSettings):
 
     def setUpdateImageFile(self, update_image_file):
         self.bot_settings['update_image_file'] = update_image_file
+        self.save_settings()
+
+    def pythonExecutable(self):
+        return self.bot_settings.get('python_executable', '/usr/bin/python3')
+
+    def setPythonExecutable(self, python_executable):
+        self.bot_settings['python_executable'] = python_executable
         self.save_settings()
 
     def setUserInfo(self, server, user_uuid, user_intid):
