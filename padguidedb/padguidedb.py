@@ -134,7 +134,7 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
-    async def setimageupdatefile(self, ctx, *, python_executable):
+    async def setpythonexecutable(self, ctx, *, python_executable):
         """Set the python executable file."""
         self.settings.setPythonExecutable(python_executable)
         await ctx.tick()
