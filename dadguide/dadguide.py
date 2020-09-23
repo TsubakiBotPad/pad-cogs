@@ -629,9 +629,9 @@ class DadguideDatabase(object):
 
     def get_monster_evo_gem(self, name: str, region='jp'):
         gem_suffix = {
-            'jp': 'の希石',
-            'na': '\'s Gem',
-            'kr': ' 의 휘석'
+            'ja': 'の希石',
+            'en': '\'s Gem',
+            'ko': ' 의 휘석'
         }
         if region not in gem_suffix:
             return None
