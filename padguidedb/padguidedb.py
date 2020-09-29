@@ -378,10 +378,10 @@ class PadGuideDbSettings(CogSettings):
         self.bot_settings['full_etl_file'] = full_etl_file
         self.save_settings()
 
-    def updateImageUpdateFile(self):
+    def imageUpdateFile(self):
         return self.bot_settings.get('dungeon_script_file', '')
 
-    def setUpdateImageUpdateFile(self, update_image_file):
+    def setImageUpdateFile(self, update_image_file):
         self.bot_settings['update_image_file'] = update_image_file
         self.save_settings()
 
