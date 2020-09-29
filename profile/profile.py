@@ -121,7 +121,7 @@ class Profile(commands.Cog):
         if server is None:
             return
 
-        pad_id = self.settings.getId(user.id, server)
+        pad_id = str(self.settings.getId(user.id, server))
         pad_name = self.settings.getName(user.id, server)
         profile_text = self.settings.getProfileText(user.id, server)
 
@@ -299,11 +299,11 @@ class ProfileSettings(CogSettings):
         return profile[server]
 
     def setId(self, user, server, id):
-        self.getProfile(user, server)['id'] = id
+        self.getProfile(user, server)['id'] = int(id)
         self.save_settings()
 
     def getId(self, user, server):
-        return self.getProfile(user, server).get('id', '000000000')
+        return self.getProfile(user, server).get('id', 000000000)
 
     def setName(self, user, server, name):
         self.getProfile(user, server)['name'] = name
