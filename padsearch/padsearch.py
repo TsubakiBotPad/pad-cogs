@@ -16,7 +16,7 @@ HELP_MSG = """
 To get more than 10 results, include the word 'all' in your search.
 
 Colors can be any of:
-  fire water wood light dark
+  fire water wood light dark null
 Additionally, orb colors can be any of:
   heart jammer poison mortal and bomb
 
@@ -67,6 +67,7 @@ COLORS = [
     'wood',
     'light',
     'dark',
+    'null',
 ]
 
 TYPES = [
@@ -133,6 +134,7 @@ COLOR_REPLACEMENTS = {
     'g': 'wood',
     'l': 'light',
     'd': 'dark',
+    'x': 'null',
     'heart': 'heal',
     'h': 'heal',
     'p': 'poison',
