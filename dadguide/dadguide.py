@@ -271,8 +271,8 @@ class Attribute(Enum):
     Wood = 2
     Light = 3
     Dark = 4
-    Unused = 5
-    Null = 6
+    Unknown = 5
+    Nil = 6
 
 
 class MonsterType(Enum):
@@ -1193,8 +1193,8 @@ class MonsterIndex(tsutils.aobject):
             Attribute.Wood: ['g'],
             Attribute.Light: ['l'],
             Attribute.Dark: ['d'],
-            Attribute.Unused: ['h'],
-            Attribute.Null: ['x'],
+            Attribute.Unknown: ['h'],
+            Attribute.Nil: ['x'],
         }
         self.attr_long_prefix_map = {
             Attribute.Fire: ['red', 'fire'],
@@ -1202,8 +1202,8 @@ class MonsterIndex(tsutils.aobject):
             Attribute.Wood: ['green', 'wood'],
             Attribute.Light: ['light'],
             Attribute.Dark: ['dark'],
-            Attribute.Unused: ['unused'],
-            Attribute.Null: ['null'],
+            Attribute.Unknown: ['unknown'],
+            Attribute.Nil: ['null', 'none'],
         }
 
         self.series_to_prefix_map = {
