@@ -534,8 +534,8 @@ class PadInfo(commands.Cog):
         pref_query, bad, check_prefix = [], [], False
         for sep in ('/', '"', ',', ' '):
             if sep in whole_query:
-                ind = whole_query.index(sep)
-                left_query, right_query = whole_query[:ind].strip(), whole_query[ind + 1:].strip()
+                left_query, *right_query = [x for x in whole_query.split(sep) if x.strip()]
+                right_query = ' '.join(q for q in right_query)
                 if sep == ' ':
                     # Handle a very specific failure case, user typing something like "uuvo ragdra"
                     nm, err, debug_info = await self._findMonster(whole_query)
