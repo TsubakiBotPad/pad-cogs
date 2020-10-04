@@ -531,18 +531,22 @@ class PadInfo(commands.Cog):
         e.g.: [p]leaderskill "r sonia" "b sonia"
         """
         # order of separators is '/' > '"' > ','
-        pref_query, bad, check_prefix = [], [], False
         for sep in ('/', '"', ',', ' '):
             if sep in whole_query:
-                left_query, *right_query = [x for x in whole_query.split(sep) if x.strip()]
-                right_query = ' '.join(q for q in right_query)  # might break in some cases, but most of the time it's ok
+
+                left_query, *right_query = [x.strip() for x in whole_query.split(sep) if x.strip()] or ('', '')  # or in case of ^ls [sep] which is empty list
+                # split on first separator, with if x.strip() block to prevent null values from showing up, mainly for quotes support
+                # right query is the rest of query but in list form because of how .strip() works. bring it back to string form with ' '.join
+                right_query = ' '.join(q for q in right_query)
                 if sep == ' ':
                     # Handle a very specific failure case, user typing something like "uuvo ragdra"
                     nm, err, debug_info = await self._findMonster(whole_query)
                     if not err and left_query in nm.prefixes:
                         left_query = whole_query
                         right_query = None
+
                 break
+
         else:  # no separators
             left_query, right_query = whole_query, None
 
