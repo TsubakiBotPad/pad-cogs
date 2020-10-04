@@ -60,10 +60,10 @@ class PadMonitor(commands.Cog):
 
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
-                    msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_na)
-                    if tsutils.containsJp(
-                            m.name_na) and m.name_na_override != m.name_na and m.name_na_override is not None:
-                        msg += ' ({})'.format(m.name_na_override)
+                    msg += '\n\tNo. {} {}'.format(m.monster_no, m.name_en)
+                    if tsutils.containsJa(
+                            m.name_en) and m.name_en_override != m.name_en and m.name_en_override is not None:
+                        msg += ' ({})'.format(m.name_en_override)
                 return msg
             else:
                 return None
@@ -83,7 +83,7 @@ class PadMonitor(commands.Cog):
             for page in pagify(message):
                 await channel.send(box(page))
         except Exception as ex:
-            logger.exception('failed to send message to', channel_id, ' : ', ex)
+            logger.exception('failed to send message to {}:'.format(channel_id))
 
     @commands.group()
     @checks.mod_or_permissions(manage_guild=True)

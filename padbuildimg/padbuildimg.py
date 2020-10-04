@@ -130,7 +130,7 @@ TYPE_TO_KILLERS_MAP = {
     'God': [207],  # devil
     'Devil': [205],  # god
     'Machine': [205, 201],  # god balanced
-    'Dragon': [208, 320],  # machine healer
+    'Dragon': [208, 203],  # machine healer
     'Physical': [208, 203],  # machine healer
     'Attacker': [207, 202],  # devil physical
     'Healer': [204, 206],  # dragon attacker

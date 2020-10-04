@@ -46,8 +46,8 @@ RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
 RPAD_PORTRAIT_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'
 VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'
 GIF_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.gif'
-ORB_SKIN_TEMPLATE = MEDIA_PATH + 'orb_skins/{0:03d}.png'
-ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/{0:03d}cb.png'
+ORB_SKIN_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}.png'
+ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}cb.png'
 
 YT_SEARCH_TEMPLATE = 'https://www.youtube.com/results?search_query={}'
 SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
@@ -255,7 +255,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
             await ctx.send(monsterToHeader(m))
-            await ctx.send(box(m.name_jp))
+            await ctx.send(box(m.name_ja))
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -457,7 +457,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             embed = monsterToBaseEmbed(m)
             embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
                 SKYOZORA_TEMPLATE.format(m.monster_no_jp),
                 INFO_PDX_TEMPLATE.format(m.monster_no_jp),
                 ILMINA_TEMPLATE.format(m.monster_no_jp))
@@ -524,23 +524,27 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
     @checks.bot_has_permissions(embed_links=True)
-    async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
+    async def leaderskill(self, ctx, *, whole_query=''):
         """Display the multiplier and leaderskills for two monsters
 
         If either your left or right query contains spaces, wrap in quotes.
         e.g.: [p]leaderskill "r sonia" "b sonia"
         """
-        if bad:
-            await ctx.send(inline('Too many inputs. Try wrapping your queries in quotes.'))
-            return
-
-        # Handle a very specific failure case, user typing something like "uuvo ragdra"
-        if ' ' not in left_query and right_query is not None and ' ' not in right_query and bad is None:
-            combined_query = left_query + ' ' + right_query
-            nm, err, debug_info = await self._findMonster(combined_query)
-            if nm and left_query in nm.prefixes:
-                left_query = combined_query
-                right_query = None
+        # order of separators is '/' > '"' > ','
+        pref_query, bad, check_prefix = [], [], False
+        for sep in ('/', '"', ',', ' '):
+            if sep in whole_query:
+                ind = whole_query.index(sep)
+                left_query, right_query = whole_query[:ind].strip(), whole_query[ind + 1:].strip()
+                if sep == ' ':
+                    # Handle a very specific failure case, user typing something like "uuvo ragdra"
+                    nm, err, debug_info = await self._findMonster(whole_query)
+                    if not err and left_query in nm.prefixes:
+                        left_query = whole_query
+                        right_query = None
+                break
+        else:  # no separators
+            left_query, right_query = whole_query, None
 
         left_m, left_err, _ = await self.findMonster(left_query)
         if right_query:
@@ -548,7 +552,7 @@ class PadInfo(commands.Cog):
         else:
             right_m, right_err, = left_m, left_err
 
-        err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, wrap it in quotes.'
+        err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, try separating the queries with / or wrap with quotes.'
         if left_err:
             await ctx.send(inline(err_msg.format('Left', left_query)))
             return
@@ -666,7 +670,7 @@ class PadInfo(commands.Cog):
                       [debug_info1, debug_info2]
                       ))
             if m1 and m2:
-                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_na, m2.name_na))
+                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_en, m2.name_en))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
         file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
         await ctx.send(file=file)
@@ -781,11 +785,11 @@ class PadInfoSettings(CogSettings):
 
 
 def monsterToHeader(m: "DgMonster", link=False):
-    msg = 'No. {} {}'.format(m.monster_no_na, m.name_na)
+    msg = 'No. {} {}'.format(m.monster_no_na, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJpSuffix(m: "DgMonster"):
+def monsterToJaSuffix(m: "DgMonster"):
     suffix = ""
     if m.roma_subname:
         suffix += ' [{}]'.format(m.roma_subname)
@@ -795,7 +799,7 @@ def monsterToJpSuffix(m: "DgMonster"):
 
 
 def monsterToLongHeader(m: "DgMonster", link=False):
-    msg = monsterToHeader(m) + monsterToJpSuffix(m)
+    msg = monsterToHeader(m) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1135,9 +1139,9 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
                 tbl.add_row([row_name.format(plus), hp, atk, rcv])
         body_text += box(tbl.get_string())
 
-    body_text += "\n**JP Name**: {}".format(m.name_jp)
+    body_text += "\n**JP Name**: {}".format(m.name_ja)
     body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-        YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_jp)),
+        YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
         SKYOZORA_TEMPLATE.format(m.monster_no_jp),
         INFO_PDX_TEMPLATE.format(m.monster_no_jp),
         ILMINA_TEMPLATE.format(m.monster_no_jp))

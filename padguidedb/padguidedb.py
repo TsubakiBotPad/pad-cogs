@@ -101,8 +101,8 @@ class PadGuideDb(commands.Cog):
         """Search"""
         search_text = '%{}%'.format(search_text)
         with self.get_cursor() as cursor:
-            sql = ('select dungeon_id, name_na, name_jp, visible from dungeons'
-                   ' where lower(name_na) like %s or lower(name_jp) like %s'
+            sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
+                   ' where lower(name_en) like %s or lower(name_ja) like %s'
                    ' order by dungeon_id desc limit 20')
             cursor.execute(sql, [search_text, search_text])
             results = list(cursor.fetchall())
@@ -130,6 +130,13 @@ class PadGuideDb(commands.Cog):
     async def setimageupdatefile(self, ctx, *, image_update_file):
         """Set the image update file."""
         self.settings.setImageUpdateFile(image_update_file)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setpythonexecutable(self, ctx, *, python_executable):
+        """Set the python executable file."""
+        self.settings.setPythonExecutable(python_executable)
         await ctx.tick()
 
     @padguidedb.command()
@@ -166,7 +173,7 @@ class PadGuideDb(commands.Cog):
     async def do_dungeon_load(self, ctx, server, dungeon_id, dungeon_floor_id):
         async with self.dungeon_load_lock:
             process = await asyncio.create_subprocess_exec(
-                '/usr/bin/python3',
+                self.settings.pythonExecutable(),
                 self.settings.dungeonScriptFile(),
                 '--db_config={}'.format(self.settings.configFile()),
                 '--server={}'.format(server),
@@ -181,7 +188,7 @@ class PadGuideDb(commands.Cog):
             stdout, stderr = await process.communicate()
 
             if stderr:
-                logger.error("Dungeon Load Error:\n" + stderr.decode())
+                logger.error("Dungeon Load Error:\n{}\n\n{}".format(stdout.decode(), stderr.decode()))
                 await tsutils.doubleup(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
@@ -326,6 +333,7 @@ class PadGuideDbSettings(CogSettings):
             'dungeon_script_file': '',
             'full_etl_file': '',
             'update_image_file': '',
+            'python_executable': '/usr/bin/python3',
             'users': {},
         }
         return config
@@ -364,17 +372,24 @@ class PadGuideDbSettings(CogSettings):
         self.save_settings()
 
     def fullETLFile(self):
-        return self.bot_settings.get('dungeon_script_file', '')
+        return self.bot_settings.get('full_etl_file', '')
 
     def setFullETLFile(self, full_etl_file):
         self.bot_settings['full_etl_file'] = full_etl_file
         self.save_settings()
 
-    def updateImageFile(self):
-        return self.bot_settings.get('dungeon_script_file', '')
+    def imageUpdateFile(self):
+        return self.bot_settings.get('update_image_file', '')
 
-    def setUpdateImageFile(self, update_image_file):
+    def setImageUpdateFile(self, update_image_file):
         self.bot_settings['update_image_file'] = update_image_file
+        self.save_settings()
+
+    def pythonExecutable(self):
+        return self.bot_settings.get('python_executable', '/usr/bin/python3')
+
+    def setPythonExecutable(self, python_executable):
+        self.bot_settings['python_executable'] = python_executable
         self.save_settings()
 
     def setUserInfo(self, server, user_uuid, user_intid):
