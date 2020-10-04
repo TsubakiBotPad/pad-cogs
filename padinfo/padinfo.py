@@ -524,7 +524,7 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
     @checks.bot_has_permissions(embed_links=True)
-    async def leaderskill(self, ctx, *, whole_query=''):
+    async def leaderskill(self, ctx, *, whole_query):
         """Display the multiplier and leaderskills for two monsters
 
         If either your left or right query contains spaces, wrap in quotes.
@@ -535,7 +535,7 @@ class PadInfo(commands.Cog):
         for sep in ('/', '"', ',', ' '):
             if sep in whole_query:
                 left_query, *right_query = [x for x in whole_query.split(sep) if x.strip()]
-                right_query = ' '.join(q for q in right_query)
+                right_query = ' '.join(q for q in right_query)  # might break in some cases, but most of the time it's ok
                 if sep == ' ':
                     # Handle a very specific failure case, user typing something like "uuvo ragdra"
                     nm, err, debug_info = await self._findMonster(whole_query)
