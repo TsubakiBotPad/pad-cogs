@@ -534,7 +534,7 @@ class PadInfo(commands.Cog):
         [p]ls sonia lubu
         """
         # deliberate order in case of multiple different separators.
-        for sep in ('/', '"', ',', ' '):
+        for sep in ('"', '/', ',', ' '):
             if sep in whole_query:
 
                 left_query, *right_query = [x.strip() for x in whole_query.split(sep) if x.strip()] or ('', '')  # or in case of ^ls [sep] which is empty list
