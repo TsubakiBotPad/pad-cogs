@@ -522,14 +522,16 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card 1> [sep] <card 2>")
+    @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskill(self, ctx, *, whole_query):
         """Display the multiplier and leaderskills for two monsters
 
         Gets two monsters separated by a slash, wrapping quotes, a comma,
         or spaces (if there's only two words).
-        e.g. ^ls r sonia / revo lu bu, ^ls r sonia "revo lu bu", ^ls sonia lubu
+        [p]ls r sonia/ revo lu bu
+        [p]ls r sonia "revo lu bu"
+        [p]ls sonia lubu
         """
         # deliberate order in case of multiple different separators.
         for sep in ('/', '"', ',', ' '):
