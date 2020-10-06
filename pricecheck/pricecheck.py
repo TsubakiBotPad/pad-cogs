@@ -65,11 +65,11 @@ class PriceCheck(commands.Cog):
         if await self.config.channel(ctx.channel).dm():
             await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.author.send(box(page.replace("'","ʼ"), lang='py'))
+                await ctx.author.send(box(page.replace("'","ʼ"), lang='q'))
         else:
             await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.send(box(page.replace("'","ʼ"), lang='py'))
+                await ctx.send(box(page.replace("'","ʼ"), lang='q'))
 
     @commands.group()
     @auth_check('pcadmin')
