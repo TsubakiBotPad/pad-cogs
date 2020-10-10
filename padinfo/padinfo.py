@@ -522,25 +522,36 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(aliases=['leaders', 'leaderskills', 'ls'])
+    @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
-    async def leaderskill(self, ctx, left_query: str, right_query: str = None, *, bad=None):
+    async def leaderskill(self, ctx, *, whole_query):
         """Display the multiplier and leaderskills for two monsters
 
-        If either your left or right query contains spaces, wrap in quotes.
-        e.g.: [p]leaderskill "r sonia" "b sonia"
+        Gets two monsters separated by a slash, wrapping quotes, a comma,
+        or spaces (if there's only two words).
+        [p]ls r sonia/ revo lu bu
+        [p]ls r sonia "revo lu bu"
+        [p]ls sonia lubu
         """
-        if bad:
-            await ctx.send(inline('Too many inputs. Try wrapping your queries in quotes.'))
-            return
+        # deliberate order in case of multiple different separators.
+        for sep in ('"', '/', ',', ' '):
+            if sep in whole_query:
 
-        # Handle a very specific failure case, user typing something like "uuvo ragdra"
-        if ' ' not in left_query and right_query is not None and ' ' not in right_query and bad is None:
-            combined_query = left_query + ' ' + right_query
-            nm, err, debug_info = await self._findMonster(combined_query)
-            if nm and left_query in nm.prefixes:
-                left_query = combined_query
-                right_query = None
+                left_query, *right_query = [x.strip() for x in whole_query.split(sep) if x.strip()] or ('', '')  # or in case of ^ls [sep] which is empty list
+                # split on first separator, with if x.strip() block to prevent null values from showing up, mainly for quotes support
+                # right query is the rest of query but in list form because of how .strip() works. bring it back to string form with ' '.join
+                right_query = ' '.join(q for q in right_query)
+                if sep == ' ':
+                    # Handle a very specific failure case, user typing something like "uuvo ragdra"
+                    nm, err, debug_info = await self._findMonster(whole_query)
+                    if not err and left_query in nm.prefixes:
+                        left_query = whole_query
+                        right_query = None
+
+                break
+
+        else:  # no separators
+            left_query, right_query = whole_query, None
 
         left_m, left_err, _ = await self.findMonster(left_query)
         if right_query:
@@ -548,7 +559,7 @@ class PadInfo(commands.Cog):
         else:
             right_m, right_err, = left_m, left_err
 
-        err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, wrap it in quotes.'
+        err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, try separating the queries with / or wrap with quotes.'
         if left_err:
             await ctx.send(inline(err_msg.format('Left', left_query)))
             return
