@@ -760,7 +760,7 @@ class PadSearch(commands.Cog):
         if dg_cog == None:
             await ctx.send("Dadguide cog not loaded.")
             return
-        monsters = dg_cog.database.get_all_monsters().values()
+        monsters = dg_cog.database.get_all_monsters()
 
         rmvGemFilter = self._make_search_config('remove( gem)')
         monsters = list(filter(rmvGemFilter.check_filters, monsters))
