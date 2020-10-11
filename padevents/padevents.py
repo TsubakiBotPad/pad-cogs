@@ -85,6 +85,7 @@ class PadEvents(commands.Cog):
                 events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
 
                 daily_refresh_servers = set()
+                pingroles = await self.config.pingroles()
                 for e in events:
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
@@ -114,14 +115,14 @@ class PadEvents(commands.Cog):
                         if not e.dungeon_type in [DungeonType.Normal]:
                             daily_refresh_servers.add(e.server)
 
-                    pingroles = await self.config.pingroles()
                     if e.dungeon_name in pingroles:
                         for cid in pingroles[e.dungeon_name]:
                             channel = self.bot.get_channel(int(cid))
                             if channel is not None:
                                 index = GROUPS.index(e.group)
-                                if channel.guild.get_role(pingroles[e.dungeon_name][cid][index]):
-                                    ment = channel.guild.get_role(pingroles[e.dungeon_name][cid][index]).mention
+                                role = channel.guild.get_role(pingroles[e.dungeon_name][cid][index])
+                                if role:
+                                    ment = role.mention
                                 else:
                                     ment = "#deleted-role"
                                 await channel.send("{} {}".format(e.dungeon_name, ment))
