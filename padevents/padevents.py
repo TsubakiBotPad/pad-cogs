@@ -11,14 +11,14 @@ from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
 from redbot.core import checks
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
-
+GROUPS = ['red', 'blue', 'green']
 
 class PadEvents(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -26,6 +26,8 @@ class PadEvents(commands.Cog):
         self.bot = bot
 
         self.settings = PadEventSettings("padevents")
+        self.config = Config.get_conf(self, identifier=940373775)
+        self.config.register_global(pingroles={})
 
         # Load event data
         self.events = list()
@@ -111,6 +113,19 @@ class PadEvents(commands.Cog):
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
                             daily_refresh_servers.add(e.server)
+
+                    pingroles = await self.config.pingroles()
+                    if e.dungeon_name in pingroles:
+                        for cid in pingroles[e.dungeon_name]:
+                            channel = self.bot.get_channel(int(cid))
+                            if channel is not None:
+                                index = GROUPS.index(e.group)
+                                if channel.guild.get_role(pingroles[e.dungeon_name][cid][index]):
+                                    ment = channel.guild.get_role(pingroles[e.dungeon_name][cid][index]).mention
+                                else:
+                                    ment = "#deleted-role"
+                                await channel.send("{} {}".format(e.dungeon_name, ment))
+
 
                 for server in daily_refresh_servers:
                     msg = self.makeActiveText(server)
@@ -232,6 +247,25 @@ class PadEvents(commands.Cog):
 
         self.settings.removeDailyReg(channel_id, server)
         await ctx.send("Channel deactivated.")
+
+    @padevents.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def autoeventping(self, ctx, name, red: discord.Role, blue: discord.Role, green: discord.Role):
+        async with self.config.pingroles() as pingroles:
+            pingroles[name] = {ctx.channel.id: (red.id, blue.id, green.id)}
+        await ctx.tick()
+
+    @padevents.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def rmautoeventping(self, ctx, *, name):
+        async with self.config.pingroles() as pingroles:
+            if name not in pingroles or ctx.guild.id not in pingroles[name]:
+                await ctx.send("That name is not set.")
+                return
+            n = pingroles[name][ctx.guild.id]
+        await ctx.tick()
 
     @padevents.command(name="listchannels")
     @checks.mod_or_permissions(manage_guild=True)
