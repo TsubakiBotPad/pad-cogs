@@ -433,10 +433,12 @@ class DadguideDatabase(object):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
                                 as_generator=as_generator)
 
-    def get_all_monsters(self):
-        if self._monsters == None or self.expiry < datetime.now().timestamp() + 60*60:
+    def get_all_monsters(self, as_generator=False):
+        if self._monsters == None or self.expiry < datetime.now().timestamp():
             self._monsters = self.get_all_monsters_query(False)
-            self.expiry = int(datetime.now().timestamp())
+            self.expiry = int(datetime.now().timestamp()) + 60*60
+        if as_generator:
+            return (m for m in self._monsters)
         return self._monsters
 
     def get_all_events(self, as_generator=True):
