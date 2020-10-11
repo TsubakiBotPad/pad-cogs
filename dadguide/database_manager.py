@@ -421,22 +421,26 @@ class DadguideDatabase(object):
         return self._select_one_entry_by_pk(monster_id, DgMonster)
 
     def get_monster(self, monster_id: int):
-        for monster in self.get_all_monsters():
-            if monster['monster_id'] == monster_id:
-                return DgMonster(monster, self)
+        self.refresh_monsters()
+        m = self._monsters.get(monster_id)
+        if m is not None:
+            return DgMonster(m, self)
 
     def get_all_monster_ja_name(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
+
+    def refresh_monsters(self):
+        if self._monsters == None or self.expiry < datetime.now().timestamp():
+            self._monsters = {m.monster_id: m for m in self.get_all_monsters_query(False)}
+            self.expiry = int(datetime.now().timestamp()) + 60*60
 
     def get_all_monsters_query(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
                                 as_generator=as_generator)
 
     def get_all_monsters(self, as_generator=False):
-        if self._monsters == None or self.expiry < datetime.now().timestamp():
-            self._monsters = self.get_all_monsters_query(False)
-            self.expiry = int(datetime.now().timestamp()) + 60*60
+        self.refresh_monsters()
         if as_generator:
             return (m for m in self._monsters)
         return self._monsters
