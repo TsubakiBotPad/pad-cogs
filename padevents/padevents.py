@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import discord
 import logging
+import itertools
 import prettytable
 import pytz
 import re
@@ -84,7 +85,7 @@ class PadEvents(commands.Cog):
                 daily_refresh_servers = set()
                 for e in events:
                     self.started_events.add(e.key)
-                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek]:
+                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
                         for gr in list(self.settings.listGuerrillaReg()):
                             if e.server == gr['server']:
                                 try:
@@ -271,6 +272,7 @@ class PadEvents(commands.Cog):
 
         msg = "Listing all events for " + server
 
+        """
         special_events = active_events.withType(
             EventType.Special).itemsByCloseTime()
         if len(special_events) > 0:
@@ -304,7 +306,43 @@ class PadEvents(commands.Cog):
             msg += "\n\n" + \
                    self.makeFullGuerrillaOutput(
                        'Guerrilla Events', guerrilla_events, starter_guerilla=True)
+        """
+        active_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(True).items()
+        if len(active_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Active Events', active_cdo_events)
+        """
+        cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(False).items()
+        if len(cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Reward Events', cdo_events)
+        """
 
+        active_grouped_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        if len(active_grouped_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveGuerrillaOutput(
+                       'Active Guerrillas', active_grouped_cdo_events)
+        grouped_cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        if len(grouped_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeFullGuerrillaOutput(
+                       'Guerrillas', grouped_cdo_events, starter_guerilla=True)
+
+        active_etc_events = active_events.withDungeonType(DungeonType.Etc).items()
+        if len(active_etc_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Active Other Events', active_etc_events)
+        """
+        etc_events = pending_events.withDungeonType(DungeonType.Etc).items()
+        if len(etc_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Other Events', etc_events)
+        """
         # clean up long headers
         msg = msg.replace('-------------------------------------', '-----------------------')
 
@@ -353,7 +391,7 @@ class PadEvents(commands.Cog):
             events = sorted(events, key=lambda e: e.open_datetime)
             events_by_group = defaultdict(list)
             for e in events:
-                events_by_group[e.group].append(e)
+                events_by_group[e.group.upper()].append(e)
 
             done = False
             while not done:
@@ -408,7 +446,8 @@ class PadEvents(commands.Cog):
 
         events = EventList(self.events)
         events = events.withServer(server)
-        events = events.inType([EventType.Guerrilla, EventType.SpecialWeek])
+        events = events.inDungeonType([DungeonType.Etc, DungeonType.CoinDailyOther])
+        events = events.isGrouped()
 
         active_events = events.activeOnly().itemsByOpenTime(reverse=True)
         pending_events = events.pendingOnly().itemsByOpenTime(reverse=True)
@@ -601,6 +640,12 @@ class EventList:
 
     def withDungeonType(self, dungeon_type, exclude=False):
         return self.withFunc(lambda e: e.dungeon_type == dungeon_type, exclude)
+
+    def inDungeonType(self, dungeon_types, exclude=False):
+        return self.withFunc(lambda e: e.dungeon_type in dungeon_types, exclude)
+
+    def isGrouped(self, exclude=False):
+        return self.withFunc(lambda e: e.group is not None, exclude)
 
     def withNameContains(self, name, exclude=False):
         return self.withFunc(lambda e: name.lower() in e.dungeon_name.lower(), exclude)
