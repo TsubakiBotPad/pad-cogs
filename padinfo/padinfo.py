@@ -768,7 +768,7 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).split()
-        monstergen = DGCOG.database.get_all_monsters()
+        monstergen = DGCOG.database.get_all_monsters().values()
         for c, token in enumerate(query):
             try:
                 filt = prefix_to_filter(token)
