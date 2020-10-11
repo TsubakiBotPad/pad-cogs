@@ -96,6 +96,10 @@ class DadguideDatabase(object):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
+
+        self._monsters = None
+        self.expiry = 0
+
     def has_database(self):
         return self._con is not None
 
@@ -413,16 +417,27 @@ class DadguideDatabase(object):
             '{0}.monster_id != {0}.monster_no_na AND {0}.monster_no_jp == {0}.monster_no_na '.format(DgMonster.TABLE),
             ())
 
-    def get_monster(self, monster_id: int):
+    def get_monster_query(self, monster_id: int):
         return self._select_one_entry_by_pk(monster_id, DgMonster)
+
+    def get_monster(self, monster_id: int):
+        for monster in self.get_all_monsters():
+            if monster['monster_id'] == monster_id:
+                return DgMonster(monster, self)
 
     def get_all_monster_ja_name(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
 
-    def get_all_monsters(self, as_generator=True):
+    def get_all_monsters_query(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
                                 as_generator=as_generator)
+
+    def get_all_monsters(self):
+        if self._monsters == None or self.expiry < datetime.now().timestamp() + 60*60:
+            self._monsters = self.get_all_monsters_query(False)
+            self.expiry = int(datetime.now().timestamp())
+        return self._monsters
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
