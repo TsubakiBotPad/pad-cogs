@@ -115,17 +115,17 @@ class PadEvents(commands.Cog):
                         if not e.dungeon_type in [DungeonType.Normal]:
                             daily_refresh_servers.add(e.server)
 
-                    if e.dungeon_name in pingroles:
-                        for cid in pingroles[e.dungeon_name]:
+                    if e.name_and_modifier in pingroles:
+                        for cid in pingroles[e.name_and_modifier]:
                             channel = self.bot.get_channel(int(cid))
                             if channel is not None:
                                 index = GROUPS.index(e.group)
-                                role = channel.guild.get_role(pingroles[e.dungeon_name][cid][index])
+                                role = channel.guild.get_role(pingroles[e.name_and_modifier][cid][index])
                                 if role:
                                     ment = role.mention
                                 else:
                                     ment = "#deleted-role"
-                                await channel.send("{} {}".format(e.dungeon_name, ment))
+                                await channel.send("{} {}".format(e.name_and_modifier, ment))
 
 
                 for server in daily_refresh_servers:
