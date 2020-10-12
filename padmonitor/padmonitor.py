@@ -39,7 +39,7 @@ class PadMonitor(commands.Cog):
         """Refresh the monster indexes."""
         pg_cog = self.bot.get_cog('Dadguide')
         await pg_cog.wait_until_ready()
-        all_monsters = pg_cog.database.get_all_monsters(as_generator=False)
+        all_monsters = pg_cog.database.get_all_monsters(as_generator=False).values()
         jp_monster_map = {m.monster_no: m for m in all_monsters if m.on_jp}
         na_monster_map = {m.monster_no: m for m in all_monsters if m.on_na}
 
