@@ -60,6 +60,21 @@ class Crud(commands.Cog):
                                cursorclass=pymysql.cursors.DictCursor,
                                autocommit=True)
 
+    async def execute_edit(self, ctx, sql, replacements):
+        with await self.get_cursor() as cursor:
+            affected = cursor.execute(sql, replacements)
+            await ctx.send(inline(cursor._executed))
+            await ctx.send("{} row(s) affected.".format(affected))
+
+    async def execute_read(self, ctx, sql, replacements):
+        with await self.get_cursor() as cursor:
+            cursor.execute(sql, replacements)
+            results = list(cursor.fetchall())
+            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
+            await ctx.send(inline(cursor._executed))
+            for page in pagify(msg):
+                await ctx.send(box(page))
+
     @commands.group(aliases=['hera-ur'])
     @auth_check('crud')
     async def crud(self, ctx):
@@ -68,17 +83,11 @@ class Crud(commands.Cog):
     @crud.command()
     async def searchdungeon(self, ctx, *, search_text):
         """Search for a dungeon via its jp or na name"""
-        search_text = '%{}%'.format(search_text)
-        with await self.get_cursor() as cursor:
-            sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
-                   ' where lower(name_en) like %s or lower(name_ja) like %s'
-                   ' order by dungeon_id desc limit 20')
-            cursor.execute(sql, [search_text, search_text])
-            results = list(cursor.fetchall())
-            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
-            await ctx.send(inline(sql))
-            for page in pagify(msg):
-                await ctx.send(box(page))
+        search_text = '%{}%'.format(search_text).lower()
+        sql = ('SELECT dungeon_id, name_en, name_ja, visible FROM dungeons'
+               ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
+               ' ORDER BY dungeon_id DESC LIMIT 20')
+        await self.execute_read(ctx, sql, [search_text, search_text])
 
     @crud.group()
     async def series(self, ctx):
@@ -87,17 +96,11 @@ class Crud(commands.Cog):
     @series.command(name="search")
     async def series_search(self, ctx, *, search_text):
         """Search for a series via its jp or na name"""
-        search_text = '%{}%'.format(search_text)
-        with await self.get_cursor() as cursor:
-            sql = ('select series_id, name_en, name_ja from series'
-                   ' where lower(name_en) like %s or lower(name_ja) like %s'
-                   ' order by series_id desc limit 20')
-            cursor.execute(sql, [search_text, search_text])
-            results = list(cursor.fetchall())
-            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
-            await ctx.send(inline(sql))
-            for page in pagify(msg):
-                await ctx.send(box(page))
+        search_text = '%{}%'.format(search_text).lower()
+        sql = ('SELECT series_id, name_en, name_ja, name_ko FROM series'
+               ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
+               ' ORDER BY series_id DESC LIMIT 20')
+        await self.execute_read(ctx, sql, [search_text, search_text])
 
     @series.command(name="add")
     async def series_add(self, ctx, *, elements: TokenConverter):
@@ -114,20 +117,18 @@ class Crud(commands.Cog):
 
         EXTRAS = {}
         with await self.get_cursor() as cursor:
-            cursor.execute("SELECT MAX(series_id) FROM series")
-            max_val = cursor.fetchall()[0]['MAX(series_id)']
+            cursor.execute("SELECT MAX(series_id) AS max_id FROM series")
+            max_val = cursor.fetchall()[0]['max_id']
             EXTRAS['series_id'] = max_val + 1
         EXTRAS['tstamp'] = int(datetime.now().timestamp())
         elements = {**SERIES_KEYS, **EXTRAS, **elements}
 
         key_infix = ", ".join(elements.keys())
         value_infix = ", ".join("%s" for v in elements.values())
-        with await self.get_cursor() as cursor:
-            sql = ('INSERT INTO series ({})'
-                   ' VALUES ({})').format(key_infix, value_infix)
-            affected = cursor.execute(sql, (*elements.values(),))
-            await ctx.send(inline(cursor._executed))
-            await ctx.send("{} row(s) added.".format(affected))
+        sql = ('INSERT INTO series ({})'
+               ' VALUES ({})').format(key_infix, value_infix)
+
+        await self.execute_edit(ctx, sql, (*elements.values(),))
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
@@ -136,30 +137,26 @@ class Crud(commands.Cog):
         Valid element keys are: `name_en`, `name_kr`, `name_jp`
 
         Example Usage:
-        [p]crud series edit key1 "Value1" key2 "Value2"
+        [p]crud series edit 100 key1 "Value1" key2 "Value2"
         """
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send_help()
             return
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
-        with await self.get_cursor() as cursor:
-            sql = ('UPDATE series'
-                   ' SET {}'
-                   ' WHERE series_id = %s').format(replacement_infix)
-            affected = cursor.execute(sql, (*elements.values(),) + (series_id,))
-            await ctx.send(inline(cursor._executed))
-            await ctx.send("{} row(s) changed.".format(affected))
+        sql = ('UPDATE series'
+               ' SET {}'
+               ' WHERE series_id = %s').format(replacement_infix)
+
+        await self.execute_edit(ctx, sql, (*elements.values(), series_id))
 
     @series.command(name="delete")
     async def series_delete(self, ctx, series_id: int):
         """Delete an existing series"""
-        with await self.get_cursor() as cursor:
-            sql = ('DELETE FROM series'
-                   ' WHERE series_id = %s')
-            affected = cursor.execute(sql, series_id)
-            await ctx.send(inline(cursor._executed))
-            await ctx.send("{} row(s) deleted.".format(affected))
+        sql = ('DELETE FROM series'
+               ' WHERE series_id = %s')
+
+        await self.execute_edit(ctx, sql, series_id)
 
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
@@ -169,22 +166,20 @@ class Crud(commands.Cog):
         with await self.get_cursor() as cursor:
             cursor.execute("SELECT name_en_override FROM monsters WHERE monster_id = %s", (monster_id,))
             old_val = cursor.fetchall()
-            if not old_val:
-                await ctx.send("There is no monster with id: {}".format(monster_id))
-                return
-            old_val = old_val[0]['name_en_override']
-            if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
-                                               " english override from `{}` to `{}`?").format(monster_id,
-                                                      old_val, name)):
-                return
 
-            sql = ('UPDATE monsters'
-                   ' SET name_en_override = %s'
-                   ' WHERE monster_id = %s')
-            affected = cursor.execute(sql, (name, monster_id))
-            await ctx.send("Changed `{}` to `{}` via:".format(old_val, name))
-            await ctx.send(inline(cursor._executed))
-            await ctx.send("{} row(s) changed.".format(affected))
+        if not old_val:
+            await ctx.send("There is no monster with id: {}".format(monster_id))
+            return
+        old_val = old_val[0]['name_en_override']
+        if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
+                                           " english override from `{}` to `{}`?"
+                                           "").format(monster_id, old_val, name)):
+            return
+
+        sql = ('UPDATE monsters'
+               ' SET name_en_override = %s'
+               ' WHERE monster_id = %s')
+        await self.execute_edit(ctx, sql, (name, monster_id))
 
     @crud.command()
     async def editmonsseries(self, ctx, monster_id: int, *, series_id: int):
@@ -192,21 +187,20 @@ class Crud(commands.Cog):
         with await self.get_cursor() as cursor:
             cursor.execute("SELECT series_id FROM monsters WHERE monster_id = %s", (monster_id,))
             old_val = cursor.fetchall()
-            if not old_val:
-                await ctx.send("There is no monster with id: {}".format(monster_id))
-                return
-            old_val = old_val[0]['series_id']
-            if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
-                                               " series_id from `{}` to `{}`?").format(monster_id,
-                                                     old_val, series_id)):
-                return
 
-            sql = ('UPDATE monsters'
-                   ' SET series_id = %s'
-                   ' WHERE monster_id = %s')
-            affected = cursor.execute(sql, (series_id, monster_id))
-            await ctx.send("Changed `{}` to `{}` via:\n".format(old_val, series_id, inline(cursor._executed)))
-            await ctx.send("{} row(s) changed.".format(affected))
+        if not old_val:
+            await ctx.send("There is no monster with id: {}".format(monster_id))
+            return
+        old_val = old_val[0]['series_id']
+        if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
+                                           " series id from `{}` to `{}`?"
+                                           "").format(monster_id, old_val, series_id)):
+            return
+
+        sql = ('UPDATE monsters'
+               ' SET series_id = %s'
+               ' WHERE monster_id = %s')
+        await self.execute_edit(ctx, sql, (series_id, monster_id))
 
     @crud.command()
     @checks.is_owner()
