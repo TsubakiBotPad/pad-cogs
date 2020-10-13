@@ -102,12 +102,14 @@ class Crud(commands.Cog):
     @series.command(name="add")
     async def series_add(self, ctx, *, elements: TokenConverter):
         """Add a new series.
+
         Valid element keys are: `name_en`, `name_kr`, `name_jp`
 
+        Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
         """
         if not all(x in SERIES_KEYS for x in elements):
-            await ctx.send("Invalid key.  Valid keys are: `{}`".format("` `".join(SERIES_KEYS)))
+            await ctx.send_help()
             return
 
         EXTRAS = {}
@@ -130,12 +132,14 @@ class Crud(commands.Cog):
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
         """Edit an existing series series.
+
         Valid element keys are: `name_en`, `name_kr`, `name_jp`
 
+        Example Usage:
         [p]crud series edit key1 "Value1" key2 "Value2"
         """
         if not all(x in SERIES_KEYS for x in elements):
-            await ctx.send("Invalid key.  Valid keys are: `{}`".format("` `".join(SERIES_KEYS)))
+            await ctx.send_help()
             return
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
