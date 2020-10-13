@@ -105,7 +105,7 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     async def searchdungeon(self, ctx, *, search_text):
-        """Search"""
+        """Search for a dungeon via its jp or na name"""
         search_text = '%{}%'.format(search_text)
         with self.get_cursor() as cursor:
             sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'

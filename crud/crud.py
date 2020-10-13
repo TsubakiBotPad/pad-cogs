@@ -67,7 +67,7 @@ class Crud(commands.Cog):
 
     @crud.command()
     async def searchdungeon(self, ctx, *, search_text):
-        """Search"""
+        """Search for a dungeon via its jp or na name"""
         search_text = '%{}%'.format(search_text)
         with await self.get_cursor() as cursor:
             sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
@@ -82,11 +82,11 @@ class Crud(commands.Cog):
 
     @crud.group()
     async def series(self, ctx):
-        """Series"""
+        """Series related commands"""
 
     @series.command(name="search")
     async def series_search(self, ctx, *, search_text):
-        """Search"""
+        """Search for a series via its jp or na name"""
         search_text = '%{}%'.format(search_text)
         with await self.get_cursor() as cursor:
             sql = ('select series_id, name_en, name_ja from series'
@@ -101,7 +101,11 @@ class Crud(commands.Cog):
 
     @series.command(name="add")
     async def series_add(self, ctx, *, elements: TokenConverter):
-        """Add"""
+        """Add a new series.
+        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+
+        [p]crud series add key1 "Value1" key2 "Value2"
+        """
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send("Invalid key.  Valid keys are: `{}`".format("` `".join(SERIES_KEYS)))
             return
@@ -125,7 +129,11 @@ class Crud(commands.Cog):
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
-        """Edit"""
+        """Edit an existing series series.
+        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+
+        [p]crud series edit key1 "Value1" key2 "Value2"
+        """
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send("Invalid key.  Valid keys are: `{}`".format("` `".join(SERIES_KEYS)))
             return
@@ -141,7 +149,7 @@ class Crud(commands.Cog):
 
     @series.command(name="delete")
     async def series_delete(self, ctx, series_id: int):
-        """Delete"""
+        """Delete an existing series"""
         with await self.get_cursor() as cursor:
             sql = ('DELETE FROM series'
                    ' WHERE series_id = %s')
