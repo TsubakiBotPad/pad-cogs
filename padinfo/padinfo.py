@@ -1126,7 +1126,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     evos_body = ", ".join(f"**{m2.monster_id}**"
                           if m2.monster_id==m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in m.alt_evos)
+                          for m2 in sorted(m.alt_evos, key=lambda m: m.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
