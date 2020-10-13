@@ -87,26 +87,6 @@ class IdEmojiUpdater(EmojiUpdater):
 
     def on_update(self, ctx, selected_emoji):
         if self.pad_info.settings.checkEvoID(ctx.author.id):
-            DGCOG = self.bot.get_cog('Dadguide')
-            evos = list(map(lambda x: [x['from_id'], x['to_id']],
-                            DGCOG.database.get_all_evolutions_by_monster(self.m.monster_id)))
-            evos = list(set(sum(evos, [])))
-            evos.sort()
-            index = evos.index(self.m.monster_id)
-            if selected_emoji == self.pad_info.previous_monster_emoji:
-                if index == 0:
-                    self.m = DGCOG.get_monster_by_id(evos[-1])
-                else:
-                    self.m = DGCOG.get_monster_by_id(evos[index - 1])
-            elif selected_emoji == self.pad_info.next_monster_emoji:
-                if index == len(evos) - 1:
-                    self.m = DGCOG.get_monster_by_id(evos[0])
-                else:
-                    self.m = DGCOG.get_monster_by_id(evos[index + 1])
-            else:
-                self.selected_emoji = selected_emoji
-                return True
-        else:
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 if self.m.prev_monster is None:
                     return False
@@ -118,6 +98,28 @@ class IdEmojiUpdater(EmojiUpdater):
             else:
                 self.selected_emoji = selected_emoji
                 return True
+        else:
+            DGCOG = self.bot.get_cog('Dadguide')
+            evos = self.m._alt_evo_id_list
+            evos.sort()
+            index = evos.index(self.m.monster_id)
+            if selected_emoji == self.pad_info.previous_monster_emoji:
+                if index == 0:
+                    newm = DGCOG.get_monster_by_id(evos[-1])
+                else:
+                    newm = DGCOG.get_monster_by_id(evos[index - 1])
+            elif selected_emoji == self.pad_info.next_monster_emoji:
+                if index == len(evos) - 1:
+                    newm = DGCOG.get_monster_by_id(evos[0])
+                else:
+                    newm = DGCOG.get_monster_by_id(evos[index + 1])
+            else:
+                self.selected_emoji = selected_emoji
+                return True
+            if newm.monster_id == self.m.monster_id:
+                return False
+            self.m = newm
+
         self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
         return True
 
@@ -170,10 +172,10 @@ class PadInfo(commands.Cog):
         self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
-        self.id_emoji = '\N{INFORMATION SOURCE}'
+        self.id_emoji = '\N{HOUSE BUILDING}'
         self.evo_emoji = char_to_emoji('e')
         self.mats_emoji = char_to_emoji('m')
-        self.ls_emoji = '\N{INFORMATION SOURCE}'
+        self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
         self.pantheon_emoji = '\N{CLASSICAL BUILDING}'
@@ -620,18 +622,18 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def idmode(self, ctx, id_type):
         """Switch between number mode and evo mode"""
-        if id_type in ['evo']:
-            if self.settings.setEvoID(ctx.author.id):
+        if id_type in ['evo', 'default']:
+            if self.settings.rmEvoID(ctx.author.id):
                 await ctx.tick()
             else:
                 await ctx.send(inline("You're already using evo mode"))
-        elif id_type in ['number', 'default']:
-            if self.settings.rmEvoID(ctx.author.id):
+        elif id_type in ['number']:
+            if self.settings.setEvoID(ctx.author.id):
                 await ctx.tick()
             else:
                 await ctx.send(inline("You're already using number mode"))
         else:
-            await ctx.send(inline("id_type must be 'number' or 'evo'"))
+            await ctx.send(inline("id_type must be `number` or `evo`"))
 
     @commands.group()
     @checks.is_owner()
@@ -749,7 +751,7 @@ class PadInfoSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'animation_dir': '',
-            'evo_id_users': [],
+            'evo_id_optout': [],
             'voice_dir_path': '',
         }
         return config
@@ -767,21 +769,21 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
     def setEvoID(self, user_id):
-        if user_id not in self.bot_settings['evo_id_users']:
-            self.bot_settings['evo_id_users'].append(user_id)
+        if user_id not in self.bot_settings['evo_id_optout']:
+            self.bot_settings['evo_id_optout'].append(user_id)
             self.save_settings()
             return True
         return False
 
     def rmEvoID(self, user_id):
-        if user_id in self.bot_settings['evo_id_users']:
-            self.bot_settings['evo_id_users'].remove(user_id)
+        if user_id in self.bot_settings['evo_id_optout']:
+            self.bot_settings['evo_id_optout'].remove(user_id)
             self.save_settings()
             return True
         return False
 
     def checkEvoID(self, user_id):
-        return user_id in self.bot_settings['evo_id_users']
+        return user_id in self.bot_settings['evo_id_optout']
 
     def setVoiceDir(self, path):
         self.bot_settings['voice_dir_path'] = path
@@ -1126,7 +1128,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
                           for m2 in m.alt_evos)
     embed.add_field(name=evos_header, value=evos_body, inline=False)
-    
+
     return embed
 
 
