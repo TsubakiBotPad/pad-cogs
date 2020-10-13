@@ -1157,6 +1157,13 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
         ls_header += " [ {} ]".format(multiplier_text)
     embed.add_field(name=ls_header, value=ls_row, inline=False)
 
+    evos_header = "Alternate Evos"
+    evos_body = ", ".join(f"**{m2.monster_id}**"
+                          if m2.monster_id==m.monster_id
+                          else f"[{m2.monster_id}]({get_pdx_url(m2)})"
+                          for m2 in m.alt_evos)
+    embed.add_field(name=evos_header, value=evos_body, inline=False)
+
     return embed
 
 
