@@ -152,6 +152,8 @@ class Crud(commands.Cog):
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
         """Change a monster's name_en_override"""
+        if name.lower() in ["none", "null"]:
+            name = None
         with await self.get_cursor() as cursor:
             cursor.execute("SELECT name_en_override FROM monsters WHERE monster_id = %s", (monster_id,))
             old_val = cursor.fetchall()
