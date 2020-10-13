@@ -490,8 +490,8 @@ class PadEvents(commands.Cog):
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
 
-        active_events = list(group_to_active_event.values())
-        pending_events = list(group_to_pending_event.values())
+        #active_events = list(group_to_active_event.values())
+        #pending_events = list(group_to_pending_event.values())
 
         active_events.sort(key=lambda e: e.group, reverse=True)
         pending_events.sort(key=lambda e: e.group, reverse=True)
@@ -512,7 +512,8 @@ class PadEvents(commands.Cog):
             for e in pending_events:
                 output += "\n" + e.toPartialEvent(self)
 
-        await ctx.send(box(output))
+        for page in pagify(output):
+            await ctx.send(box(page))
 
 
 def makeChannelReg(channel_id, server):
