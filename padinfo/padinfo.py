@@ -621,7 +621,10 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     async def idmode(self, ctx, id_type):
-        """Switch between number mode and evo mode"""
+        """Switch between number mode and evo mode
+
+        [p]idmode number
+        [p]idmode evo"""
         if id_type in ['evo', 'default']:
             if self.settings.rmEvoID(ctx.author.id):
                 await ctx.tick()
