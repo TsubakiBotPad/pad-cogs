@@ -106,7 +106,7 @@ class PadEvents(commands.Cog):
                                     except:
                                         pass  # do nothing if role is missing
 
-                                    await channel.send(message)
+                                    await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
                                 except Exception as ex:
                                     # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
                                     logger.exception("caught exception while sending guerrilla msg:")
@@ -125,7 +125,7 @@ class PadEvents(commands.Cog):
                                     ment = role.mention
                                 else:
                                     ment = "#deleted-role"
-                                await channel.send("{} {}".format(e.name_and_modifier, ment))
+                                await channel.send("{} {}".format(e.name_and_modifier, ment), allowed_mentions=discord.AllowedMentions(roles=True))
 
 
                 for server in daily_refresh_servers:
