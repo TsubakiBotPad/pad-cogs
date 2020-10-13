@@ -422,9 +422,7 @@ class DadguideDatabase(object):
 
     def get_monster(self, monster_id: int):
         self.refresh_monsters()
-        m = self._monsters.get(monster_id)
-        if m is not None:
-            return DgMonster(m, self)
+        return self._monsters.get(monster_id)
 
     def get_all_monster_ja_name(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
@@ -453,6 +451,12 @@ class DadguideDatabase(object):
     def get_dungeon_by_id(self, dungeon_id: int):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
+    def tokenize_monsters(self):
+        tokens = defaultdict(list)
+        for mid, monster in self.get_all_monsters().items():
+            for token in monster.name_en.split():
+                tokens[token.lower()].append(monster)
+        return tokens
 
 def enum_or_none(enum, value, default=None):
     if value is not None:
@@ -847,6 +851,9 @@ class DgMonster(DadguideItem):
             next = self._database.get_monster(self.monster_no - offset)
             offset += 1
         return next
+
+    def __repr__(self):
+        return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
 
 
 class MonsterSearchHelper(object):
