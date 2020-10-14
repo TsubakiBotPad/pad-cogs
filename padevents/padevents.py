@@ -17,7 +17,7 @@ from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
-SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
+SUPPORTED_SERVERS = ["JP", "NA", "KR"]
 GROUPS = ['red', 'blue', 'green']
 
 class PadEvents(commands.Cog):
@@ -114,17 +114,13 @@ class PadEvents(commands.Cog):
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
                             daily_refresh_servers.add(e.server)
-
-                    if e.name_and_modifier in pingroles:
+                    if e.clean_dungeon_name in pingroles:
                         for cid in pingroles[e.name_and_modifier]:
                             channel = self.bot.get_channel(int(cid))
                             if channel is not None:
                                 index = GROUPS.index(e.group)
                                 role = channel.guild.get_role(pingroles[e.name_and_modifier][cid][index])
-                                if role:
-                                    ment = role.mention
-                                else:
-                                    ment = "#deleted-role"
+                                ment = role.mention if role else "#deleted-role"
                                 await channel.send("{} {}".format(e.name_and_modifier, ment), allowed_mentions=discord.AllowedMentions(roles=True))
 
 
@@ -167,15 +163,21 @@ class PadEvents(commands.Cog):
         te = dg_module.DgScheduledEvent({'dungeon_id': 1}, dg_cog.database)
 
         te.server = server
+        te.server_id = SUPPORTED_SERVERS.index(server)
         te.event_type_id = EventType.Guerrilla.value
         te.event_seq = 0
         fuid = self.fake_uid = self.fake_uid - 1
         te.key = lambda: fuid
-        te.group_name = 'Yellow'
+        te.group_name = 'red'
 
         te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)
         te.close_datetime = te.open_datetime + timedelta(minutes=1)
-        te.dungeon_name = 'fake_dungeon_name'
+
+        class Dungeon: pass
+        d = Dungeon()
+        d.name_en = 'fake_dungeon_name'
+        d.dungeon_type = DungeonType.Unknown7
+        te.dungeon = d
         te.event_modifier = 'fake_event_modifier'
         self.events.append(Event(te))
 
@@ -262,10 +264,10 @@ class PadEvents(commands.Cog):
     @checks.mod_or_permissions(manage_guild=True)
     async def rmautoeventping(self, ctx, *, name):
         async with self.config.pingroles() as pingroles:
-            if name not in pingroles or ctx.guild.id not in pingroles[name]:
+            if name not in pingroles or str(ctx.channel.id) not in pingroles[name]:
                 await ctx.send("That name is not set.")
                 return
-            n = pingroles[name][ctx.guild.id]
+            del pingroles[name][str(ctx.channel.id)]
         await ctx.tick()
 
     @padevents.command(name="listchannels")
@@ -493,8 +495,8 @@ class PadEvents(commands.Cog):
         #active_events = list(group_to_active_event.values())
         #pending_events = list(group_to_pending_event.values())
 
-        active_events.sort(key=lambda e: e.group, reverse=True)
-        pending_events.sort(key=lambda e: e.group, reverse=True)
+        active_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
+        pending_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
 
         if len(active_events) == 0 and len(pending_events) == 0:
             await ctx.send("No events available for " + server)
@@ -503,12 +505,12 @@ class PadEvents(commands.Cog):
         output = "Events for {}".format(server)
 
         if len(active_events) > 0:
-            output += "\n\n" + "G Remaining Dungeon"
+            output += "\n\n" + "  Remaining Dungeon"
             for e in active_events:
                 output += "\n" + e.toPartialEvent(self)
 
         if len(pending_events) > 0:
-            output += "\n\n" + "G PT    ET    ETA     Dungeon"
+            output += "\n\n" + "  PT    ET    ETA     Dungeon"
             for e in pending_events:
                 output += "\n" + e.toPartialEvent(self)
 
