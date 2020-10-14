@@ -151,6 +151,7 @@ class Crud(commands.Cog):
         await self.execute_edit(ctx, sql, (*elements.values(), series_id))
 
     @series.command(name="delete")
+    @checks.is_owner()
     async def series_delete(self, ctx, series_id: int):
         """Delete an existing series"""
         sql = ('DELETE FROM series'
