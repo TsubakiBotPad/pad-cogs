@@ -97,7 +97,7 @@ class DadguideDatabase(object):
         self._con.row_factory = lite.Row
 
 
-        self._monsters = None
+        self.cachedmonsters = None
         self.expiry = 0
 
     def has_database(self):
@@ -422,15 +422,15 @@ class DadguideDatabase(object):
 
     def get_monster(self, monster_id: int):
         self.refresh_monsters()
-        return self._monsters.get(monster_id)
+        return self.cachedmonsters.get(monster_id)
 
     def get_all_monster_ja_name(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
 
     def refresh_monsters(self):
-        if self._monsters == None or self.expiry < datetime.now().timestamp():
-            self._monsters = {m.monster_id: m for m in self.get_all_monsters_query(False)}
+        if self.cachedmonsters == None or self.expiry < datetime.now().timestamp():
+            self.cachedmonsters = {m.monster_id: m for m in self.get_all_monsters_query(False)}
             self.expiry = int(datetime.now().timestamp()) + 60*60
 
     def get_all_monsters_query(self, as_generator=True):
@@ -440,8 +440,8 @@ class DadguideDatabase(object):
     def get_all_monsters(self, as_generator=False):
         self.refresh_monsters()
         if as_generator:
-            return (m for m in self._monsters)
-        return self._monsters
+            return (m for m in self.cachedmonsters)
+        return self.cachedmonsters
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -854,7 +854,7 @@ class DgMonster(DadguideItem):
 
     def __repr__(self):
         return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
-        
+
     def __eq__(self, other):
         return isinstance(other, DgMonster) and self.monster_id == other.monster_id
 
