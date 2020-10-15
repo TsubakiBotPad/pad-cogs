@@ -214,7 +214,7 @@ class PadEvents(commands.Cog):
     async def rmchannel(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -231,7 +231,7 @@ class PadEvents(commands.Cog):
     async def addchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -248,7 +248,7 @@ class PadEvents(commands.Cog):
     async def rmchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -267,7 +267,8 @@ class PadEvents(commands.Cog):
 
     @autoeventping.command(name="add")
     async def aep_add(self, ctx, key, server = None, searchstr = None, red: discord.Role = None, blue: discord.Role = None, green: discord.Role = None):
-        """Add a new autoeventping"""
+        """Add a new autoeventping"""@chasehult
+Padevents AEP rewrite
         if green is None and server is not None:
             await ctx.send("Multi-word keys must be in quotes.")
             return
