@@ -267,8 +267,7 @@ class PadEvents(commands.Cog):
 
     @autoeventping.command(name="add")
     async def aep_add(self, ctx, key, server = None, searchstr = None, red: discord.Role = None, blue: discord.Role = None, green: discord.Role = None):
-        """Add a new autoeventping"""@chasehult
-Padevents AEP rewrite
+        """Add a new autoeventping"""
         if green is None and server is not None:
             await ctx.send("Multi-word keys must be in quotes.")
             return
