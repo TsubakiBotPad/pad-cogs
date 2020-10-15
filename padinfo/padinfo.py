@@ -86,7 +86,8 @@ class IdEmojiUpdater(EmojiUpdater):
         self.bot = bot
 
     def on_update(self, ctx, selected_emoji):
-        if self.pad_info.settings.checkEvoID(ctx.author.id):
+        evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        if evoID:
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 if self.m.prev_monster is None:
                     return False
@@ -120,7 +121,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 return False
             self.m = newm
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=evoID)
         return True
 
 
@@ -358,7 +359,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=self.settings.checkEvoID(ctx.author.id))
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -402,10 +403,12 @@ class PadInfo(commands.Cog):
         # IdEmojiUpdater won't allow it, however they have to be defined
         # so that the buttons display in the first place
 
-        if scroll:    emoji_to_embed[self.first_monster_emoji] = None
-        emoji_to_embed[self.previous_monster_emoji] = None
-        emoji_to_embed[self.next_monster_emoji] = None
-        if scroll:    emoji_to_embed[self.last_monster_emoji] = None
+        if scroll and len(m.alt_evos) > 1:
+            emoji_to_embed[self.first_monster_emoji] = None
+            emoji_to_embed[self.last_monster_emoji] = None
+        if not (len(m.alt_evos) == 1 and scroll):
+            emoji_to_embed[self.previous_monster_emoji] = None
+            emoji_to_embed[self.next_monster_emoji] = None
 
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
@@ -786,7 +789,7 @@ class PadInfoSettings(CogSettings):
         return False
 
     def checkEvoID(self, user_id):
-        return user_id in self.bot_settings['evo_id_optout']
+        return user_id not in self.bot_settings['evo_id_optout']
 
     def setVoiceDir(self, path):
         self.bot_settings['voice_dir_path'] = path
