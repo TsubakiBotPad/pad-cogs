@@ -284,6 +284,12 @@ class PadInfo(commands.Cog):
 
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
         m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
+        params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': m.name_en})
+        url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
+        async def send_survey_after():
+            asyncio.sleep(3)
+            await ctx.send(f"Was this the monster you wanted?  If not, fill out this survey to help the Tsubaki team!\n <{url}>")
+        asyncio.create_task(send_survey_after())
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
