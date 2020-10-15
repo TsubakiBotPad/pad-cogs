@@ -88,18 +88,6 @@ class IdEmojiUpdater(EmojiUpdater):
     def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         if evoID:
-            if selected_emoji == self.pad_info.previous_monster_emoji:
-                if self.m.prev_monster is None:
-                    return False
-                self.m = self.m.prev_monster
-            elif selected_emoji == self.pad_info.next_monster_emoji:
-                if self.m.next_monster is None:
-                    return False
-                self.m = self.m.next_monster
-            else:
-                self.selected_emoji = selected_emoji
-                return True
-        else:
             DGCOG = self.bot.get_cog('Dadguide')
             evos = self.m._alt_evo_id_list
             evos.sort()
@@ -120,8 +108,20 @@ class IdEmojiUpdater(EmojiUpdater):
             if newm.monster_id == self.m.monster_id:
                 return False
             self.m = newm
+        else:
+            if selected_emoji == self.pad_info.previous_monster_emoji:
+                if self.m.prev_monster is None:
+                    return False
+                self.m = self.m.prev_monster
+            elif selected_emoji == self.pad_info.next_monster_emoji:
+                if self.m.next_monster is None:
+                    return False
+                self.m = self.m.next_monster
+            else:
+                self.selected_emoji = selected_emoji
+                return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=evoID)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [])
         return True
 
 
@@ -137,24 +137,24 @@ class ScrollEmojiUpdater(EmojiUpdater):
 
     def on_update(self, ctx, selected_emoji):
         DGCOG = self.bot.get_cog('Dadguide')
-        index = self.ms.index(self.m.monster_id)
+        index = self.ms.index(self.m)
 
         if selected_emoji == self.pad_info.first_monster_emoji:
-            self.m = DGCOG.get_monster_by_id(self.ms[0])
+            self.m = self.ms[0]
         elif selected_emoji == self.pad_info.previous_monster_emoji:
-            self.m = DGCOG.get_monster_by_id(self.ms[index - 1])
+            self.m = self.ms[index - 1]
         elif selected_emoji == self.pad_info.next_monster_emoji:
             if index == len(self.ms) - 1:
-                self.m = DGCOG.get_monster_by_id(self.ms[0])
+                self.m = self.ms[0]
             else:
-                self.m = DGCOG.get_monster_by_id(self.ms[index + 1])
+                self.m = self.ms[index + 1]
         elif selected_emoji == self.pad_info.last_monster_emoji:
-            self.m = DGCOG.get_monster_by_id(self.ms[-1])
+            self.m = self.ms[-1]
         else:
             self.selected_emoji = selected_emoji
             return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=True)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=self.ms)
         return True
 
 
@@ -359,7 +359,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=self.settings.checkEvoID(ctx.author.id))
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [])
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -368,7 +368,7 @@ class PadInfo(commands.Cog):
         )
 
     async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=True)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=ms)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -376,7 +376,7 @@ class PadInfo(commands.Cog):
                                m=m, ms=ms, selected_emoji=starting_menu_emoji)
         )
 
-    def get_id_emoji_options(self, m=None, scroll=False):
+    def get_id_emoji_options(self, m=None, scroll=[]):
         id_embed = monsterToEmbed(m, self.get_emojis())
         evo_embed = monsterToEvoEmbed(m)
         mats_embed = monsterToEvoMatsEmbed(m)
@@ -403,12 +403,14 @@ class PadInfo(commands.Cog):
         # IdEmojiUpdater won't allow it, however they have to be defined
         # so that the buttons display in the first place
 
-        if scroll and len(m.alt_evos) > 1:
+
+        if len(scroll) > 1:
             emoji_to_embed[self.first_monster_emoji] = None
-            emoji_to_embed[self.last_monster_emoji] = None
-        if not (len(m.alt_evos) == 1 and scroll):
+        if len(scroll) != 1:
             emoji_to_embed[self.previous_monster_emoji] = None
             emoji_to_embed[self.next_monster_emoji] = None
+        if len(scroll) > 1:
+            emoji_to_embed[self.last_monster_emoji] = None
 
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
@@ -512,18 +514,29 @@ class PadInfo(commands.Cog):
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
         ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
-        ms = [m._alt_evo_id_list for m in ms
-              if m._base_monster_id == m.monster_id
+        ms = [sorted({*m.alt_evos}, key=lambda m: m.monster_id) for m in ms
+              if m.base_monster == m
               and m.sell_mp >= 3000]
         ms = [m for ml in ms for m in ml]
 
-        if m._base_monster_id != m.monster_id:
-            m = self.get_monster_by_id(m._base_monster_id)
-        if m.monster_id not in ms:
-            m = m if m.monster_id in ms else self.get_monster_by_id(ms[0])
+        if m.base_monster != m:
+            m = m.base_monster
+        if m not in ms:
+            m = m if m in ms else ms[0]
 
         if m is not None:
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
+        else:
+            await ctx.send(self.makeFailureMsg(err))
+
+    @commands.command(aliases=['es'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def evoscroll(self, ctx, *, query: str):
+        """Scroll through the monsters in a collab"""
+        m, err, debug_info = await self.findMonster(query)
+
+        if m is not None:
+            await self._do_scrollmenu(ctx, m, sorted({*m.alt_evos}, key=lambda x: x.monster_id), self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -629,12 +642,12 @@ class PadInfo(commands.Cog):
         [p]idmode number
         [p]idmode evo"""
         if id_type in ['evo', 'default']:
-            if self.settings.rmEvoID(ctx.author.id):
+            if self.settings.setEvoID(ctx.author.id):
                 await ctx.tick()
             else:
                 await ctx.send(inline("You're already using evo mode"))
         elif id_type in ['number']:
-            if self.settings.setEvoID(ctx.author.id):
+            if self.settings.rmEvoID(ctx.author.id):
                 await ctx.tick()
             else:
                 await ctx.send(inline("You're already using number mode"))
@@ -757,7 +770,7 @@ class PadInfoSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'animation_dir': '',
-            'evo_id_optout': [],
+            'alt_id_optout': [],
             'voice_dir_path': '',
         }
         return config
@@ -775,21 +788,21 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
     def setEvoID(self, user_id):
-        if user_id not in self.bot_settings['evo_id_optout']:
-            self.bot_settings['evo_id_optout'].append(user_id)
-            self.save_settings()
-            return True
-        return False
+        if self.checkEvoID(user_id):
+            return False
+        self.bot_settings['alt_id_optout'].remove(user_id)
+        self.save_settings()
+        return True
 
     def rmEvoID(self, user_id):
-        if user_id in self.bot_settings['evo_id_optout']:
-            self.bot_settings['evo_id_optout'].remove(user_id)
-            self.save_settings()
-            return True
-        return False
+        if not self.checkEvoID(user_id):
+            return False
+        self.bot_settings['alt_id_optout'].append(user_id)
+        self.save_settings()
+        return True
 
     def checkEvoID(self, user_id):
-        return user_id not in self.bot_settings['evo_id_optout']
+        return user_id not in self.bot_settings['alt_id_optout']
 
     def setVoiceDir(self, path):
         self.bot_settings['voice_dir_path'] = path
@@ -1132,7 +1145,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     evos_body = ", ".join(f"**{m2.monster_id}**"
                           if m2.monster_id==m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in sorted(m.alt_evos, key=lambda m: m.monster_id))
+                          for m2 in sorted({*m.alt_evos}, key=lambda m: m.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
