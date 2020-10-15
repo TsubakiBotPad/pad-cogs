@@ -106,7 +106,10 @@ class PadEvents(commands.Cog):
                                 if channel is not None:
                                     role = guild.get_role(aep['roles'][index])
                                     ment = role.mention if role else ""
-                                    await channel.send("{} {}".format(e.name_and_modifier, ment), allowed_mentions=discord.AllowedMentions(roles=True))
+                                    offsetstr = ""
+                                    if aep['offset']:
+                                        offsetstr = " in {} minute(s)".format(aep['offset'])
+                                    await channel.send("{}{} {}".format(e.name_and_modifier, offsetstr, ment), allowed_mentions=discord.AllowedMentions(roles=True))
 
                 events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
                 daily_refresh_servers = set()
@@ -327,7 +330,7 @@ class PadEvents(commands.Cog):
 
     @autoeventping.group(name="set")
     async def aep_set(self, ctx):
-        """Set specific parts of an autoeventping"""
+        """Sets specific parts of an autoeventping"""
 
     async def aepc(self, ctx, key, k, f):
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
@@ -348,7 +351,7 @@ class PadEvents(commands.Cog):
 
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
-        """Set channel to ping for all groups"""
+        """Sets channel to ping for all groups"""
         await self.aeps(ctx, key, 'channels', [channel.id]*3)
         await ctx.tick()
 
@@ -392,7 +395,7 @@ class PadEvents(commands.Cog):
 
     @aep_set.command(name="server")
     async def aep_s_server(self, ctx, key, server):
-        """Set which server to listen to events in"""
+        """Sets which server to listen to events in"""
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
@@ -402,7 +405,7 @@ class PadEvents(commands.Cog):
 
     @aep_set.command(name="searchstr")
     async def aep_s_searchstr(self, ctx, key, *, searchstr):
-        """Set what string is tested against event name"""
+        """Sets what string is tested against event name"""
         if (await self.aepg(ctx, key))['regex']:
             try:
                 re.compile(searchstr)
@@ -414,7 +417,7 @@ class PadEvents(commands.Cog):
 
     @aep_set.command(name="regex")
     async def aep_s_regex(self, ctx, key, regex: bool):
-        """Set whether searchstr is calculated via regex"""
+        """Sets whether searchstr is calculated via regex"""
         if regex:
             try:
                 re.compile((await self.aepg(ctx, key))['searchstr'])
@@ -426,19 +429,19 @@ class PadEvents(commands.Cog):
 
     @aep_set.command(name="enabled", aliases=['enable'])
     async def aep_s_enabled(self, ctx, key, enabled: bool = True):
-        """Set whether or not ping is enabled"""
+        """Sets whether or not ping is enabled"""
         await self.aeps(ctx, key, 'enabled', enabled)
         await ctx.tick()
 
     @aep_set.command(name="disabled", aliases=['disable'])
     async def aep_s_disabled(self, ctx, key, disabled: bool = True):
-        """Set whether or not ping is disabled"""
+        """Sets whether or not ping is disabled"""
         await self.aeps(ctx, key, 'enabled', not disabled)
         await ctx.tick()
 
     @aep_set.command(name="offset")
     async def aep_s_disabled(self, ctx, key, offset: int):
-        """Set how many minutes before event should ping happen"""
+        """Sets how many minutes before event should ping happen"""
         if offset < 0:
             await ctx.send("Offset cannot be negative.")
             return
