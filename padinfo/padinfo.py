@@ -15,6 +15,8 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json
 
+from .find_monster import prefix_to_filter
+
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
 HELP_MSG = """
@@ -85,8 +87,11 @@ class IdEmojiUpdater(EmojiUpdater):
         self.selected_emoji = selected_emoji
         self.bot = bot
 
+        self.pad_info.settings.log_emoji("start_"+selected_emoji)
+
     def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
             DGCOG = self.bot.get_cog('Dadguide')
             evos = self.m._alt_evo_id_list
@@ -313,6 +318,19 @@ class PadInfo(commands.Cog):
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        await self._do_id3(ctx, query)
+
+    async def _do_id3(self, ctx, query: str):
+        m = await self.findMonster3(query)
+        if m is not None:
+            await self._do_idmenu(ctx, m, self.id_emoji)
+        else:
+            await ctx.send("whoops")
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
@@ -765,6 +783,28 @@ class PadInfo(commands.Cog):
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster2(query)
 
+    async def findMonster3(self, query):
+        return await self._findMonster3(query)
+
+    async def _findMonster3(self, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        if DGCOG is None:
+            raise ValueError("Dadguide cog is not loaded")
+
+        query = rmdiacritics(query).split()
+        monstergen = DGCOG.database.get_all_monsters()
+        for c, token in enumerate(query):
+            try:
+                filt = prefix_to_filter(token)
+            except:
+                print(token)
+                raise
+            if filt is None:
+                monster_name = " ".join(query[c:])
+                break
+            monstergen = filter(filt, monstergen)
+        return max(monstergen, key=lambda x: (not x.is_equip, x.rarity, x.monster_no_na))
+
 
 class PadInfoSettings(CogSettings):
     def make_default_settings(self):
@@ -772,6 +812,7 @@ class PadInfoSettings(CogSettings):
             'animation_dir': '',
             'alt_id_optout': [],
             'voice_dir_path': '',
+            'emoji_use': {},
         }
         return config
 
@@ -810,6 +851,10 @@ class PadInfoSettings(CogSettings):
 
     def voiceDir(self):
         return self.bot_settings['voice_dir_path']
+
+    def log_emoji(self, emote):
+        self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
+        self.save_settings()
 
 
 def monsterToHeader(m: "DgMonster", link=False):
