@@ -87,8 +87,11 @@ class IdEmojiUpdater(EmojiUpdater):
         self.selected_emoji = selected_emoji
         self.bot = bot
 
+        self.pad_info.settings.log_emoji("start_"+selected_emoji)
+
     def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
             DGCOG = self.bot.get_cog('Dadguide')
             evos = self.m._alt_evo_id_list
@@ -809,6 +812,7 @@ class PadInfoSettings(CogSettings):
             'animation_dir': '',
             'alt_id_optout': [],
             'voice_dir_path': '',
+            'emoji_use': {},
         }
         return config
 
@@ -847,6 +851,10 @@ class PadInfoSettings(CogSettings):
 
     def voiceDir(self):
         return self.bot_settings['voice_dir_path']
+
+    def log_emoji(self, emote):
+        self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
+        self.save_settings()
 
 
 def monsterToHeader(m: "DgMonster", link=False):
