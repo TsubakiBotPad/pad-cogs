@@ -854,6 +854,12 @@ class DgMonster(DadguideItem):
 
     def __repr__(self):
         return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
+        
+    def __eq__(self, other):
+        return isinstance(other, DgMonster) and self.monster_id == other.monster_id
+
+    def __hash__(self):
+        return hash(("DgMonster", self.monster_id))
 
 
 class MonsterSearchHelper(object):
