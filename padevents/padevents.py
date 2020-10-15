@@ -87,7 +87,7 @@ class PadEvents(commands.Cog):
                 daily_refresh_servers = set()
                 pingroles = await self.config.pingroles()
                 for e in events:
-                    # await self.bot.get_channel(765847219177521192).send(inline(str((e.clean_dungeon_name, fmtTime(e.open_datetime), e.server, e.key))))
+                    await self.bot.get_channel(765847219177521192).send(inline(str((e.clean_dungeon_name, fmtTime(e.open_datetime), e.server, e.key))))
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
                         for gr in list(self.settings.listGuerrillaReg()):
