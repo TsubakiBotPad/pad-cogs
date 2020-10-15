@@ -827,6 +827,12 @@ class DgMonster(DadguideItem):
             offset += 1
         return next
 
+    def __eq__(self, other):
+        return isinstance(other, DgMonster) and self.monster_id == other.monster_id
+
+    def __hash__(self):
+        return hash(("DgMonster", self.monster_id))
+
 
 class MonsterSearchHelper(object):
     def __init__(self, m: DgMonster):
