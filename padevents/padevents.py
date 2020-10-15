@@ -87,24 +87,20 @@ class PadEvents(commands.Cog):
                 daily_refresh_servers = set()
                 pingroles = await self.config.pingroles()
                 for e in events:
+                    # await self.bot.get_channel(765847219177521192).send(inline(str((e.clean_dungeon_name, fmtTime(e.open_datetime), e.server, e.key))))
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
                         for gr in list(self.settings.listGuerrillaReg()):
                             if e.server == gr['server']:
                                 try:
-                                    message = box("Server " + e.server + ", group " +
-                                                  e.groupLongName() + " : " + e.name_and_modifier)
                                     channel = self.bot.get_channel(int(gr['channel_id']))
 
-                                    try:
-                                        role_name = '{}_group_{}'.format(
-                                            e.server, e.groupLongName())
-                                        role = get_role(channel.guild.roles, role_name)
-                                        if role and role.mentionable:
-                                            message = "{} `: {} is starting`".format(
-                                                role.mention, e.name_and_modifier)
-                                    except:
-                                        pass  # do nothing if role is missing
+                                    role_name = '{}_group_{}'.format(e.server, e.groupLongName())
+                                    role = channel.guild.get_role(channel.guild.roles, role_name)
+                                    if role and role.mentionable:
+                                        message = "{} `: {} is starting`".format(role.mention, e.name_and_modifier)
+                                    else:
+                                        message = box("Server " + e.server + ", group " + e.groupLongName() + " : " + e.name_and_modifier)
 
                                     await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
                                 except Exception as ex:
@@ -114,12 +110,12 @@ class PadEvents(commands.Cog):
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
                             daily_refresh_servers.add(e.server)
-                    if e.clean_dungeon_name in pingroles:
-                        for cid in pingroles[e.name_and_modifier]:
+                    if e.server + e.clean_dungeon_name in pingroles:
+                        for cid in pingroles[e.server + e.clean_dungeon_name]:
                             channel = self.bot.get_channel(int(cid))
                             if channel is not None:
                                 index = GROUPS.index(e.group)
-                                role = channel.guild.get_role(pingroles[e.name_and_modifier][cid][index])
+                                role = channel.guild.get_role(pingroles[e.server + e.clean_dungeon_name][cid][index])
                                 ment = role.mention if role else "#deleted-role"
                                 await channel.send("{} {}".format(e.name_and_modifier, ment), allowed_mentions=discord.AllowedMentions(roles=True))
 
@@ -141,7 +137,7 @@ class PadEvents(commands.Cog):
                 logger.exception("caught exception while checking guerrillas:")
 
             await asyncio.sleep(10)
-        logger.info("done check_started")
+        logger.info("done check_started (cog probably unloaded)")
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -254,20 +250,28 @@ class PadEvents(commands.Cog):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def autoeventping(self, ctx, name, red: discord.Role, blue: discord.Role, green: discord.Role):
+    async def autoeventping(self, ctx, server, name, red: discord.Role, blue: discord.Role, green: discord.Role):
+        server = normalizeServer(server)
+        if server not in SUPPORTED_SERVERS:
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
+            return
         async with self.config.pingroles() as pingroles:
-            pingroles[name] = {ctx.channel.id: (red.id, blue.id, green.id)}
+            pingroles[server+name] = {ctx.channel.id: (red.id, blue.id, green.id)}
         await ctx.tick()
 
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmautoeventping(self, ctx, *, name):
+    async def rmautoeventping(self, ctx, *, server, name):
+        server = normalizeServer(server)
+        if server not in SUPPORTED_SERVERS:
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
+            return
         async with self.config.pingroles() as pingroles:
-            if name not in pingroles or str(ctx.channel.id) not in pingroles[name]:
+            if server+name not in pingroles or str(ctx.channel.id) not in pingroles[server+name]:
                 await ctx.send("That name is not set.")
                 return
-            del pingroles[name][str(ctx.channel.id)]
+            del pingroles[server+name][str(ctx.channel.id)]
         await ctx.tick()
 
     @padevents.command(name="listchannels")
@@ -646,7 +650,7 @@ class Event:
         return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
 
     def groupLongName(self):
-        return self.group.upper()
+        return self.group.upper() if self.group is not None else "UNGROUPED"
 
     def toPartialEvent(self, pe):
         group = self.groupShortName()
