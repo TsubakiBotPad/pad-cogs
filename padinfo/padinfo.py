@@ -126,7 +126,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [], 1)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
         return True
 
 
@@ -377,7 +377,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], 1)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
