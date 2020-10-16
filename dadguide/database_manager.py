@@ -96,6 +96,10 @@ class DadguideDatabase(object):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
+
+        self.cachedmonsters = None
+        self.expiry = 0
+
     def has_database(self):
         return self._con is not None
 
@@ -413,16 +417,31 @@ class DadguideDatabase(object):
             '{0}.monster_id != {0}.monster_no_na AND {0}.monster_no_jp == {0}.monster_no_na '.format(DgMonster.TABLE),
             ())
 
-    def get_monster(self, monster_id: int):
+    def get_monster_query(self, monster_id: int):
         return self._select_one_entry_by_pk(monster_id, DgMonster)
+
+    def get_monster(self, monster_id: int):
+        self.refresh_monsters()
+        return self.cachedmonsters.get(monster_id)
 
     def get_all_monster_ja_name(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
 
-    def get_all_monsters(self, as_generator=True):
+    def refresh_monsters(self):
+        if self.cachedmonsters == None or self.expiry < datetime.now().timestamp():
+            self.cachedmonsters = {m.monster_id: m for m in self.get_all_monsters_query(False)}
+            self.expiry = int(datetime.now().timestamp()) + 60*60
+
+    def get_all_monsters_query(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
                                 as_generator=as_generator)
+
+    def get_all_monsters(self, as_generator=False):
+        self.refresh_monsters()
+        if as_generator:
+            return (m for m in self.cachedmonsters)
+        return self.cachedmonsters
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -432,6 +451,12 @@ class DadguideDatabase(object):
     def get_dungeon_by_id(self, dungeon_id: int):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
+    def tokenize_monsters(self):
+        tokens = defaultdict(list)
+        for mid, monster in self.get_all_monsters().items():
+            for token in monster.name_en.split():
+                tokens[token.lower()].append(monster)
+        return tokens
 
 def enum_or_none(enum, value, default=None):
     if value is not None:
@@ -826,6 +851,15 @@ class DgMonster(DadguideItem):
             next = self._database.get_monster(self.monster_no - offset)
             offset += 1
         return next
+
+    def __repr__(self):
+        return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
+
+    def __eq__(self, other):
+        return isinstance(other, DgMonster) and self.monster_id == other.monster_id
+
+    def __hash__(self):
+        return hash(("DgMonster", self.monster_id))
 
 
 class MonsterSearchHelper(object):
