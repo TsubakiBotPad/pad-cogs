@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import discord
 import logging
+import itertools
 import prettytable
 import pytz
 import re
@@ -10,14 +11,14 @@ from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
 from redbot.core import checks
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
-SUPPORTED_SERVERS = ["JP", "NA", "KR", "UK"]
-
+SUPPORTED_SERVERS = ["JP", "NA", "KR"]
+GROUPS = ['red', 'blue', 'green']
 
 class PadEvents(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
@@ -25,10 +26,13 @@ class PadEvents(commands.Cog):
         self.bot = bot
 
         self.settings = PadEventSettings("padevents")
+        self.config = Config.get_conf(self, identifier=940373775)
+        self.config.register_guild(pingroles={})
 
         # Load event data
         self.events = list()
         self.started_events = set()
+        self.rolepinged_events = set()
 
         self.fake_uid = -999
 
@@ -74,61 +78,81 @@ class PadEvents(commands.Cog):
 
         self.events = new_events
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
+        self.rolepinged_events = set()
 
     async def check_started(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadEvents'):
             try:
-                events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
+                events = filter(lambda e: not e.key in self.started_events, self.events)
+                for e in events:
+                    for gid, data in (await self.config.all_guilds()).items():
+                        guild = self.bot.get_guild(gid)
+                        for key, aep in data.get('pingroles', {}).items():
+                            if e.start_from_now_sec() > aep['offset'] * 60 \
+                                        or not aep['enabled'] \
+                                        or e.server != aep['server'] \
+                                        or (key, e.key) in self.rolepinged_events:
+                                continue
+                            elif aep['regex']:
+                                matches = re.search(aep['searchstr'], e.clean_dungeon_name)
+                            else:
+                                matches = aep['searchstr'] in e.clean_dungeon_name
 
+                            self.rolepinged_events.add((key, e.key))
+                            if matches:
+                                index = GROUPS.index(e.group)
+                                channel = guild.get_channel(aep['channels'][index])
+                                if channel is not None:
+                                    role = guild.get_role(aep['roles'][index])
+                                    ment = role.mention if role else ""
+                                    offsetstr = ""
+                                    if aep['offset']:
+                                        offsetstr = " in {} minute(s)".format(aep['offset'])
+                                    await channel.send("{}{} {}".format(e.name_and_modifier, offsetstr, ment), allowed_mentions=discord.AllowedMentions(roles=True))
+
+                events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
                 daily_refresh_servers = set()
                 for e in events:
+                    await self.bot.get_channel(765847219177521192).send(inline(str((e.clean_dungeon_name, fmtTime(e.open_datetime), e.server, e.key))))
                     self.started_events.add(e.key)
-                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek]:
+                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
                         for gr in list(self.settings.listGuerrillaReg()):
                             if e.server == gr['server']:
                                 try:
-                                    message = box("Server " + e.server + ", group " +
-                                                  e.groupLongName() + " : " + e.name_and_modifier)
                                     channel = self.bot.get_channel(int(gr['channel_id']))
 
-                                    try:
-                                        role_name = '{}_group_{}'.format(
-                                            e.server, e.groupLongName())
-                                        role = get_role(channel.guild.roles, role_name)
-                                        if role and role.mentionable:
-                                            message = "{} `: {} is starting`".format(
-                                                role.mention, e.name_and_modifier)
-                                    except:
-                                        pass  # do nothing if role is missing
+                                    role_name = '{}_group_{}'.format(e.server, e.groupLongName())
+                                    role = channel.guild.get_role(role_name)
+                                    if role and role.mentionable:
+                                        message = "{} `: {} is starting`".format(role.mention, e.name_and_modifier)
+                                    else:
+                                        message = box("Server " + e.server + ", group " + e.groupLongName() + " : " + e.name_and_modifier)
 
-                                    await channel.send(message)
+                                    await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
                                 except Exception as ex:
                                     # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
                                     logger.exception("caught exception while sending guerrilla msg:")
 
                     else:
                         if not e.dungeon_type in [DungeonType.Normal]:
-                            daily_refresh_servers.add(e.server)
-
-                for server in daily_refresh_servers:
-                    msg = self.makeActiveText(server)
-                    for daily_registration in list(self.settings.listDailyReg()):
-                        try:
-                            if server == daily_registration['server']:
-                                await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
-                                                      msg, channel_id=daily_registration['channel_id'])
-                                logger.info("daily_reg server")
-                        except Exception as ex:
-                            # self.settings.removeDailyReg(
-                            #   daily_registration['channel_id'], daily_registration['server'])
-                            logger.exception("caught exception while sending daily msg:")
+                            msg = self.makeActiveText(server)
+                            for daily_registration in list(self.settings.listDailyReg()):
+                                try:
+                                    if server == daily_registration['server']:
+                                        await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
+                                                              msg, channel_id=daily_registration['channel_id'])
+                                        logger.info("daily_reg server")
+                                except Exception as ex:
+                                    # self.settings.removeDailyReg(
+                                    #   daily_registration['channel_id'], daily_registration['server'])
+                                    logger.exception("caught exception while sending daily msg:")
 
             except Exception as ex:
                 logger.exception("caught exception while checking guerrillas:")
 
             await asyncio.sleep(10)
-        logger.info("done check_started")
+        logger.info("done check_started (cog probably unloaded)")
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -150,15 +174,21 @@ class PadEvents(commands.Cog):
         te = dg_module.DgScheduledEvent({'dungeon_id': 1}, dg_cog.database)
 
         te.server = server
+        te.server_id = SUPPORTED_SERVERS.index(server)
         te.event_type_id = EventType.Guerrilla.value
         te.event_seq = 0
         fuid = self.fake_uid = self.fake_uid - 1
         te.key = lambda: fuid
-        te.group_name = 'Yellow'
+        te.group_name = 'red'
 
         te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)
         te.close_datetime = te.open_datetime + timedelta(minutes=1)
-        te.dungeon_name = 'fake_dungeon_name'
+
+        class Dungeon: pass
+        d = Dungeon()
+        d.name_en = 'fake_dungeon_name'
+        d.dungeon_type = DungeonType.Unknown7
+        te.dungeon = d
         te.event_modifier = 'fake_event_modifier'
         self.events.append(Event(te))
 
@@ -187,7 +217,7 @@ class PadEvents(commands.Cog):
     async def rmchannel(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -204,7 +234,7 @@ class PadEvents(commands.Cog):
     async def addchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -221,7 +251,7 @@ class PadEvents(commands.Cog):
     async def rmchanneldaily(self, ctx, server):
         server = normalizeServer(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, ~~KR~~, JP")
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         channel_id = ctx.channel.id
@@ -231,6 +261,192 @@ class PadEvents(commands.Cog):
 
         self.settings.removeDailyReg(channel_id, server)
         await ctx.send("Channel deactivated.")
+
+    @commands.group(aliases=['aep'])
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_guild=True)
+    async def autoeventping(self, ctx):
+        """Auto Event Pings"""
+
+    @autoeventping.command(name="add")
+    async def aep_add(self, ctx, key, server = None, searchstr = None, red: discord.Role = None, blue: discord.Role = None, green: discord.Role = None):
+        """Add a new autoeventping"""
+        if green is None and server is not None:
+            await ctx.send("Multi-word keys must be in quotes.")
+            return
+
+        default = {
+            'roles': [None, None, None],
+            'channels': [None, None, None],
+            'server': 'NA',
+            'searchstr': None,
+            'regex': False,
+            'enabled': False,
+            'offset': 0,
+        }
+
+        if green is not None:
+            server = normalizeServer(server)
+            if server not in SUPPORTED_SERVERS:
+                await ctx.send("Unsupported server, pick one of NA, KR, JP")
+                return
+            default.update({
+                'roles': [red.id, blue.id, green.id],
+                'channels': [ctx.channel.id] * 3,
+                'server': server,
+                'searchstr': searchstr,
+                'enabled': True,
+            })
+
+        async with self.config.guild(ctx.guild).pingroles() as pingroles:
+            pingroles[key] = default
+        await ctx.tick()
+
+    @autoeventping.command(name="remove", aliases=['rm', 'delete'])
+    async def aep_remove(self, ctx, *, key):
+        """Remove an autoeventping"""
+        async with self.config.guild(ctx.guild).pingroles() as pingroles:
+            if key not in pingroles:
+                await ctx.send("That key does not exist.")
+                return
+            del pingroles[key]
+        await ctx.tick()
+
+    @autoeventping.command(name="show")
+    async def aep_show(self, ctx, *, key):
+        """Show specifics of an autoeventping"""
+        pingroles = await self.config.guild(ctx.guild).pingroles()
+        if key not in pingroles:
+            await ctx.send("That key does not exist.")
+            return
+        pr = pingroles[key]
+        await ctx.send(str(pr)+"\n\nTODO: Make this readable")
+
+    @autoeventping.command(name="list")
+    async def aep_list(self, ctx):
+        """List all autoeventpings"""
+        pingroles = await self.config.guild(ctx.guild).pingroles()
+        await ctx.send(box('\n'.join(pingroles)))
+
+    @autoeventping.group(name="set")
+    async def aep_set(self, ctx):
+        """Sets specific parts of an autoeventping"""
+
+    async def aepc(self, ctx, key, k, f):
+        async with self.config.guild(ctx.guild).pingroles() as pingroles:
+            if key not in pingroles:
+                await ctx.send("That key does not exist.")
+                return
+            pingroles[key][k] = f(pingroles[key][k])
+
+    async def aeps(self, ctx, key, k, v):
+        await self.aepc(ctx, key, k, lambda x: v)
+
+    async def aepg(self, ctx, key):
+        pingroles = await self.config.guild(ctx.guild).pingroles()
+        if key not in pingroles:
+            await ctx.send("That key does not exist.")
+            return
+        return pingroles[key]
+
+    @aep_set.command(name="channel")
+    async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
+        """Sets channel to ping for all groups"""
+        await self.aeps(ctx, key, 'channels', [channel.id]*3)
+        await ctx.tick()
+
+    @aep_set.command(name="redchannel")
+    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel):
+        """Sets channel to ping when event is red"""
+        await self.aepc(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
+        await ctx.tick()
+    @aep_set.command(name="bluechannel")
+    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel):
+        """Sets channel to ping when event is blue"""
+        await self.aepc(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
+        await ctx.tick()
+    @aep_set.command(name="greenchannel")
+    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel):
+        """Sets channel to ping when event is green"""
+        await self.aepc(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
+        await ctx.tick()
+
+    @aep_set.command(name="roles")
+    async def aep_s_roles(self, ctx, key, red: discord.Role, blue: discord.Role, green: discord.Role):
+        """Sets roles to ping"""
+        await self.aeps(ctx, key, 'roles', [red.id, blue.id, green.id])
+        await ctx.tick()
+
+    @aep_set.command(name="redrole")
+    async def aep_s_redrole(self, ctx, key, role: discord.Role):
+        """Sets role to ping when event is red"""
+        await self.aepc(ctx, key, 'roles', lambda x: [role.id, x[1], x[2]])
+        await ctx.tick()
+    @aep_set.command(name="bluerole")
+    async def aep_s_bluerole(self, ctx, key, role: discord.Role):
+        """Sets role to ping when event is blue"""
+        await self.aepc(ctx, key, 'roles', lambda x: [x[0], role.id, x[2]])
+        await ctx.tick()
+    @aep_set.command(name="greenrole")
+    async def aep_s_greenrole(self, ctx, key, role: discord.Role):
+        """Sets role to ping when event is green"""
+        await self.aepc(ctx, key, 'roles', lambda x: [x[0], x[1], role.id])
+        await ctx.tick()
+
+    @aep_set.command(name="server")
+    async def aep_s_server(self, ctx, key, server):
+        """Sets which server to listen to events in"""
+        server = normalizeServer(server)
+        if server not in SUPPORTED_SERVERS:
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
+            return
+        await self.aeps(ctx, key, 'server', server)
+        await ctx.tick()
+
+    @aep_set.command(name="searchstr")
+    async def aep_s_searchstr(self, ctx, key, *, searchstr):
+        """Sets what string is tested against event name"""
+        if (await self.aepg(ctx, key))['regex']:
+            try:
+                re.compile(searchstr)
+            except re.error:
+                await ctx.send("Invalid regex searchstr. (`{}`)".format(searchstr))
+                return
+        await self.aeps(ctx, key, 'searchstr', searchstr)
+        await ctx.tick()
+
+    @aep_set.command(name="regex")
+    async def aep_s_regex(self, ctx, key, regex: bool):
+        """Sets whether searchstr is calculated via regex"""
+        if regex:
+            try:
+                re.compile((await self.aepg(ctx, key))['searchstr'])
+            except re.error:
+                await ctx.send("Invalid regex searchstr. (`{}`)".format((await self.aepg(ctx, key))['searchstr']))
+                return
+        await self.aeps(ctx, key, 'regex', regex)
+        await ctx.tick()
+
+    @aep_set.command(name="enabled", aliases=['enable'])
+    async def aep_s_enabled(self, ctx, key, enabled: bool = True):
+        """Sets whether or not ping is enabled"""
+        await self.aeps(ctx, key, 'enabled', enabled)
+        await ctx.tick()
+
+    @aep_set.command(name="disabled", aliases=['disable'])
+    async def aep_s_disabled(self, ctx, key, disabled: bool = True):
+        """Sets whether or not ping is disabled"""
+        await self.aeps(ctx, key, 'enabled', not disabled)
+        await ctx.tick()
+
+    @aep_set.command(name="offset")
+    async def aep_s_disabled(self, ctx, key, offset: int):
+        """Sets how many minutes before event should ping happen"""
+        if offset < 0:
+            await ctx.send("Offset cannot be negative.")
+            return
+        await self.aeps(ctx, key, 'offset', offset)
+        await ctx.tick()
 
     @padevents.command(name="listchannels")
     @checks.mod_or_permissions(manage_guild=True)
@@ -271,6 +487,7 @@ class PadEvents(commands.Cog):
 
         msg = "Listing all events for " + server
 
+        """
         special_events = active_events.withType(
             EventType.Special).itemsByCloseTime()
         if len(special_events) > 0:
@@ -304,7 +521,43 @@ class PadEvents(commands.Cog):
             msg += "\n\n" + \
                    self.makeFullGuerrillaOutput(
                        'Guerrilla Events', guerrilla_events, starter_guerilla=True)
+        """
+        active_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(True).items()
+        if len(active_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Active Events', active_cdo_events)
+        """
+        cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(False).items()
+        if len(cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Reward Events', cdo_events)
+        """
 
+        active_grouped_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        if len(active_grouped_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveGuerrillaOutput(
+                       'Active Guerrillas', active_grouped_cdo_events)
+        grouped_cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        if len(grouped_cdo_events) > 0:
+            msg += "\n\n" + \
+                   self.makeFullGuerrillaOutput(
+                       'Guerrillas', grouped_cdo_events, starter_guerilla=True)
+
+        active_etc_events = active_events.withDungeonType(DungeonType.Etc).items()
+        if len(active_etc_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Active Other Events', active_etc_events)
+        """
+        etc_events = pending_events.withDungeonType(DungeonType.Etc).items()
+        if len(etc_events) > 0:
+            msg += "\n\n" + \
+                   self.makeActiveOutput(
+                       'Other Events', etc_events)
+        """
         # clean up long headers
         msg = msg.replace('-------------------------------------', '-----------------------')
 
@@ -353,7 +606,7 @@ class PadEvents(commands.Cog):
             events = sorted(events, key=lambda e: e.open_datetime)
             events_by_group = defaultdict(list)
             for e in events:
-                events_by_group[e.group].append(e)
+                events_by_group[e.group.upper()].append(e)
 
             done = False
             while not done:
@@ -408,7 +661,8 @@ class PadEvents(commands.Cog):
 
         events = EventList(self.events)
         events = events.withServer(server)
-        events = events.inType([EventType.Guerrilla, EventType.SpecialWeek])
+        events = events.inDungeonType([DungeonType.Etc, DungeonType.CoinDailyOther])
+        events = events.isGrouped()
 
         active_events = events.activeOnly().itemsByOpenTime(reverse=True)
         pending_events = events.pendingOnly().itemsByOpenTime(reverse=True)
@@ -416,11 +670,11 @@ class PadEvents(commands.Cog):
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
 
-        active_events = list(group_to_active_event.values())
-        pending_events = list(group_to_pending_event.values())
+        #active_events = list(group_to_active_event.values())
+        #pending_events = list(group_to_pending_event.values())
 
-        active_events.sort(key=lambda e: e.group, reverse=True)
-        pending_events.sort(key=lambda e: e.group, reverse=True)
+        active_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
+        pending_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
 
         if len(active_events) == 0 and len(pending_events) == 0:
             await ctx.send("No events available for " + server)
@@ -429,16 +683,17 @@ class PadEvents(commands.Cog):
         output = "Events for {}".format(server)
 
         if len(active_events) > 0:
-            output += "\n\n" + "G Remaining Dungeon"
+            output += "\n\n" + "  Remaining Dungeon"
             for e in active_events:
                 output += "\n" + e.toPartialEvent(self)
 
         if len(pending_events) > 0:
-            output += "\n\n" + "G PT    ET    ETA     Dungeon"
+            output += "\n\n" + "  PT    ET    ETA     Dungeon"
             for e in pending_events:
                 output += "\n" + e.toPartialEvent(self)
 
-        await ctx.send(box(output))
+        for page in pagify(output):
+            await ctx.send(box(page))
 
 
 def makeChannelReg(channel_id, server):
@@ -569,7 +824,7 @@ class Event:
         return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
 
     def groupLongName(self):
-        return self.group.upper()
+        return self.group.upper() if self.group is not None else "UNGROUPED"
 
     def toPartialEvent(self, pe):
         group = self.groupShortName()
@@ -601,6 +856,12 @@ class EventList:
 
     def withDungeonType(self, dungeon_type, exclude=False):
         return self.withFunc(lambda e: e.dungeon_type == dungeon_type, exclude)
+
+    def inDungeonType(self, dungeon_types, exclude=False):
+        return self.withFunc(lambda e: e.dungeon_type in dungeon_types, exclude)
+
+    def isGrouped(self, exclude=False):
+        return self.withFunc(lambda e: e.group is not None, exclude)
 
     def withNameContains(self, name, exclude=False):
         return self.withFunc(lambda e: name.lower() in e.dungeon_name.lower(), exclude)

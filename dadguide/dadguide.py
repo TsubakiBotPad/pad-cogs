@@ -34,8 +34,8 @@ BASENAMES_EXPORT_PATH = _data_file('base_names.json')
 TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
-GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
+GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
