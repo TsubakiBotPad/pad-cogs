@@ -440,8 +440,8 @@ class DadguideDatabase(object):
     def get_all_monsters(self, as_generator=False):
         self.refresh_monsters()
         if as_generator:
-            return (m for m in self.cachedmonsters)
-        return self.cachedmonsters
+            return (m for m in self.cachedmonsters.values())
+        return self.cachedmonsters.values()
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -452,8 +452,9 @@ class DadguideDatabase(object):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
     def tokenize_monsters(self):
+        self.refresh_monsters()
         tokens = defaultdict(list)
-        for mid, monster in self.get_all_monsters().items():
+        for mid, monster in self.cachedmonsters:
             for token in monster.name_en.split():
                 tokens[token.lower()].append(monster)
         return tokens
