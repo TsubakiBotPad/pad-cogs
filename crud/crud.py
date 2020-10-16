@@ -60,7 +60,7 @@ class Crud(commands.Cog):
                                cursorclass=pymysql.cursors.DictCursor,
                                autocommit=True)
 
-    async def execute_edit(self, ctx, sql, replacements):
+    async def execute_write(self, ctx, sql, replacements):
         with await self.get_cursor() as cursor:
             affected = cursor.execute(sql, replacements)
             await ctx.send(inline(cursor._executed))
@@ -128,7 +128,7 @@ class Crud(commands.Cog):
         sql = ('INSERT INTO series ({})'
                ' VALUES ({})').format(key_infix, value_infix)
 
-        await self.execute_edit(ctx, sql, (*elements.values(),))
+        await self.execute_write(ctx, sql, (*elements.values(),))
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
@@ -148,7 +148,7 @@ class Crud(commands.Cog):
                ' SET {}'
                ' WHERE series_id = %s').format(replacement_infix)
 
-        await self.execute_edit(ctx, sql, (*elements.values(), series_id))
+        await self.execute_write(ctx, sql, (*elements.values(), series_id))
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -157,7 +157,7 @@ class Crud(commands.Cog):
         sql = ('DELETE FROM series'
                ' WHERE series_id = %s')
 
-        await self.execute_edit(ctx, sql, series_id)
+        await self.execute_write(ctx, sql, series_id)
 
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
@@ -180,7 +180,7 @@ class Crud(commands.Cog):
         sql = ('UPDATE monsters'
                ' SET name_en_override = %s'
                ' WHERE monster_id = %s')
-        await self.execute_edit(ctx, sql, (name, monster_id))
+        await self.execute_write(ctx, sql, (name, monster_id))
 
     @crud.command()
     async def editmonsseries(self, ctx, monster_id: int, *, series_id: int):
@@ -201,7 +201,7 @@ class Crud(commands.Cog):
         sql = ('UPDATE monsters'
                ' SET series_id = %s'
                ' WHERE monster_id = %s')
-        await self.execute_edit(ctx, sql, (series_id, monster_id))
+        await self.execute_write(ctx, sql, (series_id, monster_id))
 
     @crud.command()
     @checks.is_owner()
