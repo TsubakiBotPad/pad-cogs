@@ -517,27 +517,27 @@ class PadEvents(commands.Cog):
     async def aed_remove(self, ctx, index: int):
         """Remove an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 <= index < len(dmevents):
+            if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
             if not await confirm_message(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
-                                               "").format(dmevents[index]['searchstr'])):
+                                               "").format(dmevents[index-1]['searchstr'])):
                 return
-            dmevents.pop(index)
+            dmevents.pop(index-1)
         await ctx.tick()
 
     @autoeventdm.command(name="list")
-    async def aed_list(self, ctx, index: int):
+    async def aed_list(self, ctx):
         """List current autoeventdms"""
         dmevents = await self.config.user(ctx.author).dmevents()
-        msg = "\n".join("{}. {}".format(c, aed['searchstr']) for c, aed in enumerate(dmevents))
+        msg = "\n".join("{}. {}".format(c, aed['searchstr']) for c, aed in enumerate(dmevents, 1))
         if msg:
             await ctx.send(box(msg))
         else:
             await ctx.send("You have no autoeventdms set up.")
 
     @autoeventdm.command(name="purge")
-    async def aed_purge(self, ctx, index: int):
+    async def aed_purge(self, ctx):
         """Remove an autoeventdm"""
         if not await confirm_message(ctx, "Are you sure you want to purge your autoeventdms?"):
             return
@@ -565,20 +565,20 @@ class PadEvents(commands.Cog):
                                 " at https://www.patreon.com/tsubaki_bot.  Use `{}donate` to"
                                 " view this link at any time").format(ctx.prefix))
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 <= index < len(dmevents):
+            if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
-            dmevents[index]['offset'] = offset
+            dmevents[index-1]['offset'] = offset
         await ctx.tick()
 
     @aed_e.command(name="searchstr")
     async def aed_e_searchstr(self, ctx, index, *, searchstr):
         """Set search string of an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 <= index < len(dmevents):
+            if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
-            dmevents[index]['searchstr'] = searchstr
+            dmevents[index-1]['searchstr'] = searchstr
         await ctx.tick()
 
     @padevents.command(name="listchannels")
