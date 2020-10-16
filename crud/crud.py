@@ -20,6 +20,10 @@ SERIES_KEYS = {
     "name_ko": 'Untranslated',
 }
 
+async def check_crud_channel(ctx):
+    chan = await ctx.bot.get_cog("Crud").config.chan()
+    return chan is None or chan == ctx.channel.id or ctx.author.id in ctx.bot.owner_ids
+
 class Crud(commands.Cog):
     """PadGuide CRUD"""
 
@@ -27,7 +31,7 @@ class Crud(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, identifier=3270)
-        self.config.register_global(config_file=None)
+        self.config.register_global(config_file=None, chan=None)
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -77,6 +81,7 @@ class Crud(commands.Cog):
 
     @commands.group(aliases=['hera-ur'])
     @auth_check('crud')
+    @commands.check(check_crud_channel)
     async def crud(self, ctx):
         """PadGuide database CRUD."""
 
@@ -207,4 +212,16 @@ class Crud(commands.Cog):
     @checks.is_owner()
     async def setconfig(self, ctx, path):
         await self.config.config_file.set(path)
+        await ctx.tick()
+
+    @crud.command()
+    @checks.is_owner()
+    async def setchan(self, ctx, channel: discord.TextChannel):
+        await self.config.chan.set(channel.id)
+        await ctx.tick()
+
+    @crud.command()
+    @checks.is_owner()
+    async def rmchan(self, ctx):
+        await self.config.chan.set(None)
         await ctx.tick()
