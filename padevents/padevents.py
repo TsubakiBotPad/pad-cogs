@@ -539,6 +539,9 @@ class PadEvents(commands.Cog):
     @autoeventdm.command(name="purge")
     async def aed_purge(self, ctx):
         """Remove an autoeventdm"""
+        if not await self.config.user(ctx.author).dmevents():
+            await ctx.send("You don't have any autoeventdms.")
+            return
         if not await confirm_message(ctx, "Are you sure you want to purge your autoeventdms?"):
             return
         await self.config.user(ctx.author).dmevents.set([])
