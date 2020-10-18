@@ -1130,7 +1130,6 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('mega')
             prefixes.add('mega awoken')
             prefixes.add('awoken')
-            prefixes.add('mawo')
             prefixes.add('ma')
 
         if srevo:
