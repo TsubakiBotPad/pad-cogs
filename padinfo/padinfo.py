@@ -242,13 +242,13 @@ class PadInfo(commands.Cog):
         await dg_cog.wait_until_ready()
 
         async with self.index_lock:
-            logger.info('Loading ALL index')
+            logger.debug('Loading ALL index')
             self.index_all = await dg_cog.create_index()
 
-            logger.info('Loading NA index')
+            logger.debug('Loading NA index')
             self.index_na = await dg_cog.create_index(lambda m: m.on_na)
 
-            logger.info('Loading JP index')
+            logger.debug('Loading JP index')
             self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
