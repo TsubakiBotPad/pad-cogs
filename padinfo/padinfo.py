@@ -126,7 +126,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [])
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
         return True
 
 
@@ -377,7 +377,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [])
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -394,7 +394,7 @@ class PadInfo(commands.Cog):
                                m=m, ms=ms, selected_emoji=starting_menu_emoji)
         )
 
-    def get_id_emoji_options(self, m=None, scroll=[]):
+    def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
         id_embed = monsterToEmbed(m, self.get_emojis())
         evo_embed = monsterToEvoEmbed(m)
         mats_embed = monsterToEvoMatsEmbed(m)
@@ -422,12 +422,12 @@ class PadInfo(commands.Cog):
         # so that the buttons display in the first place
 
 
-        if len(scroll) > 1:
+        if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.first_monster_emoji] = None
         if len(scroll) != 1:
             emoji_to_embed[self.previous_monster_emoji] = None
             emoji_to_embed[self.next_monster_emoji] = None
-        if len(scroll) > 1:
+        if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.last_monster_emoji] = None
 
         # remove emoji needs to be last
