@@ -1149,6 +1149,12 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('uuvo')
             prefixes.add('uuevo')
 
+        # True Evo Type Prefixes
+        if m.trueEvoType == InternalEvoType.Reincarnated:
+            prefixes.add('revo')
+            prefixes.add('reincarnated')
+
+        # Other Prefixes
         if m.farmable:
             prefixes.add('farmable')
 
