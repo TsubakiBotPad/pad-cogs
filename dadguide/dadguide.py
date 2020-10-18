@@ -169,16 +169,18 @@ class Dadguide(commands.Cog):
         self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
 
-        logger.info('Loading dg database')
+        logger.debug('Loading dg database')
         self.database = load_database(self.database)
-        logger.info('Building dg monster index')
+        logger.debug('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
 
-        logger.info('Writing dg monster computed names')
+        logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()
 
-        logger.info('Done refreshing dg data')
+        self.database.expiry = 0
+        logger.debug('Done refreshing dg data')
+
 
     def write_monster_computed_names(self):
         results = {}
