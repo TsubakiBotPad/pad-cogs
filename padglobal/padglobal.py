@@ -291,7 +291,6 @@ class PadGlobal(commands.Cog):
         async with ctx.typing():
             await ctx.send('starting reload')
             dadguide_cog = self.bot.get_cog('Dadguide')
-            dadguide_cog.database.expiry = 0
             await dadguide_cog.reload_config_files()
             padinfo_cog = self.bot.get_cog('PadInfo')
             await padinfo_cog.refresh_index()
