@@ -177,7 +177,7 @@ class DadguideDatabase(object):
 
     def _max_id(self):
         cursor = self._con.cursor()
-        cursor.execute("SELECT MAX(monster_id) FROM monsters WHERE monster_id < 10000")
+        cursor.execute("SELECT MAX(monster_id) FROM monsters")
         return cursor.fetchone()['MAX(monster_id)']
 
     def _select_one_entry_by_pk(self, pk, d_type):
@@ -1110,6 +1110,7 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('mega')
             prefixes.add('mega awoken')
             prefixes.add('awoken')
+            prefixes.add('ma')
 
         if srevo:
             prefixes.add('srevo')
@@ -1127,6 +1128,12 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('uuvo')
             prefixes.add('uuevo')
 
+        # True Evo Type Prefixes
+        if m.true_evo_type == InternalEvoType.Reincarnated:
+            prefixes.add('revo')
+            prefixes.add('reincarnated')
+
+        # Other Prefixes
         if m.farmable:
             prefixes.add('farmable')
 

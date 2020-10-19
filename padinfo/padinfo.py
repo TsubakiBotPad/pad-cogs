@@ -94,19 +94,15 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
             DGCOG = self.bot.get_cog('Dadguide')
-            evos = self.m._alt_evo_id_list
-            evos.sort()
-            index = evos.index(self.m.monster_id)
+            evos = sorted({*self.m.alt_evos}, key=lambda m: m.monster_id)
+            index = evos.index(self.m)
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                if index == 0:
-                    newm = DGCOG.get_monster_by_id(evos[-1])
-                else:
-                    newm = DGCOG.get_monster_by_id(evos[index - 1])
+                newm = evos[index - 1]
             elif selected_emoji == self.pad_info.next_monster_emoji:
                 if index == len(evos) - 1:
-                    newm = DGCOG.get_monster_by_id(evos[0])
+                    newm = evos[0]
                 else:
-                    newm = DGCOG.get_monster_by_id(evos[index + 1])
+                    newm = evos[index + 1]
             else:
                 self.selected_emoji = selected_emoji
                 return True
@@ -126,7 +122,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_evos}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
         return True
 
 
@@ -242,13 +238,13 @@ class PadInfo(commands.Cog):
         await dg_cog.wait_until_ready()
 
         async with self.index_lock:
-            logger.info('Loading ALL index')
+            logger.debug('Loading ALL index')
             self.index_all = await dg_cog.create_index()
 
-            logger.info('Loading NA index')
+            logger.debug('Loading NA index')
             self.index_na = await dg_cog.create_index(lambda m: m.on_na)
 
-            logger.info('Loading JP index')
+            logger.debug('Loading JP index')
             self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
@@ -377,7 +373,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_evos}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -878,7 +874,7 @@ def monsterToLongHeader(m: "DgMonster", link=False):
 
 def monsterToEvoText(m: "DgMonster"):
     output = monsterToLongHeader(m)
-    for ae in sorted(m.alt_evos, key=lambda x: int(x.monster_id)):
+    for ae in sorted({*m.alt_evos}, key=lambda x: int(x.monster_id)):
         output += "\n\t- {}".format(monsterToLongHeader(ae))
     return output
 

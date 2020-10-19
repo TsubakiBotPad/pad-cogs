@@ -13,7 +13,7 @@ from enum import Enum
 from redbot.core import checks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings
+from tsutils import CogSettings, confirm_message
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
@@ -28,6 +28,7 @@ class PadEvents(commands.Cog):
         self.settings = PadEventSettings("padevents")
         self.config = Config.get_conf(self, identifier=940373775)
         self.config.register_guild(pingroles={})
+        self.config.register_user(dmevents=[])
 
         # Load event data
         self.events = list()
@@ -88,6 +89,7 @@ class PadEvents(commands.Cog):
                 for e in events:
                     for gid, data in (await self.config.all_guilds()).items():
                         guild = self.bot.get_guild(gid)
+                        if guild is None: continue
                         for key, aep in data.get('pingroles', {}).items():
                             if e.start_from_now_sec() > aep['offset'] * 60 \
                                         or not aep['enabled'] \
@@ -109,7 +111,29 @@ class PadEvents(commands.Cog):
                                     offsetstr = ""
                                     if aep['offset']:
                                         offsetstr = " in {} minute(s)".format(aep['offset'])
-                                    await channel.send("{}{} {}".format(e.name_and_modifier, offsetstr, ment), allowed_mentions=discord.AllowedMentions(roles=True))
+                                    try:
+                                        await channel.send("{}{} {}".format(e.name_and_modifier, offsetstr, ment), allowed_mentions=discord.AllowedMentions(roles=True))
+                                    except Exception:
+                                        logger.exception("Failed to send AEP in channel {}".format(channel.id))
+
+                    for uid, data in (await self.config.all_users()).items():
+                        user = self.bot.get_user(uid)
+                        if user is None: continue
+                        for aed in data.get('dmevents', []):
+                            if e.start_from_now_sec() > aed['offset'] * 60 \
+                                        or e.group != aed['group'] \
+                                        or e.server != aed['server'] \
+                                        or (aed['key'], e.key) in self.rolepinged_events:
+                                continue
+                            self.rolepinged_events.add((aed['key'], e.key))
+                            if aed['searchstr'] in e.clean_dungeon_name:
+                                offsetstr = " starts now!"
+                                if aed['offset']:
+                                    offsetstr = " starts in {} minute(s)!".format(aed['offset'])
+                                try:
+                                    await user.send(e.clean_dungeon_name + offsetstr)
+                                except Exception:
+                                    logger.exception("Failed to send AED to user {}".format(user.id))
 
                 events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
                 daily_refresh_servers = set()
@@ -446,6 +470,118 @@ class PadEvents(commands.Cog):
             await ctx.send("Offset cannot be negative.")
             return
         await self.aeps(ctx, key, 'offset', offset)
+        await ctx.tick()
+
+    @commands.group(aliases=['aed'])
+    async def autoeventdm(self, ctx):
+        """Auto Event DMs"""
+
+    @autoeventdm.command(name="add")
+    async def aed_add(self, ctx, server, searchstr, group, offset: int = 0):
+        """Add a new autoeventdm"""
+        server = normalizeServer(server)
+        if server not in SUPPORTED_SERVERS:
+            await ctx.send("Unsupported server, pick one of NA, KR, JP")
+            return
+        group = group.lower()
+        if group not in GROUPS:
+            await ctx.send("Unsupported group, pick one of red, blue, green")
+            return
+        if offset < 0:
+            await ctx.send("Offset cannot be negative")
+            return
+        elif offset > 0:
+            DONOR_COG = self.bot.get_cog("Donations")
+            if DONOR_COG is None:
+                await ctx.send(inline("Donor Cog not loaded.  Please contact a bot admin."))
+            elif not DONOR_COG.is_donor(ctx):
+                await ctx.send(("AED offset is a donor only feature due to server loads."
+                                " Your auto event DM will be created, but the offset will not"
+                                " be in affect until you're a donor.  You can donate any time"
+                                " at https://www.patreon.com/tsubaki_bot.  Use `{}donate` to"
+                                " view this link at any time").format(ctx.prefix))
+
+        default = {
+            'key': datetime.datetime.now().timestamp(),
+            'server': server,
+            'group': group,
+            'searchstr': searchstr,
+            'offset': offset,
+        }
+
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            dmevents.append(default)
+        await ctx.tick()
+
+    @autoeventdm.command(name="remove", aliases=['rm', 'delete'])
+    async def aed_remove(self, ctx, index: int):
+        """Remove an autoeventdm"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            if not 0 < index <= len(dmevents):
+                await ctx.send("That isn't a valid index.")
+                return
+            if not await confirm_message(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
+                                               "").format(dmevents[index-1]['searchstr'])):
+                return
+            dmevents.pop(index-1)
+        await ctx.tick()
+
+    @autoeventdm.command(name="list")
+    async def aed_list(self, ctx):
+        """List current autoeventdms"""
+        dmevents = await self.config.user(ctx.author).dmevents()
+        msg = "\n".join("{}. {}".format(c, aed['searchstr']) for c, aed in enumerate(dmevents, 1))
+        if msg:
+            await ctx.send(box(msg))
+        else:
+            await ctx.send("You have no autoeventdms set up.")
+
+    @autoeventdm.command(name="purge")
+    async def aed_purge(self, ctx):
+        """Remove an autoeventdm"""
+        if not await self.config.user(ctx.author).dmevents():
+            await ctx.send("You don't have any autoeventdms.")
+            return
+        if not await confirm_message(ctx, "Are you sure you want to purge your autoeventdms?"):
+            return
+        await self.config.user(ctx.author).dmevents.set([])
+        await ctx.tick()
+
+    @autoeventdm.group(name="edit")
+    async def aed_e(self, ctx):
+        """Edit a property of the autoeventdm"""
+
+    @aed_e.command(name="offset")
+    async def aed_e_offset(self, ctx, index, offset):
+        """Set offset of an autoeventdm (Donor only)"""
+        if offset < 0:
+            await ctx.send("Offset cannot be negative")
+            return
+        elif offset > 0:
+            DONOR_COG = self.bot.get_cog("Donations")
+            if DONOR_COG is None:
+                await ctx.send(inline("Donor Cog not loaded.  Please contact a bot admin."))
+            elif not DONOR_COG.is_donor(ctx):
+                await ctx.send(("AED offset is a donor only feature due to server loads."
+                                " Your auto event DM will be created, but the offset will not"
+                                " be in affect until you're a donor.  You can donate any time"
+                                " at https://www.patreon.com/tsubaki_bot.  Use `{}donate` to"
+                                " view this link at any time").format(ctx.prefix))
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            if not 0 < index <= len(dmevents):
+                await ctx.send("That isn't a valid index.")
+                return
+            dmevents[index-1]['offset'] = offset
+        await ctx.tick()
+
+    @aed_e.command(name="searchstr")
+    async def aed_e_searchstr(self, ctx, index, *, searchstr):
+        """Set search string of an autoeventdm"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            if not 0 < index <= len(dmevents):
+                await ctx.send("That isn't a valid index.")
+                return
+            dmevents[index-1]['searchstr'] = searchstr
         await ctx.tick()
 
     @padevents.command(name="listchannels")

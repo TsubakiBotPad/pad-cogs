@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import pymysql
+from datetime import datetime
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
@@ -21,6 +22,13 @@ def is_padguidedb_admin_check(ctx):
 def is_padguidedb_admin():
     return commands.check(is_padguidedb_admin_check)
 
+TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
+
+SERIES_KEYS = {
+    "name_en": 'Untranslated',
+    "name_ja": 'Untranslated',
+    "name_ko": 'Untranslated',
+}
 
 class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
@@ -96,9 +104,8 @@ class PadGuideDb(commands.Cog):
         await ctx.tick()
 
     @padguidedb.command()
-    @is_padguidedb_admin()
     async def searchdungeon(self, ctx, *, search_text):
-        """Search"""
+        """Search for a dungeon via its jp or na name"""
         search_text = '%{}%'.format(search_text)
         with self.get_cursor() as cursor:
             sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
@@ -110,41 +117,6 @@ class PadGuideDb(commands.Cog):
             await ctx.send(inline(sql))
             for page in pagify(msg):
                 await ctx.send(box(page))
-
-    @padguidedb.command()
-    @checks.is_owner()
-    async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
-        """Set the dungeon script file."""
-        self.settings.setDungeonScriptFile(dungeon_script_file)
-        await ctx.tick()
-
-    @padguidedb.command()
-    @checks.is_owner()
-    async def setfulletlfile(self, ctx, *, full_etl_file):
-        """Set the full ETL file."""
-        self.settings.setFullETLFile(full_etl_file)
-        await ctx.tick()
-
-    @padguidedb.command()
-    @checks.is_owner()
-    async def setimageupdatefile(self, ctx, *, image_update_file):
-        """Set the image update file."""
-        self.settings.setImageUpdateFile(image_update_file)
-        await ctx.tick()
-
-    @padguidedb.command()
-    @checks.is_owner()
-    async def setpythonexecutable(self, ctx, *, python_executable):
-        """Set the python executable file."""
-        self.settings.setPythonExecutable(python_executable)
-        await ctx.tick()
-
-    @padguidedb.command()
-    @checks.is_owner()
-    async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
-        """Set the dungeon script."""
-        self.settings.setUserInfo(server, user_uuid, user_intid)
-        await ctx.tick()
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -323,6 +295,41 @@ class PadGuideDb(commands.Cog):
                 await ctx.send(inline('Image extract failed'))
                 return
         await ctx.send(inline('Image extract finished'))
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
+        """Set the dungeon script file."""
+        self.settings.setDungeonScriptFile(dungeon_script_file)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setfulletlfile(self, ctx, *, full_etl_file):
+        """Set the full ETL file."""
+        self.settings.setFullETLFile(full_etl_file)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setimageupdatefile(self, ctx, *, image_update_file):
+        """Set the image update file."""
+        self.settings.setImageUpdateFile(image_update_file)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setpythonexecutable(self, ctx, *, python_executable):
+        """Set the python executable file."""
+        self.settings.setPythonExecutable(python_executable)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
+    async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
+        """Set the dungeon script."""
+        self.settings.setUserInfo(server, user_uuid, user_intid)
+        await ctx.tick()
 
 
 class PadGuideDbSettings(CogSettings):
