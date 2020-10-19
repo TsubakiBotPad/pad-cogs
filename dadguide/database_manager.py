@@ -275,7 +275,7 @@ class DadguideDatabase(object):
 
     def monster_in_pem(self, monster_id):
         m = self.get_monster(monster_id)
-        return m is not None and m.pem_egg == 1
+        return m is not None and m.pal_egg == 1
 
 
     def monster_in_mp_shop(self, monster_id):
