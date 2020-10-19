@@ -216,6 +216,7 @@ class DadguideDatabase(object):
                 self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
+        # TODO: Make this not make monsters via query
         return self._query_many(
             self._select_builder(
                 tables=OrderedDict({
@@ -269,31 +270,17 @@ class DadguideDatabase(object):
             DgDrop) is not None
 
     def monster_in_rem(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('rem_egg',)},
-                where='{0}.monster_id=? AND rem_egg=1'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.rem_egg == 1
 
     def monster_in_pem(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('pal_egg',)},
-                where='{0}.monster_id=? AND pal_egg=1'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.pem_egg == 1
+
 
     def monster_in_mp_shop(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('buy_mp',)},
-                where='{0}.monster_id=? AND buy_mp IS NOT NULL'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.buy_mp is not None
 
     def get_prev_evolution_by_monster(self, monster_id):
         return self._query_one(
@@ -365,83 +352,75 @@ class DadguideDatabase(object):
         return evolution_tree
 
     def monster_id_to_no(self, monster_id, region=Server.JP):
-        res = self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('monster_no_{}'.format(region.name.lower()),)},
-                where='{}.monster_id=?'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DictWithAttrAccess)
-        for k in res:
-            return res[k]
+        m = self.get_monster(monster_id)
+        if m:
+            return getattr(m, 'monster_no_{}'.format(region.name.lower()))
 
     def get_series(self, series_id: int):
         return self._select_one_entry_by_pk(series_id, DgSeries)
 
-    def _get_monsters_where(self, where, param):
-        return self._query_many(
-            self._select_builder(
-                tables={DgMonster.TABLE: DgMonster.FIELDS},
-                where=where
-            ),
-            param,
-            DgMonster)
+    def get_monsters_where(self, f):
+        return [m for m in self.get_all_monsters() if f(m)]
+
+    def get_first_monster_where(self, f):
+        ms = self.get_monsters_where(f)
+        if ms:
+            return min(ms, key=lambda m: m.monster_id)
 
     def get_monsters_by_series(self, series_id: int):
-        return self._get_monsters_where('{}.series_id=?'.format(DgMonster.TABLE), (series_id,))
+        return self.get_monsters_where(lambda m: m.series_id == series_id)
 
     def get_monsters_by_active(self, active_skill_id: int):
-        return self._get_monsters_where('{}.active_skill_id=?'.format(DgMonster.TABLE), (active_skill_id,))
+        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id)
 
-    def get_monster_evo_gem(self, name: str, region='jp'):
+    def get_monster_evo_gem(self, name: str, region='ja'):
         gem_suffix = {
             'ja': 'の希石',
             'en': '\'s Gem',
             'ko': ' 의 휘석'
         }
+
         if region not in gem_suffix:
             return None
-        non_gem_name = name.replace(gem_suffix[region], '')
+        non_gem_name = name.replace(gem_suffix.get(region), '')
         if non_gem_name == name:
             return None
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: DgMonster.FIELDS},
-                where='{0}.name_{1}=? AND {0}.leader_skill_id=10628'.format(DgMonster.TABLE, region)
-            ),
-            (non_gem_name,),
-            DgMonster)
+
+        return self.get_first_monster_where(lambda m: getattr(m, 'name_{}'.format(region)) == non_gem_name and m.leader_skill_id == 10628)
+
 
     def get_na_only_monsters(self):
-        return self._get_monsters_where(
-            '{0}.monster_id != {0}.monster_no_na AND {0}.monster_no_jp == {0}.monster_no_na '.format(DgMonster.TABLE),
-            ())
+        return self.get_monsters_where(lambda m: m.monster_id != m.monster_no_na and m.monster_no_jp == m.monster_no_na)
 
     def get_monster_query(self, monster_id: int):
-        return self._select_one_entry_by_pk(monster_id, DgMonster)
+        monster = self._select_one_entry_by_pk(monster_id, DgMonster)
+        if monster is not None:
+            self.cachedmonsters[monster.monster_id] = monster
+            return monster
 
     def get_monster(self, monster_id: int):
         self.refresh_monsters()
-        return self.cachedmonsters.get(monster_id)
+        if monster_id in self.cachedmonsters:
+            return self.cachedmonsters.get(monster_id)
+        return self.get_monster_query(monster_id)
 
-    def get_all_monster_ja_name(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
+    def get_all_monster_ids_query(self, as_generator=True):
+        query = self._query_many(self._select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
+        if as_generator:
+            return map(lambda m: m.monster_id, query)
+        return [m.monster_id for m in query]
 
     def refresh_monsters(self):
-        if self.cachedmonsters == None or self.expiry < datetime.now().timestamp():
-            self.cachedmonsters = {m.monster_id: m for m in self.get_all_monsters_query(False)}
+        if self.expiry < datetime.now().timestamp():
             self.expiry = int(datetime.now().timestamp()) + 60*60
+            self.cachedmonsters = {}
 
-    def get_all_monsters_query(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
-                                as_generator=as_generator)
-
-    def get_all_monsters(self, as_generator=False):
-        self.refresh_monsters()
-        if as_generator:
-            return (m for m in self.cachedmonsters.values())
-        return self.cachedmonsters.values()
+    def get_all_monsters(self, as_generator=True):
+        monsters = (self.get_monster(mid) for mid in self.get_all_monster_ids_query())
+        if not as_generator:
+            return [*monsters]
+        return monsters
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -452,9 +431,9 @@ class DadguideDatabase(object):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
     def tokenize_monsters(self):
-        self.refresh_monsters()
         tokens = defaultdict(list)
-        for mid, monster in self.cachedmonsters:
+        for mid in self.get_all_monster_ids_query():
+            monster = self.get_monster(mid)
             for token in monster.name_en.split():
                 tokens[token.lower()].append(monster)
         return tokens
