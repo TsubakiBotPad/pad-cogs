@@ -627,7 +627,6 @@ class DgMonster(DadguideItem):
 
     def __init__(self, item, database):
         super(DgMonster, self).__init__(item, database)
-        print(self.monster_id)
 
         self.roma_subname = None
         if self.name_en == self.name_ja:
