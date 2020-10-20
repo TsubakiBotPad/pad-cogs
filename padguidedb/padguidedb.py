@@ -265,7 +265,7 @@ class PadGuideDb(commands.Cog):
             )
             stdout, stderr = await process.communicate()
 
-            if stderr:
+            if "Pipeline completed successfully!" not in stderr:
                 logger.error("Full ETL Error:\n" + stderr.decode())
                 await ctx.send(inline('Full ETL failed'))
                 return
