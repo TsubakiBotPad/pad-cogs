@@ -1,7 +1,9 @@
 import asyncio
+import aiofiles
 import csv
 import discord
 import io
+import os
 import json
 import logging
 import pymysql
@@ -11,8 +13,6 @@ from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check, confirm_message
 
 logger = logging.getLogger('red.padbot-cogs.crud')
-
-TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
 
 SERIES_KEYS = {
     "name_en": 'Untranslated',
@@ -31,7 +31,7 @@ class Crud(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, identifier=3270)
-        self.config.register_global(config_file=None, chan=None)
+        self.config.register_global(config_file=None, pipeline_base=None, chan=None)
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -52,8 +52,8 @@ class Crud(commands.Cog):
         return
 
     async def get_cursor(self):
-        with open(await self.config.config_file(), 'r') as db_config:
-            return self.connect(json.load(db_config)).cursor()
+        async with aiofiles.open(await self.config.config_file(), 'r') as db_config:
+            return self.connect(json.loads(await db_config.read())).cursor()
 
     def connect(self, db_config):
         return pymysql.connect(host=db_config['host'],
@@ -108,14 +108,19 @@ class Crud(commands.Cog):
         await self.execute_read(ctx, sql, [search_text, search_text])
 
     @series.command(name="add")
-    async def series_add(self, ctx, *, elements: TokenConverter):
+    async def series_add(self, ctx, *elements):
         """Add a new series.
 
-        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`
 
         Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
         """
+        if len(elements) % 2 != 0:
+            await ctx.send_help()
+            return
+        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send_help()
             return
@@ -135,15 +140,33 @@ class Crud(commands.Cog):
 
         await self.execute_write(ctx, sql, (*elements.values(),))
 
+        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        async with aiofiles.open(fn, 'r') as f:
+            j = json.loads(await f.read())
+        j.append({
+            'name_ja': elements['name_ja'],
+            'name_en': elements['name_en'],
+            'name_ko': elements['name_ko'],
+            'series_id': elements['series_id']
+        })
+        async with aiofiles.open(fn, 'w') as f:
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
+
+
     @series.command(name="edit")
-    async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
+    async def series_edit(self, ctx, series_id: int, *elements):
         """Edit an existing series series.
 
-        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`
 
         Example Usage:
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
         """
+        if len(elements) % 2 != 0:
+            await ctx.send_help()
+            return
+        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send_help()
             return
@@ -155,6 +178,15 @@ class Crud(commands.Cog):
 
         await self.execute_write(ctx, sql, (*elements.values(), series_id))
 
+        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        async with aiofiles.open(fn, 'r') as f:
+            j = json.loads(await f.read())
+        for e in j:
+            if e['series_id'] == series_id:
+                e.update(elements)
+        async with aiofiles.open(fn, 'w') as f:
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
+
     @series.command(name="delete")
     @checks.is_owner()
     async def series_delete(self, ctx, series_id: int):
@@ -163,6 +195,15 @@ class Crud(commands.Cog):
                ' WHERE series_id = %s')
 
         await self.execute_write(ctx, sql, series_id)
+
+        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        async with aiofiles.open(fn, 'r') as f:
+            j = json.loads(await f.read())
+        for e in j[:]:
+            if e['series_id'] == series_id:
+                j.remove(e)
+        async with aiofiles.open(fn, 'w') as f:
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
 
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
@@ -212,6 +253,12 @@ class Crud(commands.Cog):
     @checks.is_owner()
     async def setconfig(self, ctx, path):
         await self.config.config_file.set(path)
+        await ctx.tick()
+
+    @crud.command()
+    @checks.is_owner()
+    async def pipeline_base(self, ctx, path):
+        await self.config.pipeline_base.set(path)
         await ctx.tick()
 
     @crud.command()

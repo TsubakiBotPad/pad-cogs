@@ -18,7 +18,8 @@
   "require_cogs": {},
   "requirements": [
     "tsutils",
-    "pymysql"
+    "pymysql",
+    "aiofiles"
   ],
   "tags": [
     "PAD"
