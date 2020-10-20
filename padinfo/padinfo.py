@@ -94,7 +94,7 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
             DGCOG = self.bot.get_cog('Dadguide')
-            evos = sorted({*self.m.alt_evos}, key=lambda m: m.monster_id)
+            evos = sorted({*self.m.alt_versions}, key=lambda m: m.monster_id)
             index = evos.index(self.m)
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 newm = evos[index - 1]
@@ -122,7 +122,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_evos}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
         return True
 
 
@@ -373,7 +373,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_evos}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -431,7 +431,7 @@ class PadInfo(commands.Cog):
         return emoji_to_embed
 
     async def _do_evolistmenu(self, ctx, sm):
-        monsters = sm.alt_evos
+        monsters = sm.alt_versions
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()
@@ -528,7 +528,7 @@ class PadInfo(commands.Cog):
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
         ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
-        ms = [sorted({*m.alt_evos}, key=lambda m: m.monster_id) for m in ms
+        ms = [sorted({*m.alt_versions}, key=lambda m: m.monster_id) for m in ms
               if m.base_monster == m
               and m.sell_mp >= 3000]
         ms = [m for ml in ms for m in ml]
@@ -550,7 +550,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
 
         if m is not None:
-            await self._do_scrollmenu(ctx, m, sorted({*m.alt_evos}, key=lambda x: x.monster_id), self.id_emoji)
+            await self._do_scrollmenu(ctx, m, sorted({*m.alt_versions}, key=lambda x: x.monster_id), self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -874,7 +874,7 @@ def monsterToLongHeader(m: "DgMonster", link=False):
 
 def monsterToEvoText(m: "DgMonster"):
     output = monsterToLongHeader(m)
-    for ae in sorted({*m.alt_evos}, key=lambda x: int(x.monster_id)):
+    for ae in sorted({*m.alt_versions}, key=lambda x: int(x.monster_id)):
         output += "\n\t- {}".format(monsterToLongHeader(ae))
     return output
 
@@ -907,11 +907,11 @@ def addEvoListFields(list_of_monsters, embed, name):
 def monsterToEvoEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
 
-    if not len(m.alt_evos) and not m.evo_gem:
+    if not len(m.alt_versions) and not m.evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
+    addEvoListFields(m.alt_versions, embed, '{} alternate evo(s)')
     if not m.evo_gem:
         return embed
     addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
@@ -1186,7 +1186,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     evos_body = ", ".join(f"**{m2.monster_id}**"
                           if m2.monster_id==m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in sorted({*m.alt_evos}, key=lambda m: m.monster_id))
+                          for m2 in sorted({*m.alt_versions}, key=lambda m: m.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
