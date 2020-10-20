@@ -585,7 +585,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @padevents.command(name="listchannels")
-    @checks.mod_or_permissions(manage_guild=True)
+    @checks.is_owner()
     async def _listchannel(self, ctx):
         msg = 'Following daily channels are registered:\n'
         msg += self.makeChannelList(self.settings.listDailyReg())

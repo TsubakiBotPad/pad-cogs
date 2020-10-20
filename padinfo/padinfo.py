@@ -606,7 +606,7 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(aliases=['lss'])
+    @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
         m, err, _ = await self.findMonster(query)
