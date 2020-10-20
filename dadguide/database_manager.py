@@ -970,7 +970,8 @@ class MonsterSearchHelper(object):
 
 
 def make_roma_subname(name_ja):
-    subname = name_ja.replace('＝', '')
+    subname = re.sub(r'[＝]', '', name_ja)
+    subname = re.sub(r'[「」]', '・', subname)
     adjusted_subname = ''
     for part in subname.split('・'):
         roma_part = romkan.to_roma(part)
