@@ -342,8 +342,26 @@ class PadEvents(commands.Cog):
         if key not in pingroles:
             await ctx.send("That key does not exist.")
             return
-        pr = pingroles[key]
-        await ctx.send(str(pr)+"\n\nTODO: Make this readable")
+        roles = [ctx.guild.get_role(role).mention
+                   if ctx.guild.get_role(role) is not None
+                   else "No Role"
+                   for role
+                   in pingroles[key]['roles']
+                 ]
+        chans = [ctx.bot.get_channel(c).mention
+                   if ctx.bot.get_channel(c) is not None
+                   else "No Channel"
+                   for c
+                   in pingroles[key]['channels']
+                 ]
+        pr = (f"{key} ({'enabled' if pingroles[key]['enabled'] else 'disabled'})\n"
+              f"    Search String: '{pingroles[key]['searchstr']}' {'(regex search)' if pingroles[key]['regex'] else ''}\n"
+              f"    Server: {pingroles[key]['server']}\n"
+              f"    Red: {roles[0]} (In {chans[0]})\n"
+              f"    Blue: {roles[1]} (In {chans[1]})\n"
+              f"    Green: {roles[2]} (In {chans[2]})\n"
+              f"    Offset: {pingroles[key]['offset']} minutes")
+        await ctx.send(pr)
 
     @autoeventping.command(name="list")
     async def aep_list(self, ctx):
