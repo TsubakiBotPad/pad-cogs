@@ -606,6 +606,20 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
+    @commands.command(aliases=['lssingle'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def leaderskillsingle(self, ctx, *, query):
+        m, err, _ = await self.findMonster(query)
+        if err:
+            await ctx.send(err)
+            return
+        emoji_to_embed = OrderedDict()
+        emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis())
+
+        await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+
+
     @commands.command(aliases=['helppic', 'helpimg'])
     @checks.bot_has_permissions(embed_links=True)
     async def helpid(self, ctx):
@@ -1069,6 +1083,26 @@ def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
 
     return embed
 
+def monstersToLssEmbed(m: "DgMonster"):
+    ls = m.leader_skill
+
+    if ls:
+        hp, atk, rcv, resist = ls.data
+    else:
+        hp, atk, rcv, resist = 1, 1, 1, 0
+
+    multiplier_text = createSingleMultiplierText(hp, atk, rcv, resist)
+
+    embed = discord.Embed()
+    embed.title = 'Multiplier [{}]\n\n'.format(multiplier_text)
+    description = ''
+    description += '\n**{}**\n{}'.format(
+        monsterToHeader(m, link=True),
+        m.leader_skill.desc if m.leader_skill else 'None')
+    embed.description = description
+
+    return embed
+
 
 def monsterToHeaderEmbed(m: "DgMonster"):
     header = monsterToLongHeader(m, link=True)
@@ -1329,4 +1363,12 @@ def createMultiplierText(hp1, atk1, rcv1, resist1, hp2=None, atk2=None, rcv2=Non
     text = "{}/{}/{}".format(fmtNum(hp1 * hp2), fmtNum(atk1 * atk2), fmtNum(rcv1 * rcv2))
     if resist1 > 0 or resist2 > 0:
         text += ' Resist {}%'.format(fmtNum(100 * (1 - (1 - resist1) * (1 - resist2))))
+    return text
+
+def createSingleMultiplierText(hp, atk, rcv, resist):
+    def fmtNum(val):
+        return ('{:.2f}').format(val).strip('0').rstrip('.')
+    text = "{}/{}/{}".format(fmtNum(hp), fmtNum(atk), fmtNum(rcv))
+    if resist > 0:
+        text += ' Resist {}%'.format(fmtNum(100 * (resist)))
     return text
