@@ -113,7 +113,7 @@ class Crud(commands.Cog):
     async def series_add(self, ctx, *, elements: TokenConverter):
         """Add a new series.
 
-        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`
 
         Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
@@ -154,7 +154,7 @@ class Crud(commands.Cog):
     async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
         """Edit an existing series series.
 
-        Valid element keys are: `name_en`, `name_kr`, `name_jp`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`
 
         Example Usage:
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
