@@ -178,7 +178,6 @@ class Dadguide(commands.Cog):
         logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()
 
-        self.database.expiry = 0
         logger.debug('Done refreshing dg data')
 
 

@@ -277,7 +277,6 @@ class DadguideDatabase(object):
         m = self.get_monster(monster_id)
         return m is not None and m.pal_egg == 1
 
-
     def monster_in_mp_shop(self, monster_id):
         m = self.get_monster(monster_id)
         return m is not None and m.buy_mp is not None
@@ -301,22 +300,46 @@ class DadguideDatabase(object):
             DgEvolution,
             as_generator=True)
 
-    def get_base_monster_by_monster(self, monster_id):
-        base = {'from_id': monster_id, 'to_id': monster_id}
-        lastbase = None
-        while base != None:
-            lastbase = base
-            base = self.get_prev_evolution_by_monster(base['from_id'])
-        return lastbase
+    def get_prev_transformations_by_monster(self, monster_id):
+        return self._query_many(
+            self._select_builder(
+                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
+                where='{}.linked_monster_id=?'.format(DgMonster.TABLE)
+            ),
+            (monster_id,),
+            DictWithAttrAccess,
+            as_generator=True)
 
-    def get_all_evolutions_by_monster(self, monster_id):
-        base = self.get_base_monster_by_monster(monster_id)
-        queue = [base]
+    def get_next_transformation_by_monster(self, monster_id):
+        return self._query_one(
+            self._select_builder(
+                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
+                where='{}.monster_id=?'.format(DgMonster.TABLE)
+            ),
+            (monster_id,),
+            DictWithAttrAccess)
 
-        while queue:
-            curr = queue.pop(0)
-            yield curr
-            queue.extend(self.get_next_evolutions_by_monster(curr['to_id']))
+    def build_id_set(self, monster_id):
+        to_check = {monster_id}
+        all_ids = {monster_id}
+        while to_check:
+            mid = to_check.pop()
+            linked_monsters = set()
+            linked_monsters.add(getattr(self.get_prev_evolution_by_monster(mid), 'from_id', None))
+            linked_monsters.update({e.to_id for e in self.get_next_evolutions_by_monster(mid)})
+            linked_monsters.update({e.from_id for e in self.get_prev_transformations_by_monster(mid)})
+            linked_monsters.add(getattr(self.get_next_transformation_by_monster(mid), 'to_id', None))
+            linked_monsters.discard(None)
+
+            linked_monsters.difference_update(all_ids)
+
+            to_check |= linked_monsters
+            all_ids |= linked_monsters
+        return sorted(all_ids)
+
+
+    def get_base_monster_by_id(self, monster_id):
+        return self.build_id_set(monster_id)[0]
 
     def get_evolution_by_material(self, monster_id):
         return self._query_many(
@@ -634,12 +657,8 @@ class DgMonster(DadguideItem):
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
-        base_id = self.monster_id
-        next_base = self._database.get_prev_evolution_by_monster(base_id)
-        while next_base is not None:
-            base_id = next_base.from_id
-            next_base = self._database.get_prev_evolution_by_monster(base_id)
-        self._base_monster_id = base_id
+        self._alt_version_id_list = self._database.build_id_set(self.monster_id)
+        self._base_monster_id = self._alt_version_id_list[0]
         self._alt_evo_id_list = self._database.get_evolution_tree_ids(self._base_monster_id)
 
         self.search = MonsterSearchHelper(self)
@@ -739,6 +758,10 @@ class DgMonster(DadguideItem):
     @property
     def alt_evos(self):
         return [self._database.get_monster(a) for a in self._alt_evo_id_list]
+
+    @property
+    def alt_versions(self):
+        return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
     @property
     def is_base_monster(self):

@@ -1200,7 +1200,7 @@ class PadGlobal(commands.Cog):
 def check_simple_tree(monster):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in monster.alt_evos:
+    for m in monster.alt_versions:
         if m.attr1 != attr1 or m.active_skill != active_skill:
             return False
         if m.is_equip:
