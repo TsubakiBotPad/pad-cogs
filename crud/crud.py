@@ -14,8 +14,6 @@ from tsutils import auth_check, confirm_message
 
 logger = logging.getLogger('red.padbot-cogs.crud')
 
-TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
-
 SERIES_KEYS = {
     "name_en": 'Untranslated',
     "name_ja": 'Untranslated',
@@ -110,7 +108,7 @@ class Crud(commands.Cog):
         await self.execute_read(ctx, sql, [search_text, search_text])
 
     @series.command(name="add")
-    async def series_add(self, ctx, *, elements: TokenConverter):
+    async def series_add(self, ctx, *elements):
         """Add a new series.
 
         Valid element keys are: `name_en`, `name_ko`, `name_ja`
@@ -118,6 +116,11 @@ class Crud(commands.Cog):
         Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
         """
+        if len(elements) % 2 != 0:
+            await ctx.send_help()
+            return
+        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send_help()
             return
@@ -151,7 +154,7 @@ class Crud(commands.Cog):
 
 
     @series.command(name="edit")
-    async def series_edit(self, ctx, series_id: int, *, elements: TokenConverter):
+    async def series_edit(self, ctx, series_id: int, *elements):
         """Edit an existing series series.
 
         Valid element keys are: `name_en`, `name_ko`, `name_ja`
@@ -159,6 +162,11 @@ class Crud(commands.Cog):
         Example Usage:
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
         """
+        if len(elements) % 2 != 0:
+            await ctx.send_help()
+            return
+        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+
         if not all(x in SERIES_KEYS for x in elements):
             await ctx.send_help()
             return
