@@ -114,7 +114,6 @@ class PadEvents(commands.Cog):
                 events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
                 daily_refresh_servers = set()
                 for e in events:
-                    await self.bot.get_channel(765847219177521192).send(inline(str((e.clean_dungeon_name, fmtTime(e.open_datetime), e.server, e.key))))
                     self.started_events.add(e.key)
                     if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
                         for gr in list(self.settings.listGuerrillaReg()):
