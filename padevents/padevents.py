@@ -601,9 +601,9 @@ class PadEvents(commands.Cog):
             dmevents[index-1]['searchstr'] = searchstr
         await ctx.tick()
 
-    @padevents.command(name="listchannels")
+    @padevents.command(name="listallchannels")
     @checks.is_owner()
-    async def _listchannel(self, ctx):
+    async def _listallchannel(self, ctx):
         msg = 'Following daily channels are registered:\n'
         msg += self.makeChannelList(self.settings.listDailyReg())
         msg += "\n"
@@ -611,14 +611,27 @@ class PadEvents(commands.Cog):
         msg += self.makeChannelList(self.settings.listGuerrillaReg())
         await self.pageOutput(ctx, msg)
 
-    def makeChannelList(self, reg_list):
+    @padevents.command(name="listchannels")
+    @checks.mod_or_permissions(manage_guild=True)
+    async def _listchannel(self, ctx):
+        msg = 'Following daily channels are registered:\n'
+        msg += self.makeChannelList(self.settings.listDailyReg(), lambda c: c in ctx.guild.channels)
+        msg += "\n"
+        msg += 'Following guerilla channels are registered:\n'
+        msg += self.makeChannelList(self.settings.listGuerrillaReg(), lambda c: c in ctx.guild.channels)
+        await self.pageOutput(ctx, msg)
+
+    def makeChannelList(self, reg_list, filt=None):
+        if filt is None:
+            filt = lambda x: x
         msg = ""
         for cr in reg_list:
             reg_channel_id = cr['channel_id']
             channel = self.bot.get_channel(int(reg_channel_id))
-            channel_name = channel.name if channel else 'Unknown(' + reg_channel_id + ')'
-            server_name = channel.guild.name if channel else 'Unknown server'
-            msg += "   " + cr['server'] + " : " + server_name + '(' + channel_name + ')\n'
+            if filt(channel):
+                channel_name = channel.name if channel else 'Unknown(' + reg_channel_id + ')'
+                server_name = channel.guild.name if channel else 'Unknown server'
+                msg += "   " + cr['server'] + " : " + server_name + '(' + channel_name + ')\n'
         return msg
 
     @padevents.command()
