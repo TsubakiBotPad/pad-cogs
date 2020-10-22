@@ -544,7 +544,7 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(aliases=['es'])
+    @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evoscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
