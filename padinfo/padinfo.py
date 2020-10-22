@@ -522,20 +522,19 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
-    async def collabscroll(self, ctx, *, query: str):
+    async def seriesscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
         m, err, debug_info = await self.findMonster(query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
-        ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
-        ms = [sorted({*m.alt_versions}, key=lambda m: m.monster_id) for m in ms
-              if m.base_monster == m
-              and m.sell_mp >= 3000]
-        ms = [m for ml in ms for m in ml]
+        ms.sort(key=lambda m: m.monster_id)
+        ms = [m for m in ms if m.sell_mp >= 100]
 
-        if m.base_monster != m:
-            m = m.base_monster
+        if not ms:
+            await ctx.send("There are no monsters in that series worth more than 99 monster points.")
+            return
+
         if m not in ms:
             m = m if m in ms else ms[0]
 
