@@ -1,10 +1,10 @@
 import asyncio
 import csv
 import discord
-import io
 import json
 import logging
 import pymysql
+from io import BytesIO
 from datetime import datetime
 from redbot.core import checks
 from redbot.core import commands
@@ -22,13 +22,6 @@ def is_padguidedb_admin_check(ctx):
 def is_padguidedb_admin():
     return commands.check(is_padguidedb_admin_check)
 
-TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
-
-SERIES_KEYS = {
-    "name_en": 'Untranslated',
-    "name_ja": 'Untranslated',
-    "name_ko": 'Untranslated',
-}
 
 class PadGuideDb(commands.Cog):
     """PadGuide Database manipulator"""
@@ -222,24 +215,6 @@ class PadGuideDb(commands.Cog):
             sql = "DELETE FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
             cursor.execute(sql)
         await ctx.tick()
-
-    # @padguidedb.command()
-    @is_padguidedb_admin()
-    async def dungeondata(self, ctx, dungeon_id: int):
-        with self.get_cursor() as cursor:
-            sql = "SELECT * FROM wave_data WHERE dungeon_id = {}".format(int(dungeon_id))
-            cursor.execute(sql)
-            results = list(cursor.fetchall())
-            order = sorted(results[0])
-            rows = [list(map(lambda x: row[x], order)) for row in results]
-            fauxfile = io.StringIO()
-            writer = csv.writer(fauxfile)
-            writer.writerow(order)
-            writer.writerows(rows)
-            fauxfile.seek(0)
-            m = await ctx.send(file=discord.File(fauxfile, filename="dungeondata.csv"))
-        await asyncio.sleep(10)
-        await m.delete()
 
     @padguidedb.group()
     @is_padguidedb_admin()

@@ -4,7 +4,7 @@
   ],
   "description": "View user-set builds for various dungeons.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
+  "install_msg": "Use [p]builds to get started.",
   "short": "Builds to help you through dungeons",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {},
+  "required_cogs": {},
   "requirements": [
     "tsutils"
   ],

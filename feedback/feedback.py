@@ -1,10 +1,12 @@
 import discord
+from io import BytesIO
 from redbot.core import checks, commands, modlog
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
 
 
 class Feedback(commands.Cog):
+    """Feedback Cog"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

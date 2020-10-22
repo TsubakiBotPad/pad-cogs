@@ -1,7 +1,7 @@
 import PIL.Image
-import io
 import logging
 import traceback
+from io import BytesIO
 from redbot.core import commands
 
 ORB_IMG_SIZE = 40
@@ -10,6 +10,7 @@ logger = logging.getLogger('red.padbot-cogs.padvision')
 
 
 class PadVision(commands.Cog):
+    """Empty cog for PadVision help"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -122,7 +123,7 @@ class NeuralClassifierBoardExtractor(object):
     def __init__(self, model_path, np_img, img_bytes):
         self.model_path = model_path
         self.np_img = np_img
-        self.img = PIL.Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        self.img = PIL.Image.open(BytesIO(img_bytes)).convert('RGB')
         self.processed = False
         self.results = [['u' for x in range(6)] for y in range(5)]
 

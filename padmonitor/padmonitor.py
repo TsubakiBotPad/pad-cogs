@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import tsutils
+from io import BytesIO
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 
@@ -8,6 +9,7 @@ logger = logging.getLogger('red.padbot-cogs.padmonitor')
 
 
 class PadMonitor(commands.Cog):
+    """Monitor PAD and announce new cards"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

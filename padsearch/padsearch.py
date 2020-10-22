@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from io import BytesIO
 from fnmatch import fnmatch
 from ply import lex
 from redbot.core import checks
