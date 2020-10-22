@@ -1,11 +1,11 @@
 import aiohttp
 import csv
 import discord
-import io
 import math
 import os
 import re
 import urllib
+from io import BytesIO
 from PIL import Image
 from PIL import ImageChops
 from PIL import ImageDraw
@@ -776,7 +776,7 @@ class PadBuildImage(commands.Cog):
                 return -1
 
         if pbg.build_img is not None:
-            with io.BytesIO() as build_io:
+            with BytesIO() as build_io:
                 pbg.build_img.save(build_io, format='PNG')
                 build_io.seek(0)
                 if ctx.guild and self.settings.dmOnly(ctx.guild.id):

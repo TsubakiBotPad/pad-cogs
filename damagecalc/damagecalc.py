@@ -1,6 +1,7 @@
 import math
 
 from ply import lex
+from io import BytesIO
 from redbot.core import commands
 
 
@@ -250,7 +251,7 @@ class DamageCalc(commands.Cog):
         Resistance, defense, loading by monster id, killers, etc coming soon
         """
 
-    @commands.command()
+    @commands.command(aliases=['damagecalc'])
     async def damage(self, ctx, *, damage_spec):
         """Computes damage for the provided damage_spec
 

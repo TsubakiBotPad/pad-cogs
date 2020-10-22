@@ -2,11 +2,11 @@ import asyncio
 import aiofiles
 import csv
 import discord
-import io
 import os
 import json
 import logging
 import pymysql
+from io import BytesIO
 from datetime import datetime
 from redbot.core import checks, commands, Config, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify

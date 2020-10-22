@@ -1,5 +1,6 @@
 import discord
 import re
+from io import BytesIO
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
@@ -17,6 +18,7 @@ def rint(x, p):
     return str(round(x, p)).rstrip('0').rstrip('.')
 
 class PriceCheck(commands.Cog):
+    """A pricechecking cog for Lumon"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

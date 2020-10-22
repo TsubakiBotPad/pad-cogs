@@ -1,6 +1,5 @@
 import asyncio
 import discord
-import io
 import json
 import logging
 import os
@@ -8,6 +7,7 @@ import prettytable
 import traceback
 import tsutils
 import urllib.parse
+from io import BytesIO
 from collections import OrderedDict
 from enum import Enum
 from redbot.core import checks, commands, data_manager
@@ -160,6 +160,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
 
 
 class PadInfo(commands.Cog):
+    """Info for PAD Cards"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -728,7 +729,7 @@ class PadInfo(commands.Cog):
             if m1 and m2:
                 await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_en, m2.name_en))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
-        file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
+        file = discord.File(BytesIO(json.dumps(f).encode()), filename="diff.json")
         await ctx.send(file=file)
 
     def get_emojis(self):

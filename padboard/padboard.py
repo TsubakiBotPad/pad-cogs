@@ -3,6 +3,7 @@ import cv2
 import discord
 import numpy as np
 import os
+from io import BytesIO
 from collections import defaultdict
 from collections import deque
 from redbot.core import Config, checks, commands
@@ -16,6 +17,7 @@ CNINJA_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
 
 
 class PadBoard(commands.Cog):
+    """Dawnglare Utilities"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

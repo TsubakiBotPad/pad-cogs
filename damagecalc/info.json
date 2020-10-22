@@ -4,7 +4,7 @@
   ],
   "description": "Calculate Puzzle & Dragons data",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
+  "install_msg": "Use [p]damage to get started.",
   "short": "Calculates Puzzle & Dragons data",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {},
+  "required_cogs": {},
   "requirements": [
     "ply"
   ],

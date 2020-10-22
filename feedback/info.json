@@ -4,8 +4,8 @@
   ],
   "description": "Tsubaki feedback and credits",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
-  "short": "P&D Phonebook",
+  "install_msg": "Use [p]setfeedbackchannel and [p]setblogfeedbackchannel to set the feedback channels.",
+  "short": "Feedback and credits",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
   "min_python_version": [
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {},
+  "required_cogs": {},
   "requirements": [
     "tsutils"
   ],

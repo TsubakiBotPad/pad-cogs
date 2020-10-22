@@ -7,6 +7,7 @@ import prettytable
 import pytz
 import re
 import traceback
+from io import BytesIO
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
@@ -21,6 +22,7 @@ SUPPORTED_SERVERS = ["JP", "NA", "KR"]
 GROUPS = ['red', 'blue', 'green']
 
 class PadEvents(commands.Cog):
+    """Pad Event Tracker"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

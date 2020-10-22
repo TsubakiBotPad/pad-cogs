@@ -14,6 +14,7 @@ import logging
 import os
 import shutil
 import tsutils
+from io import BytesIO
 from collections import defaultdict
 from redbot.core import checks, data_manager
 from redbot.core import commands
@@ -47,6 +48,7 @@ DB_DUMP_FILE = _data_file('dadguide.sqlite')
 
 
 class Dadguide(commands.Cog):
+    """Dadguide database manager"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
