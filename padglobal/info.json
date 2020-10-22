@@ -4,7 +4,7 @@
   ],
   "description": "The holy text of Tsubaki guides.  For the official PadGlobal data, please contact a Tsubaki owner.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
+  "install_msg": "Use [p]padglobal to get started.",
   "short": "Tsubaki guides and tips written by P&D professionals",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {
+  "required_cogs": {
     "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs",
     "padinfo": "https://github.com/TsubakiBotPad/padbot-cogs"
   },

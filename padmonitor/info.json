@@ -4,7 +4,7 @@
   ],
   "description": "Checks for and announces new monsters.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
+  "install_msg": "Use [p]addnewchannel to set up a monster monitor.",
   "short": "Announce new monsters",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {
+  "required_cogs": {
     "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [

@@ -4,7 +4,7 @@
   ],
   "description": "Turn a screenshot into a P&D simulation via DawnGlare.",
   "end_user_data_statement": "No personal data is stored persistantly.",
-  "install_msg": "",
+  "install_msg": "Use [p]set_tflite_path to set up your tflite path. (You need to get this from The Tsubaki Bot Team)",
   "short": "Dawnglare utils",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {
+  "required_cogs": {
     "padvision": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [

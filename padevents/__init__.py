@@ -1,4 +1,4 @@
-from .padevents import *
+from .padevents import PadEvents
 
 __red_end_user_data_statement__ = "No personal data is stored."
 

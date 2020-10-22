@@ -1,4 +1,4 @@
-from .pricecheck import *
+from .pricecheck import PriceCheck
 
 __red_end_user_data_statement__ = "No personal data is stored."
 
