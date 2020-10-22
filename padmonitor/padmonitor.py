@@ -87,7 +87,7 @@ class PadMonitor(commands.Cog):
         except Exception as ex:
             logger.exception('failed to send message to {}:'.format(channel_id))
 
-    @commands.group()
+    @commands.group(aliases=['pdm'])
     @checks.mod_or_permissions(manage_guild=True)
     async def padmonitor(self, ctx):
         """PAD info monitoring"""
@@ -96,17 +96,21 @@ class PadMonitor(commands.Cog):
     @padmonitor.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addnewchannel(self, ctx):
+    async def addchannel(self, ctx, channel: discord.TextChannel = None):
         """Sets announcements for the current channel."""
-        self.settings.add_new_monster_channel(ctx.channel.id)
+        if channel is None:
+            channel = ctx.channel
+        self.settings.add_new_monster_channel(channel.id)
         await ctx.tick()
 
     @padmonitor.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmnewchannel(self, ctx):
+    async def rmchannel(self, ctx, channel: discord.TextChannel = None):
         """Removes announcements for the current channel."""
-        self.settings.rm_new_monster_channel(ctx.channel.id)
+        if channel is None:
+            channel = ctx.channel
+        self.settings.rm_new_monster_channel(channel.id)
         await ctx.tick()
 
 
