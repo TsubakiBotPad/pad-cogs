@@ -4,13 +4,13 @@ import csv
 import datetime
 import difflib
 import discord
-import io
 import json
 import logging
 import os
 import prettytable
 import re
 import tsutils
+from io import StringIO, BytesIO
 from collections import defaultdict
 from redbot.core import checks, data_manager
 from redbot.core import commands
@@ -198,11 +198,11 @@ class PadGlobal(commands.Cog):
         mi = padinfo_cog.index_all
 
         async def write_send(nn_map, file_name):
-            data_holder = io.StringIO()
+            data_holder = StringIO()
             writer = csv.writer(data_holder)
             for nn, nm in nn_map.items():
                 writer.writerow([nn, nm.monster_no_na, nm.name_en])
-            bytes_data = io.BytesIO(data_holder.getvalue().encode())
+            bytes_data = BytesIO(data_holder.getvalue().encode())
             await ctx.channel.send(file=discord.File(bytes_data, file_name))
 
         await write_send(mi.all_entries, 'all_entries.csv')
