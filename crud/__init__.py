@@ -1,7 +1,7 @@
-from .pricecheck import PriceCheck
+from .crud import Crud
 
 __red_end_user_data_statement__ = "No personal data is stored."
 
 
 def setup(bot):
-    bot.add_cog(PriceCheck(bot))
+    bot.add_cog(Crud(bot))

@@ -7,6 +7,7 @@ import os
 import traceback
 import tsutils
 import urllib.parse
+from io import BytesIO
 from collections import OrderedDict
 from redbot.core import checks, commands, data_manager
 from redbot.core.utils.chat_formatting import inline

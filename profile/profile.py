@@ -1,6 +1,7 @@
 import discord
 import logging
 import re
+from io import BytesIO
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings
@@ -39,6 +40,7 @@ def computeOldGroup(str_id):
 
 
 class Profile(commands.Cog):
+    """PAD Profile Cog"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot

@@ -96,6 +96,10 @@ class DadguideDatabase(object):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
+
+        self.cachedmonsters = None
+        self.expiry = 0
+
     def has_database(self):
         return self._con is not None
 
@@ -173,7 +177,7 @@ class DadguideDatabase(object):
 
     def _max_id(self):
         cursor = self._con.cursor()
-        cursor.execute("SELECT MAX(monster_id) FROM monsters WHERE monster_id < 10000")
+        cursor.execute("SELECT MAX(monster_id) FROM monsters")
         return cursor.fetchone()['MAX(monster_id)']
 
     def _select_one_entry_by_pk(self, pk, d_type):
@@ -212,6 +216,7 @@ class DadguideDatabase(object):
                 self._query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
+        # TODO: Make this not make monsters via query
         return self._query_many(
             self._select_builder(
                 tables=OrderedDict({
@@ -265,31 +270,16 @@ class DadguideDatabase(object):
             DgDrop) is not None
 
     def monster_in_rem(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('rem_egg',)},
-                where='{0}.monster_id=? AND rem_egg=1'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.rem_egg == 1
 
     def monster_in_pem(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('pal_egg',)},
-                where='{0}.monster_id=? AND pal_egg=1'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.pal_egg == 1
 
     def monster_in_mp_shop(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('buy_mp',)},
-                where='{0}.monster_id=? AND buy_mp IS NOT NULL'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DgDrop) is not None
+        m = self.get_monster(monster_id)
+        return m is not None and m.buy_mp is not None
 
     def get_prev_evolution_by_monster(self, monster_id):
         return self._query_one(
@@ -310,22 +300,46 @@ class DadguideDatabase(object):
             DgEvolution,
             as_generator=True)
 
-    def get_base_monster_by_monster(self, monster_id):
-        base = {'from_id': monster_id, 'to_id': monster_id}
-        lastbase = None
-        while base != None:
-            lastbase = base
-            base = self.get_prev_evolution_by_monster(base['from_id'])
-        return lastbase
+    def get_prev_transformations_by_monster(self, monster_id):
+        return self._query_many(
+            self._select_builder(
+                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
+                where='{}.linked_monster_id=?'.format(DgMonster.TABLE)
+            ),
+            (monster_id,),
+            DictWithAttrAccess,
+            as_generator=True)
 
-    def get_all_evolutions_by_monster(self, monster_id):
-        base = self.get_base_monster_by_monster(monster_id)
-        queue = [base]
+    def get_next_transformation_by_monster(self, monster_id):
+        return self._query_one(
+            self._select_builder(
+                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
+                where='{}.monster_id=?'.format(DgMonster.TABLE)
+            ),
+            (monster_id,),
+            DictWithAttrAccess)
 
-        while queue:
-            curr = queue.pop(0)
-            yield curr
-            queue.extend(self.get_next_evolutions_by_monster(curr['to_id']))
+    def build_id_set(self, monster_id):
+        to_check = {monster_id}
+        all_ids = {monster_id}
+        while to_check:
+            mid = to_check.pop()
+            linked_monsters = set()
+            linked_monsters.add(getattr(self.get_prev_evolution_by_monster(mid), 'from_id', None))
+            linked_monsters.update({e.to_id for e in self.get_next_evolutions_by_monster(mid)})
+            linked_monsters.update({e.from_id for e in self.get_prev_transformations_by_monster(mid)})
+            linked_monsters.add(getattr(self.get_next_transformation_by_monster(mid), 'to_id', None))
+            linked_monsters.discard(None)
+
+            linked_monsters.difference_update(all_ids)
+
+            to_check |= linked_monsters
+            all_ids |= linked_monsters
+        return sorted(all_ids)
+
+
+    def get_base_monster_by_id(self, monster_id):
+        return self.build_id_set(monster_id)[0]
 
     def get_evolution_by_material(self, monster_id):
         return self._query_many(
@@ -361,68 +375,75 @@ class DadguideDatabase(object):
         return evolution_tree
 
     def monster_id_to_no(self, monster_id, region=Server.JP):
-        res = self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('monster_no_{}'.format(region.name.lower()),)},
-                where='{}.monster_id=?'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DictWithAttrAccess)
-        for k in res:
-            return res[k]
+        m = self.get_monster(monster_id)
+        if m:
+            return getattr(m, 'monster_no_{}'.format(region.name.lower()))
 
     def get_series(self, series_id: int):
         return self._select_one_entry_by_pk(series_id, DgSeries)
 
-    def _get_monsters_where(self, where, param):
-        return self._query_many(
-            self._select_builder(
-                tables={DgMonster.TABLE: DgMonster.FIELDS},
-                where=where
-            ),
-            param,
-            DgMonster)
+    def get_monsters_where(self, f):
+        return [m for m in self.get_all_monsters() if f(m)]
+
+    def get_first_monster_where(self, f):
+        ms = self.get_monsters_where(f)
+        if ms:
+            return min(ms, key=lambda m: m.monster_id)
 
     def get_monsters_by_series(self, series_id: int):
-        return self._get_monsters_where('{}.series_id=?'.format(DgMonster.TABLE), (series_id,))
+        return self.get_monsters_where(lambda m: m.series_id == series_id)
 
     def get_monsters_by_active(self, active_skill_id: int):
-        return self._get_monsters_where('{}.active_skill_id=?'.format(DgMonster.TABLE), (active_skill_id,))
+        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id)
 
-    def get_monster_evo_gem(self, name: str, region='jp'):
+    def get_monster_evo_gem(self, name: str, region='ja'):
         gem_suffix = {
             'ja': 'の希石',
             'en': '\'s Gem',
             'ko': ' 의 휘석'
         }
+
         if region not in gem_suffix:
             return None
-        non_gem_name = name.replace(gem_suffix[region], '')
+        non_gem_name = name.replace(gem_suffix.get(region), '')
         if non_gem_name == name:
             return None
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: DgMonster.FIELDS},
-                where='{0}.name_{1}=? AND {0}.leader_skill_id=10628'.format(DgMonster.TABLE, region)
-            ),
-            (non_gem_name,),
-            DgMonster)
+
+        return self.get_first_monster_where(lambda m: getattr(m, 'name_{}'.format(region)) == non_gem_name and m.leader_skill_id == 10628)
+
 
     def get_na_only_monsters(self):
-        return self._get_monsters_where(
-            '{0}.monster_id != {0}.monster_no_na AND {0}.monster_no_jp == {0}.monster_no_na '.format(DgMonster.TABLE),
-            ())
+        return self.get_monsters_where(lambda m: m.monster_id != m.monster_no_na and m.monster_no_jp == m.monster_no_na)
+
+    def get_monster_query(self, monster_id: int):
+        monster = self._select_one_entry_by_pk(monster_id, DgMonster)
+        if monster is not None:
+            self.cachedmonsters[monster.monster_id] = monster
+            return monster
 
     def get_monster(self, monster_id: int):
-        return self._select_one_entry_by_pk(monster_id, DgMonster)
+        self.refresh_monsters()
+        if monster_id in self.cachedmonsters:
+            return self.cachedmonsters.get(monster_id)
+        return self.get_monster_query(monster_id)
 
-    def get_all_monster_ja_name(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgMonster.TABLE: ('name_ja',)}), (), DictWithAttrAccess,
+    def get_all_monster_ids_query(self, as_generator=True):
+        query = self._query_many(self._select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (), DictWithAttrAccess,
                                 as_generator=as_generator)
+        if as_generator:
+            return map(lambda m: m.monster_id, query)
+        return [m.monster_id for m in query]
+
+    def refresh_monsters(self):
+        if self.expiry < datetime.now().timestamp():
+            self.expiry = int(datetime.now().timestamp()) + 60*60
+            self.cachedmonsters = {}
 
     def get_all_monsters(self, as_generator=True):
-        return self._query_many(self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}), (), DgMonster,
-                                as_generator=as_generator)
+        monsters = (self.get_monster(mid) for mid in self.get_all_monster_ids_query())
+        if not as_generator:
+            return [*monsters]
+        return monsters
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -432,6 +453,13 @@ class DadguideDatabase(object):
     def get_dungeon_by_id(self, dungeon_id: int):
         return self._select_one_entry_by_pk(dungeon_id, DgDungeon)
 
+    def tokenize_monsters(self):
+        tokens = defaultdict(list)
+        for mid in self.get_all_monster_ids_query():
+            monster = self.get_monster(mid)
+            for token in monster.name_en.split():
+                tokens[token.lower()].append(monster)
+        return tokens
 
 def enum_or_none(enum, value, default=None):
     if value is not None:
@@ -629,12 +657,8 @@ class DgMonster(DadguideItem):
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
-        base_id = self.monster_id
-        next_base = self._database.get_prev_evolution_by_monster(base_id)
-        while next_base is not None:
-            base_id = next_base.from_id
-            next_base = self._database.get_prev_evolution_by_monster(base_id)
-        self._base_monster_id = base_id
+        self._alt_version_id_list = self._database.build_id_set(self.monster_id)
+        self._base_monster_id = self._alt_version_id_list[0]
         self._alt_evo_id_list = self._database.get_evolution_tree_ids(self._base_monster_id)
 
         self.search = MonsterSearchHelper(self)
@@ -736,6 +760,10 @@ class DgMonster(DadguideItem):
         return [self._database.get_monster(a) for a in self._alt_evo_id_list]
 
     @property
+    def alt_versions(self):
+        return [self._database.get_monster(a) for a in self._alt_version_id_list]
+
+    @property
     def is_base_monster(self):
         return self.evo_from is None
 
@@ -826,6 +854,9 @@ class DgMonster(DadguideItem):
             next = self._database.get_monster(self.monster_no - offset)
             offset += 1
         return next
+
+    def __repr__(self):
+        return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
 
     def __eq__(self, other):
         return isinstance(other, DgMonster) and self.monster_id == other.monster_id
@@ -939,7 +970,8 @@ class MonsterSearchHelper(object):
 
 
 def make_roma_subname(name_ja):
-    subname = name_ja.replace('＝', '')
+    subname = re.sub(r'[＝]', '', name_ja)
+    subname = re.sub(r'[「」]', '・', subname)
     adjusted_subname = ''
     for part in subname.split('・'):
         roma_part = romkan.to_roma(part)
@@ -1102,6 +1134,7 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('mega')
             prefixes.add('mega awoken')
             prefixes.add('awoken')
+            prefixes.add('ma')
 
         if srevo:
             prefixes.add('srevo')
@@ -1119,6 +1152,12 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('uuvo')
             prefixes.add('uuevo')
 
+        # True Evo Type Prefixes
+        if m.true_evo_type == InternalEvoType.Reincarnated:
+            prefixes.add('revo')
+            prefixes.add('reincarnated')
+
+        # Other Prefixes
         if m.farmable:
             prefixes.add('farmable')
 

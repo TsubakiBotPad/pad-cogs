@@ -4,7 +4,7 @@
   ],
   "description": "A beefy helper cog for neural networks.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "",
+  "install_msg": "Make sure to use padboard with this cog!",
   "short": "Neural net helper",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {},
+  "required_cogs": {},
   "requirements": [
     "Pillow"
   ],
