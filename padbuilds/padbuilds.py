@@ -1,5 +1,6 @@
 import discord
 import re
+from io import BytesIO
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
@@ -28,7 +29,7 @@ class PadBuilds(commands.Cog):
         """
         return
 
-    @commands.group(aliases=["build"])
+    @commands.group(aliases=["build", "padbuilds"])
     @commands.guild_only()
     async def builds(self, ctx):
         """PAD Builds management"""

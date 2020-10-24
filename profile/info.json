@@ -4,7 +4,7 @@
   ],
   "description": "Holds all of your Puzzle & Dragons accounts in one place",
   "end_user_data_statement": "Profile data is stored persistantly.",
-  "install_msg": "",
+  "install_msg": "Use [p]profile to get started",
   "short": "P&D Phonebook",
   "min_bot_version": "3.4.0",
   "max_bot_version": "3.4.0",
@@ -15,7 +15,7 @@
   ],
   "hidden": false,
   "disabled": false,
-  "require_cogs": {},
+  "required_cogs": {},
   "requirements": [
     "tsutils"
   ],

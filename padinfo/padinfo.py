@@ -1,6 +1,5 @@
 import asyncio
 import discord
-import io
 import json
 import logging
 import os
@@ -9,12 +8,15 @@ import random
 import traceback
 import tsutils
 import urllib.parse
+from io import BytesIO
 from collections import OrderedDict
 from enum import Enum
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json
+
+from .find_monster import prefix_to_filter
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -86,23 +88,22 @@ class IdEmojiUpdater(EmojiUpdater):
         self.selected_emoji = selected_emoji
         self.bot = bot
 
+        self.pad_info.settings.log_emoji("start_"+selected_emoji)
+
     def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
             DGCOG = self.bot.get_cog('Dadguide')
-            evos = self.m._alt_evo_id_list
-            evos.sort()
-            index = evos.index(self.m.monster_id)
+            evos = sorted({*self.m.alt_versions}, key=lambda m: m.monster_id)
+            index = evos.index(self.m)
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                if index == 0:
-                    newm = DGCOG.get_monster_by_id(evos[-1])
-                else:
-                    newm = DGCOG.get_monster_by_id(evos[index - 1])
+                newm = evos[index - 1]
             elif selected_emoji == self.pad_info.next_monster_emoji:
                 if index == len(evos) - 1:
-                    newm = DGCOG.get_monster_by_id(evos[0])
+                    newm = evos[0]
                 else:
-                    newm = DGCOG.get_monster_by_id(evos[index + 1])
+                    newm = evos[index + 1]
             else:
                 self.selected_emoji = selected_emoji
                 return True
@@ -122,7 +123,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted(self.m.alt_evos, key=lambda x: x.monster_id) if evoID else [])
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
         return True
 
 
@@ -160,6 +161,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
 
 
 class PadInfo(commands.Cog):
+    """Info for PAD Cards"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -241,13 +243,13 @@ class PadInfo(commands.Cog):
         await dg_cog.wait_until_ready()
 
         async with self.index_lock:
-            logger.info('Loading ALL index')
+            logger.debug('Loading ALL index')
             self.index_all = await dg_cog.create_index()
 
-            logger.info('Loading NA index')
+            logger.debug('Loading NA index')
             self.index_na = await dg_cog.create_index(lambda m: m.on_na)
 
-            logger.info('Loading JP index')
+            logger.debug('Loading JP index')
             self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
 
         logger.info('Done refreshing indexes')
@@ -331,6 +333,19 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        await self._do_id3(ctx, query)
+
+    async def _do_id3(self, ctx, query: str):
+        m = await self.findMonster3(query)
+        if m is not None:
+            await self._do_idmenu(ctx, m, self.id_emoji)
+        else:
+            await ctx.send("whoops")
+
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
@@ -376,7 +391,7 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted(m.alt_evos, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [])
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
@@ -393,7 +408,7 @@ class PadInfo(commands.Cog):
                                m=m, ms=ms, selected_emoji=starting_menu_emoji)
         )
 
-    def get_id_emoji_options(self, m=None, scroll=[]):
+    def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
         id_embed = monsterToEmbed(m, self.get_emojis())
         evo_embed = monsterToEvoEmbed(m)
         mats_embed = monsterToEvoMatsEmbed(m)
@@ -421,12 +436,12 @@ class PadInfo(commands.Cog):
         # so that the buttons display in the first place
 
 
-        if len(scroll) > 1:
+        if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.first_monster_emoji] = None
         if len(scroll) != 1:
             emoji_to_embed[self.previous_monster_emoji] = None
             emoji_to_embed[self.next_monster_emoji] = None
-        if len(scroll) > 1:
+        if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.last_monster_emoji] = None
 
         # remove emoji needs to be last
@@ -434,7 +449,7 @@ class PadInfo(commands.Cog):
         return emoji_to_embed
 
     async def _do_evolistmenu(self, ctx, sm):
-        monsters = sm.alt_evos
+        monsters = sm.alt_versions
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()
@@ -522,22 +537,21 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command()
+    @commands.command(aliases=['collabscroll'])
     @checks.bot_has_permissions(embed_links=True)
-    async def collabscroll(self, ctx, *, query: str):
+    async def seriesscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
         m, err, debug_info = await self.findMonster(query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
-        ms.sort(key=lambda m: m.rarity * 100000 + m.monster_id)
-        ms = [sorted({*m.alt_evos}, key=lambda m: m.monster_id) for m in ms
-              if m.base_monster == m
-              and m.sell_mp >= 3000]
-        ms = [m for ml in ms for m in ml]
+        ms.sort(key=lambda m: m.monster_id)
+        ms = [m for m in ms if m.sell_mp >= 100]
 
-        if m.base_monster != m:
-            m = m.base_monster
+        if not ms:
+            await ctx.send("There are no monsters in that series worth more than 99 monster points.")
+            return
+
         if m not in ms:
             m = m if m in ms else ms[0]
 
@@ -546,14 +560,14 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command(aliases=['es'])
+    @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evoscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         m, err, debug_info = await self.findMonster(query)
 
         if m is not None:
-            await self._do_scrollmenu(ctx, m, sorted({*m.alt_evos}, key=lambda x: x.monster_id), self.id_emoji)
+            await self._do_scrollmenu(ctx, m, sorted({*m.alt_versions}, key=lambda x: x.monster_id), self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
 
@@ -608,6 +622,20 @@ class PadInfo(commands.Cog):
         emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis())
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+
+    @commands.command(aliases=['lssingle'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def leaderskillsingle(self, ctx, *, query):
+        m, err, _ = await self.findMonster(query)
+        if err:
+            await ctx.send(err)
+            return
+        emoji_to_embed = OrderedDict()
+        emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis())
+
+        await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+
 
     @commands.command(aliases=['helppic', 'helpimg'])
     @checks.bot_has_permissions(embed_links=True)
@@ -731,7 +759,7 @@ class PadInfo(commands.Cog):
             if m1 and m2:
                 await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_en, m2.name_en))
         await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
-        file = discord.File(io.BytesIO(json.dumps(f).encode()), filename="diff.json")
+        file = discord.File(BytesIO(json.dumps(f).encode()), filename="diff.json")
         await ctx.send(file=file)
 
     def get_emojis(self):
@@ -796,6 +824,28 @@ class PadInfo(commands.Cog):
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster2(query)
 
+    async def findMonster3(self, query):
+        return await self._findMonster3(query)
+
+    async def _findMonster3(self, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        if DGCOG is None:
+            raise ValueError("Dadguide cog is not loaded")
+
+        query = rmdiacritics(query).split()
+        monstergen = DGCOG.database.get_all_monsters()
+        for c, token in enumerate(query):
+            try:
+                filt = prefix_to_filter(token)
+            except:
+                print(token)
+                raise
+            if filt is None:
+                monster_name = " ".join(query[c:])
+                break
+            monstergen = filter(filt, monstergen)
+        return max(monstergen, key=lambda x: (not x.is_equip, x.rarity, x.monster_no_na))
+
 
 class PadInfoSettings(CogSettings):
     def make_default_settings(self):
@@ -803,6 +853,7 @@ class PadInfoSettings(CogSettings):
             'animation_dir': '',
             'alt_id_optout': [],
             'voice_dir_path': '',
+            'emoji_use': {},
         }
         return config
 
@@ -842,6 +893,10 @@ class PadInfoSettings(CogSettings):
     def voiceDir(self):
         return self.bot_settings['voice_dir_path']
 
+    def log_emoji(self, emote):
+        self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
+        self.save_settings()
+
 
 def monsterToHeader(m: "DgMonster", link=False):
     msg = 'No. {} {}'.format(m.monster_no_na, m.name_en)
@@ -864,7 +919,7 @@ def monsterToLongHeader(m: "DgMonster", link=False):
 
 def monsterToEvoText(m: "DgMonster"):
     output = monsterToLongHeader(m)
-    for ae in sorted(m.alt_evos, key=lambda x: int(x.monster_id)):
+    for ae in sorted({*m.alt_versions}, key=lambda x: int(x.monster_id)):
         output += "\n\t- {}".format(monsterToLongHeader(ae))
     return output
 
@@ -897,11 +952,11 @@ def addEvoListFields(list_of_monsters, embed, name):
 def monsterToEvoEmbed(m: "DgMonster"):
     embed = monsterToBaseEmbed(m)
 
-    if not len(m.alt_evos) and not m.evo_gem:
+    if not len(m.alt_versions) and not m.evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(m.alt_evos, embed, '{} alternate evo(s)')
+    addEvoListFields(m.alt_versions, embed, '{} alternate evo(s)')
     if not m.evo_gem:
         return embed
     addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
@@ -1059,6 +1114,26 @@ def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
 
     return embed
 
+def monstersToLssEmbed(m: "DgMonster"):
+    ls = m.leader_skill
+
+    if ls:
+        hp, atk, rcv, resist = ls.data
+    else:
+        hp, atk, rcv, resist = 1, 1, 1, 0
+
+    multiplier_text = createSingleMultiplierText(hp, atk, rcv, resist)
+
+    embed = discord.Embed()
+    embed.title = 'Multiplier [{}]\n\n'.format(multiplier_text)
+    description = ''
+    description += '\n**{}**\n{}'.format(
+        monsterToHeader(m, link=True),
+        m.leader_skill.desc if m.leader_skill else 'None')
+    embed.description = description
+
+    return embed
+
 
 def monsterToHeaderEmbed(m: "DgMonster"):
     header = monsterToLongHeader(m, link=True)
@@ -1176,7 +1251,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     evos_body = ", ".join(f"**{m2.monster_id}**"
                           if m2.monster_id==m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in sorted({*m.alt_evos}, key=lambda m: m.monster_id))
+                          for m2 in sorted({*m.alt_versions}, key=lambda m: m.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
@@ -1319,4 +1394,12 @@ def createMultiplierText(hp1, atk1, rcv1, resist1, hp2=None, atk2=None, rcv2=Non
     text = "{}/{}/{}".format(fmtNum(hp1 * hp2), fmtNum(atk1 * atk2), fmtNum(rcv1 * rcv2))
     if resist1 > 0 or resist2 > 0:
         text += ' Resist {}%'.format(fmtNum(100 * (1 - (1 - resist1) * (1 - resist2))))
+    return text
+
+def createSingleMultiplierText(hp, atk, rcv, resist):
+    def fmtNum(val):
+        return ('{:.2f}').format(val).strip('0').rstrip('.')
+    text = "{}/{}/{}".format(fmtNum(hp), fmtNum(atk), fmtNum(rcv))
+    if resist > 0:
+        text += ' Resist {}%'.format(fmtNum(100 * (resist)))
     return text

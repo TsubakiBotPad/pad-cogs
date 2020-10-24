@@ -14,6 +14,7 @@ import logging
 import os
 import shutil
 import tsutils
+from io import BytesIO
 from collections import defaultdict
 from redbot.core import checks, data_manager
 from redbot.core import commands
@@ -34,8 +35,8 @@ BASENAMES_EXPORT_PATH = _data_file('base_names.json')
 TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
-GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
+GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
@@ -47,6 +48,7 @@ DB_DUMP_FILE = _data_file('dadguide.sqlite')
 
 
 class Dadguide(commands.Cog):
+    """Dadguide database manager"""
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -169,16 +171,17 @@ class Dadguide(commands.Cog):
         self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
 
-        logger.info('Loading dg database')
+        logger.debug('Loading dg database')
         self.database = load_database(self.database)
-        logger.info('Building dg monster index')
+        logger.debug('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
 
-        logger.info('Writing dg monster computed names')
+        logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()
 
-        logger.info('Done refreshing dg data')
+        logger.debug('Done refreshing dg data')
+
 
     def write_monster_computed_names(self):
         results = {}
