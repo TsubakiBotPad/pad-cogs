@@ -5,12 +5,13 @@ import json
 import logging
 import os
 import prettytable
+import random
 import traceback
 import tsutils
 import urllib.parse
 from collections import OrderedDict
 from enum import Enum
-from redbot.core import checks, commands, data_manager
+from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json
@@ -195,6 +196,9 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
+        self.config = Config.get_conf(self, identifier=9401770)
+        self.config.register_user(survey_mode=1.0)
+
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
@@ -286,9 +290,16 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
         params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': m.name_en})
         url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
+
         async def send_survey_after():
-            asyncio.sleep(3)
-            await ctx.send(f"Was this the monster you wanted?  If not, fill out this survey to help the Tsubaki team!\n <{url}>")
+            if random.random() < await self.config.user(ctx.author).survey_mode():
+                await asyncio.sleep(1)
+                m = await ctx.send(f"Was this the monster you wanted?  If not, fill out this"
+                                   f" survey to help the Tsubaki team!\nUse `{ctx.prefix}idmode"
+                                   f" survey` to adjust how often this shows.\n<{url}>")
+                await asyncio.sleep(15)
+                await m.delete()
+
         asyncio.create_task(send_survey_after())
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
@@ -641,7 +652,7 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def idmode(self, ctx, id_type):
         """Switch between number mode and evo mode
 
@@ -659,6 +670,20 @@ class PadInfo(commands.Cog):
                 await ctx.send(inline("You're already using number mode"))
         else:
             await ctx.send(inline("id_type must be `number` or `evo`"))
+
+    @idmode.command()
+    async def survey(self, ctx, value):
+        """Change how often you see the id survey
+
+        [p]idmode survey always     (Always see survey after using id)
+        [p]idmode survey sometimes  (See survey 20% of the time after using id)
+        [p]idmode survey never      (Never see survey after using id D:)"""
+        vals = {'always': 1.0, 'sometimes': 0.2, 'never': 0.0}
+        if value in vals:
+            await self.config.user(ctx.author).survey_mode.set(vals[value])
+            await ctx.tick()
+        else:
+            await ctx.send(inline("value must be `always`, `sometimes`, or `never`"))
 
     @commands.group()
     @checks.is_owner()
