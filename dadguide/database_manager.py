@@ -224,9 +224,18 @@ class DadguideDatabase(object):
 
         ms = self._query_many("SELECT * FROM monsters", (), DictWithAttrAccess)
         es = self._query_many("SELECT * FROM evolutions", (), DictWithAttrAccess)
+        aws = self._query_many("SELECT * FROM awakenings", (), DgAwakening)
+        lss = self._query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id')
+        ass = self._query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id')
+        ss = self._query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id')
 
         for m in ms:
-            self.graph.add_node(m.monster_id, **m)
+            self.graph.add_node(m.monster_id, **m,
+                                    dgawakenings=[],
+                                    dgls=lss.get(m.leader_skill_id),
+                                    dgas=ass.get(m.active_skill_id),
+                                    dgseries=ss.get(m.series_id)
+                                )
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
                 self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
@@ -234,6 +243,9 @@ class DadguideDatabase(object):
         for e in es:
             self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
+
+        for a in aws:
+            self.graph.nodes[a.monster_id]['dgawakenings'].append(a)
 
     def get_evo_tree(self, monster_id):
         ids = set()
@@ -276,10 +288,10 @@ class DadguideDatabase(object):
             ids.add(mid)
         return ids
 
-    def get_active_skill(self, active_skill_id: int):
+    def get_active_skill_query(self, active_skill_id: int):
         return self._select_one_entry_by_pk(active_skill_id, DgActiveSkill)
 
-    def get_leader_skill(self, leader_skill_id: int):
+    def get_leader_skill_query(self, leader_skill_id: int):
         return self._select_one_entry_by_pk(leader_skill_id, DgLeaderSkill)
 
     def get_awoken_skill(self, awoken_skill_id):
@@ -304,22 +316,6 @@ class DadguideDatabase(object):
             ),
             (awoken_skill_id,),
             DgMonster)
-
-    def get_awakenings_by_monster(self, monster_id, is_super=None):
-        if is_super is None:
-            where = '{0}.monster_id=?'.format(DgAwakening.TABLE)
-            param = (monster_id,)
-        else:
-            where = '{0}.monster_id=? AND {0}.is_super=?'.format(DgAwakening.TABLE)
-            param = (monster_id, is_super)
-        return self._query_many(
-            self._select_builder(
-                tables={DgAwakening.TABLE: DgAwakening.FIELDS},
-                where=where,
-                order='order_idx ASC'
-            ),
-            param,
-            DgAwakening)
 
     def get_drop_dungeons(self, monster_id):
         return self._query_many(
@@ -403,9 +399,6 @@ class DadguideDatabase(object):
         m = self.get_monster(monster_id)
         if m:
             return getattr(m, 'monster_no_{}'.format(region.name.lower()))
-
-    def get_series(self, series_id: int):
-        return self._select_one_entry_by_pk(series_id, DgSeries)
 
     def get_monsters_where(self, f):
         return [m for m in self.get_all_monsters() if f(m)]
@@ -683,7 +676,7 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = self._database.get_awakenings_by_monster(self.monster_id)
+        self.awakenings = self.node['dgawakenings']
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
         self.is_inheritable = bool(self.inheritable)
@@ -701,6 +694,10 @@ class DgMonster(DadguideItem):
 
         self.search = MonsterSearchHelper(self)
 
+
+    @property
+    def node(self):
+        return self._database.graph.nodes[self.monster_id]
 
     @property
     def monster_no(self):
@@ -739,11 +736,11 @@ class DgMonster(DadguideItem):
 
     @property
     def active_skill(self):
-        return self._database.get_active_skill(self.active_skill_id)
+        return self.node['dgas']
 
     @property
     def leader_skill(self):
-        return self._database.get_leader_skill(self.leader_skill_id)
+        return self.node['dgls']
 
     @property
     def cur_evo_type(self):
@@ -807,7 +804,7 @@ class DgMonster(DadguideItem):
 
     @property
     def series(self):
-        return self._database.get_series(self.series_id)
+        return self.node['dgseries']
 
     @property
     def is_gfe(self):
