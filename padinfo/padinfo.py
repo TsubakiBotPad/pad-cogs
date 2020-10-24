@@ -199,7 +199,8 @@ class PadInfo(commands.Cog):
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=1.0)
+        self.config.register_user(survey_mode=0)
+        self.config.register_global(sometimes_perc=20)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -294,7 +295,9 @@ class PadInfo(commands.Cog):
         url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
 
         async def send_survey_after():
-            if random.random() < await self.config.user(ctx.author).survey_mode():
+            sm = await self.config.user(ctx.author).survey_mode()
+            sms = [1, await self.config.sometimes_perc()/100, 0][sm]
+            if random.random() < sms:
                 await asyncio.sleep(1)
                 m = await ctx.send(f"Was this the monster you wanted?  If not, fill out this"
                                    f" survey to help the Tsubaki team!\nUse `{ctx.prefix}idmode"
@@ -706,9 +709,9 @@ class PadInfo(commands.Cog):
         [p]idmode survey always     (Always see survey after using id)
         [p]idmode survey sometimes  (See survey 20% of the time after using id)
         [p]idmode survey never      (Never see survey after using id D:)"""
-        vals = {'always': 1.0, 'sometimes': 0.2, 'never': 0.0}
+        vals = ['always', 'sometimes', 'never']
         if value in vals:
-            await self.config.user(ctx.author).survey_mode.set(vals[value])
+            await self.config.user(ctx.author).survey_mode.set(vals.index(value))
             await ctx.tick()
         else:
             await ctx.send(inline("value must be `always`, `sometimes`, or `never`"))
