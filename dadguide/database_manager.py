@@ -4,6 +4,7 @@ import sqlite3 as lite
 import shutil
 import romkan
 import logging
+import networkx as nx
 import pytz
 import difflib
 import os
@@ -74,6 +75,8 @@ class Server(Enum):
     NA = 1
     KR = 2
 
+def get_edges(node, type):
+    return {mid for mid, edge in node.items() if edge.get('type') == type}
 
 class DadguideTableNotFound(Exception):
     def __init__(self, table_name):
@@ -96,15 +99,23 @@ class DadguideDatabase(object):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
+        self.graph = None
+        self.build_graph()
 
         self.cachedmonsters = None
         self.expiry = 0
+        self.generate_all_monsters()
+
+    def __del__(self):
+        self.close()
+        logger.info("Garbage Collecting Old Database")
 
     def has_database(self):
         return self._con is not None
 
     def close(self):
-        self._con.close()
+        if self._con:
+            self._con.close()
         self._con = None
 
     @staticmethod
@@ -153,14 +164,12 @@ class DadguideDatabase(object):
 
     def _as_generator(self, cursor, d_type):
         res = cursor.fetchone()
-        if issubclass(d_type, DadguideItem):
-            while res is not None:
+        while res is not None:
+            if issubclass(d_type, DadguideItem):
                 yield d_type(res, self)
-                res = cursor.fetchone()
-        else:
-            while res is not None:
+            else:
                 yield d_type(res)
-                res = cursor.fetchone()
+            res = cursor.fetchone()
 
     def _query_many(self, query, param, d_type, idx_key=None, as_generator=False):
         cursor = self._con.cursor()
@@ -168,12 +177,21 @@ class DadguideDatabase(object):
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return self._as_generator(cursor, d_type)
+            return (d_type(res, self)
+                        if issubclass(d_type, DadguideItem)
+                        else d_type(res)
+                        for res in cursor.fetchall())
         else:
             if idx_key is None:
-                return [d_type(res, self) for res in cursor.fetchall()]
+                if issubclass(d_type, DadguideItem):
+                    return [d_type(res, self) for res in cursor.fetchall()]
+                else:
+                    return [d_type(res) for res in cursor.fetchall()]
             else:
-                return DictWithAttrAccess({res[idx_key]: d_type(res, self) for res in cursor.fetchall()})
+                if issubclass(d_type, DadguideItem):
+                    return DictWithAttrAccess({res[idx_key]: d_type(res, self) for res in cursor.fetchall()})
+                else:
+                    return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
     def _max_id(self):
         cursor = self._con.cursor()
@@ -200,6 +218,63 @@ class DadguideDatabase(object):
         if len(fields) == 0:
             raise DadguideTableNotFound(table_name)
         return fields, pk
+
+    def build_graph(self):
+        self.graph = nx.DiGraph()
+
+        ms = self._query_many("SELECT * FROM monsters", (), DictWithAttrAccess)
+        es = self._query_many("SELECT * FROM evolutions", (), DictWithAttrAccess)
+
+        for m in ms:
+            self.graph.add_node(m.monster_id, **m)
+            if m.linked_monster_id:
+                self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
+                self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+
+        for e in es:
+            self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
+            self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
+
+    def get_evo_tree(self, monster_id):
+        ids = set()
+        to_check = {monster_id}
+        while to_check:
+            mid = to_check.pop()
+            if mid in ids:
+                continue
+            n = self.graph[mid]
+            to_check.update(get_edges(n, 'evolution'))
+            to_check.update(get_edges(n, 'back_evolution'))
+            ids.add(mid)
+        return ids
+
+    def get_transform_tree(self, monster_id):
+        ids = set()
+        to_check = {monster_id}
+        while to_check:
+            mid = to_check.pop()
+            if mid in ids:
+                continue
+            n = self.graph[mid]
+            to_check.update(get_edges(n, 'transformation'))
+            to_check.update(get_edges(n, 'back_transformation'))
+            ids.add(mid)
+        return ids
+
+    def get_alt_cards(self, monster_id):
+        ids = set()
+        to_check = {monster_id}
+        while to_check:
+            mid = to_check.pop()
+            if mid in ids:
+                continue
+            n = self.graph[mid]
+            to_check.update(get_edges(n, 'evolution'))
+            to_check.update(get_edges(n, 'transformation'))
+            to_check.update(get_edges(n, 'back_evolution'))
+            to_check.update(get_edges(n, 'back_transformation'))
+            ids.add(mid)
+        return ids
 
     def get_active_skill(self, active_skill_id: int):
         return self._select_one_entry_by_pk(active_skill_id, DgActiveSkill)
@@ -282,64 +357,14 @@ class DadguideDatabase(object):
         return m is not None and m.buy_mp is not None
 
     def get_prev_evolution_by_monster(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgEvolution.TABLE: DgEvolution.FIELDS},
-                where='{}.to_id=?'.format(DgEvolution.TABLE)
-            ),
-            (monster_id,),
-            DgEvolution)
+        bes = get_edges(self.graph[monster_id], 'back_evolution')
+        if bes: return bes.pop()
 
     def get_next_evolutions_by_monster(self, monster_id):
-        return self._query_many(
-            self._select_builder(
-                tables={DgEvolution.TABLE: DgEvolution.FIELDS},
-                where='{}.from_id=?'.format(DgEvolution.TABLE)
-            ),
-            (monster_id,),
-            DgEvolution,
-            as_generator=True)
-
-    def get_prev_transformations_by_monster(self, monster_id):
-        return self._query_many(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
-                where='{}.linked_monster_id=?'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DictWithAttrAccess,
-            as_generator=True)
-
-    def get_next_transformation_by_monster(self, monster_id):
-        return self._query_one(
-            self._select_builder(
-                tables={DgMonster.TABLE: ('monster_id AS from_id', 'linked_monster_id AS to_id')},
-                where='{}.monster_id=?'.format(DgMonster.TABLE)
-            ),
-            (monster_id,),
-            DictWithAttrAccess)
-
-    def build_id_set(self, monster_id):
-        to_check = {monster_id}
-        all_ids = {monster_id}
-        while to_check:
-            mid = to_check.pop()
-            linked_monsters = set()
-            linked_monsters.add(getattr(self.get_prev_evolution_by_monster(mid), 'from_id', None))
-            linked_monsters.update({e.to_id for e in self.get_next_evolutions_by_monster(mid)})
-            linked_monsters.update({e.from_id for e in self.get_prev_transformations_by_monster(mid)})
-            linked_monsters.add(getattr(self.get_next_transformation_by_monster(mid), 'to_id', None))
-            linked_monsters.discard(None)
-
-            linked_monsters.difference_update(all_ids)
-
-            to_check |= linked_monsters
-            all_ids |= linked_monsters
-        return sorted(all_ids)
-
+        return get_edges(self.graph[monster_id], 'evolution')
 
     def get_base_monster_by_id(self, monster_id):
-        return self.build_id_set(monster_id)[0]
+        return min(self.get_alt_cards(monster_id))
 
     def get_evolution_by_material(self, monster_id):
         return self._query_many(
@@ -370,8 +395,8 @@ class DadguideDatabase(object):
         while len(n_evos) > 0:
             n_evo_id = n_evos.popleft()
             for e in self.get_next_evolutions_by_monster(n_evo_id):
-                n_evos.append(e.to_id)
-                evolution_tree.append(e.to_id)
+                n_evos.append(e)
+                evolution_tree.append(e)
         return evolution_tree
 
     def monster_id_to_no(self, monster_id, region=Server.JP):
@@ -436,14 +461,24 @@ class DadguideDatabase(object):
 
     def refresh_monsters(self):
         if self.expiry < datetime.now().timestamp():
-            self.expiry = int(datetime.now().timestamp()) + 60*60
-            self.cachedmonsters = {}
+            #self.expiry = int(datetime.now().timestamp()) + 60*60
+            #self.cachedmonsters = {}
+            self.generate_all_monsters()
 
     def get_all_monsters(self, as_generator=True):
         monsters = (self.get_monster(mid) for mid in self.get_all_monster_ids_query())
         if not as_generator:
             return [*monsters]
         return monsters
+
+    def generate_all_monsters(self):
+        self.cachedmonsters = {m.monster_id: m for m in self._query_many(
+                                    self._select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}),
+                                    (),
+                                    DgMonster,
+                                    as_generator=True)}
+        self.expiry = int(datetime.now().timestamp()) + 60*60
+
 
     def get_all_events(self, as_generator=True):
         return self._query_many(self._select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
@@ -653,13 +688,16 @@ class DgMonster(DadguideItem):
 
         self.is_inheritable = bool(self.inheritable)
 
-        self.evo_from = self._database.get_prev_evolution_by_monster(self.monster_id)
+        self.evo_from_id = self._database.get_prev_evolution_by_monster(self.monster_id)
+        self.evo_from = None
+        if self.evo_from_id:
+            self.evo_from = self._database.graph.edges[self.evo_from_id, self.monster_id]
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
-        self._alt_version_id_list = self._database.build_id_set(self.monster_id)
+        self._alt_version_id_list = sorted(self._database.get_alt_cards(self.monster_id))
         self._base_monster_id = self._alt_version_id_list[0]
-        self._alt_evo_id_list = self._database.get_evolution_tree_ids(self._base_monster_id)
+        self._alt_evo_id_list = sorted(self._database.get_evo_tree(self.monster_id))
 
         self.search = MonsterSearchHelper(self)
 
@@ -709,7 +747,7 @@ class DgMonster(DadguideItem):
 
     @property
     def cur_evo_type(self):
-        return self.evo_from.evolution_type if self.evo_from else EvoType.Base
+        return self.evo_from['evolution_type'] if self.evo_from else EvoType.Base
 
     @property
     def true_evo_type(self):
@@ -749,7 +787,7 @@ class DgMonster(DadguideItem):
 
     @property
     def evo_to(self):
-        return [self._database.get_monster(x.to_id) for x in self._evolutions_to()]
+        return [self._database.get_monster(x) for x in self._evolutions_to()]
 
     @property
     def base_monster(self):
@@ -1015,6 +1053,7 @@ class MonsterIndex(tsutils.aobject):
             154: ['padr'],
             175: ['valentines', 'vday', 'v'],
             183: ['gh', 'gungho'],
+            117: ['gh', 'gungho'],
         }
 
         monster_id_to_nicknames = defaultdict(set)
