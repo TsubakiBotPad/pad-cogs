@@ -229,9 +229,13 @@ class DadguideDatabase(object):
         ass = self._query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id')
         ss = self._query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id')
 
+        mtoawo = defaultdict(list)
+        for a in aws:
+            mtoawo[a.monster_id].append(a)
+
         for m in ms:
+            m['awakenings'] = mtoawo[m.monster_id] # We don't need the csv paren awakening format from table
             self.graph.add_node(m.monster_id, **m,
-                                    dgawakenings=[],
                                     leader_skill=lss.get(m.leader_skill_id),
                                     active_skill=ass.get(m.active_skill_id),
                                     series=ss.get(m.series_id)
@@ -244,8 +248,6 @@ class DadguideDatabase(object):
             self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
 
-        for a in aws:
-            self.graph.nodes[a.monster_id]['dgawakenings'].append(a)
 
     def get_evo_tree(self, monster_id):
         ids = set()
@@ -674,7 +676,7 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = self.node['dgawakenings']
+        self.awakenings = self.node['awakenings']
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
         self.is_inheritable = bool(self.inheritable)
