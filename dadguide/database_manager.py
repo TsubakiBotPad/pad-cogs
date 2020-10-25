@@ -235,7 +235,7 @@ class DadguideDatabase(object):
 
         for m in ms:
             self.graph.add_node(m.monster_id,
-                                awakenings=mtoawo[m.monster_id]
+                                awakenings=mtoawo[m.monster_id],
                                 leader_skill=lss.get(m.leader_skill_id),
                                 active_skill=ass.get(m.active_skill_id),
                                 series=ss.get(m.series_id))
