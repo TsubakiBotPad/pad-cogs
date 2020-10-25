@@ -232,9 +232,9 @@ class DadguideDatabase(object):
         for m in ms:
             self.graph.add_node(m.monster_id, **m,
                                     dgawakenings=[],
-                                    dgls=lss.get(m.leader_skill_id),
-                                    dgas=ass.get(m.active_skill_id),
-                                    dgseries=ss.get(m.series_id)
+                                    leader_skill=lss.get(m.leader_skill_id),
+                                    active_skill=ass.get(m.active_skill_id),
+                                    series=ss.get(m.series_id)
                                 )
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
@@ -454,8 +454,6 @@ class DadguideDatabase(object):
 
     def refresh_monsters(self):
         if self.expiry < datetime.now().timestamp():
-            #self.expiry = int(datetime.now().timestamp()) + 60*60
-            #self.cachedmonsters = {}
             self.generate_all_monsters()
 
     def get_all_monsters(self, as_generator=True):
@@ -736,11 +734,11 @@ class DgMonster(DadguideItem):
 
     @property
     def active_skill(self):
-        return self.node['dgas']
+        return self.node['active_skill']
 
     @property
     def leader_skill(self):
-        return self.node['dgls']
+        return self.node['leader_skill']
 
     @property
     def cur_evo_type(self):
@@ -804,7 +802,7 @@ class DgMonster(DadguideItem):
 
     @property
     def series(self):
-        return self.node['dgseries']
+        return self.node['series']
 
     @property
     def is_gfe(self):

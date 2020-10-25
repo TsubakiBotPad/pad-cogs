@@ -67,7 +67,7 @@ class Dadguide(commands.Cog):
         # Map of google-translated JP names to EN names
         self.translated_names = {}
 
-        self.database = None # load_database(None)
+        self.database = None
         self.index = None  # type: MonsterIndex
 
     async def wait_until_ready(self):
