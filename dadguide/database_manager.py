@@ -234,12 +234,11 @@ class DadguideDatabase(object):
             mtoawo[a.monster_id].append(a)
 
         for m in ms:
-            m['awakenings'] = mtoawo[m.monster_id] # We don't need the csv paren awakening format from table
-            self.graph.add_node(m.monster_id, **m,
-                                    leader_skill=lss.get(m.leader_skill_id),
-                                    active_skill=ass.get(m.active_skill_id),
-                                    series=ss.get(m.series_id)
-                                )
+            self.graph.add_node(m.monster_id,
+                                awakenings=mtoawo[m.monster_id]
+                                leader_skill=lss.get(m.leader_skill_id),
+                                active_skill=ass.get(m.active_skill_id),
+                                series=ss.get(m.series_id))
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
                 self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
