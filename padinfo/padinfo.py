@@ -700,21 +700,21 @@ class PadInfo(commands.Cog):
             else:
                 await ctx.send(inline("You're already using number mode"))
         else:
-            await ctx.send(inline("id_type must be `number` or `evo`"))
+            await ctx.send("id_type must be `number` or `evo`")
 
     @idmode.command()
     async def survey(self, ctx, value):
         """Change how often you see the id survey
 
         [p]idmode survey always     (Always see survey after using id)
-        [p]idmode survey sometimes  (See survey 20% of the time after using id)
+        [p]idmode survey sometimes  (See survey some of the time after using id)
         [p]idmode survey never      (Never see survey after using id D:)"""
         vals = ['always', 'sometimes', 'never']
         if value in vals:
             await self.config.user(ctx.author).survey_mode.set(vals.index(value))
             await ctx.tick()
         else:
-            await ctx.send(inline("value must be `always`, `sometimes`, or `never`"))
+            await ctx.send("value must be `always`, `sometimes`, or `never`")
 
     @commands.group()
     @checks.is_owner()
