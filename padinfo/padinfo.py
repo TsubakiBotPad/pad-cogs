@@ -293,7 +293,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
 
         if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, m.name_en))
+            asyncio.create_task(self.send_survey_after(ctx, query, m.name_en if m else "None"))
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
