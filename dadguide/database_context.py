@@ -17,7 +17,7 @@ from .database_manager import DgScheduledEvent
 from .database_manager import Server
 
 
-class SqliteDbContext(object):
+class DbContext(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
         self.cachedmonsters = None
@@ -197,6 +197,17 @@ class SqliteDbContext(object):
 
     def get_dungeon_by_id(self, dungeon_id: int):
         return self.database.select_one_entry_by_pk(dungeon_id, DgDungeon)
+
+    def get_base_monster_ids(self):
+        SELECT_BASE_MONSTER_ID = '''
+            SELECT evolutions.from_id as monster_id FROM evolutions WHERE evolutions.from_id NOT IN (SELECT DISTINCT evolutions.to_id FROM evolutions)
+            UNION
+            SELECT monsters.monster_id FROM monsters WHERE monsters.monster_id NOT IN (SELECT evolutions.from_id FROM evolutions UNION SELECT evolutions.to_id FROM evolutions)'''
+        return self.database.query_many(
+            SELECT_BASE_MONSTER_ID,
+            (),
+            DictWithAttrAccess,
+            as_generator=True)
 
     def tokenize_monsters(self):
         tokens = defaultdict(list)
