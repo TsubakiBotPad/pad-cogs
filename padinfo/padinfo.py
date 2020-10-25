@@ -306,15 +306,16 @@ class PadInfo(commands.Cog):
             params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
             await asyncio.sleep(1)
-            if await tsutils.confirm_message(ctx, "Was this the monster you were looking for?"):
+            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?")
+            if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
-                return
-            await self.config.bad.set(await self.config.bad() + 1)
-            m = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
-                               f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idmode"
-                               f" survey` to adjust how often this shows.\n\n<{url}>")
-            await asyncio.sleep(15)
-            await m.delete()
+            elif userres is False:
+                await self.config.bad.set(await self.config.bad() + 1)
+                m = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
+                                   f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idmode"
+                                   f" survey` to adjust how often this shows.\n\n<{url}>")
+                await asyncio.sleep(15)
+                await m.delete()
 
     @commands.group()
     async def idsurvey(self, ctx):
