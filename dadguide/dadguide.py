@@ -67,7 +67,7 @@ class Dadguide(commands.Cog):
         # Map of google-translated JP names to EN names
         self.translated_names = {}
 
-        self.database = load_database(None)
+        self.database = None
         self.index = None  # type: MonsterIndex
 
     async def wait_until_ready(self):
@@ -115,7 +115,7 @@ class Dadguide(commands.Cog):
         await self.bot.wait_until_ready()
 
         # We already had a copy of the database at startup, signal that we're ready now.
-        if self.database.has_database():
+        if self.database and self.database.has_database():
             logger.info('Using stored database at load')
 
         while self == self.bot.get_cog('Dadguide'):

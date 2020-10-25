@@ -19,7 +19,8 @@
   "requirements": [
     "tsutils",
     "pytz",
-    "romkan"
+    "romkan",
+    "networkx"
   ],
   "tags": [
     "PAD"
