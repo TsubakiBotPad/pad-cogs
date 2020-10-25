@@ -4,16 +4,17 @@ import json
 import logging
 import os
 import prettytable
+import random
 import traceback
 import tsutils
 import urllib.parse
 from io import BytesIO
 from collections import OrderedDict
 from enum import Enum
-from redbot.core import checks, commands, data_manager
+from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
-from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json
+from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, confirm_message
 
 from .find_monster import prefix_to_filter
 
@@ -197,6 +198,10 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
+        self.config = Config.get_conf(self, identifier=9401770)
+        self.config.register_user(survey_mode=0)
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False)
+
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
@@ -286,10 +291,53 @@ class PadInfo(commands.Cog):
 
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
         m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
+
+        if await self.config.do_survey():
+            asyncio.create_task(self.send_survey_after(ctx, query, m.name_en))
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
+
+    async def send_survey_after(self, ctx, query, result):
+        sm = await self.config.user(ctx.author).survey_mode()
+        sms = [1, await self.config.sometimes_perc()/100, 0][sm]
+        if random.random() < sms:
+            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
+            url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
+            await asyncio.sleep(1)
+            if await tsutils.confirm_message(ctx, "Was this the monster you were looking for?"):
+                await self.config.good.set(await self.config.good() + 1)
+                return
+            await self.config.bad.set(await self.config.bad() + 1)
+            m = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
+                               f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idmode"
+                               f" survey` to adjust how often this shows.\n\n<{url}>")
+            await asyncio.sleep(15)
+            await m.delete()
+
+    @commands.group()
+    async def idsurvey(self, ctx):
+        """Commands pertaining to the id survey"""
+
+    @idsurvey.command()
+    async def dosurvey(self, ctx, do_survey: bool):
+        """Toggle the survey avalibility"""
+        await self.config.do_survey.set(do_survey)
+        await ctx.tick()
+
+    @idsurvey.command()
+    async def sometimesperc(self, ctx, percent: int):
+        """Change what 'sometimes' means"""
+        await self.config.sometimes_perc.set(percent)
+        await ctx.tick()
+
+    @idsurvey.command()
+    async def checkbadness(self, ctx):
+        """Check how good id is according to end users"""
+        good = await self.config.good()
+        bad = await self.config.good()
+        await ctx.send(f"{bad}/{good+bad} ({bad/(good+bad) if good or bad else 'NaN'}%)")
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -663,7 +711,7 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def idmode(self, ctx, id_type):
         """Switch between number mode and evo mode
 
@@ -680,7 +728,21 @@ class PadInfo(commands.Cog):
             else:
                 await ctx.send(inline("You're already using number mode"))
         else:
-            await ctx.send(inline("id_type must be `number` or `evo`"))
+            await ctx.send("id_type must be `number` or `evo`")
+
+    @idmode.command()
+    async def survey(self, ctx, value):
+        """Change how often you see the id survey
+
+        [p]idmode survey always     (Always see survey after using id)
+        [p]idmode survey sometimes  (See survey some of the time after using id)
+        [p]idmode survey never      (Never see survey after using id D:)"""
+        vals = ['always', 'sometimes', 'never']
+        if value in vals:
+            await self.config.user(ctx.author).survey_mode.set(vals.index(value))
+            await ctx.tick()
+        else:
+            await ctx.send("value must be `always`, `sometimes`, or `never`")
 
     @commands.group()
     @checks.is_owner()
