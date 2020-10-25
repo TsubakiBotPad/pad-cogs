@@ -675,7 +675,6 @@ class PadInfo(commands.Cog):
         await ctx.author.send(box(HELP_MSG.format(ctx)))
 
     @commands.command()
-    @checks.bot_has_permissions(speak=True)
     async def padsay(self, ctx, server, *, query: str = None):
         """Speak the voice line of a monster into your current chat"""
         voice = ctx.author.voice
