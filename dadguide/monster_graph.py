@@ -46,7 +46,7 @@ class MonsterGraph(object):
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
     
     @staticmethod
-    def get_edges(node, etype):
+    def _get_edges(node, etype):
         return {mid for mid, edge in node.items() if edge.get('type') == etype}
 
     def get_evo_tree(self, monster_id):
@@ -57,8 +57,8 @@ class MonsterGraph(object):
             if mid in ids:
                 continue
             n = self.graph[mid]
-            to_check.update(self.get_edges(n, 'evolution'))
-            to_check.update(self.get_edges(n, 'back_evolution'))
+            to_check.update(self._get_edges(n, 'evolution'))
+            to_check.update(self._get_edges(n, 'back_evolution'))
             ids.add(mid)
         return ids
 
@@ -70,8 +70,8 @@ class MonsterGraph(object):
             if mid in ids:
                 continue
             n = self.graph[mid]
-            to_check.update(self.get_edges(n, 'transformation'))
-            to_check.update(self.get_edges(n, 'back_transformation'))
+            to_check.update(self._get_edges(n, 'transformation'))
+            to_check.update(self._get_edges(n, 'back_transformation'))
             ids.add(mid)
         return ids
 
@@ -83,16 +83,16 @@ class MonsterGraph(object):
             if mid in ids:
                 continue
             n = self.graph[mid]
-            to_check.update(self.get_edges(n, 'evolution'))
-            to_check.update(self.get_edges(n, 'transformation'))
-            to_check.update(self.get_edges(n, 'back_evolution'))
-            to_check.update(self.get_edges(n, 'back_transformation'))
+            to_check.update(self._get_edges(n, 'evolution'))
+            to_check.update(self._get_edges(n, 'transformation'))
+            to_check.update(self._get_edges(n, 'back_evolution'))
+            to_check.update(self._get_edges(n, 'back_transformation'))
             ids.add(mid)
         return ids
 
     def get_prev_evolution_by_monster(self, monster_id):
-        bes = self.get_edges(self.graph[monster_id], 'back_evolution')
+        bes = self._get_edges(self.graph[monster_id], 'back_evolution')
         if bes: return bes.pop()
 
     def get_next_evolutions_by_monster(self, monster_id):
-        return self.get_edges(self.graph[monster_id], 'evolution')
+        return self._get_edges(self.graph[monster_id], 'evolution')
