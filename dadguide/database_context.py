@@ -127,11 +127,6 @@ class DbContext(object):
                 evolution_tree.append(e)
         return evolution_tree
 
-    def monster_id_to_no(self, monster_id, region=Server.JP):
-        m = self.get_monster(monster_id)
-        if m:
-            return getattr(m, 'monster_no_{}'.format(region.name.lower()))
-
     def get_monsters_where(self, f):
         return [m for m in self.get_all_monsters() if f(m)]
 
@@ -157,9 +152,6 @@ class DbContext(object):
         gem_name = name + gem_suffix.get(region)
         return self.get_first_monster_where(
             lambda m: getattr(m, 'name_{}'.format(region)) == gem_name and m.leader_skill_id == 10628)
-
-    def get_na_only_monsters(self):
-        return self.get_monsters_where(lambda m: m.monster_id != m.monster_no_na and m.monster_no_jp == m.monster_no_na)
 
     def _get_monster_query(self, monster_id: int):
         monster = self.database.select_one_entry_by_pk(monster_id, DgMonster)
