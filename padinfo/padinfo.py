@@ -306,7 +306,7 @@ class PadInfo(commands.Cog):
             params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
             await asyncio.sleep(1)
-            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?")
+            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?", yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
             elif userres is False:
