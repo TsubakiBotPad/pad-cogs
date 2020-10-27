@@ -21,6 +21,7 @@ class DbContext(object):
     def __init__(self, database: DadguideDatabase, graph: MonsterGraph):
         self.database = database
         self.graph = graph
+        self.graph.set_database(self)
         self.cachedmonsters = None
         self.expiry = 0
         self.generate_all_monsters()
