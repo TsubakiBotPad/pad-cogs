@@ -20,7 +20,8 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 
 from .database_manager import *
-
+from .old_monster_index import MonsterIndex
+from .database_loader import load_database
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -49,6 +50,7 @@ DB_DUMP_FILE = _data_file('dadguide.sqlite')
 
 class Dadguide(commands.Cog):
     """Dadguide database manager"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -67,7 +69,7 @@ class Dadguide(commands.Cog):
         # Map of google-translated JP names to EN names
         self.translated_names = {}
 
-        self.database = load_database(None)
+        self.database = None
         self.index = None  # type: MonsterIndex
 
     async def wait_until_ready(self):
@@ -115,7 +117,7 @@ class Dadguide(commands.Cog):
         await self.bot.wait_until_ready()
 
         # We already had a copy of the database at startup, signal that we're ready now.
-        if self.database.has_database():
+        if self.database and self.database.has_database():
             logger.info('Using stored database at load')
 
         while self == self.bot.get_cog('Dadguide'):
@@ -181,7 +183,6 @@ class Dadguide(commands.Cog):
         self.write_monster_computed_names()
 
         logger.debug('Done refreshing dg data')
-
 
     def write_monster_computed_names(self):
         results = {}
