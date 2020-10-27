@@ -337,8 +337,8 @@ class PadInfo(commands.Cog):
     async def checkbadness(self, ctx):
         """Check how good id is according to end users"""
         good = await self.config.good()
-        bad = await self.config.good()
-        await ctx.send(f"{bad}/{good+bad} ({bad/(good+bad) if good or bad else 'NaN'}%)")
+        bad = await self.config.bad()
+        await ctx.send(f"{bad}/{good+bad} ({int(round(bad/(good+bad)*100)) if good or bad else 'NaN'}%)")
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
