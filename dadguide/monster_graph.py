@@ -11,27 +11,30 @@ from .database_manager import DgSeries
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
+        self.db_context = None
         self.graph = None
-        self._build_graph()
         self.graph: nx.DiGraph
-        self.edges = self.graph.edges
-        self.nodes = self.graph.nodes
+        self.edges = None
+        self.nodes = None
 
-    def _build_graph(self):
+    def set_database(self, db_context):
+        self.db_context = db_context
+
+    def build_graph(self):
         self.graph = nx.DiGraph()
 
         ms = self.database.query_many("SELECT * FROM monsters", (), DictWithAttrAccess,
-                                      graph=self)
+                                      db_context=self.db_context, graph=self)
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
-                                      graph=self)
+                                      db_context=self.db_context, graph=self)
         aws = self.database.query_many("SELECT * FROM awakenings", (), DgAwakening,
-                                       graph=self)
+                                       db_context=self.db_context, graph=self)
         lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id',
-                                       graph=self)
+                                       db_context=self.db_context, graph=self)
         ass = self.database.query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id',
-                                       graph=self)
+                                       db_context=self.db_context, graph=self)
         ss = self.database.query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id',
-                                      graph=self)
+                                      db_context=self.db_context, graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -50,6 +53,9 @@ class MonsterGraph(object):
         for e in es:
             self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
+            
+        self.edges = self.graph.edges
+        self.nodes = self.graph.nodes
     
     @staticmethod
     def _get_edges(node, etype):

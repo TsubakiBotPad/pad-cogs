@@ -24,7 +24,7 @@ class DbContext(object):
         self.graph.set_database(self)
         self.cachedmonsters = None
         self.expiry = 0
-        self.generate_all_monsters()
+        # self.generate_all_monsters()
 
     def generate_all_monsters(self):
         self.cachedmonsters = {m.monster_id: m for m in self.database.query_many(
