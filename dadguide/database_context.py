@@ -212,3 +212,9 @@ class DbContext(object):
             for token in monster.name_en.split():
                 tokens[token.lower()].append(monster)
         return tokens
+    
+    def has_database(self):
+        return self.database.has_database()
+    
+    def close(self):
+        self.database.close()

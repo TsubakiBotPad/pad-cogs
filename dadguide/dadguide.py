@@ -21,14 +21,14 @@ from redbot.core import commands
 
 from .database_manager import *
 from .old_monster_index import MonsterIndex
+from .database_loader import load_database
 
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
 def _data_file(file_name: str) -> str:
-    return 'S:\\Documents\\Games\\PAD\\dadguide.sqlite'
-    # return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
+    return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
 CSV_FILE_PATTERN = '{}.csv'
