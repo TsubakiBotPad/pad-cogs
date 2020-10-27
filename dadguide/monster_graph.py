@@ -20,12 +20,18 @@ class MonsterGraph(object):
     def _build_graph(self):
         self.graph = nx.DiGraph()
 
-        ms = self.database.query_many("SELECT * FROM monsters", (), DictWithAttrAccess)
-        es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess)
-        aws = self.database.query_many("SELECT * FROM awakenings", (), DgAwakening)
-        lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id')
-        ass = self.database.query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id')
-        ss = self.database.query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id')
+        ms = self.database.query_many("SELECT * FROM monsters", (), DictWithAttrAccess,
+                                      db_context=self.database, graph=self)
+        es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
+                                      db_context=self.database, graph=self)
+        aws = self.database.query_many("SELECT * FROM awakenings", (), DgAwakening,
+                                       db_context=self.database, graph=self)
+        lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id',
+                                       db_context=self.database, graph=self)
+        ass = self.database.query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id',
+                                       db_context=self.database, graph=self)
+        ss = self.database.query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id',
+                                      db_context=self.database, graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:

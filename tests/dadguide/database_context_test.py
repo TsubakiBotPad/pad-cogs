@@ -11,7 +11,6 @@ assert ctx.get_leader_skill_query(1202)['name_en'] == 'Fusion Soul'
 assert ctx.get_awoken_skill(15)['name_en'] == 'Enhanced Water Orbs'
 # print(ctx.get_awoken_skill_ids())
 assert ctx.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'
-assert ctx.get_monsters_by_awakenings(5)[0].evo_from_id == 26  # check the graph exists in DgMonster
 assert ctx.get_drop_dungeons(4)[0]['name_en'] == 'Diagoldos Descended!'
 assert ctx.monster_is_farmable(4)
 assert not ctx.monster_is_farmable(5156)
@@ -29,3 +28,5 @@ assert ctx.get_monsters_by_series(1)[0].name_en == 'Tyrra'
 assert ctx.get_monsters_by_active(1)[0].name_en == 'Tyrra'
 assert ctx.get_monster_evo_gem(
     'Archangel of Knowledge, Raziel', region='en').name_en == 'Archangel of Knowledge, Raziel\'s Gem'
+
+assert ctx.get_monsters_by_awakenings(5)[0].evo_from_id == 26  # check the graph exists in DgMonster
