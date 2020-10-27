@@ -32,7 +32,7 @@ class DbContext(object):
             (),
             DgMonster,
             as_generator=True, db_context=self, graph=self.graph)}
-        self.expiry = int(datetime.now().timestamp()) + 60*60
+        self.expiry = int(datetime.now().timestamp()) + 60 * 60
 
     def get_active_skill_query(self, active_skill_id: int):
         return self.database.select_one_entry_by_pk(
@@ -173,8 +173,9 @@ class DbContext(object):
         return self._get_monster_query(monster_id)
 
     def get_all_monster_ids_query(self, as_generator=True):
-        query = self.database.query_many(self.database.select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (), DictWithAttrAccess,
-                                as_generator=as_generator,
+        query = self.database.query_many(self.database.select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (),
+                                         DictWithAttrAccess,
+                                         as_generator=as_generator,
                                          db_context=self, graph=self.graph)
         if as_generator:
             return map(lambda m: m.monster_id, query)
@@ -191,9 +192,10 @@ class DbContext(object):
         return monsters
 
     def get_all_events(self, as_generator=True):
-        return self.database.query_many(self.database.select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
-                                        DgScheduledEvent, db_context=self,
-                                        as_generator=as_generator)
+        return self.database.query_many(
+            self.database.select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
+            DgScheduledEvent, db_context=self,
+            as_generator=as_generator)
 
     def get_dungeon_by_id(self, dungeon_id: int):
         return self.database.select_one_entry_by_pk(dungeon_id, DgDungeon)
@@ -216,9 +218,9 @@ class DbContext(object):
             for token in monster.name_en.split():
                 tokens[token.lower()].append(monster)
         return tokens
-    
+
     def has_database(self):
         return self.database.has_database()
-    
+
     def close(self):
         self.database.close()

@@ -53,10 +53,10 @@ class MonsterGraph(object):
         for e in es:
             self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
-            
+
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
-    
+
     @staticmethod
     def _get_edges(node, etype):
         return {mid for mid, edge in node.items() if edge.get('type') == etype}
