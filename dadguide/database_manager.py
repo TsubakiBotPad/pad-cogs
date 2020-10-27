@@ -226,9 +226,6 @@ class DadguideItem(DictWithAttrAccess):
     
     def key(self):
         return self[self.PK]
-    
-    def set_database(self, database):
-        self._database = database
 
 
 class DgActiveSkill(DadguideItem):

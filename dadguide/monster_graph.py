@@ -16,13 +16,6 @@ class MonsterGraph(object):
         self.graph: nx.DiGraph
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
-        
-        self.monsters = None
-        self.evos = None
-        self.awakenings = None
-        self.leadskills = None
-        self.activeskills = None
-        self.series = None
 
     def _build_graph(self):
         self.graph = nx.DiGraph()
@@ -39,13 +32,6 @@ class MonsterGraph(object):
                                        graph=self)
         ss = self.database.query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id',
                                       graph=self)
-
-        self.monsters = ms
-        self.evos = es
-        self.awakenings = aws
-        self.leadskills = lss
-        self.activeskills = ass
-        self.series = ss
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -64,20 +50,6 @@ class MonsterGraph(object):
         for e in es:
             self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
             self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
-    
-    def set_database(self, database):
-        for obj in self.monsters:
-            obj.set_database(database)
-        for obj in self.evos:
-            obj.set_database(database)
-        for obj in self.awakenings:
-            obj.set_database(database)
-        for obj in self.leadskills:
-            obj.set_database(database)
-        for obj in self.activeskills:
-            obj.set_database(database)
-        for obj in self.series:
-            obj.set_database(database)
     
     @staticmethod
     def _get_edges(node, etype):
