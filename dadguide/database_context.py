@@ -49,7 +49,9 @@ class DbContext(object):
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
         return [r.awoken_skill_id for r in
-                self.database.query_many(SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
+                self.database.query_many(
+                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True,
+                    db_context=self, graph=self.graph)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
         # TODO: Make this not make monsters via query
@@ -172,7 +174,8 @@ class DbContext(object):
 
     def get_all_monster_ids_query(self, as_generator=True):
         query = self.database.query_many(self.database.select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (), DictWithAttrAccess,
-                                as_generator=as_generator)
+                                as_generator=as_generator,
+                                         db_context=self, graph=self.graph)
         if as_generator:
             return map(lambda m: m.monster_id, query)
         return [m.monster_id for m in query]
