@@ -164,7 +164,7 @@ class DadguideDatabase(object):
                     return [d_type(res) for res in cursor.fetchall()]
             else:
                 if issubclass(d_type, DadguideItem):
-                    return DictWithAttrAccess({res[idx_key]: d_type(res, self) for res in cursor.fetchall()})
+                    return DictWithAttrAccess({res[idx_key]: d_type(res, db_context, graph=graph) for res in cursor.fetchall()})
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
     
