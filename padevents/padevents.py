@@ -919,8 +919,7 @@ class PadEventSettings(CogSettings):
 
 class Event:
     def __init__(self, scheduled_event: "DgScheduledEvent", bot=None):
-        self.bot = bot
-        self.db_context = self.bot.get_cog("Dadguide").database
+        self.db_context = bot.get_cog("Dadguide").database
         self.db_context: DbContext
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]

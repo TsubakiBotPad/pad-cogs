@@ -465,36 +465,16 @@ class DgMonster(DadguideItem):
         return self._database.get_next_evolutions_by_monster(self.monster_id)
 
     @property
-    def evo_to(self):
-        return [self._database.get_monster(x) for x in self._evolutions_to()]
-
-    @property
     def base_monster(self):
         return self._database.get_monster(self._base_monster_id)
-
-    @property
-    def alt_evos(self):
-        return [self._database.get_monster(a) for a in self._alt_evo_id_list]
 
     @property
     def alt_versions(self):
         return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
     @property
-    def is_base_monster(self):
-        return self.evo_from is None
-
-    @property
     def series(self):
         return self.node['series']
-
-    @property
-    def is_gfe(self):
-        return self.series_id == 34
-
-    @property
-    def drop_dungeons(self):
-        return self._database.get_drop_dungeons(self.monster_id)
 
     @property
     def farmable(self):
