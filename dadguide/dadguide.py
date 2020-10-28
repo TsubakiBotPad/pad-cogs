@@ -20,7 +20,8 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 
 from .database_manager import *
-
+from .old_monster_index import MonsterIndex
+from .database_loader import load_database
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -49,6 +50,7 @@ DB_DUMP_FILE = _data_file('dadguide.sqlite')
 
 class Dadguide(commands.Cog):
     """Dadguide database manager"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -181,7 +183,6 @@ class Dadguide(commands.Cog):
         self.write_monster_computed_names()
 
         logger.debug('Done refreshing dg data')
-
 
     def write_monster_computed_names(self):
         results = {}

@@ -1,14 +1,16 @@
 from token_mappings import *
 from collections import defaultdict
 
+
 class MonsterIndex2:
     def __init__(self, monsters: 'List[DgMonster]', series: 'List[DgSeries]'):
         self.monsters = monsters
-        self.index = {}
+        self.series = series
+        self.index = defaultdict(list)
         self._build_index()
 
     def _build_index(self):
-        self.index = {}
+        self.index = defaultdict(list)
         self.monster_name_index = self._build_monster_name_index(self.monsters)
         self.series_name_index = self._build_series_name_index(self.series)
 
