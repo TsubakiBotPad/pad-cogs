@@ -280,10 +280,6 @@ class DgAwokenSkill(DadguideItem):
     TABLE = 'awoken_skills'
     PK = 'awoken_skill_id'
 
-    @property
-    def monsters_with_awakening(self):
-        return self._database.get_monsters_by_awakenings(self.awoken_skill_id)
-
 
 class DgEvolution(DadguideItem):
     TABLE = 'evolutions'
