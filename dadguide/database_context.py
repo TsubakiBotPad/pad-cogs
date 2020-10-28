@@ -25,7 +25,7 @@ class DbContext(object):
         self.cachedmonsters = None
         self.expiry = 0
 
-        self.max_id = database._max_id
+        self.max_id = database._max_id()
         # self.generate_all_monsters()
 
     def generate_all_monsters(self):
