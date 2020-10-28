@@ -332,7 +332,6 @@ class DgScheduledEvent(DadguideItem):
 
     def __init__(self, item, database, **graph):
         super(DgScheduledEvent, self).__init__(item, database)
-        self.dungeon = self._database.get_dungeon_by_id(self.dungeon_id)
 
     @property
     def open_datetime(self):
