@@ -334,7 +334,7 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
-    def __init__(self, item, database):
+    def __init__(self, item, database, **graph):
         super(DgScheduledEvent, self).__init__(item, database)
         self.dungeon = self._database.get_dungeon_by_id(self.dungeon_id)
 
@@ -584,7 +584,7 @@ class DgMonster(DadguideItem):
     def next_monster(self):
         next = None
         offset = 1
-        while next is None and self.monster_no + offset <= self._database._max_id():
+        while next is None and self.monster_no + offset <= self._database.max_id:
             next = self._database.get_monster(self.monster_no + offset)
             offset += 1
         return next
