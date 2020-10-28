@@ -36,7 +36,7 @@ Options for <query>
         {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
         {0.prefix}id r/d ares (slashes, spaces work too)
 
-computed nickname list and overrides: https://docs.google.com/spreadsheets/d/1EyzMjvf8ZCQ4K-gJYnNkiZlCEsT9YYI9dUd-T5qCirc/pubhtml
+computed nickname list and overrides: https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
 submit an override suggestion: https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
 
 EMBED_NOT_GENERATED = -1
