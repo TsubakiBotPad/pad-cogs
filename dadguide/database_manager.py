@@ -234,14 +234,6 @@ class DgActiveSkill(DadguideItem):
     PK = 'active_skill_id'
 
     @property
-    def monsters(self):
-        return self._database.get_monsters_by_active(self.active_skill_id)
-
-    @property
-    def skillups(self):
-        return list(filter(lambda x: x.farmable, self.monsters))
-
-    @property
     def desc(self):
         return self.desc_en or self.desc_ja
 
