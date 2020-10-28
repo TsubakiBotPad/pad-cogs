@@ -584,7 +584,7 @@ class DgMonster(DadguideItem):
     def next_monster(self):
         next = None
         offset = 1
-        while next is None and self.monster_no + offset <= self._max_id():
+        while next is None and self.monster_no + offset <= self._database.max_id:
             next = self._database.get_monster(self.monster_no + offset)
             offset += 1
         return next
