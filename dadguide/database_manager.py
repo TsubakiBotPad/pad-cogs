@@ -307,10 +307,6 @@ class DgSeries(DadguideItem):
     PK = 'series_id'
 
     @property
-    def monsters(self):
-        return self._database.get_monsters_by_series(self.series_id)
-
-    @property
     def name(self):
         return self.name_en if self.name_en is not None else self.name_ja
 

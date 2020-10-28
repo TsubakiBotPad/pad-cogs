@@ -17,6 +17,8 @@ from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, confirm_message
 
 from .find_monster import prefix_to_filter
+from dadguide.database_manager import DgMonster
+from dadguide.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -165,6 +167,9 @@ class PadInfo(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+
+        self.DGCOG = self.bot.get_cog("Dadguide")
+        self.db_context = self.DGCOG.database
 
         self.settings = PadInfoSettings("padinfo")
 
@@ -453,7 +458,7 @@ class PadInfo(commands.Cog):
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m)
+        pantheon_embed = monsterToPantheonEmbed(m, self.db_context)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
@@ -1029,8 +1034,8 @@ def monsterToEvoMatsEmbed(m: "DgMonster"):
     return embed
 
 
-def monsterToPantheonEmbed(m: "DgMonster"):
-    full_pantheon = m.series.monsters
+def monsterToPantheonEmbed(m: "DgMonster", db_context: DbContext):
+    full_pantheon = db_context.get_monsters_by_series(m.series_id)
     pantheon_list = list(filter(lambda x: x.evo_from is None, full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
