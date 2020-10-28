@@ -11,7 +11,6 @@ db_context.generate_all_monsters()
 
 assert db_context.get_active_skill_query(15)['name_en'] == 'Inferno Breath'
 assert db_context.get_leader_skill_query(1202)['name_en'] == 'Fusion Soul'
-assert db_context.get_awoken_skill(15)['name_en'] == 'Enhanced Water Orbs'
 # print(ctx.get_awoken_skill_ids())
 assert db_context.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'
 assert db_context.get_drop_dungeons(4)[0]['name_en'] == 'Diagoldos Descended!'

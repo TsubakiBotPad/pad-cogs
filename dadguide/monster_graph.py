@@ -27,7 +27,7 @@ class MonsterGraph(object):
                                       db_context=self.db_context, graph=self)
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
                                       db_context=self.db_context, graph=self)
-        aws = self.database.query_many("SELECT * FROM awakenings", (), DgAwakening,
+        aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
                                        db_context=self.db_context, graph=self)
         lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id',
                                        db_context=self.db_context, graph=self)

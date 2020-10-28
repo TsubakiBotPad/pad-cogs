@@ -268,17 +268,8 @@ class DgAwakening(DadguideItem):
         super(DgAwakening, self).__init__(item, database)
 
     @property
-    def skill(self):
-        return self._database.get_awoken_skill(self.awoken_skill_id)
-
-    @property
     def name(self):
-        return self.skill.name_en if self.skill.name_en is not None else self.skill.name_ja
-
-
-class DgAwokenSkill(DadguideItem):
-    TABLE = 'awoken_skills'
-    PK = 'awoken_skill_id'
+        return self.name_en if self.name_en is not None else self.name_ja
 
 
 class DgEvolution(DadguideItem):
