@@ -462,7 +462,7 @@ class PadInfo(commands.Cog):
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m)
+        skillups_embed = monsterToSkillupsEmbed(m, self.db_context)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -1051,8 +1051,11 @@ def monsterToPantheonEmbed(m: "DgMonster", db_context: DbContext):
     return embed
 
 
-def monsterToSkillupsEmbed(m: "DgMonster"):
-    skillups_list = m.active_skill.skillups if m.active_skill else []
+def monsterToSkillupsEmbed(m: "DgMonster", db_context: DbContext):
+    if m.active_skill is None:
+        return None
+    possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
+    skillups_list = list(filter(lambda x: x.farmable, possible_skillups_list))
     if len(skillups_list) == 0:
         return None
 
