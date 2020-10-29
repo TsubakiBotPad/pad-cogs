@@ -79,15 +79,6 @@ class DbContext(object):
             (monster_id,),
             DgDungeon, db_context=self)
 
-    def monster_is_farmable(self, monster_id):
-        return self.database.query_one(
-            self.database.select_builder(
-                tables={DgDrop.TABLE: DgDrop.FIELDS},
-                where='{0}.monster_id=?'.format(DgDrop.TABLE)
-            ),
-            (monster_id,),
-            DgDrop, db_context=self) is not None
-
     def monster_in_rem(self, monster_id):
         m = self.get_monster(monster_id)
         return m is not None and m.rem_egg == 1
