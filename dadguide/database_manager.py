@@ -471,10 +471,6 @@ class DgMonster(DadguideItem):
         return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
     @property
-    def farmable(self):
-        return self.node['model'].is_farmable
-
-    @property
     def killers(self):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],

@@ -197,7 +197,7 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('reincarnated')
 
         # Other Prefixes
-        if m.farmable:
+        if self.db_context.graph.monster_is_farmable_evo(m):
             prefixes.add('farmable')
 
         # If any monster in the group is a pixel, add 'nonpixel' to all the versions

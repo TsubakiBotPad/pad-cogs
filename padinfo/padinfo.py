@@ -1055,7 +1055,9 @@ def monsterToSkillupsEmbed(m: DgMonster, db_context: DbContext):
     if m.active_skill is None:
         return None
     possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
-    skillups_list = list(filter(lambda x: x.farmable, possible_skillups_list))
+    skillups_list = list(filter(
+        lambda x: db_context.graph.monster_is_farmable_evo(x), possible_skillups_list))
+
     if len(skillups_list) == 0:
         return None
 
@@ -1187,7 +1189,7 @@ def monsterToTypeString(m: DgMonster):
 
 def monsterToAcquireString(m: DgMonster, db_context: DbContext):
     acquire_text = None
-    if m.farmable and not db_context.graph.monster_is_mp_evo(m):
+    if db_context.graph.monster_is_farmable(m) and not db_context.graph.monster_is_mp_evo(m):
         # Some MP shop monsters 'drop' in PADR
         acquire_text = 'Farmable'
     elif db_context.graph.monster_is_farmable_evo(m) and not db_context.graph.monster_is_mp_evo(m):
