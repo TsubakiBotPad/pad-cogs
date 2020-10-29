@@ -7,7 +7,7 @@
   "install_msg": "Use [p]padglobal to get started.",
   "short": "Tsubaki guides and tips written by P&D professionals",
   "min_bot_version": "3.4.0",
-  "max_bot_version": "3.4.0",
+  "max_bot_version": "3.4.2",
   "min_python_version": [
     3,
     8,
