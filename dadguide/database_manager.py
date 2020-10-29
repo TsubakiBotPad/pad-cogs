@@ -242,23 +242,6 @@ class DgActiveSkill(DadguideItem):
         return self.name_en or self.name_ja
 
 
-class DgLeaderSkill(DadguideItem):
-    TABLE = 'leader_skills'
-    PK = 'leader_skill_id'
-
-    @property
-    def data(self):
-        return self.max_hp, self.max_atk, self.max_rcv, self.max_shield
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-
 class DgAwakening(DadguideItem):
     TABLE = 'awakenings'
     PK = 'awakening_id'

@@ -3,11 +3,11 @@ from collections import defaultdict
 from .database_manager import DgMonster
 from .database_manager import DadguideDatabase
 from .database_manager import DgActiveSkill
-from .database_manager import DgLeaderSkill
 from .database_manager import DgAwakening
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgSeries
 from .models.monster_model import MonsterModel
+from .models.leader_skill_model import LeaderSkillModel
 
 
 class MonsterGraph(object):
@@ -26,16 +26,13 @@ class MonsterGraph(object):
         self.graph = nx.DiGraph()
 
         ms = self.database.query_many(
-            "SELECT monsters.*, drops.drop_id FROM monsters LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
+            "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_Rcv, leader_skills.max_shield, leader_skills.max_combos, drops.drop_id FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
             db_context=self.db_context, graph=self)
 
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
                                       db_context=self.db_context, graph=self)
 
         aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
-                                       db_context=self.db_context, graph=self)
-
-        lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id',
                                        db_context=self.db_context, graph=self)
 
         ass = self.database.query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id',
@@ -49,12 +46,26 @@ class MonsterGraph(object):
             mtoawo[a.monster_id].append(a)
 
         for m in ms:
+            ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
+                                        name_ja=m.ls_name_ja,
+                                        name_en=m.ls_name_en,
+                                        name_ko=m.ls_name_ko,
+                                        desc_ja=m.ls_desc_ja,
+                                        desc_en=m.ls_desc_en,
+                                        desc_ko=m.ls_desc_ko,
+                                        max_hp=m.max_hp,
+                                        max_atk=m.max_atk,
+                                        max_rcv=m.max_rcv,
+                                        max_shield=m.max_shield,
+                                        max_combos=m.max_combos
+                                        ) if m.leader_skill_id != 0 else None
+
             m_model = MonsterModel(monster_id=m.monster_id,
                                    monster_no_jp=m.monster_no_jp,
                                    monster_no_na=m.monster_no_na,
                                    monster_no_kr=m.monster_no_kr,
                                    awakenings=mtoawo[m.monster_id],
-                                   leader_skill=lss.get(m.leader_skill_id),
+                                   leader_skill=ls_model,
                                    active_skill=ass.get(m.active_skill_id),
                                    series=ss.get(m.series_id),
                                    attribute_1_id=m.attribute_1_id,

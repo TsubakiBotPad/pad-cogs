@@ -4,7 +4,6 @@ from collections import OrderedDict, defaultdict, deque
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
 from .database_manager import DgActiveSkill
-from .database_manager import DgLeaderSkill
 from .database_manager import DadguideItem
 from .database_manager import DgMonster
 from .database_manager import DgAwakening
@@ -38,10 +37,6 @@ class DbContext(object):
     def get_active_skill_query(self, active_skill_id: int):
         return self.database.select_one_entry_by_pk(
             active_skill_id, DgActiveSkill, db_context=self)
-
-    def get_leader_skill_query(self, leader_skill_id: int):
-        return self.database.select_one_entry_by_pk(
-            leader_skill_id, DgLeaderSkill, db_context=self)
 
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
