@@ -359,7 +359,7 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = sorted(self.node['awakenings'], key=lambda a: a.order_idx)
+        self.awakenings = sorted(self.node['model'].awakenings, key=lambda a: a.order_idx)
 
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
