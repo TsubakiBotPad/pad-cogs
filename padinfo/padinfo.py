@@ -1222,7 +1222,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
         info_row_2 += '\n**Inheritable**'
     else:
         info_row_2 += '\n**Not inheritable**'
-    if tet_text:
+    if tet_text in ("Reincarnated", "Assist", "Pixel", "Super Reincarnated"):
         info_row_2 += '\n**{}**'.format(tet_text)
 
     embed.add_field(name=info_row_1, value=info_row_2)
