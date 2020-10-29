@@ -14,8 +14,8 @@ assert db_context.get_leader_skill_query(1202)['name_en'] == 'Fusion Soul'
 # print(ctx.get_awoken_skill_ids())
 assert db_context.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'
 assert db_context.get_drop_dungeons(4)[0]['name_en'] == 'Diagoldos Descended!'
-assert db_context.graph.is_monster_id_farmable(4)
-assert not db_context.graph.is_monster_id_farmable(5156)
+assert db_context.graph.monster_is_farmable_by_id(4)
+assert not db_context.graph.monster_is_farmable_by_id(5156)
 print(db_context.monster_in_rem(1073))  # base pandora
 print(db_context.monster_in_rem(2121))
 print(db_context.monster_in_pem(2120))  # arthur

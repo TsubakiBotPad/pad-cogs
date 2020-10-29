@@ -78,7 +78,8 @@ class PadEvents(commands.Cog):
         new_events = []
         for se in scheduled_events:
             try:
-                new_events.append(Event(se, bot=self.bot))
+                db_context = self.bot.get_cog("Dadguide").database
+                new_events.append(Event(se, db_context))
             except Exception as ex:
                 logger.exception("Refresh error:")
 
@@ -918,9 +919,8 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "DgScheduledEvent", bot=None):
-        self.db_context = bot.get_cog("Dadguide").database
-        self.db_context: DbContext
+    def __init__(self, scheduled_event: "DgScheduledEvent", db_context: DbContext):
+        self.db_context = db_context
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime

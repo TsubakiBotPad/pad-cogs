@@ -12,7 +12,7 @@ class MonsterModel(BaseModel):
         self.is_rem = is_rem
         self.is_pem = is_pem
 
-    def generate_log(self):
+    def to_dict(self):
         return {
             'awakenings': self.awakenings,
             'leader_skill': self.leader_skill,

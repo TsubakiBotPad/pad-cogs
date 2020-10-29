@@ -55,6 +55,7 @@ class MonsterGraph(object):
                                    series=ss.get(m.series_id),
                                    is_farmable=m.drop_id is not None
                                    )
+
             self.graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
@@ -119,17 +120,15 @@ class MonsterGraph(object):
     def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')
 
-    def is_monster_id_farmable(self, monster_id):
+    def monster_is_farmable_by_id(self, monster_id):
         return self.graph.nodes[monster_id]['model'].is_farmable
 
-    def is_monster_farmable(self, monster: DgMonster):
-        return self.is_monster_id_farmable(monster.monster_no)
+    def monster_is_farmable(self, monster: DgMonster):
+        return self.monster_is_farmable_by_id(monster.monster_no)
 
-    def is_monster_id_farmable_evo(self, monster_id):
-        for m in self.get_evo_tree(monster_id):
-            if self.is_monster_id_farmable(m):
-                return True
-        return False
+    def monster_is_farmable_evo_by_id(self, monster_id):
+        return any(
+            m for m in self.get_evo_tree(monster_id) if self.monster_is_farmable_by_id(m))
 
-    def is_monster_farmable_evo(self, monster: DgMonster):
-        return self.is_monster_id_farmable_evo(monster.monster_no)
+    def monster_is_farmable_evo(self, monster: DgMonster):
+        return self.monster_is_farmable_evo_by_id(monster.monster_no)
