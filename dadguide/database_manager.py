@@ -229,19 +229,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgActiveSkill(DadguideItem):
-    TABLE = 'active_skills'
-    PK = 'active_skill_id'
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-
 class DgAwakening(DadguideItem):
     TABLE = 'awakenings'
     PK = 'awakening_id'
