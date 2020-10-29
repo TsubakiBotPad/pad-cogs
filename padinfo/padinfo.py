@@ -1223,7 +1223,13 @@ def monsterToEmbed(m: "DgMonster", emoji_list, db_context: DbContext):
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 
-    info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(m.rarity, m.base_monster.rarity, os, m.cost)
+    info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(
+        m.rarity,
+        db_context.graph.get_base_mons_by_id(m.monster_no).rarity,
+        os,
+        m.cost
+    )
+
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
     if m.is_inheritable:

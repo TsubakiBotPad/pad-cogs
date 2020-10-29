@@ -462,9 +462,6 @@ class DgMonster(DadguideItem):
         mat_of = self._database.get_evolution_by_material(self.monster_id)
         return [self._database.get_monster(x.to_id) for x in mat_of]
 
-    def _evolutions_to(self):
-        return self._database.get_next_evolutions_by_monster_id(self.monster_id)
-
     @property
     def base_monster(self):
         return self._database.get_monster(self._base_monster_id)

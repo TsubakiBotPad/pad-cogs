@@ -53,6 +53,7 @@ class MonsterGraph(object):
                                    leader_skill=lss.get(m.leader_skill_id),
                                    active_skill=ass.get(m.active_skill_id),
                                    series=ss.get(m.series_id),
+                                   rarity=m.rarity,
                                    is_farmable=m.drop_id is not None,
                                    is_pem=m.pal_egg == 1,
                                    is_rem=m.rem_egg == 1,
@@ -74,6 +75,11 @@ class MonsterGraph(object):
     @staticmethod
     def _get_edges(node, etype):
         return {mid for mid, edge in node.items() if edge.get('type') == etype}
+
+    def get_monster(self, monster_id):
+        if monster_id not in self.graph.nodes:
+            return None
+        return self.graph.nodes[monster_id]['model']
 
     def get_evo_tree(self, monster_id):
         ids = set()
@@ -115,6 +121,15 @@ class MonsterGraph(object):
             to_check.update(self._get_edges(n, 'back_transformation'))
             ids.add(mid)
         return ids
+
+    def get_base_id_by_id(self, monster_id):
+        alt_cards = self.get_alt_cards(monster_id)
+        if alt_cards is None:
+            return None
+        return sorted(alt_cards)[0]
+
+    def get_base_mons_by_id(self, monster_id):
+        return self.get_monster(self.get_base_id_by_id(monster_id))
 
     def get_prev_evolution_by_monster_id(self, monster_id):
         bes = self._get_edges(self.graph[monster_id], 'back_evolution')
