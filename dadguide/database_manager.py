@@ -251,15 +251,6 @@ class DgEvolution(DadguideItem):
         self.evolution_type = EvoType(self.evolution_type)
 
 
-class DgSeries(DadguideItem):
-    TABLE = 'series'
-    PK = 'series_id'
-
-    @property
-    def name(self):
-        return self.name_en if self.name_en is not None else self.name_ja
-
-
 class DgDungeon(DadguideItem):
     TABLE = 'dungeons'
     PK = 'dungeon_id'
