@@ -1187,22 +1187,22 @@ def monsterToTypeString(m: "DgMonster"):
 
 def monsterToAcquireString(m: "DgMonster", db_context: DbContext):
     acquire_text = None
-    if m.farmable and not m.mp_evo:
+    if m.farmable and not db_context.graph.monster_is_mp_evo(m):
         # Some MP shop monsters 'drop' in PADR
         acquire_text = 'Farmable'
-    elif db_context.graph.monster_is_farmable_evo(m) and not m.mp_evo:
+    elif db_context.graph.monster_is_farmable_evo(m) and not db_context.graph.monster_is_mp_evo(m):
         acquire_text = 'Farmable Evo'
     elif m.in_pem:
         acquire_text = 'In PEM'
-    elif m.pem_evo:
+    elif db_context.graph.monster_is_pem_evo(m):
         acquire_text = 'PEM Evo'
     elif m.in_rem:
         acquire_text = 'In REM'
-    elif m.rem_evo:
+    elif db_context.graph.monster_is_rem_evo(m):
         acquire_text = 'REM Evo'
     elif m.in_mpshop:
         acquire_text = 'MP Shop'
-    elif m.mp_evo:
+    elif db_context.graph.monster_is_mp_evo(m):
         acquire_text = 'MP Shop Evo'
     return acquire_text
 

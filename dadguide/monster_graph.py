@@ -53,7 +53,10 @@ class MonsterGraph(object):
                                    leader_skill=lss.get(m.leader_skill_id),
                                    active_skill=ass.get(m.active_skill_id),
                                    series=ss.get(m.series_id),
-                                   is_farmable=m.drop_id is not None
+                                   is_farmable=m.drop_id is not None,
+                                   is_pem=m.pal_egg == 1,
+                                   is_rem=m.rem_egg == 1,
+                                   is_mp=m.buy_mp is not None
                                    )
 
             self.graph.add_node(m.monster_id, model=m_model)
@@ -120,6 +123,7 @@ class MonsterGraph(object):
     def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')
 
+    # farmable
     def monster_is_farmable_by_id(self, monster_id):
         return self.graph.nodes[monster_id]['model'].is_farmable
 
@@ -132,3 +136,45 @@ class MonsterGraph(object):
 
     def monster_is_farmable_evo(self, monster: DgMonster):
         return self.monster_is_farmable_evo_by_id(monster.monster_no)
+
+    # mp
+    def monster_is_mp_by_id(self, monster_id):
+        return self.graph.nodes[monster_id]['model'].is_mp
+
+    def monster_is_mp(self, monster: DgMonster):
+        return self.monster_is_mp_by_id(monster.monster_no)
+
+    def monster_is_mp_evo_by_id(self, monster_id):
+        return any(
+            m for m in self.get_evo_tree(monster_id) if self.monster_is_mp_by_id(m))
+
+    def monster_is_mp_evo(self, monster: DgMonster):
+        return self.monster_is_mp_evo_by_id(monster.monster_no)
+
+    # pem
+    def monster_is_pem_by_id(self, monster_id):
+        return self.graph.nodes[monster_id]['model'].is_pem
+
+    def monster_is_pem(self, monster: DgMonster):
+        return self.monster_is_pem_by_id(monster.monster_no)
+
+    def monster_is_pem_evo_by_id(self, monster_id):
+        return any(
+            m for m in self.get_evo_tree(monster_id) if self.monster_is_pem_by_id(m))
+
+    def monster_is_pem_evo(self, monster: DgMonster):
+        return self.monster_is_pem_evo_by_id(monster.monster_no)
+
+    # rem
+    def monster_is_rem_by_id(self, monster_id):
+        return self.graph.nodes[monster_id]['model'].is_rem
+
+    def monster_is_rem(self, monster: DgMonster):
+        return self.monster_is_rem_by_id(monster.monster_no)
+
+    def monster_is_rem_evo_by_id(self, monster_id):
+        return any(
+            m for m in self.get_evo_tree(monster_id) if self.monster_is_rem_by_id(m))
+
+    def monster_is_rem_evo(self, monster: DgMonster):
+        return self.monster_is_rem_evo_by_id(monster.monster_no)

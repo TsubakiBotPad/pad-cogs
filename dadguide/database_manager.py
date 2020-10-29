@@ -482,20 +482,6 @@ class DgMonster(DadguideItem):
         return self.node['model'].is_farmable
 
     @property
-    def rem_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_rem(e_id):
-                return True
-        return False
-
-    @property
-    def pem_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_pem(e_id):
-                return True
-        return False
-
-    @property
     def killers(self):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],
@@ -516,13 +502,6 @@ class DgMonster(DadguideItem):
     @property
     def in_mpshop(self):
         return self.buy_mp is not None
-
-    @property
-    def mp_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_mp_shop(e_id):
-                return True
-        return False
 
     @property
     def history_us(self):
