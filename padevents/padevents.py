@@ -15,8 +15,6 @@ from redbot.core import checks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, confirm_message
-from dadguide.database_context import DbContext
-from dadguide.database_manager import DgScheduledEvent
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
@@ -919,7 +917,7 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "DgScheduledEvent", db_context: DbContext):
+    def __init__(self, scheduled_event: "DgScheduledEvent", db_context):
         self.db_context = db_context
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]

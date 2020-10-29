@@ -17,8 +17,6 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
-from dadguide.database_manager import DgMonster
-from dadguide.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -735,13 +733,12 @@ class PadGlobal(commands.Cog):
             return name, definition, timestamp, True
 
         monster = monster_id_to_monster(monster_id)
-        monster: DgMonster
 
         if db_context.graph.monster_is_mp_evo(monster):
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
-        elif check_simple_tree(monster):
+        elif check_simple_tree(monster, db_context):
             return name, SIMPLE_TREE_MSG, None, False
         else:
             await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
@@ -1206,10 +1203,10 @@ class PadGlobal(commands.Cog):
         return tsutils.fix_emojis_for_server(emojis, message)
 
 
-def check_simple_tree(monster: DgMonster):
+def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in monster.alt_versions:
+    for m in db_context.graph.get_alt_monsters_by_id(monster.monster_no):
         if m.attr1 != attr1 or m.active_skill != active_skill:
             return False
         if m.is_equip:

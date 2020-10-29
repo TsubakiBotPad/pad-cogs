@@ -49,15 +49,31 @@ class MonsterGraph(object):
             mtoawo[a.monster_id].append(a)
 
         for m in ms:
-            m_model = MonsterModel(awakenings=mtoawo[m.monster_id],
+            m_model = MonsterModel(monster_id=m.monster_id,
+                                   monster_no_jp=m.monster_no_jp,
+                                   monster_no_na=m.monster_no_na,
+                                   monster_no_kr=m.monster_no_kr,
+                                   awakenings=mtoawo[m.monster_id],
                                    leader_skill=lss.get(m.leader_skill_id),
                                    active_skill=ass.get(m.active_skill_id),
                                    series=ss.get(m.series_id),
+                                   attribute_1_id=m.attribute_1_id,
+                                   attribute_2_id=m.attribute_2_id,
+                                   name_ja=m.name_ja,
+                                   name_en=m.name_en,
+                                   name_ko=m.name_ko,
+                                   name_en_override=m.name_en_override,
                                    rarity=m.rarity,
                                    is_farmable=m.drop_id is not None,
-                                   is_pem=m.pal_egg == 1,
-                                   is_rem=m.rem_egg == 1,
-                                   is_mp=m.buy_mp is not None
+                                   in_pem=m.pal_egg == 1,
+                                   in_rem=m.rem_egg == 1,
+                                   in_mpshop=m.buy_mp is not None,
+                                   on_jp=m.on_jp == 1,
+                                   on_na=m.on_na == 1,
+                                   on_kr=m.on_kr == 1,
+                                   type_1_id=m.type_1_id,
+                                   type_2_id=m.type_2_id,
+                                   type_3_id=m.type_3_id
                                    )
 
             self.graph.add_node(m.monster_id, model=m_model)
@@ -122,13 +138,17 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
+    def get_alt_monsters_by_id(self, monster_id):
+        ids = self.get_alt_cards(monster_id)
+        return [self.get_monster(m_id) for m_id in ids]
+
     def get_base_id_by_id(self, monster_id):
         alt_cards = self.get_alt_cards(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[0]
 
-    def get_base_mons_by_id(self, monster_id):
+    def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
     def get_prev_evolution_by_monster_id(self, monster_id):
@@ -154,7 +174,7 @@ class MonsterGraph(object):
 
     # mp
     def monster_is_mp_by_id(self, monster_id):
-        return self.graph.nodes[monster_id]['model'].is_mp
+        return self.graph.nodes[monster_id]['model'].in_mpshop
 
     def monster_is_mp(self, monster: DgMonster):
         return self.monster_is_mp_by_id(monster.monster_no)
@@ -168,7 +188,7 @@ class MonsterGraph(object):
 
     # pem
     def monster_is_pem_by_id(self, monster_id):
-        return self.graph.nodes[monster_id]['model'].is_pem
+        return self.graph.nodes[monster_id]['model'].in_pem
 
     def monster_is_pem(self, monster: DgMonster):
         return self.monster_is_pem_by_id(monster.monster_no)
@@ -182,7 +202,7 @@ class MonsterGraph(object):
 
     # rem
     def monster_is_rem_by_id(self, monster_id):
-        return self.graph.nodes[monster_id]['model'].is_rem
+        return self.graph.nodes[monster_id]['model'].in_rem
 
     def monster_is_rem(self, monster: DgMonster):
         return self.monster_is_rem_by_id(monster.monster_no)
