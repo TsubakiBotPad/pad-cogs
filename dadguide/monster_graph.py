@@ -1,5 +1,6 @@
 import networkx as nx
 from collections import defaultdict
+from .database_manager import DgMonster
 from .database_manager import DadguideDatabase
 from .database_manager import DgActiveSkill
 from .database_manager import DgLeaderSkill
@@ -111,9 +112,24 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
-    def get_prev_evolution_by_monster(self, monster_id):
+    def get_prev_evolution_by_monster_id(self, monster_id):
         bes = self._get_edges(self.graph[monster_id], 'back_evolution')
         if bes: return bes.pop()
 
-    def get_next_evolutions_by_monster(self, monster_id):
+    def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')
+
+    def is_monster_id_farmable(self, monster_id):
+        return self.graph.nodes[monster_id]['model'].is_farmable
+
+    def is_monster_farmable(self, monster: DgMonster):
+        return self.is_monster_id_farmable(monster.monster_no)
+
+    def is_monster_id_farmable_evo(self, monster_id):
+        for m in self.get_evo_tree(monster_id):
+            if self.is_monster_id_farmable(m):
+                return True
+        return False
+
+    def is_monster_farmable_evo(self, monster: DgMonster):
+        return self.is_monster_id_farmable_evo(monster.monster_no)
