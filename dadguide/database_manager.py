@@ -256,16 +256,6 @@ class DgDungeon(DadguideItem):
     PK = 'dungeon_id'
 
 
-class DgEncounter(DadguideItem):
-    TABLE = 'encounters'
-    PK = 'encounter_id'
-
-
-class DgDrop(DadguideItem):
-    TABLE = 'drops'
-    PK = 'drop_id'
-
-
 class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'

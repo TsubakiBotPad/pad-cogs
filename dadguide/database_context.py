@@ -7,8 +7,6 @@ from .database_manager import DadguideItem
 from .database_manager import DgMonster
 from .database_manager import DgAwakening
 from .database_manager import DgDungeon
-from .database_manager import DgEncounter
-from .database_manager import DgDrop
 from .database_manager import DgEvolution
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
@@ -54,20 +52,6 @@ class DbContext(object):
             ),
             (awoken_skill_id,),
             DgMonster, db_context=self, graph=self.graph)
-
-    def get_drop_dungeons(self, monster_id):
-        return self.database.query_many(
-            self.database.select_builder(
-                tables=OrderedDict({
-                    DgDungeon.TABLE: DgDungeon.FIELDS,
-                    DgEncounter.TABLE: None,
-                    DgDrop.TABLE: None,
-                }),
-                where='{0}.monster_id=?'.format(DgDrop.TABLE),
-                key=(DgDungeon.PK, DgEncounter.PK)
-            ),
-            (monster_id,),
-            DgDungeon, db_context=self)
 
     def monster_in_rem(self, monster_id):
         m = self.get_monster(monster_id)
