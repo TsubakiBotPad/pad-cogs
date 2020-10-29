@@ -55,9 +55,9 @@ class EvoType(Enum):
 
 class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
-    Base = ""
-    Normal = ""
-    Ultimate = ""
+    Base = "Base"
+    Normal = "Normal"
+    Ultimate = "Ultimate"
     Reincarnated = "Reincarnated"
     Assist = "Assist"
     Pixel = "Pixel"
@@ -359,7 +359,8 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = self.node['model'].awakenings
+        self.awakenings = sorted(self.node['awakenings'], key=lambda a: a.order_idx)
+
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
         self.is_inheritable = bool(self.inheritable)
@@ -426,7 +427,7 @@ class DgMonster(DadguideItem):
 
     @property
     def cur_evo_type(self):
-        return self.evo_from['evolution_type'] if self.evo_from else EvoType.Base
+        return EvoType(self.evo_from['evolution_type']) if self.evo_from else EvoType.Base
 
     @property
     def true_evo_type(self):

@@ -5,9 +5,9 @@ COLOR_MAP = {}
 for r in ('r','red','fire'): COLOR_MAP[r] = 'r'
 for b in ('b','blue','water'): COLOR_MAP[b] = 'b'
 for g in ('g','green','wood'): COLOR_MAP[g] = 'g'
-for l in ('l','light','yellow', 'white'): COLOR_MAP[l] = 'l'
-for d in ('d','dark','purple', 'black'): COLOR_MAP[d] = 'd'
-for x in ('x','none','null', 'nil'): COLOR_MAP[x] = 'x'
+for l in ('l','light','yellow','white'): COLOR_MAP[l] = 'l'
+for d in ('d','dark','purple','black'): COLOR_MAP[d] = 'd'
+for x in ('x','none','null','nil'): COLOR_MAP[x] = 'x'
 
 COLORS = 'rbgld?x'
 
