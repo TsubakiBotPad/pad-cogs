@@ -471,10 +471,6 @@ class DgMonster(DadguideItem):
         return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
     @property
-    def series(self):
-        return self.node['model'].series
-
-    @property
     def farmable(self):
         return self.node['model'].is_farmable
 
@@ -763,7 +759,7 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set):
+    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
         # Must not hold onto monster or monster_group!
 
         # Hold on to the IDs instead
@@ -780,7 +776,8 @@ class NamedMonster(object):
         self.prefixes = prefixes
 
         # Pantheon
-        self.series = monster.series.name if monster.series else None
+        series = db_context.graph.get_monster(monster.monster_no).series
+        self.series = series.name if series else None
 
         # Data used to determine how to rank the nicknames
         self.is_low_priority = monster_group.is_low_priority or monster.is_equip

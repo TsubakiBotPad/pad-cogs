@@ -20,6 +20,7 @@ class MonsterIndex(tsutils.aobject):
     async def __init__(self, monster_database: DbContext, nickname_overrides, basename_overrides,
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
+        self.db_context = monster_database
         base_monster_ids = monster_database.get_base_monster_ids()
 
         self.attr_short_prefix_map = {
@@ -70,7 +71,8 @@ class MonsterIndex(tsutils.aobject):
                     continue
                 prefixes = self.compute_prefixes(monster, evolution_tree)
                 extra_nicknames = monster_id_to_nicknames[monster.monster_id]
-                named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames)
+                named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames,
+                                             db_context=self.db_context)
                 named_monsters.append(named_monster)
 
         # Sort the NamedMonsters into the opposite order we want to accept their nicknames in
@@ -214,7 +216,8 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('equip')
 
         # Collab prefixes
-        prefixes.update(self.series_to_prefix_map.get(m.series.series_id, []))
+        prefixes.update(self.series_to_prefix_map.get(
+            self.db_context.graph.get_monster(m.monster_no).series.series_id, []))
 
         return prefixes
 
