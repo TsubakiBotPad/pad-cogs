@@ -101,10 +101,10 @@ class DbContext(object):
         return m is not None and m.buy_mp is not None
 
     def get_prev_evolution_by_monster(self, monster_id):
-        return self.graph.get_prev_evolution_by_monster(monster_id)
+        return self.graph.get_prev_evolution_by_monster_id(monster_id)
 
     def get_next_evolutions_by_monster(self, monster_id):
-        return self.graph.get_next_evolutions_by_monster(monster_id)
+        return self.graph.get_next_evolutions_by_monster_id(monster_id)
 
     def get_base_monster_by_id(self, monster_id):
         return min(self.graph.get_alt_cards(monster_id))

@@ -446,7 +446,7 @@ class PadInfo(commands.Cog):
         )
 
     def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
-        id_embed = monsterToEmbed(m, self.get_emojis())
+        id_embed = monsterToEmbed(m, self.get_emojis(), self.db_context)
         evo_embed = monsterToEvoEmbed(m)
         mats_embed = monsterToEvoMatsEmbed(m)
         animated = m.has_animation
@@ -492,7 +492,7 @@ class PadInfo(commands.Cog):
         emoji_to_embed = OrderedDict()
         for idx, m in enumerate(monsters):
             emoji = char_to_emoji(str(idx))
-            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis())
+            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -655,8 +655,8 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLsEmbed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis())
-        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis())
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis(), self.db_context)
+        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis(), self.db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -669,7 +669,7 @@ class PadInfo(commands.Cog):
             return
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis())
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -1185,12 +1185,12 @@ def monsterToTypeString(m: "DgMonster"):
     return '/'.join([t.name for t in m.types])
 
 
-def monsterToAcquireString(m: "DgMonster"):
+def monsterToAcquireString(m: "DgMonster", db_context: DbContext):
     acquire_text = None
     if m.farmable and not m.mp_evo:
         # Some MP shop monsters 'drop' in PADR
         acquire_text = 'Farmable'
-    elif m.farmable_evo and not m.mp_evo:
+    elif db_context.graph.is_monster_farmable_evo(m) and not m.mp_evo:
         acquire_text = 'Farmable Evo'
     elif m.in_pem:
         acquire_text = 'In PEM'
@@ -1214,11 +1214,11 @@ def match_emoji(emoji_list, name):
     return name
 
 
-def monsterToEmbed(m: "DgMonster", emoji_list):
+def monsterToEmbed(m: "DgMonster", emoji_list, db_context: DbContext):
     embed = monsterToBaseEmbed(m)
 
     info_row_1 = monsterToTypeString(m)
-    acquire_text = monsterToAcquireString(m)
+    acquire_text = monsterToAcquireString(m, db_context)
     tet_text = m.true_evo_type.value
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"

@@ -364,7 +364,7 @@ class DgMonster(DadguideItem):
 
         self.is_inheritable = bool(self.inheritable)
 
-        self.evo_from_id = self._graph.get_prev_evolution_by_monster(self.monster_id)
+        self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
         self.evo_from = None
         if self.evo_from_id:
             self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]
@@ -462,7 +462,7 @@ class DgMonster(DadguideItem):
         return [self._database.get_monster(x.to_id) for x in mat_of]
 
     def _evolutions_to(self):
-        return self._database.get_next_evolutions_by_monster(self.monster_id)
+        return self._database.get_next_evolutions_by_monster_id(self.monster_id)
 
     @property
     def base_monster(self):
