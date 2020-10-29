@@ -359,7 +359,7 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = self.node['awakenings']
+        self.awakenings = self.node['model'].awakenings
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
         self.is_inheritable = bool(self.inheritable)
@@ -418,11 +418,11 @@ class DgMonster(DadguideItem):
 
     @property
     def active_skill(self):
-        return self.node['active_skill']
+        return self.node['model'].active_skill
 
     @property
     def leader_skill(self):
-        return self.node['leader_skill']
+        return self.node['model'].leader_skill
 
     @property
     def cur_evo_type(self):
@@ -474,11 +474,11 @@ class DgMonster(DadguideItem):
 
     @property
     def series(self):
-        return self.node['series']
+        return self.node['model'].series
 
     @property
     def farmable(self):
-        return self._database.monster_is_farmable(self.monster_id)
+        return self.node['model'].is_farmable
 
     @property
     def farmable_evo(self):

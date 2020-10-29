@@ -27,6 +27,7 @@ logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
 def _data_file(file_name: str) -> str:
+    # return 'S:\\Documents\\Games\\PAD\\dadguide.sqlite'
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 

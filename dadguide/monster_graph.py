@@ -6,6 +6,7 @@ from .database_manager import DgLeaderSkill
 from .database_manager import DgAwakening
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgSeries
+from .models.monster_model import MonsterModel
 
 
 class MonsterGraph(object):
@@ -23,16 +24,22 @@ class MonsterGraph(object):
     def build_graph(self):
         self.graph = nx.DiGraph()
 
-        ms = self.database.query_many("SELECT * FROM monsters", (), DictWithAttrAccess,
-                                      db_context=self.db_context, graph=self)
+        ms = self.database.query_many(
+            "SELECT monsters.*, drops.drop_id FROM monsters LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
+            db_context=self.db_context, graph=self)
+
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
                                       db_context=self.db_context, graph=self)
+
         aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
                                        db_context=self.db_context, graph=self)
+
         lss = self.database.query_many("SELECT * FROM leader_skills", (), DgLeaderSkill, idx_key='leader_skill_id',
                                        db_context=self.db_context, graph=self)
+
         ass = self.database.query_many("SELECT * FROM active_skills", (), DgActiveSkill, idx_key='active_skill_id',
                                        db_context=self.db_context, graph=self)
+
         ss = self.database.query_many("SELECT * FROM series", (), DgSeries, idx_key='series_id',
                                       db_context=self.db_context, graph=self)
 
@@ -41,11 +48,13 @@ class MonsterGraph(object):
             mtoawo[a.monster_id].append(a)
 
         for m in ms:
-            self.graph.add_node(m.monster_id,
-                                awakenings=mtoawo[m.monster_id],
-                                leader_skill=lss.get(m.leader_skill_id),
-                                active_skill=ass.get(m.active_skill_id),
-                                series=ss.get(m.series_id))
+            m_model = MonsterModel(awakenings=mtoawo[m.monster_id],
+                                   leader_skill=lss.get(m.leader_skill_id),
+                                   active_skill=ass.get(m.active_skill_id),
+                                   series=ss.get(m.series_id),
+                                   is_farmable=m.drop_id is not None
+                                   )
+            self.graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
                 self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
