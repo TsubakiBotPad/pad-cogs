@@ -3,14 +3,14 @@ import json
 
 class BaseModel(object):
 
-    def generate_log(self):
+    def to_dict(self):
         raise NotImplementedError
 
-    def to_json(self):
-        return json.dumps(self.generate_log())
+    def to_string(self):
+        return json.dumps(self.to_dict())
 
     def __repr__(self):
         try:
-            print(self.to_json())
+            print(self.to_string())
         except NotImplementedError:
             super()

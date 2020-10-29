@@ -1190,7 +1190,7 @@ def monsterToAcquireString(m: "DgMonster", db_context: DbContext):
     if m.farmable and not m.mp_evo:
         # Some MP shop monsters 'drop' in PADR
         acquire_text = 'Farmable'
-    elif db_context.graph.is_monster_farmable_evo(m) and not m.mp_evo:
+    elif db_context.graph.monster_is_farmable_evo(m) and not m.mp_evo:
         acquire_text = 'Farmable Evo'
     elif m.in_pem:
         acquire_text = 'In PEM'

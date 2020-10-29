@@ -418,9 +418,8 @@ class PadSearchLexer(object):
 
 class SearchConfig(object):
 
-    def __init__(self, lexer, bot):
-        self.db_context = bot.get_cog("Dadguide").database
-        self.db_context: DbContext
+    def __init__(self, lexer, db_context: DbContext):
+        self.db_context = db_context
         self.all = False
         self.cd = None
         self.farmable = None
@@ -809,7 +808,8 @@ class PadSearch(commands.Cog):
     def _make_search_config(self, input):
         lexer = PadSearchLexer().build()
         lexer.input(input)
-        return SearchConfig(lexer, self.bot)
+        db_context = self.bot.get_cog("Dadguide").database
+        return SearchConfig(lexer, db_context)
 
     @commands.command()
     @checks.is_owner()
