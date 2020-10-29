@@ -8,6 +8,7 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 from tsutils import tsutils
+from dadguide.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padsearch')
 
@@ -417,7 +418,9 @@ class PadSearchLexer(object):
 
 class SearchConfig(object):
 
-    def __init__(self, lexer):
+    def __init__(self, lexer, bot):
+        self.db_context = bot.get_cog("Dadguide").database
+        self.db_context: DbContext
         self.all = False
         self.cd = None
         self.farmable = None
@@ -517,7 +520,7 @@ class SearchConfig(object):
             self.filters.append(lambda m: m.search.active_min and m.search.active_min <= self.cd)
 
         if self.farmable:
-            self.filters.append(lambda m: m.farmable_evo)
+            self.filters.append(lambda m: self.db_context.graph.is_monster_farmable_evo(m))
 
         if self.haste:
             text = "charge allies' skill by {}".format(self.haste)
@@ -806,7 +809,7 @@ class PadSearch(commands.Cog):
     def _make_search_config(self, input):
         lexer = PadSearchLexer().build()
         lexer.input(input)
-        return SearchConfig(lexer)
+        return SearchConfig(lexer, self.bot)
 
     @commands.command()
     @checks.is_owner()

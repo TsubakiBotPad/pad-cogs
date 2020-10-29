@@ -481,13 +481,6 @@ class DgMonster(DadguideItem):
         return self.node['model'].is_farmable
 
     @property
-    def farmable_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_is_farmable(e_id):
-                return True
-        return False
-
-    @property
     def rem_evo(self):
         for e_id in self._alt_evo_id_list:
             if self._database.monster_in_rem(e_id):
