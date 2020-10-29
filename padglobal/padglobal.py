@@ -17,6 +17,8 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
+from dadguide.database_manager import DgMonster
+from dadguide.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -711,6 +713,10 @@ class PadGlobal(commands.Cog):
         await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
+
+        db_context = self.bot.get_cog('Dadguide').database
+        db_context: DbContext
+
         term = term.lower().replace('?', '')
         nm, _, _ = await lookup_named_monster(term)
         if nm is None:
@@ -729,10 +735,11 @@ class PadGlobal(commands.Cog):
             return name, definition, timestamp, True
 
         monster = monster_id_to_monster(monster_id)
+        monster: DgMonster
 
-        if monster.mp_evo:
+        if db_context.graph.monster_is_mp_evo(monster):
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
-        elif monster.farmable_evo:
+        elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster):
             return name, SIMPLE_TREE_MSG, None, False
@@ -1199,7 +1206,7 @@ class PadGlobal(commands.Cog):
         return tsutils.fix_emojis_for_server(emojis, message)
 
 
-def check_simple_tree(monster):
+def check_simple_tree(monster: DgMonster):
     attr1 = monster.attr1
     active_skill = monster.active_skill
     for m in monster.alt_versions:
