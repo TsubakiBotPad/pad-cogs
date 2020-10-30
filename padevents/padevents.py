@@ -21,6 +21,7 @@ logger = logging.getLogger('red.padbot-cogs.padevents')
 SUPPORTED_SERVERS = ["JP", "NA", "KR"]
 GROUPS = ['red', 'blue', 'green']
 
+
 class PadEvents(commands.Cog):
     """Pad Event Tracker"""
     def __init__(self, bot, *args, **kwargs):
@@ -75,7 +76,8 @@ class PadEvents(commands.Cog):
         new_events = []
         for se in scheduled_events:
             try:
-                new_events.append(Event(se))
+                db_context = self.bot.get_cog("Dadguide").database
+                new_events.append(Event(se, db_context))
             except Exception as ex:
                 logger.exception("Refresh error:")
 
@@ -213,7 +215,6 @@ class PadEvents(commands.Cog):
         d = Dungeon()
         d.name_en = 'fake_dungeon_name'
         d.dungeon_type = DungeonType.Unknown7
-        te.dungeon = d
         te.event_modifier = 'fake_event_modifier'
         self.events.append(Event(te))
 
@@ -403,11 +404,13 @@ class PadEvents(commands.Cog):
         """Sets channel to ping when event is red"""
         await self.aepc(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
         await ctx.tick()
+
     @aep_set.command(name="bluechannel")
     async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping when event is blue"""
         await self.aepc(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
         await ctx.tick()
+
     @aep_set.command(name="greenchannel")
     async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping when event is green"""
@@ -425,11 +428,13 @@ class PadEvents(commands.Cog):
         """Sets role to ping when event is red"""
         await self.aepc(ctx, key, 'roles', lambda x: [role.id, x[1], x[2]])
         await ctx.tick()
+
     @aep_set.command(name="bluerole")
     async def aep_s_bluerole(self, ctx, key, role: discord.Role):
         """Sets role to ping when event is blue"""
         await self.aepc(ctx, key, 'roles', lambda x: [x[0], role.id, x[2]])
         await ctx.tick()
+
     @aep_set.command(name="greenrole")
     async def aep_s_greenrole(self, ctx, key, role: discord.Role):
         """Sets role to ping when event is green"""
@@ -912,13 +917,15 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "DgScheduledEvent"):
+    def __init__(self, scheduled_event: "DgScheduledEvent", db_context):
+        self.db_context = db_context
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
-        self.dungeon_name = scheduled_event.dungeon.name_en if scheduled_event.dungeon else 'unknown_dungeon'
+        self.dungeon = self.db_context.get_dungeon_by_id(scheduled_event.dungeon_id)
+        self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
         self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
         self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
@@ -929,8 +936,8 @@ class Event:
             self.name_and_modifier += ', ' + self.clean_event_name
 
         self.event_type = EventType(scheduled_event.event_type_id)
-        self.dungeon_type = DungeonType(
-            scheduled_event.dungeon.dungeon_type) if scheduled_event.dungeon else DungeonType.Unknown
+
+        self.dungeon_type = DungeonType(self.dungeon.dungeon_type) if self.dungeon else DungeonType.Unknown
 
     def start_from_now_sec(self):
         now = datetime.datetime.now(pytz.utc)
