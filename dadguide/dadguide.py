@@ -21,6 +21,7 @@ from redbot.core import commands
 
 from .database_manager import *
 from .old_monster_index import MonsterIndex
+from .monster_index import MonsterIndex2
 from .database_loader import load_database
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
@@ -102,6 +103,11 @@ class Dadguide(commands.Cog):
                                   self.panthname_overrides,
                                   accept_filter=accept_filter)
 
+    async def create_index2(self):
+        """Exported function that allows a client cog to create a monster index"""
+        await self.wait_until_ready()
+        return MonsterIndex2(self.database.get_all_monsters(False), [])
+
     def get_monster_by_id(self, monster_id: int):
         """Exported function that allows a client cog to get a full DgMonster by monster_id"""
         return self.database.get_monster(monster_id)
@@ -179,6 +185,7 @@ class Dadguide(commands.Cog):
         logger.debug('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
+        self.index2 = MonsterIndex2(self.database.get_all_monsters(False), [])
 
         logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()

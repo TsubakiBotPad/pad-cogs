@@ -19,6 +19,13 @@ COLOR_MAP.update({n: Attribute.Light for n in ('l','light','yellow','white')})
 COLOR_MAP.update({n: Attribute.Dark for n in ('d','dark','purple','black')})
 COLOR_MAP.update({n: Attribute.Nil for n in ('x','none','null','nil')})
 
+COLOR_MAP = {Attribute.Fire: ('r','red','fire'),
+             Attribute.Water: ('b','blue','water'),
+             Attribute.Wood: ('g','green','wood'),
+             Attribute.Light: ('l','light','yellow','white'),
+             Attribute.Dark: ('d','dark','purple','black'),
+             Attribute.Nil: ('x','none','null','nil')}
+
 SERIES_MAP = {}
 SERIES_MAP.update({n: 130 for n in ('halloween', 'hw', 'h')})
 SERIES_MAP.update({n: 136 for n in ('xmas', 'christmas')})
@@ -32,6 +39,18 @@ SERIES_MAP.update({n: 183 for n in ('gh', 'gungho')})
 SERIES_MAP.update({n: 117 for n in ('ghpem', 'gunghopem')}) #FIXME
 
 SERIES_MAP.update({n: 187 for n in ('sam3', 'samurai3', 'samiii')})
+
+SERIES_MAP = {130: ('halloween', 'hw', 'h'),
+              136: ('xmas', 'christmas'),
+              125: ('summer', 'beach'),
+              114: ('school', 'academy', 'gakuen'),
+              139: ('new years', 'ny'),
+              149: ('wedding', 'bride'),
+              154: ('padr'),
+              175: ('valentines', 'vday', 'v'),
+              183: ('gh', 'gungho'),
+              117: ('ghpem', 'gunghopem'), #FIXME
+              187: ('sam3', 'samurai3', 'samiii')}
 
 
 class EvoTypes(Enum):
@@ -60,6 +79,18 @@ EVO_PREFIX_MAP.update({n: EvoTypes.SREVO for n in ('srevo', 'super')})
 EVO_PREFIX_MAP.update({n: EvoTypes.PIXEL for n in ('p', 'pixel', 'dot')})
 EVO_PREFIX_MAP.update({n: EvoTypes.EQUIP for n in ('equip', 'assist')})
 
+EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
+                  EvoTypes.EVO: ('evo', 'evolved'),
+                  EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
+                  EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo'),
+                  EvoTypes.TRANS: ('trans', 'transform', 'transformed'),
+                  EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
+                  EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma'),
+                  EvoTypes.REVO: ('reincarnated', 'revo'),
+                  EvoTypes.SREVO: ('srevo', 'super'),
+                  EvoTypes.PIXEL: ('p', 'pixel', 'dot'),
+                  EvoTypes.EQUIP: ('equip', 'assist')}
+
 
 class MiscPrefixes(Enum):
     CHIBI = 'chibi'
@@ -68,3 +99,6 @@ class MiscPrefixes(Enum):
 MISC_PREFIX_MAP = {}
 MISC_PREFIX_MAP.update({n: MiscPrefixes.CHIBI for n in ('chibi', 'mini')})
 MISC_PREFIX_MAP.update({n: MiscPrefixes.FARMABLE for n in ('farmable', 'nrem')})
+
+MISC_PREFIX_MAP = {MiscPrefixes.CHIBI: ('chibi', 'mini'),
+                   MiscPrefixes.FARMABLE: ('farmable', 'nrem')}
