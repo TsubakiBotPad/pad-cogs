@@ -50,8 +50,8 @@ class EvoTypes(Enum):
 EVO_PREFIX_MAP = {}
 EVO_PREFIX_MAP.update({n: EvoTypes.BASE for n in ('base',)})
 EVO_PREFIX_MAP.update({n: EvoTypes.EVO for n in ('evo', 'evolved')})
-EVO_PREFIX_MAP.update({n: EvoTypes.UVO for n in ('uvo', 'ult', 'ultimate')})
-EVO_PREFIX_MAP.update({n: EvoTypes.UUVO for n in ('uuvo', 'uult', 'uultimate')})
+EVO_PREFIX_MAP.update({n: EvoTypes.UVO for n in ('uvo', 'ult', 'ultimate', 'uevo')})
+EVO_PREFIX_MAP.update({n: EvoTypes.UUVO for n in ('uuvo', 'uult', 'uultimate', 'uuevo')})
 EVO_PREFIX_MAP.update({n: EvoTypes.TRANS for n in ('trans', 'transform', 'transformed')})
 EVO_PREFIX_MAP.update({n: EvoTypes.AWOKEN for n in ('awoken', 'awo', 'a')})
 EVO_PREFIX_MAP.update({n: EvoTypes.MEGA for n in ('mega', 'mawoken', 'mawo', 'ma')})
