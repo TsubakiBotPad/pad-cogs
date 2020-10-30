@@ -12,11 +12,9 @@ def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
-DB_DUMP_FILE = _data_file('dadguide.sqlite')
-DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
-
-
 def load_database(existing_db):
+    DB_DUMP_FILE = _data_file('dadguide.sqlite')
+    DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
     # Release the handle to the database file if it has one
     if existing_db:
         existing_db.close()

@@ -81,12 +81,14 @@ def _data_file(file_name: str) -> str:
 
 class IdEmojiUpdater(EmojiUpdater):
     def __init__(self, emoji_to_embed, m: "DgMonster" = None,
-                 pad_info=None, selected_emoji=None, bot=None):
+                 pad_info=None, selected_emoji=None, bot=None,
+                 db_context: "DbContext" = None):
         self.emoji_dict = emoji_to_embed
         self.m = m
         self.pad_info = pad_info
         self.selected_emoji = selected_emoji
         self.bot = bot
+        self.db_context = db_context
 
         self.pad_info.settings.log_emoji("start_"+selected_emoji)
 
@@ -94,7 +96,6 @@ class IdEmojiUpdater(EmojiUpdater):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
-            DGCOG = self.bot.get_cog('Dadguide')
             evos = sorted({*self.m.alt_versions}, key=lambda m: m.monster_id)
             index = evos.index(self.m)
             if selected_emoji == self.pad_info.previous_monster_emoji:
@@ -165,6 +166,9 @@ class PadInfo(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+
+        self.DGCOG = self.bot.get_cog("Dadguide")
+        self.db_context = self.DGCOG.database
 
         self.settings = PadInfoSettings("padinfo")
 
@@ -428,7 +432,8 @@ class PadInfo(commands.Cog):
             ctx,
             starting_menu_emoji,
             IdEmojiUpdater(emoji_to_embed, pad_info=self,
-                           m=m, selected_emoji=starting_menu_emoji, bot=self.bot)
+                           m=m, selected_emoji=starting_menu_emoji, bot=self.bot,
+                           db_context=self.db_context)
         )
 
     async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
@@ -441,23 +446,23 @@ class PadInfo(commands.Cog):
         )
 
     def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
-        id_embed = monsterToEmbed(m, self.get_emojis())
-        evo_embed = monsterToEvoEmbed(m)
+        id_embed = monsterToEmbed(m, self.get_emojis(), self.db_context)
+        evo_embed = monsterToEvoEmbed(m, self.db_context)
         mats_embed = monsterToEvoMatsEmbed(m)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
-        other_info_embed = monsterToOtherInfoEmbed(m)
+        other_info_embed = monsterToOtherInfoEmbed(m, self.db_context)
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m)
+        pantheon_embed = monsterToPantheonEmbed(m, self.db_context)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m)
+        skillups_embed = monsterToSkillupsEmbed(m, self.db_context)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -487,7 +492,7 @@ class PadInfo(commands.Cog):
         emoji_to_embed = OrderedDict()
         for idx, m in enumerate(monsters):
             emoji = char_to_emoji(str(idx))
-            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis())
+            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -650,8 +655,8 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLsEmbed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis())
-        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis())
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis(), self.db_context)
+        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis(), self.db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -664,7 +669,7 @@ class PadInfo(commands.Cog):
             return
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis())
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -948,13 +953,6 @@ def monsterToLongHeader(m: "DgMonster", link=False):
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToEvoText(m: "DgMonster"):
-    output = monsterToLongHeader(m)
-    for ae in sorted({*m.alt_versions}, key=lambda x: int(x.monster_id)):
-        output += "\n\t- {}".format(monsterToLongHeader(ae))
-    return output
-
-
 def monsterToThumbnailUrl(m: "DgMonster"):
     return get_portrait_url(m)
 
@@ -980,14 +978,15 @@ def addEvoListFields(list_of_monsters, embed, name):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoEmbed(m: "DgMonster"):
+def monsterToEvoEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
+    alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
 
-    if not len(m.alt_versions) and not m.evo_gem:
+    if not len(alt_versions) and not m.evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(m.alt_versions, embed, '{} alternate evo(s)')
+    addEvoListFields(alt_versions, embed, '{} alternate evo(s)')
     if not m.evo_gem:
         return embed
     addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
@@ -1029,15 +1028,15 @@ def monsterToEvoMatsEmbed(m: "DgMonster"):
     return embed
 
 
-def monsterToPantheonEmbed(m: "DgMonster"):
-    full_pantheon = m.series.monsters
+def monsterToPantheonEmbed(m: "DgMonster", db_context: "DbContext"):
+    full_pantheon = db_context.get_monsters_by_series(m.series_id)
     pantheon_list = list(filter(lambda x: x.evo_from is None, full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
 
     embed = monsterToBaseEmbed(m)
 
-    field_name = 'Pantheon: ' + m.series.name
+    field_name = 'Pantheon: ' + db_context.graph.get_monster(m.monster_no).series.name
     field_data = ''
     for monster in sorted(pantheon_list, key=lambda x: x.monster_no_na):
         field_data += '\n' + monsterToHeader(monster, link=True)
@@ -1046,8 +1045,13 @@ def monsterToPantheonEmbed(m: "DgMonster"):
     return embed
 
 
-def monsterToSkillupsEmbed(m: "DgMonster"):
-    skillups_list = m.active_skill.skillups if m.active_skill else []
+def monsterToSkillupsEmbed(m: "DgMonster", db_context: "DbContext"):
+    if m.active_skill is None:
+        return None
+    possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
+    skillups_list = list(filter(
+        lambda x: db_context.graph.monster_is_farmable_evo(x), possible_skillups_list))
+
     if len(skillups_list) == 0:
         return None
 
@@ -1177,24 +1181,24 @@ def monsterToTypeString(m: "DgMonster"):
     return '/'.join([t.name for t in m.types])
 
 
-def monsterToAcquireString(m: "DgMonster"):
+def monsterToAcquireString(m: "DgMonster", db_context: "DbContext"):
     acquire_text = None
-    if m.farmable and not m.mp_evo:
+    if db_context.graph.monster_is_farmable(m) and not db_context.graph.monster_is_mp_evo(m):
         # Some MP shop monsters 'drop' in PADR
         acquire_text = 'Farmable'
-    elif m.farmable_evo and not m.mp_evo:
+    elif db_context.graph.monster_is_farmable_evo(m) and not db_context.graph.monster_is_mp_evo(m):
         acquire_text = 'Farmable Evo'
     elif m.in_pem:
         acquire_text = 'In PEM'
-    elif m.pem_evo:
+    elif db_context.graph.monster_is_pem_evo(m):
         acquire_text = 'PEM Evo'
     elif m.in_rem:
         acquire_text = 'In REM'
-    elif m.rem_evo:
+    elif db_context.graph.monster_is_rem_evo(m):
         acquire_text = 'REM Evo'
     elif m.in_mpshop:
         acquire_text = 'MP Shop'
-    elif m.mp_evo:
+    elif db_context.graph.monster_is_mp_evo(m):
         acquire_text = 'MP Shop Evo'
     return acquire_text
 
@@ -1206,16 +1210,22 @@ def match_emoji(emoji_list, name):
     return name
 
 
-def monsterToEmbed(m: "DgMonster", emoji_list):
+def monsterToEmbed(m: "DgMonster", emoji_list, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
 
     info_row_1 = monsterToTypeString(m)
-    acquire_text = monsterToAcquireString(m)
+    acquire_text = monsterToAcquireString(m, db_context)
     tet_text = m.true_evo_type.value
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 
-    info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(m.rarity, m.base_monster.rarity, os, m.cost)
+    info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(
+        m.rarity,
+        db_context.graph.get_base_monster_by_id(m.monster_no).rarity,
+        os,
+        m.cost
+    )
+
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
     if m.is_inheritable:
@@ -1282,13 +1292,13 @@ def monsterToEmbed(m: "DgMonster", emoji_list):
     evos_body = ", ".join(f"**{m2.monster_id}**"
                           if m2.monster_id==m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in sorted({*m.alt_versions}, key=lambda m: m.monster_id))
+                          for m2 in sorted({*db_context.graph.get_alt_monsters_by_id(m.monster_no)}, key=lambda m: m.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
 
 
-def monsterToOtherInfoEmbed(m: "DgMonster"):
+def monsterToOtherInfoEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     # Clear the thumbnail, takes up too much space
     embed.set_thumbnail(url='')
@@ -1321,7 +1331,7 @@ def monsterToOtherInfoEmbed(m: "DgMonster"):
     if m.history_us:
         body_text += '\n**History:** {}'.format(m.history_us)
 
-    body_text += '\n**Series:** {}'.format(m.series.name)
+    body_text += '\n**Series:** {}'.format(db_context.graph.get_monster(m.monster_no).series.name)
     body_text += '\n**Sell MP:** {:,}'.format(m.sell_mp)
     if m.buy_mp is not None:
         body_text += "  **Buy MP:** {:,}".format(m.buy_mp)
