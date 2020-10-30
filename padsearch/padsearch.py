@@ -8,7 +8,6 @@ from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 from tsutils import tsutils
-from dadguide.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padsearch')
 
@@ -418,7 +417,7 @@ class PadSearchLexer(object):
 
 class SearchConfig(object):
 
-    def __init__(self, lexer, db_context: DbContext):
+    def __init__(self, lexer, db_context: "DbContext"):
         self.db_context = db_context
         self.all = False
         self.cd = None
