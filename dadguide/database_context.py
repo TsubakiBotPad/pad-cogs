@@ -3,15 +3,10 @@ from collections import OrderedDict, defaultdict, deque
 
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
-from .database_manager import DgActiveSkill
-from .database_manager import DgLeaderSkill
-from .database_manager import DgAwokenSkill
 from .database_manager import DadguideItem
 from .database_manager import DgMonster
 from .database_manager import DgAwakening
 from .database_manager import DgDungeon
-from .database_manager import DgEncounter
-from .database_manager import DgDrop
 from .database_manager import DgEvolution
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
@@ -36,18 +31,6 @@ class DbContext(object):
             as_generator=True, db_context=self, graph=self.graph)}
         self.expiry = int(datetime.now().timestamp()) + 60 * 60
 
-    def get_active_skill_query(self, active_skill_id: int):
-        return self.database.select_one_entry_by_pk(
-            active_skill_id, DgActiveSkill, db_context=self)
-
-    def get_leader_skill_query(self, leader_skill_id: int):
-        return self.database.select_one_entry_by_pk(
-            leader_skill_id, DgLeaderSkill, db_context=self)
-
-    def get_awoken_skill(self, awoken_skill_id):
-        return self.database.select_one_entry_by_pk(
-            awoken_skill_id, DgAwokenSkill, db_context=self)
-
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
         return [r.awoken_skill_id for r in
@@ -70,29 +53,6 @@ class DbContext(object):
             (awoken_skill_id,),
             DgMonster, db_context=self, graph=self.graph)
 
-    def get_drop_dungeons(self, monster_id):
-        return self.database.query_many(
-            self.database.select_builder(
-                tables=OrderedDict({
-                    DgDungeon.TABLE: DgDungeon.FIELDS,
-                    DgEncounter.TABLE: None,
-                    DgDrop.TABLE: None,
-                }),
-                where='{0}.monster_id=?'.format(DgDrop.TABLE),
-                key=(DgDungeon.PK, DgEncounter.PK)
-            ),
-            (monster_id,),
-            DgDungeon, db_context=self)
-
-    def monster_is_farmable(self, monster_id):
-        return self.database.query_one(
-            self.database.select_builder(
-                tables={DgDrop.TABLE: DgDrop.FIELDS},
-                where='{0}.monster_id=?'.format(DgDrop.TABLE)
-            ),
-            (monster_id,),
-            DgDrop, db_context=self) is not None
-
     def monster_in_rem(self, monster_id):
         m = self.get_monster(monster_id)
         return m is not None and m.rem_egg == 1
@@ -106,10 +66,10 @@ class DbContext(object):
         return m is not None and m.buy_mp is not None
 
     def get_prev_evolution_by_monster(self, monster_id):
-        return self.graph.get_prev_evolution_by_monster(monster_id)
+        return self.graph.get_prev_evolution_by_monster_id(monster_id)
 
     def get_next_evolutions_by_monster(self, monster_id):
-        return self.graph.get_next_evolutions_by_monster(monster_id)
+        return self.graph.get_next_evolutions_by_monster_id(monster_id)
 
     def get_base_monster_by_id(self, monster_id):
         return min(self.graph.get_alt_cards(monster_id))

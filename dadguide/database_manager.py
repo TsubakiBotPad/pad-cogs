@@ -229,44 +229,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgActiveSkill(DadguideItem):
-    TABLE = 'active_skills'
-    PK = 'active_skill_id'
-
-    @property
-    def monsters(self):
-        return self._database.get_monsters_by_active(self.active_skill_id)
-
-    @property
-    def skillups(self):
-        return list(filter(lambda x: x.farmable, self.monsters))
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-
-class DgLeaderSkill(DadguideItem):
-    TABLE = 'leader_skills'
-    PK = 'leader_skill_id'
-
-    @property
-    def data(self):
-        return self.max_hp, self.max_atk, self.max_rcv, self.max_shield
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-
 class DgAwakening(DadguideItem):
     TABLE = 'awakenings'
     PK = 'awakening_id'
@@ -276,21 +238,8 @@ class DgAwakening(DadguideItem):
         super(DgAwakening, self).__init__(item, database)
 
     @property
-    def skill(self):
-        return self._database.get_awoken_skill(self.awoken_skill_id)
-
-    @property
     def name(self):
-        return self.skill.name_en if self.skill.name_en is not None else self.skill.name_ja
-
-
-class DgAwokenSkill(DadguideItem):
-    TABLE = 'awoken_skills'
-    PK = 'awoken_skill_id'
-
-    @property
-    def monsters_with_awakening(self):
-        return self._database.get_monsters_by_awakenings(self.awoken_skill_id)
+        return self.name_en if self.name_en is not None else self.name_ja
 
 
 class DgEvolution(DadguideItem):
@@ -302,32 +251,9 @@ class DgEvolution(DadguideItem):
         self.evolution_type = EvoType(self.evolution_type)
 
 
-class DgSeries(DadguideItem):
-    TABLE = 'series'
-    PK = 'series_id'
-
-    @property
-    def monsters(self):
-        return self._database.get_monsters_by_series(self.series_id)
-
-    @property
-    def name(self):
-        return self.name_en if self.name_en is not None else self.name_ja
-
-
 class DgDungeon(DadguideItem):
     TABLE = 'dungeons'
     PK = 'dungeon_id'
-
-
-class DgEncounter(DadguideItem):
-    TABLE = 'encounters'
-    PK = 'encounter_id'
-
-
-class DgDrop(DadguideItem):
-    TABLE = 'drops'
-    PK = 'drop_id'
 
 
 class DgScheduledEvent(DadguideItem):
@@ -336,7 +262,6 @@ class DgScheduledEvent(DadguideItem):
 
     def __init__(self, item, database, **graph):
         super(DgScheduledEvent, self).__init__(item, database)
-        self.dungeon = self._database.get_dungeon_by_id(self.dungeon_id)
 
     @property
     def open_datetime(self):
@@ -385,12 +310,13 @@ class DgMonster(DadguideItem):
         self.in_pem = bool(self.pal_egg)
         self.in_rem = bool(self.rem_egg)
 
-        self.awakenings = sorted(self.node['awakenings'], key=lambda a: a.order_idx)
+        self.awakenings = sorted(self.node['model'].awakenings, key=lambda a: a.order_idx)
+
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
 
         self.is_inheritable = bool(self.inheritable)
 
-        self.evo_from_id = self._graph.get_prev_evolution_by_monster(self.monster_id)
+        self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
         self.evo_from = None
         if self.evo_from_id:
             self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]
@@ -444,11 +370,11 @@ class DgMonster(DadguideItem):
 
     @property
     def active_skill(self):
-        return self.node['active_skill']
+        return self.node['model'].active_skill
 
     @property
     def leader_skill(self):
-        return self.node['leader_skill']
+        return self.node['model'].leader_skill
 
     @property
     def cur_evo_type(self):
@@ -487,65 +413,13 @@ class DgMonster(DadguideItem):
         mat_of = self._database.get_evolution_by_material(self.monster_id)
         return [self._database.get_monster(x.to_id) for x in mat_of]
 
-    def _evolutions_to(self):
-        return self._database.get_next_evolutions_by_monster(self.monster_id)
-
-    @property
-    def evo_to(self):
-        return [self._database.get_monster(x) for x in self._evolutions_to()]
-
     @property
     def base_monster(self):
         return self._database.get_monster(self._base_monster_id)
 
     @property
-    def alt_evos(self):
-        return [self._database.get_monster(a) for a in self._alt_evo_id_list]
-
-    @property
     def alt_versions(self):
         return [self._database.get_monster(a) for a in self._alt_version_id_list]
-
-    @property
-    def is_base_monster(self):
-        return self.evo_from is None
-
-    @property
-    def series(self):
-        return self.node['series']
-
-    @property
-    def is_gfe(self):
-        return self.series_id == 34
-
-    @property
-    def drop_dungeons(self):
-        return self._database.get_drop_dungeons(self.monster_id)
-
-    @property
-    def farmable(self):
-        return self._database.monster_is_farmable(self.monster_id)
-
-    @property
-    def farmable_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_is_farmable(e_id):
-                return True
-        return False
-
-    @property
-    def rem_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_rem(e_id):
-                return True
-        return False
-
-    @property
-    def pem_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_pem(e_id):
-                return True
-        return False
 
     @property
     def killers(self):
@@ -568,13 +442,6 @@ class DgMonster(DadguideItem):
     @property
     def in_mpshop(self):
         return self.buy_mp is not None
-
-    @property
-    def mp_evo(self):
-        for e_id in self._alt_evo_id_list:
-            if self._database.monster_in_mp_shop(e_id):
-                return True
-        return False
 
     @property
     def history_us(self):
@@ -839,7 +706,7 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set):
+    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
         # Must not hold onto monster or monster_group!
 
         # Hold on to the IDs instead
@@ -856,7 +723,8 @@ class NamedMonster(object):
         self.prefixes = prefixes
 
         # Pantheon
-        self.series = monster.series.name if monster.series else None
+        series = db_context.graph.get_monster(monster.monster_no).series
+        self.series = series.name if series else None
 
         # Data used to determine how to rank the nicknames
         self.is_low_priority = monster_group.is_low_priority or monster.is_equip
