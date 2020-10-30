@@ -58,9 +58,9 @@ class MonsterGraph(object):
                                         name_ja=m.as_name_ja,
                                         name_en=m.as_name_en,
                                         name_ko=m.as_name_ko,
-                                        desc_ja=m.as_name_ja,
-                                        desc_en=m.as_name_en,
-                                        desc_ko=m.as_name_ko,
+                                        desc_ja=m.as_desc_ja,
+                                        desc_en=m.as_desc_en,
+                                        desc_ko=m.as_desc_ko,
                                         turn_max=m.turn_max,
                                         turn_min=m.turn_min
                                         ) if m.active_skill_id != 0 else None
