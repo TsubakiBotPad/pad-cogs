@@ -167,9 +167,6 @@ class PadInfo(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
-        self.DGCOG = self.bot.get_cog("Dadguide")
-        self.db_context = self.DGCOG.database
-
         self.settings = PadInfoSettings("padinfo")
 
         self.index_all = None
@@ -428,12 +425,16 @@ class PadInfo(commands.Cog):
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
+
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
             IdEmojiUpdater(emoji_to_embed, pad_info=self,
                            m=m, selected_emoji=starting_menu_emoji, bot=self.bot,
-                           db_context=self.db_context)
+                           db_context=db_context)
         )
 
     async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
@@ -446,23 +447,26 @@ class PadInfo(commands.Cog):
         )
 
     def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
-        id_embed = monsterToEmbed(m, self.get_emojis(), self.db_context)
-        evo_embed = monsterToEvoEmbed(m, self.db_context)
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
+        id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
+        evo_embed = monsterToEvoEmbed(m, db_context)
         mats_embed = monsterToEvoMatsEmbed(m)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
-        other_info_embed = monsterToOtherInfoEmbed(m, self.db_context)
+        other_info_embed = monsterToOtherInfoEmbed(m, db_context)
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m, self.db_context)
+        pantheon_embed = monsterToPantheonEmbed(m, db_context)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m, self.db_context)
+        skillups_embed = monsterToSkillupsEmbed(m, db_context)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -486,13 +490,16 @@ class PadInfo(commands.Cog):
         return emoji_to_embed
 
     async def _do_evolistmenu(self, ctx, sm):
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
         monsters = sm.alt_versions
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()
         for idx, m in enumerate(monsters):
             emoji = char_to_emoji(str(idx))
-            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
+            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -619,6 +626,9 @@ class PadInfo(commands.Cog):
         [p]ls r sonia "revo lu bu"
         [p]ls sonia lubu
         """
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
         # deliberate order in case of multiple different separators.
         for sep in ('"', '/', ',', ' '):
             if sep in whole_query:
@@ -655,21 +665,24 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLsEmbed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis(), self.db_context)
-        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis(), self.db_context)
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis(), db_context)
+        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis(), db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
         m, err, _ = await self.findMonster(query)
         if err:
             await ctx.send(err)
             return
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), self.db_context)
+        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
