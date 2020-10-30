@@ -150,7 +150,7 @@ class Crud(commands.Cog):
             'series_id': elements['series_id']
         })
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
 
 
     @series.command(name="edit")
@@ -185,7 +185,7 @@ class Crud(commands.Cog):
             if e['series_id'] == series_id:
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -203,7 +203,7 @@ class Crud(commands.Cog):
             if e['series_id'] == series_id:
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
 
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
