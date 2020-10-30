@@ -74,7 +74,7 @@ class Crud(commands.Cog):
         with await self.get_cursor() as cursor:
             cursor.execute(sql, replacements)
             results = list(cursor.fetchall())
-            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
+            msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False, sort_keys=True)
             await ctx.send(inline(cursor._executed))
             for page in pagify(msg):
                 await ctx.send(box(page))
@@ -150,7 +150,7 @@ class Crud(commands.Cog):
             'series_id': elements['series_id']
         })
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
 
 
     @series.command(name="edit")
@@ -185,7 +185,7 @@ class Crud(commands.Cog):
             if e['series_id'] == series_id:
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -203,7 +203,7 @@ class Crud(commands.Cog):
             if e['series_id'] == series_id:
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=4, ensure_ascii=False))
+            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
 
     @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
