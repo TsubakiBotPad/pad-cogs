@@ -1207,7 +1207,7 @@ def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
     for m in db_context.graph.get_alt_monsters_by_id(monster.monster_no):
-        if m.attr1 != attr1 or m.active_skill != active_skill:
+        if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:
             return False
