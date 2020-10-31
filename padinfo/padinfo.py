@@ -10,7 +10,7 @@ import traceback
 import tsutils
 import urllib.parse
 from io import BytesIO
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from enum import Enum
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
@@ -897,19 +897,32 @@ class PadInfo(commands.Cog):
             monstergen = filter(filt, monstergen)
         """
 
-        monstergen = set(DGCOG.database.get_all_monsters())
+        monstergen = {m: 1 for m in DGCOG.database.get_all_monsters()}
         for t in query:
             ms = difflib.get_close_matches(t, DGCOG.index2.index, n=10000, cutoff=.8)
-            valid = set()
+            valid = defaultdict(int)
             if not ms:
                 return
-            for m in ms:
-                print(t, m)
-                valid.update(DGCOG.index2.index[m])
-            monstergen.intersection_update(valid)
+            for match in ms:
+                rat = difflib.SequenceMatcher(None, t, match).real_quick_ratio()
+                print(t, match, rat)
+                for m in DGCOG.index2.index[match]:
+                    valid[m] = max(valid[m], DGCOG.index2.index[match][m] * rat)
+            for m in tuple(monstergen):
+                if m in valid:
+                    monstergen[m] += valid[m]
+                else:
+                    del monstergen[m]
         if not monstergen:
             return None
-        return max(monstergen, key=lambda x: (not x.is_equip, x.rarity, x.monster_no_na))
+        mx = max(monstergen.values())
+        print('1:',len(monstergen))
+        monstergen = [m for m in monstergen if monstergen[m] == mx]
+        print('2:',len(monstergen))
+        return max(monstergen, key=lambda x: (not x.is_equip,
+                                              -x._base_monster_id,
+                                              x.rarity,
+                                              x.monster_no_na))
 
 
 class PadInfoSettings(CogSettings):
