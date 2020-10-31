@@ -75,7 +75,7 @@ EVO_PREFIX_MAP.update({n: EvoTypes.TRANS for n in ('trans', 'transform', 'transf
 EVO_PREFIX_MAP.update({n: EvoTypes.AWOKEN for n in ('awoken', 'awo', 'a')})
 EVO_PREFIX_MAP.update({n: EvoTypes.MEGA for n in ('mega', 'mawoken', 'mawo', 'ma')})
 EVO_PREFIX_MAP.update({n: EvoTypes.REVO for n in ('reincarnated', 'revo')})
-EVO_PREFIX_MAP.update({n: EvoTypes.SREVO for n in ('srevo', 'super')})
+EVO_PREFIX_MAP.update({n: EvoTypes.SREVO for n in ('srevo', 'super', 'sr')})
 EVO_PREFIX_MAP.update({n: EvoTypes.PIXEL for n in ('p', 'pixel', 'dot')})
 EVO_PREFIX_MAP.update({n: EvoTypes.EQUIP for n in ('equip', 'assist')})
 
