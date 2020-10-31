@@ -87,7 +87,7 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
                   EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
                   EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma'),
                   EvoTypes.REVO: ('reincarnated', 'revo'),
-                  EvoTypes.SREVO: ('srevo', 'super'),
+                  EvoTypes.SREVO: ('srevo', 'super', 'sr'),
                   EvoTypes.PIXEL: ('p', 'pixel', 'dot'),
                   EvoTypes.EQUIP: ('equip', 'assist')}
 
