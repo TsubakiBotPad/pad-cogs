@@ -173,14 +173,14 @@ class MonsterGraph(object):
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
-    def get_top_id_by_id(self, monster_id):
+    def get_numerical_sort_top_id_by_id(self, monster_id):
         alt_cards = self.get_alt_cards(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[-1]
 
-    def get_top_monster_by_id(self, monster_id):
-        return self.get_monster(self.get_top_id_by_id(monster_id))
+    def get_numerical_sort_top_monster_by_id(self, monster_id):
+        return self.get_monster(self.get_numerical_sort_top_id_by_id(monster_id))
 
     def get_prev_evolution_by_monster_id(self, monster_id):
         bes = self._get_edges(self.graph[monster_id], 'back_evolution')

@@ -739,7 +739,7 @@ class PadGlobal(commands.Cog):
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster, db_context):
-            top_monster = db_context.graph.get_alt_monsters_by_id(monster.monster_no)
+            top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
             return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
         else:
             await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
