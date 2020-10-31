@@ -48,7 +48,7 @@ DISABLED_MSG = 'PAD Global info disabled on this server'
 FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever evos you like.'
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
               ', check {}mpdra? for specific recommendations.')
-SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution.'
+SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: No. {}, {}.'
 
 
 def mod_help(self, ctx, help_type):
@@ -739,7 +739,8 @@ class PadGlobal(commands.Cog):
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster, db_context):
-            return name, SIMPLE_TREE_MSG, None, False
+            top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
+            return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
         else:
             await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
             return None, None, None, None
