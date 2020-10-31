@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import difflib
 import json
 import logging
 import os
@@ -896,9 +897,16 @@ class PadInfo(commands.Cog):
             monstergen = filter(filt, monstergen)
         """
 
-        monstergen = DGCOG.index2.index[query[0]].copy()
+        monstergen = set(DGCOG.database.get_all_monsters())
         for t in query:
-            monstergen.intersection_update(DGCOG.index2.index[t])
+            ms = difflib.get_close_matches(t, DGCOG.index2.index, n=10000, cutoff=.8)
+            valid = set()
+            if not ms:
+                return
+            for m in ms:
+                print(t, m)
+                valid.update(DGCOG.index2.index[m])
+            monstergen.intersection_update(valid)
         if not monstergen:
             return None
         return max(monstergen, key=lambda x: (not x.is_equip, x.rarity, x.monster_no_na))
