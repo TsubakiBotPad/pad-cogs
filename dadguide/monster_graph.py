@@ -22,6 +22,7 @@ class MonsterGraph(object):
         self.graph: nx.DiGraph
         self.edges = None
         self.nodes = None
+        self.max_monster_id = -1
 
     def set_database(self, db_context):
         self.db_context = db_context
@@ -108,6 +109,8 @@ class MonsterGraph(object):
             if m.linked_monster_id:
                 self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
                 self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+
+            self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
         for e in es:
             evo_model = EvolutionModel(**e)
@@ -250,6 +253,8 @@ class MonsterGraph(object):
 
     def evo_mats_by_monster_id(self, monster_id: int) -> list:
         evo = self.get_evo_by_monster_id(monster_id)
+        if evo is None:
+            return []
         return [self.get_monster(mat) for mat in evo.mats]
 
     def evo_mats_by_monster(self, monster: DgMonster) -> list:
@@ -310,3 +315,23 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo(self, monster: DgMonster):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+
+    def next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
+        next_monster = None
+        offset = 1
+        while next_monster is None and monster_id + offset <= self.max_monster_id:
+            next_monster = self.get_monster(monster_id + offset)
+            offset += 1
+        if next_monster is None:
+            return None
+        return next_monster.monster_id
+
+    def prev_monster_id_by_id(self, monster_id) -> Optional[int]:
+        prev_monster = None
+        offset = 1
+        while prev_monster is None and monster_id - offset >= 1:
+            prev_monster = self.get_monster(monster_id - offset)
+            offset += 1
+        if prev_monster is None:
+            return None
+        return prev_monster.monster_id

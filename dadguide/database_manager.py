@@ -381,10 +381,6 @@ class DgMonster(DadguideItem):
         return [self._database.get_monster(x.to_id) for x in mat_of]
 
     @property
-    def base_monster(self):
-        return self._database.get_monster(self._base_monster_id)
-
-    @property
     def alt_versions(self):
         return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
@@ -413,24 +409,6 @@ class DgMonster(DadguideItem):
     @property
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
-
-    @property
-    def next_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no + offset <= self._database.max_id:
-            next = self._database.get_monster(self.monster_no + offset)
-            offset += 1
-        return next
-
-    @property
-    def prev_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no - offset >= 1:
-            next = self._database.get_monster(self.monster_no - offset)
-            offset += 1
-        return next
 
     def __repr__(self):
         return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
