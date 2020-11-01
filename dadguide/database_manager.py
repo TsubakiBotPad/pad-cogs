@@ -131,7 +131,7 @@ class DadguideDatabase(object):
         res = cursor.fetchone()
         if res is not None:
             if issubclass(d_type, DadguideItem):
-                return d_type(res, db_context, graph=graph)
+                return d_type(res, graph=graph)
             else:
                 return d_type(res)
         return None
@@ -140,7 +140,7 @@ class DadguideDatabase(object):
         res = cursor.fetchone()
         while res is not None:
             if issubclass(d_type, DadguideItem):
-                yield d_type(res, db_context, graph=graph)
+                yield d_type(res, graph=graph)
             else:
                 yield d_type(res)
             res = cursor.fetchone()
@@ -152,20 +152,20 @@ class DadguideDatabase(object):
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (d_type(res, db_context, graph=graph)
+            return (d_type(res, graph=graph)
                     if issubclass(d_type, DadguideItem)
                     else d_type(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
                 if issubclass(d_type, DadguideItem):
-                    return [d_type(res, db_context, graph=graph) for res in cursor.fetchall()]
+                    return [d_type(res, graph=graph) for res in cursor.fetchall()]
                 else:
                     return [d_type(res) for res in cursor.fetchall()]
             else:
                 if issubclass(d_type, DadguideItem):
                     return DictWithAttrAccess(
-                        {res[idx_key]: d_type(res, db_context, graph=graph) for res in cursor.fetchall()})
+                        {res[idx_key]: d_type(res, graph=graph) for res in cursor.fetchall()})
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
@@ -219,9 +219,8 @@ class DadguideItem(DictWithAttrAccess):
     PK = None
     AS_BOOL = ()
 
-    def __init__(self, item, database, **kwargs):
+    def __init__(self, item, **kwargs):
         super(DadguideItem, self).__init__(item)
-        self._database = database
         for k in self.AS_BOOL:
             self[k] = bool(self[k])
 
@@ -234,8 +233,8 @@ class DgAwakening(DadguideItem):
     PK = 'awakening_id'
     AS_BOOL = ['is_super']
 
-    def __init__(self, item, database, **kwargs):
-        super(DgAwakening, self).__init__(item, database)
+    def __init__(self, item, **kwargs):
+        super(DgAwakening, self).__init__(item)
 
     @property
     def name(self):
@@ -246,8 +245,8 @@ class DgEvolution(DadguideItem):
     TABLE = 'evolutions'
     PK = 'evolution_id'
 
-    def __init__(self, item, database, **kwargs):
-        super(DgEvolution, self).__init__(item, database)
+    def __init__(self, item, **kwargs):
+        super(DgEvolution, self).__init__(item)
         self.evolution_type = EvoType(self.evolution_type)
 
 
@@ -260,8 +259,8 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
-    def __init__(self, item, database, **graph):
-        super(DgScheduledEvent, self).__init__(item, database)
+    def __init__(self, item, **graph):
+        super(DgScheduledEvent, self).__init__(item)
 
     @property
     def open_datetime(self):
@@ -285,8 +284,8 @@ class DgMonster(DadguideItem):
     PK = 'monster_id'
     AS_BOOL = ('on_jp', 'on_na', 'on_kr', 'has_animation', 'has_hqimage')
 
-    def __init__(self, item, database, graph):
-        super(DgMonster, self).__init__(item, database)
+    def __init__(self, item, graph):
+        super(DgMonster, self).__init__(item)
 
         self._graph = graph
 
@@ -322,7 +321,7 @@ class DgMonster(DadguideItem):
 
     @property
     def node(self):
-        return self._database.graph.nodes[self.monster_id]
+        return self._graph.nodes[self.monster_id]
 
     @property
     def monster_no(self):
