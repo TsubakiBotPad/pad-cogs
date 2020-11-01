@@ -1007,14 +1007,15 @@ def monsterToEvoEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
 
-    if not len(alt_versions) and not m.evo_gem:
+    evo_gem = db_context.graph.evo_gem_monster(m)
+    if not len(alt_versions) and not evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
     addEvoListFields(alt_versions, embed, '{} alternate evo(s)')
-    if not m.evo_gem:
+    if not evo_gem:
         return embed
-    addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
+    addEvoListFields([evo_gem], embed, '{} evo gem(s)')
 
     return embed
 
@@ -1047,9 +1048,10 @@ def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
     embed.add_field(name=field_name, value=field_data)
 
     addMonsterEvoOfList(m.material_of, embed, 'Material for')
-    if not m.evo_gem:
+    evo_gem = db_context.graph.evo_gem_monster(m)
+    if not evo_gem:
         return embed
-    addMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
+    addMonsterEvoOfList(db_context.get_monster(evo_gem.monster_no).material_of, embed, "Evo gem is mat for")
     return embed
 
 

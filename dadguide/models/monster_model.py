@@ -46,6 +46,7 @@ class MonsterModel(BaseModel):
         self.attr2 = enum_or_none(Attribute, kwargs['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable = kwargs['is_inheritable']
+        self.evo_gem_id = kwargs['evo_gem_id']
 
     @property
     def killers(self):

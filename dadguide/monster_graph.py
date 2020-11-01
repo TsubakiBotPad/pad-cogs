@@ -31,7 +31,7 @@ class MonsterGraph(object):
         self.graph = nx.DiGraph()
 
         ms = self.database.query_many(
-            "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_rcv, leader_skills.max_shield, leader_skills.max_combos, active_skills.name_ja AS as_name_ja, active_skills.name_en AS as_name_en, active_skills.name_ko AS as_name_ko, active_skills.desc_ja AS as_desc_ja, active_skills.desc_en AS as_desc_en, active_skills.desc_ko AS as_desc_ko, active_skills.turn_max, active_skills.turn_min, series.name_ja AS s_name_ja, series.name_en AS s_name_en, series.name_ko AS s_name_ko, drops.drop_id FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id LEFT OUTER JOIN series ON monsters.series_id = series.series_id LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
+            "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_rcv, leader_skills.max_shield, leader_skills.max_combos, active_skills.name_ja AS as_name_ja, active_skills.name_en AS as_name_en, active_skills.name_ko AS as_name_ko, active_skills.desc_ja AS as_desc_ja, active_skills.desc_en AS as_desc_en, active_skills.desc_ko AS as_desc_ko, active_skills.turn_max, active_skills.turn_min, series.name_ja AS s_name_ja, series.name_en AS s_name_en, series.name_ko AS s_name_ko, exchanges.target_monster_id AS evo_gem_id, drops.drop_id FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id LEFT OUTER JOIN series ON monsters.series_id = series.series_id LEFT OUTER JOIN exchanges on '(' || monsters.monster_id || ')' = exchanges.required_monster_ids LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
             db_context=self.db_context, graph=self)
 
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
@@ -102,7 +102,8 @@ class MonsterGraph(object):
                                    type_1_id=m.type_1_id,
                                    type_2_id=m.type_2_id,
                                    type_3_id=m.type_3_id,
-                                   is_inheritable=m.inheritable == 1
+                                   is_inheritable=m.inheritable == 1,
+                                   evo_gem_id=m.evo_gem_id
                                    )
 
             self.graph.add_node(m.monster_id, model=m_model)
@@ -335,3 +336,12 @@ class MonsterGraph(object):
         if prev_monster is None:
             return None
         return prev_monster.monster_id
+
+    def evo_gem_monster_by_id(self, monster_id) -> Optional[MonsterModel]:
+        this_monster = self.get_monster(monster_id)
+        if this_monster.evo_gem_id is None:
+            return None
+        return self.get_monster(this_monster.evo_gem_id)
+
+    def evo_gem_monster(self, monster: DgMonster) -> Optional[MonsterModel]:
+        return self.evo_gem_monster_by_id(monster.monster_no)
