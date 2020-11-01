@@ -93,10 +93,15 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji("start_"+selected_emoji)
 
     def on_update(self, ctx, selected_emoji):
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
-            evos = sorted({*self.m.alt_versions}, key=lambda m: m.monster_id)
+            alt_version_ids = db_context.graph.get_alt_cards(self.m.monster_id)
+            alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
+            evos = sorted({*alt_versions}, key=lambda m: m.monster_id)
             index = evos.index(self.m)
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 newm = evos[index - 1]
@@ -126,7 +131,9 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
+        alt_version_ids = db_context.graph.get_alt_cards(self.m.monster_id)
+        alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
+        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type=1)
         return True
 
 
@@ -426,10 +433,12 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
-
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
+
+        alt_version_ids = db_context.graph.get_alt_cards(m.monster_id)
+        alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
 
         return await self._do_menu(
             ctx,
@@ -495,7 +504,8 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        monsters = sm.alt_versions
+        monster_ids = db_context.graph.get_alt_cards(sm.monster_id)
+        monsters = [db_context.get_monster(m) for m in monster_ids]
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()

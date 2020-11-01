@@ -318,10 +318,6 @@ class DgMonster(DadguideItem):
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
-        self._alt_version_id_list = sorted(self._graph.get_alt_cards(self.monster_id))
-        self._base_monster_id = self._alt_version_id_list[0]
-        self._alt_evo_id_list = sorted(self._graph.get_evo_tree(self.monster_id))
-
         self.search = MonsterSearchHelper(self)
 
     @property
@@ -379,10 +375,6 @@ class DgMonster(DadguideItem):
     def material_of(self):
         mat_of = self._database.get_evolution_by_material(self.monster_id)
         return [self._database.get_monster(x.to_id) for x in mat_of]
-
-    @property
-    def alt_versions(self):
-        return [self._database.get_monster(a) for a in self._alt_version_id_list]
 
     @property
     def killers(self):
