@@ -93,47 +93,40 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji("start_"+selected_emoji)
 
     def on_update(self, ctx, selected_emoji):
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
-            alt_version_ids = db_context.graph.get_alt_cards(self.m.monster_id)
-            alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
-            evos = sorted({*alt_versions}, key=lambda m: m.monster_id)
-            index = evos.index(self.m)
+            evos = sorted({*self.db_context.graph.get_alt_cards(self.m.monster_id)})
+            index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                newm = evos[index - 1]
+                new_id = evos[index - 1]
             elif selected_emoji == self.pad_info.next_monster_emoji:
                 if index == len(evos) - 1:
-                    newm = evos[0]
+                    new_id = evos[0]
                 else:
-                    newm = evos[index + 1]
+                    new_id = evos[index + 1]
             else:
                 self.selected_emoji = selected_emoji
                 return True
-            if newm.monster_id == self.m.monster_id:
+            if new_id == self.m.monster_id:
                 return False
-            self.m = newm
+            self.m = self.db_context.graph.get_monster(new_id)
         else:
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                prev_monster_id = self.db_context.graph.prev_monster_id_by_id(self.m.monster_id)
-                if prev_monster_id is None:
+                if self.m.prev_monster is None:
                     return False
-                self.m = self.db_context.get_monster(prev_monster_id)
+                self.m = self.m.prev_monster
             elif selected_emoji == self.pad_info.next_monster_emoji:
-                next_monster_id = self.db_context.graph.next_monster_id_by_id(self.m.monster_id)
-                if next_monster_id is None:
+                if self.m.next_monster is None:
                     return False
-                self.m = self.db_context.get_monster(next_monster_id)
+                self.m = self.m.next_monster
             else:
                 self.selected_emoji = selected_emoji
                 return True
 
-        alt_version_ids = db_context.graph.get_alt_cards(self.m.monster_id)
-        alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type=1)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(
+            m=self.m, scroll=sorted(
+                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
         return True
 
 
@@ -436,8 +429,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        alt_version_ids = db_context.graph.get_alt_cards(m.monster_id)
-        alt_versions = [db_context.get_monster(m) for m in alt_version_ids]
+        alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
         emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
 
         return await self._do_menu(
@@ -504,8 +496,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        monster_ids = db_context.graph.get_alt_cards(sm.monster_id)
-        monsters = [db_context.get_monster(m) for m in monster_ids]
+        monsters = db_context.graph.get_alt_monsters_by_id(sm.monster_id)
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()

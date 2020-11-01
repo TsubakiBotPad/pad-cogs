@@ -84,6 +84,7 @@ class MonsterGraph(object):
                                    leader_skill=ls_model,
                                    active_skill=as_model,
                                    series=s_model,
+                                   series_id=m.series_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
@@ -95,6 +96,8 @@ class MonsterGraph(object):
                                    in_pem=m.pal_egg == 1,
                                    in_rem=m.rem_egg == 1,
                                    buy_mp=m.buy_mp,
+                                   sell_mp=m.sell_mp,
+                                   sell_gold=m.sell_gold,
                                    reg_date=m.reg_date,
                                    on_jp=m.on_jp == 1,
                                    on_na=m.on_na == 1,
@@ -103,7 +106,25 @@ class MonsterGraph(object):
                                    type_2_id=m.type_2_id,
                                    type_3_id=m.type_3_id,
                                    is_inheritable=m.inheritable == 1,
-                                   evo_gem_id=m.evo_gem_id
+                                   evo_gem_id=m.evo_gem_id,
+                                   orb_skin_id=m.orb_skin_id,
+                                   cost=m.cost,
+                                   level=m.level,
+                                   exp=m.exp,
+                                   limit_mult=m.limit_mult,
+                                   pronunciation_ja=m.pronunciation_ja,
+                                   hp_max=m.hp_max,
+                                   hp_min=m.hp_min,
+                                   hp_scale=m.hp_scale,
+                                   atk_max=m.atk_max,
+                                   atk_min=m.atk_min,
+                                   atk_scale=m.atk_scale,
+                                   rcv_max=m.rcv_max,
+                                   rcv_min=m.rcv_min,
+                                   rcv_scale=m.rcv_scale,
+                                   latent_slots=m.latent_slots,
+                                   has_animation=m.has_animation == 1,
+                                   has_hqimage=m.has_hqimage == 1
                                    )
 
             self.graph.add_node(m.monster_id, model=m_model)
