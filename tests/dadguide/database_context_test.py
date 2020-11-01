@@ -1,6 +1,8 @@
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
 from dadguide.monster_graph import MonsterGraph
+from dadguide.database_manager import EvoType
+from dadguide.database_manager import InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
@@ -29,3 +31,20 @@ assert db_context.get_monster_evo_gem(
     'Archangel of Knowledge, Raziel', region='en').name_en == 'Archangel of Knowledge, Raziel\'s Gem'
 
 assert db_context.get_monsters_by_awakenings(5)[0].evo_from_id == 26  # check the graph exists in DgMonster
+
+
+# evo types
+# 5392 is mega dkali
+assert db_context.graph.get_prev_evolution_by_monster_id(5392) == 1588
+assert db_context.graph.cur_evo_type_by_monster_id(5392) == EvoType.UvoAwoken
+assert db_context.graph.cur_evo_type_by_monster_id(1587) == EvoType.Base  # base dkali
+assert db_context.graph.cur_evo_type_by_monster_id(6238) == EvoType.UuvoReincarnated  # b sam3
+assert db_context.graph.cur_evo_type_by_monster_id(3270) == EvoType.UuvoReincarnated  # revo hades
+assert db_context.graph.cur_evo_type_by_monster_id(3391) == EvoType.UuvoReincarnated  # revo blodin
+assert db_context.graph.cur_evo_type_by_monster_id(1748) == EvoType.UvoAwoken  # awoken hades
+
+assert db_context.graph.true_evo_type_by_monster_id(5392) == InternalEvoType.Ultimate
+assert db_context.graph.true_evo_type_by_monster_id(6337) == InternalEvoType.SuperReincarnated  # sr hades
+assert db_context.graph.true_evo_type_by_monster_id(5871) == InternalEvoType.Pixel  # px sakuya
+assert db_context.graph.true_evo_type_by_monster_id(1465) == InternalEvoType.Normal  # awoken thoth
+assert db_context.graph.true_evo_type_by_monster_id(1464) == InternalEvoType.Base  # base thoth

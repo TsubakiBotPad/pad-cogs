@@ -1,13 +1,17 @@
 import networkx as nx
+from typing import Optional
 from collections import defaultdict
 from .database_manager import DgMonster
 from .database_manager import DadguideDatabase
 from .database_manager import DgAwakening
 from .database_manager import DictWithAttrAccess
+from .database_manager import EvoType
+from .database_manager import InternalEvoType
 from .models.monster_model import MonsterModel
 from .models.leader_skill_model import LeaderSkillModel
 from .models.active_skill_model import ActiveSkillModel
 from .models.series_model import SeriesModel
+from .models.evolution_model import EvolutionModel
 
 
 class MonsterGraph(object):
@@ -89,13 +93,15 @@ class MonsterGraph(object):
                                    is_farmable=m.drop_id is not None,
                                    in_pem=m.pal_egg == 1,
                                    in_rem=m.rem_egg == 1,
-                                   in_mpshop=m.buy_mp is not None,
+                                   buy_mp=m.buy_mp,
+                                   reg_date=m.reg_date,
                                    on_jp=m.on_jp == 1,
                                    on_na=m.on_na == 1,
                                    on_kr=m.on_kr == 1,
                                    type_1_id=m.type_1_id,
                                    type_2_id=m.type_2_id,
-                                   type_3_id=m.type_3_id
+                                   type_3_id=m.type_3_id,
+                                   is_inheritable=m.inheritable == 1
                                    )
 
             self.graph.add_node(m.monster_id, model=m_model)
@@ -104,8 +110,9 @@ class MonsterGraph(object):
                 self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
 
         for e in es:
-            self.graph.add_edge(e.from_id, e.to_id, type='evolution', **e)
-            self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', **e)
+            evo_model = EvolutionModel(**e)
+            self.graph.add_edge(e.from_id, e.to_id, type='evolution', model=evo_model)
+            self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', model=evo_model)
 
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
@@ -114,7 +121,7 @@ class MonsterGraph(object):
     def _get_edges(node, etype):
         return {mid for mid, edge in node.items() if edge.get('type') == etype}
 
-    def get_monster(self, monster_id):
+    def get_monster(self, monster_id) -> Optional[MonsterModel]:
         if monster_id not in self.graph.nodes:
             return None
         return self.graph.nodes[monster_id]['model']
@@ -182,9 +189,52 @@ class MonsterGraph(object):
     def get_numerical_sort_top_monster_by_id(self, monster_id):
         return self.get_monster(self.get_numerical_sort_top_id_by_id(monster_id))
 
+    def get_evo_by_monster_id(self, monster_id) -> Optional[EvolutionModel]:
+        prev_evo = self.get_prev_evolution_by_monster_id(monster_id)
+        if prev_evo is None:
+            return None
+        return self.graph.edges[prev_evo, monster_id]['model']
+
+    def cur_evo_type_by_monster_id(self, monster_id: int) -> EvoType:
+        prev_evo = self.get_evo_by_monster_id(monster_id)
+        return EvoType(prev_evo.evolution_type) if prev_evo else EvoType.Base
+
+    def cur_evo_type_by_monster(self, monster: DgMonster) -> EvoType:
+        return self.cur_evo_type_by_monster_id(monster.monster_no)
+
+    def true_evo_type_by_monster_id(self, monster_id: int) -> InternalEvoType:
+        if self.get_base_id_by_id(monster_id) == monster_id:
+            return InternalEvoType.Base
+
+        evo = self.get_evo_by_monster_id(monster_id)
+        if evo.is_super_reincarnated:
+            return InternalEvoType.SuperReincarnated
+        elif evo.is_pixel:
+            return InternalEvoType.Pixel
+
+        monster = self.get_monster(monster_id)
+        if monster.is_equip:
+            return InternalEvoType.Assist
+
+        cur_evo_type = self.cur_evo_type_by_monster_id(monster_id)
+        if cur_evo_type == EvoType.UuvoReincarnated:
+            return InternalEvoType.Reincarnated
+        elif cur_evo_type == EvoType.UvoAwoken:
+            return InternalEvoType.Ultimate
+
+        return InternalEvoType.Normal
+
+    def true_evo_type_by_monster(self, monster: DgMonster) -> InternalEvoType:
+        return self.true_evo_type_by_monster_id(monster.monster_no)
+
     def get_prev_evolution_by_monster_id(self, monster_id):
         bes = self._get_edges(self.graph[monster_id], 'back_evolution')
-        if bes: return bes.pop()
+        if bes:
+            return bes.pop()
+        return None
+
+    def get_prev_evolution_by_monster(self, monster: DgMonster):
+        return self.get_prev_evolution_by_monster_id(monster.monster_no)
 
     def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')

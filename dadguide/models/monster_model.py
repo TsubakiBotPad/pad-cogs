@@ -37,13 +37,68 @@ class MonsterModel(BaseModel):
         self.is_farmable = kwargs['is_farmable']
         self.in_rem = kwargs['in_rem']
         self.in_pem = kwargs['in_pem']
-        self.in_mpshop = kwargs['in_mpshop']
+        self.in_mpshop = kwargs['buy_mp'] is not None
+        self.reg_date = kwargs['reg_date']
         self.on_jp = kwargs['on_jp']
         self.on_na = kwargs['on_na']
         self.on_kr = kwargs['on_kr']
         self.attr1 = enum_or_none(Attribute, kwargs['attribute_1_id'], Attribute.Nil)
         self.attr2 = enum_or_none(Attribute, kwargs['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
+        self.is_inheritable = kwargs['is_inheritable']
+
+    @property
+    def killers(self):
+        type_to_killers_map = {
+            MonsterType.God: ['Devil'],
+            MonsterType.Devil: ['God'],
+            MonsterType.Machine: ['God', 'Balance'],
+            MonsterType.Dragon: ['Machine', 'Healer'],
+            MonsterType.Physical: ['Machine', 'Healer'],
+            MonsterType.Attacker: ['Devil', 'Physical'],
+            MonsterType.Healer: ['Dragon', 'Attacker'],
+        }
+        if MonsterType.Balance in self.types:
+            return ['Any']
+        killers = set()
+        for t in self.types:
+            killers.update(type_to_killers_map.get(t, []))
+        return sorted(killers)
+
+    @property
+    def history_us(self):
+        return '[{}] New Added'.format(self.reg_date)
+
+    def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
+        s_min = float(self[key + '_min'])
+        s_max = float(self[key + '_max'])
+        if self.level > 1:
+            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** self[key + '_scale']
+        else:
+            s_val = s_min
+        if lv > 99:
+            s_val *= 1 + (self.limit_mult / 11 * (lv - 99)) / 100
+        plus_dict = {'hp': 10, 'atk': 5, 'rcv': 3}
+        s_val += plus_dict[key] * max(min(plus, 99), 0)
+        if inherit:
+            inherit_dict = {'hp': 0.10, 'atk': 0.05, 'rcv': 0.15}
+            if not is_plus_297:
+                s_val -= plus_dict[key] * max(min(plus, 99), 0)
+            s_val *= inherit_dict[key]
+        return int(round(s_val))
+
+    def stats(self, lv=99, plus=0, inherit=False):
+        is_plus_297 = False
+        if plus == 297:
+            plus = (99, 99, 99)
+            is_plus_297 = True
+        elif plus == 0:
+            plus = (0, 0, 0)
+        hp = self.stat('hp', lv, plus[0], inherit, is_plus_297)
+        atk = self.stat('atk', lv, plus[1], inherit, is_plus_297)
+        rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
+        weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
+        return hp, atk, rcv, weighted
 
     def to_dict(self):
         return {
