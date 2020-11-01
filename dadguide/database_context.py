@@ -83,6 +83,10 @@ class DbContext(object):
             (monster_id,) * 5,
             DgEvolution, db_context=self)
 
+    def material_of(self, monster_id):
+        mat_of = self.get_evolution_by_material(monster_id)
+        return [self.get_monster(x.to_id) for x in mat_of]
+
     def get_evolution_tree_ids(self, base_monster_id):
         # is not a tree i lied
         base_id = base_monster_id

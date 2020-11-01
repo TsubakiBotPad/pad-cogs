@@ -368,11 +368,6 @@ class DgMonster(DadguideItem):
         return self.node['model'].leader_skill
 
     @property
-    def material_of(self):
-        mat_of = self._database.get_evolution_by_material(self.monster_id)
-        return [self._database.get_monster(x.to_id) for x in mat_of]
-
-    @property
     def killers(self):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],

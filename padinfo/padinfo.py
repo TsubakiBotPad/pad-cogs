@@ -1047,11 +1047,11 @@ def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
         field_data = 'None'
     embed.add_field(name=field_name, value=field_data)
 
-    addMonsterEvoOfList(m.material_of, embed, 'Material for')
+    addMonsterEvoOfList(db_context.material_of(m.monster_no), embed, 'Material for')
     evo_gem = db_context.graph.evo_gem_monster(m)
     if not evo_gem:
         return embed
-    addMonsterEvoOfList(db_context.get_monster(evo_gem.monster_no).material_of, embed, "Evo gem is mat for")
+    addMonsterEvoOfList(db_context.material_of(evo_gem.monster_no), embed, "Evo gem is mat for")
     return embed
 
 
