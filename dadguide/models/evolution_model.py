@@ -14,6 +14,7 @@ class EvolutionModel(BaseModel):
         self.mats = [self.mat_1_id, self.mat_2_id, self.mat_3_id, self.mat_4_id, self.mat_5_id]
         self.is_pixel = 3826 in self.mats
         self.is_super_reincarnated = 5077 in self.mats
+        self.tstamp = kwargs['tstamp']
 
     def to_dict(self):
         return {

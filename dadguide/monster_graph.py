@@ -146,6 +146,16 @@ class MonsterGraph(object):
     def _get_edges(node, etype):
         return {mid for mid, edge in node.items() if edge.get('type') == etype}
 
+    @staticmethod
+    def _get_edge_model(node, etype):
+        possible_results = set()
+        for _, edge in node.items():
+            if edge.get('type') == etype:
+                possible_results.add(edge['model'])
+        if len(possible_results) == 0:
+            return None
+        return sorted(possible_results, key=lambda x: x.tstamp)[-1]
+
     def get_monster(self, monster_id) -> Optional[MonsterModel]:
         if monster_id not in self.graph.nodes:
             return None
@@ -221,10 +231,11 @@ class MonsterGraph(object):
         return self.get_monster(self.get_numerical_sort_top_id_by_id(monster_id))
 
     def get_evo_by_monster_id(self, monster_id) -> Optional[EvolutionModel]:
-        prev_evo = self.get_prev_evolution_by_monster_id(monster_id)
-        if prev_evo is None:
-            return None
-        return self.graph.edges[prev_evo, monster_id]['model']
+        return self._get_edge_model(self.graph[monster_id], 'back_evolution')
+        # prev_evo = self.get_prev_evolution_by_monster_id(monster_id)
+        # if prev_evo is None:
+        #     return None
+        # return self.graph.edges[prev_evo, monster_id]['model']
 
     def cur_evo_type_by_monster_id(self, monster_id: int) -> EvoType:
         prev_evo = self.get_evo_by_monster_id(monster_id)

@@ -36,3 +36,6 @@ assert db_context.graph.true_evo_type_by_monster_id(6337) == InternalEvoType.Sup
 assert db_context.graph.true_evo_type_by_monster_id(5871) == InternalEvoType.Pixel  # px sakuya
 assert db_context.graph.true_evo_type_by_monster_id(1465) == InternalEvoType.Normal  # awoken thoth
 assert db_context.graph.true_evo_type_by_monster_id(1464) == InternalEvoType.Base  # base thoth
+
+# check that we're using the most recent data
+assert db_context.graph.true_evo_type_by_monster_id(3908) == InternalEvoType.Reincarnated  # revo typhon

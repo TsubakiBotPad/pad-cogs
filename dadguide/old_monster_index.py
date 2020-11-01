@@ -156,7 +156,7 @@ class MonsterIndex(tsutils.aobject):
         true_evo_type = self.db_context.graph.true_evo_type_by_monster(m)
         awoken = lower_name.startswith('awoken') or '覚醒' in lower_name
         revo = true_evo_type == InternalEvoType.Reincarnated
-        srevo = true_evo_type == InternalEvoType.SuperReincarnated
+        srevo = lower_name.startswith('super reincarnated') or '超転生' in lower_name
         mega = lower_name.startswith('mega awoken') or '極醒' in lower_name
         awoken_or_revo_or_equip_or_mega = awoken or revo or m.is_equip or mega
 
@@ -192,11 +192,6 @@ class MonsterIndex(tsutils.aobject):
         elif cur_evo_type == EvoType.UuvoReincarnated and not awoken_or_revo_or_equip_or_mega:
             prefixes.add('uuvo')
             prefixes.add('uuevo')
-
-        # True Evo Type Prefixes
-        if revo:
-            prefixes.add('revo')
-            prefixes.add('reincarnated')
 
         # Other Prefixes
         if self.db_context.graph.monster_is_farmable_evo(m):
