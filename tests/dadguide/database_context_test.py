@@ -30,9 +30,6 @@ assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'
 assert db_context.get_monster_evo_gem(
     'Archangel of Knowledge, Raziel', region='en').name_en == 'Archangel of Knowledge, Raziel\'s Gem'
 
-assert db_context.get_monsters_by_awakenings(5)[0].evo_from_id == 26  # check the graph exists in DgMonster
-
-
 # evo types
 # 5392 is mega dkali
 assert db_context.graph.get_prev_evolution_by_monster_id(5392) == 1588

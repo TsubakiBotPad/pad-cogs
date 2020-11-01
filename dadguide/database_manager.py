@@ -316,11 +316,6 @@ class DgMonster(DadguideItem):
 
         self.is_inheritable = bool(self.inheritable)
 
-        self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
-        self.evo_from = None
-        if self.evo_from_id:
-            self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]['model']
-
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
         self._alt_version_id_list = sorted(self._graph.get_alt_cards(self.monster_id))
@@ -375,12 +370,6 @@ class DgMonster(DadguideItem):
     @property
     def leader_skill(self):
         return self.node['model'].leader_skill
-
-    @property
-    def mats_for_evo(self):
-        if self.evo_from is None:
-            return []
-        return [self._database.get_monster(mat) for mat in self.evo_from.mats]
 
     @property
     def evo_gem(self):

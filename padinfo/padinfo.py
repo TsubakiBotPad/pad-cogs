@@ -452,7 +452,7 @@ class PadInfo(commands.Cog):
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
         evo_embed = monsterToEvoEmbed(m, db_context)
-        mats_embed = monsterToEvoMatsEmbed(m)
+        mats_embed = monsterToEvoMatsEmbed(m, db_context)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
         other_info_embed = monsterToOtherInfoEmbed(m, db_context)
@@ -1020,15 +1020,15 @@ def addMonsterEvoOfList(monster_list, embed, field_name):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: "DgMonster"):
+def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
 
-    mats_for_evo = m.mats_for_evo
+    mats_for_evo = db_context.graph.evo_mats_by_monster(m)
 
     field_name = 'Evo materials'
     field_data = ''
     if len(mats_for_evo) > 0:
-        for ae in m.mats_for_evo:
+        for ae in mats_for_evo:
             field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
     else:
         field_data = 'None'
@@ -1043,7 +1043,7 @@ def monsterToEvoMatsEmbed(m: "DgMonster"):
 
 def monsterToPantheonEmbed(m: "DgMonster", db_context: "DbContext"):
     full_pantheon = db_context.get_monsters_by_series(m.series_id)
-    pantheon_list = list(filter(lambda x: x.evo_from is None, full_pantheon))
+    pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
 

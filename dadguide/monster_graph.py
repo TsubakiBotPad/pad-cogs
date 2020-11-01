@@ -180,6 +180,12 @@ class MonsterGraph(object):
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
+    def monster_is_base_by_id(self, monster_id: int) -> bool:
+        return self.get_base_id_by_id(monster_id) == monster_id
+
+    def monster_is_base(self, monster: DgMonster) -> bool:
+        return self.monster_is_base_by_id(monster.monster_no)
+
     def get_numerical_sort_top_id_by_id(self, monster_id):
         alt_cards = self.get_alt_cards(monster_id)
         if alt_cards is None:
@@ -241,6 +247,13 @@ class MonsterGraph(object):
 
     def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')
+
+    def evo_mats_by_monster_id(self, monster_id: int) -> list:
+        evo = self.get_evo_by_monster_id(monster_id)
+        return [self.get_monster(mat) for mat in evo.mats]
+
+    def evo_mats_by_monster(self, monster: DgMonster) -> list:
+        return self.evo_mats_by_monster_id(monster.monster_no)
 
     # farmable
     def monster_is_farmable_by_id(self, monster_id):
