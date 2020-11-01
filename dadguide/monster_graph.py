@@ -207,6 +207,9 @@ class MonsterGraph(object):
             return InternalEvoType.Base
 
         evo = self.get_evo_by_monster_id(monster_id)
+        if evo is None:
+            # this is possible without being the above case for transforms
+            return InternalEvoType.Base
         if evo.is_super_reincarnated:
             return InternalEvoType.SuperReincarnated
         elif evo.is_pixel:

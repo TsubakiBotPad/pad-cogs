@@ -1228,7 +1228,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list, db_context: "DbContext"):
 
     info_row_1 = monsterToTypeString(m)
     acquire_text = monsterToAcquireString(m, db_context)
-    tet_text = m.true_evo_type.value
+    tet_text = db_context.graph.true_evo_type_by_monster(m).value
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 

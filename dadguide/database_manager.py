@@ -319,7 +319,7 @@ class DgMonster(DadguideItem):
         self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
         self.evo_from = None
         if self.evo_from_id:
-            self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]
+            self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]['model']
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
@@ -377,32 +377,10 @@ class DgMonster(DadguideItem):
         return self.node['model'].leader_skill
 
     @property
-    def cur_evo_type(self):
-        return EvoType(self.evo_from['evolution_type']) if self.evo_from else EvoType.Base
-
-    @property
-    def true_evo_type(self):
-        if self == self.base_monster:
-            return InternalEvoType.Base
-        elif 5077 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.SuperReincarnated
-        elif 3826 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.Pixel
-        elif self.is_equip:
-            return InternalEvoType.Assist
-        elif self.cur_evo_type == EvoType.UuvoReincarnated:
-            return InternalEvoType.Reincarnated
-        elif self.cur_evo_type == EvoType.UvoAwoken:
-            return InternalEvoType.Ultimate
-        else:
-            return InternalEvoType.Normal
-
-    @property
     def mats_for_evo(self):
         if self.evo_from is None:
             return []
-        return [self._database.get_monster(self.evo_from['mat_{}_id'.format(i)]) for i in range(1, 6) if
-                self.evo_from['mat_{}_id'.format(i)] is not None]
+        return [self._database.get_monster(mat) for mat in self.evo_from.mats]
 
     @property
     def evo_gem(self):
