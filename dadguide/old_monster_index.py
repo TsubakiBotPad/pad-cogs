@@ -44,7 +44,7 @@ class MonsterIndex(tsutils.aobject):
 
         self.series_to_prefix_map = {
             130: ['halloween', 'hw', 'h'],
-            136: ['xmas', 'christmas'],
+            136: ['xmas', 'christmas', 'x'],
             125: ['summer', 'beach'],
             114: ['school', 'academy', 'gakuen'],
             139: ['new years', 'ny'],
