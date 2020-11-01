@@ -15,20 +15,11 @@ db_context.generate_all_monsters()
 assert db_context.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'
 assert db_context.graph.monster_is_farmable_by_id(4)
 assert not db_context.graph.monster_is_farmable_by_id(5156)
-print(db_context.monster_in_rem(1073))  # base pandora
-print(db_context.monster_in_rem(2121))
-print(db_context.monster_in_pem(2120))  # arthur
-assert db_context.monster_in_mp_shop(2256)  # odindra
-assert not db_context.monster_in_mp_shop(5156)  # yusuke
-assert db_context.get_prev_evolution_by_monster(1074) == 1073  # evo pandora
-assert len(db_context.get_next_evolutions_by_monster(1074)) == 2  # evo pandora
 assert db_context.get_base_monster_by_id(1074) == 1073 # evo pandora
 assert len(db_context.get_evolution_by_material(5963)) == 3  # raziel gem
 assert 6352 in db_context.get_evolution_tree_ids(1074)
 assert db_context.get_monsters_by_series(1)[0].name_en == 'Tyrra'
 assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'
-assert db_context.get_monster_evo_gem(
-    'Archangel of Knowledge, Raziel', region='en').name_en == 'Archangel of Knowledge, Raziel\'s Gem'
 
 # evo types
 # 5392 is mega dkali

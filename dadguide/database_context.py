@@ -53,21 +53,6 @@ class DbContext(object):
             (awoken_skill_id,),
             DgMonster, db_context=self, graph=self.graph)
 
-    def monster_in_rem(self, monster_id):
-        m = self.get_monster(monster_id)
-        return m is not None and m.rem_egg == 1
-
-    def monster_in_pem(self, monster_id):
-        m = self.get_monster(monster_id)
-        return m is not None and m.pal_egg == 1
-
-    def monster_in_mp_shop(self, monster_id):
-        m = self.get_monster(monster_id)
-        return m is not None and m.buy_mp is not None
-
-    def get_prev_evolution_by_monster(self, monster_id):
-        return self.graph.get_prev_evolution_by_monster_id(monster_id)
-
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
 
@@ -113,18 +98,6 @@ class DbContext(object):
 
     def get_monsters_by_active(self, active_skill_id: int):
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id)
-
-    def get_monster_evo_gem(self, name: str, region='ja'):
-        gem_suffix = {
-            'ja': 'の希石',
-            'en': '\'s Gem',
-            'ko': ' 의 휘석'
-        }
-        if region not in gem_suffix:
-            return None
-        gem_name = name + gem_suffix.get(region)
-        return self.get_first_monster_where(
-            lambda m: getattr(m, 'name_{}'.format(region)) == gem_name and m.leader_skill_id == 10628)
 
     def _get_monster_query(self, monster_id: int):
         monster = self.database.select_one_entry_by_pk(monster_id, DgMonster)
