@@ -7,7 +7,6 @@ from dadguide.database_manager import InternalEvoType
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
 db_context = DbContext(database, graph)
-graph.set_database(db_context)
 graph.build_graph()
 db_context.generate_all_monsters()
 

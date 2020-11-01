@@ -17,28 +17,24 @@ from .models.evolution_model import EvolutionModel
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
-        self.db_context = None
         self.graph = None
         self.graph: nx.DiGraph
         self.edges = None
         self.nodes = None
         self.max_monster_id = -1
 
-    def set_database(self, db_context):
-        self.db_context = db_context
-
     def build_graph(self):
         self.graph = nx.DiGraph()
 
         ms = self.database.query_many(
             "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_rcv, leader_skills.max_shield, leader_skills.max_combos, active_skills.name_ja AS as_name_ja, active_skills.name_en AS as_name_en, active_skills.name_ko AS as_name_ko, active_skills.desc_ja AS as_desc_ja, active_skills.desc_en AS as_desc_en, active_skills.desc_ko AS as_desc_ko, active_skills.turn_max, active_skills.turn_min, series.name_ja AS s_name_ja, series.name_en AS s_name_en, series.name_ko AS s_name_ko, exchanges.target_monster_id AS evo_gem_id, drops.drop_id FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id LEFT OUTER JOIN series ON monsters.series_id = series.series_id LEFT OUTER JOIN exchanges on '(' || monsters.monster_id || ')' = exchanges.required_monster_ids LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
-            db_context=self.db_context, graph=self)
+            graph=self)
 
         es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
-                                      db_context=self.db_context, graph=self)
+                                      graph=self)
 
         aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
-                                       db_context=self.db_context, graph=self)
+                                       graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:

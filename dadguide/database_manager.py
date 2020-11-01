@@ -125,7 +125,7 @@ class DadguideDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param, d_type, db_context=None, graph=None):
+    def query_one(self, query, param, d_type, graph=None):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
@@ -136,7 +136,7 @@ class DadguideDatabase(object):
                 return d_type(res)
         return None
 
-    def as_generator(self, cursor, d_type, db_context=None, graph=None):
+    def as_generator(self, cursor, d_type, graph=None):
         res = cursor.fetchone()
         while res is not None:
             if issubclass(d_type, DadguideItem):
@@ -145,8 +145,7 @@ class DadguideDatabase(object):
                 yield d_type(res)
             res = cursor.fetchone()
 
-    def query_many(self, query, param, d_type, idx_key=None, as_generator=False,
-                   db_context=None, graph=None):
+    def query_many(self, query, param, d_type, idx_key=None, as_generator=False, graph=None):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
@@ -174,13 +173,13 @@ class DadguideDatabase(object):
         cursor.execute("SELECT MAX(monster_id) FROM monsters")
         return cursor.fetchone()['MAX(monster_id)']
 
-    def select_one_entry_by_pk(self, pk, d_type, db_context=None, graph=None):
+    def select_one_entry_by_pk(self, pk, d_type, graph=None):
         return self.query_one(
             self.select_builder(
                 tables={d_type.TABLE: d_type.FIELDS},
                 where='{}.{}=?'.format(d_type.TABLE, d_type.PK)),
             (pk,),
-            d_type, db_context=db_context, graph=graph)
+            d_type, graph=graph)
 
     def get_table_fields(self, table_name: str):
         # SQL inject vulnerable :v

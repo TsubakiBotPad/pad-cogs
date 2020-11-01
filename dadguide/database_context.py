@@ -16,7 +16,6 @@ class DbContext(object):
     def __init__(self, database: DadguideDatabase, graph: MonsterGraph):
         self.database = database
         self.graph = graph
-        self.graph.set_database(self)
         self.cachedmonsters = None
         self.expiry = 0
 
@@ -28,15 +27,14 @@ class DbContext(object):
             self.database.select_builder(tables={DgMonster.TABLE: DgMonster.FIELDS}),
             (),
             DgMonster,
-            as_generator=True, db_context=self, graph=self.graph)}
+            as_generator=True, graph=self.graph)}
         self.expiry = int(datetime.now().timestamp()) + 60 * 60
 
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
         return [r.awoken_skill_id for r in
                 self.database.query_many(
-                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True,
-                    db_context=self, graph=self.graph)]
+                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True, graph=self.graph)]
 
     def get_monsters_by_awakenings(self, awoken_skill_id: int):
         # TODO: Make this not make monsters via query
@@ -51,7 +49,7 @@ class DbContext(object):
                 distinct=True
             ),
             (awoken_skill_id,),
-            DgMonster, db_context=self, graph=self.graph)
+            DgMonster, graph=self.graph)
 
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
@@ -66,7 +64,7 @@ class DbContext(object):
                 where=' OR '.join(['{}.mat_{}_id=?'.format(DgEvolution.TABLE, i) for i in range(1, 6)])
             ),
             (monster_id,) * 5,
-            DgEvolution, db_context=self)
+            DgEvolution)
 
     def material_of(self, monster_id):
         mat_of = self.get_evolution_by_material(monster_id)
@@ -114,8 +112,7 @@ class DbContext(object):
     def get_all_monster_ids_query(self, as_generator=True):
         query = self.database.query_many(self.database.select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (),
                                          DictWithAttrAccess,
-                                         as_generator=as_generator,
-                                         db_context=self, graph=self.graph)
+                                         as_generator=as_generator, graph=self.graph)
         if as_generator:
             return map(lambda m: m.monster_id, query)
         return [m.monster_id for m in query]
@@ -133,7 +130,7 @@ class DbContext(object):
     def get_all_events(self, as_generator=True):
         return self.database.query_many(
             self.database.select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
-            DgScheduledEvent, db_context=self,
+            DgScheduledEvent,
             as_generator=as_generator)
 
     def get_dungeon_by_id(self, dungeon_id: int):
@@ -147,7 +144,7 @@ class DbContext(object):
         return self.database.query_many(
             SELECT_BASE_MONSTER_ID,
             (),
-            DictWithAttrAccess, db_context=self,
+            DictWithAttrAccess,
             as_generator=True)
 
     def tokenize_monsters(self):
