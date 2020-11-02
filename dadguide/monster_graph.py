@@ -22,6 +22,7 @@ class MonsterGraph(object):
         self.edges = None
         self.nodes = None
         self.max_monster_id = -1
+        self.build_graph()
 
     def build_graph(self):
         self.graph = nx.DiGraph()

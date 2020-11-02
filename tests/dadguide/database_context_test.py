@@ -7,8 +7,6 @@ from dadguide.database_manager import InternalEvoType
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
 db_context = DbContext(database, graph)
-graph.build_graph()
-db_context.generate_all_monsters()
 
 # print(ctx.get_awoken_skill_ids())
 assert db_context.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'

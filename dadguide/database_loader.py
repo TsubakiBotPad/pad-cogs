@@ -25,6 +25,4 @@ def load_database(existing_db):
     database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
     graph = MonsterGraph(database)
     db_context = DbContext(database, graph)
-    graph.build_graph()
-    db_context.generate_all_monsters()
     return db_context
