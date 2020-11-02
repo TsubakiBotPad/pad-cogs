@@ -144,9 +144,9 @@ def toHeader(c):
     collection = c['translated_collection']
     name = c['idol']['name']
     if collection:
-        return 'No. {} {} {}'.format(cid, collection, name)
+        return '[{}] {} {}'.format(cid, collection, name)
     else:
-        return 'No. {} {}'.format(cid, name)
+        return '[{}] {}'.format(cid, name)
 
 
 def get_info_url(c):
