@@ -4,7 +4,6 @@ from collections import OrderedDict, defaultdict, deque
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
 from .database_manager import DadguideItem
-from .database_manager import DgMonster
 from .database_manager import DgDungeon
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
@@ -52,9 +51,10 @@ class DbContext(object):
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id)
 
     def get_all_monster_ids_query(self, as_generator=True):
-        query = self.database.query_many(self.database.select_builder(tables={DgMonster.TABLE: ('monster_id',)}), (),
-                                         DictWithAttrAccess,
-                                         as_generator=as_generator, graph=self.graph)
+        query = self.database.query_many(
+            self.database.select_builder(tables={'monsters': ('monster_id',)}), (),
+            DictWithAttrAccess,
+            as_generator=as_generator, graph=self.graph)
         if as_generator:
             return map(lambda m: m.monster_id, query)
         return [m.monster_id for m in query]
