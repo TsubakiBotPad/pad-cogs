@@ -3,7 +3,6 @@ from typing import Optional
 from collections import defaultdict
 from .database_manager import DgMonster
 from .database_manager import DadguideDatabase
-from .database_manager import DgAwakening
 from .database_manager import DictWithAttrAccess
 from .models.enum_types import EvoType, InternalEvoType
 from .models.monster_model import MonsterModel
@@ -11,6 +10,8 @@ from .models.leader_skill_model import LeaderSkillModel
 from .models.active_skill_model import ActiveSkillModel
 from .models.series_model import SeriesModel
 from .models.evolution_model import EvolutionModel
+from .models.awoken_skill_model import AwokenSkillModel
+from .models.awakening_model import AwakeningModel
 
 MONSTER_QUERY = """SELECT
   monsters.*,
@@ -70,12 +71,11 @@ FROM
   AND evolutions.tstamp = latest_evolutions.tstamp"""
 
 AWAKENINGS_QUERY = """SELECT
-  monster_id,
-  awoken_skills.awoken_skill_id,
-  is_super,
-  order_idx,
-  name_ja,
-  name_en
+  awakenings.awakening_id,
+  awakenings.monster_id,
+  awakenings.is_super,
+  awakenings.order_idx,
+  awoken_skills.*
 FROM
   awakenings
   JOIN awoken_skills ON awakenings.awoken_skill_id = awoken_skills.awoken_skill_id"""
@@ -96,11 +96,13 @@ class MonsterGraph(object):
 
         ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess, graph=self)
         es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess, graph=self)
-        aws = self.database.query_many(AWAKENINGS_QUERY, (), DgAwakening, graph=self)
+        aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess, graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:
-            mtoawo[a.monster_id].append(a)
+            awoken_skill_model = AwokenSkillModel(**a)
+            awakening_model = AwakeningModel(awoken_skill_model=awoken_skill_model, **a)
+            mtoawo[a.monster_id].append(awakening_model)
 
         for m in ms:
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,

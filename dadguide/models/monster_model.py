@@ -13,6 +13,8 @@ class MonsterModel(BaseModel):
         self.monster_no_jp = m['monster_no_jp']
         self.monster_no_na = m['monster_no_na']
         self.monster_no_kr = m['monster_no_kr']
+
+        # these things are literally named backwards atm
         self.awakenings = m['awakenings']
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
         self.leader_skill = m['leader_skill']
