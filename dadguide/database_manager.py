@@ -255,8 +255,6 @@ class DgMonster(DadguideItem):
 
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
 
-        self.search = MonsterSearchHelper(self)
-
     @property
     def node(self):
         return self._graph.nodes[self.monster_id]
@@ -338,110 +336,6 @@ class DgMonster(DadguideItem):
 
     def __hash__(self):
         return hash(("DgMonster", self.monster_id))
-
-
-class MonsterSearchHelper(object):
-    def __init__(self, m: DgMonster):
-
-        self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
-        leader_skill = m.leader_skill
-        self.leader = leader_skill.desc.lower() if leader_skill else ''
-        active_skill = m.active_skill
-        self.active_name = active_skill.name.lower() if active_skill else ''
-        self.active_desc = active_skill.desc.lower() if active_skill else ''
-        self.active = '{} {}'.format(self.active_name, self.active_desc)
-        self.active_min = active_skill.turn_min if active_skill else None
-        self.active_max = active_skill.turn_max if active_skill else None
-
-        self.color = [m.attr1.name.lower()]
-        self.hascolor = [c.name.lower() for c in [m.attr1, m.attr2] if c]
-
-        self.hp, self.atk, self.rcv, self.weighted_stats = m.stats(lv=110)
-
-        self.types = [t.name for t in m.types]
-
-        def replace_colors(text: str):
-            return text.replace('red', 'fire').replace('blue', 'water').replace('green', 'wood')
-
-        self.leader = replace_colors(self.leader)
-        self.active = replace_colors(self.active)
-        self.active_name = replace_colors(self.active_name)
-        self.active_desc = replace_colors(self.active_desc)
-
-        self.board_change = []
-        self.orb_convert = defaultdict(list)
-        self.row_convert = []
-        self.column_convert = []
-
-        def color_txt_to_list(txt):
-            txt = txt.replace('and', ' ')
-            txt = txt.replace(',', ' ')
-            txt = txt.replace('orbs', ' ')
-            txt = txt.replace('orb', ' ')
-            txt = txt.replace('mortal poison', 'mortalpoison')
-            txt = txt.replace('jammers', 'jammer')
-            txt = txt.strip()
-            return txt.split()
-
-        def strip_prev_clause(txt: str, sep: str):
-            prev_clause_start_idx = txt.find(sep)
-            if prev_clause_start_idx >= 0:
-                prev_clause_start_idx += len(sep)
-                txt = txt[prev_clause_start_idx:]
-            return txt
-
-        def strip_next_clause(txt: str, sep: str):
-            next_clause_start_idx = txt.find(sep)
-            if next_clause_start_idx >= 0:
-                txt = txt[:next_clause_start_idx]
-            return txt
-
-        active_desc = self.active_desc
-        active_desc = active_desc.replace(' rows ', ' row ')
-        active_desc = active_desc.replace(' columns ', ' column ')
-        active_desc = active_desc.replace(' into ', ' to ')
-        active_desc = active_desc.replace('changes orbs to', 'all orbs to')
-
-        board_change_txt = 'all orbs to'
-        if board_change_txt in active_desc:
-            txt = strip_prev_clause(active_desc, board_change_txt)
-            txt = strip_next_clause(txt, 'orbs')
-            txt = strip_next_clause(txt, ';')
-            self.board_change = color_txt_to_list(txt)
-
-        txt = active_desc
-        if 'row' in txt:
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                if 'row' in parts[i]:
-                    self.row_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        txt = active_desc
-        if 'column' in txt:
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                if 'column' in parts[i]:
-                    self.column_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        convert_done = self.board_change or self.row_convert or self.column_convert
-
-        change_txt = 'change '
-        if not convert_done and change_txt in active_desc and 'orb' in active_desc:
-            txt = active_desc
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                parts[i] = strip_prev_clause(parts[i], change_txt) if change_txt in parts[i] else ''
-
-            for part in parts:
-                sub_parts = part.split(' to ')
-                if len(sub_parts) > 1:
-                    source_orbs = color_txt_to_list(sub_parts[0])
-                    dest_orbs = color_txt_to_list(sub_parts[1])
-                    for so in source_orbs:
-                        for do in dest_orbs:
-                            self.orb_convert[so].append(do)
 
 
 def make_roma_subname(name_ja):

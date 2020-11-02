@@ -104,7 +104,7 @@ class DbContext(object):
             self.generate_all_monsters()
 
     def get_all_monsters(self, as_generator=True):
-        monsters = (self.get_monster(mid) for mid in self.get_all_monster_ids_query())
+        monsters = (self.graph.get_monster(mid) for mid in self.get_all_monster_ids_query())
         if not as_generator:
             return [*monsters]
         return monsters

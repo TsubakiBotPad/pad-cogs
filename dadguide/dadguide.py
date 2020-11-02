@@ -108,7 +108,7 @@ class Dadguide(commands.Cog):
 
     def get_monster_by_id(self, monster_id: int):
         """Exported function that allows a client cog to get a full DgMonster by monster_id"""
-        return self.database.get_monster(monster_id)
+        return self.database.graph.get_monster(monster_id)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
