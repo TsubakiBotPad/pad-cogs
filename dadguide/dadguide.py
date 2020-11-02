@@ -27,26 +27,30 @@ logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
 def _data_file(file_name: str) -> str:
-    # return 'S:\\Documents\\Games\\PAD\\dadguide.sqlite'
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
-CSV_FILE_PATTERN = '{}.csv'
-NAMES_EXPORT_PATH = _data_file('computed_names.json')
-BASENAMES_EXPORT_PATH = _data_file('base_names.json')
-TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
+try:
+    # allow to run the tests locally without being inside a bot instance, which won't
+    # have any cog data path loaded
+    CSV_FILE_PATTERN = '{}.csv'
+    NAMES_EXPORT_PATH = _data_file('computed_names.json')
+    BASENAMES_EXPORT_PATH = _data_file('base_names.json')
+    TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
-SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
-NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
-PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
+    SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
+    NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
+    GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
+    PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
-NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
-BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
-PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
+    NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
+    BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
+    PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
-DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
-DB_DUMP_FILE = _data_file('dadguide.sqlite')
+    DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
+    DB_DUMP_FILE = _data_file('dadguide.sqlite')
+except RuntimeError:
+    pass
 
 
 class Dadguide(commands.Cog):
