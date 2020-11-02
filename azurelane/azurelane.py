@@ -109,7 +109,7 @@ def make_card_embed(c, image_idx):
     url = image['url']
     file_name = url[url.rfind("/") + 1:]
 
-    header = 'No. {} {} - {}'.format(cid, name, image_title)
+    header = '[{}] {} - {}'.format(cid, name, image_title)
     image_url = 'https://storage.googleapis.com/mirubot/alimages/raw/{}'.format(file_name)
 
     embed = discord.Embed()

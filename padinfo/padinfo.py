@@ -951,7 +951,7 @@ class PadInfoSettings(CogSettings):
 
 
 def monsterToHeader(m: "DgMonster", link=False):
-    msg = 'No. {} {}'.format(m.monster_no_na, m.name_en)
+    msg = '[{}] {}'.format(m.monster_no_na, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
