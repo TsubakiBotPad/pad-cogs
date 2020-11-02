@@ -168,11 +168,6 @@ class DadguideDatabase(object):
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
-    def _max_id(self):
-        cursor = self._con.cursor()
-        cursor.execute("SELECT MAX(monster_id) FROM monsters")
-        return cursor.fetchone()['MAX(monster_id)']
-
     def select_one_entry_by_pk(self, pk, d_type, graph=None):
         return self.query_one(
             self.select_builder(

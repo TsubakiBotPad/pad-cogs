@@ -7,7 +7,6 @@ from .database_manager import DadguideItem
 from .database_manager import DgMonster
 from .database_manager import DgAwakening
 from .database_manager import DgDungeon
-from .database_manager import DgEvolution
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
 
@@ -19,7 +18,6 @@ class DbContext(object):
         self.cachedmonsters = None
         self.expiry = 0
 
-        self.max_id = database._max_id()
         self.generate_all_monsters()
 
     def generate_all_monsters(self):
@@ -53,9 +51,6 @@ class DbContext(object):
 
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
-
-    def get_base_monster_by_id(self, monster_id):
-        return min(self.graph.get_alt_cards(monster_id))
 
     def get_evolution_tree_ids(self, base_monster_id):
         # is not a tree i lied
