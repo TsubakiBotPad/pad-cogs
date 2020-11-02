@@ -96,21 +96,21 @@ class IdEmojiUpdater(EmojiUpdater):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
-            evos = sorted({*self.m.alt_versions}, key=lambda m: m.monster_id)
-            index = evos.index(self.m)
+            evos = sorted({*self.db_context.graph.get_alt_cards(self.m.monster_id)})
+            index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                newm = evos[index - 1]
+                new_id = evos[index - 1]
             elif selected_emoji == self.pad_info.next_monster_emoji:
                 if index == len(evos) - 1:
-                    newm = evos[0]
+                    new_id = evos[0]
                 else:
-                    newm = evos[index + 1]
+                    new_id = evos[index + 1]
             else:
                 self.selected_emoji = selected_emoji
                 return True
-            if newm.monster_id == self.m.monster_id:
+            if new_id == self.m.monster_id:
                 return False
-            self.m = newm
+            self.m = self.db_context.graph.get_monster(new_id)
         else:
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 if self.m.prev_monster is None:
@@ -124,7 +124,9 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=sorted({*self.m.alt_versions}, key=lambda x: x.monster_id) if evoID else [], menu_type = 1)
+        self.emoji_dict = self.pad_info.get_id_emoji_options(
+            m=self.m, scroll=sorted(
+                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
         return True
 
 
@@ -424,10 +426,11 @@ class PadInfo(commands.Cog):
             await ctx.send(self.makeFailureMsg(err))
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
-
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
+
+        alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
+        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
 
         return await self._do_menu(
             ctx,
@@ -452,7 +455,7 @@ class PadInfo(commands.Cog):
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
         evo_embed = monsterToEvoEmbed(m, db_context)
-        mats_embed = monsterToEvoMatsEmbed(m)
+        mats_embed = monsterToEvoMatsEmbed(m, db_context)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
         other_info_embed = monsterToOtherInfoEmbed(m, db_context)
@@ -493,7 +496,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        monsters = sm.alt_versions
+        monsters = db_context.graph.get_alt_monsters_by_id(sm.monster_id)
         monsters.sort(key=lambda m: m.monster_id)
 
         emoji_to_embed = OrderedDict()
@@ -995,55 +998,58 @@ def monsterToEvoEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
 
-    if not len(alt_versions) and not m.evo_gem:
+    evo_gem = db_context.graph.evo_gem_monster(m)
+    if not len(alt_versions) and not evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
     addEvoListFields(alt_versions, embed, '{} alternate evo(s)')
-    if not m.evo_gem:
+    if not evo_gem:
         return embed
-    addEvoListFields([m.evo_gem], embed, '{} evo gem(s)')
+    addEvoListFields([evo_gem], embed, '{} evo gem(s)')
 
     return embed
 
 
-def addMonsterEvoOfList(monster_list, embed, field_name):
-    if not len(monster_list):
+def addMonsterEvoOfList(monster_id_list, embed, field_name, db_context=None):
+    if not len(monster_id_list):
         return
     field_data = ''
-    if len(monster_list) > 5:
-        field_data = '{} monsters'.format(len(monster_list))
+    if len(monster_id_list) > 5:
+        field_data = '{} monsters'.format(len(monster_id_list))
     else:
-        item_count = min(len(monster_list), 5)
+        item_count = min(len(monster_id_list), 5)
+        monster_list = [db_context.graph.get_monster(m) for m in monster_id_list]
         for ae in sorted(monster_list, key=lambda x: x.monster_no_na, reverse=True)[:item_count]:
             field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: "DgMonster"):
+def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
 
-    mats_for_evo = m.mats_for_evo
+    mats_for_evo = db_context.graph.evo_mats_by_monster(m)
 
     field_name = 'Evo materials'
     field_data = ''
     if len(mats_for_evo) > 0:
-        for ae in m.mats_for_evo:
+        for ae in mats_for_evo:
             field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
     else:
         field_data = 'None'
     embed.add_field(name=field_name, value=field_data)
 
-    addMonsterEvoOfList(m.material_of, embed, 'Material for')
-    if not m.evo_gem:
+    addMonsterEvoOfList(db_context.graph.material_of_ids(m), embed, 'Material for', db_context=db_context)
+    evo_gem = db_context.graph.evo_gem_monster(m)
+    if not evo_gem:
         return embed
-    addMonsterEvoOfList(m.evo_gem.material_of, embed, "Tree's gem (may not be this evo) is mat for")
+    addMonsterEvoOfList(db_context.graph.material_of_ids(evo_gem), embed, "Evo gem is mat for", db_context=db_context)
     return embed
 
 
 def monsterToPantheonEmbed(m: "DgMonster", db_context: "DbContext"):
     full_pantheon = db_context.get_monsters_by_series(m.series_id)
-    pantheon_list = list(filter(lambda x: x.evo_from is None, full_pantheon))
+    pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
 
@@ -1228,7 +1234,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list, db_context: "DbContext"):
 
     info_row_1 = monsterToTypeString(m)
     acquire_text = monsterToAcquireString(m, db_context)
-    tet_text = m.true_evo_type.value
+    tet_text = db_context.graph.true_evo_type_by_monster(m).value
 
     os = "" if m.orb_skin_id is None else " (Orb Skin)"
 

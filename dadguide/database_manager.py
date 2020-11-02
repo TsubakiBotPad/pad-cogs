@@ -125,47 +125,46 @@ class DadguideDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param, d_type, db_context=None, graph=None):
+    def query_one(self, query, param, d_type, graph=None):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
         if res is not None:
             if issubclass(d_type, DadguideItem):
-                return d_type(res, db_context, graph=graph)
+                return d_type(res, graph=graph)
             else:
                 return d_type(res)
         return None
 
-    def as_generator(self, cursor, d_type, db_context=None, graph=None):
+    def as_generator(self, cursor, d_type, graph=None):
         res = cursor.fetchone()
         while res is not None:
             if issubclass(d_type, DadguideItem):
-                yield d_type(res, db_context, graph=graph)
+                yield d_type(res, graph=graph)
             else:
                 yield d_type(res)
             res = cursor.fetchone()
 
-    def query_many(self, query, param, d_type, idx_key=None, as_generator=False,
-                   db_context=None, graph=None):
+    def query_many(self, query, param, d_type, idx_key=None, as_generator=False, graph=None):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (d_type(res, db_context, graph=graph)
+            return (d_type(res, graph=graph)
                     if issubclass(d_type, DadguideItem)
                     else d_type(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
                 if issubclass(d_type, DadguideItem):
-                    return [d_type(res, db_context, graph=graph) for res in cursor.fetchall()]
+                    return [d_type(res, graph=graph) for res in cursor.fetchall()]
                 else:
                     return [d_type(res) for res in cursor.fetchall()]
             else:
                 if issubclass(d_type, DadguideItem):
                     return DictWithAttrAccess(
-                        {res[idx_key]: d_type(res, db_context, graph=graph) for res in cursor.fetchall()})
+                        {res[idx_key]: d_type(res, graph=graph) for res in cursor.fetchall()})
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
@@ -174,13 +173,13 @@ class DadguideDatabase(object):
         cursor.execute("SELECT MAX(monster_id) FROM monsters")
         return cursor.fetchone()['MAX(monster_id)']
 
-    def select_one_entry_by_pk(self, pk, d_type, db_context=None, graph=None):
+    def select_one_entry_by_pk(self, pk, d_type, graph=None):
         return self.query_one(
             self.select_builder(
                 tables={d_type.TABLE: d_type.FIELDS},
                 where='{}.{}=?'.format(d_type.TABLE, d_type.PK)),
             (pk,),
-            d_type, db_context=db_context, graph=graph)
+            d_type, graph=graph)
 
     def get_table_fields(self, table_name: str):
         # SQL inject vulnerable :v
@@ -219,9 +218,8 @@ class DadguideItem(DictWithAttrAccess):
     PK = None
     AS_BOOL = ()
 
-    def __init__(self, item, database, **kwargs):
+    def __init__(self, item, **kwargs):
         super(DadguideItem, self).__init__(item)
-        self._database = database
         for k in self.AS_BOOL:
             self[k] = bool(self[k])
 
@@ -234,8 +232,8 @@ class DgAwakening(DadguideItem):
     PK = 'awakening_id'
     AS_BOOL = ['is_super']
 
-    def __init__(self, item, database, **kwargs):
-        super(DgAwakening, self).__init__(item, database)
+    def __init__(self, item, **kwargs):
+        super(DgAwakening, self).__init__(item)
 
     @property
     def name(self):
@@ -246,8 +244,8 @@ class DgEvolution(DadguideItem):
     TABLE = 'evolutions'
     PK = 'evolution_id'
 
-    def __init__(self, item, database, **kwargs):
-        super(DgEvolution, self).__init__(item, database)
+    def __init__(self, item, **kwargs):
+        super(DgEvolution, self).__init__(item)
         self.evolution_type = EvoType(self.evolution_type)
 
 
@@ -260,8 +258,8 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
-    def __init__(self, item, database, **graph):
-        super(DgScheduledEvent, self).__init__(item, database)
+    def __init__(self, item, **graph):
+        super(DgScheduledEvent, self).__init__(item)
 
     @property
     def open_datetime(self):
@@ -285,8 +283,8 @@ class DgMonster(DadguideItem):
     PK = 'monster_id'
     AS_BOOL = ('on_jp', 'on_na', 'on_kr', 'has_animation', 'has_hqimage')
 
-    def __init__(self, item, database, graph):
-        super(DgMonster, self).__init__(item, database)
+    def __init__(self, item, graph):
+        super(DgMonster, self).__init__(item)
 
         self._graph = graph
 
@@ -316,22 +314,13 @@ class DgMonster(DadguideItem):
 
         self.is_inheritable = bool(self.inheritable)
 
-        self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
-        self.evo_from = None
-        if self.evo_from_id:
-            self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]
-
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
-
-        self._alt_version_id_list = sorted(self._graph.get_alt_cards(self.monster_id))
-        self._base_monster_id = self._alt_version_id_list[0]
-        self._alt_evo_id_list = sorted(self._graph.get_evo_tree(self.monster_id))
 
         self.search = MonsterSearchHelper(self)
 
     @property
     def node(self):
-        return self._database.graph.nodes[self.monster_id]
+        return self._graph.nodes[self.monster_id]
 
     @property
     def monster_no(self):
@@ -377,51 +366,6 @@ class DgMonster(DadguideItem):
         return self.node['model'].leader_skill
 
     @property
-    def cur_evo_type(self):
-        return EvoType(self.evo_from['evolution_type']) if self.evo_from else EvoType.Base
-
-    @property
-    def true_evo_type(self):
-        if self == self.base_monster:
-            return InternalEvoType.Base
-        elif 5077 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.SuperReincarnated
-        elif 3826 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.Pixel
-        elif self.is_equip:
-            return InternalEvoType.Assist
-        elif self.cur_evo_type == EvoType.UuvoReincarnated:
-            return InternalEvoType.Reincarnated
-        elif self.cur_evo_type == EvoType.UvoAwoken:
-            return InternalEvoType.Ultimate
-        else:
-            return InternalEvoType.Normal
-
-    @property
-    def mats_for_evo(self):
-        if self.evo_from is None:
-            return []
-        return [self._database.get_monster(self.evo_from['mat_{}_id'.format(i)]) for i in range(1, 6) if
-                self.evo_from['mat_{}_id'.format(i)] is not None]
-
-    @property
-    def evo_gem(self):
-        return self._database.get_monster_evo_gem(self.name_ja)
-
-    @property
-    def material_of(self):
-        mat_of = self._database.get_evolution_by_material(self.monster_id)
-        return [self._database.get_monster(x.to_id) for x in mat_of]
-
-    @property
-    def base_monster(self):
-        return self._database.get_monster(self._base_monster_id)
-
-    @property
-    def alt_versions(self):
-        return [self._database.get_monster(a) for a in self._alt_version_id_list]
-
-    @property
     def killers(self):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],
@@ -446,24 +390,6 @@ class DgMonster(DadguideItem):
     @property
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
-
-    @property
-    def next_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no + offset <= self._database.max_id:
-            next = self._database.get_monster(self.monster_no + offset)
-            offset += 1
-        return next
-
-    @property
-    def prev_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no - offset >= 1:
-            next = self._database.get_monster(self.monster_no - offset)
-            offset += 1
-        return next
 
     def __repr__(self):
         return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
