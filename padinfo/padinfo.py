@@ -1011,14 +1011,15 @@ def monsterToEvoEmbed(m: "DgMonster", db_context: "DbContext"):
     return embed
 
 
-def addMonsterEvoOfList(monster_list, embed, field_name):
-    if not len(monster_list):
+def addMonsterEvoOfList(monster_id_list, embed, field_name, db_context=None):
+    if not len(monster_id_list):
         return
     field_data = ''
-    if len(monster_list) > 5:
-        field_data = '{} monsters'.format(len(monster_list))
+    if len(monster_id_list) > 5:
+        field_data = '{} monsters'.format(len(monster_id_list))
     else:
-        item_count = min(len(monster_list), 5)
+        item_count = min(len(monster_id_list), 5)
+        monster_list = [db_context.graph.get_monster(m) for m in monster_id_list]
         for ae in sorted(monster_list, key=lambda x: x.monster_no_na, reverse=True)[:item_count]:
             field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
     embed.add_field(name=field_name, value=field_data)
@@ -1038,11 +1039,11 @@ def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
         field_data = 'None'
     embed.add_field(name=field_name, value=field_data)
 
-    addMonsterEvoOfList(db_context.material_of(m.monster_no), embed, 'Material for')
+    addMonsterEvoOfList(db_context.graph.material_of_ids(m), embed, 'Material for', db_context=db_context)
     evo_gem = db_context.graph.evo_gem_monster(m)
     if not evo_gem:
         return embed
-    addMonsterEvoOfList(db_context.material_of(evo_gem.monster_no), embed, "Evo gem is mat for")
+    addMonsterEvoOfList(db_context.graph.material_of_ids(evo_gem), embed, "Evo gem is mat for", db_context=db_context)
     return embed
 
 

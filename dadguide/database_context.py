@@ -57,19 +57,6 @@ class DbContext(object):
     def get_base_monster_by_id(self, monster_id):
         return min(self.graph.get_alt_cards(monster_id))
 
-    def get_evolution_by_material(self, monster_id):
-        return self.database.query_many(
-            self.database.select_builder(
-                tables={DgEvolution.TABLE: DgEvolution.FIELDS},
-                where=' OR '.join(['{}.mat_{}_id=?'.format(DgEvolution.TABLE, i) for i in range(1, 6)])
-            ),
-            (monster_id,) * 5,
-            DgEvolution)
-
-    def material_of(self, monster_id):
-        mat_of = self.get_evolution_by_material(monster_id)
-        return [self.get_monster(x.to_id) for x in mat_of]
-
     def get_evolution_tree_ids(self, base_monster_id):
         # is not a tree i lied
         base_id = base_monster_id

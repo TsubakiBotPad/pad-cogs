@@ -30,7 +30,11 @@ class MonsterGraph(object):
             "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_rcv, leader_skills.max_shield, leader_skills.max_combos, active_skills.name_ja AS as_name_ja, active_skills.name_en AS as_name_en, active_skills.name_ko AS as_name_ko, active_skills.desc_ja AS as_desc_ja, active_skills.desc_en AS as_desc_en, active_skills.desc_ko AS as_desc_ko, active_skills.turn_max, active_skills.turn_min, series.name_ja AS s_name_ja, series.name_en AS s_name_en, series.name_ko AS s_name_ko, exchanges.target_monster_id AS evo_gem_id, drops.drop_id FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id LEFT OUTER JOIN series ON monsters.series_id = series.series_id LEFT OUTER JOIN exchanges on '(' || monsters.monster_id || ')' = exchanges.required_monster_ids LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id GROUP BY monsters.monster_id", (), DictWithAttrAccess,
             graph=self)
 
-        es = self.database.query_many("SELECT * FROM evolutions", (), DictWithAttrAccess,
+        # make sure we're only looking at the most recent row for any evolution
+        # since the database might have old data in it still
+        # group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
+        # the evolution_id changes when data changes so grouping by evolution_id is unhelpful
+        es = self.database.query_many("SELECT evolutions.* FROM (SELECT evolution_id, MAX(tstamp) AS tstamp FROM evolutions GROUP BY to_id) AS latest_evolutions INNER JOIN evolutions ON evolutions.evolution_id=latest_evolutions.evolution_id AND evolutions.tstamp=latest_evolutions.tstamp", (), DictWithAttrAccess,
                                       graph=self)
 
         aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
@@ -132,8 +136,20 @@ class MonsterGraph(object):
 
         for e in es:
             evo_model = EvolutionModel(**e)
-            self.graph.add_edge(e.from_id, e.to_id, type='evolution', model=evo_model)
-            self.graph.add_edge(e.to_id, e.from_id, type='back_evolution', model=evo_model)
+
+            self.graph.add_edge(
+                evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
+            self.graph.add_edge(
+                evo_model.to_id, evo_model.from_id, type='back_evolution', model=evo_model)
+
+            # for material_of queries
+            already_used_in_this_evo = []  # don't add same mat more than once per evo
+            for mat in evo_model.mats:
+                if mat in already_used_in_this_evo:
+                    continue
+                self.graph.add_edge(
+                    mat, evo_model.to_id, type="material_of", model=evo_model)
+                already_used_in_this_evo.append(mat)
 
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
@@ -228,10 +244,6 @@ class MonsterGraph(object):
 
     def get_evo_by_monster_id(self, monster_id) -> Optional[EvolutionModel]:
         return self._get_edge_model(self.graph[monster_id], 'back_evolution')
-        # prev_evo = self.get_prev_evolution_by_monster_id(monster_id)
-        # if prev_evo is None:
-        #     return None
-        # return self.graph.edges[prev_evo, monster_id]['model']
 
     def cur_evo_type_by_monster_id(self, monster_id: int) -> EvoType:
         prev_evo = self.get_evo_by_monster_id(monster_id)
@@ -373,3 +385,9 @@ class MonsterGraph(object):
 
     def evo_gem_monster(self, monster: DgMonster) -> Optional[MonsterModel]:
         return self.evo_gem_monster_by_id(monster.monster_no)
+
+    def material_of_ids_by_id(self, monster_id: int) -> list:
+        return sorted(self._get_edges(self.graph[monster_id], 'material_of'))
+
+    def material_of_ids(self, monster: DgMonster) -> list:
+        return self.material_of_ids_by_id(monster.monster_no)

@@ -11,7 +11,8 @@ class EvolutionModel(BaseModel):
         self.mat_3_id = kwargs['mat_3_id']
         self.mat_4_id = kwargs['mat_4_id']
         self.mat_5_id = kwargs['mat_5_id']
-        self.mats = [self.mat_1_id, self.mat_2_id, self.mat_3_id, self.mat_4_id, self.mat_5_id]
+        mats = [self.mat_1_id, self.mat_2_id, self.mat_3_id, self.mat_4_id, self.mat_5_id]
+        self.mats = [mat for mat in mats if mat]
         self.is_pixel = 3826 in self.mats
         self.is_super_reincarnated = 5077 in self.mats
         self.tstamp = kwargs['tstamp']
