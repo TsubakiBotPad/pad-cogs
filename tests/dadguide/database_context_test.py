@@ -35,3 +35,6 @@ assert db_context.graph.true_evo_type_by_monster_id(1464) == InternalEvoType.Bas
 
 # check that we're using the most recent data
 assert db_context.graph.true_evo_type_by_monster_id(3908) == InternalEvoType.Reincarnated  # revo typhon
+
+assert len(db_context.graph.get_evo_by_monster_id(3).mats) == 2
+assert 153 in db_context.graph.get_evo_by_monster_id(3).mats
