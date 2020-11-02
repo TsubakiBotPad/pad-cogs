@@ -23,6 +23,8 @@ from .database_manager import *
 from .old_monster_index import MonsterIndex
 from .database_loader import load_database
 
+from .models.monster_model import MonsterModel
+
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
@@ -106,8 +108,8 @@ class Dadguide(commands.Cog):
                                   self.panthname_overrides,
                                   accept_filter=accept_filter)
 
-    def get_monster_by_id(self, monster_id: int):
-        """Exported function that allows a client cog to get a full DgMonster by monster_id"""
+    def get_monster_by_id(self, monster_id: int) -> MonsterModel:
+        """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
         return self.database.graph.get_monster(monster_id)
 
     def cog_unload(self):

@@ -10,6 +10,7 @@ from collections import defaultdict
 
 import tsutils
 from dadguide.models.enum_types import Attribute, MonsterType
+from dadguide.models.monster_model import MonsterModel
 
 logger = logging.getLogger('red.padbot-cogs.dadguide.database_manager')
 
@@ -465,7 +466,7 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
+    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
         # Must not hold onto monster or monster_group!
 
         # Hold on to the IDs instead

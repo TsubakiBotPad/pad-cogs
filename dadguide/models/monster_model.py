@@ -1,13 +1,13 @@
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType
+from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
 from .leader_skill_model import LeaderSkillModel
-from ..database_manager import enum_or_none
-from ..database_manager import make_roma_subname
 import tsutils
 import re
 from collections import defaultdict
+import romkan
 
 
 class MonsterModel(BaseModel):
@@ -33,7 +33,7 @@ class MonsterModel(BaseModel):
         self.name_en = m['name_en']
         self.roma_subname = None
         if self.name_en == self.name_ja:
-            self.roma_subname = make_roma_subname(self.name_ja)
+            self.roma_subname = self.make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
             self.name_en = tsutils.rmdiacritics(self.name_en)
@@ -141,6 +141,17 @@ class MonsterModel(BaseModel):
         rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
         weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
         return hp, atk, rcv, weighted
+
+    @staticmethod
+    def make_roma_subname(name_ja):
+        subname = re.sub(r'[＝]', '', name_ja)
+        subname = re.sub(r'[「」]', '・', subname)
+        adjusted_subname = ''
+        for part in subname.split('・'):
+            roma_part = romkan.to_roma(part)
+            if part != roma_part and not tsutils.containsJa(roma_part):
+                adjusted_subname += ' ' + roma_part.strip('-')
+        return adjusted_subname.strip()
 
     def to_dict(self):
         return {

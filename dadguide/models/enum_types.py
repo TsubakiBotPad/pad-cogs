@@ -50,3 +50,10 @@ class Server(Enum):
     JP = 0
     NA = 1
     KR = 2
+
+
+def enum_or_none(enum, value, default=None):
+    if value is not None:
+        return enum(value)
+    else:
+        return default
