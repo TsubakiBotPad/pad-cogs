@@ -167,19 +167,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgAwakening(DadguideItem):
-    TABLE = 'awakenings'
-    PK = 'awakening_id'
-    AS_BOOL = ['is_super']
-
-    def __init__(self, item, **kwargs):
-        super(DgAwakening, self).__init__(item)
-
-    @property
-    def name(self):
-        return self.name_en if self.name_en is not None else self.name_ja
-
-
 class DgEvolution(DadguideItem):
     TABLE = 'evolutions'
     PK = 'evolution_id'

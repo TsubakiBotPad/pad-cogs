@@ -5,7 +5,6 @@ from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
 from .database_manager import DadguideItem
 from .database_manager import DgMonster
-from .database_manager import DgAwakening
 from .database_manager import DgDungeon
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
@@ -21,21 +20,6 @@ class DbContext(object):
         return [r.awoken_skill_id for r in
                 self.database.query_many(
                     SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True, graph=self.graph)]
-
-    def get_monsters_by_awakenings(self, awoken_skill_id: int):
-        # TODO: Make this not make monsters via query
-        return self.database.query_many(
-            self.database.select_builder(
-                tables=OrderedDict({
-                    DgMonster.TABLE: DgMonster.FIELDS,
-                    DgAwakening.TABLE: None,
-                }),
-                where='{}.awoken_skill_id=?;'.format(DgAwakening.TABLE),
-                key=('monster_id',),
-                distinct=True
-            ),
-            (awoken_skill_id,),
-            DgMonster, graph=self.graph)
 
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
