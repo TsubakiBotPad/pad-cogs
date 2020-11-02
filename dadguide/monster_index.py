@@ -3,7 +3,7 @@ from collections import defaultdict
 
 
 class MonsterIndex2:
-    def __init__(self, monsters: 'List[DgMonster]', series: 'List[DgSeries]'):
+    def __init__(self, monsters: 'List[MonsterModel]', series: 'List[DgSeries]'):
         self.monsters = monsters
         self.series = series
         self.index = defaultdict(list)

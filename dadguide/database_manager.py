@@ -205,127 +205,6 @@ class DgScheduledEvent(DadguideItem):
         self.end_timestamp = int(value.timestamp())
 
 
-class DgMonster(DadguideItem):
-    TABLE = 'monsters'
-    PK = 'monster_id'
-    AS_BOOL = ('on_jp', 'on_na', 'on_kr', 'has_animation', 'has_hqimage')
-
-    def __init__(self, item, graph):
-        super(DgMonster, self).__init__(item)
-
-        self._graph = graph
-
-        self.roma_subname = None
-        if self.name_en == self.name_ja:
-            self.roma_subname = make_roma_subname(self.name_ja)
-        else:
-            # Remove annoying stuff from NA names, like Jörmungandr
-            self.name_en = tsutils.rmdiacritics(self.name_en)
-
-        self.name_en = self.name_en_override or self.name_en
-
-        self.attr1 = enum_or_none(Attribute, self.attribute_1_id, Attribute.Nil)
-        self.attr2 = enum_or_none(Attribute, self.attribute_2_id, Attribute.Nil)
-
-        self.type1 = enum_or_none(MonsterType, self.type_1_id)
-        self.type2 = enum_or_none(MonsterType, self.type_2_id)
-        self.type3 = enum_or_none(MonsterType, self.type_3_id)
-        self.types = list(filter(None, [self.type1, self.type2, self.type3]))
-
-        self.in_pem = bool(self.pal_egg)
-        self.in_rem = bool(self.rem_egg)
-
-        self.awakenings = sorted(self.node['model'].awakenings, key=lambda a: a.order_idx)
-
-        self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
-
-        self.is_inheritable = bool(self.inheritable)
-
-        self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
-
-    @property
-    def node(self):
-        return self._graph.nodes[self.monster_id]
-
-    @property
-    def monster_no(self):
-        return self.monster_id
-
-    def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
-        s_min = float(self[key + '_min'])
-        s_max = float(self[key + '_max'])
-        if self.level > 1:
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** self[key + '_scale']
-        else:
-            s_val = s_min
-        if lv > 99:
-            s_val *= 1 + (self.limit_mult / 11 * (lv - 99)) / 100
-        plus_dict = {'hp': 10, 'atk': 5, 'rcv': 3}
-        s_val += plus_dict[key] * max(min(plus, 99), 0)
-        if inherit:
-            inherit_dict = {'hp': 0.10, 'atk': 0.05, 'rcv': 0.15}
-            if not is_plus_297:
-                s_val -= plus_dict[key] * max(min(plus, 99), 0)
-            s_val *= inherit_dict[key]
-        return int(round(s_val))
-
-    def stats(self, lv=99, plus=0, inherit=False):
-        is_plus_297 = False
-        if plus == 297:
-            plus = (99, 99, 99)
-            is_plus_297 = True
-        elif plus == 0:
-            plus = (0, 0, 0)
-        hp = self.stat('hp', lv, plus[0], inherit, is_plus_297)
-        atk = self.stat('atk', lv, plus[1], inherit, is_plus_297)
-        rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
-        weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
-        return hp, atk, rcv, weighted
-
-    @property
-    def active_skill(self):
-        return self.node['model'].active_skill
-
-    @property
-    def leader_skill(self):
-        return self.node['model'].leader_skill
-
-    @property
-    def killers(self):
-        type_to_killers_map = {
-            MonsterType.God: ['Devil'],
-            MonsterType.Devil: ['God'],
-            MonsterType.Machine: ['God', 'Balance'],
-            MonsterType.Dragon: ['Machine', 'Healer'],
-            MonsterType.Physical: ['Machine', 'Healer'],
-            MonsterType.Attacker: ['Devil', 'Physical'],
-            MonsterType.Healer: ['Dragon', 'Attacker'],
-        }
-        if MonsterType.Balance in self.types:
-            return ['Any']
-        killers = set()
-        for t in self.types:
-            killers.update(type_to_killers_map.get(t, []))
-        return sorted(killers)
-
-    @property
-    def in_mpshop(self):
-        return self.buy_mp is not None
-
-    @property
-    def history_us(self):
-        return '[{}] New Added'.format(self.reg_date)
-
-    def __repr__(self):
-        return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
-
-    def __eq__(self, other):
-        return isinstance(other, DgMonster) and self.monster_id == other.monster_id
-
-    def __hash__(self):
-        return hash(("DgMonster", self.monster_id))
-
-
 def make_roma_subname(name_ja):
     subname = re.sub(r'[＝]', '', name_ja)
     subname = re.sub(r'[「」]', '・', subname)
@@ -389,7 +268,7 @@ class NamedMonsterGroup(object):
 
         self.basenames = basename_overrides or self.computed_basenames
 
-    def _compute_monster_basename(self, m: DgMonster):
+    def _compute_monster_basename(self, m: MonsterModel):
         basename = m.name_en.lower()
         if ',' in basename:
             name_parts = basename.split(',')
@@ -432,7 +311,7 @@ class NamedMonsterGroup(object):
         entries = [[count_id[0], -1 * count_id[1], bn] for bn, count_id in basename_to_info.items()]
         return max(entries)[2]
 
-    def _is_low_priority_monster(self, m: DgMonster):
+    def _is_low_priority_monster(self, m: MonsterModel):
         lp_types = [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
         lp_substrings = ['tamadra']
         lp_min_rarity = 2
