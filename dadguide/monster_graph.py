@@ -13,6 +13,74 @@ from .models.active_skill_model import ActiveSkillModel
 from .models.series_model import SeriesModel
 from .models.evolution_model import EvolutionModel
 
+MONSTER_QUERY = """SELECT
+  monsters.*,
+  leader_skills.name_ja AS ls_name_ja,
+  leader_skills.name_en AS ls_name_en,
+  leader_skills.name_ko AS ls_name_ko,
+  leader_skills.desc_ja AS ls_desc_ja,
+  leader_skills.desc_en AS ls_desc_en,
+  leader_skills.desc_ko AS ls_desc_ko,
+  leader_skills.max_hp,
+  leader_skills.max_atk,
+  leader_skills.max_rcv,
+  leader_skills.max_rcv,
+  leader_skills.max_shield,
+  leader_skills.max_combos,
+  active_skills.name_ja AS as_name_ja,
+  active_skills.name_en AS as_name_en,
+  active_skills.name_ko AS as_name_ko,
+  active_skills.desc_ja AS as_desc_ja,
+  active_skills.desc_en AS as_desc_en,
+  active_skills.desc_ko AS as_desc_ko,
+  active_skills.turn_max,
+  active_skills.turn_min,
+  series.name_ja AS s_name_ja,
+  series.name_en AS s_name_en,
+  series.name_ko AS s_name_ko,
+  exchanges.target_monster_id AS evo_gem_id,
+  drops.drop_id
+FROM
+  monsters
+  LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id
+  LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id
+  LEFT OUTER JOIN series ON monsters.series_id = series.series_id
+  LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' == target_monsters.name_ja
+  LEFT OUTER JOIN exchanges on target_monsters.monster_id = exchanges.target_monster_id
+  LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
+GROUP BY
+  monsters.monster_id"""
+
+# make sure we're only looking at the most recent row for any evolution
+# since the database might have old data in it still
+# group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
+# the evolution_id changes when data changes so grouping by evolution_id is unhelpful
+EVOS_QUERY = """SELECT
+  evolutions.*
+FROM
+  (
+    SELECT
+      evolution_id,
+      MAX(tstamp) AS tstamp
+    FROM
+      evolutions
+    GROUP BY
+      to_id
+  ) AS latest_evolutions
+  INNER JOIN evolutions ON evolutions.evolution_id = latest_evolutions.evolution_id
+  AND evolutions.tstamp = latest_evolutions.tstamp"""
+
+AWAKENINGS_QUERY = """SELECT
+  monster_id,
+  awoken_skills.awoken_skill_id,
+  is_super,
+  order_idx,
+  name_ja,
+  name_en
+FROM
+  awakenings
+  JOIN awoken_skills ON awakenings.awoken_skill_id = awoken_skills.awoken_skill_id"""
+
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
@@ -27,27 +95,9 @@ class MonsterGraph(object):
     def build_graph(self):
         self.graph = nx.DiGraph()
 
-        ms = self.database.query_many(
-            "SELECT monsters.*, leader_skills.name_ja AS ls_name_ja, leader_skills.name_en AS ls_name_en, leader_skills.name_ko AS ls_name_ko, leader_skills.desc_ja AS ls_desc_ja, leader_skills.desc_en AS ls_desc_en, leader_skills.desc_ko AS ls_desc_ko, leader_skills.max_hp, leader_skills.max_atk, leader_skills.max_rcv, leader_skills.max_rcv, leader_skills.max_shield, leader_skills.max_combos, active_skills.name_ja AS as_name_ja, active_skills.name_en AS as_name_en, active_skills.name_ko AS as_name_ko, active_skills.desc_ja AS as_desc_ja, active_skills.desc_en AS as_desc_en, active_skills.desc_ko AS as_desc_ko, active_skills.turn_max, active_skills.turn_min, series.name_ja AS s_name_ja, series.name_en AS s_name_en, series.name_ko AS s_name_ko, exchanges.target_monster_id AS evo_gem_id, drops.drop_id "
-            "FROM monsters LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id "
-            "LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id " 
-            "LEFT OUTER JOIN series ON monsters.series_id = series.series_id "
-            "LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' == target_monsters.name_ja "
-            "LEFT OUTER JOIN exchanges on target_monsters.monster_id=exchanges.target_monster_id "
-            "LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id "
-            "GROUP BY monsters.monster_id", (), DictWithAttrAccess,
-            graph=self
-        )
-
-        # make sure we're only looking at the most recent row for any evolution
-        # since the database might have old data in it still
-        # group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
-        # the evolution_id changes when data changes so grouping by evolution_id is unhelpful
-        es = self.database.query_many("SELECT evolutions.* FROM (SELECT evolution_id, MAX(tstamp) AS tstamp FROM evolutions GROUP BY to_id) AS latest_evolutions INNER JOIN evolutions ON evolutions.evolution_id=latest_evolutions.evolution_id AND evolutions.tstamp=latest_evolutions.tstamp", (), DictWithAttrAccess,
-                                      graph=self)
-
-        aws = self.database.query_many("SELECT monster_id, awoken_skills.awoken_skill_id, is_super, order_idx, name_ja, name_en FROM awakenings JOIN awoken_skills ON awakenings.awoken_skill_id=awoken_skills.awoken_skill_id", (), DgAwakening,
-                                       graph=self)
+        ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess, graph=self)
+        es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess, graph=self)
+        aws = self.database.query_many(AWAKENINGS_QUERY, (), DgAwakening, graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:
