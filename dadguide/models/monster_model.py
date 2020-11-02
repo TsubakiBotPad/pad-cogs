@@ -1,6 +1,6 @@
 from .base_model import BaseModel
-from ..database_manager import Attribute
-from ..database_manager import MonsterType
+from .enum_types import Attribute
+from .enum_types import MonsterType
 from ..database_manager import enum_or_none
 from ..database_manager import make_roma_subname
 import tsutils

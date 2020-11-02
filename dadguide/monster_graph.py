@@ -5,8 +5,7 @@ from .database_manager import DgMonster
 from .database_manager import DadguideDatabase
 from .database_manager import DgAwakening
 from .database_manager import DictWithAttrAccess
-from .database_manager import EvoType
-from .database_manager import InternalEvoType
+from .models.enum_types import EvoType, InternalEvoType
 from .models.monster_model import MonsterModel
 from .models.leader_skill_model import LeaderSkillModel
 from .models.active_skill_model import ActiveSkillModel

@@ -7,9 +7,9 @@ from discord.utils import find as find_first
 import tsutils
 
 from .database_manager import DgMonster
-from .database_manager import Attribute
-from .database_manager import EvoType
-from .database_manager import InternalEvoType
+from .models.enum_types import Attribute
+from .models.enum_types import EvoType
+from .models.enum_types import InternalEvoType
 from .database_manager import PotentialMatches
 from .database_manager import NamedMonster
 from .database_manager import NamedMonsterGroup
