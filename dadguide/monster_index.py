@@ -23,35 +23,47 @@ class MonsterIndex2(aobject):
 
         nicks = await self._sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         idtonick = {int(id): nick for nick, id, *_ in nicks if id.isdigit()}
-        nicks = await self._sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
-        idtognick = {int(id): nick for id, nick, *_ in nicks if id.isdigit()}
-
+        gnicks = await self._sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
+        idtognick = {int(id): nick for id, nick, *_ in gnicks if id.isdigit()}
         async for m in AsyncIter(monsters):
+            # ID
+            tokens[str(m.monster_id)][m] += 100.0
+
             # Name Tokens
             for token in self._name_to_tokens(m.name_en):
                 tokens[token.lower()][m] += 10.0
+                for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                    tokens[repl][m] += 10.0
 
             # Monster Nickname
-            mtokens = idtonick.get(m.monster_id, "").split()
-            for t in mtokens:
-                tokens[t.lower()][m] += 20.0
+            #mtokens = idtonick.get(m.monster_id, "").split()
+            #for t in mtokens:
+            #    tokens[t.lower()][m] += 20.0
+            if idtonick.get(m.monster_id):
+                tokens[idtonick[m.monster_id]][m] += 20.0
 
             # Group Nickname
-            gtokens = idtognick.get(m._base_monster_id, "").split()
-            for t in gtokens:
-                tokens[t.lower()][m] += 8.0
+            #gtokens = idtognick.get(m._base_monster_id, "").split()
+            #for t in gtokens:
+            #    tokens[t.lower()][m] += 8.0
+            if idtognick.get(m._base_monster_id):
+                tokens[idtognick[m._base_monster_id]][m] += 12.0
 
             # Main Color
             for c in COLOR_MAP:
                 if m.attr1.value == c.value:
                     for t in COLOR_MAP[c]:
                         tokens[t][m] += 1.0
+                        tokens['main_attr_'+t][m] += 2.0
+                        tokens['sub_attr_'+t][m] += .01
 
             # Sub Color
             for c in COLOR_MAP:
                 if m.attr2.value == c.value:
                     for t in COLOR_MAP[c]:
                         tokens[t][m] += .25
+                        tokens['sub_attr_'+t][m] += 2.0
+                        tokens['main_attr_'+t][m] += .01
 
             # Both Colors
             for c1 in COLOR_MAP:
@@ -71,18 +83,23 @@ class MonsterIndex2(aobject):
             # Base
             # NOTHING HERE.  THIS IS A SPECIAL CASE
 
+            special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or
+            '転生' in m.name_ja or m.true_evo_type.value == "Reincarnated" or 'reincarnated' in m.name_en or \
+            m.true_evo_type.value == "Super Reincarnated" or \
+            m.is_equip or '極醒' in m.name_ja)
+
             # Evo
-            if m.cur_evo_type.value == 1:
+            if m.cur_evo_type.value == 1 and not special_evo:
                 for t in EVO_PREFIX_MAP[EvoTypes.EVO]:
                     tokens[t][m] += 1.0
 
             # Uvo
-            if m.cur_evo_type.value == 2:
+            if m.cur_evo_type.value == 2 and not special_evo:
                 for t in EVO_PREFIX_MAP[EvoTypes.UVO]:
                     tokens[t][m] += 1.0
 
             # UUvo
-            if m.cur_evo_type.value == 3:
+            if m.cur_evo_type.value == 3 and not special_evo:
                 for t in EVO_PREFIX_MAP[EvoTypes.UUVO]:
                     tokens[t][m] += 1.0
 
@@ -136,10 +153,10 @@ class MonsterIndex2(aobject):
 
         return tokens
 
-    def _name_to_tokens(self, name):
-        name = re.sub(r'[\-+]', ' ', name.lower())
+    def _name_to_tokens(self, oname):
+        name = re.sub(r'[\-+]', ' ', oname.lower())
         name = re.sub(r'[^a-z0-9 ]', '', name)
-        return [t.strip() for t in name.split() if t]
+        return [t.strip() for t in set(name.split()+oname.split()) if t]
 
     async def _sheet_to_reader(self, url):
         async with aiohttp.ClientSession() as session:

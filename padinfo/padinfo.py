@@ -4,6 +4,7 @@ import difflib
 import json
 import logging
 import os
+import re
 import prettytable
 import random
 import traceback
@@ -882,29 +883,18 @@ class PadInfo(commands.Cog):
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
 
-        query = rmdiacritics(query).lower().split()
-        """
-        monstergen = DGCOG.database.get_all_monsters()
-        for c, token in enumerate(query):
-            try:
-                filt = prefix_to_filter(token)
-            except:
-                print(token)
-                raise
-            if filt is None:
-                monster_name = " ".join(query[c:])
-                break
-            monstergen = filter(filt, monstergen)
-        """
+        query = rmdiacritics(query).lower()
+        query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
+        query = query.split()
 
         monstergen = {m: 1 for m in DGCOG.database.get_all_monsters()}
         for t in query:
-            ms = difflib.get_close_matches(t, DGCOG.index2.index, n=10000, cutoff=.8)
+            ms = difflib.get_close_matches(t, DGCOG.index2.index, n=10000, cutoff=.81)
             valid = defaultdict(int)
             if not ms:
                 return
             for match in ms:
-                rat = difflib.SequenceMatcher(None, t, match).real_quick_ratio()
+                rat = difflib.SequenceMatcher(None, t, match).ratio()
                 print(t, match, rat)
                 for m in DGCOG.index2.index[match]:
                     valid[m] = max(valid[m], DGCOG.index2.index[match][m] * rat)
@@ -917,6 +907,7 @@ class PadInfo(commands.Cog):
             return None
         mx = max(monstergen.values())
         print('1:',len(monstergen))
+        print(monstergen)
         monstergen = [m for m in monstergen if monstergen[m] == mx]
         print('2:',len(monstergen))
         return max(monstergen, key=lambda x: (not x.is_equip,

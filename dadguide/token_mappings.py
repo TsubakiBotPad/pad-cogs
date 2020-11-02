@@ -1,4 +1,5 @@
 from enum import Enum
+from collections import defaultdict
 
 class Attribute(Enum):
     """Standard 5 PAD colors in enum form. Values correspond to DadGuide values."""
@@ -102,3 +103,9 @@ MISC_PREFIX_MAP.update({n: MiscPrefixes.FARMABLE for n in ('farmable', 'nrem')})
 
 MISC_PREFIX_MAP = {MiscPrefixes.CHIBI: ('chibi', 'mini'),
                    MiscPrefixes.FARMABLE: ('farmable', 'nrem')}
+
+
+TOKEN_REPLACEMENTS = defaultdict(tuple, {
+    'tamadra': ('tama',),
+    'evolution': ('evo',),
+})
