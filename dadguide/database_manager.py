@@ -135,13 +135,6 @@ class DadguideDatabase(object):
         return fields, pk
 
 
-def enum_or_none(enum, value, default=None):
-    if value is not None:
-        return enum(value)
-    else:
-        return default
-
-
 class DictWithAttrAccess(dict):
     def __init__(self, item):
         super(DictWithAttrAccess, self).__init__(item)
@@ -203,17 +196,6 @@ class DgScheduledEvent(DadguideItem):
     @close_datetime.setter
     def close_datetime(self, value):
         self.end_timestamp = int(value.timestamp())
-
-
-def make_roma_subname(name_ja):
-    subname = re.sub(r'[＝]', '', name_ja)
-    subname = re.sub(r'[「」]', '・', subname)
-    adjusted_subname = ''
-    for part in subname.split('・'):
-        roma_part = romkan.to_roma(part)
-        if part != roma_part and not tsutils.containsJa(roma_part):
-            adjusted_subname += ' ' + roma_part.strip('-')
-    return adjusted_subname.strip()
 
 
 class PotentialMatches(object):
