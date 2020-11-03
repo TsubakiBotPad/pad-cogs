@@ -418,7 +418,6 @@ class PadSearchLexer(object):
 class SearchConfig(object):
 
     def __init__(self, lexer, db_context: "DbContext"):
-        self.db_context = db_context
         self.all = False
         self.cd = None
         self.farmable = None
@@ -518,7 +517,7 @@ class SearchConfig(object):
             self.filters.append(lambda m: m.search.active_min and m.search.active_min <= self.cd)
 
         if self.farmable:
-            self.filters.append(lambda m: self.db_context.graph.monster_is_farmable_evo(m))
+            self.filters.append(lambda m: db_context.graph.monster_is_farmable_evo(m))
 
         if self.haste:
             text = "charge allies' skill by {}".format(self.haste)
