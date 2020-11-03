@@ -1,18 +1,16 @@
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
 from dadguide.monster_graph import MonsterGraph
-from dadguide.database_manager import EvoType
-from dadguide.database_manager import InternalEvoType
+from dadguide.models.enum_types import EvoType, InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
 db_context = DbContext(database, graph)
 
 # print(ctx.get_awoken_skill_ids())
-assert db_context.get_monsters_by_awakenings(5)[0].name_en == 'Crystal Aurora Dragon'
 assert db_context.graph.monster_is_farmable_by_id(4)
 assert not db_context.graph.monster_is_farmable_by_id(5156)
-assert db_context.get_base_monster_by_id(1074) == 1073  # evo pandora
+assert db_context.graph.get_base_monster_by_id(1074).monster_id == 1073  # evo pandora
 assert 6352 in db_context.get_evolution_tree_ids(1074)
 assert db_context.get_monsters_by_series(1)[0].name_en == 'Tyrra'
 assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'

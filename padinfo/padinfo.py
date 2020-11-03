@@ -80,7 +80,7 @@ def _data_file(file_name: str) -> str:
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: "DgMonster" = None,
+    def __init__(self, emoji_to_embed, m: "MonsterModel" = None,
                  pad_info=None, selected_emoji=None, bot=None,
                  db_context: "DbContext" = None):
         self.emoji_dict = emoji_to_embed
@@ -131,7 +131,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
 
 class ScrollEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: "DgMonster" = None,
+    def __init__(self, emoji_to_embed, m: "MonsterModel" = None,
                  ms: "List[int]" = None, selected_emoji=None, pad_info=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -950,12 +950,12 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
 
-def monsterToHeader(m: "DgMonster", link=False):
+def monsterToHeader(m: "MonsterModel", link=False):
     msg = '[{}] {}'.format(m.monster_no_na, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJaSuffix(m: "DgMonster"):
+def monsterToJaSuffix(m: "MonsterModel"):
     suffix = ""
     if m.roma_subname:
         suffix += ' [{}]'.format(m.roma_subname)
@@ -964,16 +964,16 @@ def monsterToJaSuffix(m: "DgMonster"):
     return suffix
 
 
-def monsterToLongHeader(m: "DgMonster", link=False):
+def monsterToLongHeader(m: "MonsterModel", link=False):
     msg = monsterToHeader(m) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToThumbnailUrl(m: "DgMonster"):
+def monsterToThumbnailUrl(m: "MonsterModel"):
     return get_portrait_url(m)
 
 
-def monsterToBaseEmbed(m: "DgMonster"):
+def monsterToBaseEmbed(m: "MonsterModel"):
     header = monsterToLongHeader(m)
     embed = discord.Embed()
     embed.set_thumbnail(url=monsterToThumbnailUrl(m))
@@ -994,7 +994,7 @@ def addEvoListFields(list_of_monsters, embed, name):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoEmbed(m: "DgMonster", db_context: "DbContext"):
+def monsterToEvoEmbed(m: "MonsterModel", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
 
@@ -1025,7 +1025,7 @@ def addMonsterEvoOfList(monster_id_list, embed, field_name, db_context=None):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
+def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
 
     mats_for_evo = db_context.graph.evo_mats_by_monster(m)
@@ -1047,7 +1047,7 @@ def monsterToEvoMatsEmbed(m: "DgMonster", db_context: "DbContext"):
     return embed
 
 
-def monsterToPantheonEmbed(m: "DgMonster", db_context: "DbContext"):
+def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext"):
     full_pantheon = db_context.get_monsters_by_series(m.series_id)
     pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
@@ -1064,7 +1064,7 @@ def monsterToPantheonEmbed(m: "DgMonster", db_context: "DbContext"):
     return embed
 
 
-def monsterToSkillupsEmbed(m: "DgMonster", db_context: "DbContext"):
+def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext"):
     if m.active_skill is None:
         return None
     possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
@@ -1093,11 +1093,11 @@ def monsterToSkillupsEmbed(m: "DgMonster", db_context: "DbContext"):
     return embed
 
 
-def monsterToPicUrl(m: "DgMonster"):
+def monsterToPicUrl(m: "MonsterModel"):
     return get_pic_url(m)
 
 
-def monsterToPicEmbed(m: "DgMonster", animated=False):
+def monsterToPicEmbed(m: "MonsterModel", animated=False):
     embed = monsterToBaseEmbed(m)
     url = monsterToPicUrl(m)
     embed.set_image(url=url)
@@ -1114,23 +1114,23 @@ def monsterToPicEmbed(m: "DgMonster", animated=False):
     return embed
 
 
-def monsterToVideoUrl(m: "DgMonster", link_text='(MP4)'):
+def monsterToVideoUrl(m: "MonsterModel", link_text='(MP4)'):
     return '[{}]({})'.format(link_text, VIDEO_TEMPLATE.format(m.monster_no_jp))
 
 
-def monsterToGifUrl(m: "DgMonster", link_text='(GIF)'):
+def monsterToGifUrl(m: "MonsterModel", link_text='(GIF)'):
     return '[{}]({})'.format(link_text, GIF_TEMPLATE.format(m.monster_no_jp))
 
 
-def monsterToOrbSkinUrl(m: "DgMonster", link_text='Regular'):
+def monsterToOrbSkinUrl(m: "MonsterModel", link_text='Regular'):
     return '[{}]({})'.format(link_text, ORB_SKIN_TEMPLATE.format(m.orb_skin_id))
 
 
-def monsterToOrbSkinCBUrl(m: "DgMonster", link_text='Color Blind'):
+def monsterToOrbSkinCBUrl(m: "MonsterModel", link_text='Color Blind'):
     return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
 
 
-def monsterToGifEmbed(m: "DgMonster"):
+def monsterToGifEmbed(m: "MonsterModel"):
     embed = monsterToBaseEmbed(m)
     url = monsterToGifUrl(m)
     embed.set_image(url=url)
@@ -1139,7 +1139,7 @@ def monsterToGifEmbed(m: "DgMonster"):
     return embed
 
 
-def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
+def monstersToLsEmbed(left_m: "MonsterModel", right_m: "MonsterModel"):
     lls = left_m.leader_skill
     rls = right_m.leader_skill
 
@@ -1168,7 +1168,7 @@ def monstersToLsEmbed(left_m: "DgMonster", right_m: "DgMonster"):
 
     return embed
 
-def monstersToLssEmbed(m: "DgMonster"):
+def monstersToLssEmbed(m: "MonsterModel"):
     ls = m.leader_skill
 
     if ls:
@@ -1189,18 +1189,18 @@ def monstersToLssEmbed(m: "DgMonster"):
     return embed
 
 
-def monsterToHeaderEmbed(m: "DgMonster"):
+def monsterToHeaderEmbed(m: "MonsterModel"):
     header = monsterToLongHeader(m, link=True)
     embed = discord.Embed()
     embed.description = header
     return embed
 
 
-def monsterToTypeString(m: "DgMonster"):
+def monsterToTypeString(m: "MonsterModel"):
     return '/'.join([t.name for t in m.types])
 
 
-def monsterToAcquireString(m: "DgMonster", db_context: "DbContext"):
+def monsterToAcquireString(m: "MonsterModel", db_context: "DbContext"):
     acquire_text = None
     if db_context.graph.monster_is_farmable(m) and not db_context.graph.monster_is_mp_evo(m):
         # Some MP shop monsters 'drop' in PADR
@@ -1229,7 +1229,7 @@ def match_emoji(emoji_list, name):
     return name
 
 
-def monsterToEmbed(m: "DgMonster", emoji_list, db_context: "DbContext"):
+def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
 
     info_row_1 = monsterToTypeString(m)
@@ -1317,7 +1317,7 @@ def monsterToEmbed(m: "DgMonster", emoji_list, db_context: "DbContext"):
     return embed
 
 
-def monsterToOtherInfoEmbed(m: "DgMonster", db_context: "DbContext"):
+def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     # Clear the thumbnail, takes up too much space
     embed.set_thumbnail(url='')
