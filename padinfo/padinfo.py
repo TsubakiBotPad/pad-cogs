@@ -113,13 +113,15 @@ class IdEmojiUpdater(EmojiUpdater):
             self.m = self.db_context.graph.get_monster(new_id)
         else:
             if selected_emoji == self.pad_info.previous_monster_emoji:
-                if self.m.prev_monster is None:
+                prev_monster_id = self.db_context.graph.prev_monster_id_by_id(self.m.monster_id)
+                if prev_monster_id is None:
                     return False
-                self.m = self.m.prev_monster
+                self.m = self.db_context.graph.get_monster(prev_monster_id)
             elif selected_emoji == self.pad_info.next_monster_emoji:
-                if self.m.next_monster is None:
+                next_monster_id = self.db_context.graph.next_monster_id_by_id(self.m.monster_id)
+                if next_monster_id is None:
                     return False
-                self.m = self.m.next_monster
+                self.m = self.db_context.graph.get_monster(next_monster_id)
             else:
                 self.selected_emoji = selected_emoji
                 return True
