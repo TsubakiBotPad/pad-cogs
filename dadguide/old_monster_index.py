@@ -6,10 +6,10 @@ from redbot.core.utils import AsyncIter
 from discord.utils import find as find_first
 import tsutils
 
-from .database_manager import DgMonster
-from .database_manager import Attribute
-from .database_manager import EvoType
-from .database_manager import InternalEvoType
+from .models.monster_model import MonsterModel
+from .models.enum_types import Attribute
+from .models.enum_types import EvoType
+from .models.enum_types import InternalEvoType
 from .database_manager import PotentialMatches
 from .database_manager import NamedMonster
 from .database_manager import NamedMonsterGroup
@@ -63,7 +63,7 @@ class MonsterIndex(tsutils.aobject):
         async for base_mon in AsyncIter(base_monster_ids):
             base_id = base_mon.monster_id
             group_basename_overrides = basename_overrides.get(base_id, [])
-            evolution_tree = [monster_database.get_monster(m) for m in
+            evolution_tree = [monster_database.graph.get_monster(m) for m in
                               monster_database.get_evolution_tree_ids(base_id)]
             named_mg = NamedMonsterGroup(evolution_tree, group_basename_overrides)
             for monster in evolution_tree:
@@ -127,7 +127,7 @@ class MonsterIndex(tsutils.aobject):
     def init_index(self):
         pass
 
-    def compute_prefixes(self, m: DgMonster, evotree: list):
+    def compute_prefixes(self, m: MonsterModel, evotree: list):
         prefixes = set()
 
         attr1_short_prefixes = self.attr_short_prefix_map[m.attr1]
