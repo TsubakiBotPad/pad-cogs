@@ -416,7 +416,7 @@ class MonsterGraph(object):
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
 
-    def next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
+    def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
         next_monster = None
         offset = 1
         while next_monster is None and monster_id + offset <= self.max_monster_id:
@@ -426,7 +426,13 @@ class MonsterGraph(object):
             return None
         return next_monster.monster_id
 
-    def prev_monster_id_by_id(self, monster_id) -> Optional[int]:
+    def numeric_next_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        next_monster_id = self.numeric_next_monster_id_by_id(monster.monster_no)
+        if next_monster_id is None:
+            return None
+        return self.get_monster(next_monster_id)
+
+    def numeric_prev_monster_id_by_id(self, monster_id) -> Optional[int]:
         prev_monster = None
         offset = 1
         while prev_monster is None and monster_id - offset >= 1:
@@ -435,6 +441,12 @@ class MonsterGraph(object):
         if prev_monster is None:
             return None
         return prev_monster.monster_id
+
+    def numeric_prev_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        prev_monster_id = self.numeric_prev_monster_id_by_id(monster.monster_no)
+        if prev_monster_id is None:
+            return None
+        return self.get_monster(prev_monster_id)
 
     def evo_gem_monster_by_id(self, monster_id) -> Optional[MonsterModel]:
         this_monster = self.get_monster(monster_id)
