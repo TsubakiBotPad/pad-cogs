@@ -4,10 +4,10 @@ import logging
 import re
 import time
 import traceback
+from typing import Optional
 from datetime import datetime
 from io import BytesIO
-from redbot.core import checks
-from redbot.core import commands
+from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
 from tsutils import CogSettings, auth_check, box, replace_emoji_names_with_code, fix_emojis_for_server
 
@@ -28,6 +28,9 @@ class ChannelMod(commands.Cog):
         self.bot = bot
         self.settings = ChannelModSettings("channelmod")
         self.channel_last_spoke = {}
+
+        self.config = Config.get_conf(self, identifier=3747737700)
+        self.config.register_channel(multiedit=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG: self.bot.get_cog("GlobalAdmin").register_perm("channelmod")
@@ -66,6 +69,15 @@ class ChannelMod(commands.Cog):
             await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
             return
         self.settings.rm_mirrored_channel(source_channel_id, dest_channel_id)
+        await ctx.tick()
+
+    @channelmod.command()
+    @checks.is_owner()
+    async def multiedit(self, ctx, channel: Optional[discord.TextChannel], multiedit: bool):
+        """Remove mirroring between two channels."""
+        if channel is None:
+            channel = ctx.channel
+        await self.config.channel(channel).multiedit.set(multiedit)
         await ctx.tick()
 
     @channelmod.command()
@@ -171,10 +183,11 @@ class ChannelMod(commands.Cog):
         attachment_bytes = None
         filename = None
 
-        await message.delete()
-        idmess = await message.channel.send("Pending...")
-        message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
-        await idmess.edit(content=str(message.id))
+        if await self.config.channel(message.channel).multiedit():
+            await message.delete()
+            idmess = await message.channel.send("Pending...")
+            message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
+            await idmess.edit(content=str(message.id))
 
         if message.attachments:
             # If we know we're copying a message and that message has an attachment,
@@ -238,11 +251,17 @@ class ChannelMod(commands.Cog):
 
     @commands.Cog.listener('on_reaction_add')
     async def mirror_reaction_add(self, reaction, user):
-        await self.mirror_msg_mod(reaction.message, new_message_reaction=reaction.emoji)
+        message = reaction.message
+        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+            return
+        await self.mirror_msg_mod(message, new_message_reaction=reaction.emoji)
 
     @commands.Cog.listener('on_reaction_remove')
     async def mirror_reaction_remove(self, reaction, user):
-        await self.mirror_msg_mod(reaction.message, delete_message_reaction=reaction.emoji)
+        message = reaction.message
+        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+            return
+        await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
 
     async def mirror_msg_mod(self, message,
                              new_message_content: str = None,
