@@ -63,12 +63,12 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
+    async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int):
         """Remove mirroring between two channels."""
-        if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
-            await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
+        success = self.settings.rm_mirrored_channel(source_channel_id, dest_channel_id)
+        if not success:
+            await ctx.send("That isn't an existing mirror.")
             return
-        self.settings.rm_mirrored_channel(source_channel_id, dest_channel_id)
         await ctx.tick()
 
     @channelmod.command()
@@ -82,14 +82,17 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def mirrorconfig(self, ctx):
+    async def mirrorconfig(self, ctx, server_id: int = None):
         """List mirror config."""
         mirrored_channels = self.settings.mirrored_channels()
         msg = 'Mirrored channels\n'
         for mc_id, config in mirrored_channels.items():
+            if server_id is not None and mc_id != server_id and server_id not in config['channels']:
+                continue
             channel = self.bot.get_channel(mc_id)
-            channel_name = channel.name if channel else 'unknown'
-            msg += '\n{} ({})'.format(mc_id, channel_name)
+            channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
+            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 channel = self.bot.get_channel(channel_id)
                 channel_name = channel.name if channel else 'unknown'
@@ -438,6 +441,9 @@ class ChannelModSettings(CogSettings):
             if not dest_channel_config:
                 channels.pop(source_channel)
             self.save_settings()
+            return True
+        else:
+            return False
 
     def add_mirrored_message(self, source_channel: int, source_message: str, dest_channel: int, dest_message: str):
         channel_config = self.mirrored_channels()[source_channel]
