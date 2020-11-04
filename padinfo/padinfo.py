@@ -8,6 +8,7 @@ import re
 import prettytable
 import random
 import traceback
+import importlib
 import tsutils
 import urllib.parse
 from io import BytesIO
@@ -270,7 +271,7 @@ class PadInfo(commands.Cog):
             await ctx.send(monsterToHeader(m))
             await ctx.send(box(m.name_ja))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(name="id", aliases="iD Id ID".split())
     @checks.bot_has_permissions(embed_links=True)
@@ -300,7 +301,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     async def send_survey_after(self, ctx, query, result):
         sm = await self.config.user(ctx.author).survey_mode()
@@ -366,7 +367,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -389,7 +390,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat'])
     @checks.bot_has_permissions(embed_links=True)
@@ -399,7 +400,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -411,7 +412,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('Not a pantheon monster'))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -423,7 +424,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('No skillups available'))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*m.alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
@@ -532,7 +533,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -550,7 +551,7 @@ class PadInfo(commands.Cog):
             await ctx.send(embed=embed)
 
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
@@ -560,7 +561,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -571,7 +572,7 @@ class PadInfo(commands.Cog):
             embed = monsterToHeaderEmbed(m)
             await ctx.send(embed=embed)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -581,7 +582,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['collabscroll'])
     @checks.bot_has_permissions(embed_links=True)
@@ -604,7 +605,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -615,7 +616,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_scrollmenu(ctx, m, sorted({*m.alt_versions}, key=lambda x: x.monster_id), self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -729,7 +730,7 @@ class PadInfo(commands.Cog):
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.group(invoke_without_command=True)
     async def idmode(self, ctx, id_type):
@@ -817,11 +818,11 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    def makeFailureMsg(self, err):
+    async def makeFailureMsg(self, ctx: discord.abc.Messageable, err):
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
                'Unexpected results? Use ^helpid for more info.').format(err)
-        return box(msg)
+        await ctx.send(box(msg))
 
     async def findMonster(self, query, server_filter=ServerFilter.any):
         query = rmdiacritics(query)
@@ -880,6 +881,7 @@ class PadInfo(commands.Cog):
 
     async def _findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
+        tm = importlib.import_module(DGCOG.__module__.rstrip("dadguide")+'token_mappings')
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
 
@@ -887,29 +889,74 @@ class PadInfo(commands.Cog):
         query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
         query = query.split()
 
-        monstergen = {m: 1 for m in DGCOG.database.get_all_monsters()}
-        for t in query:
-            ms = difflib.get_close_matches(t, DGCOG.index2.index, n=10000, cutoff=.81)
-            valid = defaultdict(int)
+        prefixes = set()
+        name = set()
+        for c, t in enumerate(query):
+            if difflib.get_close_matches(t, DGCOG.index2.prefix, n=1, cutoff=.8):
+                prefixes.add(t)
+            else:
+                name.add(t)
+                name.update(query[c+1:])
+                break
+
+        print(prefixes, name)
+
+        monstergen = list(DGCOG.database.get_all_monsters())
+        for t in name:
+            valid = []
+
+            ms = difflib.get_close_matches(t, DGCOG.index2.tokens, n=10000, cutoff=.8)
             if not ms:
                 return
             for match in ms:
-                rat = difflib.SequenceMatcher(None, t, match).ratio()
-                print(t, match, rat)
-                for m in DGCOG.index2.index[match]:
-                    valid[m] = max(valid[m], DGCOG.index2.index[match][m] * rat)
-            for m in tuple(monstergen):
-                if m in valid:
-                    monstergen[m] += valid[m]
-                else:
-                    del monstergen[m]
+                for m in DGCOG.index2.manual[match]:
+                    if m not in valid:
+                        valid.append(m)
+            for match in ms:
+                for m in DGCOG.index2.tokens[match]:
+                    if m not in valid:
+                        valid.append(m)
+
+            ftr = []
+            for m in valid:
+                if m in monstergen:
+                    ftr.append(m)
+            monstergen = ftr
+        print(monstergen)
+
+        filts = []
+        for t in prefixes:
+            sf = lambda m: False
+            if len(t) >= 6:
+                ms = difflib.get_close_matches(t, DGCOG.index2.prefix, n=10000, cutoff=.8)
+            else:
+                ms = difflib.get_close_matches(t, DGCOG.index2.prefix, n=10000, cutoff=1)
+            if not ms:
+                return
+            for match in ms:
+                if match in DGCOG.index2.manual:
+                    osf = sf
+                    sf = lambda m: m in DGCOG.index2.manual[match] or osf(m)
+            for match in ms:
+                osf = sf
+                sf = lambda m: DGCOG.index2.prefix[match](m) or osf(m)
+            for match in ms:
+                if match in DGCOG.index2.tokens:
+                    osf = sf
+                    sf = lambda m: m in DGCOG.index2.tokens[match] or osf(m)
+
+            filts.append(sf)
+            print()
+            print(monstergen)
+
+
+        print(len(monstergen))
+        print(filts)
+        monstergen = [m for m in monstergen if all(f(m) for f in filts)]
+
         if not monstergen:
             return None
-        mx = max(monstergen.values())
-        print('1:',len(monstergen))
-        print(monstergen)
-        monstergen = [m for m in monstergen if monstergen[m] == mx]
-        print('2:',len(monstergen))
+
         return max(monstergen, key=lambda x: (not x.is_equip,
                                               -x._base_monster_id,
                                               x.rarity,
