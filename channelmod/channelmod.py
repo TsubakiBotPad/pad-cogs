@@ -85,9 +85,16 @@ class ChannelMod(commands.Cog):
     async def mirrorconfig(self, ctx, server_id: int = None):
         """List mirror config."""
         mirrored_channels = self.settings.mirrored_channels()
+        gchs = set()
+        if server_id:
+            guild = self.bot.get_guild(server_id)
+            if guild is None:
+                await ctx.send("Invalid server id.")
+                return
+            gchs = {c.id for c in self.bot.get_guild(server_id).channels}
         msg = 'Mirrored channels\n'
         for mc_id, config in mirrored_channels.items():
-            if server_id is not None and mc_id != server_id and server_id not in config['channels']:
+            if server_id is not None and mc_id not in gchs and not gchs.intersection(config['channels']):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
