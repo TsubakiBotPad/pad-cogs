@@ -70,7 +70,6 @@ class Feedback(commands.Cog):
             "This is an instance of [the Red Discord bot]({}), "
             "use the '{}info' command for more info. "
             "The various PAD related cogs were created by Aradia Megido and tactical_retreat. "
-            "Massive overhaul of the bot to Red v3 by Aradia Megido. "
             "This bot was created for the [PAD Community Server Discord]({}) but "
             "is available for other servers on request."
             "".format(red_repo, ctx.prefix, rpad_invite))
