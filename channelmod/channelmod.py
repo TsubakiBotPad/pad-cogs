@@ -252,8 +252,9 @@ class ChannelMod(commands.Cog):
             attachment_bytes.close()
 
     @commands.Cog.listener('on_message_edit')
-    async def mirror_msg_edit(self, message, new_message):
-        await self.mirror_msg_mod(message, new_message_content=new_message.content)
+    async def mirror_msg_edit(self, before, after):
+        if before.content != after.content:
+            await self.mirror_msg_mod(message, new_message_content=after.content)
 
     @commands.Cog.listener('on_message_delete')
     async def mirror_msg_delete(self, message):
