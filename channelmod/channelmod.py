@@ -73,8 +73,8 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def multiedit(self, ctx, channel: Optional[discord.TextChannel], multiedit: bool):
-        """Remove mirroring between two channels."""
+    async def multiedit(self, ctx, channel: Optional[discord.TextChannel], enable: bool):
+        """Opt in a channel to multi-edit mode."""
         if channel is None:
             channel = ctx.channel
         await self.config.channel(channel).multiedit.set(multiedit)
