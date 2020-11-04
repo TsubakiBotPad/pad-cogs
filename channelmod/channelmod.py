@@ -148,8 +148,11 @@ class ChannelMod(commands.Cog):
 
     @commands.Cog.listener('on_message_without_command')
     async def mirror_msg(self, message):
-        if message.author.id == self.bot.user.id:
+        author = message.author
+
+        if author.bot:
             return
+
 
         channel = message.channel
         mirrored_channels = self.settings.get_mirrored_channels(channel.id)
@@ -161,12 +164,18 @@ class ChannelMod(commands.Cog):
         now_time = datetime.utcnow()
         last_spoke_time = datetime.utcfromtimestamp(
             last_spoke_timestamp) if last_spoke_timestamp else now_time
-        attribution_required = last_spoke != message.author.id
+        attribution_required = last_spoke != author.id
         attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
-        self.settings.set_last_spoke(channel.id, message.author.id)
+        self.settings.set_last_spoke(channel.id, author.id)
 
         attachment_bytes = None
         filename = None
+
+        await message.delete()
+        idmess = await message.channel.send("Pending...")
+        message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
+        await idmess.edit(content=str(message.id))
+
         if message.attachments:
             # If we know we're copying a message and that message has an attachment,
             # pre download it and reuse it for every upload.
@@ -229,24 +238,18 @@ class ChannelMod(commands.Cog):
 
     @commands.Cog.listener('on_reaction_add')
     async def mirror_reaction_add(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id:
-            return
-        await self.mirror_msg_mod(message, new_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(reaction.message, new_message_reaction=reaction.emoji)
 
     @commands.Cog.listener('on_reaction_remove')
     async def mirror_reaction_remove(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id:
-            return
-        await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(reaction.message, delete_message_reaction=reaction.emoji)
 
     async def mirror_msg_mod(self, message,
                              new_message_content: str = None,
                              delete_message_content: bool = False,
                              new_message_reaction=None,
                              delete_message_reaction=None):
-        if message.author.id == self.bot.user.id or isinstance(message.channel, discord.abc.PrivateChannel):
+        if isinstance(message.channel, discord.abc.PrivateChannel):
             return
 
         channel = message.channel
@@ -266,11 +269,17 @@ class ChannelMod(commands.Cog):
                     fcontent = await self.mformat(new_message_content, channel, dest_message.channel)
                     await dest_message.edit(content=fcontent)
                 elif new_message_reaction:
-                    await dest_message.add_reaction(new_message_reaction)
+                    try:
+                        await dest_message.add_reaction(new_message_reaction)
+                    except discord.HTTPException:
+                        pass
                 elif delete_message_content:
                     await dest_message.delete()
                 elif delete_message_reaction:
-                    await dest_message.remove_reaction(delete_message_reaction, dest_message.guild.me)
+                    try:
+                        await dest_message.remove_reaction(delete_message_reaction, dest_message.guild.me)
+                    except discord.HTTPException:
+                        pass
             except Exception as ex:
                 logger.exception('Failed to mirror message edit from {} to {}:'.format(channel.id, dest_channel_id))
 
