@@ -8,8 +8,8 @@ from typing import Optional
 from datetime import datetime
 from io import BytesIO
 from redbot.core import checks, commands, Config
-from redbot.core.utils.chat_formatting import inline
-from tsutils import CogSettings, auth_check, box, replace_emoji_names_with_code, fix_emojis_for_server
+from redbot.core.utils.chat_formatting import inline, pagify, box
+from tsutils import CogSettings, auth_check, replace_emoji_names_with_code, fix_emojis_for_server
 
 logger = logging.getLogger('red.misc-cogs.channelmod')
 
@@ -122,8 +122,7 @@ class ChannelMod(commands.Cog):
                 await ctx.send("Invalid server id.")
                 return
             gchs = {c.id for c in self.bot.get_guild(server_id).channels}
-        msg = 'Mirrored channels\n\n'
-        msg += 'From:'
+        msg = 'From:'
         for mc_id, config in mirrored_channels.items():
             if mc_id not in gchs:
                 continue
@@ -135,7 +134,10 @@ class ChannelMod(commands.Cog):
                 channel = self.bot.get_channel(channel_id)
                 channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
-        msg += '\n\nTo: '
+        for page in pagify(msg):
+            await ctx.send(box(page))
+
+        msg = 'To:'
         for mc_id, config in mirrored_channels.items():
             if not gchs.intersection(config['channels']):
                 continue
@@ -149,8 +151,11 @@ class ChannelMod(commands.Cog):
                 channel = self.bot.get_channel(channel_id)
                 channel_name = channel.name if channel else 'unknown'
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
-        msg += '\n\n* indicates multi-edit'
-        await ctx.send(box(msg))
+        for page in pagify(msg):
+            await ctx.send(box(page))
+
+        await ctx.send(inline('* indicates multi-edit'))
+
 
     @channelmod.command()
     async def countreactions(self, ctx, message: discord.Message):
@@ -300,7 +305,7 @@ class ChannelMod(commands.Cog):
     @commands.Cog.listener('on_message_edit')
     async def mirror_msg_edit(self, before, after):
         if before.content != after.content:
-            await self.mirror_msg_mod(message, new_message_content=after.content)
+            await self.mirror_msg_mod(before, new_message_content=after.content)
 
     @commands.Cog.listener('on_message_delete')
     async def mirror_msg_delete(self, message):
