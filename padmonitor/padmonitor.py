@@ -4,9 +4,13 @@ import tsutils
 import discord
 from io import BytesIO
 from redbot.core import checks, commands
-from redbot.core.utils.chat_formatting import box, inline, pagify
+from redbot.core.utils.chat_formatting import box, pagify
+
+from typing import TYPE_CHECKING
 
 logger = logging.getLogger('red.padbot-cogs.padmonitor')
+if TYPE_CHECKING:
+    from dadguide.database_context import DbContext
 
 
 class PadMonitor(commands.Cog):
@@ -40,15 +44,16 @@ class PadMonitor(commands.Cog):
 
     async def check_seen(self):
         """Refresh the monster indexes."""
-        pg_cog = self.bot.get_cog('Dadguide')
-        await pg_cog.wait_until_ready()
-        all_monsters = pg_cog.database.get_all_monsters(as_generator=False)
+        DGCOG = self.bot.get_cog('Dadguide')
+        await DGCOG.wait_until_ready()
+        db_context: "DbContext" = DGCOG.database
+        all_monsters = db_context.get_all_monsters(as_generator=False)
         jp_monster_map = {m.monster_no: m for m in all_monsters if m.on_jp}
         na_monster_map = {m.monster_no: m for m in all_monsters if m.on_na}
 
         def process(existing, new_map, name):
             if not existing:
-                logger.info('preloading', len(new_map))
+                logger.info('preloading %i', len(new_map))
                 existing.extend(new_map.keys())
                 self.settings.save_settings()
                 return None
