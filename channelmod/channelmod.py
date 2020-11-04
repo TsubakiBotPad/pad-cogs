@@ -125,7 +125,7 @@ class ChannelMod(commands.Cog):
         msg = 'Mirrored channels\n\n'
         msg += 'From:'
         for mc_id, config in mirrored_channels.items():
-            if server_id is not None and mc_id not in gchs:
+            if mc_id not in gchs:
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
@@ -137,14 +137,14 @@ class ChannelMod(commands.Cog):
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
         msg += '\n\nTo: '
         for mc_id, config in mirrored_channels.items():
-            if server_id is not None and not gchs.intersection(config['channels']):
+            if not gchs.intersection(config['channels']):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
             multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
-                if server_id is not None and channel_id not in gchs:
+                if channel_id not in gchs:
                     continue
                 channel = self.bot.get_channel(channel_id)
                 channel_name = channel.name if channel else 'unknown'
