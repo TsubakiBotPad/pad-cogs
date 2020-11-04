@@ -113,7 +113,7 @@ class ChannelMod(commands.Cog):
     @channelmod.command()
     @checks.is_owner()
     async def guildmirrorconfig(self, ctx, server_id: int):
-        """List mirror config for a channel."""
+        """List mirror config for a guild."""
         mirrored_channels = self.settings.mirrored_channels()
         gchs = set()
         if server_id:
