@@ -99,11 +99,57 @@ class ChannelMod(commands.Cog):
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
             multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            msg += '\n\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
+            for channel_id in config['channels']:
+                if server_id is not None and mc_id not in gchs and not channel_id not in gchs:
+                    continue
+                channel = self.bot.get_channel(channel_id)
+                channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
+                msg += '\n\t{} ({})'.format(channel_id, channel_name)
+        msg += '\n\n* indicates multi-edit'
+        await ctx.send(box(msg))
+
+
+    @channelmod.command()
+    @checks.is_owner()
+    async def guildmirrorconfig(self, ctx, server_id: int):
+        """List mirror config for a guild."""
+        mirrored_channels = self.settings.mirrored_channels()
+        gchs = set()
+        if server_id:
+            guild = self.bot.get_guild(server_id)
+            if guild is None:
+                await ctx.send("Invalid server id.")
+                return
+            gchs = {c.id for c in self.bot.get_guild(server_id).channels}
+        msg = 'Mirrored channels\n\n'
+        msg += 'From:'
+        for mc_id, config in mirrored_channels.items():
+            if mc_id not in gchs:
+                continue
+            channel = self.bot.get_channel(mc_id)
+            channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
+            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 channel = self.bot.get_channel(channel_id)
+                channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
+                msg += '\n\t{} ({})'.format(channel_id, channel_name)
+        msg += '\n\nTo: '
+        for mc_id, config in mirrored_channels.items():
+            if not gchs.intersection(config['channels']):
+                continue
+            channel = self.bot.get_channel(mc_id)
+            channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
+            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
+            for channel_id in config['channels']:
+                if channel_id not in gchs:
+                    continue
+                channel = self.bot.get_channel(channel_id)
                 channel_name = channel.name if channel else 'unknown'
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
+        msg += '\n\n* indicates multi-edit'
         await ctx.send(box(msg))
 
     @channelmod.command()
