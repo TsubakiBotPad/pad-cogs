@@ -37,7 +37,8 @@ class MonsterModel(BaseModel):
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
             self.name_en = tsutils.rmdiacritics(self.name_en)
-        self.name_en = m['name_en_override'] or self.name_en
+        self.name_en_override = m['name_en_override']
+        self.name_en = self.name_en_override or self.name_en
 
         self.type1 = enum_or_none(MonsterType, m['type_1_id'])
         self.type2 = enum_or_none(MonsterType, m['type_2_id'])
