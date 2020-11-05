@@ -628,10 +628,12 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evoscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context: "DbContext" = DGCOG.database
         m, err, debug_info = await self.findMonster(query)
 
         if m is not None:
-            await self._do_scrollmenu(ctx, m, sorted({*m.alt_versions}, key=lambda x: x.monster_id), self.id_emoji)
+            await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id), self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
 

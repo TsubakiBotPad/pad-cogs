@@ -277,6 +277,9 @@ class MonsterGraph(object):
         ids = self.get_alt_cards(monster_id)
         return [self.get_monster(m_id) for m_id in ids]
 
+    def get_alt_monsters(self, monster: MonsterModel):
+        return self.get_alt_monsters_by_id(monster.monster_id)
+
     def get_base_id_by_id(self, monster_id):
         alt_cards = self.get_alt_cards(monster_id)
         if alt_cards is None:
