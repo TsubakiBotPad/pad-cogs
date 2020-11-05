@@ -18,6 +18,12 @@ from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics
 
 from .find_monster import prefix_to_filter
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dadguide.database_context import DbContext
+    from dadguide.models.monster_model import MonsterModel
+
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
 HELP_MSG = """
@@ -90,7 +96,7 @@ class IdEmojiUpdater(EmojiUpdater):
         self.bot = bot
         self.db_context = db_context
 
-        self.pad_info.settings.log_emoji("start_"+selected_emoji)
+        self.pad_info.settings.log_emoji("start_" + selected_emoji)
 
     def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
@@ -167,6 +173,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
 
 class PadInfo(commands.Cog):
     """Info for PAD Cards"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -306,12 +313,13 @@ class PadInfo(commands.Cog):
 
     async def send_survey_after(self, ctx, query, result):
         sm = await self.config.user(ctx.author).survey_mode()
-        sms = [1, await self.config.sometimes_perc()/100, 0][sm]
+        sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
         if random.random() < sms:
             params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
             await asyncio.sleep(1)
-            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?", yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
+            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
+                                                    yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
             elif userres is False:
@@ -343,7 +351,7 @@ class PadInfo(commands.Cog):
         """Check how good id is according to end users"""
         good = await self.config.good()
         bad = await self.config.bad()
-        await ctx.send(f"{bad}/{good+bad} ({int(round(bad/(good+bad)*100)) if good or bad else 'NaN'}%)")
+        await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -432,7 +440,8 @@ class PadInfo(commands.Cog):
         db_context = DGCOG.database
 
         alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=sorted({*alt_versions}, key=lambda m: m.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type = 1)
+        emoji_to_embed = self.get_id_emoji_options(
+            m=m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type=1)
 
         return await self._do_menu(
             ctx,
@@ -481,7 +490,6 @@ class PadInfo(commands.Cog):
         # IdEmojiUpdater won't allow it, however they have to be defined
         # so that the buttons display in the first place
 
-
         if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.first_monster_emoji] = None
         if len(scroll) != 1:
@@ -499,7 +507,7 @@ class PadInfo(commands.Cog):
         db_context = DGCOG.database
 
         monsters = db_context.graph.get_alt_monsters_by_id(sm.monster_id)
-        monsters.sort(key=lambda m: m.monster_id)
+        monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
         for idx, m in enumerate(monsters):
@@ -594,7 +602,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
-        ms.sort(key=lambda m: m.monster_id)
+        ms.sort(key=lambda x: x.monster_id)
         ms = [m for m in ms if m.sell_mp >= 100]
 
         if not ms:
@@ -638,7 +646,8 @@ class PadInfo(commands.Cog):
         for sep in ('"', '/', ',', ' '):
             if sep in whole_query:
 
-                left_query, *right_query = [x.strip() for x in whole_query.split(sep) if x.strip()] or ('', '')  # or in case of ^ls [sep] which is empty list
+                left_query, *right_query = [x.strip() for x in whole_query.split(sep) if x.strip()] or (
+                    '', '')  # or in case of ^ls [sep] which is empty list
                 # split on first separator, with if x.strip() block to prevent null values from showing up, mainly for quotes support
                 # right query is the rest of query but in list form because of how .strip() works. bring it back to string form with ' '.join
                 right_query = ' '.join(q for q in right_query)
@@ -690,7 +699,6 @@ class PadInfo(commands.Cog):
         emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
-
 
     @commands.command(aliases=['helppic', 'helpimg'])
     @checks.bot_has_permissions(embed_links=True)
@@ -820,7 +828,8 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    def makeFailureMsg(self, err):
+    @staticmethod
+    def makeFailureMsg(err):
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
                'Unexpected results? Use ^helpid for more info.').format(err)
@@ -1170,6 +1179,7 @@ def monstersToLsEmbed(left_m: "MonsterModel", right_m: "MonsterModel"):
 
     return embed
 
+
 def monstersToLssEmbed(m: "MonsterModel"):
     ls = m.leader_skill
 
@@ -1238,12 +1248,12 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     acquire_text = monsterToAcquireString(m, db_context)
     tet_text = db_context.graph.true_evo_type_by_monster(m).value
 
-    os = "" if m.orb_skin_id is None else " (Orb Skin)"
+    orb_skin = "" if m.orb_skin_id is None else " (Orb Skin)"
 
     info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(
         m.rarity,
         db_context.graph.get_base_monster_by_id(m.monster_no).rarity,
-        os,
+        orb_skin,
         m.cost
     )
 
@@ -1311,9 +1321,10 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
 
     evos_header = "Alternate Evos"
     evos_body = ", ".join(f"**{m2.monster_id}**"
-                          if m2.monster_id==m.monster_id
+                          if m2.monster_id == m.monster_id
                           else f"[{m2.monster_id}]({get_pdx_url(m2)})"
-                          for m2 in sorted({*db_context.graph.get_alt_monsters_by_id(m.monster_no)}, key=lambda m: m.monster_id))
+                          for m2 in
+                          sorted({*db_context.graph.get_alt_monsters_by_id(m.monster_no)}, key=lambda x: x.monster_id))
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
@@ -1451,17 +1462,19 @@ def createMultiplierText(hp1, atk1, rcv1, resist1, hp2=None, atk2=None, rcv2=Non
         hp2, atk2, rcv2, resist2 = hp1, atk1, rcv1, resist1
 
     def fmtNum(val):
-        return ('{:.2f}').format(val).strip('0').rstrip('.')
+        return '{:.2f}'.format(val).strip('0').rstrip('.')
 
     text = "{}/{}/{}".format(fmtNum(hp1 * hp2), fmtNum(atk1 * atk2), fmtNum(rcv1 * rcv2))
     if resist1 > 0 or resist2 > 0:
         text += ' Resist {}%'.format(fmtNum(100 * (1 - (1 - resist1) * (1 - resist2))))
     return text
 
+
 def createSingleMultiplierText(hp, atk, rcv, resist):
     def fmtNum(val):
-        return ('{:.2f}').format(val).strip('0').rstrip('.')
+        return '{:.2f}'.format(val).strip('0').rstrip('.')
+
     text = "{}/{}/{}".format(fmtNum(hp), fmtNum(atk), fmtNum(rcv))
     if resist > 0:
-        text += ' Resist {}%'.format(fmtNum(100 * (resist)))
+        text += ' Resist {}%'.format(fmtNum(100 * resist))
     return text
