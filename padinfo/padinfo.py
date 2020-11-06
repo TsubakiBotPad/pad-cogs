@@ -511,14 +511,12 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed = OrderedDict()
         for idx, m in enumerate(monsters):
-            # FIXME: This is not sustainable!  Figure out a fix
-            if idx == 10:
-                emoji = "\N{KEYCAP TEN}"
-            elif idx > 10:
+            chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
+            if idx > 19:
                 await ctx.send("There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.prefix))
                 return
             else:
-                emoji = char_to_emoji(str(idx))
+                emoji = char_to_emoji(chars[idx])
             emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
