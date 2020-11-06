@@ -91,7 +91,7 @@ class MonsterGraph(object):
         self.build_graph()
 
     def build_graph(self):
-        self.graph = nx.DiGraph()
+        self.graph = nx.MultiDiGraph()
 
         ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess, graph=self)
         es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess, graph=self)
@@ -215,14 +215,15 @@ class MonsterGraph(object):
 
     @staticmethod
     def _get_edges(node, etype):
-        return {mid for mid, edge in node.items() if edge.get('type') == etype}
+        return {mid for mid, atlas in node.items() for edge in atlas.values() if edge.get('type') == etype}
 
     @staticmethod
     def _get_edge_model(node, etype):
         possible_results = set()
-        for _, edge in node.items():
-            if edge.get('type') == etype:
-                possible_results.add(edge['model'])
+        for atlas in node.values():
+            for edge in atlas.values():
+                if edge.get('type') == etype:
+                    possible_results.add(edge['model'])
         if len(possible_results) == 0:
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
