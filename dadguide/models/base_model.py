@@ -11,6 +11,6 @@ class BaseModel(object):
 
     def __repr__(self):
         try:
-            print(self.to_string())
+            return self.to_string()
         except NotImplementedError:
-            super()
+            return super().__repr__()
