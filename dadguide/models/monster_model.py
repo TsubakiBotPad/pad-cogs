@@ -65,15 +65,9 @@ class MonsterModel(BaseModel):
         self.orb_skin_id = m['orb_skin_id']
         self.cost = m['cost']
         self.exp = m['exp']
-        self.fodder_exp = m['fodder_exp']
         self.level = m['level']
         self.limit_mult = m['limit_mult']
         self.latent_slots = m['latent_slots']
-
-        self.diff_stats = m['diff_stats']
-        self.diff_awakenings = m['diff_awakenings']
-        self.diff_leader_skill = m['diff_leader_skill']
-        self.diff_active_skill = m['diff_active_skill']
 
         self.hp_max = m['hp_max']
         self.hp_min = m['hp_min']
@@ -96,8 +90,6 @@ class MonsterModel(BaseModel):
         self.pronunciation_ja = m['pronunciation_ja']
         self.has_animation = m['has_animation']
         self.has_hqimage = m['has_hqimage']
-
-        self.tstamp = m['tstamp']
 
         self.search = MonsterSearchHelper(self)
 
