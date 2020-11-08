@@ -170,6 +170,7 @@ class MonsterGraph(object):
                                    cost=m.cost,
                                    level=m.level,
                                    exp=m.exp,
+                                   fodder_exp=m.fodder_exp,
                                    limit_mult=m.limit_mult,
                                    pronunciation_ja=m.pronunciation_ja,
                                    voice_id_jp=m.voice_id_jp,
