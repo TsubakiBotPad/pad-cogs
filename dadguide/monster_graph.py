@@ -170,12 +170,7 @@ class MonsterGraph(object):
                                    cost=m.cost,
                                    level=m.level,
                                    exp=m.exp,
-                                   fodder_exp=m.fodder_exp,
                                    limit_mult=m.limit_mult,
-                                   diff_stats=m.diff_stats,
-                                   diff_awakenings=m.diff_awakenings,
-                                   diff_leader_skill=m.diff_leader_skill,
-                                   diff_active_skill=m.diff_active_skill,
                                    pronunciation_ja=m.pronunciation_ja,
                                    voice_id_jp=m.voice_id_jp,
                                    voice_id_na=m.voice_id_na,
@@ -191,7 +186,6 @@ class MonsterGraph(object):
                                    latent_slots=m.latent_slots,
                                    has_animation=m.has_animation == 1,
                                    has_hqimage=m.has_hqimage == 1,
-                                   tstamp=m.tstamp,
                                   )
 
             self.graph.add_node(m.monster_id, model=m_model)
