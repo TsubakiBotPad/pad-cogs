@@ -736,7 +736,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
-                await ctx.send(inline("No voice file found for " + m.name))
+                await ctx.send(inline("No voice file found for " + m.name_en))
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))

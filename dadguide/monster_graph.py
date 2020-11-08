@@ -172,6 +172,8 @@ class MonsterGraph(object):
                                    exp=m.exp,
                                    limit_mult=m.limit_mult,
                                    pronunciation_ja=m.pronunciation_ja,
+                                   voice_id_jp=m.voice_id_jp,
+                                   voice_id_na=m.voice_id_na,
                                    hp_max=m.hp_max,
                                    hp_min=m.hp_min,
                                    hp_scale=m.hp_scale,
@@ -183,8 +185,8 @@ class MonsterGraph(object):
                                    rcv_scale=m.rcv_scale,
                                    latent_slots=m.latent_slots,
                                    has_animation=m.has_animation == 1,
-                                   has_hqimage=m.has_hqimage == 1
-                                   )
+                                   has_hqimage=m.has_hqimage == 1,
+                                  )
 
             self.graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
