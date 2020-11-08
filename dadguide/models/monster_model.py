@@ -19,7 +19,7 @@ class MonsterModel(BaseModel):
         self.monster_no_kr = m['monster_no_kr']
 
         # these things are literally named backwards atm
-        self.awakenings = m['awakenings']
+        self.awakenings = sorted(m['awakenings'], key=lambda a: a.order_idx)
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
         self.leader_skill: LeaderSkillModel = m['leader_skill']
         self.leader_skill_id = self.leader_skill.leader_skill_id if self.leader_skill else None
@@ -83,6 +83,9 @@ class MonsterModel(BaseModel):
             'atk': {'min': self.atk_min, 'max': self.atk_max, 'scale': self.atk_scale},
             'rcv': {'min': self.rcv_min, 'max': self.rcv_max, 'scale': self.rcv_scale}
         }
+
+        self.voice_id_jp = m['voice_id_jp']
+        self.voice_id_na = m['voice_id_na']
 
         self.pronunciation_ja = m['pronunciation_ja']
         self.has_animation = m['has_animation']
