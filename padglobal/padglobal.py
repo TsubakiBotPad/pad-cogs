@@ -893,9 +893,14 @@ class PadGlobal(commands.Cog):
                 return
         await ctx.tick()
 
-    @padglobal.command()
+    @padglobal.group()
     @checks.is_owner()
-    async def addemojiserver(self, ctx, server_id: int):
+    async def emojiservers(self, ctx):
+        """Emoji server subcommand"""
+
+    @emojiservers.command(name="add")
+    @checks.is_owner()
+    async def es_add(self, ctx, server_id: int):
         """Add the emoji server by ID"""
         ess = self.settings.emojiServers()
         if server_id not in ess:
@@ -903,9 +908,9 @@ class PadGlobal(commands.Cog):
             self.settings.save_settings()
         await ctx.tick()
 
-    @padglobal.command()
+    @emojiservers.command(name="remove", aliases=['rm', 'del'])
     @checks.is_owner()
-    async def rmemojiserver(self, ctx, server_id: int):
+    async def es_rm(self, ctx, server_id: int):
         """Remove the emoji server by ID"""
         ess = self.settings.emojiServers()
         if server_id not in ess:
@@ -915,9 +920,9 @@ class PadGlobal(commands.Cog):
         self.settings.save_settings()
         await ctx.tick()
 
-    @padglobal.command()
+    @emojiservers.command(name="list", aliases=['show'])
     @checks.is_owner()
-    async def listemojiservers(self, ctx):
+    async def es_show(self, ctx):
         """List the emoji servers by ID"""
         ess = self.settings.emojiServers()
         await ctx.send(box("\n".join(str(s) for s in ess)))
