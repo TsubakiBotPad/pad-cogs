@@ -65,6 +65,7 @@ class MonsterModel(BaseModel):
         self.orb_skin_id = m['orb_skin_id']
         self.cost = m['cost']
         self.exp = m['exp']
+        self.fodder_exp = m['fodder_exp']
         self.level = m['level']
         self.limit_mult = m['limit_mult']
         self.latent_slots = m['latent_slots']
