@@ -465,7 +465,7 @@ class PadInfo(commands.Cog):
         db_context = DGCOG.database
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
-        evo_embed = monsterToEvoEmbed(m, db_context)
+        evo_embed = monsterToEvoEmbed(m, self.get_emojis(), db_context)
         mats_embed = monsterToEvoMatsEmbed(m, db_context)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
@@ -1026,18 +1026,23 @@ def monsterToBaseEmbed(m: "MonsterModel"):
     return embed
 
 
-def addEvoListFields(list_of_monsters, embed, name):
+def addEvoListFields(list_of_monsters, embed, emoji_list, name):
     if not len(list_of_monsters):
         return
     field_name = name.format(len(list_of_monsters))
     field_data = ''
     for ae in sorted(list_of_monsters, key=lambda x: int(x.monster_id)):
-        field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
+        ae: "MonsterModel"
+        field_data += "{} {}\n".format(monster_attr_emoji(emoji_list, ae), monsterToLongHeader(ae, link=True))
 
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
+    return match_emoji(emoji_list, ":{}_{}:".format(monster.attr1.name.lower(), monster.attr2.name.lower()))
+
+
+def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
 
@@ -1046,10 +1051,10 @@ def monsterToEvoEmbed(m: "MonsterModel", db_context: "DbContext"):
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(alt_versions, embed, '{} alternate evo(s)')
+    addEvoListFields(alt_versions, embed, emoji_list, '{} alternate evo(s)')
     if not evo_gem:
         return embed
-    addEvoListFields([evo_gem], embed, '{} evo gem(s)')
+    addEvoListFields([evo_gem], embed, emoji_list, '{} evo gem(s)')
 
     return embed
 
