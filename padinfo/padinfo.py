@@ -1039,7 +1039,10 @@ def addEvoListFields(list_of_monsters, embed, emoji_list, name):
 
 
 def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
-    return match_emoji(emoji_list, ":{}_{}:".format(monster.attr1.name.lower(), monster.attr2.name.lower()))
+    attr1 = monster.attr1.name.lower()
+    attr2 = monster.attr2.name.lower()
+    emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
+    return match_emoji(emoji_list, emoji)
 
 
 def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
