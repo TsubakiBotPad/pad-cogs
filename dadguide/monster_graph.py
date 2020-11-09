@@ -46,7 +46,7 @@ FROM
   LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id
   LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id
   LEFT OUTER JOIN series ON monsters.series_id = series.series_id
-  LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' == target_monsters.name_ja
+  LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' = target_monsters.name_ja
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
   LEFT OUTER JOIN egg_machines AS pems ON pems.contents LIKE "%(" || monsters.monster_id || ")%" AND pems.egg_machine_type_id = 2
