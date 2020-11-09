@@ -895,12 +895,32 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     @checks.is_owner()
-    async def setemojiservers(self, ctx, *, emoji_servers=''):
-        """Set the emoji servers by ID (csv)"""
-        self.settings.emojiServers().clear()
-        if emoji_servers:
-            self.settings.setEmojiServers(re.findall(r'\d+', emoji_servers))
-        await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+    async def addemojiserver(self, ctx, server_id: int):
+        """Add the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            ess.append(server_id)
+            self.settings.save_settings()
+        await ctx.tick()
+
+    @padglobal.command()
+    @checks.is_owner()
+    async def rmemojiserver(self, ctx, server_id: int):
+        """Remove the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            await ctx.send("That emoji server is not set.")
+            return
+        ess.remove(server_id)
+        self.settings.save_settings()
+        await ctx.tick()
+
+    @padglobal.command()
+    @checks.is_owner()
+    async def listemojiservers(self, ctx):
+        """List the emoji servers by ID"""
+        ess = self.settings.emojiServers()
+        await ctx.send(box("\n".join(str(s) for s in ess)))
 
     def _get_emojis(self):
         emojis = list()
