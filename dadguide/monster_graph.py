@@ -1,4 +1,5 @@
-import networkx as nx
+import networkx
+import json
 from typing import Optional
 from collections import defaultdict
 from .database_manager import DadguideDatabase
@@ -38,9 +39,7 @@ MONSTER_QUERY = """SELECT
   series.name_en AS s_name_en,
   series.name_ko AS s_name_ko,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id,
-  pems.egg_machine_id AS pem_id,
-  rems.egg_machine_id AS rem_id
+  drops.drop_id
 FROM
   monsters
   LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id
@@ -49,8 +48,6 @@ FROM
   LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' = target_monsters.name_ja
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
-  LEFT OUTER JOIN egg_machines AS pems ON pems.contents LIKE "%(" || monsters.monster_id || ")%" AND pems.egg_machine_type_id = 2
-  LEFT OUTER JOIN egg_machines AS rems ON rems.contents LIKE "%(" || monsters.monster_id || ")%" AND rems.egg_machine_type_id != 2
 GROUP BY
   monsters.monster_id"""
 
@@ -83,29 +80,44 @@ FROM
   awakenings
   JOIN awoken_skills ON awakenings.awoken_skill_id = awoken_skills.awoken_skill_id"""
 
+EGG_QUERY = """SELECT
+   d_egg_machine_types.name AS type,
+   egg_machines.*
+FROM
+  egg_machines
+  JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
+"""
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
         self.graph = None
-        self.graph: nx.DiGraph
+        self.graph: networkx.MultiDiGraph
         self.edges = None
         self.nodes = None
         self.max_monster_id = -1
         self.build_graph()
 
     def build_graph(self):
-        self.graph = nx.MultiDiGraph()
+        self.graph = networkx.MultiDiGraph()
 
         ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess, graph=self)
         es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess, graph=self)
         aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess, graph=self)
+        ems = self.database.query_many(EGG_QUERY, (), DictWithAttrAccess, graph=self)
 
         mtoawo = defaultdict(list)
         for a in aws:
             awoken_skill_model = AwokenSkillModel(**a)
             awakening_model = AwakeningModel(awoken_skill_model=awoken_skill_model, **a)
             mtoawo[a.monster_id].append(awakening_model)
+
+        mtoegg = defaultdict(lambda: {'pem': False, 'rem': False})
+        for e in ems:
+            data = json.loads(e.contents)
+            type = 'pem' if e.type == "PEM" else 'rem'
+            for m in data:
+                mtoegg[int(m[1:-1])][type] = True
 
         for m in ms:
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
@@ -156,8 +168,8 @@ class MonsterGraph(object):
                                    name_en_override=m.name_en_override,
                                    rarity=m.rarity,
                                    is_farmable=m.drop_id is not None,
-                                   in_pem=m.pem_id is not None,
-                                   in_rem=m.rem_id is not None,
+                                   in_pem=mtoegg[m.monster_id]['pem'],
+                                   in_rem=mtoegg[m.monster_id]['rem'],
                                    buy_mp=m.buy_mp,
                                    sell_mp=m.sell_mp,
                                    sell_gold=m.sell_gold,
