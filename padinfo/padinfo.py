@@ -1406,6 +1406,7 @@ def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext"):
         xp_text = '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
     body_text += '\n**XP to Max:** {}'.format(xp_text)
     body_text += '  **Max Level:**: {}'.format(m.level)
+    body_text += '\n**Fodder EXP:** {:,}'.format(m.fodder_exp)
     body_text += '\n**Rarity:** {} **Cost:** {}'.format(m.rarity, m.cost)
 
     embed.description = body_text
