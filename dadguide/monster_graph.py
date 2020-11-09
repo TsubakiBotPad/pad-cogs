@@ -38,15 +38,19 @@ MONSTER_QUERY = """SELECT
   series.name_en AS s_name_en,
   series.name_ko AS s_name_ko,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id
+  drops.drop_id,
+  pems.egg_machine_id AS pem_id,
+  rems.egg_machine_id AS rem_id
 FROM
   monsters
   LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id
   LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id
   LEFT OUTER JOIN series ON monsters.series_id = series.series_id
   LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' == target_monsters.name_ja
-  LEFT OUTER JOIN exchanges on target_monsters.monster_id = exchanges.target_monster_id
+  LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
+  LEFT OUTER JOIN egg_machines AS pems ON pems.contents LIKE "%(" || monsters.monster_id || ")%" AND pems.egg_machine_type_id = 2
+  LEFT OUTER JOIN egg_machines AS rems ON rems.contents LIKE "%(" || monsters.monster_id || ")%" AND rems.egg_machine_type_id != 2
 GROUP BY
   monsters.monster_id"""
 
@@ -152,8 +156,8 @@ class MonsterGraph(object):
                                    name_en_override=m.name_en_override,
                                    rarity=m.rarity,
                                    is_farmable=m.drop_id is not None,
-                                   in_pem=m.pal_egg == 1,
-                                   in_rem=m.rem_egg == 1,
+                                   in_pem=m.pem_id is not None,
+                                   in_rem=m.rem_id is not None,
                                    buy_mp=m.buy_mp,
                                    sell_mp=m.sell_mp,
                                    sell_gold=m.sell_gold,
