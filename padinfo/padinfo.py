@@ -787,14 +787,39 @@ class PadInfo(commands.Cog):
     async def padinfo(self, ctx):
         """PAD info management"""
 
-    @padinfo.command()
+    @padinfo.group()
     @checks.is_owner()
-    async def setemojiservers(self, ctx, *, emoji_servers=''):
-        """Set the emoji servers by ID (csv)"""
-        self.settings.emojiServers().clear()
-        if emoji_servers:
-            self.settings.setEmojiServers(emoji_servers.split(','))
-        await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+    async def emojiservers(self, ctx):
+        """Emoji server subcommand"""
+
+    @emojiservers.command(name="add")
+    @checks.is_owner()
+    async def es_add(self, ctx, server_id: int):
+        """Add the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            ess.append(server_id)
+            self.settings.save_settings()
+        await ctx.tick()
+
+    @emojiservers.command(name="remove", aliases=['rm', 'del'])
+    @checks.is_owner()
+    async def es_rm(self, ctx, server_id: int):
+        """Remove the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            await ctx.send("That emoji server is not set.")
+            return
+        ess.remove(server_id)
+        self.settings.save_settings()
+        await ctx.tick()
+
+    @emojiservers.command(name="list", aliases=['show'])
+    @checks.is_owner()
+    async def es_show(self, ctx):
+        """List the emoji servers by ID"""
+        ess = self.settings.emojiServers()
+        await ctx.send(box("\n".join(str(s) for s in ess)))
 
     @padinfo.command()
     @checks.is_owner()
