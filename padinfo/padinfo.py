@@ -1012,9 +1012,11 @@ def monsterToLongHeader(m: "MonsterModel", link=False):
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToEvoHeader(m: "MonsterModel", emoji_list, max_id, link=False):
-    msg = inline(f'[{m.monster_no_na}]'.rjust(len(str(max_id))+2))+f" {monster_attr_emoji(emoji_list, m)} {m.name_en}{monsterToJaSuffix(m, False)}"
-    return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
+def monsterToEvoHeader(m: "MonsterModel", emoji_list, link=True):
+    prefix = f" {monster_attr_emoji(emoji_list, m)} "
+    msg = f"{m.monster_no_na} - {m.name_en}"
+    suffix = monsterToJaSuffix(m, False)
+    return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
 
 
 def monsterToThumbnailUrl(m: "MonsterModel"):
@@ -1037,7 +1039,7 @@ def addEvoListFields(monsters, current_monster, emoji_list):
     field_data = ''
     field_values = []
     for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
-        monster_header = monsterToEvoHeader(ae, emoji_list, max(m.monster_id for m in monsters), link=True) + '\n'
+        monster_header = monsterToEvoHeader(ae, emoji_list, link=ae.monster_id != current_monster.monster_id) + '\n'
         if len(field_data+monster_header) > 1024:
             field_values.append(field_data)
             field_data = ""
@@ -1066,17 +1068,19 @@ def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     if not gem_versions:
         embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
         for f in evos[1:]:
-            embed.add_field(name="Evos (continued)", value=f)
+            embed.add_field(name="\u200b", value=f)
         return embed
     gems = addEvoListFields(gem_versions, m, emoji_list)
 
     embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=True)
-    embed.add_field(name="\u200b", value="\u200b", inline=True)
     embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=True)
+    if len(evos) > 1:
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
     for e,g in zip(evos[1:], gems[1:]):
-        embed.add_field(name="Evos (continued)", value=e, inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(name="Gems (continued)", value=g, inline=True)
+        embed.add_field(name="\u200b", value=e, inline=True)
+        embed.add_field(name="\u200b", value=g, inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
     return embed
 
 
