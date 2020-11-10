@@ -998,9 +998,9 @@ def monsterToHeader(m: "MonsterModel", link=False):
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJaSuffix(m: "MonsterModel"):
+def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
     suffix = ""
-    if m.roma_subname:
+    if m.roma_subname and (subname_on_override or m.name_en_override is None):
         suffix += ' [{}]'.format(m.roma_subname)
     if not m.on_na:
         suffix += ' (JP only)'
@@ -1009,6 +1009,11 @@ def monsterToJaSuffix(m: "MonsterModel"):
 
 def monsterToLongHeader(m: "MonsterModel", link=False):
     msg = monsterToHeader(m) + monsterToJaSuffix(m)
+    return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
+
+
+def monsterToEvoHeader(m: "MonsterModel", emoji_list, max_id, link=False):
+    msg = inline(f'[{m.monster_no_na}]'.rjust(len(str(max_id))+2))+f" {monster_attr_emoji(emoji_list, m)} {m.name_en}{monsterToJaSuffix(m, False)}"
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1026,16 +1031,19 @@ def monsterToBaseEmbed(m: "MonsterModel"):
     return embed
 
 
-def addEvoListFields(list_of_monsters, embed, emoji_list, name):
-    if not len(list_of_monsters):
+def addEvoListFields(monsters, current_monster, emoji_list):
+    if not len(monsters):
         return
-    field_name = name.format(len(list_of_monsters))
     field_data = ''
-    for ae in sorted(list_of_monsters, key=lambda x: int(x.monster_id)):
-        ae: "MonsterModel"
-        field_data += "{} {}\n".format(monster_attr_emoji(emoji_list, ae), monsterToLongHeader(ae, link=True))
-
-    embed.add_field(name=field_name, value=field_data)
+    field_values = []
+    for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
+        monster_header = monsterToEvoHeader(ae, emoji_list, max(m.monster_id for m in monsters), link=True) + '\n'
+        if len(field_data+monster_header) > 1024:
+            field_values.append(field_data)
+            field_data = ""
+        field_data += monster_header
+    field_values.append(field_data)
+    return field_values
 
 
 def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
@@ -1048,17 +1056,27 @@ def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
 def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
+    gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
 
-    evo_gem = db_context.graph.evo_gem_monster(m)
     if not len(alt_versions) and not evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(alt_versions, embed, emoji_list, '{} alternate evo(s)')
-    if not evo_gem:
+    evos = addEvoListFields(alt_versions, m, emoji_list)
+    if not gem_versions:
+        embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
+        for f in evos[1:]:
+            embed.add_field(name="Evos (continued)", value=f)
         return embed
-    addEvoListFields([evo_gem], embed, emoji_list, '{} evo gem(s)')
+    gems = addEvoListFields(gem_versions, m, emoji_list)
 
+    embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=True)
+    embed.add_field(name="\u200b", value="\u200b", inline=True)
+    embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=True)
+    for e,g in zip(evos[1:], gems[1:]):
+        embed.add_field(name="Evos (continued)", value=e, inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(name="Gems (continued)", value=g, inline=True)
     return embed
 
 
