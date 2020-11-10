@@ -117,7 +117,8 @@ class MonsterGraph(object):
             data = json.loads(e.contents)
             type = 'pem' if e.type == "PEM" else 'rem'
             for m in data:
-                mtoegg[int(m[1:-1])][type] = True
+                id = int(m[1:-1]) # Remove parentheses
+                mtoegg[id][type] = True
 
         for m in ms:
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
