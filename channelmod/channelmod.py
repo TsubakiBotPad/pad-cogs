@@ -226,7 +226,7 @@ class ChannelMod(commands.Cog):
         if author.bot:
             return
 
-        if (await bot.get_context(message)).prefix is not None:
+        if (await self.bot.get_context(message)).prefix is not None:
             return
 
 
