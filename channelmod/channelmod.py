@@ -226,6 +226,9 @@ class ChannelMod(commands.Cog):
         if author.bot:
             return
 
+        if (await bot.get_context(message)).prefix is not None:
+            return
+
 
         channel = message.channel
         mirrored_channels = self.settings.get_mirrored_channels(channel.id)
