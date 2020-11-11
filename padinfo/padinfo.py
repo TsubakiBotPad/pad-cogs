@@ -465,7 +465,7 @@ class PadInfo(commands.Cog):
         db_context = DGCOG.database
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
-        evo_embed = monsterToEvoEmbed(m, db_context)
+        evo_embed = monsterToEvoEmbed(m, self.get_emojis(), db_context)
         mats_embed = monsterToEvoMatsEmbed(m, db_context)
         animated = m.has_animation
         pic_embed = monsterToPicEmbed(m, animated=animated)
@@ -998,9 +998,9 @@ def monsterToHeader(m: "MonsterModel", link=False):
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToJaSuffix(m: "MonsterModel"):
+def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
     suffix = ""
-    if m.roma_subname:
+    if m.roma_subname and (subname_on_override or m.name_en_override is None):
         suffix += ' [{}]'.format(m.roma_subname)
     if not m.on_na:
         suffix += ' (JP only)'
@@ -1010,6 +1010,13 @@ def monsterToJaSuffix(m: "MonsterModel"):
 def monsterToLongHeader(m: "MonsterModel", link=False):
     msg = monsterToHeader(m) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
+
+
+def monsterToEvoHeader(m: "MonsterModel", emoji_list, link=True):
+    prefix = f" {monster_attr_emoji(emoji_list, m)} "
+    msg = f"{m.monster_no_na} - {m.name_en}"
+    suffix = monsterToJaSuffix(m, False)
+    return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
 
 
 def monsterToThumbnailUrl(m: "MonsterModel"):
@@ -1026,30 +1033,52 @@ def monsterToBaseEmbed(m: "MonsterModel"):
     return embed
 
 
-def addEvoListFields(list_of_monsters, embed, name):
-    if not len(list_of_monsters):
+def addEvoListFields(monsters, current_monster, emoji_list):
+    if not len(monsters):
         return
-    field_name = name.format(len(list_of_monsters))
     field_data = ''
-    for ae in sorted(list_of_monsters, key=lambda x: int(x.monster_id)):
-        field_data += "{}\n".format(monsterToLongHeader(ae, link=True))
+    field_values = []
+    for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
+        monster_header = monsterToEvoHeader(ae, emoji_list, link=ae.monster_id != current_monster.monster_id) + '\n'
+        if len(field_data+monster_header) > 1024:
+            field_values.append(field_data)
+            field_data = ""
+        field_data += monster_header
+    field_values.append(field_data)
+    return field_values
 
-    embed.add_field(name=field_name, value=field_data)
+
+def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
+    attr1 = monster.attr1.name.lower()
+    attr2 = monster.attr2.name.lower()
+    emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
+    return match_emoji(emoji_list, emoji)
 
 
-def monsterToEvoEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
+    gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
 
-    evo_gem = db_context.graph.evo_gem_monster(m)
     if not len(alt_versions) and not evo_gem:
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    addEvoListFields(alt_versions, embed, '{} alternate evo(s)')
-    if not evo_gem:
+    evos = addEvoListFields(alt_versions, m, emoji_list)
+    if not gem_versions:
+        embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
+        for f in evos[1:]:
+            embed.add_field(name="\u200b", value=f)
         return embed
-    addEvoListFields([evo_gem], embed, '{} evo gem(s)')
+    gems = addEvoListFields(gem_versions, m, emoji_list)
+
+    embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
+    for e in evos[1:]:
+        embed.add_field(name="\u200b", value=e, inline=False)
+
+    embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=False)
+    for e in gems[1:]:
+        embed.add_field(name="\u200b", value=g, inline=False)
 
     return embed
 
