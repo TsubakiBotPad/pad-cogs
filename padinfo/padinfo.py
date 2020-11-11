@@ -1072,15 +1072,14 @@ def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
         return embed
     gems = addEvoListFields(gem_versions, m, emoji_list)
 
-    embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=True)
-    embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=True)
-    if len(evos) > 1:
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+    embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
+    for e in evos[1:]:
+        embed.add_field(name="\u200b", value=e, inline=False)
 
-    for e,g in zip(evos[1:], gems[1:]):
-        embed.add_field(name="\u200b", value=e, inline=True)
-        embed.add_field(name="\u200b", value=g, inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+    embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=False)
+    for e in gems[1:]:
+        embed.add_field(name="\u200b", value=g, inline=False)
+
     return embed
 
 
