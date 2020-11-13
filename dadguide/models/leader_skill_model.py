@@ -18,7 +18,7 @@ class LeaderSkillModel(BaseModel):
 
     @property
     def data(self):
-        return self.max_hp, self.max_atk, self.max_rcv, self.max_shield
+        return self.max_hp, self.max_atk, self.max_rcv, self.max_shield, self.max_combos
 
     @property
     def desc(self):
