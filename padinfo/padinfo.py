@@ -1358,7 +1358,12 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     if not len(awakenings_row):
         awakenings_row = 'No Awakenings'
 
-    killers_row = '**Available Killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
+    if db_context.graph.monster_is_transform_base(m):
+        killers_row = '**Available Killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
+    else:
+        base_transform = db_context.graph.get_transform_base_by_id(m.monster_id)
+        killers_row = '**Avail. Killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, ' '.join(base_transform.killers))
+
 
     embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
