@@ -316,6 +316,33 @@ class MonsterGraph(object):
     def monster_is_base(self, monster: MonsterModel) -> bool:
         return self.monster_is_base_by_id(monster.monster_no)
 
+    def get_transform_base_id_by_id(self, monster_id):
+        # NOTE: This assumes that no two monsters will transform to the same monster. This
+        #        also doesn't work for monsters like DMG which are transforms but also base
+        #        cards.  This also assumes that the "base" monster will be the lowest id in
+        #        the case of a cyclical transform.
+        seen = set()
+        curr = monster_id
+        while curr not in seen:
+            seen.add(curr)
+            next_ids = self.get_prev_transforms_by_monster_id(monster_id)
+            if next_ids:
+                curr = next_ids.pop()
+            else:
+                break
+        else:
+            curr = min(seen)
+        return curr
+
+    def get_transform_base_by_id(self, monster_id):
+        return self.get_monster(self.get_transform_base_id_by_id(monster_id))
+
+    def monster_is_transform_base_by_id(self, monster_id: int) -> bool:
+        return self.get_transform_base_id_by_id(monster_id) == monster_id
+
+    def monster_is_transform_base(self, monster: MonsterModel) -> bool:
+        return self.monster_is_transform_base_by_id(monster.monster_no)
+
     def get_numerical_sort_top_id_by_id(self, monster_id):
         alt_cards = self.get_alt_cards(monster_id)
         if alt_cards is None:
@@ -374,6 +401,24 @@ class MonsterGraph(object):
 
     def get_next_evolutions_by_monster_id(self, monster_id):
         return self._get_edges(self.graph[monster_id], 'evolution')
+
+    def get_next_evolutions_by_monster(self, monster: MonsterModel):
+        return self.get_next_evolutions_by_monster_id(monster.monster_no)
+
+    def get_prev_transforms_by_monster_id(self, monster_id):
+        return self._get_edges(self.graph[monster_id], 'back_transformation')
+
+    def get_prev_transforms_by_monster(self, monster: MonsterModel):
+        return self.get_prev_evolution_by_monster_id(monster.monster_no)
+
+    def get_next_transform_by_monster_id(self, monster_id):
+        bes = self._get_edges(self.graph[monster_id], 'transformation')
+        if bes:
+            return bes.pop()
+        return None
+
+    def get_next_transform_by_monster(self, monster: MonsterModel):
+        return self.get_next_evolutions_by_monster_id(monster.monster_no)
 
     def evo_mats_by_monster_id(self, monster_id: int) -> list:
         evo = self.get_evo_by_monster_id(monster_id)
