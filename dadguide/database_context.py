@@ -20,14 +20,6 @@ FROM
   schedule LEFT OUTER JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id"""
 
 
-DUNGEON_QUERY = """SELECT
-  dungeons.*
-FROM
-  dungeons
-WHERE
-  dungeons.dungeon_id = "{dungeon_id}" """
-
-
 class DbContext(object):
     def __init__(self, database: DadguideDatabase, graph: MonsterGraph):
         self.database = database
@@ -92,12 +84,6 @@ class DbContext(object):
                                                name_ko=se['d_name_ko'],
                                                **se)
             yield ScheduledEventModel(**se)
-
-    def get_dungeon_by_id(self, dungeon_id: int) -> Optional[DungeonModel]:
-        dungeon = self.database.query_one(
-            DUNGEON_QUERY.format(dungeon_id=dungeon_id), (), DictWithAttrAccess)
-        dungeon_model = DungeonModel(**dungeon) if dungeon else None
-        return dungeon_model
 
     def get_base_monster_ids(self):
         SELECT_BASE_MONSTER_ID = '''
