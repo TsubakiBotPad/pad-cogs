@@ -6,8 +6,18 @@ from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
 from .database_manager import DadguideItem
 from .database_manager import DictWithAttrAccess
-from .database_manager import DgScheduledEvent
+from .models.scheduled_event_model import ScheduledEventModel
 from .models.dungeon_model import DungeonModel
+
+
+SCHEDULED_EVENT_QUERY = """SELECT
+  schedule.*,
+  dungeons.name_ja AS d_name_ja,
+  dungeons.name_en AS d_name_en,
+  dungeons.name_ko AS d_name_ko,
+  dungeons.dungeon_type AS dungeon_type
+FROM
+  schedule LEFT OUTER JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id"""
 
 
 DUNGEON_QUERY = """SELECT
@@ -16,7 +26,6 @@ FROM
   dungeons
 WHERE
   dungeons.dungeon_id = "{dungeon_id}" """
-
 
 
 class DbContext(object):
@@ -75,11 +84,14 @@ class DbContext(object):
             return [*monsters]
         return monsters
 
-    def get_all_events(self, as_generator=True):
-        return self.database.query_many(
-            self.database.select_builder(tables={DgScheduledEvent.TABLE: DgScheduledEvent.FIELDS}), (),
-            DgScheduledEvent,
-            as_generator=as_generator)
+    def get_all_events(self) -> ScheduledEventModel:
+        result = self.database.query_many(SCHEDULED_EVENT_QUERY, (), DictWithAttrAccess)
+        for se in result:
+            se['dungeon_model'] = DungeonModel(name_ja=se['d_name_ja'],
+                                               name_en=se['d_name_en'],
+                                               name_ko=se['d_name_ko'],
+                                               **se)
+            yield ScheduledEventModel(**se)
 
     def get_dungeon_by_id(self, dungeon_id: int) -> Optional[DungeonModel]:
         dungeon = self.database.query_one(

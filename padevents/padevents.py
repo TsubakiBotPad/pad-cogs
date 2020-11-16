@@ -16,6 +16,11 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, confirm_message
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from dadguide.database_context import DbContext
+    from dadguide.models.scheduled_event_model import ScheduledEventModel
+
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR"]
@@ -917,14 +922,14 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "DgScheduledEvent", db_context):
+    def __init__(self, scheduled_event: "ScheduledEventModel", db_context):
         self.db_context = db_context
         self.key = scheduled_event.key()
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
-        self.dungeon = self.db_context.get_dungeon_by_id(scheduled_event.dungeon_id)
+        self.dungeon = scheduled_event.dungeon
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
         self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
