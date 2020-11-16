@@ -933,7 +933,7 @@ class Event:
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
         self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
-        self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
+        self.clean_dungeon_name = self.dungeon.clean_name_en if self.dungeon else 'unknown_dungeon'
         self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')
 
         self.name_and_modifier = self.clean_dungeon_name
@@ -1133,39 +1133,3 @@ def isEventWanted(event):
         return False
 
     return True
-
-
-def cleanDungeonNames(name):
-    # TODO: Make this info internally stored
-    if 'tamadra invades in some tech' in name.lower():
-        return 'Latents invades some Techs & 20x +Eggs'
-    if '1.5x Bonus Pal Point in multiplay' in name:
-        name = '[Descends] 1.5x Pal Points in multiplay'
-    name = name.replace('No Continues', 'No Cont')
-    name = name.replace('No Continue', 'No Cont')
-    name = name.replace('Some Limited Time Dungeons', 'Some Guerrillas')
-    name = name.replace('are added in', 'in')
-    name = name.replace('!', '')
-    name = name.replace('Dragon Infestation', 'Dragons')
-    name = name.replace(' Infestation', 's')
-    name = name.replace('Daily Descended Dungeon', 'Daily Descends')
-    name = name.replace('Chance for ', '')
-    name = name.replace('Jewel of the Spirit', 'Spirit Jewel')
-    name = name.replace(' & ', '/')
-    name = name.replace(' / ', '/')
-    name = name.replace('PAD Radar', 'PADR')
-    name = name.replace('in normal dungeons', 'in normals')
-    name = name.replace('Selected ', 'Some ')
-    name = name.replace('Enhanced ', 'Enh ')
-    name = name.replace('All Att. Req.', 'All Att.')
-    name = name.replace('Extreme King Metal Dragon', 'Extreme KMD')
-    name = name.replace('Golden Mound-Tricolor [Fr/Wt/Wd Only]', 'Golden Mound')
-    name = name.replace('Gods-Awakening Materials Descended', "Awoken Mats")
-    name = name.replace('Orb move time 4 sec', '4s move time')
-    name = name.replace('Awakening Materials Descended', 'Awkn Mats')
-    name = name.replace('Awakening Materials', 'Awkn Mats')
-    name = name.replace("Star Treasure Thieves' Den", 'STTD')
-    name = name.replace('Ruins of the Star Vault', 'Star Vault')
-    name = name.replace('-★6 or lower Enhanced', '')
-
-    return name
