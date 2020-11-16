@@ -203,7 +203,7 @@ class PadEvents(commands.Cog):
         await dg_cog.wait_until_ready()
         dg_module = __import__(dg_cog.__module__)
 
-        te = dg_module.DgScheduledEvent({'dungeon_id': 1}, dg_cog.database)
+        te = dg_module.ScheduledEventModule({'dungeon_id': 1})
 
         te.server = server
         te.server_id = SUPPORTED_SERVERS.index(server)

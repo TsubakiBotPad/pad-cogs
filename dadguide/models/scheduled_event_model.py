@@ -7,14 +7,14 @@ import pytz
 class ScheduledEventModel(BaseModel):
     def __init__(self, **kwargs):
         self.event_id = kwargs["event_id"]
-        self.server_id = kwargs["server_id"]
-        self.event_type_id = kwargs["event_type_id"]
-        self.start_timestamp = kwargs["start_timestamp"]
-        self.end_timestamp = kwargs["end_timestamp"]
-        self.group_name = kwargs["group_name"]
+        self.server_id = kwargs.get("server_id")
+        self.event_type_id = kwargs.get("event_type_id")
+        self.start_timestamp = kwargs.get("start_timestamp")
+        self.end_timestamp = kwargs.get("end_timestamp")
+        self.group_name = kwargs.get("group_name")
 
-        self.dungeon: DungeonModel = kwargs["dungeon_model"]
-        self.dungeon_id = self.dungeon.dungeon_id
+        self.dungeon: DungeonModel = kwargs.get("dungeon_model")
+        self.dungeon_id = self.dungeon.dungeon_id if self.dungeon else None
 
     def key(self):
         """
