@@ -70,56 +70,56 @@ class DadguideDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param, d_type, graph=None):
+    def query_one(self, query, param, d_type):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
         if res is not None:
             if issubclass(d_type, DadguideItem):
-                return d_type(res, graph=graph)
+                return d_type(res)
             else:
                 return d_type(res)
         return None
 
-    def as_generator(self, cursor, d_type, graph=None):
+    def as_generator(self, cursor, d_type):
         res = cursor.fetchone()
         while res is not None:
             if issubclass(d_type, DadguideItem):
-                yield d_type(res, graph=graph)
+                yield d_type(res)
             else:
                 yield d_type(res)
             res = cursor.fetchone()
 
-    def query_many(self, query, param, d_type, idx_key=None, as_generator=False, graph=None):
+    def query_many(self, query, param, d_type, idx_key=None, as_generator=False):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (d_type(res, graph=graph)
+            return (d_type(res)
                     if issubclass(d_type, DadguideItem)
                     else d_type(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
                 if issubclass(d_type, DadguideItem):
-                    return [d_type(res, graph=graph) for res in cursor.fetchall()]
+                    return [d_type(res) for res in cursor.fetchall()]
                 else:
                     return [d_type(res) for res in cursor.fetchall()]
             else:
                 if issubclass(d_type, DadguideItem):
                     return DictWithAttrAccess(
-                        {res[idx_key]: d_type(res, graph=graph) for res in cursor.fetchall()})
+                        {res[idx_key]: d_type(res) for res in cursor.fetchall()})
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
-    def select_one_entry_by_pk(self, pk, d_type, graph=None):
+    def select_one_entry_by_pk(self, pk, d_type):
         return self.query_one(
             self.select_builder(
                 tables={d_type.TABLE: d_type.FIELDS},
                 where='{}.{}=?'.format(d_type.TABLE, d_type.PK)),
             (pk,),
-            d_type, graph=graph)
+            d_type)
 
     def get_table_fields(self, table_name: str):
         # SQL inject vulnerable :v
@@ -151,22 +151,13 @@ class DadguideItem(DictWithAttrAccess):
     PK = None
     AS_BOOL = ()
 
-    def __init__(self, item, **kwargs):
+    def __init__(self, item):
         super(DadguideItem, self).__init__(item)
         for k in self.AS_BOOL:
             self[k] = bool(self[k])
 
     def key(self):
         return self[self.PK]
-
-
-class DgEvolution(DadguideItem):
-    TABLE = 'evolutions'
-    PK = 'evolution_id'
-
-    def __init__(self, item, **kwargs):
-        super(DgEvolution, self).__init__(item)
-        self.evolution_type = EvoType(self.evolution_type)
 
 
 class DgDungeon(DadguideItem):
@@ -178,7 +169,7 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
-    def __init__(self, item, **graph):
+    def __init__(self, item):
         super(DgScheduledEvent, self).__init__(item)
 
     @property

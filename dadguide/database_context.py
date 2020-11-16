@@ -18,7 +18,7 @@ class DbContext(object):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
         return [r.awoken_skill_id for r in
                 self.database.query_many(
-                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True, graph=self.graph)]
+                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
 
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
@@ -54,7 +54,7 @@ class DbContext(object):
         query = self.database.query_many(
             self.database.select_builder(tables={'monsters': ('monster_id',)}), (),
             DictWithAttrAccess,
-            as_generator=as_generator, graph=self.graph)
+            as_generator=as_generator)
         if as_generator:
             return map(lambda m: m.monster_id, query)
         return [m.monster_id for m in query]
