@@ -75,19 +75,13 @@ class DadguideDatabase(object):
         cursor.execute(query, param)
         res = cursor.fetchone()
         if res is not None:
-            if issubclass(d_type, DadguideItem):
-                return d_type(res)
-            else:
-                return d_type(res)
+            return d_type(res)
         return None
 
     def as_generator(self, cursor, d_type):
         res = cursor.fetchone()
         while res is not None:
-            if issubclass(d_type, DadguideItem):
-                yield d_type(res)
-            else:
-                yield d_type(res)
+            yield d_type(res)
             res = cursor.fetchone()
 
     def query_many(self, query, param, d_type, idx_key=None, as_generator=False):
@@ -97,21 +91,12 @@ class DadguideDatabase(object):
             return []
         if as_generator:
             return (d_type(res)
-                    if issubclass(d_type, DadguideItem)
-                    else d_type(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
-                if issubclass(d_type, DadguideItem):
-                    return [d_type(res) for res in cursor.fetchall()]
-                else:
-                    return [d_type(res) for res in cursor.fetchall()]
+                return [d_type(res) for res in cursor.fetchall()]
             else:
-                if issubclass(d_type, DadguideItem):
-                    return DictWithAttrAccess(
-                        {res[idx_key]: d_type(res) for res in cursor.fetchall()})
-                else:
-                    return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
+                return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
     def select_one_entry_by_pk(self, pk, d_type):
         return self.query_one(
@@ -139,25 +124,6 @@ class DictWithAttrAccess(dict):
     def __init__(self, item):
         super(DictWithAttrAccess, self).__init__(item)
         self.__dict__ = self
-
-
-class DadguideItem(DictWithAttrAccess):
-    """
-    Base class for all items loaded from DadGuide.
-    Is a dict with attr access.
-    """
-    TABLE = None
-    FIELDS = '*'
-    PK = None
-    AS_BOOL = ()
-
-    def __init__(self, item):
-        super(DadguideItem, self).__init__(item)
-        for k in self.AS_BOOL:
-            self[k] = bool(self[k])
-
-    def key(self):
-        return self[self.PK]
 
 
 class PotentialMatches(object):

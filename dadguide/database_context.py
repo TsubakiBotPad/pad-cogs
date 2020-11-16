@@ -4,7 +4,6 @@ from typing import Optional
 
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
-from .database_manager import DadguideItem
 from .database_manager import DictWithAttrAccess
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.dungeon_model import DungeonModel
@@ -29,7 +28,7 @@ class DbContext(object):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'
         return [r.awoken_skill_id for r in
                 self.database.query_many(
-                    SELECT_AWOKEN_SKILL_IDS, (), DadguideItem, as_generator=True)]
+                    SELECT_AWOKEN_SKILL_IDS, (), DictWithAttrAccess, as_generator=True)]
 
     def get_next_evolutions_by_monster(self, monster_id):
         return self.graph.get_next_evolutions_by_monster_id(monster_id)
