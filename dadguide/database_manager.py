@@ -160,15 +160,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgEvolution(DadguideItem):
-    TABLE = 'evolutions'
-    PK = 'evolution_id'
-
-    def __init__(self, item, **kwargs):
-        super(DgEvolution, self).__init__(item)
-        self.evolution_type = EvoType(self.evolution_type)
-
-
 class DgDungeon(DadguideItem):
     TABLE = 'dungeons'
     PK = 'dungeon_id'
