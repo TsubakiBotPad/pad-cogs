@@ -160,30 +160,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgScheduledEvent(DadguideItem):
-    TABLE = 'schedule'
-    PK = 'event_id'
-
-    def __init__(self, item):
-        super(DgScheduledEvent, self).__init__(item)
-
-    @property
-    def open_datetime(self):
-        return datetime.utcfromtimestamp(self.start_timestamp).replace(tzinfo=pytz.UTC)
-
-    @open_datetime.setter
-    def open_datetime(self, value):
-        self.start_timestamp = int(value.timestamp())
-
-    @property
-    def close_datetime(self):
-        return datetime.utcfromtimestamp(self.end_timestamp).replace(tzinfo=pytz.UTC)
-
-    @close_datetime.setter
-    def close_datetime(self, value):
-        self.end_timestamp = int(value.timestamp())
-
-
 class PotentialMatches(object):
     def __init__(self):
         self.match_list = set()
