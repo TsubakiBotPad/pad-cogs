@@ -151,7 +151,7 @@ class DadguideItem(DictWithAttrAccess):
     PK = None
     AS_BOOL = ()
 
-    def __init__(self, item, **kwargs):
+    def __init__(self, item):
         super(DadguideItem, self).__init__(item)
         for k in self.AS_BOOL:
             self[k] = bool(self[k])
