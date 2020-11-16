@@ -924,7 +924,7 @@ class PadEventSettings(CogSettings):
 class Event:
     def __init__(self, scheduled_event: "ScheduledEventModel", db_context):
         self.db_context = db_context
-        self.key = scheduled_event.key()
+        self.key = scheduled_event.event_id
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime

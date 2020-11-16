@@ -16,12 +16,6 @@ class ScheduledEventModel(BaseModel):
         self.dungeon: DungeonModel = kwargs.get("dungeon_model")
         self.dungeon_id = self.dungeon.dungeon_id if self.dungeon else None
 
-    def key(self):
-        """
-        This is just here for compatibility and will be deleted
-        """
-        return self.event_id
-
     @property
     def open_datetime(self):
         return datetime.utcfromtimestamp(self.start_timestamp).replace(tzinfo=pytz.UTC)
