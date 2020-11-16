@@ -101,10 +101,10 @@ class MonsterGraph(object):
     def build_graph(self):
         self.graph = networkx.MultiDiGraph()
 
-        ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess, graph=self)
-        es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess, graph=self)
-        aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess, graph=self)
-        ems = self.database.query_many(EGG_QUERY, (), DictWithAttrAccess, graph=self)
+        ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess)
+        es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess)
+        aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess)
+        ems = self.database.query_many(EGG_QUERY, (), DictWithAttrAccess)
 
         mtoawo = defaultdict(list)
         for a in aws:
