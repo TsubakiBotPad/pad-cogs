@@ -267,9 +267,9 @@ class PadInfo(commands.Cog):
 
         logger.info('Done refreshing indexes')
 
-    def get_monster_by_id(self, monster_id: int):
+    def get_monster(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
-        return dg_cog.get_monster_by_id(monster_id)
+        return dg_cog.get_monster(monster_id)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -875,7 +875,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups[query] = monster_no
         json.dump(self.historic_lookups, open(self.historic_lookups_file_path, "w+"))
 
-        m = self.get_monster_by_id(nm.monster_id) if nm else None
+        m = self.get_monster(nm.monster_id) if nm else None
 
         return m, err, debug_info
 
@@ -901,7 +901,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups_id2[query] = monster_no
         json.dump(self.historic_lookups_id2, open(self.historic_lookups_file_path_id2, "w+"))
 
-        m = self.get_monster_by_id(nm.monster_id) if nm else None
+        m = self.get_monster(nm.monster_id) if nm else None
 
         return m, err, debug_info
 

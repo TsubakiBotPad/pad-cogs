@@ -80,7 +80,7 @@ def monster_id_to_monster(monster_id):
     dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
     if dg_cog is None:
         return None
-    return dg_cog.get_monster_by_id(monster_id)
+    return dg_cog.get_monster(monster_id)
 
 
 def monster_id_to_named_monster(monster_id):

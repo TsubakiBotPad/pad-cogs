@@ -108,7 +108,7 @@ class Dadguide(commands.Cog):
                                   self.panthname_overrides,
                                   accept_filter=accept_filter)
 
-    def get_monster_by_id(self, monster_id: int) -> MonsterModel:
+    def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
         return self.database.graph.get_monster(monster_id)
 
