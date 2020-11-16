@@ -70,41 +70,34 @@ class DadguideDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param, d_type):
+    def query_one(self, query, param):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
         if res is not None:
-            return d_type(res)
+            return DictWithAttrAccess(res)
         return None
 
-    def as_generator(self, cursor, d_type):
+    @staticmethod
+    def as_generator(cursor):
         res = cursor.fetchone()
         while res is not None:
-            yield d_type(res)
+            yield DictWithAttrAccess(res)
             res = cursor.fetchone()
 
-    def query_many(self, query, param, d_type, idx_key=None, as_generator=False):
+    def query_many(self, query, param, idx_key=None, as_generator=False):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (d_type(res)
+            return (DictWithAttrAccess(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
-                return [d_type(res) for res in cursor.fetchall()]
+                return [DictWithAttrAccess(res) for res in cursor.fetchall()]
             else:
-                return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
-
-    def select_one_entry_by_pk(self, pk, d_type):
-        return self.query_one(
-            self.select_builder(
-                tables={d_type.TABLE: d_type.FIELDS},
-                where='{}.{}=?'.format(d_type.TABLE, d_type.PK)),
-            (pk,),
-            d_type)
+                return DictWithAttrAccess({res[idx_key]: DictWithAttrAccess(res) for res in cursor.fetchall()})
 
     def get_table_fields(self, table_name: str):
         # SQL inject vulnerable :v
