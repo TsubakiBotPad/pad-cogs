@@ -160,11 +160,6 @@ class DadguideItem(DictWithAttrAccess):
         return self[self.PK]
 
 
-class DgDungeon(DadguideItem):
-    TABLE = 'dungeons'
-    PK = 'dungeon_id'
-
-
 class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'

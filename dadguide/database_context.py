@@ -4,9 +4,18 @@ from collections import OrderedDict, defaultdict, deque
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
 from .database_manager import DadguideItem
-from .database_manager import DgDungeon
 from .database_manager import DictWithAttrAccess
 from .database_manager import DgScheduledEvent
+from .models.dungeon_model import DungeonModel
+
+
+DUNGEON_QUERY = """SELECT
+  dungeons.*
+FROM
+  dungeons
+WHERE
+  dungeons.dungeon_id = "{dungeon_id}" """
+
 
 
 class DbContext(object):
@@ -72,7 +81,10 @@ class DbContext(object):
             as_generator=as_generator)
 
     def get_dungeon_by_id(self, dungeon_id: int):
-        return self.database.select_one_entry_by_pk(dungeon_id, DgDungeon)
+        dungeon = self.database.query_one(
+            DUNGEON_QUERY.format(dungeon_id=dungeon_id), (), DictWithAttrAccess)
+        dungeon_model = DungeonModel(**dungeon) if dungeon else None
+        return dungeon_model
 
     def get_base_monster_ids(self):
         SELECT_BASE_MONSTER_ID = '''
