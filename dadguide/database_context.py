@@ -1,5 +1,6 @@
 from datetime import datetime
 from collections import OrderedDict, defaultdict, deque
+from typing import Optional
 
 from .database_manager import DadguideDatabase
 from .monster_graph import MonsterGraph
@@ -80,7 +81,7 @@ class DbContext(object):
             DgScheduledEvent,
             as_generator=as_generator)
 
-    def get_dungeon_by_id(self, dungeon_id: int):
+    def get_dungeon_by_id(self, dungeon_id: int) -> Optional[DungeonModel]:
         dungeon = self.database.query_one(
             DUNGEON_QUERY.format(dungeon_id=dungeon_id), (), DictWithAttrAccess)
         dungeon_model = DungeonModel(**dungeon) if dungeon else None
