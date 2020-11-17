@@ -12,13 +12,23 @@ class LeaderSkillModel(BaseModel):
         self.max_rcv = kwargs['max_rcv']
         self.max_shield = kwargs['max_shield']
         self.max_combos = kwargs['max_combos']
+        self.bonus_damage = kwargs['bonus_damage']
+        self.mult_bonus_damage = kwargs['mult_bonus_damage']
+        self.extra_time = kwargs['extra_time']
         self.desc_en = kwargs['desc_en']
         self.desc_ja = kwargs['desc_ja']
         self.desc_ko = kwargs['desc_ko']
 
     @property
     def data(self):
-        return self.max_hp, self.max_atk, self.max_rcv, self.max_shield, self.max_combos
+        return (self.max_hp,
+                self.max_atk,
+                self.max_rcv,
+                self.max_shield,
+                self.max_combos,
+                self.bonus_damage,
+                self.mult_bonus_damage,
+                self.extra_time)
 
     @property
     def desc(self):

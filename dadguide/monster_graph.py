@@ -27,6 +27,9 @@ MONSTER_QUERY = """SELECT
   leader_skills.max_rcv,
   leader_skills.max_shield,
   leader_skills.max_combos,
+  leader_skills.bonus_damage,
+  leader_skills.mult_bonus_damage,
+  leader_skills.extra_time,
   active_skills.name_ja AS as_name_ja,
   active_skills.name_en AS as_name_en,
   active_skills.name_ko AS as_name_ko,
@@ -132,7 +135,10 @@ class MonsterGraph(object):
                                         max_atk=m.max_atk,
                                         max_rcv=m.max_rcv,
                                         max_shield=m.max_shield,
-                                        max_combos=m.max_combos
+                                        max_combos=m.max_combos,
+                                        bonus_damage=m.bonus_damage,
+                                        mult_bonus_damage=m.mult_bonus_damage,
+                                        extra_time=m.extra_time,
                                         ) if m.leader_skill_id != 0 else None
 
             as_model = ActiveSkillModel(active_skill_id=m.active_skill_id,
