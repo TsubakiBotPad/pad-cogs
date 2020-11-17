@@ -1215,44 +1215,27 @@ def monstersToLsEmbed(left_m: "MonsterModel", right_m: "MonsterModel"):
     lls = left_m.leader_skill
     rls = right_m.leader_skill
 
-    if lls:
-        lhp, latk, lrcv, lresist = lls.data
-    else:
-        lhp, latk, lrcv, lresist = 1, 1, 1, 0
-
-    if rls:
-        rhp, ratk, rrcv, rresist = rls.data
-    else:
-        rhp, ratk, rrcv, rresist = 1, 1, 1, 0
-
-    multiplier_text = createMultiplierText(lhp, latk, lrcv, lresist, rhp, ratk, rrcv, rresist)
+    multiplier_text = createMultiplierText(lls, rls)
 
     embed = discord.Embed()
-    embed.title = 'Multiplier [{}]\n\n'.format(multiplier_text)
+    embed.title = '{}\n\n'.format(multiplier_text)
     description = ''
     description += '\n**{}**\n{}'.format(
         monsterToHeader(left_m, link=True),
-        left_m.leader_skill.desc if left_m.leader_skill else 'None')
+        lls.desc if lls else 'None')
     description += '\n**{}**\n{}'.format(
         monsterToHeader(right_m, link=True),
-        right_m.leader_skill.desc if right_m.leader_skill else 'None')
+        rls.desc if rls else 'None')
     embed.description = description
 
     return embed
 
 
 def monstersToLssEmbed(m: "MonsterModel"):
-    ls = m.leader_skill
-
-    if ls:
-        hp, atk, rcv, resist = ls.data
-    else:
-        hp, atk, rcv, resist = 1, 1, 1, 0
-
-    multiplier_text = createSingleMultiplierText(hp, atk, rcv, resist)
+    multiplier_text = createSingleMultiplierText(m.leader_skill)
 
     embed = discord.Embed()
-    embed.title = 'Multiplier [{}]\n\n'.format(multiplier_text)
+    embed.title = '{}\n\n'.format(multiplier_text)
     description = ''
     description += '\n**{}**\n{}'.format(
         monsterToHeader(m, link=True),
@@ -1380,9 +1363,8 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     ls_row = m.leader_skill.desc if leader_skill else 'None'
     ls_header = 'Leader Skill'
     if leader_skill:
-        hp, atk, rcv, resist = m.leader_skill.data
-        multiplier_text = createMultiplierText(hp, atk, rcv, resist)
-        ls_header += " [ {} ]".format(multiplier_text)
+        multiplier_text = createMultiplierText(leader_skill)
+        ls_header += " {}".format(multiplier_text)
     embed.add_field(name=ls_header, value=ls_row, inline=False)
 
     evos_header = "Alternate Evos"
@@ -1523,25 +1505,68 @@ AWAKENING_MAP = {
     72: 'misc_poisonboost',
 }
 
+def humanize_number(number, sigfigs=2):
+    n = float("{0:.{1}g}".format(number, sigfigs))
+    if n >= 1e9:
+        return str(int(n//1e9))+"B"
+    elif n >= 1e6:
+        return str(int(n//1e6))+"M"
+    elif n >= 1e3:
+        return str(int(n//1e3))+"k"
+    else:
+        return str(int(n))
 
-def createMultiplierText(hp1, atk1, rcv1, resist1, hp2=None, atk2=None, rcv2=None, resist2=None):
-    if all([x is None for x in (hp2, atk2, rcv2, resist2)]):
-        hp2, atk2, rcv2, resist2 = hp1, atk1, rcv1, resist1
+def createMultiplierText(ls1, ls2=None):
+    if ls2 and not ls1:
+        ls1, ls2 = ls2, ls1
 
-    def fmtNum(val):
-        return '{:.2f}'.format(val).strip('0').rstrip('.')
+    if ls1:
+        hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = ls1.data
+    else:
+        hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = 1, 1, 1, 0, 0, 0, 0, 0
 
-    text = "{}/{}/{}".format(fmtNum(hp1 * hp2), fmtNum(atk1 * atk2), fmtNum(rcv1 * rcv2))
-    if resist1 > 0 or resist2 > 0:
-        text += ' Resist {}%'.format(fmtNum(100 * (1 - (1 - resist1) * (1 - resist2))))
-    return text
+    if ls2:
+        hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = ls2.data
+    else:
+        hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1
+
+    return format_ls_text(
+            hp1*hp2,
+            atk1*atk2,
+            rcv1*rcv2,
+            100 * (1 - (1 - resist1) * (1 - resist2)),
+            combo1+combo2,
+            fua1+fua2,
+            mfua1+mfua2,
+            te1+te2
+           )
 
 
-def createSingleMultiplierText(hp, atk, rcv, resist):
+def createSingleMultiplierText(ls=None):
+    if ls:
+        hp, atk, rcv, resist, combo, fua, mfua, te = ls.data
+    else:
+        hp, atk, rcv, resist, combo, fua, mfua, te = 1, 1, 1, 0, 0, 0, 0, 0
+
+    return format_ls_text(hp, atk, rcv, resist, combo, fua, mfua, te)
+
+
+def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     def fmtNum(val):
         return '{:.2f}'.format(val).strip('0').rstrip('.')
 
     text = "{}/{}/{}".format(fmtNum(hp), fmtNum(atk), fmtNum(rcv))
-    if resist > 0:
+    if resist != 0:
         text += ' Resist {}%'.format(fmtNum(100 * resist))
-    return text
+
+    extras = []
+    if combo:
+        extras.append('+{}c'.format(combo))
+    if fua:
+        extras.append('{} fua'.format(humanize_number(fua, 2)))
+    elif mfua:
+        textextras.append('fua')
+
+    if extras:
+        return '[{}] [{}]'.format(text, ' '.join(extras))
+    return '[{}]'.format(text)
