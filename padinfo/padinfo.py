@@ -1503,9 +1503,9 @@ AWAKENING_MAP = {
 def humanize_number(number, sigfigs=2):
     n = float("{0:.{1}g}".format(number, sigfigs))
     if n >= 1e9:
-        return str(int(n//1e9))+"b"
+        return str(int(n//1e9))+"B"
     elif n >= 1e6:
-        return str(int(n//1e6))+"m"
+        return str(int(n//1e6))+"M"
     elif n >= 1e3:
         return str(int(n//1e3))+"k"
     else:
