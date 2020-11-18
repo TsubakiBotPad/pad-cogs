@@ -7,7 +7,7 @@
   "install_msg": "Use [p]sifid to get started.",
   "short": "Shows School Idol data",
   "min_bot_version": "3.4.0",
-  "max_bot_version": "3.4.2",
+  "max_bot_version": "0.0.0",
   "min_python_version": [
     3,
     8,
