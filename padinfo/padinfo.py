@@ -1534,7 +1534,7 @@ def createMultiplierText(ls1, ls2=None):
             hp1*hp2,
             atk1*atk2,
             rcv1*rcv2,
-            100 * (1 - (1 - resist1) * (1 - resist2)),
+            1 - (1 - resist1) * (1 - resist2),
             combo1+combo2,
             fua1+fua2,
             mfua1+mfua2,
