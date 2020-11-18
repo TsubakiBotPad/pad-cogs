@@ -466,21 +466,21 @@ class PadInfo(commands.Cog):
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
         evo_embed = monsterToEvoEmbed(m, self.get_emojis(), db_context)
-        mats_embed = monsterToEvoMatsEmbed(m, db_context)
+        mats_embed = monsterToEvoMatsEmbed(m, db_context, self.get_emojis())
         animated = m.has_animation
-        pic_embed = monsterToPicEmbed(m, animated=animated)
-        other_info_embed = monsterToOtherInfoEmbed(m, db_context)
+        pic_embed = monsterToPicEmbed(m, self.get_emojis(), animated=animated)
+        other_info_embed = monsterToOtherInfoEmbed(m, db_context, self.get_emojis())
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m, db_context)
+        pantheon_embed = monsterToPantheonEmbed(m, db_context, self.get_emojis())
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m, db_context)
+        skillups_embed = monsterToSkillupsEmbed(m, db_context, self.get_emojis())
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -584,7 +584,7 @@ class PadInfo(commands.Cog):
         """Short info results for a monster query"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            embed = monsterToHeaderEmbed(m)
+            embed = monsterToHeaderEmbed(m, self.get_emojis())
             await ctx.send(embed=embed)
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -993,8 +993,9 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
 
-def monsterToHeader(m: "MonsterModel", link=False):
-    msg = '[{}] {}'.format(m.monster_no_na, m.name_en)
+def monsterToHeader(m: "MonsterModel", link=False, show_types=False, allowed_emojis=None):
+    type_emojis = '{} '.format(''.join([str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
+    msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1007,8 +1008,8 @@ def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
     return suffix
 
 
-def monsterToLongHeader(m: "MonsterModel", link=False):
-    msg = monsterToHeader(m) + monsterToJaSuffix(m)
+def monsterToLongHeader(m: "MonsterModel", link=False, show_types=False, allowed_emojis=None):
+    msg = monsterToHeader(m, show_types=show_types, allowed_emojis=allowed_emojis) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1023,8 +1024,8 @@ def monsterToThumbnailUrl(m: "MonsterModel"):
     return get_portrait_url(m)
 
 
-def monsterToBaseEmbed(m: "MonsterModel"):
-    header = monsterToLongHeader(m)
+def monsterToBaseEmbed(m: "MonsterModel", allowed_emojis):
+    header = monsterToLongHeader(m, show_types=True, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.set_thumbnail(url=monsterToThumbnailUrl(m))
     embed.title = header
@@ -1056,11 +1057,11 @@ def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
 
 
 def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, emoji_list)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
     gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
 
-    if not len(alt_versions) and not evo_gem:
+    if not len(alt_versions):
         embed.description = 'No alternate evos or evo gem'
         return embed
 
@@ -1097,8 +1098,8 @@ def addMonsterEvoOfList(monster_id_list, embed, field_name, db_context=None):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext", emoji_list):
+    embed = monsterToBaseEmbed(m, emoji_list)
 
     mats_for_evo = db_context.graph.evo_mats_by_monster(m)
 
@@ -1119,13 +1120,13 @@ def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext"):
     return embed
 
 
-def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext", emoji_list):
     full_pantheon = db_context.get_monsters_by_series(m.series_id)
     pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
 
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, emoji_list)
 
     field_name = 'Pantheon: ' + db_context.graph.get_monster(m.monster_no).series.name
     field_data = ''
@@ -1136,7 +1137,7 @@ def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext"):
     return embed
 
 
-def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext", emoji_list):
     if m.active_skill is None:
         return None
     possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
@@ -1146,7 +1147,7 @@ def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext"):
     if len(skillups_list) == 0:
         return None
 
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, emoji_list)
 
     field_name = 'Skillups'
     field_data = ''
@@ -1169,8 +1170,8 @@ def monsterToPicUrl(m: "MonsterModel"):
     return get_pic_url(m)
 
 
-def monsterToPicEmbed(m: "MonsterModel", animated=False):
-    embed = monsterToBaseEmbed(m)
+def monsterToPicEmbed(m: "MonsterModel", emoji_list, animated=False):
+    embed = monsterToBaseEmbed(m, emoji_list)
     url = monsterToPicUrl(m)
     embed.set_image(url=url)
     # Clear the thumbnail, don't need it on pic
@@ -1200,15 +1201,6 @@ def monsterToOrbSkinUrl(m: "MonsterModel", link_text='Regular'):
 
 def monsterToOrbSkinCBUrl(m: "MonsterModel", link_text='Color Blind'):
     return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
-
-
-def monsterToGifEmbed(m: "MonsterModel"):
-    embed = monsterToBaseEmbed(m)
-    url = monsterToGifUrl(m)
-    embed.set_image(url=url)
-    # Clear the thumbnail, don't need it on pic
-    embed.set_thumbnail(url='')
-    return embed
 
 
 def monstersToLsEmbed(left_m: "MonsterModel", right_m: "MonsterModel"):
@@ -1245,15 +1237,11 @@ def monstersToLssEmbed(m: "MonsterModel"):
     return embed
 
 
-def monsterToHeaderEmbed(m: "MonsterModel"):
-    header = monsterToLongHeader(m, link=True)
+def monsterToHeaderEmbed(m: "MonsterModel", allowed_emojis):
+    header = monsterToLongHeader(m, link=True, show_types=True, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.description = header
     return embed
-
-
-def monsterToTypeString(m: "MonsterModel"):
-    return '/'.join([t.name for t in m.types])
 
 
 def monsterToAcquireString(m: "MonsterModel", db_context: "DbContext"):
@@ -1286,9 +1274,9 @@ def match_emoji(emoji_list, name):
 
 
 def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, emoji_list)
 
-    info_row_1 = monsterToTypeString(m)
+    info_row_1 = 'Inheritable' if m.is_inheritable else 'Not inheritable'
     acquire_text = monsterToAcquireString(m, db_context)
     tet_text = db_context.graph.true_evo_type_by_monster(m).value
 
@@ -1303,10 +1291,6 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
 
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
-    if m.is_inheritable:
-        info_row_2 += '\n**Inheritable**'
-    else:
-        info_row_2 += '\n**Not inheritable**'
     if tet_text in ("Reincarnated", "Assist", "Pixel", "Super Reincarnated"):
         info_row_2 += '\n**{}**'.format(tet_text)
 
@@ -1347,7 +1331,6 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
         base_transform = db_context.graph.get_transform_base_by_id(m.monster_id)
         killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, ' '.join(base_transform.killers))
 
-
     embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
     active_header = 'Active Skill'
@@ -1378,8 +1361,8 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     return embed
 
 
-def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext", emoji_list):
+    embed = monsterToBaseEmbed(m, emoji_list)
     # Clear the thumbnail, takes up too much space
     embed.set_thumbnail(url='')
 
