@@ -1565,7 +1565,7 @@ def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     if fua:
         extras.append('{} fua'.format(humanize_number(fua, 2)))
     elif mfua:
-        textextras.append('fua')
+        extras.append('fua')
 
     if extras:
         return '[{}] [{}]'.format(text, ' '.join(extras))
