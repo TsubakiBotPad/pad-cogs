@@ -17,32 +17,36 @@ class DungeonModel(BaseModel):
             return 'Latents invades some Techs & 20x +Eggs'
         if '1.5x Bonus Pal Point in multiplay' in name:
             name = '[Descends] 1.5x Pal Points in multiplay'
-        name = name.replace('No Continues', 'No Cont')
-        name = name.replace('No Continue', 'No Cont')
-        name = name.replace('Some Limited Time Dungeons', 'Some Guerrillas')
-        name = name.replace('are added in', 'in')
-        name = name.replace('!', '')
-        name = name.replace('Dragon Infestation', 'Dragons')
-        name = name.replace(' Infestation', 's')
-        name = name.replace('Daily Descended Dungeon', 'Daily Descends')
-        name = name.replace('Chance for ', '')
-        name = name.replace('Jewel of the Spirit', 'Spirit Jewel')
-        name = name.replace(' & ', '/')
-        name = name.replace(' / ', '/')
-        name = name.replace('PAD Radar', 'PADR')
-        name = name.replace('in normal dungeons', 'in normals')
-        name = name.replace('Selected ', 'Some ')
-        name = name.replace('Enhanced ', 'Enh ')
-        name = name.replace('All Att. Req.', 'All Att.')
-        name = name.replace('Extreme King Metal Dragon', 'Extreme KMD')
-        name = name.replace('Golden Mound-Tricolor [Fr/Wt/Wd Only]', 'Golden Mound')
-        name = name.replace('Gods-Awakening Materials Descended', "Awoken Mats")
-        name = name.replace('Orb move time 4 sec', '4s move time')
-        name = name.replace('Awakening Materials Descended', 'Awkn Mats')
-        name = name.replace('Awakening Materials', 'Awkn Mats')
-        name = name.replace("Star Treasure Thieves' Den", 'STTD')
-        name = name.replace('Ruins of the Star Vault', 'Star Vault')
-        name = name.replace('-★6 or lower Enhanced', '')
+        clean_name_map = {
+            'No Continues': 'No Cont',
+            'No Continue': 'No Cont',
+            'Some Limited Time Dungeons': 'Some Guerrillas',
+            'are added in': 'in',
+            '!': '',
+            'Dragon Infestation': 'Dragons',
+            ' Infestation': 's',
+            'Daily Descended Dungeon': 'Daily Descends',
+            'Chance for ': '',
+            'Jewel of the Spirit': 'Spirit Jewel',
+            ' & ': '/',
+            ' / ': '/',
+            'PAD Radar': 'PADR',
+            'in normal dungeons': 'in normals',
+            'Selected ': 'Some ',
+            'Enhanced ': 'Enh ',
+            'All Att. Req.': 'All Att.',
+            'Extreme King Metal Dragon': 'Extreme KMD',
+            'Golden Mound-Tricolor [Fr/Wt/Wd Only]': 'Golden Mound',
+            'Gods-Awakening Materials Descended': "Awoken Mats",
+            'Orb move time 4 sec': '4s move time',
+            'Awakening Materials Descended': 'Awkn Mats',
+            'Awakening Materials': 'Awkn Mats',
+            "Star Treasure Thieves' Den": 'STTD',
+            'Ruins of the Star Vault': 'Star Vault',
+            '-★6 or lower Enhanced': '',
+        }
+        for find, replace in clean_name_map.items():
+            name = name.replace(find, replace)
         return name
 
     def to_dict(self):
