@@ -1,73 +1,18 @@
-from enum import Enum
 from datetime import datetime
 import sqlite3 as lite
-import shutil
 import romkan
 import logging
 
 import pytz
-import difflib
-import os
 import re
 
-from collections import OrderedDict, defaultdict, deque
+from collections import defaultdict
 
-from redbot.core.utils import AsyncIter
-from redbot.core import data_manager
 import tsutils
+from dadguide.models.enum_types import Attribute, MonsterType
+from dadguide.models.monster_model import MonsterModel
 
 logger = logging.getLogger('red.padbot-cogs.dadguide.database_manager')
-
-
-class Attribute(Enum):
-    """Standard 5 PAD colors in enum form. Values correspond to DadGuide values."""
-    Fire = 0
-    Water = 1
-    Wood = 2
-    Light = 3
-    Dark = 4
-    Unknown = 5
-    Nil = 6
-
-
-class MonsterType(Enum):
-    Evolve = 0
-    Balance = 1
-    Physical = 2
-    Healer = 3
-    Dragon = 4
-    God = 5
-    Attacker = 6
-    Devil = 7
-    Machine = 8
-    Awoken = 12
-    Enhance = 14
-    Vendor = 15
-
-
-class EvoType(Enum):
-    """Evo types supported by DadGuide. Numbers correspond to their id values."""
-    Base = 0  # Represents monsters who didn't require evo
-    Evo = 1
-    UvoAwoken = 2
-    UuvoReincarnated = 3
-
-
-class InternalEvoType(Enum):
-    """Evo types unsupported by DadGuide."""
-    Base = "Base"
-    Normal = "Normal"
-    Ultimate = "Ultimate"
-    Reincarnated = "Reincarnated"
-    Assist = "Assist"
-    Pixel = "Pixel"
-    SuperReincarnated = "Super Reincarnated"
-
-
-class Server(Enum):
-    JP = 0
-    NA = 1
-    KR = 2
 
 
 class DadguideTableNotFound(Exception):
@@ -125,62 +70,56 @@ class DadguideDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param, d_type, db_context=None, graph=None):
+    def query_one(self, query, param, d_type):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
         if res is not None:
             if issubclass(d_type, DadguideItem):
-                return d_type(res, db_context, graph=graph)
+                return d_type(res)
             else:
                 return d_type(res)
         return None
 
-    def as_generator(self, cursor, d_type, db_context=None, graph=None):
+    def as_generator(self, cursor, d_type):
         res = cursor.fetchone()
         while res is not None:
             if issubclass(d_type, DadguideItem):
-                yield d_type(res, db_context, graph=graph)
+                yield d_type(res)
             else:
                 yield d_type(res)
             res = cursor.fetchone()
 
-    def query_many(self, query, param, d_type, idx_key=None, as_generator=False,
-                   db_context=None, graph=None):
+    def query_many(self, query, param, d_type, idx_key=None, as_generator=False):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (d_type(res, db_context, graph=graph)
+            return (d_type(res)
                     if issubclass(d_type, DadguideItem)
                     else d_type(res)
                     for res in cursor.fetchall())
         else:
             if idx_key is None:
                 if issubclass(d_type, DadguideItem):
-                    return [d_type(res, db_context, graph=graph) for res in cursor.fetchall()]
+                    return [d_type(res) for res in cursor.fetchall()]
                 else:
                     return [d_type(res) for res in cursor.fetchall()]
             else:
                 if issubclass(d_type, DadguideItem):
                     return DictWithAttrAccess(
-                        {res[idx_key]: d_type(res, db_context, graph=graph) for res in cursor.fetchall()})
+                        {res[idx_key]: d_type(res) for res in cursor.fetchall()})
                 else:
                     return DictWithAttrAccess({res[idx_key]: d_type(res) for res in cursor.fetchall()})
 
-    def _max_id(self):
-        cursor = self._con.cursor()
-        cursor.execute("SELECT MAX(monster_id) FROM monsters")
-        return cursor.fetchone()['MAX(monster_id)']
-
-    def select_one_entry_by_pk(self, pk, d_type, db_context=None, graph=None):
+    def select_one_entry_by_pk(self, pk, d_type):
         return self.query_one(
             self.select_builder(
                 tables={d_type.TABLE: d_type.FIELDS},
                 where='{}.{}=?'.format(d_type.TABLE, d_type.PK)),
             (pk,),
-            d_type, db_context=db_context, graph=graph)
+            d_type)
 
     def get_table_fields(self, table_name: str):
         # SQL inject vulnerable :v
@@ -194,13 +133,6 @@ class DadguideDatabase(object):
         if len(fields) == 0:
             raise DadguideTableNotFound(table_name)
         return fields, pk
-
-
-def enum_or_none(enum, value, default=None):
-    if value is not None:
-        return enum(value)
-    else:
-        return default
 
 
 class DictWithAttrAccess(dict):
@@ -219,36 +151,13 @@ class DadguideItem(DictWithAttrAccess):
     PK = None
     AS_BOOL = ()
 
-    def __init__(self, item, database, **kwargs):
+    def __init__(self, item):
         super(DadguideItem, self).__init__(item)
-        self._database = database
         for k in self.AS_BOOL:
             self[k] = bool(self[k])
 
     def key(self):
         return self[self.PK]
-
-
-class DgAwakening(DadguideItem):
-    TABLE = 'awakenings'
-    PK = 'awakening_id'
-    AS_BOOL = ['is_super']
-
-    def __init__(self, item, database, **kwargs):
-        super(DgAwakening, self).__init__(item, database)
-
-    @property
-    def name(self):
-        return self.name_en if self.name_en is not None else self.name_ja
-
-
-class DgEvolution(DadguideItem):
-    TABLE = 'evolutions'
-    PK = 'evolution_id'
-
-    def __init__(self, item, database, **kwargs):
-        super(DgEvolution, self).__init__(item, database)
-        self.evolution_type = EvoType(self.evolution_type)
 
 
 class DgDungeon(DadguideItem):
@@ -260,8 +169,8 @@ class DgScheduledEvent(DadguideItem):
     TABLE = 'schedule'
     PK = 'event_id'
 
-    def __init__(self, item, database, **graph):
-        super(DgScheduledEvent, self).__init__(item, database)
+    def __init__(self, item):
+        super(DgScheduledEvent, self).__init__(item)
 
     @property
     def open_datetime(self):
@@ -278,316 +187,6 @@ class DgScheduledEvent(DadguideItem):
     @close_datetime.setter
     def close_datetime(self, value):
         self.end_timestamp = int(value.timestamp())
-
-
-class DgMonster(DadguideItem):
-    TABLE = 'monsters'
-    PK = 'monster_id'
-    AS_BOOL = ('on_jp', 'on_na', 'on_kr', 'has_animation', 'has_hqimage')
-
-    def __init__(self, item, database, graph):
-        super(DgMonster, self).__init__(item, database)
-
-        self._graph = graph
-
-        self.roma_subname = None
-        if self.name_en == self.name_ja:
-            self.roma_subname = make_roma_subname(self.name_ja)
-        else:
-            # Remove annoying stuff from NA names, like Jörmungandr
-            self.name_en = tsutils.rmdiacritics(self.name_en)
-
-        self.name_en = self.name_en_override or self.name_en
-
-        self.attr1 = enum_or_none(Attribute, self.attribute_1_id, Attribute.Nil)
-        self.attr2 = enum_or_none(Attribute, self.attribute_2_id, Attribute.Nil)
-
-        self.type1 = enum_or_none(MonsterType, self.type_1_id)
-        self.type2 = enum_or_none(MonsterType, self.type_2_id)
-        self.type3 = enum_or_none(MonsterType, self.type_3_id)
-        self.types = list(filter(None, [self.type1, self.type2, self.type3]))
-
-        self.in_pem = bool(self.pal_egg)
-        self.in_rem = bool(self.rem_egg)
-
-        self.awakenings = sorted(self.node['model'].awakenings, key=lambda a: a.order_idx)
-
-        self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
-
-        self.is_inheritable = bool(self.inheritable)
-
-        self.evo_from_id = self._graph.get_prev_evolution_by_monster_id(self.monster_id)
-        self.evo_from = None
-        if self.evo_from_id:
-            self.evo_from = self._graph.edges[self.evo_from_id, self.monster_id]
-
-        self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
-
-        self._alt_version_id_list = sorted(self._graph.get_alt_cards(self.monster_id))
-        self._base_monster_id = self._alt_version_id_list[0]
-        self._alt_evo_id_list = sorted(self._graph.get_evo_tree(self.monster_id))
-
-        self.search = MonsterSearchHelper(self)
-
-    @property
-    def node(self):
-        return self._database.graph.nodes[self.monster_id]
-
-    @property
-    def monster_no(self):
-        return self.monster_id
-
-    def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
-        s_min = float(self[key + '_min'])
-        s_max = float(self[key + '_max'])
-        if self.level > 1:
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** self[key + '_scale']
-        else:
-            s_val = s_min
-        if lv > 99:
-            s_val *= 1 + (self.limit_mult / 11 * (lv - 99)) / 100
-        plus_dict = {'hp': 10, 'atk': 5, 'rcv': 3}
-        s_val += plus_dict[key] * max(min(plus, 99), 0)
-        if inherit:
-            inherit_dict = {'hp': 0.10, 'atk': 0.05, 'rcv': 0.15}
-            if not is_plus_297:
-                s_val -= plus_dict[key] * max(min(plus, 99), 0)
-            s_val *= inherit_dict[key]
-        return int(round(s_val))
-
-    def stats(self, lv=99, plus=0, inherit=False):
-        is_plus_297 = False
-        if plus == 297:
-            plus = (99, 99, 99)
-            is_plus_297 = True
-        elif plus == 0:
-            plus = (0, 0, 0)
-        hp = self.stat('hp', lv, plus[0], inherit, is_plus_297)
-        atk = self.stat('atk', lv, plus[1], inherit, is_plus_297)
-        rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
-        weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
-        return hp, atk, rcv, weighted
-
-    @property
-    def active_skill(self):
-        return self.node['model'].active_skill
-
-    @property
-    def leader_skill(self):
-        return self.node['model'].leader_skill
-
-    @property
-    def cur_evo_type(self):
-        return EvoType(self.evo_from['evolution_type']) if self.evo_from else EvoType.Base
-
-    @property
-    def true_evo_type(self):
-        if self == self.base_monster:
-            return InternalEvoType.Base
-        elif 5077 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.SuperReincarnated
-        elif 3826 in [dgi.monster_id for dgi in self.mats_for_evo]:
-            return InternalEvoType.Pixel
-        elif self.is_equip:
-            return InternalEvoType.Assist
-        elif self.cur_evo_type == EvoType.UuvoReincarnated:
-            return InternalEvoType.Reincarnated
-        elif self.cur_evo_type == EvoType.UvoAwoken:
-            return InternalEvoType.Ultimate
-        else:
-            return InternalEvoType.Normal
-
-    @property
-    def mats_for_evo(self):
-        if self.evo_from is None:
-            return []
-        return [self._database.get_monster(self.evo_from['mat_{}_id'.format(i)]) for i in range(1, 6) if
-                self.evo_from['mat_{}_id'.format(i)] is not None]
-
-    @property
-    def evo_gem(self):
-        return self._database.get_monster_evo_gem(self.name_ja)
-
-    @property
-    def material_of(self):
-        mat_of = self._database.get_evolution_by_material(self.monster_id)
-        return [self._database.get_monster(x.to_id) for x in mat_of]
-
-    @property
-    def base_monster(self):
-        return self._database.get_monster(self._base_monster_id)
-
-    @property
-    def alt_versions(self):
-        return [self._database.get_monster(a) for a in self._alt_version_id_list]
-
-    @property
-    def killers(self):
-        type_to_killers_map = {
-            MonsterType.God: ['Devil'],
-            MonsterType.Devil: ['God'],
-            MonsterType.Machine: ['God', 'Balance'],
-            MonsterType.Dragon: ['Machine', 'Healer'],
-            MonsterType.Physical: ['Machine', 'Healer'],
-            MonsterType.Attacker: ['Devil', 'Physical'],
-            MonsterType.Healer: ['Dragon', 'Attacker'],
-        }
-        if MonsterType.Balance in self.types:
-            return ['Any']
-        killers = set()
-        for t in self.types:
-            killers.update(type_to_killers_map.get(t, []))
-        return sorted(killers)
-
-    @property
-    def in_mpshop(self):
-        return self.buy_mp is not None
-
-    @property
-    def history_us(self):
-        return '[{}] New Added'.format(self.reg_date)
-
-    @property
-    def next_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no + offset <= self._database.max_id:
-            next = self._database.get_monster(self.monster_no + offset)
-            offset += 1
-        return next
-
-    @property
-    def prev_monster(self):
-        next = None
-        offset = 1
-        while next is None and self.monster_no - offset >= 1:
-            next = self._database.get_monster(self.monster_no - offset)
-            offset += 1
-        return next
-
-    def __repr__(self):
-        return "DgMonster<{} ({})>".format(self.name_en, self.monster_no)
-
-    def __eq__(self, other):
-        return isinstance(other, DgMonster) and self.monster_id == other.monster_id
-
-    def __hash__(self):
-        return hash(("DgMonster", self.monster_id))
-
-
-class MonsterSearchHelper(object):
-    def __init__(self, m: DgMonster):
-
-        self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
-        leader_skill = m.leader_skill
-        self.leader = leader_skill.desc.lower() if leader_skill else ''
-        active_skill = m.active_skill
-        self.active_name = active_skill.name.lower() if active_skill else ''
-        self.active_desc = active_skill.desc.lower() if active_skill else ''
-        self.active = '{} {}'.format(self.active_name, self.active_desc)
-        self.active_min = active_skill.turn_min if active_skill else None
-        self.active_max = active_skill.turn_max if active_skill else None
-
-        self.color = [m.attr1.name.lower()]
-        self.hascolor = [c.name.lower() for c in [m.attr1, m.attr2] if c]
-
-        self.hp, self.atk, self.rcv, self.weighted_stats = m.stats(lv=110)
-
-        self.types = [t.name for t in m.types]
-
-        def replace_colors(text: str):
-            return text.replace('red', 'fire').replace('blue', 'water').replace('green', 'wood')
-
-        self.leader = replace_colors(self.leader)
-        self.active = replace_colors(self.active)
-        self.active_name = replace_colors(self.active_name)
-        self.active_desc = replace_colors(self.active_desc)
-
-        self.board_change = []
-        self.orb_convert = defaultdict(list)
-        self.row_convert = []
-        self.column_convert = []
-
-        def color_txt_to_list(txt):
-            txt = txt.replace('and', ' ')
-            txt = txt.replace(',', ' ')
-            txt = txt.replace('orbs', ' ')
-            txt = txt.replace('orb', ' ')
-            txt = txt.replace('mortal poison', 'mortalpoison')
-            txt = txt.replace('jammers', 'jammer')
-            txt = txt.strip()
-            return txt.split()
-
-        def strip_prev_clause(txt: str, sep: str):
-            prev_clause_start_idx = txt.find(sep)
-            if prev_clause_start_idx >= 0:
-                prev_clause_start_idx += len(sep)
-                txt = txt[prev_clause_start_idx:]
-            return txt
-
-        def strip_next_clause(txt: str, sep: str):
-            next_clause_start_idx = txt.find(sep)
-            if next_clause_start_idx >= 0:
-                txt = txt[:next_clause_start_idx]
-            return txt
-
-        active_desc = self.active_desc
-        active_desc = active_desc.replace(' rows ', ' row ')
-        active_desc = active_desc.replace(' columns ', ' column ')
-        active_desc = active_desc.replace(' into ', ' to ')
-        active_desc = active_desc.replace('changes orbs to', 'all orbs to')
-
-        board_change_txt = 'all orbs to'
-        if board_change_txt in active_desc:
-            txt = strip_prev_clause(active_desc, board_change_txt)
-            txt = strip_next_clause(txt, 'orbs')
-            txt = strip_next_clause(txt, ';')
-            self.board_change = color_txt_to_list(txt)
-
-        txt = active_desc
-        if 'row' in txt:
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                if 'row' in parts[i]:
-                    self.row_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        txt = active_desc
-        if 'column' in txt:
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                if 'column' in parts[i]:
-                    self.column_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        convert_done = self.board_change or self.row_convert or self.column_convert
-
-        change_txt = 'change '
-        if not convert_done and change_txt in active_desc and 'orb' in active_desc:
-            txt = active_desc
-            parts = re.split(r'\Wand\W|;\W', txt)
-            for i in range(0, len(parts)):
-                parts[i] = strip_prev_clause(parts[i], change_txt) if change_txt in parts[i] else ''
-
-            for part in parts:
-                sub_parts = part.split(' to ')
-                if len(sub_parts) > 1:
-                    source_orbs = color_txt_to_list(sub_parts[0])
-                    dest_orbs = color_txt_to_list(sub_parts[1])
-                    for so in source_orbs:
-                        for do in dest_orbs:
-                            self.orb_convert[so].append(do)
-
-
-def make_roma_subname(name_ja):
-    subname = re.sub(r'[＝]', '', name_ja)
-    subname = re.sub(r'[「」]', '・', subname)
-    adjusted_subname = ''
-    for part in subname.split('・'):
-        roma_part = romkan.to_roma(part)
-        if part != roma_part and not tsutils.containsJa(roma_part):
-            adjusted_subname += ' ' + roma_part.strip('-')
-    return adjusted_subname.strip()
 
 
 class PotentialMatches(object):
@@ -642,7 +241,7 @@ class NamedMonsterGroup(object):
 
         self.basenames = basename_overrides or self.computed_basenames
 
-    def _compute_monster_basename(self, m: DgMonster):
+    def _compute_monster_basename(self, m: MonsterModel):
         basename = m.name_en.lower()
         if ',' in basename:
             name_parts = basename.split(',')
@@ -685,7 +284,7 @@ class NamedMonsterGroup(object):
         entries = [[count_id[0], -1 * count_id[1], bn] for bn, count_id in basename_to_info.items()]
         return max(entries)[2]
 
-    def _is_low_priority_monster(self, m: DgMonster):
+    def _is_low_priority_monster(self, m: MonsterModel):
         lp_types = [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
         lp_substrings = ['tamadra']
         lp_min_rarity = 2
@@ -706,7 +305,7 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: DgMonster, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
+    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
         # Must not hold onto monster or monster_group!
 
         # Hold on to the IDs instead

@@ -24,30 +24,36 @@ from .old_monster_index import MonsterIndex
 from .monster_index import MonsterIndex2
 from .database_loader import load_database
 
+from .models.monster_model import MonsterModel
+
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 
 def _data_file(file_name: str) -> str:
-    # return 'S:\\Documents\\Games\\PAD\\dadguide.sqlite'
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
-CSV_FILE_PATTERN = '{}.csv'
-NAMES_EXPORT_PATH = _data_file('computed_names.json')
-BASENAMES_EXPORT_PATH = _data_file('base_names.json')
-TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
+try:
+    # allow to run the tests locally without being inside a bot instance, which won't
+    # have any cog data path loaded
+    CSV_FILE_PATTERN = '{}.csv'
+    NAMES_EXPORT_PATH = _data_file('computed_names.json')
+    BASENAMES_EXPORT_PATH = _data_file('base_names.json')
+    TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
-SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
-NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
-PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
+    SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
+    NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
+    GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
+    PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
-NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
-BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
-PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
+    NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
+    BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
+    PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
-DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
-DB_DUMP_FILE = _data_file('dadguide.sqlite')
+    DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
+    DB_DUMP_FILE = _data_file('dadguide.sqlite')
+except RuntimeError:
+    pass
 
 
 class Dadguide(commands.Cog):
@@ -108,9 +114,9 @@ class Dadguide(commands.Cog):
         await self.wait_until_ready()
         return await MonsterIndex2(self.database.get_all_monsters(False), [])
 
-    def get_monster_by_id(self, monster_id: int):
-        """Exported function that allows a client cog to get a full DgMonster by monster_id"""
-        return self.database.get_monster(monster_id)
+    def get_monster(self, monster_id: int) -> MonsterModel:
+        """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
+        return self.database.graph.get_monster(monster_id)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

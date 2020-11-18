@@ -216,7 +216,7 @@ class PadEvents(commands.Cog):
         d.name_en = 'fake_dungeon_name'
         d.dungeon_type = DungeonType.Unknown7
         te.event_modifier = 'fake_event_modifier'
-        self.events.append(Event(te))
+        self.events.append(Event(te, self.bot.get_cog('Dadguide').database))
 
         await ctx.send("Fake event injected.")
 

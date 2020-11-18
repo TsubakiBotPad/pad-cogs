@@ -48,7 +48,7 @@ DISABLED_MSG = 'PAD Global info disabled on this server'
 FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever evos you like.'
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
               ', check {}mpdra? for specific recommendations.')
-SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution.'
+SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
 
 
 def mod_help(self, ctx, help_type):
@@ -80,7 +80,7 @@ def monster_id_to_monster(monster_id):
     dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
     if dg_cog is None:
         return None
-    return dg_cog.get_monster_by_id(monster_id)
+    return dg_cog.get_monster(monster_id)
 
 
 def monster_id_to_named_monster(monster_id):
@@ -739,7 +739,8 @@ class PadGlobal(commands.Cog):
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster, db_context):
-            return name, SIMPLE_TREE_MSG, None, False
+            top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
+            return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
         else:
             await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
             return None, None, None, None
@@ -892,14 +893,39 @@ class PadGlobal(commands.Cog):
                 return
         await ctx.tick()
 
-    @padglobal.command()
+    @padglobal.group()
     @checks.is_owner()
-    async def setemojiservers(self, ctx, *, emoji_servers=''):
-        """Set the emoji servers by ID (csv)"""
-        self.settings.emojiServers().clear()
-        if emoji_servers:
-            self.settings.setEmojiServers(re.findall(r'\d+', emoji_servers))
-        await ctx.send(inline('Set {} servers'.format(len(self.settings.emojiServers()))))
+    async def emojiservers(self, ctx):
+        """Emoji server subcommand"""
+
+    @emojiservers.command(name="add")
+    @checks.is_owner()
+    async def es_add(self, ctx, server_id: int):
+        """Add the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            ess.append(server_id)
+            self.settings.save_settings()
+        await ctx.tick()
+
+    @emojiservers.command(name="remove", aliases=['rm', 'del'])
+    @checks.is_owner()
+    async def es_rm(self, ctx, server_id: int):
+        """Remove the emoji server by ID"""
+        ess = self.settings.emojiServers()
+        if server_id not in ess:
+            await ctx.send("That emoji server is not set.")
+            return
+        ess.remove(server_id)
+        self.settings.save_settings()
+        await ctx.tick()
+
+    @emojiservers.command(name="list", aliases=['show'])
+    @checks.is_owner()
+    async def es_show(self, ctx):
+        """List the emoji servers by ID"""
+        ess = self.settings.emojiServers()
+        await ctx.send(box("\n".join(str(s) for s in ess)))
 
     def _get_emojis(self):
         emojis = list()
@@ -1207,7 +1233,7 @@ def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
     for m in db_context.graph.get_alt_monsters_by_id(monster.monster_no):
-        if m.attr1 != attr1 or m.active_skill != active_skill:
+        if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:
             return False

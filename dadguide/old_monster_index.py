@@ -6,10 +6,10 @@ from redbot.core.utils import AsyncIter
 from discord.utils import find as find_first
 import tsutils
 
-from .database_manager import DgMonster
-from .database_manager import Attribute
-from .database_manager import EvoType
-from .database_manager import InternalEvoType
+from .models.monster_model import MonsterModel
+from .models.enum_types import Attribute
+from .models.enum_types import EvoType
+from .models.enum_types import InternalEvoType
 from .database_manager import PotentialMatches
 from .database_manager import NamedMonster
 from .database_manager import NamedMonsterGroup
@@ -44,7 +44,7 @@ class MonsterIndex(tsutils.aobject):
 
         self.series_to_prefix_map = {
             130: ['halloween', 'hw', 'h'],
-            136: ['xmas', 'christmas'],
+            136: ['xmas', 'christmas', 'x'],
             125: ['summer', 'beach'],
             114: ['school', 'academy', 'gakuen'],
             139: ['new years', 'ny'],
@@ -63,7 +63,7 @@ class MonsterIndex(tsutils.aobject):
         async for base_mon in AsyncIter(base_monster_ids):
             base_id = base_mon.monster_id
             group_basename_overrides = basename_overrides.get(base_id, [])
-            evolution_tree = [monster_database.get_monster(m) for m in
+            evolution_tree = [monster_database.graph.get_monster(m) for m in
                               monster_database.get_evolution_tree_ids(base_id)]
             named_mg = NamedMonsterGroup(evolution_tree, group_basename_overrides)
             for monster in evolution_tree:
@@ -127,7 +127,7 @@ class MonsterIndex(tsutils.aobject):
     def init_index(self):
         pass
 
-    def compute_prefixes(self, m: DgMonster, evotree: list):
+    def compute_prefixes(self, m: MonsterModel, evotree: list):
         prefixes = set()
 
         attr1_short_prefixes = self.attr_short_prefix_map[m.attr1]
@@ -153,8 +153,9 @@ class MonsterIndex(tsutils.aobject):
             # Guarding this separately to prevent 'gemini' from triggering (e.g. 2645)
             prefixes.add('chibi')
 
+        true_evo_type = self.db_context.graph.true_evo_type_by_monster(m)
         awoken = lower_name.startswith('awoken') or '覚醒' in lower_name
-        revo = lower_name.startswith('reincarnated') or '転生' in lower_name
+        revo = true_evo_type == InternalEvoType.Reincarnated
         srevo = lower_name.startswith('super reincarnated') or '超転生' in lower_name
         mega = lower_name.startswith('mega awoken') or '極醒' in lower_name
         awoken_or_revo_or_equip_or_mega = awoken or revo or m.is_equip or mega
@@ -180,21 +181,17 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('super reincarnated')
 
         # Prefixes for evo type
-        if m.cur_evo_type == EvoType.Base:
+        cur_evo_type = self.db_context.graph.cur_evo_type_by_monster(m)
+        if cur_evo_type == EvoType.Base:
             prefixes.add('base')
-        elif m.cur_evo_type == EvoType.Evo:
+        elif cur_evo_type == EvoType.Evo:
             prefixes.add('evo')
-        elif m.cur_evo_type == EvoType.UvoAwoken and not awoken_or_revo_or_equip_or_mega:
+        elif cur_evo_type == EvoType.UvoAwoken and not awoken_or_revo_or_equip_or_mega:
             prefixes.add('uvo')
             prefixes.add('uevo')
-        elif m.cur_evo_type == EvoType.UuvoReincarnated and not awoken_or_revo_or_equip_or_mega:
+        elif cur_evo_type == EvoType.UuvoReincarnated and not awoken_or_revo_or_equip_or_mega:
             prefixes.add('uuvo')
             prefixes.add('uuevo')
-
-        # True Evo Type Prefixes
-        if m.true_evo_type == InternalEvoType.Reincarnated:
-            prefixes.add('revo')
-            prefixes.add('reincarnated')
 
         # Other Prefixes
         if self.db_context.graph.monster_is_farmable_evo(m):
