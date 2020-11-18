@@ -15,10 +15,10 @@ PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 
 class MonsterIndex2(aobject):
-    async def __init__(self, monsters: 'List[DgMonster]', series: 'List[DgSeries]'):
-        self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
+    async def __init__(self, monsters: 'List[MonsterModel]', db):
+        self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters, db)
 
-    async def _build_monster_index(self, monsters):
+    async def _build_monster_index(self, monsters, db):
         manual = defaultdict(set)
         tokens = defaultdict(set)
         prefix = defaultdict(MonsterFilter)
@@ -44,9 +44,10 @@ class MonsterIndex2(aobject):
                 manual[idtonick[m.monster_id]].add(m)
 
             # Group Nickname
-            if idtognick.get(m._base_monster_id):
-                tokens[idtognick[m._base_monster_id]].add(m)
-                manual[idtognick[m._base_monster_id]].add(m)
+            base_id = db.graph.get_base_monster_id(m)
+            if idtognick.get(base_id):
+                tokens[idtognick[base_id]].add(m)
+                manual[idtognick[base_id]].add(m)
 
         # Main Color
         for c in COLOR_MAP:
@@ -76,9 +77,9 @@ class MonsterIndex2(aobject):
         # NOTHING HERE.  THIS IS A SPECIAL CASE
 
         special_evo = lambda m: ('覚醒' in m.name_ja or 'awoken' in m.name_en or
-        '転生' in m.name_ja or m.true_evo_type.value == "Reincarnated" or 'reincarnated' in m.name_en or \
-        m.true_evo_type.value == "Super Reincarnated" or \
-        m.is_equip or '極醒' in m.name_ja)
+            '転生' in m.name_ja or m.true_evo_type.value == "Reincarnated" or
+            'reincarnated' in m.name_en or m.true_evo_type.value == "Super Reincarnated" or
+            m.is_equip or '極醒' in m.name_ja)
 
         # Evo
         for t in EVO_PREFIX_MAP[EvoTypes.EVO]:
@@ -146,9 +147,11 @@ class MonsterIndex2(aobject):
 
 class MonsterFilter:
     def __init__(self, *funcs):
-        self.funcs = set(funcs)
+        self.funcs = funcs
 
     def __or__(self, other):
+        if isinstance(other, MonsterFilter):
+            return MonsterFilter(*self.funcs, *other.funcs)
         return MonsterFilter(other, *self.funcs)
 
     def __call__(self, *args, **kwargs):

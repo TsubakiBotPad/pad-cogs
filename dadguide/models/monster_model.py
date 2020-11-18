@@ -165,6 +165,9 @@ class MonsterModel(BaseModel):
             'name_en': self.name_en,
         }
 
+    def __repr__(self):
+        return "Monster<{} ({})>".format(self.name_en, self.monster_id)
+
 
 class MonsterSearchHelper(object):
     def __init__(self, m: MonsterModel):

@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import difflib
+import dis
 import json
 import logging
 import os
@@ -992,28 +993,31 @@ class PadInfo(commands.Cog):
             for match in ms:
                 if match in DGCOG.index2.manual:
                     sf |= lambda m: m in DGCOG.index2.manual[match]
-            for match in ms:
-                sf |= lambda m: DGCOG.index2.prefix[match](m)
-            for match in ms:
+                sf |= DGCOG.index2.prefix[match]
                 if match in DGCOG.index2.tokens:
                     sf |= lambda m: m in DGCOG.index2.tokens[match]
 
             filts.add(sf)
             print()
-            print(monstergen)
+            print(filts)
 
 
         print(len(monstergen))
-        print(filts)
+        for filt in filts:
+            for f in filt.funcs:
+                dis.dis(f)
+                print({n:c.cell_contents for n, c in zip(f.__code__.co_freevars, f.__closure__)})
+                print()
+            print('\n'*3)
         monstergen = [m for m in monstergen if all(f(m) for f in filts)]
 
         if not monstergen:
             return None
 
-        mon = max(monstergen, key=lambda x: (not x.is_equip,
-                                              -x._base_monster_id,
-                                              x.rarity,
-                                              x.monster_no_na))
+        mon = max(monstergen, key=lambda m: (not m.is_equip,
+                                              -DGCOG.database.graph.get_base_monster_id(m),
+                                              m.rarity,
+                                              m.monster_no_na))
         if base:
             return mon
         else:

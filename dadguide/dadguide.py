@@ -191,7 +191,7 @@ class Dadguide(commands.Cog):
         logger.debug('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
-        self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), [])
+        self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
         logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()
