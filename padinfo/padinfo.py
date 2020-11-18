@@ -882,12 +882,18 @@ class PadInfo(commands.Cog):
     async def _findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
         tm = importlib.import_module(DGCOG.__module__.rstrip("dadguide")+'token_mappings')
+        mi = importlib.import_module(DGCOG.__module__.rstrip("dadguide")+'monster_index')
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
         query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
         query = query.split()
+
+        base = False
+        if 'base' in query:
+            query.remove('base')
+            base = True
 
         prefixes = set()
         name = set()
@@ -899,11 +905,15 @@ class PadInfo(commands.Cog):
                 name.update(query[c+1:])
                 break
 
+        def calc_ratio(s1, s2): return difflib.SequenceMatcher(None, s1, s2).ratio()
+
         print(prefixes, name)
 
-        monstergen = list(DGCOG.database.get_all_monsters())
+        monstergen = set(DGCOG.database.get_all_monsters())
+        monstermat = {m: 0 for m in DGCOG.database.get_all_monsters()}
+
         for t in name:
-            valid = []
+            valid = set()
 
             ms = difflib.get_close_matches(t, DGCOG.index2.tokens, n=10000, cutoff=.8)
             if not ms:
@@ -911,22 +921,23 @@ class PadInfo(commands.Cog):
             for match in ms:
                 for m in DGCOG.index2.manual[match]:
                     if m not in valid:
-                        valid.append(m)
+                        calc_ratio(t, match)
+                        valid.add(m)
             for match in ms:
                 for m in DGCOG.index2.tokens[match]:
                     if m not in valid:
-                        valid.append(m)
+                        valid.add(m)
 
-            ftr = []
+            ftr = set()
             for m in valid:
                 if m in monstergen:
-                    ftr.append(m)
+                    ftr.add(m)
             monstergen = ftr
         print(monstergen)
 
-        filts = []
+        filts = set()
         for t in prefixes:
-            sf = lambda m: False
+            sf = mi.MonsterFilter()
             if len(t) >= 6:
                 ms = difflib.get_close_matches(t, DGCOG.index2.prefix, n=10000, cutoff=.8)
             else:
@@ -935,17 +946,14 @@ class PadInfo(commands.Cog):
                 return
             for match in ms:
                 if match in DGCOG.index2.manual:
-                    osf = sf
-                    sf = lambda m: m in DGCOG.index2.manual[match] or osf(m)
+                    sf |= lambda m: m in DGCOG.index2.manual[match]
             for match in ms:
-                osf = sf
-                sf = lambda m: DGCOG.index2.prefix[match](m) or osf(m)
+                sf |= lambda m: DGCOG.index2.prefix[match](m)
             for match in ms:
                 if match in DGCOG.index2.tokens:
-                    osf = sf
-                    sf = lambda m: m in DGCOG.index2.tokens[match] or osf(m)
+                    sf |= lambda m: m in DGCOG.index2.tokens[match]
 
-            filts.append(sf)
+            filts.add(sf)
             print()
             print(monstergen)
 
@@ -957,10 +965,14 @@ class PadInfo(commands.Cog):
         if not monstergen:
             return None
 
-        return max(monstergen, key=lambda x: (not x.is_equip,
+        mon = max(monstergen, key=lambda x: (not x.is_equip,
                                               -x._base_monster_id,
                                               x.rarity,
                                               x.monster_no_na))
+        if base:
+            return mon
+        else:
+            return mon
 
 
 class PadInfoSettings(CogSettings):

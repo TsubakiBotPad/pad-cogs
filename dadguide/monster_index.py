@@ -21,7 +21,7 @@ class MonsterIndex2(aobject):
     async def _build_monster_index(self, monsters):
         manual = defaultdict(set)
         tokens = defaultdict(set)
-        prefix = defaultdict(lambda: lambda m: False)
+        prefix = defaultdict(MonsterFilter)
 
         nicks = await self._sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         idtonick = {int(id): nick for nick, id, *_ in nicks if id.isdigit()}
@@ -51,30 +51,26 @@ class MonsterIndex2(aobject):
         # Main Color
         for c in COLOR_MAP:
             for t in COLOR_MAP[c]:
-                of = prefix[t]
-                prefix[t] = lambda m: m.attr1.value == c or of(m)
-                prefix['main_attr_'+t] = lambda m: m.attr1.value == c or of(m)
+                prefix[t] |= lambda m: m.attr1.value == c
+                prefix['main_attr_'+t] |= lambda m: m.attr1.value == c
 
         # Sub Color
         for c in COLOR_MAP:
             for t in COLOR_MAP[c]:
-                of = prefix['sub_attr_'+t]
-                prefix['sub_attr_'+t] = lambda m: m.attr2.value == c or of(m)
+                prefix['sub_attr_'+t] |= lambda m: m.attr2.value == c
 
         # Both Colors
         for c1 in COLOR_MAP:
             for c2 in COLOR_MAP:
                 for t1 in COLOR_MAP[c1]:
                     for t2 in COLOR_MAP[c2]:
-                        of = prefix[t1+t2]
-                        prefix[t1+t2] = lambda m: (m.attr1.value == c1 and m.attr2.value == c2) or of(m)
-                        prefix[t1+"/"+t2] = lambda m: (m.attr1.value == c1 and m.attr2.value == c2) or of(m)
+                        prefix[t1+t2] |= lambda m: m.attr1.value == c1 and m.attr2.value == c2
+                        prefix[t1+"/"+t2] |= lambda m: m.attr1.value == c1 and m.attr2.value == c2
 
         # Series
         for s in SERIES_MAP:
             for t in SERIES_MAP[s]:
-                of = prefix[t]
-                prefix[t] = lambda m: m.series_id == s or of(m)
+                prefix[t] |= lambda m: m.series_id == s
 
         # Base
         # NOTHING HERE.  THIS IS A SPECIAL CASE
@@ -86,59 +82,48 @@ class MonsterIndex2(aobject):
 
         # Evo
         for t in EVO_PREFIX_MAP[EvoTypes.EVO]:
-            of = prefix[t]
-            prefix[t] = lambda m: (m.cur_evo_type.value == 1 and not special_evo(m)) or of(m)
+            prefix[t] |= lambda m: m.cur_evo_type.value == 1 and not special_evo(m)
 
         # Uvo
         for t in EVO_PREFIX_MAP[EvoTypes.UVO]:
-            of = prefix[t]
-            prefix[t] = lambda m: (m.cur_evo_type.value == 2 and not special_evo(m)) or of(m)
+            prefix[t] |= lambda m: m.cur_evo_type.value == 2 and not special_evo(m)
 
         # UUvo
         for t in EVO_PREFIX_MAP[EvoTypes.UUVO]:
-            of = prefix[t]
-            prefix[t] = lambda m: (m.cur_evo_type.value == 3 and not special_evo(m)) or of(m)
+            prefix[t] = lambda m: m.cur_evo_type.value == 3 and not special_evo(m)
 
         # Transform
         # for t in EVO_PREFIX_MAP[EvoTypes.TRANS]:
-        #     prefix[t] = lambda m: (???) or of(m)
+        #     prefix[t] = lambda m: (???)
 
         # Awoken
         for t in EVO_PREFIX_MAP[EvoTypes.AWOKEN]:
-            of = prefix[t]
-            prefix[t] = lambda m: ('覚醒' in m.name_ja or 'awoken' in m.name_en.lower()) or of(m)
+            prefix[t] |= lambda m: '覚醒' in m.name_ja or 'awoken' in m.name_en.lower()
 
         # Mega Awoken
         for t in EVO_PREFIX_MAP[EvoTypes.MEGA]:
-            of = prefix[t]
-            prefix[t] = lambda m: ('極醒' in m.name_ja or 'mega awoken' in m.name_en.lower()) or of(m)
+            prefix[t] |= lambda m: '極醒' in m.name_ja or 'mega awoken' in m.name_en.lower()
 
         # Reincarnated
         for t in EVO_PREFIX_MAP[EvoTypes.REVO]:
-            of = prefix[t]
-            prefix[t] = lambda m: ('転生' in m.name_ja or m.true_evo_type.value == "Reincarnated") or of(m)
+            prefix[t] |= lambda m: '転生' in m.name_ja or m.true_evo_type.value == "Reincarnated"
 
         # Super Reincarnated
         for t in EVO_PREFIX_MAP[EvoTypes.SREVO]:
-            of = prefix[t]
-            prefix[t] = lambda m: ('超転生' in m.name_ja or m.true_evo_type.value == "Super Reincarnated") or of(m)
-
+            prefix[t] |= lambda m: '超転生' in m.name_ja or m.true_evo_type.value == "Super Reincarnated"
         # Pixel
         for t in EVO_PREFIX_MAP[EvoTypes.PIXEL]:
-            of = prefix[t]
-            prefix[t] = lambda m: (m.name_ja.startswith('ドット') or
+            prefix[t] |= lambda m: (m.name_ja.startswith('ドット') or
                     m.name_en.startswith('pixel') or
-                    m.true_evo_type.value == "Pixel") or of(m)
+                    m.true_evo_type.value == "Pixel")
 
         # Equip
         for t in EVO_PREFIX_MAP[EvoTypes.EQUIP]:
-            of = prefix[t]
-            prefix[t] = lambda m: m.is_equip or of(m)
+            prefix[t] |= lambda m: m.is_equip
 
         # Chibi
         for t in MISC_PREFIX_MAP[MiscPrefixes.CHIBI]:
-            of = prefix[t]
-            prefix[t] = lambda m: ((m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or 'ミニ' in m.name_ja) or of(m)
+            prefix[t] |= lambda m: (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or 'ミニ' in m.name_ja
 
         # Farmable
         # for t in MISC_PREFIX_MAP[MiscPrefixes.FARMABLE]:
@@ -157,3 +142,17 @@ class MonsterIndex2(aobject):
             async with session.get(url) as response:
                 file = io.StringIO(await response.text())
         return csv.reader(file, delimiter=',')
+
+
+class MonsterFilter:
+    def __init__(self, *funcs):
+        self.funcs = set(funcs)
+
+    def __or__(self, other):
+        return MonsterFilter(other, *self.funcs)
+
+    def __call__(self, *args, **kwargs):
+        for f in self.funcs:
+            if f(*args, **kwargs):
+                return True
+        return False
