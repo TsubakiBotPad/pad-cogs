@@ -1326,10 +1326,11 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
         awakenings_row = 'No Awakenings'
 
     if db_context.graph.monster_is_transform_base(m):
-        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
+
+        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, get_killers_text(m, emoji_list))
     else:
         base_transform = db_context.graph.get_transform_base_by_id(m.monster_id)
-        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, ' '.join(base_transform.killers))
+        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, get_killers_text(base_transform, emoji_list))
 
     embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
@@ -1359,6 +1360,12 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     embed.add_field(name=evos_header, value=evos_body, inline=False)
 
     return embed
+
+
+def get_killers_text(m: "MonsterModel", allowed_emoji):
+    if 'Any' in m.killers:
+        return 'Any'
+    return ' '.join([str(match_emoji(allowed_emoji, 'killer_{}'.format(k.lower()))) for k in m.killers])
 
 
 def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext", emoji_list):
@@ -1488,6 +1495,7 @@ AWAKENING_MAP = {
     72: 'misc_poisonboost',
 }
 
+
 def humanize_number(number, sigfigs=2):
     n = float("{0:.{1}g}".format(number, sigfigs))
     if n >= 1e9:
@@ -1498,6 +1506,7 @@ def humanize_number(number, sigfigs=2):
         return str(int(n//1e3))+"k"
     else:
         return str(int(n))
+
 
 def createMultiplierText(ls1, ls2=None):
     if ls2 and not ls1:
