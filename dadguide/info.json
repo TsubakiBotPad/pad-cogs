@@ -7,7 +7,7 @@
   "install_msg": "Use [p]dadguide setdatafile if it's applicable to you.",
   "short": "Loads monster data (LOAD THIS FIRST)",
   "min_bot_version": "3.4.0",
-  "max_bot_version": "3.4.2",
+  "max_bot_version": "0.0.0",
   "min_python_version": [
     3,
     8,
