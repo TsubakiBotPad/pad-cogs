@@ -16,6 +16,11 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, confirm_message
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from dadguide.database_context import DbContext
+    from dadguide.models.scheduled_event_model import ScheduledEventModel
+
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR"]
@@ -198,7 +203,7 @@ class PadEvents(commands.Cog):
         await dg_cog.wait_until_ready()
         dg_module = __import__(dg_cog.__module__)
 
-        te = dg_module.DgScheduledEvent({'dungeon_id': 1}, dg_cog.database)
+        te = dg_module.ScheduledEventModule({'dungeon_id': 1})
 
         te.server = server
         te.server_id = SUPPORTED_SERVERS.index(server)
@@ -917,18 +922,18 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "DgScheduledEvent", db_context):
+    def __init__(self, scheduled_event: "ScheduledEventModel", db_context):
         self.db_context = db_context
-        self.key = scheduled_event.key()
+        self.key = scheduled_event.event_id
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
         self.close_datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
-        self.dungeon = self.db_context.get_dungeon_by_id(scheduled_event.dungeon_id)
+        self.dungeon = scheduled_event.dungeon
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
         self.event_name = ''  # scheduled_event.event.name if scheduled_event.event else ''
 
-        self.clean_dungeon_name = cleanDungeonNames(self.dungeon_name)
+        self.clean_dungeon_name = self.dungeon.clean_name_en if self.dungeon else 'unknown_dungeon'
         self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')
 
         self.name_and_modifier = self.clean_dungeon_name
@@ -1128,39 +1133,3 @@ def isEventWanted(event):
         return False
 
     return True
-
-
-def cleanDungeonNames(name):
-    # TODO: Make this info internally stored
-    if 'tamadra invades in some tech' in name.lower():
-        return 'Latents invades some Techs & 20x +Eggs'
-    if '1.5x Bonus Pal Point in multiplay' in name:
-        name = '[Descends] 1.5x Pal Points in multiplay'
-    name = name.replace('No Continues', 'No Cont')
-    name = name.replace('No Continue', 'No Cont')
-    name = name.replace('Some Limited Time Dungeons', 'Some Guerrillas')
-    name = name.replace('are added in', 'in')
-    name = name.replace('!', '')
-    name = name.replace('Dragon Infestation', 'Dragons')
-    name = name.replace(' Infestation', 's')
-    name = name.replace('Daily Descended Dungeon', 'Daily Descends')
-    name = name.replace('Chance for ', '')
-    name = name.replace('Jewel of the Spirit', 'Spirit Jewel')
-    name = name.replace(' & ', '/')
-    name = name.replace(' / ', '/')
-    name = name.replace('PAD Radar', 'PADR')
-    name = name.replace('in normal dungeons', 'in normals')
-    name = name.replace('Selected ', 'Some ')
-    name = name.replace('Enhanced ', 'Enh ')
-    name = name.replace('All Att. Req.', 'All Att.')
-    name = name.replace('Extreme King Metal Dragon', 'Extreme KMD')
-    name = name.replace('Golden Mound-Tricolor [Fr/Wt/Wd Only]', 'Golden Mound')
-    name = name.replace('Gods-Awakening Materials Descended', "Awoken Mats")
-    name = name.replace('Orb move time 4 sec', '4s move time')
-    name = name.replace('Awakening Materials Descended', 'Awkn Mats')
-    name = name.replace('Awakening Materials', 'Awkn Mats')
-    name = name.replace("Star Treasure Thieves' Den", 'STTD')
-    name = name.replace('Ruins of the Star Vault', 'Star Vault')
-    name = name.replace('-★6 or lower Enhanced', '')
-
-    return name
