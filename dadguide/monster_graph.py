@@ -3,7 +3,6 @@ import json
 from typing import Optional
 from collections import defaultdict
 from .database_manager import DadguideDatabase
-from .database_manager import DictWithAttrAccess
 from .models.enum_types import EvoType, InternalEvoType
 from .models.monster_model import MonsterModel
 from .models.leader_skill_model import LeaderSkillModel
@@ -104,10 +103,10 @@ class MonsterGraph(object):
     def build_graph(self):
         self.graph = networkx.MultiDiGraph()
 
-        ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess)
-        es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess)
-        aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess)
-        ems = self.database.query_many(EGG_QUERY, (), DictWithAttrAccess)
+        ms = self.database.query_many(MONSTER_QUERY, ())
+        es = self.database.query_many(EVOS_QUERY, ())
+        aws = self.database.query_many(AWAKENINGS_QUERY, ())
+        ems = self.database.query_many(EGG_QUERY, ())
 
         mtoawo = defaultdict(list)
         for a in aws:
