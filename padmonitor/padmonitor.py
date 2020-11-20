@@ -94,12 +94,12 @@ class PadMonitor(commands.Cog):
             logger.exception('failed to send message to {}:'.format(channel_id))
 
     @commands.group(aliases=['pdm'])
-    @checks.mod_or_permissions(manage_guild=True)
     async def padmonitor(self, ctx):
         """PAD info monitoring"""
         pass
 
     @padmonitor.command()
+    @checks.is_owner()
     async def reload(self, ctx):
         """Update PDM channels"""
         await self.check_seen()
