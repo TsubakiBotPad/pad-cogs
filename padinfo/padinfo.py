@@ -1238,7 +1238,7 @@ def monstersToLssEmbed(m: "MonsterModel"):
 
 
 def monsterToHeaderEmbed(m: "MonsterModel", allowed_emojis):
-    header = monsterToLongHeader(m, link=True, show_types=True, allowed_emojis=allowed_emojis)
+    header = monsterToLongHeader(m, link=True, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.description = header
     return embed
