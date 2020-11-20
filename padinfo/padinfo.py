@@ -1025,7 +1025,7 @@ def monsterToThumbnailUrl(m: "MonsterModel"):
 
 
 def monsterToBaseEmbed(m: "MonsterModel", allowed_emojis):
-    header = monsterToLongHeader(m, show_types=True, allowed_emojis=allowed_emojis)
+    header = monsterToLongHeader(m, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.set_thumbnail(url=monsterToThumbnailUrl(m))
     embed.title = header
@@ -1276,6 +1276,43 @@ def match_emoji(allowed_emoji, name):
 def monsterToEmbed(m: "MonsterModel", allowed_emoji, db_context: "DbContext"):
     embed = monsterToBaseEmbed(m, allowed_emoji)
 
+    # in case we want to readd the type emojis later
+    # types_row = ' '.join(['{} {}'.format(str(match_emoji(allowed_emoji, 'mons_type_{}'.format(t.name.lower()))), t.name) for t in m.types])
+    types_row = '/'.join(['{}'.format(t.name) for t in m.types])
+
+    awakenings_row = ''
+    has_sa = False
+    for idx, a in enumerate(m.awakenings):
+        as_id = a.awoken_skill_id
+        as_name = a.name
+        mapped_awakening = AWAKENING_MAP.get(as_id, as_name)
+        mapped_awakening = match_emoji(allowed_emoji, mapped_awakening)
+
+        # Wrap superawakenings to the next line
+        if len(m.awakenings) - idx == m.superawakening_count:
+            has_sa = True
+            awakenings_row += '\n{}'.format(mapped_awakening)
+        else:
+            awakenings_row += ' {}'.format(mapped_awakening)
+    if has_sa:
+        awakenings_row += ' (SA)'
+
+    is_transform_base = db_context.graph.monster_is_transform_base(m)
+    transform_base = db_context.graph.get_transform_base_by_id(m.monster_id) if not is_transform_base else None
+
+    awakenings_row = awakenings_row.strip()
+
+    if not len(awakenings_row):
+        awakenings_row = 'No Awakenings'
+
+    if is_transform_base:
+
+        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, get_killers_text(m, allowed_emoji))
+    else:
+        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(transform_base.latent_slots, get_killers_text(transform_base, allowed_emoji))
+
+    embed.add_field(name=types_row, value='{}\n{}'.format(awakenings_row, killers_row), inline=False)
+
     info_row_1 = 'Inheritable' if m.is_inheritable else 'Not inheritable'
     acquire_text = monsterToAcquireString(m, db_context)
     tet_text = db_context.graph.true_evo_type_by_monster(m).value
@@ -1299,40 +1336,15 @@ def monsterToEmbed(m: "MonsterModel", allowed_emoji, db_context: "DbContext"):
     hp, atk, rcv, weighted = m.stats()
     if m.limit_mult > 0:
         lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-        stats_row_1 = 'Weighted {} | LB {} (+{}%)'.format(weighted, lb_weighted, m.limit_mult)
+        stats_row_1 = 'Stats (LB, +{}%)'.format(m.limit_mult)
         stats_row_2 = '**HP** {} ({})\n**ATK** {} ({})\n**RCV** {} ({})'.format(
             hp, lb_hp, atk, lb_atk, rcv, lb_rcv)
     else:
-        stats_row_1 = 'Weighted {}'.format(weighted)
+        stats_row_1 = 'Stats'
         stats_row_2 = '**HP** {}\n**ATK** {}\n**RCV** {}'.format(hp, atk, rcv)
+    if any(x if x.name == 'Enhance' else None for x in m.types):
+        stats_row_2 += '\n**Fodder EXP** {:,}'.format(m.fodder_exp)
     embed.add_field(name=stats_row_1, value=stats_row_2)
-
-    awakenings_row = ''
-    for idx, a in enumerate(m.awakenings):
-        as_id = a.awoken_skill_id
-        as_name = a.name
-        mapped_awakening = AWAKENING_MAP.get(as_id, as_name)
-        mapped_awakening = match_emoji(allowed_emoji, mapped_awakening)
-
-        # Wrap superawakenings to the next line
-        if len(m.awakenings) - idx == m.superawakening_count:
-            awakenings_row += '\n{}'.format(mapped_awakening)
-        else:
-            awakenings_row += ' {}'.format(mapped_awakening)
-
-    awakenings_row = awakenings_row.strip()
-
-    if not len(awakenings_row):
-        awakenings_row = 'No Awakenings'
-
-    if db_context.graph.monster_is_transform_base(m):
-
-        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, get_killers_text(m, allowed_emoji))
-    else:
-        base_transform = db_context.graph.get_transform_base_by_id(m.monster_id)
-        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, get_killers_text(base_transform, allowed_emoji))
-
-    embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
     active_header = 'Active Skill'
     active_body = 'None'
@@ -1365,7 +1377,7 @@ def monsterToEmbed(m: "MonsterModel", allowed_emoji, db_context: "DbContext"):
 def get_killers_text(m: "MonsterModel", allowed_emoji):
     if 'Any' in m.killers:
         return 'Any'
-    return ' '.join([str(match_emoji(allowed_emoji, 'killer_{}'.format(k.lower()))) for k in m.killers])
+    return ' '.join([str(match_emoji(allowed_emoji, 'latent_killer_{}'.format(k.lower()))) for k in m.killers])
 
 
 def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext", allowed_emoji):
@@ -1412,6 +1424,14 @@ def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext", allowed_
         xp_text = '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
     body_text += '\n**XP to Max:** {}'.format(xp_text)
     body_text += '  **Max Level:**: {}'.format(m.level)
+
+    # weighted stat calculation & display
+    hp, atk, rcv, weighted = m.stats()
+    body_text += '\n**Weighted stats:** {}'.format(weighted)
+    if m.limit_mult > 0:
+        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
+        body_text += ' | LB {} (+{}%)'.format(lb_weighted, m.limit_mult)
+
     body_text += '\n**Fodder EXP:** {:,}'.format(m.fodder_exp)
     body_text += '\n**Rarity:** {} **Cost:** {}'.format(m.rarity, m.cost)
 
