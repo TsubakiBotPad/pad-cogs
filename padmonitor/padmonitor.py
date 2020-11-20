@@ -100,6 +100,11 @@ class PadMonitor(commands.Cog):
         pass
 
     @padmonitor.command()
+    async def reload(self, ctx):
+        """Update PDM channels"""
+        await self.check_seen()
+
+    @padmonitor.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     async def addchannel(self, ctx, channel: discord.TextChannel = None):
