@@ -1281,7 +1281,6 @@ def monsterToEmbed(m: "MonsterModel", allowed_emojis, db_context: "DbContext"):
     types_row = '/'.join(['{}'.format(t.name) for t in m.types])
 
     awakenings_row = ''
-    has_sa = False
     for idx, a in enumerate(m.awakenings):
         as_id = a.awoken_skill_id
         as_name = a.name
@@ -1290,12 +1289,10 @@ def monsterToEmbed(m: "MonsterModel", allowed_emojis, db_context: "DbContext"):
 
         # Wrap superawakenings to the next line
         if len(m.awakenings) - idx == m.superawakening_count:
-            has_sa = True
-            awakenings_row += '\n{}'.format(mapped_awakening)
+            awakenings_row += '\n{}'.format(match_emoji(allowed_emojis, 'sa_questionmark'))
+            awakenings_row += ' {}'.format(mapped_awakening)
         else:
             awakenings_row += ' {}'.format(mapped_awakening)
-    if has_sa:
-        awakenings_row += ' (SA)'
 
     is_transform_base = db_context.graph.monster_is_transform_base(m)
     transform_base = db_context.graph.get_transform_base_by_id(m.monster_id) if not is_transform_base else None
