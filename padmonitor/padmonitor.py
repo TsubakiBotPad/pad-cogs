@@ -102,7 +102,9 @@ class PadMonitor(commands.Cog):
     @checks.is_owner()
     async def reload(self, ctx):
         """Update PDM channels"""
-        await self.check_seen()
+        async with ctx.typing():
+            await self.check_seen()
+        await ctx.tick()
 
     @padmonitor.command()
     @commands.guild_only()
