@@ -1158,7 +1158,7 @@ class PadGlobal(commands.Cog):
         result_output = '**Guide for {}**\n{}'.format(term, text)
         result = "{} asked me to send you this:\n{}".format(
             ctx.author.name, result_output)
-        await to_user.send_message(result)
+        await to_user.send(result)
         msg = "Sent guide for {} to {}".format(term, to_user.name)
         await ctx.send(inline(msg))
 
