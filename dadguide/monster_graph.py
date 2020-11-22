@@ -315,11 +315,14 @@ class MonsterGraph(object):
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
+    def get_base_monster(self, monster: MonsterModel):
+        return self.get_monster(self.get_base_id_by_id(monster.monster_id))
+
     def monster_is_base_by_id(self, monster_id: int) -> bool:
         return self.get_base_id_by_id(monster_id) == monster_id
 
     def monster_is_base(self, monster: MonsterModel) -> bool:
-        return self.monster_is_base_by_id(monster.monster_no)
+        return self.monster_is_base_by_id(monster.monster_id)
 
     def get_transform_base_id_by_id(self, monster_id):
         # NOTE: This assumes that no two monsters will transform to the same monster. This
