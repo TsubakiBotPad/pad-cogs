@@ -800,8 +800,9 @@ class PadGlobal(commands.Cog):
         e.x. [p]padglobal addwhich 3818 take the pixel one
         """
         m = monster_id_to_monster(monster_id)
-        if m != m.base_monster:
-            m = m.base_monster
+        base_monster = bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
@@ -813,8 +814,9 @@ class PadGlobal(commands.Cog):
     async def rmwhich(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
         m = monster_id_to_monster(monster_id)
-        if m != m.base_monster:
-            m = m.base_monster
+        base_monster = bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await confirm_message(ctx, "Are you sure you want to globally remove the which data for {}?".format(
                 m.name_en)):
@@ -1186,8 +1188,9 @@ class PadGlobal(commands.Cog):
     async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
         m = monster_id_to_monster(monster_id)
-        if m != m.base_monster:
-            m = m.base_monster
+        base_monster = bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
@@ -1199,8 +1202,9 @@ class PadGlobal(commands.Cog):
     async def rmleaderguide(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
         m = monster_id_to_monster(monster_id)
-        if m != m.base_monster:
-            m = m.base_monster
+        base_monster = bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await confirm_message(ctx,
                                      "Are you sure you want to globally remove the leaderguide data for {}?".format(
