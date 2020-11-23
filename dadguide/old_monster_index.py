@@ -460,8 +460,6 @@ class NamedMonsterGroup(object):
 
         base_monster = evolution_tree[0]
 
-        self.evolution_tree = evolution_tree
-
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
         self.base_monster_no_na = base_monster.monster_no_na
