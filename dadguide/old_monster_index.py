@@ -65,6 +65,7 @@ class MonsterIndex(tsutils.aobject):
             evolution_tree = [monster_database.graph.get_monster(m) for m in
                               monster_database.get_evolution_tree_ids(base_id)]
             named_mg = NamedMonsterGroup(evolution_tree, group_basename_overrides)
+            named_evolution_tree = []
             for monster in evolution_tree:
                 if accept_filter and not accept_filter(monster):
                     continue
@@ -73,6 +74,10 @@ class MonsterIndex(tsutils.aobject):
                 named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames,
                                              db_context=self.db_context)
                 named_monsters.append(named_monster)
+                named_evolution_tree.append(named_monster)
+            for named_monster in named_evolution_tree:
+                named_monster.set_evolution_tree(named_evolution_tree)
+
 
         # Sort the NamedMonsters into the opposite order we want to accept their nicknames in
         # This order is:
@@ -365,13 +370,13 @@ class MonsterIndex(tsutils.aobject):
             if query.endswith("base {}".format(m.monster_id)):
                 matches.add(
                     find_first(lambda mo: m.base_monster_no == mo.monster_id, self.all_entries.values()))
-        matches.remove_potential_matches_without_all_prefixes(query_prefixes)
+        matches.update_list(query_prefixes)
 
         # first try to get matches from nicknames
         for nickname, m in self.all_entries.items():
             if new_query in nickname:
                 matches.add(m)
-        matches.remove_potential_matches_without_all_prefixes(query_prefixes)
+        matches.update_list(query_prefixes)
 
         # if we don't have any candidates yet, pick a new method
         if not matches.length():
@@ -379,7 +384,7 @@ class MonsterIndex(tsutils.aobject):
             for nickname, m in self.all_en_name_to_monsters.items():
                 if new_query in m.name_en.lower() or new_query in m.name_ja.lower():
                     matches.add(m)
-            matches.remove_potential_matches_without_all_prefixes(query_prefixes)
+            matches.update_list(query_prefixes)
 
         # check for exact match on pantheon name but only if needed
         if not matches.length():
@@ -387,7 +392,7 @@ class MonsterIndex(tsutils.aobject):
                 if new_query == pantheon.lower():
                     matches.get_monsters_from_potential_pantheon_match(pantheon, self.pantheon_nick_to_name,
                                                                        self.pantheons)
-            matches.remove_potential_matches_without_all_prefixes(query_prefixes)
+            matches.update_list(query_prefixes)
 
         # check for any match on pantheon name, again but only if needed
         if not matches.length():
@@ -395,7 +400,7 @@ class MonsterIndex(tsutils.aobject):
                 if new_query in pantheon.lower():
                     matches.get_monsters_from_potential_pantheon_match(pantheon, self.pantheon_nick_to_name,
                                                                        self.pantheons)
-            matches.remove_potential_matches_without_all_prefixes(query_prefixes)
+            matches.update_list(query_prefixes)
 
         if matches.length():
             return matches.pick_best_monster(), None, None
@@ -418,7 +423,18 @@ class PotentialMatches(object):
     def length(self):
         return len(self.match_list)
 
-    def remove_potential_matches_without_all_prefixes(self, query_prefixes):
+    def update_list(self, query_prefixes):
+        self._add_trees()
+        self._remove_any_without_all_prefixes(query_prefixes)
+
+    def _add_trees(self):
+        to_add = set()
+        for m in self.match_list:
+            for evo in m.evolution_tree:
+                to_add.add(evo)
+        self.match_list.update(to_add)
+
+    def _remove_any_without_all_prefixes(self, query_prefixes):
         to_remove = set()
         for m in self.match_list:
             for prefix in query_prefixes:
@@ -442,6 +458,9 @@ class NamedMonsterGroup(object):
                         or self._is_low_priority_group(evolution_tree))
 
         base_monster = evolution_tree[0]
+
+        self.evolution_tree = evolution_tree
+
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
         self.base_monster_no_na = base_monster.monster_no_na
@@ -522,7 +541,8 @@ class NamedMonsterGroup(object):
 
 class NamedMonster(object):
     def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
-        # Must not hold onto monster or monster_group!
+
+        self.evolution_tree = None
 
         # Hold on to the IDs instead
         self.monster_id = monster.monster_id
@@ -591,3 +611,11 @@ class NamedMonster(object):
             for prefix in self.prefixes:
                 self.final_two_word_nicknames.add(prefix + basename)
                 self.final_two_word_nicknames.add(prefix + ' ' + basename)
+
+    def set_evolution_tree(self, evolution_tree):
+        """
+        Set the evolution tree to a list of NamedMonsters so that we can have
+        nice things like prefix lookups on the entire tree in id2 and not cry
+        about Diablos equip
+        """
+        self.evolution_tree = evolution_tree
