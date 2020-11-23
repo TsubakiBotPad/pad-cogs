@@ -466,21 +466,21 @@ class PadInfo(commands.Cog):
 
         id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
         evo_embed = monsterToEvoEmbed(m, self.get_emojis(), db_context)
-        mats_embed = monsterToEvoMatsEmbed(m, db_context)
+        mats_embed = monsterToEvoMatsEmbed(m, db_context, self.get_emojis())
         animated = m.has_animation
-        pic_embed = monsterToPicEmbed(m, animated=animated)
-        other_info_embed = monsterToOtherInfoEmbed(m, db_context)
+        pic_embed = monsterToPicEmbed(m, self.get_emojis(), animated=animated)
+        other_info_embed = monsterToOtherInfoEmbed(m, db_context, self.get_emojis())
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m, db_context)
+        pantheon_embed = monsterToPantheonEmbed(m, db_context, self.get_emojis())
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m, db_context)
+        skillups_embed = monsterToSkillupsEmbed(m, db_context, self.get_emojis())
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -584,7 +584,7 @@ class PadInfo(commands.Cog):
         """Short info results for a monster query"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            embed = monsterToHeaderEmbed(m)
+            embed = monsterToHeaderEmbed(m, self.get_emojis())
             await ctx.send(embed=embed)
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -993,8 +993,9 @@ class PadInfoSettings(CogSettings):
         self.save_settings()
 
 
-def monsterToHeader(m: "MonsterModel", link=False):
-    msg = '[{}] {}'.format(m.monster_no_na, m.name_en)
+def monsterToHeader(m: "MonsterModel", link=False, show_types=False, allowed_emojis=None):
+    type_emojis = '{} '.format(''.join([str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
+    msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
@@ -1007,13 +1008,13 @@ def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
     return suffix
 
 
-def monsterToLongHeader(m: "MonsterModel", link=False):
-    msg = monsterToHeader(m) + monsterToJaSuffix(m)
+def monsterToLongHeader(m: "MonsterModel", link=False, show_types=False, allowed_emojis=None):
+    msg = monsterToHeader(m, show_types=show_types, allowed_emojis=allowed_emojis) + monsterToJaSuffix(m)
     return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
 
-def monsterToEvoHeader(m: "MonsterModel", emoji_list, link=True):
-    prefix = f" {monster_attr_emoji(emoji_list, m)} "
+def monsterToEvoHeader(m: "MonsterModel", allowed_emojis, link=True):
+    prefix = f" {monster_attr_emoji(allowed_emojis, m)} "
     msg = f"{m.monster_no_na} - {m.name_en}"
     suffix = monsterToJaSuffix(m, False)
     return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
@@ -1023,8 +1024,8 @@ def monsterToThumbnailUrl(m: "MonsterModel"):
     return get_portrait_url(m)
 
 
-def monsterToBaseEmbed(m: "MonsterModel"):
-    header = monsterToLongHeader(m)
+def monsterToBaseEmbed(m: "MonsterModel", allowed_emojis):
+    header = monsterToLongHeader(m, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.set_thumbnail(url=monsterToThumbnailUrl(m))
     embed.title = header
@@ -1033,13 +1034,13 @@ def monsterToBaseEmbed(m: "MonsterModel"):
     return embed
 
 
-def addEvoListFields(monsters, current_monster, emoji_list):
+def addEvoListFields(monsters, current_monster, allowed_emojis):
     if not len(monsters):
         return
     field_data = ''
     field_values = []
     for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
-        monster_header = monsterToEvoHeader(ae, emoji_list, link=ae.monster_id != current_monster.monster_id) + '\n'
+        monster_header = monsterToEvoHeader(ae, allowed_emojis, link=ae.monster_id != current_monster.monster_id) + '\n'
         if len(field_data+monster_header) > 1024:
             field_values.append(field_data)
             field_data = ""
@@ -1048,29 +1049,29 @@ def addEvoListFields(monsters, current_monster, emoji_list):
     return field_values
 
 
-def monster_attr_emoji(emoji_list, monster: "MonsterModel"):
+def monster_attr_emoji(allowed_emojis, monster: "MonsterModel"):
     attr1 = monster.attr1.name.lower()
     attr2 = monster.attr2.name.lower()
     emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
-    return match_emoji(emoji_list, emoji)
+    return match_emoji(allowed_emojis, emoji)
 
 
-def monsterToEvoEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def monsterToEvoEmbed(m: "MonsterModel", allowed_emojis, db_context: "DbContext"):
+    embed = monsterToBaseEmbed(m, allowed_emojis)
     alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_no)
     gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
 
-    if not len(alt_versions) and not evo_gem:
+    if not len(alt_versions):
         embed.description = 'No alternate evos or evo gem'
         return embed
 
-    evos = addEvoListFields(alt_versions, m, emoji_list)
+    evos = addEvoListFields(alt_versions, m, allowed_emojis)
     if not gem_versions:
         embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
         for f in evos[1:]:
             embed.add_field(name="\u200b", value=f)
         return embed
-    gems = addEvoListFields(gem_versions, m, emoji_list)
+    gems = addEvoListFields(gem_versions, m, allowed_emojis)
 
     embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
     for e in evos[1:]:
@@ -1097,8 +1098,8 @@ def addMonsterEvoOfList(monster_id_list, embed, field_name, db_context=None):
     embed.add_field(name=field_name, value=field_data)
 
 
-def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext", allowed_emojis):
+    embed = monsterToBaseEmbed(m, allowed_emojis)
 
     mats_for_evo = db_context.graph.evo_mats_by_monster(m)
 
@@ -1119,13 +1120,13 @@ def monsterToEvoMatsEmbed(m: "MonsterModel", db_context: "DbContext"):
     return embed
 
 
-def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext", allowed_emojis):
     full_pantheon = db_context.get_monsters_by_series(m.series_id)
     pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
     if len(pantheon_list) == 0 or len(pantheon_list) > 6:
         return None
 
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, allowed_emojis)
 
     field_name = 'Pantheon: ' + db_context.graph.get_monster(m.monster_no).series.name
     field_data = ''
@@ -1136,7 +1137,7 @@ def monsterToPantheonEmbed(m: "MonsterModel", db_context: "DbContext"):
     return embed
 
 
-def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext"):
+def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext", allowed_emojis):
     if m.active_skill is None:
         return None
     possible_skillups_list = db_context.get_monsters_by_active(m.active_skill.active_skill_id)
@@ -1146,7 +1147,7 @@ def monsterToSkillupsEmbed(m: "MonsterModel", db_context: "DbContext"):
     if len(skillups_list) == 0:
         return None
 
-    embed = monsterToBaseEmbed(m)
+    embed = monsterToBaseEmbed(m, allowed_emojis)
 
     field_name = 'Skillups'
     field_data = ''
@@ -1169,8 +1170,8 @@ def monsterToPicUrl(m: "MonsterModel"):
     return get_pic_url(m)
 
 
-def monsterToPicEmbed(m: "MonsterModel", animated=False):
-    embed = monsterToBaseEmbed(m)
+def monsterToPicEmbed(m: "MonsterModel", allowed_emojis, animated=False):
+    embed = monsterToBaseEmbed(m, allowed_emojis)
     url = monsterToPicUrl(m)
     embed.set_image(url=url)
     # Clear the thumbnail, don't need it on pic
@@ -1200,15 +1201,6 @@ def monsterToOrbSkinUrl(m: "MonsterModel", link_text='Regular'):
 
 def monsterToOrbSkinCBUrl(m: "MonsterModel", link_text='Color Blind'):
     return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
-
-
-def monsterToGifEmbed(m: "MonsterModel"):
-    embed = monsterToBaseEmbed(m)
-    url = monsterToGifUrl(m)
-    embed.set_image(url=url)
-    # Clear the thumbnail, don't need it on pic
-    embed.set_thumbnail(url='')
-    return embed
 
 
 def monstersToLsEmbed(left_m: "MonsterModel", right_m: "MonsterModel"):
@@ -1245,15 +1237,11 @@ def monstersToLssEmbed(m: "MonsterModel"):
     return embed
 
 
-def monsterToHeaderEmbed(m: "MonsterModel"):
-    header = monsterToLongHeader(m, link=True)
+def monsterToHeaderEmbed(m: "MonsterModel", allowed_emojis):
+    header = monsterToLongHeader(m, link=True, allowed_emojis=allowed_emojis)
     embed = discord.Embed()
     embed.description = header
     return embed
-
-
-def monsterToTypeString(m: "MonsterModel"):
-    return '/'.join([t.name for t in m.types])
 
 
 def monsterToAcquireString(m: "MonsterModel", db_context: "DbContext"):
@@ -1278,17 +1266,51 @@ def monsterToAcquireString(m: "MonsterModel", db_context: "DbContext"):
     return acquire_text
 
 
-def match_emoji(emoji_list, name):
-    for e in emoji_list:
+def match_emoji(allowed_emojis, name):
+    for e in allowed_emojis:
         if e.name == name:
             return e
     return name
 
 
-def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def monsterToEmbed(m: "MonsterModel", allowed_emojis, db_context: "DbContext"):
+    embed = monsterToBaseEmbed(m, allowed_emojis)
 
-    info_row_1 = monsterToTypeString(m)
+    # in case we want to readd the type emojis later
+    # types_row = ' '.join(['{} {}'.format(str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))), t.name) for t in m.types])
+    types_row = '/'.join(['{}'.format(t.name) for t in m.types])
+
+    awakenings_row = ''
+    for idx, a in enumerate(m.awakenings):
+        as_id = a.awoken_skill_id
+        as_name = a.name
+        mapped_awakening = AWAKENING_MAP.get(as_id, as_name)
+        mapped_awakening = match_emoji(allowed_emojis, mapped_awakening)
+
+        # Wrap superawakenings to the next line
+        if len(m.awakenings) - idx == m.superawakening_count:
+            awakenings_row += '\n{}'.format(match_emoji(allowed_emojis, 'sa_questionmark'))
+            awakenings_row += ' {}'.format(mapped_awakening)
+        else:
+            awakenings_row += ' {}'.format(mapped_awakening)
+
+    is_transform_base = db_context.graph.monster_is_transform_base(m)
+    transform_base = db_context.graph.get_transform_base_by_id(m.monster_id) if not is_transform_base else None
+
+    awakenings_row = awakenings_row.strip()
+
+    if not len(awakenings_row):
+        awakenings_row = 'No Awakenings'
+
+    if is_transform_base:
+
+        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, get_killers_text(m, allowed_emojis))
+    else:
+        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(transform_base.latent_slots, get_killers_text(transform_base, allowed_emojis))
+
+    embed.add_field(name=types_row, value='{}\n{}'.format(awakenings_row, killers_row), inline=False)
+
+    info_row_1 = 'Inheritable' if m.is_inheritable else 'Not inheritable'
     acquire_text = monsterToAcquireString(m, db_context)
     tet_text = db_context.graph.true_evo_type_by_monster(m).value
 
@@ -1303,10 +1325,6 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
 
     if acquire_text:
         info_row_2 += '\n**{}**'.format(acquire_text)
-    if m.is_inheritable:
-        info_row_2 += '\n**Inheritable**'
-    else:
-        info_row_2 += '\n**Not inheritable**'
     if tet_text in ("Reincarnated", "Assist", "Pixel", "Super Reincarnated"):
         info_row_2 += '\n**{}**'.format(tet_text)
 
@@ -1315,40 +1333,15 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     hp, atk, rcv, weighted = m.stats()
     if m.limit_mult > 0:
         lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-        stats_row_1 = 'Weighted {} | LB {} (+{}%)'.format(weighted, lb_weighted, m.limit_mult)
+        stats_row_1 = 'Stats (LB, +{}%)'.format(m.limit_mult)
         stats_row_2 = '**HP** {} ({})\n**ATK** {} ({})\n**RCV** {} ({})'.format(
             hp, lb_hp, atk, lb_atk, rcv, lb_rcv)
     else:
-        stats_row_1 = 'Weighted {}'.format(weighted)
+        stats_row_1 = 'Stats'
         stats_row_2 = '**HP** {}\n**ATK** {}\n**RCV** {}'.format(hp, atk, rcv)
+    if any(x if x.name == 'Enhance' else None for x in m.types):
+        stats_row_2 += '\n**Fodder EXP** {:,}'.format(m.fodder_exp)
     embed.add_field(name=stats_row_1, value=stats_row_2)
-
-    awakenings_row = ''
-    for idx, a in enumerate(m.awakenings):
-        as_id = a.awoken_skill_id
-        as_name = a.name
-        mapped_awakening = AWAKENING_MAP.get(as_id, as_name)
-        mapped_awakening = match_emoji(emoji_list, mapped_awakening)
-
-        # Wrap superawakenings to the next line
-        if len(m.awakenings) - idx == m.superawakening_count:
-            awakenings_row += '\n{}'.format(mapped_awakening)
-        else:
-            awakenings_row += ' {}'.format(mapped_awakening)
-
-    awakenings_row = awakenings_row.strip()
-
-    if not len(awakenings_row):
-        awakenings_row = 'No Awakenings'
-
-    if db_context.graph.monster_is_transform_base(m):
-        killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots, ' '.join(m.killers))
-    else:
-        base_transform = db_context.graph.get_transform_base_by_id(m.monster_id)
-        killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(base_transform.latent_slots, ' '.join(base_transform.killers))
-
-
-    embed.description = '{}\n{}'.format(awakenings_row, killers_row)
 
     active_header = 'Active Skill'
     active_body = 'None'
@@ -1378,8 +1371,14 @@ def monsterToEmbed(m: "MonsterModel", emoji_list, db_context: "DbContext"):
     return embed
 
 
-def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext"):
-    embed = monsterToBaseEmbed(m)
+def get_killers_text(m: "MonsterModel", allowed_emojis):
+    if 'Any' in m.killers:
+        return 'Any'
+    return ' '.join([str(match_emoji(allowed_emojis, 'latent_killer_{}'.format(k.lower()))) for k in m.killers])
+
+
+def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext", allowed_emojis):
+    embed = monsterToBaseEmbed(m, allowed_emojis)
     # Clear the thumbnail, takes up too much space
     embed.set_thumbnail(url='')
 
@@ -1422,6 +1421,14 @@ def monsterToOtherInfoEmbed(m: "MonsterModel", db_context: "DbContext"):
         xp_text = '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
     body_text += '\n**XP to Max:** {}'.format(xp_text)
     body_text += '  **Max Level:**: {}'.format(m.level)
+
+    # weighted stat calculation & display
+    hp, atk, rcv, weighted = m.stats()
+    body_text += '\n**Weighted stats:** {}'.format(weighted)
+    if m.limit_mult > 0:
+        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
+        body_text += ' | LB {} (+{}%)'.format(lb_weighted, m.limit_mult)
+
     body_text += '\n**Fodder EXP:** {:,}'.format(m.fodder_exp)
     body_text += '\n**Rarity:** {} **Cost:** {}'.format(m.rarity, m.cost)
 
@@ -1505,6 +1512,7 @@ AWAKENING_MAP = {
     72: 'misc_poisonboost',
 }
 
+
 def humanize_number(number, sigfigs=2):
     n = float("{0:.{1}g}".format(number, sigfigs))
     if n >= 1e9:
@@ -1515,6 +1523,7 @@ def humanize_number(number, sigfigs=2):
         return str(int(n//1e3))+"k"
     else:
         return str(int(n))
+
 
 def createMultiplierText(ls1, ls2=None):
     if ls2 and not ls1:
