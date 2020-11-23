@@ -12,6 +12,7 @@ from .models.enum_types import EvoType
 from .models.enum_types import InternalEvoType
 from dadguide.models.enum_types import Attribute, MonsterType
 from dadguide.models.monster_model import MonsterModel
+from dadguide.models.series_model import SeriesModel
 from .database_context import DbContext
 
 
@@ -61,6 +62,7 @@ class MonsterIndex(tsutils.aobject):
         named_monsters = []
         async for base_mon in AsyncIter(base_monster_ids):
             base_id = base_mon.monster_id
+            series = monster_database.graph.get_monster(base_id).series
             group_basename_overrides = basename_overrides.get(base_id, [])
             evolution_tree = [monster_database.graph.get_monster(m) for m in
                               monster_database.get_evolution_tree_ids(base_id)]
@@ -71,8 +73,7 @@ class MonsterIndex(tsutils.aobject):
                     continue
                 prefixes = self.compute_prefixes(monster, evolution_tree)
                 extra_nicknames = monster_id_to_nicknames[monster.monster_id]
-                named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames,
-                                             db_context=self.db_context)
+                named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames, series)
                 named_monsters.append(named_monster)
                 named_evolution_tree.append(named_monster)
             for named_monster in named_evolution_tree:
@@ -540,7 +541,7 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, db_context=None):
+    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, series: SeriesModel):
 
         self.evolution_tree = None
 
@@ -558,7 +559,7 @@ class NamedMonster(object):
         self.prefixes = prefixes
 
         # Pantheon
-        series = db_context.graph.get_monster(monster.monster_no).series
+        series = series
         self.series = series.name if series else None
 
         # Data used to determine how to rank the nicknames
