@@ -115,7 +115,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
 class ScrollEmojiUpdater(EmojiUpdater):
     def __init__(self, emoji_to_embed, m: "MonsterModel" = None,
-                 ms: "List[int]" = None, selected_emoji=None, pad_info=None, bot=None):
+                 ms: "list[int]" = None, selected_emoji=None, pad_info=None, bot=None):
         self.emoji_dict = emoji_to_embed
         self.m = m
         self.ms = ms
@@ -124,7 +124,6 @@ class ScrollEmojiUpdater(EmojiUpdater):
         self.bot = bot
 
     def on_update(self, ctx, selected_emoji):
-        DGCOG = self.bot.get_cog('Dadguide')
         index = self.ms.index(self.m)
 
         if selected_emoji == self.pad_info.first_monster_emoji:
@@ -488,6 +487,7 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed = OrderedDict()
         menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+        starting_menu_emoji = None
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
             if idx > 19:
