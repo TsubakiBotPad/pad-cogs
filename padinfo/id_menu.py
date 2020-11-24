@@ -466,6 +466,15 @@ class IdMenu(object):
 
         return embed
 
+    def monsterToLinksEmbed(self, m: "MonsterModel"):
+        embed = self.monsterToBaseEmbed(m)
+        embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
+            YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
+            SKYOZORA_TEMPLATE.format(m.monster_no_jp),
+            INFO_PDX_TEMPLATE.format(m.monster_no_jp),
+            ILMINA_TEMPLATE.format(m.monster_no_jp))
+        embed.set_footer(text='')
+
     def monstersToLssEmbed(self, m: "MonsterModel"):
         multiplier_text = createSingleMultiplierText(m.leader_skill)
 

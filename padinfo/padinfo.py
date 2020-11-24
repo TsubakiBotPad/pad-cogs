@@ -251,7 +251,7 @@ class PadInfo(commands.Cog):
         """Show the Japanese name of a monster"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            await ctx.send(monsterToHeader(m))
+            await ctx.send(IdMenu.monsterToHeader(m))
             await ctx.send(box(m.name_ja))
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -439,23 +439,25 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        id_embed = monsterToEmbed(m, self.get_emojis(), db_context)
-        evo_embed = monsterToEvoEmbed(m, self.get_emojis(), db_context)
-        mats_embed = monsterToEvoMatsEmbed(m, db_context, self.get_emojis())
+        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+
+        id_embed = menu.monsterToEmbed(m)
+        evo_embed = menu.monsterToEvoEmbed(m)
+        mats_embed = menu.monsterToEvoMatsEmbed(m)
         animated = m.has_animation
-        pic_embed = monsterToPicEmbed(m, self.get_emojis(), animated=animated)
-        other_info_embed = monsterToOtherInfoEmbed(m, db_context, self.get_emojis())
+        pic_embed = menu.monsterToPicEmbed(m, animated=animated)
+        other_info_embed = menu.monsterToOtherInfoEmbed(m)
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = monsterToPantheonEmbed(m, db_context, self.get_emojis())
+        pantheon_embed = menu.monsterToPantheonEmbed(m)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = monsterToSkillupsEmbed(m, db_context, self.get_emojis())
+        skillups_embed = menu.monsterToSkillupsEmbed(m)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -485,6 +487,7 @@ class PadInfo(commands.Cog):
         monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
+        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
             if idx > 19:
@@ -492,7 +495,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
+            emoji_to_embed[emoji] = menu.monsterToEmbed(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -531,13 +534,8 @@ class PadInfo(commands.Cog):
         """Monster links"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            embed = monsterToBaseEmbed(m)
-            embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-                YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
-                SKYOZORA_TEMPLATE.format(m.monster_no_jp),
-                INFO_PDX_TEMPLATE.format(m.monster_no_jp),
-                ILMINA_TEMPLATE.format(m.monster_no_jp))
-            embed.set_footer(text='')
+            menu = IdMenu()
+            embed = menu.monsterToLinksEmbed(m)
             await ctx.send(embed=embed)
 
         else:
@@ -559,7 +557,8 @@ class PadInfo(commands.Cog):
         """Short info results for a monster query"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            embed = monsterToHeaderEmbed(m, self.get_emojis())
+            menu = IdMenu(allowed_emojis=self.get_emojis())
+            embed = menu.monsterToHeaderEmbed(m)
             await ctx.send(embed=embed)
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -659,10 +658,11 @@ class PadInfo(commands.Cog):
             await ctx.send(inline(err_msg.format('Right', right_query)))
             return
 
+        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = monstersToLsEmbed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(left_m, self.get_emojis(), db_context)
-        emoji_to_embed[self.right_emoji] = monsterToEmbed(right_m, self.get_emojis(), db_context)
+        emoji_to_embed[self.ls_emoji] = menu.monstersToLsEmbed(left_m, right_m)
+        emoji_to_embed[self.left_emoji] = menu.monsterToEmbed(left_m)
+        emoji_to_embed[self.right_emoji] = menu.monsterToEmbed(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
