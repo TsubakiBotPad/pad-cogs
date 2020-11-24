@@ -470,6 +470,7 @@ class IdMenu(object):
             INFO_PDX_TEMPLATE.format(m.monster_no_jp),
             ILMINA_TEMPLATE.format(m.monster_no_jp))
         embed.set_footer(text='')
+        return embed
 
     def make_lssingle_embed(self, m: "MonsterModel"):
         multiplier_text = createSingleMultiplierText(m.leader_skill)
