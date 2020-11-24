@@ -17,6 +17,7 @@ from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, confirm_message
 
 from .find_monster import prefix_to_filter
+from .id_menu import IdMenu
 
 from typing import TYPE_CHECKING
 
@@ -675,9 +676,10 @@ class PadInfo(commands.Cog):
         if err:
             await ctx.send(err)
             return
+        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = monstersToLssEmbed(m)
-        emoji_to_embed[self.left_emoji] = monsterToEmbed(m, self.get_emojis(), db_context)
+        emoji_to_embed[self.ls_emoji] = menu.monstersToLssEmbed(m)
+        emoji_to_embed[self.left_emoji] = menu.monsterToEmbed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -714,7 +716,7 @@ class PadInfo(commands.Cog):
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
-            header = '{} ({})'.format(monsterToHeader(m), server)
+            header = '{} ({})'.format(IdMenu.monsterToHeader(m), server)
             if not os.path.exists(voice_file):
                 await ctx.send(inline('Could not find voice for ' + header))
                 return

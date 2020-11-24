@@ -30,8 +30,20 @@ SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
 ILMINA_TEMPLATE = 'https://ilmina.com/#/CARD/{}'
 
 
+def get_pdx_url(m: "MonsterModel"):
+    return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
+
+
+def get_portrait_url(m: "MonsterModel"):
+    return RPAD_PORTRAIT_TEMPLATE.format(m.monster_id)
+
+
+def get_pic_url(m: "MonsterModel"):
+    return RPAD_PIC_TEMPLATE.format(m.monster_id)
+
+
 class IdMenu(object):
-    def __init__(self, db_context: "DbContext", allowed_emojis):
+    def __init__(self, db_context: "DbContext" = None, allowed_emojis: list = None):
         self.db_context = db_context
         self.allowed_emojis = allowed_emojis
 
@@ -42,22 +54,12 @@ class IdMenu(object):
         return name
 
     @staticmethod
-    def get_pdx_url(m: "MonsterModel"):
-        return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
-
-    @staticmethod
-    def get_portrait_url(m: "MonsterModel"):
-        return RPAD_PORTRAIT_TEMPLATE.format(m.monster_id)
-
-    @staticmethod
-    def get_pic_url(m: "MonsterModel"):
-        return RPAD_PIC_TEMPLATE.format(m.monster_id)
-
-    def monsterToHeader(self, m: "MonsterModel", link=False, show_types=False):
-        type_emojis = '{} '.format(''.join(
-            [str(self.match_emoji('mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
+    def monsterToHeader(m: "MonsterModel", link=False):
+        # type_emojis = '{} '.format(''.join(
+        #     [str(self.match_emoji('mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
+        type_emojis = ''
         msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
-        return '[{}]({})'.format(msg, self.get_pdx_url(m)) if link else msg
+        return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
     @staticmethod
     def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
@@ -68,25 +70,26 @@ class IdMenu(object):
             suffix += ' (JP only)'
         return suffix
 
-    def monsterToLongHeader(self, m: "MonsterModel", link=False, show_types=False):
-        msg = self.monsterToHeader(m, show_types=show_types) + self.monsterToJaSuffix(m)
-        return '[{}]({})'.format(msg, self.get_pdx_url(m)) if link else msg
+    def monsterToLongHeader(self, m: "MonsterModel", link=False):
+        msg = self.monsterToHeader(m) + self.monsterToJaSuffix(m)
+        return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
     def monsterToEvoHeader(self, m: "MonsterModel", link=True):
         prefix = f" {self.monster_attr_emoji(m)} "
         msg = f"{m.monster_no_na} - {m.name_en}"
         suffix = self.monsterToJaSuffix(m, False)
-        return prefix + ("[{}]({})".format(msg, self.get_pdx_url(m)) if link else msg) + suffix
+        return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
 
-    def monsterToThumbnailUrl(self, m: "MonsterModel"):
-        return self.get_portrait_url(m)
+    @staticmethod
+    def monsterToThumbnailUrl(m: "MonsterModel"):
+        return get_portrait_url(m)
 
     def monsterToBaseEmbed(self, m: "MonsterModel"):
         header = self.monsterToLongHeader(m)
         embed = discord.Embed()
         embed.set_thumbnail(url=self.monsterToThumbnailUrl(m))
         embed.title = header
-        embed.url = self.get_pdx_url(m)
+        embed.url = get_pdx_url(m)
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
         return embed
 
@@ -216,8 +219,9 @@ class IdMenu(object):
 
         return embed
 
-    def monsterToPicUrl(self, m: "MonsterModel"):
-        return self.get_pic_url(m)
+    @staticmethod
+    def monsterToPicUrl(m: "MonsterModel"):
+        return get_pic_url(m)
 
     def monsterToPicEmbed(self, m: "MonsterModel", animated=False):
         embed = self.monsterToBaseEmbed(m)
@@ -390,7 +394,7 @@ class IdMenu(object):
         evos_header = "Alternate Evos"
         evos_body = ", ".join(f"**{m2.monster_id}**"
                               if m2.monster_id == m.monster_id
-                              else f"[{m2.monster_id}]({self.get_pdx_url(m2)})"
+                              else f"[{m2.monster_id}]({get_pdx_url(m2)})"
                               for m2 in
                               sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
                                      key=lambda x: x.monster_id))
