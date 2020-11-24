@@ -250,7 +250,7 @@ class PadInfo(commands.Cog):
         """Show the Japanese name of a monster"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            await ctx.send(IdMenu.monsterToHeader(m))
+            await ctx.send(IdMenu.monster_header(m))
             await ctx.send(box(m.name_ja))
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -441,23 +441,23 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
 
-        id_embed = menu.monsterToEmbed(m)
-        evo_embed = menu.monsterToEvoEmbed(m)
-        mats_embed = menu.monsterToEvoMatsEmbed(m)
+        id_embed = menu.make_embed(m)
+        evo_embed = menu.make_evo_embed(m)
+        mats_embed = menu.make_evo_mats_embed(m)
         animated = m.has_animation
-        pic_embed = menu.monsterToPicEmbed(m, animated=animated)
-        other_info_embed = menu.monsterToOtherInfoEmbed(m)
+        pic_embed = menu.make_picture_embed(m, animated=animated)
+        other_info_embed = menu.make_otherinfo_embed(m)
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = menu.monsterToPantheonEmbed(m)
+        pantheon_embed = menu.make_pantheon_embed(m)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = menu.monsterToSkillupsEmbed(m)
+        skillups_embed = menu.make_skillups_embed(m)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -497,7 +497,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = menu.monsterToEmbed(m)
+            emoji_to_embed[emoji] = menu.make_embed(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -537,7 +537,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
             menu = IdMenu()
-            embed = menu.monsterToLinksEmbed(m)
+            embed = menu.make_links_embed(m)
             await ctx.send(embed=embed)
 
         else:
@@ -560,7 +560,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
             menu = IdMenu(allowed_emojis=self.get_emojis())
-            embed = menu.monsterToHeaderEmbed(m)
+            embed = menu.make_header_embed(m)
             await ctx.send(embed=embed)
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -663,9 +663,9 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = menu.monstersToLsEmbed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = menu.monsterToEmbed(left_m)
-        emoji_to_embed[self.right_emoji] = menu.monsterToEmbed(right_m)
+        emoji_to_embed[self.ls_emoji] = menu.make_ls_embed(left_m, right_m)
+        emoji_to_embed[self.left_emoji] = menu.make_embed(left_m)
+        emoji_to_embed[self.right_emoji] = menu.make_embed(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -681,8 +681,8 @@ class PadInfo(commands.Cog):
             return
         menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = menu.monstersToLssEmbed(m)
-        emoji_to_embed[self.left_emoji] = menu.monsterToEmbed(m)
+        emoji_to_embed[self.ls_emoji] = menu.make_lssingle_embed(m)
+        emoji_to_embed[self.left_emoji] = menu.make_embed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -719,7 +719,7 @@ class PadInfo(commands.Cog):
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
-            header = '{} ({})'.format(IdMenu.monsterToHeader(m), server)
+            header = '{} ({})'.format(IdMenu.monster_header(m), server)
             if not os.path.exists(voice_file):
                 await ctx.send(inline('Could not find voice for ' + header))
                 return
