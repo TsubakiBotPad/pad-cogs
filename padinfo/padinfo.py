@@ -415,7 +415,8 @@ class PadInfo(commands.Cog):
 
         alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
         emoji_to_embed = self.get_id_emoji_options(
-            m=m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if self.settings.checkEvoID(ctx.author.id) else [], menu_type=1)
+            m=m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if self.settings.checkEvoID(
+                ctx.author.id) else [], menu_type=1)
 
         return await self._do_menu(
             ctx,
@@ -491,7 +492,8 @@ class PadInfo(commands.Cog):
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
             if idx > 19:
-                await ctx.send("There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.prefix))
+                await ctx.send(
+                    "There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.prefix))
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
@@ -605,7 +607,8 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonster(query)
 
         if m is not None:
-            await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id), self.id_emoji)
+            await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
+                                      self.id_emoji)
         else:
             await ctx.send(self.makeFailureMsg(err))
 
