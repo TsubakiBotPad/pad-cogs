@@ -213,8 +213,7 @@ class MonsterIndex(tsutils.aobject):
             prefixes.add('equip')
 
         # Collab prefixes
-        prefixes.update(self.series_to_prefix_map.get(
-            self.db_context.graph.get_monster(m.monster_no).series.series_id, []))
+        prefixes.update(self.series_to_prefix_map.get(m.series.series_id, []))
 
         return prefixes
 
