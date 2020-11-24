@@ -54,7 +54,7 @@ class IdMenu(object):
         return name
 
     @staticmethod
-    def monsterToHeader(m: "MonsterModel", link=False):
+    def monster_header(m: "MonsterModel", link=False):
         # type_emojis = '{} '.format(''.join(
         #     [str(self.match_emoji('mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
         type_emojis = ''
@@ -62,7 +62,7 @@ class IdMenu(object):
         return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
     @staticmethod
-    def monsterToJaSuffix(m: "MonsterModel", subname_on_override=True):
+    def monster_ja_suffix(m: "MonsterModel", subname_on_override=True):
         suffix = ""
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
@@ -70,36 +70,36 @@ class IdMenu(object):
             suffix += ' (JP only)'
         return suffix
 
-    def monsterToLongHeader(self, m: "MonsterModel", link=False):
-        msg = self.monsterToHeader(m) + self.monsterToJaSuffix(m)
+    def monster_long_header(self, m: "MonsterModel", link=False):
+        msg = self.monster_header(m) + self.monster_ja_suffix(m)
         return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
 
-    def monsterToEvoHeader(self, m: "MonsterModel", link=True):
-        prefix = f" {self.monster_attr_emoji(m)} "
+    def monster_evo_header(self, m: "MonsterModel", link=True):
+        prefix = f" {self._get_monster_attr_emoji(m)} "
         msg = f"{m.monster_no_na} - {m.name_en}"
-        suffix = self.monsterToJaSuffix(m, False)
+        suffix = self.monster_ja_suffix(m, False)
         return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
 
     @staticmethod
-    def monsterToThumbnailUrl(m: "MonsterModel"):
+    def make_thumbnail_url(m: "MonsterModel"):
         return get_portrait_url(m)
 
-    def monsterToBaseEmbed(self, m: "MonsterModel"):
-        header = self.monsterToLongHeader(m)
+    def make_base_embed(self, m: "MonsterModel"):
+        header = self.monster_long_header(m)
         embed = discord.Embed()
-        embed.set_thumbnail(url=self.monsterToThumbnailUrl(m))
+        embed.set_thumbnail(url=self.make_thumbnail_url(m))
         embed.title = header
         embed.url = get_pdx_url(m)
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
         return embed
 
-    def addEvoListFields(self, monsters, current_monster):
+    def _get_evo_list_fields(self, monsters, current_monster):
         if not len(monsters):
             return
         field_data = ''
         field_values = []
         for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
-            monster_header = self.monsterToEvoHeader(
+            monster_header = self.monster_evo_header(
                 ae, link=ae.monster_id != current_monster.monster_id) + '\n'
             if len(field_data + monster_header) > 1024:
                 field_values.append(field_data)
@@ -108,14 +108,14 @@ class IdMenu(object):
         field_values.append(field_data)
         return field_values
 
-    def monster_attr_emoji(self, monster: "MonsterModel"):
+    def _get_monster_attr_emoji(self, monster: "MonsterModel"):
         attr1 = monster.attr1.name.lower()
         attr2 = monster.attr2.name.lower()
         emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
         return self.match_emoji(emoji)
 
-    def monsterToEvoEmbed(self, m: "MonsterModel"):
-        embed = self.monsterToBaseEmbed(m)
+    def make_evo_embed(self, m: "MonsterModel"):
+        embed = self.make_base_embed(m)
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
 
@@ -123,13 +123,13 @@ class IdMenu(object):
             embed.description = 'No alternate evos or evo gem'
             return embed
 
-        evos = self.addEvoListFields(alt_versions, m)
+        evos = self._get_evo_list_fields(alt_versions, m)
         if not gem_versions:
             embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
             for f in evos[1:]:
                 embed.add_field(name="\u200b", value=f)
             return embed
-        gems = self.addEvoListFields(gem_versions, m)
+        gems = self._get_evo_list_fields(gem_versions, m)
 
         embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
         for e in evos[1:]:
@@ -141,7 +141,7 @@ class IdMenu(object):
 
         return embed
 
-    def addMonsterEvoOfList(self, monster_id_list, embed, field_name):
+    def _add_mats_of_list(self, embed, monster_id_list, field_name):
         if not len(monster_id_list):
             return
         field_data = ''
@@ -151,11 +151,11 @@ class IdMenu(object):
             item_count = min(len(monster_id_list), 5)
             monster_list = [self.db_context.graph.get_monster(m) for m in monster_id_list]
             for ae in sorted(monster_list, key=lambda x: x.monster_no_na, reverse=True)[:item_count]:
-                field_data += "{}\n".format(self.monsterToLongHeader(ae, link=True))
+                field_data += "{}\n".format(self.monster_long_header(ae, link=True))
         embed.add_field(name=field_name, value=field_data)
 
-    def monsterToEvoMatsEmbed(self, m: "MonsterModel"):
-        embed = self.monsterToBaseEmbed(m)
+    def make_evo_mats_embed(self, m: "MonsterModel"):
+        embed = self.make_base_embed(m)
 
         mats_for_evo = self.db_context.graph.evo_mats_by_monster(m)
 
@@ -163,35 +163,35 @@ class IdMenu(object):
         field_data = ''
         if len(mats_for_evo) > 0:
             for ae in mats_for_evo:
-                field_data += "{}\n".format(self.monsterToLongHeader(ae, link=True))
+                field_data += "{}\n".format(self.monster_long_header(ae, link=True))
         else:
             field_data = 'None'
         embed.add_field(name=field_name, value=field_data)
 
-        self.addMonsterEvoOfList(self.db_context.graph.material_of_ids(m), embed, 'Material for')
+        self._add_mats_of_list(embed, self.db_context.graph.material_of_ids(m), 'Material for')
         evo_gem = self.db_context.graph.evo_gem_monster(m)
         if not evo_gem:
             return embed
-        self.addMonsterEvoOfList(self.db_context.graph.material_of_ids(evo_gem), embed, "Evo gem is mat for")
+        self._add_mats_of_list(embed, self.db_context.graph.material_of_ids(evo_gem), "Evo gem is mat for")
         return embed
 
-    def monsterToPantheonEmbed(self, m: "MonsterModel"):
+    def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
         pantheon_list = list(filter(lambda x: self.db_context.graph.monster_is_base(x), full_pantheon))
         if len(pantheon_list) == 0 or len(pantheon_list) > 6:
             return None
 
-        embed = self.monsterToBaseEmbed(m)
+        embed = self.make_base_embed(m)
 
         field_name = 'Pantheon: ' + self.db_context.graph.get_monster(m.monster_no).series.name
         field_data = ''
         for monster in sorted(pantheon_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + self.monsterToHeader(monster, link=True)
+            field_data += '\n' + self.monster_header(monster, link=True)
         embed.add_field(name=field_name, value=field_data)
 
         return embed
 
-    def monsterToSkillupsEmbed(self, m: "MonsterModel"):
+    def make_skillups_embed(self, m: "MonsterModel"):
         if m.active_skill is None:
             return None
         possible_skillups_list = self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
@@ -201,7 +201,7 @@ class IdMenu(object):
         if len(skillups_list) == 0:
             return None
 
-        embed = self.monsterToBaseEmbed(m)
+        embed = self.make_base_embed(m)
 
         field_name = 'Skillups'
         field_data = ''
@@ -212,50 +212,46 @@ class IdMenu(object):
             skillups_list = skillups_list[0:8]
 
         for monster in sorted(skillups_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + self.monsterToHeader(monster, link=True)
+            field_data += '\n' + self.monster_header(monster, link=True)
 
         if len(field_data.strip()):
             embed.add_field(name=field_name, value=field_data)
 
         return embed
 
-    @staticmethod
-    def monsterToPicUrl(m: "MonsterModel"):
-        return get_pic_url(m)
-
-    def monsterToPicEmbed(self, m: "MonsterModel", animated=False):
-        embed = self.monsterToBaseEmbed(m)
-        url = self.monsterToPicUrl(m)
+    def make_picture_embed(self, m: "MonsterModel", animated=False):
+        embed = self.make_base_embed(m)
+        url = get_pic_url(m)
         embed.set_image(url=url)
         # Clear the thumbnail, don't need it on pic
         embed.set_thumbnail(url='')
         extra_links = []
         if animated:
-            extra_links.append('Animation: {} -- {}'.format(self.monsterToVideoUrl(m), self.monsterToGifUrl(m)))
+            extra_links.append('Animation: {} -- {}'.format(self.monster_video_url(m), self.monster_gif_url(m)))
         if m.orb_skin_id is not None:
-            extra_links.append('Orb Skin: {} -- {}'.format(self.monsterToOrbSkinUrl(m), self.monsterToOrbSkinCBUrl(m)))
+            extra_links.append('Orb Skin: {} -- {}'.format(self.monster_orb_skin_url(m), self.monster_orb_skin_cb_url(m)))
         if len(extra_links) > 0:
             embed.add_field(name='Extra Links', value='\n'.join(extra_links))
 
         return embed
 
     @staticmethod
-    def monsterToVideoUrl(m: "MonsterModel", link_text='(MP4)'):
+    def monster_video_url(m: "MonsterModel", link_text='(MP4)'):
         return '[{}]({})'.format(link_text, VIDEO_TEMPLATE.format(m.monster_no_jp))
 
     @staticmethod
-    def monsterToGifUrl(m: "MonsterModel", link_text='(GIF)'):
+    def monster_gif_url(m: "MonsterModel", link_text='(GIF)'):
         return '[{}]({})'.format(link_text, GIF_TEMPLATE.format(m.monster_no_jp))
 
     @staticmethod
-    def monsterToOrbSkinUrl(m: "MonsterModel", link_text='Regular'):
+    def monster_orb_skin_url(m: "MonsterModel", link_text='Regular'):
         return '[{}]({})'.format(link_text, ORB_SKIN_TEMPLATE.format(m.orb_skin_id))
 
     @staticmethod
-    def monsterToOrbSkinCBUrl(m: "MonsterModel", link_text='Color Blind'):
+    def monster_orb_skin_cb_url(m: "MonsterModel", link_text='Color Blind'):
         return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
 
-    def monstersToLsEmbed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
+    def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         lls = left_m.leader_skill
         rls = right_m.leader_skill
 
@@ -265,22 +261,22 @@ class IdMenu(object):
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
-            self.monsterToHeader(left_m, link=True),
+            self.monster_header(left_m, link=True),
             lls.desc if lls else 'None')
         description += '\n**{}**\n{}'.format(
-            self.monsterToHeader(right_m, link=True),
+            self.monster_header(right_m, link=True),
             rls.desc if rls else 'None')
         embed.description = description
 
         return embed
 
-    def monsterToHeaderEmbed(self, m: "MonsterModel"):
-        header = self.monsterToLongHeader(m, link=True)
+    def make_header_embed(self, m: "MonsterModel"):
+        header = self.monster_long_header(m, link=True)
         embed = discord.Embed()
         embed.description = header
         return embed
 
-    def monsterToAcquireString(self, m: "MonsterModel"):
+    def _monster_acquisition_string(self, m: "MonsterModel"):
         acquire_text = None
         if self.db_context.graph.monster_is_farmable(m) and not self.db_context.graph.monster_is_mp_evo(m):
             # Some MP shop monsters 'drop' in PADR
@@ -301,8 +297,8 @@ class IdMenu(object):
             acquire_text = 'MP Shop Evo'
         return acquire_text
 
-    def monsterToEmbed(self, m: "MonsterModel"):
-        embed = self.monsterToBaseEmbed(m)
+    def make_embed(self, m: "MonsterModel"):
+        embed = self.make_base_embed(m)
 
         # in case we want to readd the type emojis later
         # types_row = ' '.join(['{} {}'.format(str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))), t.name) for t in m.types])
@@ -342,7 +338,7 @@ class IdMenu(object):
         embed.add_field(name=types_row, value='{}\n{}'.format(awakenings_row, killers_row), inline=False)
 
         info_row_1 = 'Inheritable' if m.is_inheritable else 'Not inheritable'
-        acquire_text = self.monsterToAcquireString(m)
+        acquire_text = self._monster_acquisition_string(m)
         tet_text = self.db_context.graph.true_evo_type_by_monster(m).value
 
         orb_skin = "" if m.orb_skin_id is None else " (Orb Skin)"
@@ -407,8 +403,8 @@ class IdMenu(object):
             return 'Any'
         return ' '.join([str(self.match_emoji('latent_killer_{}'.format(k.lower()))) for k in m.killers])
 
-    def monsterToOtherInfoEmbed(self, m: "MonsterModel"):
-        embed = self.monsterToBaseEmbed(m)
+    def make_otherinfo_embed(self, m: "MonsterModel"):
+        embed = self.make_base_embed(m)
         # Clear the thumbnail, takes up too much space
         embed.set_thumbnail(url='')
 
@@ -466,8 +462,8 @@ class IdMenu(object):
 
         return embed
 
-    def monsterToLinksEmbed(self, m: "MonsterModel"):
-        embed = self.monsterToBaseEmbed(m)
+    def make_links_embed(self, m: "MonsterModel"):
+        embed = self.make_base_embed(m)
         embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
             YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
             SKYOZORA_TEMPLATE.format(m.monster_no_jp),
@@ -475,14 +471,14 @@ class IdMenu(object):
             ILMINA_TEMPLATE.format(m.monster_no_jp))
         embed.set_footer(text='')
 
-    def monstersToLssEmbed(self, m: "MonsterModel"):
+    def make_lssingle_embed(self, m: "MonsterModel"):
         multiplier_text = createSingleMultiplierText(m.leader_skill)
 
         embed = discord.Embed()
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
-            self.monsterToHeader(m, link=True),
+            self.monster_header(m, link=True),
             m.leader_skill.desc if m.leader_skill else 'None')
         embed.description = description
 
