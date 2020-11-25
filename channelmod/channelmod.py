@@ -77,7 +77,7 @@ class ChannelMod(commands.Cog):
         """Opt in a channel to multi-edit mode."""
         if channel is None:
             channel = ctx.channel
-        await self.config.channel(channel).multiedit.set(multiedit)
+        await self.config.channel(channel).multiedit.set(enable)
         await ctx.tick()
 
     @channelmod.command()
