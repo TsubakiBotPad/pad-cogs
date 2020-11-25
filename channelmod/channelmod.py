@@ -368,7 +368,7 @@ class ChannelMod(commands.Cog):
                 logger.exception('Failed to mirror message edit from {} to {}:'.format(channel.id, dest_channel_id))
 
     def makeheader(self, message, author=None):
-        return 'Posted by **{}** in *{} - #{}*:\n{}'.format(message.author.name if author is None else author,
+        return 'Posted by **{}** in *{} - #{}*:\n{}'.format(message.author.name if author is None else author.name,
                                                             message.guild.name,
                                                             message.channel.name,
                                                             message.jump_url)
