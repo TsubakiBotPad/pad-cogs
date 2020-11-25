@@ -352,19 +352,6 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id3(self, ctx, *, query: str):
-        """Monster info (main tab)"""
-        await self._do_id3(ctx, query)
-
-    async def _do_id3(self, ctx, query: str):
-        m = await self.findMonster3(query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
-            await ctx.send("whoops")
-
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
@@ -897,28 +884,6 @@ class PadInfo(commands.Cog):
         else:
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster2(query)
-
-    async def findMonster3(self, query):
-        return await self._findMonster3(query)
-
-    async def _findMonster3(self, query):
-        DGCOG = self.bot.get_cog("Dadguide")
-        if DGCOG is None:
-            raise ValueError("Dadguide cog is not loaded")
-
-        query = rmdiacritics(query).split()
-        monstergen = DGCOG.database.get_all_monsters()
-        for c, token in enumerate(query):
-            try:
-                filt = prefix_to_filter(token)
-            except:
-                print(token)
-                raise
-            if filt is None:
-                monster_name = " ".join(query[c:])
-                break
-            monstergen = filter(filt, monstergen)
-        return max(monstergen, key=lambda x: (not x.is_equip, x.rarity, x.monster_no_na))
 
 
 class PadInfoSettings(CogSettings):
