@@ -68,7 +68,7 @@ COLORS = [
     'wood',
     'light',
     'dark',
-    'null',
+    'nil',
 ]
 
 TYPES = [
