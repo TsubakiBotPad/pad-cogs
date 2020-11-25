@@ -247,12 +247,6 @@ class ChannelMod(commands.Cog):
         attachment_bytes = None
         filename = None
 
-        if await self.config.channel(message.channel).multiedit():
-            await message.delete()
-            idmess = await message.channel.send("Pending...")
-            message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
-            await idmess.edit(content=str(message.id))
-
         if message.attachments:
             # If we know we're copying a message and that message has an attachment,
             # pre download it and reuse it for every upload.
@@ -261,6 +255,13 @@ class ChannelMod(commands.Cog):
                 url = attachment.url
                 filename = attachment.filename
                 attachment_bytes = BytesIO(await attachment.read())
+
+        if await self.config.channel(message.channel).multiedit():
+            await message.delete()
+            idmess = await message.channel.send("Pending...")
+            message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
+            await idmess.edit(content=str(message.id))
+
 
         for dest_channel_id in mirrored_channels:
             dest_channel = self.bot.get_channel(dest_channel_id)
