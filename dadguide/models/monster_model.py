@@ -51,8 +51,8 @@ class MonsterModel(BaseModel):
         self.in_pem = m['in_pem']
         self.in_mpshop = m['buy_mp'] is not None
         self.buy_mp = m['buy_mp']
-        self.sell_gold= m['sell_gold']
-        self.sell_mp=m['sell_mp']
+        self.sell_gold = m['sell_gold']
+        self.sell_mp = m['sell_mp']
         self.reg_date = m['reg_date']
         self.on_jp = m['on_jp']
         self.on_na = m['on_na']
@@ -120,7 +120,8 @@ class MonsterModel(BaseModel):
         s_min = float(self.stat_values[key]['min'])
         s_max = float(self.stat_values[key]['max'])
         if self.level > 1:
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** self.stat_values[key]['scale']
+            scale = self.stat_values[key]['scale']
+            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** scale
         else:
             s_val = s_min
         if lv > 99:

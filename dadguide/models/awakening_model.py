@@ -6,6 +6,7 @@ class AwakeningModel(BaseModel):
     """
     This class represents an awakening belonging to a monster, in contrast to AwokenSkillModel, which represents an "abstract" awoken skill.
     """
+
     def __init__(self, awoken_skill_model: AwokenSkillModel = None, **kwargs):
         self.awakening_id = kwargs['awakening_id']
         self.monster_id = kwargs['monster_id']

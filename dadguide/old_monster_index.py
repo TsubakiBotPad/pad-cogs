@@ -79,7 +79,6 @@ class MonsterIndex(tsutils.aobject):
             for named_monster in named_evolution_tree:
                 named_monster.set_evolution_tree(named_evolution_tree)
 
-
         # Sort the NamedMonsters into the opposite order we want to accept their nicknames in
         # This order is:
         #  1) High priority first
@@ -538,7 +537,8 @@ class NamedMonsterGroup(object):
 
 
 class NamedMonster(object):
-    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set, series: SeriesModel):
+    def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set,
+                 series: SeriesModel):
 
         self.evolution_tree = None
 
