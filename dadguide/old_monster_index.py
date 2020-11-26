@@ -85,9 +85,9 @@ class MonsterIndex(tsutils.aobject):
         #  2) Larger group sizes
         #  3) Minimum ID size in the group
         #  4) Monsters with higher ID values
-        def named_monsters_sort(nm: NamedMonster):
-            return (not nm.is_low_priority, nm.group_size, -1 *
-                    nm.base_monster_no_na, nm.monster_no_na)
+        def named_monsters_sort(named_mon: NamedMonster):
+            return (not named_mon.is_low_priority, named_mon.group_size, -1 *
+                    named_mon.base_monster_no_na, named_mon.monster_no_na)
 
         named_monsters.sort(key=named_monsters_sort)
 
@@ -254,14 +254,14 @@ class MonsterIndex(tsutils.aobject):
                 matches.add(
                     find_first(lambda mo: m.base_monster_no == mo.monster_id, self.all_entries.values()))
         if len(matches):
-            return self.pickBestMonster(matches), None, "Base ID match, max of 1".format()
+            return self.pick_best_monster(matches), None, "Base ID match, max of 1".format()
 
         # prefix search for nicknames, space-preceeded, take max id
         for nickname, m in self.all_entries.items():
             if nickname.startswith(query + ' '):
                 matches.add(m)
         if len(matches):
-            return self.pickBestMonster(matches), None, "Space nickname prefix, max of {}".format(len(matches))
+            return self.pick_best_monster(matches), None, "Space nickname prefix, max of {}".format(len(matches))
 
         # prefix search for nicknames, take max id
         for nickname, m in self.all_entries.items():
@@ -269,15 +269,15 @@ class MonsterIndex(tsutils.aobject):
                 matches.add(m)
         if len(matches):
             all_names = ",".join(map(lambda x: x.name_en, matches))
-            return self.pickBestMonster(matches), None, "Nickname prefix, max of {}, matches=({})".format(
+            return self.pick_best_monster(matches), None, "Nickname prefix, max of {}, matches=({})".format(
                 len(matches), all_names)
 
         # prefix search for full name, take max id
         for nickname, m in self.all_entries.items():
-            if (m.name_en.lower().startswith(query) or m.name_ja.lower().startswith(query)):
+            if m.name_en.lower().startswith(query) or m.name_ja.lower().startswith(query):
                 matches.add(m)
         if len(matches):
-            return self.pickBestMonster(matches), None, "Full name, max of {}".format(len(matches))
+            return self.pick_best_monster(matches), None, "Full name, max of {}".format(len(matches))
 
         # for nicknames with 2 names, prefix search 2nd word, take max id
         if query in self.two_word_entries:
@@ -287,10 +287,10 @@ class MonsterIndex(tsutils.aobject):
 
         # full name contains on nickname, take max id
         for nickname, m in self.all_entries.items():
-            if (query in m.name_en.lower() or query in m.name_ja.lower()):
+            if query in m.name_en.lower() or query in m.name_ja.lower():
                 matches.add(m)
         if len(matches):
-            return self.pickBestMonster(matches), None, 'Nickname contains nickname match ({})'.format(
+            return self.pick_best_monster(matches), None, 'Nickname contains nickname match ({})'.format(
                 len(matches))
 
         # No decent matches. Try near hits on nickname instead
@@ -313,7 +313,7 @@ class MonsterIndex(tsutils.aobject):
                             all(map(lambda x: x in m.name_ja.lower(), query.split()))):
                 matches.add(m)
         if len(matches):
-            return self.pickBestMonster(matches), None, 'All word match on full name, max of {}'.format(
+            return self.pick_best_monster(matches), None, 'All word match on full name, max of {}'.format(
                 len(matches))
 
         # couldn't find anything
@@ -405,7 +405,8 @@ class MonsterIndex(tsutils.aobject):
             return matches.pick_best_monster(), None, None
         return None, "Could not find a match for: " + query, None
 
-    def pickBestMonster(self, named_monster_list):
+    @staticmethod
+    def pick_best_monster(named_monster_list):
         return max(named_monster_list, key=lambda x: (not x.is_low_priority, x.rarity, x.monster_no_na))
 
 
@@ -467,13 +468,14 @@ class NamedMonsterGroup(object):
         }
 
         self.computed_basename = self._compute_group_basename(evolution_tree)
-        self.computed_basenames = set([self.computed_basename])
+        self.computed_basenames = {self.computed_basename}
         if '-' in self.computed_basename:
             self.computed_basenames.add(self.computed_basename.replace('-', ' '))
 
         self.basenames = basename_overrides or self.computed_basenames
 
-    def _compute_monster_basename(self, m: MonsterModel):
+    @staticmethod
+    def _compute_monster_basename(m: MonsterModel):
         basename = m.name_en.lower()
         if ',' in basename:
             name_parts = basename.split(',')
@@ -516,7 +518,8 @@ class NamedMonsterGroup(object):
         entries = [[count_id[0], -1 * count_id[1], bn] for bn, count_id in basename_to_info.items()]
         return max(entries)[2]
 
-    def _is_low_priority_monster(self, m: MonsterModel):
+    @staticmethod
+    def _is_low_priority_monster(m: MonsterModel):
         lp_types = [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
         lp_substrings = ['tamadra']
         lp_min_rarity = 2
@@ -529,7 +532,8 @@ class NamedMonsterGroup(object):
         failed_equip = m.is_equip
         return failed_type or failed_ss or failed_rarity or failed_chibi or failed_equip
 
-    def _is_low_priority_group(self, mg: list):
+    @staticmethod
+    def _is_low_priority_group(mg: list):
         lp_grp_min_rarity = 5
         max_rarity = max(m.rarity for m in mg)
         failed_max_rarity = max_rarity < lp_grp_min_rarity
