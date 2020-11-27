@@ -374,14 +374,14 @@ class IdMenu(object):
         active_body = 'None'
         active_skill = m.active_skill
         if active_skill:
-            active_header = 'Active Skill ({} -> {})'.format(active_skill.turn_max,
+            active_header = '**Active Skill** ({} -> {})'.format(active_skill.turn_max,
                                                              active_skill.turn_min)
             active_body = active_skill.desc
         embed.add_field(name=active_header, value=active_body, inline=False)
 
         leader_skill = m.leader_skill
         ls_row = m.leader_skill.desc if leader_skill else 'None'
-        ls_header = 'Leader Skill'
+        ls_header = '**Leader Skill**'
         if leader_skill:
             multiplier_text = createMultiplierText(leader_skill)
             ls_header += " {}".format(multiplier_text)
