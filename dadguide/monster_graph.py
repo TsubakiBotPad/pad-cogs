@@ -90,6 +90,7 @@ FROM
   JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
 """
 
+
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
@@ -117,10 +118,10 @@ class MonsterGraph(object):
         mtoegg = defaultdict(lambda: {'pem': False, 'rem': False})
         for e in ems:
             data = json.loads(e.contents)
-            type = 'pem' if e.type == "PEM" else 'rem'
+            e_type = 'pem' if e.type == "PEM" else 'rem'
             for m in data:
-                id = int(m[1:-1]) # Remove parentheses
-                mtoegg[id][type] = True
+                idx = int(m[1:-1])  # Remove parentheses
+                mtoegg[idx][e_type] = True
 
         for m in ms:
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
@@ -209,7 +210,7 @@ class MonsterGraph(object):
                                    latent_slots=m.latent_slots,
                                    has_animation=m.has_animation == 1,
                                    has_hqimage=m.has_hqimage == 1,
-                                  )
+                                   )
 
             self.graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:

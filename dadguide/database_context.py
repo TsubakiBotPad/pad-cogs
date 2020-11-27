@@ -7,7 +7,6 @@ from .monster_graph import MonsterGraph
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.dungeon_model import DungeonModel
 
-
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,
   dungeons.name_ja AS d_name_ja,
