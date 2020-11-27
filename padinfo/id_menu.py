@@ -370,21 +370,21 @@ class IdMenu(object):
             stats_row_2 += '\n**Fodder EXP** {:,}'.format(m.fodder_exp)
         embed.add_field(name=stats_row_1, value=stats_row_2)
 
-        active_header = 'Active Skill'
+        active_header = '**Active Skill**'
         active_body = 'None'
         active_skill = m.active_skill
         if active_skill:
-            active_header = 'Active Skill ({} -> {})'.format(active_skill.turn_max,
+            active_header = '**Active Skill ({} -> {})**'.format(active_skill.turn_max,
                                                              active_skill.turn_min)
             active_body = active_skill.desc
         embed.add_field(name=active_header, value=active_body, inline=False)
 
         leader_skill = m.leader_skill
         ls_row = m.leader_skill.desc if leader_skill else 'None'
-        ls_header = 'Leader Skill'
+        ls_header = '**Leader Skill**'
         if leader_skill:
             multiplier_text = createMultiplierText(leader_skill)
-            ls_header += " {}".format(multiplier_text)
+            ls_header += " **{}**".format(multiplier_text)
         embed.add_field(name=ls_header, value=ls_row, inline=False)
 
         evos_header = "Alternate Evos"
