@@ -107,7 +107,8 @@ class ChannelMod(commands.Cog):
                 channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
         msg += '\n\n* indicates multi-edit'
-        await ctx.send(box(msg))
+        for page in pagify(msg):
+            await ctx.send(box(page))
 
 
     @channelmod.command()
