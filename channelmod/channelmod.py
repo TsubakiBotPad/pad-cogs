@@ -453,9 +453,9 @@ class ChannelMod(commands.Cog):
     @commands.command(aliases=['medit'])
     @checks.mod_or_permissions(manage_messages=True)
     async def mirroredit(self, ctx, message, *, content):
-        """Given a channel and an ID for a message printed in that channel, replaces it.
-            To find a message ID, enable developer mode in Discord settings and
-            click the ... on a message.
+        """Given a message ID from the mirroredit-configured channel, replaces it.
+        This is a TEMPORARY command until the alias command is fixed to respect newlines.
+        At that point, we will just use aliases instead of configuring channel IDs here.
         """
         try:
             message = await commands.MessageConverter().convert(ctx, message)
