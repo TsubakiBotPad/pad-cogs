@@ -435,18 +435,14 @@ class ChannelMod(commands.Cog):
     @channelmod.command()
     @checks.is_owner()
     async def setmirroreditchannel(self, ctx, channelid):
-        """
-        Sets the mirroredit_target for the current channel to `channelid`
-        """
+        """Sets the mirroredit_target for the current channel to `channelid`"""
         await self.config.channel(ctx.channel).mirroredit_target.set(channelid)
         await ctx.tick()
 
     @channelmod.command()
     @checks.is_owner()
     async def rmmirroreditchannel(self, ctx):
-        """
-        Removes the mirroredit_target for the current channel
-        """
+        """Removes the mirroredit_target for the current channel"""
         await self.config.channel(ctx.channel).mirroredit_target.set(None)
         await ctx.tick()
 
