@@ -309,8 +309,7 @@ class ChannelMod(commands.Cog):
 
     @commands.Cog.listener('on_message_edit')
     async def mirror_msg_edit(self, before, after):
-        if before.content != after.content:
-            await self.mirror_msg_mod(before, new_message_content=after.content)
+        await self.mirror_msg_mod(before, new_message_content=after.content)
 
     @commands.Cog.listener('on_message_delete')
     async def mirror_msg_delete(self, message):
@@ -457,9 +456,6 @@ class ChannelMod(commands.Cog):
             message = await commands.MessageConverter().convert(ctx, message)
         except commands.MessageNotFound as e:
             channel_id = await self.config.channel(ctx.channel).mirroredit_target()
-            if channel_id is None:
-                await ctx.send("Please configure a mirroredit channel here.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
-                return
             channel = self.bot.get_channel(channel_id)
             if channel is None:
                 await ctx.send("Invalid mirroredit channel.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
