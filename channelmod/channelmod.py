@@ -31,6 +31,7 @@ class ChannelMod(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=3747737700)
         self.config.register_channel(multiedit=False)
+        self.config.register_channel(mirroredit_target=None)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG: self.bot.get_cog("GlobalAdmin").register_perm("channelmod")
@@ -431,6 +432,49 @@ class ChannelMod(commands.Cog):
             emojis.extend(guild.emojis)
         message = replace_emoji_names_with_code(emojis, message)
         return fix_emojis_for_server(emojis, message)
+
+    @commands.command()
+    @checks.is_owner()
+    async def setmirroreditchannel(self, ctx, channelid):
+        """
+        Sets the mirroredit_target for the current channel to `channelid`
+        """
+        await self.config.channel(ctx.channel).mirroredit_target.set(channelid)
+        await ctx.tick()
+
+    @commands.command()
+    @checks.is_owner()
+    async def rmmirroreditchannel(self, ctx):
+        """
+        Removes the mirroredit_target for the current channel
+        """
+        await self.config.channel(ctx.channel).mirroredit_target.set(None)
+        await ctx.tick()
+
+    @commands.command(aliases=['medit'])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def mirroredit(self, ctx, message, *, content):
+        """Given a channel and an ID for a message printed in that channel, replaces it.
+            To find a message ID, enable developer mode in Discord settings and
+            click the ... on a message.
+        """
+        try:
+            message = await commands.MessageConverter().convert(ctx, message)
+        except commands.MessageNotFound as e:
+            channel_id = await self.config.channel(ctx.channel).mirroredit_target()
+            if channel_id is None:
+                await ctx.send('Please configure a mirroredit channel here')
+                return
+            channel = self.bot.get_channel(channel_id)
+            try:
+                message = await channel.fetch_message(int(message))
+            except (discord.NotFound, ValueError):
+                raise e
+        if message.author != ctx.me:
+            await ctx.send("I can't edit a message that's not my own")
+            return
+        await message.edit(content=content)
+        await ctx.tick()
 
 
 class ChannelModSettings(CogSettings):
