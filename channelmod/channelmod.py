@@ -30,7 +30,7 @@ class ChannelMod(commands.Cog):
         self.channel_last_spoke = {}
 
         self.config = Config.get_conf(self, identifier=3747737700)
-        self.config.register_channel(multiedit=False)
+        self.config.register_channel(multiedit=False, mirroredit_target=None)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG: self.bot.get_cog("GlobalAdmin").register_perm("channelmod")
@@ -431,6 +431,50 @@ class ChannelMod(commands.Cog):
             emojis.extend(guild.emojis)
         message = replace_emoji_names_with_code(emojis, message)
         return fix_emojis_for_server(emojis, message)
+
+    @channelmod.command()
+    @checks.is_owner()
+    async def setmirroreditchannel(self, ctx, channelid):
+        """Sets the mirroredit_target for the current channel to `channelid`"""
+        await self.config.channel(ctx.channel).mirroredit_target.set(channelid)
+        await ctx.tick()
+
+    @channelmod.command()
+    @checks.is_owner()
+    async def rmmirroreditchannel(self, ctx):
+        """Removes the mirroredit_target for the current channel"""
+        await self.config.channel(ctx.channel).mirroredit_target.set(None)
+        await ctx.tick()
+
+    @commands.command(aliases=['medit'])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def mirroredit(self, ctx, message, *, content):
+        """Given a message ID from the mirroredit-configured channel, replaces it.
+        This is a TEMPORARY command until the alias command is fixed to respect newlines.
+        At that point, we will just use aliases instead of configuring channel IDs here.
+        """
+        try:
+            message = await commands.MessageConverter().convert(ctx, message)
+        except commands.MessageNotFound as e:
+            channel_id = await self.config.channel(ctx.channel).mirroredit_target()
+            if channel_id is None:
+                await ctx.send("Please configure a mirroredit channel here")
+                return
+            channel = self.bot.get_channel(channel_id)
+            try:
+                message = await channel.fetch_message(int(message))
+            except (discord.NotFound, ValueError):
+                raise e
+        if message.author != ctx.me:
+            await ctx.send("I can't edit a message that's not my own")
+            return
+        # Even if permissions change in the target channel in between the bot sending and
+        # editing the message, the bot will still be able to edit the message, so testing
+        # for discord.Forbidden is not actually required here (this is in contrast to
+        # human users lacking an edit button when channels are read-only but they previously)
+        # had sent a message in them. Tested 2020-12-02.
+        await message.edit(content=content)
+        await ctx.tick()
 
 
 class ChannelModSettings(CogSettings):
