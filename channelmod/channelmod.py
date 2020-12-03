@@ -30,8 +30,7 @@ class ChannelMod(commands.Cog):
         self.channel_last_spoke = {}
 
         self.config = Config.get_conf(self, identifier=3747737700)
-        self.config.register_channel(multiedit=False)
-        self.config.register_channel(mirroredit_target=None)
+        self.config.register_channel(multiedit=False, mirroredit_target=None)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG: self.bot.get_cog("GlobalAdmin").register_perm("channelmod")
@@ -433,7 +432,7 @@ class ChannelMod(commands.Cog):
         message = replace_emoji_names_with_code(emojis, message)
         return fix_emojis_for_server(emojis, message)
 
-    @commands.command()
+    @channelmod.command()
     @checks.is_owner()
     async def setmirroreditchannel(self, ctx, channelid):
         """
@@ -442,7 +441,7 @@ class ChannelMod(commands.Cog):
         await self.config.channel(ctx.channel).mirroredit_target.set(channelid)
         await ctx.tick()
 
-    @commands.command()
+    @channelmod.command()
     @checks.is_owner()
     async def rmmirroreditchannel(self, ctx):
         """
@@ -463,7 +462,7 @@ class ChannelMod(commands.Cog):
         except commands.MessageNotFound as e:
             channel_id = await self.config.channel(ctx.channel).mirroredit_target()
             if channel_id is None:
-                await ctx.send('Please configure a mirroredit channel here')
+                await ctx.send("Please configure a mirroredit channel here")
                 return
             channel = self.bot.get_channel(channel_id)
             try:
