@@ -472,6 +472,11 @@ class ChannelMod(commands.Cog):
         if message.author != ctx.me:
             await ctx.send("I can't edit a message that's not my own")
             return
+        # Even if permissions change in the target channel in between the bot sending and
+        # editing the message, the bot will still be able to edit the message, so testing
+        # for discord.Forbidden is not actually required here (this is in contrast to
+        # human users lacking an edit button when channels are read-only but they previously)
+        # had sent a message in them. Tested 2020-12-02.
         await message.edit(content=content)
         await ctx.tick()
 
