@@ -317,15 +317,15 @@ class ChannelMod(commands.Cog):
 
     @commands.Cog.listener('on_raw_reaction_add')
     async def mirror_reaction_add(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), new_message_reaction=payload.emoji)
 
     @commands.Cog.listener('on_raw_reaction_remove')
     async def mirror_reaction_remove(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), delete_message_reaction=payload.emoji)
 
