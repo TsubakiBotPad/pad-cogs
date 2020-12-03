@@ -307,28 +307,27 @@ class ChannelMod(commands.Cog):
         if attachment_bytes:
             attachment_bytes.close()
 
-    @commands.Cog.listener('on_message_edit')
+    @commands.Cog.listener('on_raw_message_edit')
     async def mirror_msg_edit(self, before, after):
-        if before.content != after.content:
-            await self.mirror_msg_mod(before, new_message_content=after.content)
+        await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), new_message_content=payload.data['content'])
 
-    @commands.Cog.listener('on_message_delete')
-    async def mirror_msg_delete(self, message):
-        await self.mirror_msg_mod(message, delete_message_content=True)
+    @commands.Cog.listener('on_raw_message_delete')
+    async def mirror_msg_delete(self, payload):
+        await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), delete_message_content=True)
 
-    @commands.Cog.listener('on_reaction_add')
+    @commands.Cog.listener('on_raw_reaction_add')
     async def mirror_reaction_add(self, reaction, user):
         message = reaction.message
         if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
             return
-        await self.mirror_msg_mod(message, new_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), new_message_reaction=payload.emoji)
 
-    @commands.Cog.listener('on_reaction_remove')
+    @commands.Cog.listener('on_raw_reaction_remove')
     async def mirror_reaction_remove(self, reaction, user):
         message = reaction.message
         if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
             return
-        await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(discord.Object(id=paylod.message_id, channel=bot.get_channel(payload.channel_id)), delete_message_reaction=payload.emoji)
 
     async def mirror_msg_mod(self, message,
                              new_message_content: str = None,
