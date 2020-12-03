@@ -308,7 +308,7 @@ class ChannelMod(commands.Cog):
             attachment_bytes.close()
 
     @commands.Cog.listener('on_raw_message_edit')
-    async def mirror_msg_edit(self, before, after):
+    async def mirror_msg_edit(self, payload):
         await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), new_message_content=payload.data['content'])
 
     @commands.Cog.listener('on_raw_message_delete')
@@ -316,14 +316,14 @@ class ChannelMod(commands.Cog):
         await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), delete_message_content=True)
 
     @commands.Cog.listener('on_raw_reaction_add')
-    async def mirror_reaction_add(self, reaction, user):
+    async def mirror_reaction_add(self, payload):
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), new_message_reaction=payload.emoji)
 
     @commands.Cog.listener('on_raw_reaction_remove')
-    async def mirror_reaction_remove(self, reaction, user):
+    async def mirror_reaction_remove(self, payload):
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
