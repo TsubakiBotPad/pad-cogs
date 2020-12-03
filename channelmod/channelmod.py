@@ -434,9 +434,9 @@ class ChannelMod(commands.Cog):
 
     @channelmod.command()
     @checks.is_owner()
-    async def setmirroreditchannel(self, ctx, channelid):
+    async def setmirroreditchannel(self, ctx, channel: discord.TextChannel):
         """Sets the mirroredit_target for the current channel to `channelid`"""
-        await self.config.channel(ctx.channel).mirroredit_target.set(channelid)
+        await self.config.channel(ctx.channel).mirroredit_target.set(channel.id)
         await ctx.tick()
 
     @channelmod.command()
@@ -458,9 +458,12 @@ class ChannelMod(commands.Cog):
         except commands.MessageNotFound as e:
             channel_id = await self.config.channel(ctx.channel).mirroredit_target()
             if channel_id is None:
-                await ctx.send("Please configure a mirroredit channel here")
+                await ctx.send("Please configure a mirroredit channel here.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
                 return
             channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                await ctx.send("Invalid mirroredit channel.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
+                return
             try:
                 message = await channel.fetch_message(int(message))
             except (discord.NotFound, ValueError):
