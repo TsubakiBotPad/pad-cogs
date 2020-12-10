@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
     from dadguide.models.monster_model import MonsterModel
+    from dadguide.old_monster_index import NamedMonster
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -845,7 +846,7 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    async def _findMonster(self, query, server_filter=ServerFilter.any):
+    async def _findMonster(self, query, server_filter=ServerFilter.any) -> "NamedMonster":
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
