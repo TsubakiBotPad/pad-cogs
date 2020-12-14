@@ -52,6 +52,13 @@ class Server(Enum):
     KR = 2
 
 
+class AwakeningRestrictedLatent(Enum):
+    """Latent awakenings with availability gated by having an awakening"""
+    AbsorbPierce = 606
+    SpinnerClear = 607
+    UnmatchableClear = 608
+
+
 def enum_or_none(enum, value, default=None):
     if value is not None:
         return enum(value)

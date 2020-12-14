@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
     from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.enum_types import AwakeningRestrictedLatent
 
 INFO_PDX_TEMPLATE = 'http://www.puzzledragonx.com/en/monster.asp?n={}'
 
@@ -308,7 +309,7 @@ class IdMenu(object):
         for idx, a in enumerate(m.awakenings):
             as_id = a.awoken_skill_id
             as_name = a.name
-            mapped_awakening = AWAKENING_MAP.get(as_id, as_name)
+            mapped_awakening = AWAKENING_ID_TO_EMOJI_NAME_MAP.get(as_id, as_name)
             mapped_awakening = self.match_emoji(mapped_awakening)
 
             # Wrap superawakenings to the next line
@@ -328,10 +329,10 @@ class IdMenu(object):
 
         if is_transform_base:
 
-            killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots,
+            killers_row = '**Available latents:** [{} slots] {}'.format(m.latent_slots,
                                                                         self.get_killers_text(m))
         else:
-            killers_row = '**Avail. killers (pre-transform):** [{} slots] {}'.format(
+            killers_row = '**Avail. latents (pre-xform):** [{} slots] {}'.format(
                 transform_base.latent_slots,
                 self.get_killers_text(transform_base))
 
@@ -399,9 +400,28 @@ class IdMenu(object):
         return embed
 
     def get_killers_text(self, m: "MonsterModel"):
+        return_text = ''
         if 'Any' in m.killers:
-            return 'Any'
-        return ' '.join([str(self.match_emoji('latent_killer_{}'.format(k.lower()))) for k in m.killers])
+            return_text += 'Any killer'
+            if m.awakening_restricted_latents:
+                return_text += ', '
+        else:
+            return_text += ' '.join([self.killer_latent_emoji(k) for k in m.killers])
+            if m.awakening_restricted_latents:
+                return_text += ' '
+        return_text += self.get_awakening_restricted_latents_text(m)
+        return return_text
+
+    def get_awakening_restricted_latents_text(self, m: "MonsterModel"):
+        if not m.awakening_restricted_latents:
+            return ''
+        return ' ' + ' '.join([self.awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
+
+    def killer_latent_emoji(self, latent: str):
+        return str(self.match_emoji('latent_killer_{}'.format(latent.lower())))
+
+    def awakening_restricted_latent_emoji(self, latent: "AwakeningRestrictedLatent"):
+        return str(self.match_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
 
     def make_otherinfo_embed(self, m: "MonsterModel"):
         embed = self.make_base_embed(m)
@@ -486,7 +506,7 @@ class IdMenu(object):
         return embed
 
 
-AWAKENING_MAP = {
+AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     1: 'boost_hp',
     2: 'boost_atk',
     3: 'boost_rcv',
@@ -559,4 +579,11 @@ AWAKENING_MAP = {
     70: 'res_poison_super',
     71: 'misc_jammerboost',
     72: 'misc_poisonboost',
+}
+
+
+AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
+    606: 'absorb_pierce',
+    607: 'spinner_clear',
+    608: 'unmatchable_clear',
 }
