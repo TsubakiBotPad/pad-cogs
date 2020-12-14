@@ -1,6 +1,7 @@
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType
+from .enum_types import AwakeningRestrictedLatent
 from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
 from .leader_skill_model import LeaderSkillModel
@@ -111,6 +112,22 @@ class MonsterModel(BaseModel):
         for t in self.types:
             killers.update(type_to_killers_map.get(t, []))
         return sorted(killers)
+
+    @property
+    def awakening_restricted_latents(self):
+        monster_awakening_to_allowed_latent_map = [
+            {27: AwakeningRestrictedLatent.UnmatchableClear},  # TPA
+            {62: AwakeningRestrictedLatent.AbsorbPierce},  # Combo orb
+            {20: AwakeningRestrictedLatent.SpinnerClear},  # Bind clear
+        ]
+        latents = []
+        for row in monster_awakening_to_allowed_latent_map:
+            # iterate over one thing
+            for awakening in row.keys():
+                if any([x.awoken_skill_id == awakening and not x.is_super for x in self.awakenings]):
+                    latents.append(row[awakening])
+
+        return latents
 
     @property
     def history_us(self):
