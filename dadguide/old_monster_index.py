@@ -62,7 +62,8 @@ class MonsterIndex(tsutils.aobject):
         named_monsters = []
         async for base_mon in AsyncIter(base_monster_ids):
             base_id = base_mon.monster_id
-            series = monster_database.graph.get_monster(base_id).series
+            base_monster = monster_database.graph.get_monster(base_id)
+            series = base_monster.series
             group_basename_overrides = basename_overrides.get(base_id, [])
             evolution_tree = [monster_database.graph.get_monster(m) for m in
                               monster_database.get_evolution_tree_ids(base_id)]
@@ -73,7 +74,13 @@ class MonsterIndex(tsutils.aobject):
                     continue
                 prefixes = self.compute_prefixes(monster, evolution_tree)
                 extra_nicknames = monster_id_to_nicknames[monster.monster_id]
-                named_monster = NamedMonster(monster, named_mg, prefixes, extra_nicknames, series)
+
+                # The query mis-handles transforms so we have to fetch base monsters
+                # from the graph properly ourselves instead of just listening to whatever
+                # the query says the base monster is above
+                named_monster = NamedMonster(
+                    monster, named_mg, prefixes, extra_nicknames, series,
+                    base_monster=monster_database.graph.get_base_monster(monster))
                 named_monsters.append(named_monster)
                 named_evolution_tree.append(named_monster)
             for named_monster in named_evolution_tree:
@@ -542,7 +549,7 @@ class NamedMonsterGroup(object):
 
 class NamedMonster(object):
     def __init__(self, monster: MonsterModel, monster_group: NamedMonsterGroup, prefixes: set, extra_nicknames: set,
-                 series: SeriesModel):
+                 series: SeriesModel, base_monster: MonsterModel = None):
 
         self.evolution_tree = None
 
@@ -552,8 +559,8 @@ class NamedMonster(object):
         self.monster_no_jp = monster.monster_no_jp
 
         # ID of the root of the tree for this monster
-        self.base_monster_no = monster_group.base_monster_no
-        self.base_monster_no_na = monster_group.base_monster_no_na
+        self.base_monster_no = base_monster.monster_id
+        self.base_monster_no_na = base_monster.monster_no_na
 
         # This stuff is important for nickname generation
         self.group_basenames = monster_group.basenames

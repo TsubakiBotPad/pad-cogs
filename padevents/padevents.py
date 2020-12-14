@@ -153,7 +153,9 @@ class PadEvents(commands.Cog):
                             if e.server == gr['server']:
                                 try:
                                     channel = self.bot.get_channel(int(gr['channel_id']))
-
+                                    if channel is None:
+                                        continue
+                                        
                                     role_name = '{}_group_{}'.format(e.server, e.groupLongName())
                                     role = channel.guild.get_role(role_name)
                                     if role and role.mentionable:

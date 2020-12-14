@@ -11,7 +11,7 @@ from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline, pagify, box
 from tsutils import CogSettings, auth_check, replace_emoji_names_with_code, fix_emojis_for_server
 
-logger = logging.getLogger('red.misc-cogs.channelmod')
+logger = logging.getLogger('red.misc-cogs.channelmirror')
 
 # Three hour cooldown
 ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
@@ -20,20 +20,20 @@ frMESSAGE_LINK = r'(https://discordapp\.com/channels/{0.guild.id}/{0.id}/(\d+)/?
 MESSAGE_LINK = 'https://discordapp.com/channels/{0.guild.id}/{0.channel.id}/{0.id}'
 
 
-class ChannelMod(commands.Cog):
-    """Channel moderation tools."""
+class ChannelMirror(commands.Cog):
+    """Channel mirroring tools."""
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.settings = ChannelModSettings("channelmod")
+        self.settings = ChannelMirrorSettings("channelmirror")
         self.channel_last_spoke = {}
 
         self.config = Config.get_conf(self, identifier=3747737700)
-        self.config.register_channel(multiedit=False, mirroredit_target=None)
+        self.config.register_channel(multiedit=False, mirroredit_target=None, nodeletion=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
-        if GACOG: self.bot.get_cog("GlobalAdmin").register_perm("channelmod")
+        if GACOG: GACOG.register_perm("channelmirror")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -47,13 +47,13 @@ class ChannelMod(commands.Cog):
         """
         return
 
-    @commands.group()
-    async def channelmod(self, ctx):
-        """Manage channel moderation settings"""
+    @commands.group(aliases=['channelmod'])
+    async def channelmirror(self, ctx):
+        """Manage channel mirroring settings"""
 
-    @channelmod.command()
+    @channelmirror.command(aliases=['addmirror'])
     @checks.is_owner()
-    async def addmirror(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
+    async def add(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Set mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
@@ -61,9 +61,9 @@ class ChannelMod(commands.Cog):
         self.settings.add_mirrored_channel(source_channel_id, dest_channel_id)
         await ctx.tick()
 
-    @channelmod.command()
+    @channelmirror.command(aliases=['rmmirror', 'rm', 'delete'])
     @checks.is_owner()
-    async def rmmirror(self, ctx, source_channel_id: int, dest_channel_id: int):
+    async def remove(self, ctx, source_channel_id: int, dest_channel_id: int):
         """Remove mirroring between two channels."""
         success = self.settings.rm_mirrored_channel(source_channel_id, dest_channel_id)
         if not success:
@@ -71,18 +71,27 @@ class ChannelMod(commands.Cog):
             return
         await ctx.tick()
 
-    @channelmod.command()
+    @channelmirror.command()
     @checks.is_owner()
-    async def multiedit(self, ctx, channel: Optional[discord.TextChannel], enable: bool):
+    async def multiedit(self, ctx, channel: Optional[discord.TextChannel], enable: bool = True):
         """Opt in a channel to multi-edit mode."""
         if channel is None:
             channel = ctx.channel
         await self.config.channel(channel).multiedit.set(enable)
         await ctx.tick()
 
-    @channelmod.command()
+    @channelmirror.command()
     @checks.is_owner()
-    async def mirrorconfig(self, ctx, server_id: int = None):
+    async def nodeletion(self, ctx, channel: Optional[discord.TextChannel], enable: bool = True):
+        """Opt in a channel to no-deletion mode."""
+        if channel is None:
+            channel = ctx.channel
+        await self.config.channel(channel).nodeletion.set(enable)
+        await ctx.tick()
+
+    @channelmirror.command(aliases=['mirrorconfig'])
+    @checks.is_owner()
+    async def config(self, ctx, server_id: int = None):
         """List mirror config."""
         mirrored_channels = self.settings.mirrored_channels()
         gchs = set()
@@ -111,9 +120,9 @@ class ChannelMod(commands.Cog):
             await ctx.send(box(page))
 
 
-    @channelmod.command()
+    @channelmirror.command(aliases=['guildmirrorconfig'])
     @checks.is_owner()
-    async def guildmirrorconfig(self, ctx, server_id: int):
+    async def guildconfig(self, ctx, server_id: int):
         """List mirror config for a guild."""
         mirrored_channels = self.settings.mirrored_channels()
         gchs = set()
@@ -158,7 +167,7 @@ class ChannelMod(commands.Cog):
         await ctx.send(inline('* indicates multi-edit'))
 
 
-    @channelmod.command()
+    @channelmirror.command()
     async def countreactions(self, ctx, message: discord.Message):
         """Count reactions on a message and all of its mirrors.
 
@@ -191,8 +200,8 @@ class ChannelMod(commands.Cog):
             o += "{{}}: {{:{}}}\n".format(maxlen).format(r, c)
         await ctx.send(o)
 
-    @channelmod.command()
-    @auth_check('channelmod')
+    @channelmirror.command()
+    @auth_check('channelmirror')
     async def catchup(self, ctx, channel, from_message, to_message=None):
         """Catch up a mirror for all messages after from_message (inclusive)"""
         if channel.isdigit():
@@ -307,18 +316,19 @@ class ChannelMod(commands.Cog):
         if attachment_bytes:
             attachment_bytes.close()
 
-    @commands.Cog.listener('on_raw_message_edit')
-    async def mirror_msg_edit(self, payload):
-        await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), new_message_content=payload.data['content'])
+    @commands.Cog.listener('on_message_edit')
+    async def mirror_msg_edit(self, before, after):
+        await self.mirror_msg_mod(before, new_message_content=after.content)
 
-    @commands.Cog.listener('on_raw_message_delete')
-    async def mirror_msg_delete(self, payload):
-        await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), delete_message_content=True)
+    @commands.Cog.listener('on_message_delete')
+    async def mirror_msg_delete(self, message):
+        if not await self.config.channel(message.channel).nodeletion():
+            await self.mirror_msg_mod(message, delete_message_content=True)
 
-    @commands.Cog.listener('on_raw_reaction_add')
-    async def mirror_reaction_add(self, payload):
-        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
+    @commands.Cog.listener('on_reaction_add')
+    async def mirror_reaction_add(self, reaction, user):
+        message = reaction.message
+        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(discord.Object(id=payload.message_id, channel=bot.get_channel(payload.channel_id)), new_message_reaction=payload.emoji)
 
@@ -431,16 +441,16 @@ class ChannelMod(commands.Cog):
         message = replace_emoji_names_with_code(emojis, message)
         return fix_emojis_for_server(emojis, message)
 
-    @channelmod.command()
+    @channelmirror.command(aliases=['setmirroreditchannel'])
     @checks.is_owner()
-    async def setmirroreditchannel(self, ctx, channel: discord.TextChannel):
-        """Sets the mirroredit_target for the current channel to `channelid`"""
+    async def seteditchannel(self, ctx, channel: discord.TextChannel):
+        """Sets the edit_target for the current channel to `channelid`"""
         await self.config.channel(ctx.channel).mirroredit_target.set(channel.id)
         await ctx.tick()
 
-    @channelmod.command()
+    @channelmirror.command(aliases=['rmmirroreditchannel'])
     @checks.is_owner()
-    async def rmmirroreditchannel(self, ctx):
+    async def rmeditchannel(self, ctx):
         """Removes the mirroredit_target for the current channel"""
         await self.config.channel(ctx.channel).mirroredit_target.set(None)
         await ctx.tick()
@@ -456,9 +466,6 @@ class ChannelMod(commands.Cog):
             message = await commands.MessageConverter().convert(ctx, message)
         except commands.MessageNotFound as e:
             channel_id = await self.config.channel(ctx.channel).mirroredit_target()
-            if channel_id is None:
-                await ctx.send("Please configure a mirroredit channel here.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
-                return
             channel = self.bot.get_channel(channel_id)
             if channel is None:
                 await ctx.send("Invalid mirroredit channel.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
@@ -479,7 +486,7 @@ class ChannelMod(commands.Cog):
         await ctx.tick()
 
 
-class ChannelModSettings(CogSettings):
+class ChannelMirrorSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'servers': {},
