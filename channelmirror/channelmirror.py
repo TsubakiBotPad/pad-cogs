@@ -26,7 +26,7 @@ class ChannelMirror(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.settings = ChannelMirrorSettings("channelmod")
+        self.settings = ChannelMirrorSettings("channelmirror")
         self.channel_last_spoke = {}
 
         self.config = Config.get_conf(self, identifier=3747737700)
