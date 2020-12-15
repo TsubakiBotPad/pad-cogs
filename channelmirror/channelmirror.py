@@ -1,9 +1,7 @@
-import aiohttp
 import discord
 import logging
 import re
 import time
-import traceback
 from typing import Optional
 from datetime import datetime
 from io import BytesIO
@@ -119,7 +117,6 @@ class ChannelMirror(commands.Cog):
         for page in pagify(msg):
             await ctx.send(box(page))
 
-
     @channelmirror.command(aliases=['guildmirrorconfig'])
     @checks.is_owner()
     async def guildconfig(self, ctx, server_id: int):
@@ -165,7 +162,6 @@ class ChannelMirror(commands.Cog):
             await ctx.send(box(page))
 
         await ctx.send(inline('* indicates multi-edit'))
-
 
     @channelmirror.command()
     async def countreactions(self, ctx, message: discord.Message):
@@ -239,7 +235,6 @@ class ChannelMirror(commands.Cog):
         if (await self.bot.get_context(message)).prefix is not None:
             return
 
-
         channel = message.channel
         mirrored_channels = self.settings.get_mirrored_channels(channel.id)
 
@@ -269,9 +264,9 @@ class ChannelMirror(commands.Cog):
         if await self.config.channel(message.channel).multiedit():
             await message.delete()
             idmess = await message.channel.send("Pending...")
-            message = await message.channel.send(message.content, files=[await a.to_file() for a in message.attachments])
+            message = await message.channel.send(message.content,
+                                                 files=[await a.to_file() for a in message.attachments])
             await idmess.edit(content=str(message.id))
-
 
         for dest_channel_id in mirrored_channels:
             dest_channel = self.bot.get_channel(dest_channel_id)
@@ -316,28 +311,31 @@ class ChannelMirror(commands.Cog):
         if attachment_bytes:
             attachment_bytes.close()
 
-    @commands.Cog.listener('on_message_edit')
-    async def mirror_msg_edit(self, before, after):
-        await self.mirror_msg_mod(before, new_message_content=after.content)
+    @commands.Cog.listener('on_raw_message_edit')
+    async def mirror_msg_edit(self, payload):
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        await self.mirror_msg_mod(message, new_message_content=payload.data['content'])
 
-    @commands.Cog.listener('on_message_delete')
-    async def mirror_msg_delete(self, message):
-        if not await self.config.channel(message.channel).nodeletion():
-            await self.mirror_msg_mod(message, delete_message_content=True)
+    @commands.Cog.listener('on_raw_message_delete')
+    async def mirror_msg_delete(self, payload):
+        if not await self.config.channel(self.bot.get_channel(payload.channel_id)).nodeletion():
+            fmessage = discord.Object(id=payload.message_id)
+            fmessage.channel = self.bot.get_channel(payload.channel_id)
+            await self.mirror_msg_mod(fmessage, delete_message_content=True)
 
-    @commands.Cog.listener('on_reaction_add')
-    async def mirror_reaction_add(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+    @commands.Cog.listener('on_raw_reaction_add')
+    async def mirror_reaction_add(self, payload):
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
-        await self.mirror_msg_mod(message, new_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(message, new_message_reaction=payload.emoji)
 
-    @commands.Cog.listener('on_reaction_remove')
-    async def mirror_reaction_remove(self, reaction, user):
-        message = reaction.message
-        if message.author.id != user.id and not await self.config.channel(message.channel).multiedit():
+    @commands.Cog.listener('on_raw_reaction_remove')
+    async def mirror_reaction_remove(self, payload):
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
-        await self.mirror_msg_mod(message, delete_message_reaction=reaction.emoji)
+        await self.mirror_msg_mod(message, delete_message_reaction=payload.emoji)
 
     async def mirror_msg_mod(self, message,
                              new_message_content: str = None,
@@ -468,7 +466,8 @@ class ChannelMirror(commands.Cog):
             channel_id = await self.config.channel(ctx.channel).mirroredit_target()
             channel = self.bot.get_channel(channel_id)
             if channel is None:
-                await ctx.send("Invalid mirroredit channel.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
+                await ctx.send(
+                    "Invalid mirroredit channel.  Please add one with `{0.prefix}setmirroreditchannel`".format(ctx))
                 return
             try:
                 message = await channel.fetch_message(int(message))
