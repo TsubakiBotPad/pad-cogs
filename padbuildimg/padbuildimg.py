@@ -80,6 +80,7 @@ MAX_LATENTS = 8
 LATENTS_MAP = {
     # NOT APPLICABLE
     1: 'emp',
+    2: 'nemp',
 
     # ONE SLOT
     101: 'hp',
@@ -124,7 +125,16 @@ LATENTS_MAP = {
     603: 'ls',
     604: 'vdp',
     605: 'attr',
+    606: 'unm',
+    607: 'spn',
+    608: 'abs',
 }
+AWO_RES_LATENT_TO_AWO_MAP = {
+    606: 27,
+    607: 20,
+    608: 62,
+}
+LATENTS_MAP.update({-k: 'n'+LATENTS_MAP[k] for k in AWO_RES_LATENT_TO_AWO_MAP})
 REVERSE_LATENTS_MAP = {v: k for k, v in LATENTS_MAP.items()}
 TYPE_TO_KILLERS_MAP = {
     'God': [207],  # devil
@@ -134,6 +144,7 @@ TYPE_TO_KILLERS_MAP = {
     'Physical': [208, 203],  # machine healer
     'Attacker': [207, 202],  # devil physical
     'Healer': [204, 206],  # dragon attacker
+    'Balance': [201, 202, 203, 204, 205, 206, 207, 208]
 }
 
 AWK_CIRCLE = 'circle'
@@ -376,17 +387,22 @@ class PaDTeamLexer(object):
         return self.lexer
 
 
-def validate_latents(latents, card_types):
+def validate_latents(card_dict, card, ass_card):
+    latents = card_dict['LATENT']
+    card_types = [t.name for t in card.types]
+    awos = {a.awoken_skill_id for a in card.awakenings[:-card.superawakening_count]}
+    if card_dict['SUPER'] and card.superawakening_count:
+        awos.add(card.awakenings[-card.superawakening_count+card_dict['SUPER']-1].awoken_skill_id)
+    if ass_card and ass_card.is_equip:
+        awos |= {a.awoken_skill_id for a in ass_card.awakenings}
     if latents is None:
         return None
-    if card_types is None:
-        return None
-    if 'Balance' in card_types:
-        return latents
     for idx, l in enumerate(latents):
         if 200 < l < 209:
             if not any([l in TYPE_TO_KILLERS_MAP[t] for t in card_types if t is not None]):
                 latents[idx] = None
+        if l in AWO_RES_LATENT_TO_AWO_MAP and AWO_RES_LATENT_TO_AWO_MAP[l] not in awos:
+            latents[idx] = -latents[idx]
     latents = [l for l in latents if l is not None]
     return latents if len(latents) > 0 else None
 
@@ -485,11 +501,15 @@ class PadBuildImageGenerator(object):
                 return []
         self.lexer.input(card_str)
         assist_str = None
+        ass_card = None
         card = None
         repeat = 1
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
+                ass_card, err, debug_info = await self.padinfo_cog.findMonster(tok.value)
+                if ass_card is None:
+                    raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
             elif tok.type == 'REPEAT':
                 repeat = min(tok.value, MAX_LATENTS)
             elif tok.type == 'ID':
@@ -524,8 +544,9 @@ class PadBuildImageGenerator(object):
             return []
         elif card != DELAY_BUFFER:
             result_card['LATENT'] = validate_latents(
-                result_card['LATENT'],
-                [t.name for t in card.types]
+                result_card,
+                card,
+                ass_card
             )
             result_card['LV'] = min(
                 result_card['LV'],
@@ -561,7 +582,8 @@ class PadBuildImageGenerator(object):
             parsed_cards = parsed_cards * repeat
             return parsed_cards
 
-    def combine_latents(self, latents):
+    def combine_latents(self, card):
+        latents = card['LATENT']
         if not latents:
             return False
         if len(latents) > MAX_LATENTS:
@@ -581,6 +603,9 @@ class PadBuildImageGenerator(object):
             elif 600 <= l < 700:
                 six_slot.append(l)
                 six_slot.append(1)
+            elif -700 < l <= -600:
+                six_slot.append(l)
+                six_slot.append(2)
         sorted_latents = []
         if len(one_slot) > len(two_slot):
             sorted_latents.extend(six_slot)
@@ -700,7 +725,7 @@ class PadBuildImageGenerator(object):
                         (x_offset + x * self.params.PORTRAIT_WIDTH,
                          y_offset + y * self.params.PORTRAIT_WIDTH))
                     if has_latents and idx % 2 == 0 and card['LATENT'] is not None:
-                        latents = self.combine_latents(card['LATENT'])
+                        latents = self.combine_latents(card)
                         self.build_img.paste(
                             latents,
                             (x_offset + x * self.params.PORTRAIT_WIDTH,
