@@ -54,9 +54,9 @@ class Server(Enum):
 
 class AwakeningRestrictedLatent(Enum):
     """Latent awakenings with availability gated by having an awakening"""
-    AbsorbPierce = 606
+    UnmatchableClear = 606
     SpinnerClear = 607
-    UnmatchableClear = 608
+    AbsorbPierce = 608
 
 
 def enum_or_none(enum, value, default=None):
