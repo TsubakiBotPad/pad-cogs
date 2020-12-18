@@ -329,10 +329,10 @@ class IdMenu(object):
 
         if is_transform_base:
 
-            killers_row = '**Available latents:** [{} slots] {}'.format(m.latent_slots,
+            killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots,
                                                                         self.get_killers_text(m))
         else:
-            killers_row = '**Avail. latents (pre-xform):** [{} slots] {}'.format(
+            killers_row = '**Avail. killers (pre-xform):** [{} slots] {}'.format(
                 transform_base.latent_slots,
                 self.get_killers_text(transform_base))
 
@@ -376,7 +376,7 @@ class IdMenu(object):
         active_skill = m.active_skill
         if active_skill:
             active_header = '**Active Skill ({} -> {})**'.format(active_skill.turn_max,
-                                                             active_skill.turn_min)
+                                                                 active_skill.turn_min)
             active_body = active_skill.desc
         embed.add_field(name=active_header, value=active_body, inline=False)
 
@@ -402,17 +402,22 @@ class IdMenu(object):
     def get_killers_text(self, m: "MonsterModel"):
         return_text = ''
         if 'Any' in m.killers:
-            return_text += 'Any killer'
+            return_text += 'Any'
             if m.awakening_restricted_latents:
-                return_text += ', '
+                pass
+                # return_text += ', '
         else:
             return_text += ' '.join([self.killer_latent_emoji(k) for k in m.killers])
             if m.awakening_restricted_latents:
-                return_text += ' '
-        return_text += self.get_awakening_restricted_latents_text(m)
+                pass
+                # return_text += ' '
+        # return_text += self.get_awakening_restricted_latents_text(m)
         return return_text
 
     def get_awakening_restricted_latents_text(self, m: "MonsterModel"):
+        """Not currently in use, but potentially could be in the future
+        if more ARLatents are added later
+        """
         if not m.awakening_restricted_latents:
             return ''
         return ' ' + ' '.join([self.awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
