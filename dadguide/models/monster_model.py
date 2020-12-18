@@ -117,8 +117,8 @@ class MonsterModel(BaseModel):
     def awakening_restricted_latents(self):
         monster_awakening_to_allowed_latent_map = [
             {27: AwakeningRestrictedLatent.UnmatchableClear},  # TPA
-            {62: AwakeningRestrictedLatent.AbsorbPierce},  # Combo orb
             {20: AwakeningRestrictedLatent.SpinnerClear},  # Bind clear
+            {62: AwakeningRestrictedLatent.AbsorbPierce},  # Combo orb
         ]
         latents = []
         for row in monster_awakening_to_allowed_latent_map:

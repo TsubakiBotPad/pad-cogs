@@ -583,7 +583,7 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
 
 
 AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
-    606: 'absorb_pierce',
+    606: 'unmatchable_clear',
     607: 'spinner_clear',
-    608: 'unmatchable_clear',
+    608: 'absorb_pierce',
 }
