@@ -716,18 +716,22 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.group(invoke_without_command=True)
-    async def idmode(self, ctx, id_type):
-        """Switch between number mode and evo mode
+    @commands.group()
+    async def idmode(self, ctx):
+        """id settings configuration"""
 
-        [p]idmode number
-        [p]idmode evo"""
-        if id_type in ['evo', 'default']:
+    @idmode.command()
+    async def scroll(self, ctx, value):
+        """Switch between number scroll and evo scroll
+
+        [p]idmode scroll number
+        [p]idmode scroll evo"""
+        if value in ['evo', 'default']:
             if self.settings.setEvoID(ctx.author.id):
                 await ctx.tick()
             else:
                 await ctx.send(inline("You're already using evo mode"))
-        elif id_type in ['number']:
+        elif value in ['number']:
             if self.settings.rmEvoID(ctx.author.id):
                 await ctx.tick()
             else:
