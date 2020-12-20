@@ -59,8 +59,8 @@ class Feedback(commands.Cog):
             await ctx.send(inline("I'm unable to deliver your message. Sorry."))
         else:
             await ctx.send(inline("Your message has been sent."
-                                  " Abusing this feature will result in a blacklist."
-                                  + success_message))
+                                  " Abusing this feature will result in a blacklist.")
+                                  + success_message)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -106,7 +106,7 @@ class Feedback(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                                  (" Join the Tsubaki Server to see any responses.\n"
+                                  ("\nJoin the Tsubaki Server to see any responses.\n"
                                    "{}").format(await self.config.feedback_server()))
 
     @commands.command()
@@ -138,7 +138,8 @@ class Feedback(commands.Cog):
 
     @feedback.command()
     @checks.is_owner()
-    async def setserverinvite(self, ctx, invite):
+    @commands.cooldown(1, 0, commands.BucketType.user)
+    async def setserverinvite(self, ctx, *, invite):
         """Set the blog feedback destination channel."""
         await self.config.feedback_server.set(invite)
         await ctx.tick()
