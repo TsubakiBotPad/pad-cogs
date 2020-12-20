@@ -377,6 +377,9 @@ class PadEvents(commands.Cog):
     async def aep_list(self, ctx):
         """List all autoeventpings"""
         pingroles = await self.config.guild(ctx.guild).pingroles()
+        if len(pingroles) == 0:
+            await ctx.send('You have no auto event pings configured currently!')
+            return
         await ctx.send(box('\n'.join(pingroles)))
 
     @autoeventping.group(name="set")
