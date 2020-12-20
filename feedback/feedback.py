@@ -1,16 +1,20 @@
-import discord
 from io import BytesIO
-from redbot.core import checks, commands, modlog
-from redbot.core.utils.chat_formatting import box, inline, pagify
+
+import discord
+from redbot.core import checks, commands, Config
+from redbot.core.utils.chat_formatting import inline
 from tsutils import CogSettings
 
 
 class Feedback(commands.Cog):
     """Feedback Cog"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = FeedbackSettings("feedback")
+        self.config = Config.get_conf(self, identifier=73308437)
+        self.config.register_global(feedback_server="")
 
         self.sessions = set()
 
@@ -93,7 +97,7 @@ class Feedback(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def feedback(self, ctx, *, message: str):
         """Provide feedback on the bot.
@@ -102,8 +106,8 @@ class Feedback(commands.Cog):
         """
         feedback_channel = self.bot.get_channel(int(self.settings.get_feedback_channel()))
         await self._send_feedback(ctx, message, feedback_channel,
-                                  " Join the Tsubaki Server to see any responses ({0.prefix}tsubakiserver).".format(
-                                      ctx))
+                                  (" Join the Tsubaki Server to see any responses.\n"
+                                   "{}").format(await self.config.feedback_server()))
 
     @commands.command()
     @commands.guild_only()
@@ -130,6 +134,13 @@ class Feedback(commands.Cog):
     async def setblogfeedbackchannel(self, ctx, channel: discord.TextChannel):
         """Set the blog feedback destination channel."""
         self.settings.set_blog_feedback_channel(channel.id)
+        await ctx.tick()
+
+    @feedback.command()
+    @checks.is_owner()
+    async def setserverinvite(self, ctx, invite):
+        """Set the blog feedback destination channel."""
+        await self.config.feedback_server.set(invite)
         await ctx.tick()
 
 
