@@ -1,18 +1,19 @@
-import aiohttp
 import asyncio
 import csv
 import datetime
 import difflib
-import discord
 import json
 import logging
 import os
-import prettytable
 import re
 import time
-import tsutils
-from io import StringIO, BytesIO
 from collections import defaultdict
+from io import StringIO, BytesIO
+
+import aiohttp
+import discord
+import prettytable
+import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
@@ -343,6 +344,10 @@ class PadGlobal(commands.Cog):
                 return
         elif command in self.c_commands:
             op = 'EDITED'
+            if op == 'EDITED' and not await confirm_message(ctx,
+                                                            "Are you sure you want to edit the command {}?".format(
+                                                                command)):
+                return
             ted = self.c_commands[command]
             alias = False
             while ted in self.c_commands:
@@ -587,6 +592,10 @@ class PadGlobal(commands.Cog):
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
 
         op = 'EDITED' if term in self.settings.glossary() else 'ADDED'
+        if op == 'EDITED' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the glossary info for {}?".format(
+                                                            term)):
+            return
         self.settings.addGlossary(term, definition)
         await ctx.send("PAD glossary term successfully {}.".format(op))
 
@@ -667,6 +676,10 @@ class PadGlobal(commands.Cog):
         If you want to use a multiple word boss name, enclose it in quotes."""
         term = term.lower()
         op = 'EDITED' if term in self.settings.boss() else 'ADDED'
+        if op == 'EDITED' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the boss info for {}?".format(
+                                                            term)):
+            return
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
@@ -807,6 +820,10 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         op = 'EDITED' if name in self.settings.which() else 'ADDED'
+        if op == 'EDITED' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the which info for {}?".format(
+                                                            m.name_en)):
+            return
         self.settings.addWhich(name, definition)
         await ctx.send("PAD which info successfully {}.".format(op))
 
@@ -1167,6 +1184,10 @@ class PadGlobal(commands.Cog):
         """Adds a dungeon guide to the [p]guide command"""
         term = term.lower()
         op = 'EDITED' if term in self.settings.dungeonGuide() else 'ADDED'
+        if op == 'EDITED' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the dungeon guide info for {}?".format(
+                                                            term)):
+            return
         self.settings.addDungeonGuide(term, definition)
         await ctx.send("PAD dungeon guide successfully {}.".format(op))
 
@@ -1179,7 +1200,7 @@ class PadGlobal(commands.Cog):
             return
         if not await confirm_message(ctx,
                                      "Are you sure you want to globally remove the dungeonguide data for {}?".format(
-                                             term)):
+                                         term)):
             return
         self.settings.rmDungeonGuide(term)
         await ctx.tick()
@@ -1195,6 +1216,10 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         op = 'EDITED' if name in self.settings.leaderGuide() else 'ADDED'
+        if op == 'EDITED' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the boss info for {}?".format(
+                                                            m.name_en)):
+            return
         self.settings.addLeaderGuide(name, definition)
         await ctx.send("PAD leader guide info successfully {}.".format(op))
 
@@ -1208,7 +1233,7 @@ class PadGlobal(commands.Cog):
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await confirm_message(ctx,
                                      "Are you sure you want to globally remove the leaderguide data for {}?".format(
-                                             m.name_en)):
+                                         m.name_en)):
             return
         name = m.monster_id
 
