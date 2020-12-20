@@ -7,7 +7,7 @@ from ply import lex
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils import tsutils
+from tsutils import timeout_after
 
 logger = logging.getLogger('red.padbot-cogs.padsearch')
 
@@ -55,7 +55,7 @@ Multiple instance filters
 """
 
 
-@tsutils.timeout_after(1)
+@timeout_after(1)
 def filt_timeout(filts, ms):
     for f in filts:
         ms = [m for m in ms if f(m)]
