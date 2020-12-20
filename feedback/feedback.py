@@ -58,9 +58,9 @@ class Feedback(commands.Cog):
         except:
             await ctx.send(inline("I'm unable to deliver your message. Sorry."))
         else:
-            await ctx.send(inline("Your message has been sent."
-                                  " Abusing this feature will result in a blacklist.")
-                                  + success_message)
+            await ctx.send(("Your message has been sent."
+                            " Abusing this feature will result in a blacklist.")
+                           + success_message)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
