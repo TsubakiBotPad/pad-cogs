@@ -97,7 +97,7 @@ class Feedback(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def feedback(self, ctx, *, message: str):
         """Provide feedback on the bot.
@@ -136,9 +136,9 @@ class Feedback(commands.Cog):
         self.settings.set_blog_feedback_channel(channel.id)
         await ctx.tick()
 
-    @commands.command()
+    @feedback.command()
     @checks.is_owner()
-    async def setfeedbackserverinvite(self, ctx, invite):
+    async def setserverinvite(self, ctx, invite):
         """Set the blog feedback destination channel."""
         await self.config.feedback_server.set(invite)
         await ctx.tick()
