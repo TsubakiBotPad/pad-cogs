@@ -584,6 +584,11 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     70: 'res_poison_super',
     71: 'misc_jammerboost',
     72: 'misc_poisonboost',
+    73: 'cc_fire',
+    74: 'cc_water',
+    75: 'cc_wood',
+    76: 'cc_light',
+    77: 'cc_dark',
 }
 
 
