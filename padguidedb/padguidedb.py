@@ -9,7 +9,8 @@ from datetime import datetime
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings, tsutils
+from tsutils import CogSettings
+import tsutils
 
 logger = logging.getLogger('red.padbot-cogs.padguidedb')
 
