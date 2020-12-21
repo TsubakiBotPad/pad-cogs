@@ -344,10 +344,6 @@ class PadGlobal(commands.Cog):
                 return
         elif command in self.c_commands:
             op = 'EDITED'
-            if op == 'EDITED' and not await confirm_message(ctx,
-                                                            "Are you sure you want to edit the command {}?".format(
-                                                                command)):
-                return
             ted = self.c_commands[command]
             alias = False
             while ted in self.c_commands:
@@ -726,7 +722,7 @@ class PadGlobal(commands.Cog):
     async def _resolve_which(self, ctx, term):
 
         db_context = self.bot.get_cog('Dadguide').database
-        db_context: DbContext
+        db_context: "DbContext"
 
         term = term.lower().replace('?', '')
         nm, _, _ = await lookup_named_monster(term)
