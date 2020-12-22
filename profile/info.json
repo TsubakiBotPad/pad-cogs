@@ -17,7 +17,7 @@
   "disabled": false,
   "required_cogs": {},
   "requirements": [
-    "tsutils"
+    "tsutils>=3.0.0"
   ],
   "tags": [
     "PAD"

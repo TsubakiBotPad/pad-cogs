@@ -4,14 +4,9 @@ import re
 from io import BytesIO
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings
+from tsutils import CogSettings, normalize_server_name
 
 logger = logging.getLogger('red.padbot-cogs.profile')
-
-
-def normalizeServer(server):
-    server = server.upper().strip()
-    return 'NA' if server == 'US' else server
 
 
 SUPPORTED_SERVERS = ["NA", "KR", "JP", "EU"]
@@ -112,7 +107,7 @@ class Profile(commands.Cog):
     async def getServer(self, ctx, user_id, server=None):
         if server is None:
             server = self.settings.getDefaultServer(user_id)
-        server = normalizeServer(server)
+        server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send(inline('Unsupported server: ' + server))
             return
@@ -144,7 +139,7 @@ class Profile(commands.Cog):
 
         This server is used to default the idme command if you don't provide a server.
         """
-        server = normalizeServer(server)
+        server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send(inline('Unsupported server: ' + server))
             return
@@ -212,7 +207,7 @@ class Profile(commands.Cog):
             self.settings.clearProfile(user_id)
             await ctx.send(inline('Cleared your profile for all servers'))
         else:
-            server = normalizeServer(server)
+            server = normalize_server_name(server)
             self.settings.clearProfile(user_id, server)
             await ctx.send(inline('Cleared your profile for ' + server))
 
