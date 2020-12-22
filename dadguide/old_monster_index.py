@@ -246,7 +246,7 @@ class MonsterIndex(tsutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_ja = tsutils.containsJa(query)
+        contains_ja = tsutils.contains_ja(query)
         if len(query) < 2 and contains_ja:
             return None, 'Japanese queries must be at least 2 characters', None
         elif len(query) < 4 and not contains_ja:
@@ -347,7 +347,7 @@ class MonsterIndex(tsutils.aobject):
         if query in self.all_entries:
             return self.all_entries[query], None, "Exact nickname"
 
-        contains_ja = tsutils.containsJa(query)
+        contains_ja = tsutils.contains_ja(query)
         if len(query) < 2 and contains_ja:
             return None, 'Japanese queries must be at least 2 characters', None
         elif len(query) < 4 and not contains_ja:

@@ -172,7 +172,7 @@ class MonsterModel(BaseModel):
         adjusted_subname = ''
         for part in subname.split('・'):
             roma_part = romkan.to_roma(part)
-            if part != roma_part and not tsutils.containsJa(roma_part):
+            if part != roma_part and not tsutils.contains_ja(roma_part):
                 adjusted_subname += ' ' + roma_part.strip('-')
         return adjusted_subname.strip()
 

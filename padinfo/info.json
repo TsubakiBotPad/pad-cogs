@@ -20,7 +20,7 @@
     "speech": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [
-    "tsutils>=1.1.0",
+    "tsutils>=3.0.0",
     "prettytable"
   ],
   "tags": [

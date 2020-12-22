@@ -74,7 +74,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
         self.pad_info.settings.log_emoji("start_" + selected_emoji)
 
-    def on_update(self, ctx, selected_emoji):
+    async def on_update(self, ctx, selected_emoji):
         evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evoID:
@@ -124,7 +124,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
         self.selected_emoji = selected_emoji
         self.bot = bot
 
-    def on_update(self, ctx, selected_emoji):
+    async def on_update(self, ctx, selected_emoji):
         index = self.ms.index(self.m)
 
         if selected_emoji == self.pad_info.first_monster_emoji:

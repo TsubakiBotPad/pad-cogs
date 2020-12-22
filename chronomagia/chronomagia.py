@@ -78,7 +78,7 @@ class ChronoMagia(commands.Cog):
         await self.bot.wait_until_ready()
 
         standard_expiry_secs = 2 * 60 * 60
-        summary_text = await tsutils.makeAsyncCachedPlainRequest(
+        summary_text = await tsutils.async_cached_plain_request(
             _data_file('summary.csv'), SUMMARY_SHEET, standard_expiry_secs)
         file_reader = csv.reader(summary_text.splitlines(), delimiter=',')
         next(file_reader, None)  # skip header
