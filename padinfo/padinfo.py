@@ -14,7 +14,7 @@ from enum import Enum
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
-from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, confirm_message
+from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
 from .find_monster import prefix_to_filter
 from .id_menu import IdMenu
@@ -62,9 +62,10 @@ def _data_file(file_name: str) -> str:
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: "MonsterModel" = None,
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
                  pad_info=None, selected_emoji=None, bot=None,
                  db_context: "DbContext" = None):
+        self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
         self.pad_info = pad_info
@@ -108,15 +109,16 @@ class IdEmojiUpdater(EmojiUpdater):
                 self.selected_emoji = selected_emoji
                 return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(
+        self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
             m=self.m, scroll=sorted(
                 {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
         return True
 
 
 class ScrollEmojiUpdater(EmojiUpdater):
-    def __init__(self, emoji_to_embed, m: "MonsterModel" = None,
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
                  ms: "list[int]" = None, selected_emoji=None, pad_info=None, bot=None):
+        self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
         self.ms = ms
@@ -142,7 +144,7 @@ class ScrollEmojiUpdater(EmojiUpdater):
             self.selected_emoji = selected_emoji
             return True
 
-        self.emoji_dict = self.pad_info.get_id_emoji_options(m=self.m, scroll=self.ms)
+        self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx, m=self.m, scroll=self.ms)
         return True
 
 
@@ -186,7 +188,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0)
+        self.config.register_user(survey_mode=0, color=None)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False)
 
     def cog_unload(self):
@@ -402,50 +404,52 @@ class PadInfo(commands.Cog):
         db_context = DGCOG.database
 
         alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
-        emoji_to_embed = self.get_id_emoji_options(
+        emoji_to_embed = await self.get_id_emoji_options(ctx,
             m=m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if self.settings.checkEvoID(
                 ctx.author.id) else [], menu_type=1)
 
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
-            IdEmojiUpdater(emoji_to_embed, pad_info=self,
+            IdEmojiUpdater(ctx, emoji_to_embed, pad_info=self,
                            m=m, selected_emoji=starting_menu_emoji, bot=self.bot,
                            db_context=db_context)
         )
 
     async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
-        emoji_to_embed = self.get_id_emoji_options(m=m, scroll=ms)
+        emoji_to_embed = await self.get_id_emoji_options(ctx, m=m, scroll=ms)
         return await self._do_menu(
             ctx,
             starting_menu_emoji,
-            ScrollEmojiUpdater(emoji_to_embed, pad_info=self, bot=self.bot,
+            ScrollEmojiUpdater(ctx, emoji_to_embed, pad_info=self, bot=self.bot,
                                m=m, ms=ms, selected_emoji=starting_menu_emoji)
         )
 
-    def get_id_emoji_options(self, m=None, scroll=[], menu_type=0):
+    async def get_id_emoji_options(self, ctx, m=None, scroll=None, menu_type=0):
+        if scroll is None:
+            scroll = []
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
-        id_embed = menu.make_embed(m)
-        evo_embed = menu.make_evo_embed(m)
-        mats_embed = menu.make_evo_mats_embed(m)
+        id_embed = await menu.make_embed(m)
+        evo_embed = await menu.make_evo_embed(m)
+        mats_embed = await menu.make_evo_mats_embed(m)
         animated = m.has_animation
-        pic_embed = menu.make_picture_embed(m, animated=animated)
-        other_info_embed = menu.make_otherinfo_embed(m)
+        pic_embed = await menu.make_picture_embed(m, animated=animated)
+        other_info_embed = await menu.make_otherinfo_embed(m)
 
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = menu.make_pantheon_embed(m)
+        pantheon_embed = await menu.make_pantheon_embed(m)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
-        skillups_embed = menu.make_skillups_embed(m)
+        skillups_embed = await menu.make_skillups_embed(m)
         if skillups_embed:
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
@@ -475,7 +479,7 @@ class PadInfo(commands.Cog):
         monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
-        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         starting_menu_emoji = None
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
@@ -485,7 +489,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = menu.make_embed(m)
+            emoji_to_embed[emoji] = await menu.make_embed(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -506,7 +510,7 @@ class PadInfo(commands.Cog):
                 result_embed.set_footer(text=discord.Embed.Empty)
                 await result_msg.edit(embed=result_embed)
         except Exception as ex:
-            logger.error('Menu failure', exc_info=1)
+            logger.error('Menu failure', exc_info=True)
 
     @commands.command(aliases=['img'])
     @checks.bot_has_permissions(embed_links=True)
@@ -524,8 +528,8 @@ class PadInfo(commands.Cog):
         """Monster links"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            menu = IdMenu()
-            embed = menu.make_links_embed(m)
+            menu = IdMenu(ctx)
+            embed = await menu.make_links_embed(m)
             await ctx.send(embed=embed)
 
         else:
@@ -547,8 +551,8 @@ class PadInfo(commands.Cog):
         """Short info results for a monster query"""
         m, err, debug_info = await self.findMonster(query)
         if m is not None:
-            menu = IdMenu(allowed_emojis=self.get_emojis())
-            embed = menu.make_header_embed(m)
+            menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
+            embed = await menu.make_header_embed(m)
             await ctx.send(embed=embed)
         else:
             await ctx.send(self.makeFailureMsg(err))
@@ -649,11 +653,11 @@ class PadInfo(commands.Cog):
             await ctx.send(inline(err_msg.format('Right', right_query)))
             return
 
-        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = menu.make_ls_embed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = menu.make_embed(left_m)
-        emoji_to_embed[self.right_emoji] = menu.make_embed(right_m)
+        emoji_to_embed[self.ls_emoji] = await menu.make_ls_embed(left_m, right_m)
+        emoji_to_embed[self.left_emoji] = await menu.make_embed(left_m)
+        emoji_to_embed[self.right_emoji] = await menu.make_embed(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -667,10 +671,10 @@ class PadInfo(commands.Cog):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenu(db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = menu.make_embed(m)
+        emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
+        emoji_to_embed[self.left_emoji] = await menu.make_embed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -752,6 +756,18 @@ class PadInfo(commands.Cog):
             await ctx.tick()
         else:
             await ctx.send("value must be `always`, `sometimes`, or `never`")
+
+    @is_donor()
+    @idmode.command()
+    async def setembedcolor(self, ctx, *, color: discord.Color):
+        """(DONOR ONLY) Change the color of all your ID embeds!
+
+        Examples:
+        [p]idmode setembedcolor green
+        [p]idmode setembedcolor #a10000
+        """
+        await self.config.user(ctx.author).color.set(color.value)
+        await ctx.tick()
 
     @commands.group()
     @checks.is_owner()
