@@ -778,6 +778,8 @@ class PadInfo(commands.Cog):
         [p]idset embedcolor green
         [p]idset embedcolor #a10000
         [p]idset embedcolor random
+
+        Picking random will choose a random hex code every time you use [p]id!
         """
         if color in COLORS:
             await self.config.user(ctx.author).color.set(COLORS[color])
