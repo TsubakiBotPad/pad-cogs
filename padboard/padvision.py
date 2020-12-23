@@ -1,32 +1,11 @@
-import PIL.Image
 import logging
-import traceback
 from io import BytesIO
-from redbot.core import commands
+
+import PIL.Image
 
 ORB_IMG_SIZE = 40
 
-logger = logging.getLogger('red.padbot-cogs.padvision')
-
-
-class PadVision(commands.Cog):
-    """Empty cog for PadVision help"""
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-    async def red_get_data_for_user(self, *, user_id):
-        """Get a user's personal data."""
-        data = "No data is stored for user with ID {}.\n".format(user_id)
-        return {"user_data.txt": BytesIO(data.encode())}
-
-    async def red_delete_data_for_user(self, *, requester, user_id):
-        """Delete a user's personal data.
-
-        No personal data is stored in this cog.
-        """
-        return
-
+logger = logging.getLogger('red.padbot-cogs.padboard.padvision')
 
 EXTRACTABLE = 'rbgldhjpmo'
 
@@ -131,7 +110,7 @@ class NeuralClassifierBoardExtractor(object):
         try:
             self._process()
         except Exception as ex:
-            logger.error("orb extractor failed ", exc_info=1)
+            logger.error("orb extractor failed ", exc_info=True)
 
     def _process(self):
         import numpy as np

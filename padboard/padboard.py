@@ -2,7 +2,7 @@ import aiohttp
 import cv2
 import discord
 import numpy as np
-import os
+from .padvision import NeuralClassifierBoardExtractor
 from io import BytesIO
 from collections import defaultdict
 from collections import deque
@@ -10,14 +10,13 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import inline
 from tsutils import extract_image_url
 
-DATA_DIR = os.path.join('data', 'padboard')
-
 DAWNGLARE_BOARD_TEMPLATE = "https://pad.dawnglare.com/?patt={}"
 CNINJA_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"
 
 
 class PadBoard(commands.Cog):
     """Dawnglare Utilities"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -128,9 +127,5 @@ class PadBoard(commands.Cog):
         model_path = await self.config.tflite_path()
         if not model_path:
             return None
-        PDV_COG = self.bot.get_cog("PadVision")
-        if not PDV_COG:
-            raise IOError("PadVision is not loaded")
-        PDV_MODULE = __import__(PDV_COG.__module__)
-        img_extractor = PDV_MODULE.NeuralClassifierBoardExtractor(model_path, img_np, image_data)
+        img_extractor = NeuralClassifierBoardExtractor(model_path, img_np, image_data)
         return img_extractor.get_board()
