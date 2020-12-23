@@ -2,7 +2,7 @@
   "author": [
     "The Tsubaki Bot Team"
   ],
-  "description": "Displays data about Chrono Ma:Gia.",
+  "description": "Displays data about the now defunct GungHo game, Chrono Ma:Gia.",
   "end_user_data_statement": "No personal data is stored.",
   "install_msg": "Use [p]cmid to get started.",
   "short": "Shows Chrono Ma:Gia data",
@@ -13,7 +13,7 @@
     8,
     1
   ],
-  "hidden": false,
+  "hidden": true,
   "disabled": false,
   "required_cogs": {},
   "requirements": [
