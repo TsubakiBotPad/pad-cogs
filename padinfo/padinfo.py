@@ -65,6 +65,8 @@ COLORS = {
        discord.Colour.__dict__[c].__func__.__code__.co_argcount == 1 and
        isinstance(getattr(discord.Colour, c)(), discord.Colour)},
     'pink': 0xffa1dd,
+
+    # Special
     'random': 'random',
     'clear': 0,
 }
