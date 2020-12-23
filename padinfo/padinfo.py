@@ -771,13 +771,13 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def setembedcolor(self, ctx, *, color):
+    async def embedcolor(self, ctx, *, color):
         """(DONOR ONLY) Change the color of all your ID embeds!
 
         Examples:
-        [p]idset setembedcolor green
-        [p]idset setembedcolor #a10000
-        [p]idset setembedcolor random
+        [p]idset embedcolor green
+        [p]idset embedcolor #a10000
+        [p]idset embedcolor random
         """
         if color in COLORS:
             await self.config.user(ctx.author).color.set(COLORS[color])
