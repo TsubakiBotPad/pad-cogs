@@ -1,15 +1,13 @@
+import urllib.parse
+from typing import TYPE_CHECKING
+
 import discord
 import prettytable
-
 import tsutils
-import urllib.parse
-
-from redbot.core.utils.chat_formatting import box, inline
+from redbot.core.utils.chat_formatting import box
 
 from .leader_skills import createMultiplierText
 from .leader_skills import createSingleMultiplierText
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -43,8 +41,9 @@ def get_pic_url(m: "MonsterModel"):
     return RPAD_PIC_TEMPLATE.format(m.monster_id)
 
 
-class IdMenu(object):
-    def __init__(self, db_context: "DbContext" = None, allowed_emojis: list = None):
+class IdMenu:
+    def __init__(self, ctx, db_context: "DbContext" = None, allowed_emojis: list = None):
+        self.ctx = ctx
         self.db_context = db_context
         self.allowed_emojis = allowed_emojis
 
@@ -85,9 +84,9 @@ class IdMenu(object):
     def make_thumbnail_url(m: "MonsterModel"):
         return get_portrait_url(m)
 
-    def make_base_embed(self, m: "MonsterModel"):
+    async def make_base_embed(self, m: "MonsterModel"):
         header = self.monster_long_header(m)
-        embed = discord.Embed()
+        embed = await self.make_custom_embed()
         embed.set_thumbnail(url=self.make_thumbnail_url(m))
         embed.title = header
         embed.url = get_pdx_url(m)
@@ -115,8 +114,8 @@ class IdMenu(object):
         emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
         return self.match_emoji(emoji)
 
-    def make_evo_embed(self, m: "MonsterModel"):
-        embed = self.make_base_embed(m)
+    async def make_evo_embed(self, m: "MonsterModel"):
+        embed = await self.make_base_embed(m)
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
 
@@ -155,8 +154,8 @@ class IdMenu(object):
                 field_data += "{}\n".format(self.monster_long_header(ae, link=True))
         embed.add_field(name=field_name, value=field_data)
 
-    def make_evo_mats_embed(self, m: "MonsterModel"):
-        embed = self.make_base_embed(m)
+    async def make_evo_mats_embed(self, m: "MonsterModel"):
+        embed = await self.make_base_embed(m)
 
         mats_for_evo = self.db_context.graph.evo_mats_by_monster(m)
 
@@ -176,13 +175,13 @@ class IdMenu(object):
         self._add_mats_of_list(embed, self.db_context.graph.material_of_ids(evo_gem), "Evo gem is mat for")
         return embed
 
-    def make_pantheon_embed(self, m: "MonsterModel"):
+    async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
         pantheon_list = list(filter(lambda x: self.db_context.graph.monster_is_base(x), full_pantheon))
         if len(pantheon_list) == 0 or len(pantheon_list) > 6:
             return None
 
-        embed = self.make_base_embed(m)
+        embed = await self.make_base_embed(m)
 
         field_name = 'Pantheon: ' + self.db_context.graph.get_monster(m.monster_no).series.name
         field_data = ''
@@ -192,7 +191,7 @@ class IdMenu(object):
 
         return embed
 
-    def make_skillups_embed(self, m: "MonsterModel"):
+    async def make_skillups_embed(self, m: "MonsterModel"):
         if m.active_skill is None:
             return None
         possible_skillups_list = self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
@@ -202,7 +201,7 @@ class IdMenu(object):
         if len(skillups_list) == 0:
             return None
 
-        embed = self.make_base_embed(m)
+        embed = await self.make_base_embed(m)
 
         field_name = 'Skillups'
         field_data = ''
@@ -220,8 +219,8 @@ class IdMenu(object):
 
         return embed
 
-    def make_picture_embed(self, m: "MonsterModel", animated=False):
-        embed = self.make_base_embed(m)
+    async def make_picture_embed(self, m: "MonsterModel", animated=False):
+        embed = await self.make_base_embed(m)
         url = get_pic_url(m)
         embed.set_image(url=url)
         # Clear the thumbnail, don't need it on pic
@@ -230,7 +229,8 @@ class IdMenu(object):
         if animated:
             extra_links.append('Animation: {} -- {}'.format(self.monster_video_url(m), self.monster_gif_url(m)))
         if m.orb_skin_id is not None:
-            extra_links.append('Orb Skin: {} -- {}'.format(self.monster_orb_skin_url(m), self.monster_orb_skin_cb_url(m)))
+            extra_links.append(
+                'Orb Skin: {} -- {}'.format(self.monster_orb_skin_url(m), self.monster_orb_skin_cb_url(m)))
         if len(extra_links) > 0:
             embed.add_field(name='Extra Links', value='\n'.join(extra_links))
 
@@ -252,13 +252,13 @@ class IdMenu(object):
     def monster_orb_skin_cb_url(m: "MonsterModel", link_text='Color Blind'):
         return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
 
-    def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
+    async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         lls = left_m.leader_skill
         rls = right_m.leader_skill
 
         multiplier_text = createMultiplierText(lls, rls)
 
-        embed = discord.Embed()
+        embed = await self.make_custom_embed()
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
@@ -271,9 +271,9 @@ class IdMenu(object):
 
         return embed
 
-    def make_header_embed(self, m: "MonsterModel"):
+    async def make_header_embed(self, m: "MonsterModel"):
         header = self.monster_long_header(m, link=True)
-        embed = discord.Embed()
+        embed = await self.make_custom_embed()
         embed.description = header
         return embed
 
@@ -298,8 +298,8 @@ class IdMenu(object):
             acquire_text = 'MP Shop Evo'
         return acquire_text
 
-    def make_embed(self, m: "MonsterModel"):
-        embed = self.make_base_embed(m)
+    async def make_embed(self, m: "MonsterModel"):
+        embed = await self.make_base_embed(m)
 
         # in case we want to readd the type emojis later
         # types_row = ' '.join(['{} {}'.format(str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))), t.name) for t in m.types])
@@ -426,10 +426,11 @@ class IdMenu(object):
         return str(self.match_emoji('latent_killer_{}'.format(latent.lower())))
 
     def awakening_restricted_latent_emoji(self, latent: "AwakeningRestrictedLatent"):
-        return str(self.match_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
+        return str(
+            self.match_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
 
-    def make_otherinfo_embed(self, m: "MonsterModel"):
-        embed = self.make_base_embed(m)
+    async def make_otherinfo_embed(self, m: "MonsterModel"):
+        embed = await self.make_base_embed(m)
         # Clear the thumbnail, takes up too much space
         embed.set_thumbnail(url='')
 
@@ -487,8 +488,8 @@ class IdMenu(object):
 
         return embed
 
-    def make_links_embed(self, m: "MonsterModel"):
-        embed = self.make_base_embed(m)
+    async def make_links_embed(self, m: "MonsterModel"):
+        embed = await self.make_base_embed(m)
         embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
             YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
             SKYOZORA_TEMPLATE.format(m.monster_no_jp),
@@ -497,10 +498,10 @@ class IdMenu(object):
         embed.set_footer(text='')
         return embed
 
-    def make_lssingle_embed(self, m: "MonsterModel"):
+    async def make_lssingle_embed(self, m: "MonsterModel"):
         multiplier_text = createSingleMultiplierText(m.leader_skill)
 
-        embed = discord.Embed()
+        embed = await self.make_custom_embed()
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
@@ -509,6 +510,14 @@ class IdMenu(object):
         embed.description = description
 
         return embed
+
+    async def make_custom_embed(self):
+        pdicog = self.ctx.bot.get_cog("PadInfo")
+        color = await pdicog.config.user(self.ctx.author).color()
+        if color is None:
+            return discord.Embed()
+        else:
+            return discord.Embed(color=discord.Color(color))
 
 
 AWAKENING_ID_TO_EMOJI_NAME_MAP = {
@@ -590,7 +599,6 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     76: 'cc_light',
     77: 'cc_dark',
 }
-
 
 AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
     606: 'unmatchable_clear',
