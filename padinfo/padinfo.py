@@ -1,25 +1,23 @@
 import asyncio
-import discord
 import json
 import logging
 import os
-import prettytable
 import random
-import traceback
-import tsutils
+import re
 import urllib.parse
-from io import BytesIO
 from collections import OrderedDict
 from enum import Enum
+from io import BytesIO
+from typing import TYPE_CHECKING
+
+import discord
+import tsutils
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
-from .find_monster import prefix_to_filter
 from .id_menu import IdMenu
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -59,6 +57,19 @@ class ServerFilter(Enum):
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padinfo')), file_name)
+
+
+COLORS = {
+    **{c: getattr(discord.Colour, c)().value for c in discord.Colour.__dict__ if
+       isinstance(discord.Colour.__dict__[c], classmethod) and
+       discord.Colour.__dict__[c].__func__.__code__.co_argcount == 1 and
+       isinstance(getattr(discord.Colour, c)(), discord.Colour)},
+    'pink': 0xffa1dd,
+
+    # Special
+    'random': 'random',
+    'clear': 0,
+}
 
 
 class IdEmojiUpdater(EmojiUpdater):
@@ -110,7 +121,7 @@ class IdEmojiUpdater(EmojiUpdater):
                 return True
 
         self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
-            m=self.m, scroll=sorted(
+                                                                   m=self.m, scroll=sorted(
                 {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
         return True
 
@@ -302,7 +313,7 @@ class PadInfo(commands.Cog):
             elif userres is False:
                 await self.config.bad.set(await self.config.bad() + 1)
                 m = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
-                                   f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idmode"
+                                   f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idset"
                                    f" survey` to adjust how often this shows.\n\n<{url}>")
                 await asyncio.sleep(15)
                 await m.delete()
@@ -405,7 +416,8 @@ class PadInfo(commands.Cog):
 
         alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
         emoji_to_embed = await self.get_id_emoji_options(ctx,
-            m=m, scroll=sorted({*alt_versions}, key=lambda x: x.monster_id) if self.settings.checkEvoID(
+                                                         m=m, scroll=sorted({*alt_versions}, key=lambda
+                x: x.monster_id) if self.settings.checkEvoID(
                 ctx.author.id) else [], menu_type=1)
 
         return await self._do_menu(
@@ -720,16 +732,16 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(self.makeFailureMsg(err))
 
-    @commands.group()
-    async def idmode(self, ctx):
+    @commands.group(aliases=['idmode'])
+    async def idset(self, ctx):
         """id settings configuration"""
 
-    @idmode.command()
+    @idset.command()
     async def scroll(self, ctx, value):
         """Switch between number scroll and evo scroll
 
-        [p]idmode scroll number
-        [p]idmode scroll evo"""
+        [p]idset scroll number
+        [p]idset scroll evo"""
         if value in ['evo', 'default']:
             if self.settings.setEvoID(ctx.author.id):
                 await ctx.tick()
@@ -743,13 +755,13 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send("id_type must be `number` or `evo`")
 
-    @idmode.command()
+    @idset.command()
     async def survey(self, ctx, value):
         """Change how often you see the id survey
 
-        [p]idmode survey always     (Always see survey after using id)
-        [p]idmode survey sometimes  (See survey some of the time after using id)
-        [p]idmode survey never      (Never see survey after using id D:)"""
+        [p]idset survey always     (Always see survey after using id)
+        [p]idset survey sometimes  (See survey some of the time after using id)
+        [p]idset survey never      (Never see survey after using id D:)"""
         vals = ['always', 'sometimes', 'never']
         if value in vals:
             await self.config.user(ctx.author).survey_mode.set(vals.index(value))
@@ -758,15 +770,22 @@ class PadInfo(commands.Cog):
             await ctx.send("value must be `always`, `sometimes`, or `never`")
 
     @is_donor()
-    @idmode.command()
-    async def setembedcolor(self, ctx, *, color: discord.Color):
+    @idset.command()
+    async def embedcolor(self, ctx, *, color):
         """(DONOR ONLY) Change the color of all your ID embeds!
 
         Examples:
-        [p]idmode setembedcolor green
-        [p]idmode setembedcolor #a10000
+        [p]idset embedcolor green
+        [p]idset embedcolor #a10000
+        [p]idset embedcolor random
         """
-        await self.config.user(ctx.author).color.set(color.value)
+        if color in COLORS:
+            await self.config.user(ctx.author).color.set(COLORS[color])
+        elif re.match(r"^#?[0-9a-fA-F]{6}$", color):
+            await self.config.user(ctx.author).color.set(int(color.lstrip("#"), 16))
+        else:
+            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n"+", ".join(COLORS))
+            return
         await ctx.tick()
 
     @commands.group()
