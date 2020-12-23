@@ -775,9 +775,11 @@ class PadInfo(commands.Cog):
         """(DONOR ONLY) Change the color of all your ID embeds!
 
         Examples:
-        [p]idset embedcolor green - set all id embeds to green
-        [p]idset embedcolor #a10000 - set all id embeds to a specific red
-        [p]idset embedcolor random - pick a random color each time
+        [p]idset embedcolor green
+        [p]idset embedcolor #a10000
+        [p]idset embedcolor random
+
+        Picking random will choose a random hex code every time you use [p]id!
         """
         if color in COLORS:
             await self.config.user(ctx.author).color.set(COLORS[color])
