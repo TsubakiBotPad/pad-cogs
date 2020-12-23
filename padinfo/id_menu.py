@@ -1,3 +1,4 @@
+import random
 import urllib.parse
 from typing import TYPE_CHECKING
 
@@ -516,6 +517,8 @@ class IdMenu:
         color = await pdicog.config.user(self.ctx.author).color()
         if color is None:
             return discord.Embed()
+        elif color == "random":
+            return discord.Embed(color=random.randint(0x000000, 0xffffff))
         else:
             return discord.Embed(color=discord.Color(color))
 
