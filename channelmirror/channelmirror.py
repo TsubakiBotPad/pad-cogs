@@ -355,15 +355,19 @@ class ChannelMirror(commands.Cog):
 
     @commands.Cog.listener('on_raw_reaction_add')
     async def mirror_reaction_add(self, payload):
+        if not await self.config.channel(discord.Object(payload.channel_id)).multiedit():
+            return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
+        if message.author.id != payload.user_id:
             return
         await self.mirror_msg_mod(message, new_message_reaction=payload.emoji)
 
     @commands.Cog.listener('on_raw_reaction_remove')
     async def mirror_reaction_remove(self, payload):
+        if not await self.config.channel(discord.Object(payload.channel_id)).multiedit():
+            return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
+        if message.author.id != payload.user_id:
             return
         await self.mirror_msg_mod(message, delete_message_reaction=payload.emoji)
 
