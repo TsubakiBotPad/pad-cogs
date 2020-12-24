@@ -343,31 +343,35 @@ class ChannelMirror(commands.Cog):
 
     @commands.Cog.listener('on_raw_message_edit')
     async def mirror_msg_edit(self, payload):
+        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+            return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if 'content' in payload.data:
             await self.mirror_msg_mod(message, new_message_content=payload.data['content'])
 
     @commands.Cog.listener('on_raw_message_delete')
     async def mirror_msg_delete(self, payload):
+        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+            return
         if not await self.config.channel(self.bot.get_channel(payload.channel_id)).nodeletion():
             fmessage = tsutils.DummyObject(id=payload.message_id, channel=self.bot.get_channel(payload.channel_id))
             await self.mirror_msg_mod(fmessage, delete_message_content=True)
 
     @commands.Cog.listener('on_raw_reaction_add')
     async def mirror_reaction_add(self, payload):
-        if not await self.config.channel(discord.Object(payload.channel_id)).multiedit():
+        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
             return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        if message.author.id != payload.user_id:
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(message, new_message_reaction=payload.emoji)
 
     @commands.Cog.listener('on_raw_reaction_remove')
     async def mirror_reaction_remove(self, payload):
-        if not await self.config.channel(discord.Object(payload.channel_id)).multiedit():
+        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
             return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        if message.author.id != payload.user_id:
+        if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(message, delete_message_reaction=payload.emoji)
 
