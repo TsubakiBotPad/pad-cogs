@@ -1,24 +1,23 @@
 import asyncio
 import datetime
-import discord
-import logging
 import itertools
-import prettytable
-import pytz
+import logging
 import re
-import traceback
-from io import BytesIO
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
+from io import BytesIO
+from typing import TYPE_CHECKING
+
+import discord
+import prettytable
+import pytz
 from redbot.core import checks
 from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings, confirm_message, normalize_server_name
+from redbot.core.utils.chat_formatting import box, pagify
+from tsutils import CogSettings, confirm_message, normalize_server_name, DummyObject, is_donor
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from dadguide.database_context import DbContext
     from dadguide.models.scheduled_event_model import ScheduledEventModel
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
@@ -29,6 +28,7 @@ GROUPS = ['red', 'blue', 'green']
 
 class PadEvents(commands.Cog):
     """Pad Event Tracker"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -94,25 +94,26 @@ class PadEvents(commands.Cog):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadEvents'):
             try:
-                events = filter(lambda e: not e.key in self.started_events, self.events)
-                for e in events:
+                events = filter(lambda e: e.key not in self.started_events, self.events)
+                for event in events:
                     for gid, data in (await self.config.all_guilds()).items():
                         guild = self.bot.get_guild(gid)
-                        if guild is None: continue
+                        if guild is None:
+                            continue
                         for key, aep in data.get('pingroles', {}).items():
-                            if e.start_from_now_sec() > aep['offset'] * 60 \
-                                        or not aep['enabled'] \
-                                        or e.server != aep['server'] \
-                                        or (key, e.key) in self.rolepinged_events:
+                            if event.start_from_now_sec() > aep['offset'] * 60 \
+                                    or not aep['enabled'] \
+                                    or event.server != aep['server'] \
+                                    or (key, event.key) in self.rolepinged_events:
                                 continue
                             elif aep['regex']:
-                                matches = re.search(aep['searchstr'], e.clean_dungeon_name)
+                                matches = re.search(aep['searchstr'], event.clean_dungeon_name)
                             else:
-                                matches = aep['searchstr'] in e.clean_dungeon_name
+                                matches = aep['searchstr'] in event.clean_dungeon_name
 
-                            self.rolepinged_events.add((key, e.key))
+                            self.rolepinged_events.add((key, event.key))
                             if matches:
-                                index = GROUPS.index(e.group)
+                                index = GROUPS.index(event.group)
                                 channel = guild.get_channel(aep['channels'][index])
                                 if channel is not None:
                                     role = guild.get_role(aep['roles'][index])
@@ -121,64 +122,70 @@ class PadEvents(commands.Cog):
                                     if aep['offset']:
                                         offsetstr = " in {} minute(s)".format(aep['offset'])
                                     try:
-                                        await channel.send("{}{} {}".format(e.name_and_modifier, offsetstr, ment), allowed_mentions=discord.AllowedMentions(roles=True))
+                                        await channel.send("{}{} {}".format(event.name_and_modifier, offsetstr, ment),
+                                                           allowed_mentions=discord.AllowedMentions(roles=True))
                                     except Exception:
                                         logger.exception("Failed to send AEP in channel {}".format(channel.id))
 
                     for uid, data in (await self.config.all_users()).items():
                         user = self.bot.get_user(uid)
-                        if user is None: continue
+                        if user is None:
+                            continue
                         for aed in data.get('dmevents', []):
-                            if e.start_from_now_sec() > aed['offset'] * 60 \
-                                        or e.group != aed['group'] \
-                                        or e.server != aed['server'] \
-                                        or (aed['key'], e.key) in self.rolepinged_events:
+                            if event.start_from_now_sec() > aed['offset'] * 60 \
+                                    or event.group != aed['group'] \
+                                    or event.server != aed['server'] \
+                                    or (aed['key'], event.key) in self.rolepinged_events:
                                 continue
-                            self.rolepinged_events.add((aed['key'], e.key))
-                            if aed['searchstr'] in e.clean_dungeon_name:
+                            self.rolepinged_events.add((aed['key'], event.key))
+                            if aed['searchstr'] in event.clean_dungeon_name:
                                 offsetstr = " starts now!"
                                 if aed['offset']:
                                     offsetstr = " starts in {} minute(s)!".format(aed['offset'])
                                 try:
-                                    await user.send(e.clean_dungeon_name + offsetstr)
+                                    await user.send(event.clean_dungeon_name + offsetstr)
                                 except Exception:
                                     logger.exception("Failed to send AED to user {}".format(user.id))
 
-                events = filter(lambda e: e.is_started() and not e.key in self.started_events, self.events)
+                events = filter(lambda e: e.is_started() and e.key not in self.started_events, self.events)
                 daily_refresh_servers = set()
-                for e in events:
-                    self.started_events.add(e.key)
-                    if e.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek, EventType.Week]:
-                        for gr in list(self.settings.listGuerrillaReg()):
-                            if e.server == gr['server']:
+                for event in events:
+                    self.started_events.add(event.key)
+                    if event.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek,
+                                            EventType.Week]:
+                        for gr in list(self.settings.list_guerrilla_reg()):
+                            if event.server == gr['server']:
                                 try:
                                     channel = self.bot.get_channel(int(gr['channel_id']))
                                     if channel is None:
                                         continue
-                                        
-                                    role_name = '{}_group_{}'.format(e.server, e.groupLongName())
+
+                                    role_name = '{}_group_{}'.format(event.server, event.group_long_name())
                                     role = channel.guild.get_role(role_name)
                                     if role and role.mentionable:
-                                        message = "{} `: {} is starting`".format(role.mention, e.name_and_modifier)
+                                        message = "{} `: {} is starting`".format(role.mention, event.name_and_modifier)
                                     else:
-                                        message = box("Server " + e.server + ", group " + e.groupLongName() + " : " + e.name_and_modifier)
+                                        message = box(
+                                            "Server " + event.server + ", group " + event.group_long_name() +
+                                            " : " + event.name_and_modifier
+                                        )
 
                                     await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
                                 except Exception as ex:
-                                    # self.settings.removeGuerrillaReg(gr['channel_id'], gr['server'])
+                                    # self.settings.remove_guerrilla_reg(gr['channel_id'], gr['server'])
                                     logger.exception("caught exception while sending guerrilla msg:")
 
                     else:
-                        if not e.dungeon_type in [DungeonType.Normal]:
-                            msg = self.makeActiveText(e.server)
-                            for daily_registration in list(self.settings.listDailyReg()):
+                        if event.dungeon_type not in [DungeonType.Normal]:
+                            msg = self.make_active_text(event.server)
+                            for daily_registration in list(self.settings.list_daily_reg()):
                                 try:
-                                    if e.server == daily_registration['server']:
-                                        await self.pageOutput(self.bot.get_channel(daily_registration['channel_id']),
-                                                              msg, channel_id=daily_registration['channel_id'])
+                                    if event.server == daily_registration['server']:
+                                        await self.page_output(self.bot.get_channel(daily_registration['channel_id']),
+                                                               msg, channel_id=daily_registration['channel_id'])
                                         logger.info("daily_reg server")
                                 except Exception as ex:
-                                    # self.settings.removeDailyReg(
+                                    # self.settings.remove_daily_reg(
                                     #   daily_registration['channel_id'], daily_registration['server'])
                                     logger.exception("caught exception while sending daily msg:")
 
@@ -203,29 +210,27 @@ class PadEvents(commands.Cog):
 
         dg_cog = self.bot.get_cog('Dadguide')
         await dg_cog.wait_until_ready()
-        dg_module = __import__(dg_cog.__module__)
+        # TODO: Don't use this awful importing hack
+        dg_module = __import__('.'.join(dg_cog.__module__.split('.')[:-1]) + ".models.scheduled_event_model")
+        timestamp = int((datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)).timestamp())
+        self.fake_uid -= 1
 
-        te = dg_module.ScheduledEventModule({'dungeon_id': 1})
-
-        te.server = server
-        te.server_id = SUPPORTED_SERVERS.index(server)
-        te.event_type_id = EventType.Guerrilla.value
-        te.event_seq = 0
-        fuid = self.fake_uid = self.fake_uid - 1
-        te.key = lambda: fuid
-        te.group_name = 'red'
-
-        te.open_datetime = datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)
-        te.close_datetime = te.open_datetime + timedelta(minutes=1)
-
-        class Dungeon: pass
-        d = Dungeon()
-        d.name_en = 'fake_dungeon_name'
-        d.dungeon_type = DungeonType.Unknown7
-        te.event_modifier = 'fake_event_modifier'
+        te = dg_module.models.scheduled_event_model.ScheduledEventModel(
+            event_id=self.fake_uid,
+            server_id=SUPPORTED_SERVERS.index(server),
+            event_type_id=EventType.Guerrilla.value,
+            start_timestamp=timestamp,
+            end_timestamp=timestamp + 60,
+            group_name='red',
+            dungeon_model=DummyObject(
+                name_en='fake_dungeon_name',
+                clean_name_en='fake_dungeon_name',
+                dungeon_type=DungeonType.Unknown7,
+                dungeon_id=1,
+            )
+        )
         self.events.append(Event(te, self.bot.get_cog('Dadguide').database))
-
-        await ctx.send("Fake event injected.")
+        await ctx.tick()
 
     @padevents.command()
     @commands.guild_only()
@@ -237,11 +242,11 @@ class PadEvents(commands.Cog):
             return
 
         channel_id = ctx.channel.id
-        if self.settings.checkGuerrillaReg(channel_id, server):
+        if self.settings.check_guerrilla_reg(channel_id, server):
             await ctx.send("Channel already active.")
             return
 
-        self.settings.addGuerrillaReg(channel_id, server)
+        self.settings.add_guerrilla_reg(channel_id, server)
         await ctx.send("Channel now active.")
 
     @padevents.command()
@@ -254,11 +259,11 @@ class PadEvents(commands.Cog):
             return
 
         channel_id = ctx.channel.id
-        if not self.settings.checkGuerrillaReg(channel_id, server):
+        if not self.settings.check_guerrilla_reg(channel_id, server):
             await ctx.send("Channel is not active.")
             return
 
-        self.settings.removeGuerrillaReg(channel_id, server)
+        self.settings.remove_guerrilla_reg(channel_id, server)
         await ctx.send("Channel deactivated.")
 
     @padevents.command()
@@ -271,11 +276,11 @@ class PadEvents(commands.Cog):
             return
 
         channel_id = ctx.channel.id
-        if self.settings.checkDailyReg(channel_id, server):
+        if self.settings.check_daily_reg(channel_id, server):
             await ctx.send("Channel already active.")
             return
 
-        self.settings.addDailyReg(channel_id, server)
+        self.settings.add_daily_reg(channel_id, server)
         await ctx.send("Channel now active.")
 
     @padevents.command()
@@ -288,11 +293,11 @@ class PadEvents(commands.Cog):
             return
 
         channel_id = ctx.channel.id
-        if not self.settings.checkDailyReg(channel_id, server):
+        if not self.settings.check_daily_reg(channel_id, server):
             await ctx.send("Channel is not active.")
             return
 
-        self.settings.removeDailyReg(channel_id, server)
+        self.settings.remove_daily_reg(channel_id, server)
         await ctx.send("Channel deactivated.")
 
     @commands.group(aliases=['aep'])
@@ -302,7 +307,8 @@ class PadEvents(commands.Cog):
         """Auto Event Pings"""
 
     @autoeventping.command(name="add")
-    async def aep_add(self, ctx, key, server = None, searchstr = None, red: discord.Role = None, blue: discord.Role = None, green: discord.Role = None):
+    async def aep_add(self, ctx, key, server=None, searchstr=None, red: discord.Role = None, blue: discord.Role = None,
+                      green: discord.Role = None):
         """Add a new autoeventping"""
         if green is None and server is not None:
             await ctx.send("Multi-word keys must be in quotes.")
@@ -353,24 +359,24 @@ class PadEvents(commands.Cog):
             await ctx.send("That key does not exist.")
             return
         roles = [ctx.guild.get_role(role).mention
-                   if ctx.guild.get_role(role) is not None
-                   else "No Role"
-                   for role
-                   in pingroles[key]['roles']
+                 if ctx.guild.get_role(role) is not None
+                 else "No Role"
+                 for role
+                 in pingroles[key]['roles']
                  ]
         chans = [ctx.bot.get_channel(c).mention
-                   if ctx.bot.get_channel(c) is not None
-                   else "No Channel"
-                   for c
-                   in pingroles[key]['channels']
+                 if ctx.bot.get_channel(c) is not None
+                 else "No Channel"
+                 for c
+                 in pingroles[key]['channels']
                  ]
         pr = (f"{key} ({'enabled' if pingroles[key]['enabled'] else 'disabled'})\n"
-              f"    Search String: '{pingroles[key]['searchstr']}' {'(regex search)' if pingroles[key]['regex'] else ''}\n"
-              f"    Server: {pingroles[key]['server']}\n"
-              f"    Red: {roles[0]} (In {chans[0]})\n"
-              f"    Blue: {roles[1]} (In {chans[1]})\n"
-              f"    Green: {roles[2]} (In {chans[2]})\n"
-              f"    Offset: {pingroles[key]['offset']} minutes")
+              f"\tSearch String: '{pingroles[key]['searchstr']}' {'(regex search)' * pingroles[key]['regex']}\n"
+              f"\tServer: {pingroles[key]['server']}\n"
+              f"\tRed: {roles[0]} (In {chans[0]})\n"
+              f"\tBlue: {roles[1]} (In {chans[1]})\n"
+              f"\tGreen: {roles[2]} (In {chans[2]})\n"
+              f"\tOffset: {pingroles[key]['offset']} minutes")
         await ctx.send(pr)
 
     @autoeventping.command(name="list")
@@ -406,7 +412,7 @@ class PadEvents(commands.Cog):
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping for all groups"""
-        await self.aeps(ctx, key, 'channels', [channel.id]*3)
+        await self.aeps(ctx, key, 'channels', [channel.id] * 3)
         await ctx.tick()
 
     @aep_set.command(name="redchannel")
@@ -510,6 +516,7 @@ class PadEvents(commands.Cog):
     async def autoeventdm(self, ctx):
         """Auto Event DMs"""
 
+    @is_donor()
     @autoeventdm.command(name="add")
     async def aed_add(self, ctx, server, searchstr, group, offset: int = 0):
         """Add a new autoeventdm"""
@@ -524,16 +531,6 @@ class PadEvents(commands.Cog):
         if offset < 0:
             await ctx.send("Offset cannot be negative")
             return
-        elif offset > 0:
-            DONOR_COG = self.bot.get_cog("Donations")
-            if DONOR_COG is None:
-                await ctx.send(inline("Donor Cog not loaded.  Please contact a bot admin."))
-            elif not DONOR_COG.is_donor(ctx):
-                await ctx.send(("AED offset is a donor only feature due to server loads."
-                                " Your auto event DM will be created, but the offset will not"
-                                " be in affect until you're a donor.  You can donate any time"
-                                " at https://www.patreon.com/tsubaki_bot.  Use `{}donate` to"
-                                " view this link at any time").format(ctx.prefix))
 
         default = {
             'key': datetime.datetime.now().timestamp(),
@@ -555,9 +552,9 @@ class PadEvents(commands.Cog):
                 await ctx.send("That isn't a valid index.")
                 return
             if not await confirm_message(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
-                                               "").format(dmevents[index-1]['searchstr'])):
+                                               "").format(dmevents[index - 1]['searchstr'])):
                 return
-            dmevents.pop(index-1)
+            dmevents.pop(index - 1)
         await ctx.tick()
 
     @autoeventdm.command(name="list")
@@ -585,27 +582,18 @@ class PadEvents(commands.Cog):
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
 
+    @is_donor()
     @aed_e.command(name="offset")
     async def aed_e_offset(self, ctx, index, offset):
         """Set offset of an autoeventdm (Donor only)"""
         if offset < 0:
             await ctx.send("Offset cannot be negative")
             return
-        elif offset > 0:
-            DONOR_COG = self.bot.get_cog("Donations")
-            if DONOR_COG is None:
-                await ctx.send(inline("Donor Cog not loaded.  Please contact a bot admin."))
-            elif not DONOR_COG.is_donor(ctx):
-                await ctx.send(("AED offset is a donor only feature due to server loads."
-                                " Your auto event DM will be created, but the offset will not"
-                                " be in affect until you're a donor.  You can donate any time"
-                                " at https://www.patreon.com/tsubaki_bot.  Use `{}donate` to"
-                                " view this link at any time").format(ctx.prefix))
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
-            dmevents[index-1]['offset'] = offset
+            dmevents[index - 1]['offset'] = offset
         await ctx.tick()
 
     @aed_e.command(name="searchstr")
@@ -615,32 +603,33 @@ class PadEvents(commands.Cog):
             if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
-            dmevents[index-1]['searchstr'] = searchstr
+            dmevents[index - 1]['searchstr'] = searchstr
         await ctx.tick()
 
-    @padevents.command(name="listallchannels")
+    @padevents.command()
     @checks.is_owner()
-    async def _listallchannel(self, ctx):
+    async def listallchannels(self, ctx):
         msg = 'Following daily channels are registered:\n'
-        msg += self.makeChannelList(self.settings.listDailyReg())
+        msg += self.make_channel_list(self.settings.list_daily_reg())
         msg += "\n"
         msg += 'Following guerilla channels are registered:\n'
-        msg += self.makeChannelList(self.settings.listGuerrillaReg())
-        await self.pageOutput(ctx, msg)
+        msg += self.make_channel_list(self.settings.list_guerrilla_reg())
+        await self.page_output(ctx, msg)
 
-    @padevents.command(name="listchannels")
+    @padevents.command()
     @checks.mod_or_permissions(manage_guild=True)
-    async def _listchannel(self, ctx):
+    async def listchannels(self, ctx):
         msg = 'Following daily channels are registered:\n'
-        msg += self.makeChannelList(self.settings.listDailyReg(), lambda c: c in ctx.guild.channels)
+        msg += self.make_channel_list(self.settings.list_daily_reg(), lambda c: c in ctx.guild.channels)
         msg += "\n"
         msg += 'Following guerilla channels are registered:\n'
-        msg += self.makeChannelList(self.settings.listGuerrillaReg(), lambda c: c in ctx.guild.channels)
-        await self.pageOutput(ctx, msg)
+        msg += self.make_channel_list(self.settings.list_guerrilla_reg(), lambda c: c in ctx.guild.channels)
+        await self.page_output(ctx, msg)
 
-    def makeChannelList(self, reg_list, filt=None):
+    def make_channel_list(self, reg_list, filt=None):
         if filt is None:
-            filt = lambda x: x
+            def filt(x):
+                return x
         msg = ""
         for cr in reg_list:
             reg_channel_id = cr['channel_id']
@@ -659,86 +648,86 @@ class PadEvents(commands.Cog):
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        msg = self.makeActiveText(server)
-        await self.pageOutput(ctx, msg)
+        msg = self.make_active_text(server)
+        await self.page_output(ctx, msg)
 
-    def makeActiveText(self, server):
-        server_events = EventList(self.events).withServer(server)
-        active_events = server_events.activeOnly()
-        pending_events = server_events.pendingOnly()
-        available_events = server_events.availableOnly()
+    def make_active_text(self, server):
+        server_events = EventList(self.events).with_server(server)
+        active_events = server_events.active_only()
+        pending_events = server_events.pending_only()
+        available_events = server_events.available_only()
 
         msg = "Listing all events for " + server
 
         """
-        special_events = active_events.withType(
-            EventType.Special).itemsByCloseTime()
+        special_events = active_events.with_type(
+            EventType.Special).items_by_close_time()
         if len(special_events) > 0:
-            msg += "\n\n" + self.makeActiveOutput('Special Events', special_events)
+            msg += "\n\n" + self.make_active_output('Special Events', special_events)
 
-        all_etc_events = active_events.withType(EventType.Etc)
+        all_etc_events = active_events.with_type(EventType.Etc)
 
-        etc_events = all_etc_events.withDungeonType(
-            DungeonType.Etc).excludeUnwantedEvents().itemsByCloseTime()
+        etc_events = all_etc_events.with_dungeon_type(
+            DungeonType.Etc).exclude_unwanted_events().items_by_close_time()
         if len(etc_events) > 0:
-            msg += "\n\n" + self.makeActiveOutput('Etc Events', etc_events)
+            msg += "\n\n" + self.make_active_output('Etc Events', etc_events)
 
         # Old-style guerrillas
-        active_guerrilla_events = active_events.withType(EventType.Guerrilla).items()
+        active_guerrilla_events = active_events.with_type(EventType.Guerrilla).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
+                   self.make_active_guerrilla_output('Active Guerrillas', active_guerrilla_events)
 
-        guerrilla_events = pending_events.withType(EventType.Guerrilla).items()
+        guerrilla_events = pending_events.with_type(EventType.Guerrilla).items()
         if len(guerrilla_events) > 0:
-            msg += "\n\n" + self.makeFullGuerrillaOutput('Guerrilla Events', guerrilla_events)
+            msg += "\n\n" + self.make_full_guerrilla_output('Guerrilla Events', guerrilla_events)
 
         # New-style guerrillas
-        active_guerrilla_events = active_events.withType(EventType.SpecialWeek).items()
+        active_guerrilla_events = active_events.with_type(EventType.SpecialWeek).items()
         if len(active_guerrilla_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveGuerrillaOutput('Active Guerrillas', active_guerrilla_events)
+                   self.make_active_guerrilla_output('Active Guerrillas', active_guerrilla_events)
 
-        guerrilla_events = pending_events.withType(EventType.SpecialWeek).items()
+        guerrilla_events = pending_events.with_type(EventType.SpecialWeek).items()
         if len(guerrilla_events) > 0:
             msg += "\n\n" + \
-                   self.makeFullGuerrillaOutput(
+                   self.make_full_guerrilla_output(
                        'Guerrilla Events', guerrilla_events, starter_guerilla=True)
         """
-        active_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(True).items()
+        active_cdo_events = active_events.with_dungeon_type(DungeonType.CoinDailyOther).is_grouped(True).items()
         if len(active_cdo_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveOutput(
+                   self.make_active_output(
                        'Active Events', active_cdo_events)
         """
-        cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped(False).items()
+        cdo_events = pending_events.with_dungeon_type(DungeonType.CoinDailyOther).is_grouped(False).items()
         if len(cdo_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveOutput(
+                   self.make_active_output(
                        'Reward Events', cdo_events)
         """
 
-        active_grouped_cdo_events = active_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        active_grouped_cdo_events = active_events.with_dungeon_type(DungeonType.CoinDailyOther).is_grouped().items()
         if len(active_grouped_cdo_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveGuerrillaOutput(
+                   self.make_active_guerrilla_output(
                        'Active Guerrillas', active_grouped_cdo_events)
-        grouped_cdo_events = pending_events.withDungeonType(DungeonType.CoinDailyOther).isGrouped().items()
+        grouped_cdo_events = pending_events.with_dungeon_type(DungeonType.CoinDailyOther).is_grouped().items()
         if len(grouped_cdo_events) > 0:
             msg += "\n\n" + \
-                   self.makeFullGuerrillaOutput(
+                   self.make_full_guerrilla_output(
                        'Guerrillas', grouped_cdo_events, starter_guerilla=True)
 
-        active_etc_events = active_events.withDungeonType(DungeonType.Etc).items()
+        active_etc_events = active_events.with_dungeon_type(DungeonType.Etc).items()
         if len(active_etc_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveOutput(
+                   self.make_active_output(
                        'Active Other Events', active_etc_events)
         """
-        etc_events = pending_events.withDungeonType(DungeonType.Etc).items()
+        etc_events = pending_events.with_dungeon_type(DungeonType.Etc).items()
         if len(etc_events) > 0:
             msg += "\n\n" + \
-                   self.makeActiveOutput(
+                   self.make_active_output(
                        'Other Events', etc_events)
         """
         # clean up long headers
@@ -746,7 +735,7 @@ class PadEvents(commands.Cog):
 
         return msg
 
-    async def pageOutput(self, ctx, msg, channel_id=None, format_type=box):
+    async def page_output(self, ctx, msg, channel_id=None, format_type=box):
         msg = msg.strip()
         msg = pagify(msg, ["\n"], shorten_by=20)
         for page in msg:
@@ -758,38 +747,38 @@ class PadEvents(commands.Cog):
             except Exception as e:
                 logger.exception("page output failed " + str(e), "tried to output: " + page)
 
-    def makeActiveOutput(self, table_name, event_list):
+    def make_active_output(self, table_name, event_list):
         tbl = prettytable.PrettyTable(["Time", table_name])
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row([e.endFromNowFullMin().strip(), e.name_and_modifier])
+            tbl.add_row([e.end_from_now_full_min().strip(), e.name_and_modifier])
         return tbl.get_string()
 
-    def makeActiveGuerrillaOutput(self, table_name, event_list):
+    def make_active_guerrilla_output(self, table_name, event_list):
         tbl = prettytable.PrettyTable([table_name, "Group", "Time"])
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row([e.name_and_modifier, e.group, e.endFromNowFullMin().strip()])
+            tbl.add_row([e.name_and_modifier, e.group, e.end_from_now_full_min().strip()])
         return tbl.get_string()
 
-    def makeFullGuerrillaOutput(self, table_name, event_list, starter_guerilla=False):
+    def make_full_guerrilla_output(self, table_name, event_list, starter_guerilla=False):
         events_by_name = defaultdict(list)
-        for e in event_list:
-            events_by_name[e.name_and_modifier].append(e)
+        for event in event_list:
+            events_by_name[event.name_and_modifier].append(event)
 
         rows = list()
         grps = ["RED", "BLUE", "GREEN"] if starter_guerilla else ["A", "B", "C", "D", "E"]
         for name, events in events_by_name.items():
             events = sorted(events, key=lambda e: e.open_datetime)
             events_by_group = defaultdict(list)
-            for e in events:
-                events_by_group[e.group.upper()].append(e)
+            for event in events:
+                events_by_group[event.group.upper()].append(event)
 
             done = False
             while not done:
@@ -802,8 +791,8 @@ class PadEvents(commands.Cog):
                         row.append("")
                     else:
                         did_work = True
-                        e = grp_list.pop(0)
-                        row.append(e.toGuerrillaStr())
+                        event = grp_list.pop(0)
+                        row.append(event.to_guerrilla_str())
                 if did_work:
                     rows.append(row)
                 else:
@@ -824,37 +813,37 @@ class PadEvents(commands.Cog):
     @commands.command(aliases=['events'])
     async def eventsna(self, ctx):
         """Display upcoming daily events for NA."""
-        await self.doPartial(ctx, 'NA')
+        await self.do_partial(ctx, 'NA')
 
     @commands.command()
     async def eventsjp(self, ctx):
         """Display upcoming daily events for JP."""
-        await self.doPartial(ctx, 'JP')
+        await self.do_partial(ctx, 'JP')
 
     @commands.command()
     async def eventskr(self, ctx):
         """Display upcoming daily events for KR."""
-        await self.doPartial(ctx, 'KR')
+        await self.do_partial(ctx, 'KR')
 
-    async def doPartial(self, ctx, server):
+    async def do_partial(self, ctx, server):
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
         events = EventList(self.events)
-        events = events.withServer(server)
-        events = events.inDungeonType([DungeonType.Etc, DungeonType.CoinDailyOther])
-        events = events.isGrouped()
+        events = events.with_server(server)
+        events = events.in_dungeon_type([DungeonType.Etc, DungeonType.CoinDailyOther])
+        events = events.is_grouped()
 
-        active_events = events.activeOnly().itemsByOpenTime(reverse=True)
-        pending_events = events.pendingOnly().itemsByOpenTime(reverse=True)
+        active_events = events.active_only().items_by_open_time(reverse=True)
+        pending_events = events.pending_only().items_by_open_time(reverse=True)
 
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
 
-        #active_events = list(group_to_active_event.values())
-        #pending_events = list(group_to_pending_event.values())
+        # active_events = list(group_to_active_event.values())
+        # pending_events = list(group_to_pending_event.values())
 
         active_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
         pending_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
@@ -868,18 +857,18 @@ class PadEvents(commands.Cog):
         if len(active_events) > 0:
             output += "\n\n" + "  Remaining Dungeon"
             for e in active_events:
-                output += "\n" + e.toPartialEvent(self)
+                output += "\n" + e.to_partial_event(self)
 
         if len(pending_events) > 0:
             output += "\n\n" + "  PT    ET    ETA     Dungeon"
             for e in pending_events:
-                output += "\n" + e.toPartialEvent(self)
+                output += "\n" + e.to_partial_event(self)
 
         for page in pagify(output):
             await ctx.send(box(page))
 
 
-def makeChannelReg(channel_id, server):
+def make_channel_reg(channel_id, server):
     server = normalize_server_name(server)
     return {
         "channel_id": channel_id,
@@ -895,34 +884,34 @@ class PadEventSettings(CogSettings):
         }
         return config
 
-    def listGuerrillaReg(self):
+    def list_guerrilla_reg(self):
         return self.bot_settings['guerrilla_regs']
 
-    def addGuerrillaReg(self, channel_id, server):
-        self.listGuerrillaReg().append(makeChannelReg(channel_id, server))
+    def add_guerrilla_reg(self, channel_id, server):
+        self.list_guerrilla_reg().append(make_channel_reg(channel_id, server))
         self.save_settings()
 
-    def checkGuerrillaReg(self, channel_id, server):
-        return makeChannelReg(channel_id, server) in self.listGuerrillaReg()
+    def check_guerrilla_reg(self, channel_id, server):
+        return make_channel_reg(channel_id, server) in self.list_guerrilla_reg()
 
-    def removeGuerrillaReg(self, channel_id, server):
-        if self.checkGuerrillaReg(channel_id, server):
-            self.listGuerrillaReg().remove(makeChannelReg(channel_id, server))
+    def remove_guerrilla_reg(self, channel_id, server):
+        if self.check_guerrilla_reg(channel_id, server):
+            self.list_guerrilla_reg().remove(make_channel_reg(channel_id, server))
             self.save_settings()
 
-    def listDailyReg(self):
+    def list_daily_reg(self):
         return self.bot_settings['daily_regs']
 
-    def addDailyReg(self, channel_id, server):
-        self.listDailyReg().append(makeChannelReg(channel_id, server))
+    def add_daily_reg(self, channel_id, server):
+        self.list_daily_reg().append(make_channel_reg(channel_id, server))
         self.save_settings()
 
-    def checkDailyReg(self, channel_id, server):
-        return makeChannelReg(channel_id, server) in self.listDailyReg()
+    def check_daily_reg(self, channel_id, server):
+        return make_channel_reg(channel_id, server) in self.list_daily_reg()
 
-    def removeDailyReg(self, channel_id, server):
-        if self.checkDailyReg(channel_id, server):
-            self.listDailyReg().remove(makeChannelReg(channel_id, server))
+    def remove_daily_reg(self, channel_id, server):
+        if self.check_daily_reg(channel_id, server):
+            self.list_daily_reg().remove(make_channel_reg(channel_id, server))
             self.save_settings()
 
 
@@ -978,101 +967,101 @@ class Event:
         return not self.is_finished()
 
     def tostr(self):
-        return fmtTime(self.open_datetime) + "," + fmtTime(
-            self.close_datetime) + "," + self.group + "," + self.dungeon_code + "," + self.event_type + "," + self.event_seq
+        return fmt_time(self.open_datetime) + "," + fmt_time(
+            self.close_datetime) + "," + self.group + "," + self.dungeon_name + "," + self.event_type
 
-    def startPst(self):
+    def start_pst(self):
         tz = pytz.timezone('US/Pacific')
         return self.open_datetime.astimezone(tz)
 
-    def startEst(self):
+    def start_est(self):
         tz = pytz.timezone('US/Eastern')
         return self.open_datetime.astimezone(tz)
 
-    def startFromNow(self):
-        return fmtHrsMins(self.start_from_now_sec())
+    def start_from_now(self):
+        return fmt_hrs_mins(self.start_from_now_sec())
 
-    def endFromNow(self):
-        return fmtHrsMins(self.end_from_now_sec())
+    def end_from_now(self):
+        return fmt_hrs_mins(self.end_from_now_sec())
 
-    def endFromNowFullMin(self):
-        return fmtDaysHrsMinsShort(self.end_from_now_sec())
+    def end_from_now_full_min(self):
+        return fmt_days_hrs_mins_short(self.end_from_now_sec())
 
-    def toGuerrillaStr(self):
-        return fmtTimeShort(self.startPst())
+    def to_guerrilla_str(self):
+        return fmt_time_short(self.start_pst())
 
-    def toDateStr(self):
-        return self.server + "," + self.group + "," + fmtTime(self.startPst()) + "," + fmtTime(
-            self.startEst()) + "," + self.startFromNow()
+    def to_date_str(self):
+        return self.server + "," + self.group + "," + fmt_time(self.start_pst()) + "," + fmt_time(
+            self.start_est()) + "," + self.start_from_now()
 
-    def groupShortName(self):
+    def group_short_name(self):
         return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
 
-    def groupLongName(self):
+    def group_long_name(self):
         return self.group.upper() if self.group is not None else "UNGROUPED"
 
-    def toPartialEvent(self, pe):
-        group = self.groupShortName()
+    def to_partial_event(self, pe):
+        group = self.group_short_name()
         if self.is_started():
-            return group + " " + self.endFromNow() + "   " + self.name_and_modifier
+            return group + " " + self.end_from_now() + "   " + self.name_and_modifier
         else:
-            return group + " " + fmtTimeShort(self.startPst()) + " " + fmtTimeShort(
-                self.startEst()) + " " + self.startFromNow() + " " + self.name_and_modifier
+            return group + " " + fmt_time_short(self.start_pst()) + " " + fmt_time_short(
+                self.start_est()) + " " + self.start_from_now() + " " + self.name_and_modifier
 
 
 class EventList:
     def __init__(self, event_list):
         self.event_list = event_list
 
-    def withFunc(self, func, exclude=False):
+    def with_func(self, func, exclude=False):
         if exclude:
             return EventList(list(itertools.filterfalse(func, self.event_list)))
         else:
             return EventList(list(filter(func, self.event_list)))
 
-    def withServer(self, server):
-        return self.withFunc(lambda e: e.server == normalize_server_name(server))
+    def with_server(self, server):
+        return self.with_func(lambda e: e.server == normalize_server_name(server))
 
-    def withType(self, event_type):
-        return self.withFunc(lambda e: e.event_type == event_type)
+    def with_type(self, event_type):
+        return self.with_func(lambda e: e.event_type == event_type)
 
-    def inType(self, event_types):
-        return self.withFunc(lambda e: e.event_type in event_types)
+    def in_type(self, event_types):
+        return self.with_func(lambda e: e.event_type in event_types)
 
-    def withDungeonType(self, dungeon_type, exclude=False):
-        return self.withFunc(lambda e: e.dungeon_type == dungeon_type, exclude)
+    def with_dungeon_type(self, dungeon_type, exclude=False):
+        return self.with_func(lambda e: e.dungeon_type == dungeon_type, exclude)
 
-    def inDungeonType(self, dungeon_types, exclude=False):
-        return self.withFunc(lambda e: e.dungeon_type in dungeon_types, exclude)
+    def in_dungeon_type(self, dungeon_types, exclude=False):
+        return self.with_func(lambda e: e.dungeon_type in dungeon_types, exclude)
 
-    def isGrouped(self, exclude=False):
-        return self.withFunc(lambda e: e.group is not None, exclude)
+    def is_grouped(self, exclude=False):
+        return self.with_func(lambda e: e.group is not None, exclude)
 
-    def withNameContains(self, name, exclude=False):
-        return self.withFunc(lambda e: name.lower() in e.dungeon_name.lower(), exclude)
+    def with_name_contains(self, name, exclude=False):
+        return self.with_func(lambda e: name.lower() in e.dungeon_name.lower(), exclude)
 
-    def excludeUnwantedEvents(self):
-        return self.withFunc(isEventWanted)
+    def exclude_unwanted_events(self):
+        return self.with_func(is_event_wanted)
 
     def items(self):
         return self.event_list
 
-    def startedOnly(self):
-        return self.withFunc(lambda e: e.is_started())
+    def started_only(self):
+        return self.with_func(lambda e: e.is_started())
 
-    def pendingOnly(self):
-        return self.withFunc(lambda e: e.is_pending())
+    def pending_only(self):
+        return self.with_func(lambda e: e.is_pending())
 
-    def activeOnly(self):
-        return self.withFunc(lambda e: e.is_active())
+    def active_only(self):
+        return self.with_func(lambda e: e.is_active())
 
-    def availableOnly(self):
-        return self.withFunc(lambda e: e.is_available())
+    def available_only(self):
+        return self.with_func(lambda e: e.is_available())
 
-    def itemsByOpenTime(self, reverse=False):
+    def items_by_open_time(self, reverse=False):
         return list(sorted(self.event_list, key=(lambda e: (e.open_datetime, e.dungeon_name)), reverse=reverse))
 
-    def itemsByCloseTime(self, reverse=False):
+    def items_by_close_time(self, reverse=False):
         return list(sorted(self.event_list, key=(lambda e: (e.close_datetime, e.dungeon_name)), reverse=reverse))
 
 
@@ -1099,21 +1088,21 @@ class DungeonType(Enum):
     Unknown9 = 9
 
 
-def fmtTime(dt):
+def fmt_time(dt):
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
-def fmtTimeShort(dt):
+def fmt_time_short(dt):
     return dt.strftime("%H:%M")
 
 
-def fmtHrsMins(seconds):
+def fmt_hrs_mins(seconds):
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     return '{:2}h {:2}m'.format(int(hours), int(minutes))
 
 
-def fmtDaysHrsMinsShort(sec):
+def fmt_days_hrs_mins_short(sec):
     days, sec = divmod(sec, 86400)
     hours, sec = divmod(sec, 3600)
     minutes, sec = divmod(sec, 60)
@@ -1126,7 +1115,7 @@ def fmtDaysHrsMinsShort(sec):
         return '{:2}m'.format(int(minutes))
 
 
-def isEventWanted(event):
+def is_event_wanted(event):
     name = event.name_and_modifier.lower()
     if 'castle of satan' in name:
         # eliminate things like : TAMADRA Invades in [Castle of Satan][Castle of Satan in the Abyss]
