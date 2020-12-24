@@ -164,6 +164,9 @@ class MonsterIndex(tsutils.aobject):
             # Guarding this separately to prevent 'gemini' from triggering (e.g. 2645)
             prefixes.add('chibi')
 
+        if 'chibi' in lower_name:
+            prefixes.add('chibi')
+
         true_evo_type = self.db_context.graph.true_evo_type_by_monster(m)
         awoken = lower_name.startswith('awoken') or '覚醒' in lower_name
         revo = true_evo_type == InternalEvoType.Reincarnated
