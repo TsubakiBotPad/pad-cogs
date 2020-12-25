@@ -464,6 +464,7 @@ class PadEvents(commands.Cog):
     @aep_set.command(name="searchstr")
     async def aep_s_searchstr(self, ctx, key, *, searchstr):
         """Sets what string is tested against event name"""
+        searchstr = searchstr.strip('"')
         if (await self.aepg(ctx, key))['regex']:
             try:
                 re.compile(searchstr)
@@ -611,6 +612,7 @@ class PadEvents(commands.Cog):
     @aed_e.command(name="searchstr")
     async def aed_e_searchstr(self, ctx, index, *, searchstr):
         """Set search string of an autoeventdm"""
+        searchstr = searchstr.strip('"')
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
