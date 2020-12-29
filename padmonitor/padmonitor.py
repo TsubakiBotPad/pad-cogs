@@ -69,7 +69,7 @@ class PadMonitor(commands.Cog):
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
                     msg += '\n\t[{}] {}'.format(m.monster_no, m.name_en)
-                    if tsutils.containsJa(
+                    if tsutils.contains_ja(
                             m.name_en) and m.name_en_override != m.name_en and m.name_en_override is not None:
                         msg += ' ({})'.format(m.name_en_override)
                 return msg
@@ -94,10 +94,17 @@ class PadMonitor(commands.Cog):
             logger.exception('failed to send message to {}:'.format(channel_id))
 
     @commands.group(aliases=['pdm'])
-    @checks.mod_or_permissions(manage_guild=True)
     async def padmonitor(self, ctx):
         """PAD info monitoring"""
         pass
+
+    @padmonitor.command()
+    @checks.is_owner()
+    async def reload(self, ctx):
+        """Update PDM channels"""
+        async with ctx.typing():
+            await self.check_seen()
+        await ctx.tick()
 
     @padmonitor.command()
     @commands.guild_only()

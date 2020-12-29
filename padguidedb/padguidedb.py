@@ -9,7 +9,8 @@ from datetime import datetime
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings, tsutils
+from tsutils import CogSettings
+import tsutils
 
 logger = logging.getLogger('red.padbot-cogs.padguidedb')
 
@@ -154,10 +155,10 @@ class PadGuideDb(commands.Cog):
 
             if stderr:
                 logger.error("Dungeon Load Error:\n{}\n\n{}".format(stdout.decode(), stderr.decode()))
-                await tsutils.doubleup(ctx, inline(
+                await tsutils.send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
-                await tsutils.doubleup(ctx, inline(
+                await tsutils.send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
 

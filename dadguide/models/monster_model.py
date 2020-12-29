@@ -1,6 +1,7 @@
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType
+from .enum_types import AwakeningRestrictedLatent
 from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
 from .leader_skill_model import LeaderSkillModel
@@ -51,8 +52,8 @@ class MonsterModel(BaseModel):
         self.in_pem = m['in_pem']
         self.in_mpshop = m['buy_mp'] is not None
         self.buy_mp = m['buy_mp']
-        self.sell_gold= m['sell_gold']
-        self.sell_mp=m['sell_mp']
+        self.sell_gold = m['sell_gold']
+        self.sell_mp = m['sell_mp']
         self.reg_date = m['reg_date']
         self.on_jp = m['on_jp']
         self.on_na = m['on_na']
@@ -113,6 +114,22 @@ class MonsterModel(BaseModel):
         return sorted(killers)
 
     @property
+    def awakening_restricted_latents(self):
+        monster_awakening_to_allowed_latent_map = [
+            {27: AwakeningRestrictedLatent.UnmatchableClear},  # TPA
+            {20: AwakeningRestrictedLatent.SpinnerClear},  # Bind clear
+            {62: AwakeningRestrictedLatent.AbsorbPierce},  # Combo orb
+        ]
+        latents = []
+        for row in monster_awakening_to_allowed_latent_map:
+            # iterate over one thing
+            for awakening in row.keys():
+                if any([x.awoken_skill_id == awakening and not x.is_super for x in self.awakenings]):
+                    latents.append(row[awakening])
+
+        return latents
+
+    @property
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
 
@@ -120,7 +137,8 @@ class MonsterModel(BaseModel):
         s_min = float(self.stat_values[key]['min'])
         s_max = float(self.stat_values[key]['max'])
         if self.level > 1:
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** self.stat_values[key]['scale']
+            scale = self.stat_values[key]['scale']
+            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** scale
         else:
             s_val = s_min
         if lv > 99:
@@ -154,7 +172,7 @@ class MonsterModel(BaseModel):
         adjusted_subname = ''
         for part in subname.split('・'):
             roma_part = romkan.to_roma(part)
-            if part != roma_part and not tsutils.containsJa(roma_part):
+            if part != roma_part and not tsutils.contains_ja(roma_part):
                 adjusted_subname += ' ' + roma_part.strip('-')
         return adjusted_subname.strip()
 

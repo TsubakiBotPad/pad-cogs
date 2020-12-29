@@ -15,11 +15,12 @@
   ],
   "hidden": false,
   "disabled": false,
-  "required_cogs": {
-    "padvision": "https://github.com/TsubakiBotPad/padbot-cogs"
-  },
+  "required_cogs": {},
   "requirements": [
-    "tsutils"
+    "tsutils",
+    "Pillow",
+    "tensorflow",
+    "numpy"
   ],
   "tags": [
     "PAD"

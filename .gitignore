@@ -136,3 +136,5 @@ bot_data/
 
 # 3way Merge
 .orig
+
+.DS_Store

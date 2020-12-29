@@ -3,7 +3,6 @@ import json
 from typing import Optional
 from collections import defaultdict
 from .database_manager import DadguideDatabase
-from .database_manager import DictWithAttrAccess
 from .models.enum_types import EvoType, InternalEvoType
 from .models.monster_model import MonsterModel
 from .models.leader_skill_model import LeaderSkillModel
@@ -91,6 +90,7 @@ FROM
   JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
 """
 
+
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
@@ -104,10 +104,10 @@ class MonsterGraph(object):
     def build_graph(self):
         self.graph = networkx.MultiDiGraph()
 
-        ms = self.database.query_many(MONSTER_QUERY, (), DictWithAttrAccess)
-        es = self.database.query_many(EVOS_QUERY, (), DictWithAttrAccess)
-        aws = self.database.query_many(AWAKENINGS_QUERY, (), DictWithAttrAccess)
-        ems = self.database.query_many(EGG_QUERY, (), DictWithAttrAccess)
+        ms = self.database.query_many(MONSTER_QUERY, ())
+        es = self.database.query_many(EVOS_QUERY, ())
+        aws = self.database.query_many(AWAKENINGS_QUERY, ())
+        ems = self.database.query_many(EGG_QUERY, ())
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -118,10 +118,10 @@ class MonsterGraph(object):
         mtoegg = defaultdict(lambda: {'pem': False, 'rem': False})
         for e in ems:
             data = json.loads(e.contents)
-            type = 'pem' if e.type == "PEM" else 'rem'
+            e_type = 'pem' if e.type == "PEM" else 'rem'
             for m in data:
-                id = int(m[1:-1]) # Remove parentheses
-                mtoegg[id][type] = True
+                idx = int(m[1:-1])  # Remove parentheses
+                mtoegg[idx][e_type] = True
 
         for m in ms:
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
@@ -210,7 +210,7 @@ class MonsterGraph(object):
                                    latent_slots=m.latent_slots,
                                    has_animation=m.has_animation == 1,
                                    has_hqimage=m.has_hqimage == 1,
-                                  )
+                                   )
 
             self.graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
@@ -316,14 +316,14 @@ class MonsterGraph(object):
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
-    def get_base_monster_id(self, monster: MonsterModel):
-        return self.get_base_id_by_id(monster.monster_id)
+    def get_base_monster(self, monster: MonsterModel):
+        return self.get_monster(self.get_base_id_by_id(monster.monster_id))
 
     def monster_is_base_by_id(self, monster_id: int) -> bool:
         return self.get_base_id_by_id(monster_id) == monster_id
 
     def monster_is_base(self, monster: MonsterModel) -> bool:
-        return self.monster_is_base_by_id(monster.monster_no)
+        return self.monster_is_base_by_id(monster.monster_id)
 
     def get_transform_base_id_by_id(self, monster_id):
         # NOTE: This assumes that no two monsters will transform to the same monster. This

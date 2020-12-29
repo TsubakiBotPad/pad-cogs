@@ -241,11 +241,11 @@ class Dadguide(commands.Cog):
 
     async def _download_override_files(self):
         one_hour_secs = 1 * 60 * 60
-        await tsutils.makeAsyncCachedPlainRequest(
+        await tsutils.async_cached_plain_request(
             NICKNAME_FILE_PATTERN, NICKNAME_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.makeAsyncCachedPlainRequest(
+        await tsutils.async_cached_plain_request(
             BASENAME_FILE_PATTERN, GROUP_BASENAMES_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.makeAsyncCachedPlainRequest(
+        await tsutils.async_cached_plain_request(
             PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
     @commands.group()
