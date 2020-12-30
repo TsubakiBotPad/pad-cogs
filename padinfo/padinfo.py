@@ -630,6 +630,9 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
+        # Remove unicode quotation marks
+        whole_query = re.sub("[\u201c\u201d]", '"', whole_query)
+
         # deliberate order in case of multiple different separators.
         for sep in ('"', '/', ',', ' '):
             if sep in whole_query:
