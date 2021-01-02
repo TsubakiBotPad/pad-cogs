@@ -45,6 +45,7 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
                   EvoTypes.REVO: ('revo', 'reincarnated'),
                   EvoTypes.SREVO: ('srevo', 'super', 'sr'),
                   EvoTypes.PIXEL: ('p', 'pixel', 'dot'),
+                  EvoTypes.NONPIXEL: ('np', 'nonpixel'),
                   EvoTypes.EQUIP: ('equip', 'assist')}
 
 
@@ -54,6 +55,7 @@ class MiscPrefixes(Enum):
 
 
 MISC_PREFIX_MAP = {MiscPrefixes.CHIBI: ('chibi', 'mini'),
+                   MiscPrefixes.NONCHIBI: ('nonchibi', 'nc'),
                    MiscPrefixes.FARMABLE: ('farmable', 'nrem')}
 
 PREFIX_MAPS = [
