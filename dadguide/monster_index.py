@@ -160,6 +160,9 @@ class MonsterIndex2(aobject):
                 graph.true_evo_type_by_monster(m).value == "Pixel"):
             for t in EVO_PREFIX_MAP[EvoTypes.PIXEL]:
                 prefix.add(t)
+        else:
+            for t in EVO_PREFIX_MAP[EvoTypes.NONPIXEL]:
+                prefix.add(t)
 
         # Equip
         if m.is_equip:
@@ -169,6 +172,9 @@ class MonsterIndex2(aobject):
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or 'ミニ' in m.name_ja:
             for t in MISC_PREFIX_MAP[MiscPrefixes.CHIBI]:
+                prefix.add(t)
+        else:
+            for t in MISC_PREFIX_MAP[MiscPrefixes.NONCHIBI]:
                 prefix.add(t)
 
         # Farmable

@@ -1083,6 +1083,9 @@ class PadInfo(commands.Cog):
 
         monstergen = set(monstergen).intersection(monstergen_base) or monstergen
 
+        if not monstergen:
+            return
+
         mon = max(monstergen, key=lambda m: (not m.is_equip,
                                              monsterscore[m],
                                              -DGCOG.database.graph.get_base_id(m),
