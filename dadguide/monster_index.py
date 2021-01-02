@@ -9,6 +9,7 @@ SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vf
                  '/pub?gid={}&single=true&output=csv'
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
 GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
+PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 
 class MonsterIndex2(aobject):
@@ -26,20 +27,20 @@ class MonsterIndex2(aobject):
             if mid.isdigit() and not i:
                 if " " in nick:
                     self.mwtokens.add(nick)
-                self.idtonick[int(mid)].add(nick)
+                self.idtonick[int(mid)].add(nick.replace(" ", ""))
         gnicks = await sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
         for mid, nick, *data in gnicks:
             _, i, *_ = data + [None, None]
             if mid.isdigit() and not i:
                 if " " in nick:
                     self.mwtokens.add(nick)
-                self.idtognick[int(mid)].add(nick)
+                self.idtognick[int(mid)].add(nick.replace(" ", ""))
         pnicks = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
         for nick, _, sid, *_ in pnicks:
             if sid.isdigit():
                 if " " in nick:
                     self.mwtokens.add(nick)
-                self.sidtopnick[int(sid)].add(nick)
+                self.sidtopnick[int(sid)].add(nick.replace(" ", ""))
 
         self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
 
@@ -85,13 +86,6 @@ class MonsterIndex2(aobject):
         name = re.sub(r'[\-+]', ' ', oname)
         name = re.sub(r'[^a-z0-9 ]', '', name)
         return [t.strip() for t in set(name.split() + oname.split()) if t]
-
-    @staticmethod
-    async def _sheet_to_reader(url):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                file = io.StringIO(await response.text())
-        return csv.reader(file, delimiter=',')
 
     async def get_prefixes(self, m):
         prefix = set()
@@ -197,3 +191,11 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         return prefix
+
+
+# TODO: Move this to TSUtils
+async def sheet_to_reader(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            file = io.StringIO(await response.text())
+    return csv.reader(file, delimiter=',')
