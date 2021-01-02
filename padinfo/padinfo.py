@@ -204,7 +204,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0, color=None)
+        self.config.register_user(survey_mode=0, color=None, beta_id3=False)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
 
     def cog_unload(self):
@@ -274,12 +274,19 @@ class PadInfo(commands.Cog):
         else:
             await self.makeFailureMsg(ctx, err)
 
-    @commands.command(name="id", aliases=["iD", "Id", "ID", "id1", "idold", "oldid"])
+    @commands.command(name="id", aliases=["iD", "Id", "ID"])
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        prefix = ctx.prefix + "id"
-        query = prefix.join(filter(None, query.split(prefix)))
+        if await self.config.user(ctx.author).beta_id3():
+            await self._do_id3(ctx, query)
+        else:
+            await self._do_id(ctx, query)
+
+    @commands.command(aliases=["idold", "oldid"])
+    @checks.bot_has_permissions(embed_links=True)
+    async def id1(self, ctx, *, query):
+        """Do a search via id1"""
         await self._do_id(ctx, query)
 
     @commands.command()
@@ -375,6 +382,9 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def id3(self, ctx, *, query: str):
         """Monster info (main tab)"""
+        await self._do_id3(ctx, query)
+
+    async def _do_id3(self, ctx, query):
         m = await self.findMonster3(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
@@ -849,6 +859,12 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send("value must be `always`, `sometimes`, or `never`")
 
+    @idset.command()
+    async def beta(self, ctx, value: bool = True):
+        """Opt in (or out D:) to the id3 beta test!"""
+        await self.config.user(ctx.author).beta_id3.set(value)
+        await ctx.tick()
+
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
@@ -1093,8 +1109,8 @@ class PadInfo(commands.Cog):
         if not monstergen:
             return
 
-        mon = max(monstergen, key=lambda m: (not m.is_equip,
-                                             monsterscore[m],
+        mon = max(monstergen, key=lambda m: (monsterscore[m],
+                                             not m.is_equip,
                                              -DGCOG.database.graph.get_base_id(m),
                                              m.rarity,
                                              m.monster_no_na))
