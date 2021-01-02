@@ -1054,7 +1054,7 @@ class PadInfo(commands.Cog):
         def calc_ratio(s1, s2):
             return difflib.SequenceMatcher(None, s1, s2).ratio()
 
-        print(prefixes, name)
+        # print(prefixes, name)
 
         monsterscore = {m: 0 for m in DGCOG.database.get_all_monsters()}
         monstergen = set(monsterscore)
@@ -1081,7 +1081,7 @@ class PadInfo(commands.Cog):
                     ftr.add(m)
             monstergen = ftr
 
-        print({m: monsterscore[m] for m in monstergen})
+        # print({m: monsterscore[m] for m in monstergen})
 
         def matches(m, t):
             if len(t) < 6:
