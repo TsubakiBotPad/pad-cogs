@@ -28,13 +28,13 @@ class MonsterIndex2(aobject):
 
         nicks = await self._sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         idtonick = defaultdict(set)
-        for nick, mid, *_ in nicks:
-            if mid.isdigit():
+        for nick, mid, *data in nicks:
+            if mid.isdigit() and len(data) > 1 and data[1]:
                 idtonick[int(mid)].add(nick)
         gnicks = await self._sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
         idtognick = defaultdict(set)
-        for mid, nick, *_ in gnicks:
-            if mid.isdigit():
+        for mid, nick, *data in gnicks:
+            if mid.isdigit() and len(data) > 1 and data[1]:
                 idtognick[int(mid)].add(nick)
 
         async for m in AsyncIter(monsters):
