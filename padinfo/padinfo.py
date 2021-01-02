@@ -1078,7 +1078,7 @@ class PadInfo(commands.Cog):
             if not monstergen:
                 return
 
-        monstergen = monstergen.intersection(monstergen_base) or monstergen
+        monstergen = set(monstergen).intersection(monstergen_base) or monstergen
 
         mon = max(monstergen, key=lambda m: (not m.is_equip,
                                              monsterscore[m],
