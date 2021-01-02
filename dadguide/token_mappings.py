@@ -52,7 +52,7 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
 
 class MiscPrefixes(Enum):
     CHIBI = 'chibi'
-    NONCHIBI = 'chibi'
+    NONCHIBI = 'nonchibi'
     FARMABLE = 'farmable'
 
 
