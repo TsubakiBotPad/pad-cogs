@@ -860,7 +860,7 @@ class PadInfo(commands.Cog):
             await ctx.send("value must be `always`, `sometimes`, or `never`")
 
     @idset.command()
-    async def dobetaid3(self, ctx, value: bool = True):
+    async def beta(self, ctx, value: bool = True):
         """Opt in (or out D:) to the id3 beta test!"""
         await self.config.user(ctx.author).beta_id3.set(value)
         await ctx.tick()
