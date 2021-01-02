@@ -170,7 +170,8 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         # Chibi
-        if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or 'ミニ' in m.name_ja:
+        if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
+                'ミニ' in m.name_ja or '(chibi)' in m.name_en:
             for t in MISC_PREFIX_MAP[MiscPrefixes.CHIBI]:
                 prefix.add(t)
         else:
