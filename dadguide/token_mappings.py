@@ -32,6 +32,7 @@ class EvoTypes(Enum):
     REVO = 'reincarnated'
     SREVO = 'super reincarnated'
     PIXEL = 'pixel'
+    NONPIXEL = 'nonpixel'
     EQUIP = 'equip'
 
 
@@ -51,6 +52,7 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
 
 class MiscPrefixes(Enum):
     CHIBI = 'chibi'
+    NONCHIBI = 'chibi'
     FARMABLE = 'farmable'
 
 
