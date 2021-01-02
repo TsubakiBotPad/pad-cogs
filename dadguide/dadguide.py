@@ -79,6 +79,7 @@ class Dadguide(commands.Cog):
 
         self.database = None
         self.index = None  # type: MonsterIndex
+        self.index2 = None  # type: MonsterIndex2
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.

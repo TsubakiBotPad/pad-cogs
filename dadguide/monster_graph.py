@@ -313,6 +313,9 @@ class MonsterGraph(object):
             return None
         return sorted(alt_cards)[0]
 
+    def get_base_id(self, monster):
+        return self.get_base_id_by_id(monster.monster_id)
+
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
 
