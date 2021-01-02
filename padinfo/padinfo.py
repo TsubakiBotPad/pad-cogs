@@ -1,4 +1,6 @@
 import asyncio
+import difflib
+import importlib
 import json
 import logging
 import os
@@ -14,7 +16,7 @@ import discord
 import tsutils
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, inline
+from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
 from .id_menu import IdMenu
@@ -43,8 +45,11 @@ Options for <query>
         {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
         {0.prefix}id r/d ares (slashes, spaces work too)
 
-computed nickname list and overrides: https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
-submit an override suggestion: https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
+computed nickname list and overrides: 
+    https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
+
+submit an override suggestion: 
+    https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
 
 EMBED_NOT_GENERATED = -1
 
@@ -87,9 +92,9 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji("start_" + selected_emoji)
 
     async def on_update(self, ctx, selected_emoji):
-        evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        evo_id = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
-        if evoID:
+        if evo_id:
             evos = sorted({*self.db_context.graph.get_alt_cards(self.m.monster_id)})
             index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
@@ -122,7 +127,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
         self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
                                                                    m=self.m, scroll=sorted(
-                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
+                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evo_id else [], menu_type=1)
         return True
 
 
@@ -200,7 +205,7 @@ class PadInfo(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False)
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -267,9 +272,9 @@ class PadInfo(commands.Cog):
             await ctx.send(IdMenu.monster_header(m))
             await ctx.send(box(m.name_ja))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
-    @commands.command(name="id", aliases="iD Id ID".split())
+    @commands.command(name="id", aliases=["iD", "Id", "ID", "id1", "idold", "oldid"])
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
@@ -297,7 +302,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     async def send_survey_after(self, ctx, query, result):
         sm = await self.config.user(ctx.author).survey_mode()
@@ -364,7 +369,17 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        m = await self.findMonster3(query)
+        if m is not None:
+            await self._do_idmenu(ctx, m, self.id_emoji)
+        else:
+            await self.makeFailureMsg(ctx, "No monster matched")
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
@@ -374,7 +389,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat'])
     @checks.bot_has_permissions(embed_links=True)
@@ -384,7 +399,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -396,7 +411,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('Not a pantheon monster'))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -408,7 +423,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('No skillups available'))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         DGCOG = self.bot.get_cog("Dadguide")
@@ -532,7 +547,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -545,7 +560,7 @@ class PadInfo(commands.Cog):
             await ctx.send(embed=embed)
 
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
@@ -555,7 +570,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -567,7 +582,7 @@ class PadInfo(commands.Cog):
             embed = await menu.make_header_embed(m)
             await ctx.send(embed=embed)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -577,7 +592,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['collabscroll'])
     @checks.bot_has_permissions(embed_links=True)
@@ -600,7 +615,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -614,7 +629,7 @@ class PadInfo(commands.Cog):
             await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
                                       self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -699,6 +714,68 @@ class PadInfo(commands.Cog):
         """Whispers you info on how to craft monster queries for [p]id"""
         await ctx.author.send(box(HELP_MSG.format(ctx)))
 
+    @commands.group()
+    # @checks.is_owner()
+    async def idtest(self, ctx):
+        """ID Test suite subcommands"""
+
+    @idtest.command(name="add")
+    async def idt_add(self, ctx, id: int, *, query):
+        async with self.config.test_suite() as suite:
+            suite[query] = {'result': id}
+        await ctx.tick()
+
+    @idtest.command(name="remove", aliases=["delete", "rm"])
+    async def idt_remove(self, ctx, number: int):
+        async with self.config.test_suite() as suite:
+            if number >= len(suite):
+                await ctx.react_quietly("\N{CROSS MARK}")
+                return
+            del suite[sorted(suite)[number]]
+        await ctx.tick()
+
+    @idtest.command(name="setreason", aliases=["addreason"])
+    async def idt_setreason(self, ctx, number: int, *, reason):
+        async with self.config.test_suite() as suite:
+            if number >= len(suite):
+                await ctx.react_quietly("\N{CROSS MARK}")
+                return
+            suite[sorted(suite)[number]]['reason'] = reason
+        await ctx.tick()
+
+    @idtest.command(name="list")
+    async def idt_list(self, ctx):
+        suite = await self.config.test_suite()
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items())):
+            o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="run", aliases=["test"])
+    async def idt_run(self, ctx):
+        suite = await self.config.test_suite()
+        c = 0
+        o = ""
+        ml = len(max(suite, key=len)) + 2
+        for q, r in suite.items():
+            m = await self.findMonster3(q)
+            if m and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
+                q = '"' + q + '"'
+                o += f"{q.ljust(ml)} - Ex: {m and m.monster_id}, Ac: {r['result']}{reason}\n"
+            else:
+                c += 1
+        if c:
+            o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
+        else:
+            o += "\n\nAll tests succeeded."
+        for page in pagify(o):
+            await ctx.send(box(page))
+
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
         """Speak the voice line of a monster into your current chat"""
@@ -733,7 +810,7 @@ class PadInfo(commands.Cog):
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, err)
 
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
@@ -789,7 +866,7 @@ class PadInfo(commands.Cog):
         elif re.match(r"^#?[0-9a-fA-F]{6}$", color):
             await self.config.user(ctx.author).color.set(int(color.lstrip("#"), 16))
         else:
-            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n"+", ".join(COLORS))
+            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
             return
         await ctx.tick()
 
@@ -871,12 +948,11 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    @staticmethod
-    def makeFailureMsg(err):
+    async def makeFailureMsg(self, ctx: discord.abc.Messageable, err):
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
                'Unexpected results? Use ^helpid for more info.').format(err)
-        return box(msg)
+        await ctx.send(box(msg))
 
     async def findMonster(self, query, server_filter=ServerFilter.any):
         query = rmdiacritics(query)
@@ -929,6 +1005,93 @@ class PadInfo(commands.Cog):
         else:
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster2(query)
+
+    async def findMonster3(self, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        tm = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'token_mappings')
+        mi = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'monster_index')
+        if DGCOG is None:
+            raise ValueError("Dadguide cog is not loaded")
+
+        query = rmdiacritics(query).lower()
+        query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
+        query = query.split()
+
+        base = False
+        if 'base' in query:
+            query.remove('base')
+            base = True
+
+        prefixes = set()
+        name = set()
+        valid_prefixes = {p for ps in DGCOG.index2.prefix.values() for p in ps}
+        for c, t in enumerate(query):
+            if difflib.get_close_matches(t,
+                                         [p for p in valid_prefixes if len(p) > 8],
+                                         n=1, cutoff=.8) or t in valid_prefixes:
+                prefixes.add(t)
+            else:
+                name.add(t)
+                name.update(query[c + 1:])
+                break
+
+        def calc_ratio(s1, s2):
+            return difflib.SequenceMatcher(None, s1, s2).ratio()
+
+        # print(prefixes, name)
+
+        monsterscore = {m: 0 for m in DGCOG.database.get_all_monsters()}
+        monstergen = set(monsterscore)
+
+        for t in name:
+            valid = set()
+
+            ms = difflib.get_close_matches(t, list(DGCOG.index2.tokens) + list(DGCOG.index2.manual), n=10000, cutoff=.8)
+            if not ms:
+                return
+            for match in ms:
+                for m in DGCOG.index2.manual[match]:
+                    if m not in valid:
+                        monsterscore[m] += calc_ratio(t, match) * 2
+                        valid.add(m)
+                for m in DGCOG.index2.tokens[match]:
+                    if m not in valid:
+                        monsterscore[m] += calc_ratio(t, match)
+                        valid.add(m)
+
+            ftr = set()
+            for m in valid:
+                if m in monstergen:
+                    ftr.add(m)
+            monstergen = ftr
+
+        # print({m: monsterscore[m] for m in monstergen})
+
+        def matches(m, t):
+            if len(t) < 6:
+                return t in DGCOG.index2.prefix[m]
+            else:
+                return bool(difflib.get_close_matches(t, DGCOG.index2.prefix[m], n=10000, cutoff=.8))
+
+        monstergen_base = monstergen
+        monstergen = sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), [])
+
+        for t in prefixes:
+            monstergen = {m for m in monstergen if matches(m, t)}
+            if not monstergen:
+                return
+
+        monstergen = set(monstergen).intersection(monstergen_base) or monstergen
+
+        mon = max(monstergen, key=lambda m: (not m.is_equip,
+                                             monsterscore[m],
+                                             -DGCOG.database.graph.get_base_id(m),
+                                             m.rarity,
+                                             m.monster_no_na))
+        if base:
+            return DGCOG.database.graph.get_base_monster(mon)
+        else:
+            return mon
 
 
 class PadInfoSettings(CogSettings):

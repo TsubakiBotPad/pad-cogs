@@ -21,6 +21,7 @@ from redbot.core import commands
 
 from .database_manager import *
 from .old_monster_index import MonsterIndex
+from .monster_index import MonsterIndex2
 from .database_loader import load_database
 
 from .models.monster_model import MonsterModel
@@ -78,6 +79,7 @@ class Dadguide(commands.Cog):
 
         self.database = None
         self.index = None  # type: MonsterIndex
+        self.index2 = None  # type: MonsterIndex2
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.
@@ -107,6 +109,11 @@ class Dadguide(commands.Cog):
                                   self.basename_overrides,
                                   self.panthname_overrides,
                                   accept_filter=accept_filter)
+
+    async def create_index2(self):
+        """Exported function that allows a client cog to create a monster index"""
+        await self.wait_until_ready()
+        return await MonsterIndex2(self.database.get_all_monsters(False), [])
 
     def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
@@ -185,6 +192,7 @@ class Dadguide(commands.Cog):
         logger.debug('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
+        self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
         logger.debug('Writing dg monster computed names')
         self.write_monster_computed_names()

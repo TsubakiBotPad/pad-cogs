@@ -17,7 +17,7 @@ from .database_context import DbContext
 
 
 class MonsterIndex(tsutils.aobject):
-    async def __init__(self, monster_database: DbContext, nickname_overrides, basename_overrides,
+    async def __ainit__(self, monster_database: DbContext, nickname_overrides, basename_overrides,
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
@@ -134,6 +134,8 @@ class MonsterIndex(tsutils.aobject):
             if nm:
                 for nickname in nicknames:
                     self.all_entries[nickname] = nm
+
+    __init__ = __ainit__
 
     def init_index(self):
         pass
