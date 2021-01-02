@@ -274,7 +274,7 @@ class PadInfo(commands.Cog):
         else:
             await self.makeFailureMsg(ctx, err)
 
-    @commands.command(name="id", aliases=["iD", "Id", "ID", "id1", "idold", "oldid"])
+    @commands.command(name="id", aliases=["iD", "Id", "ID"])
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
@@ -862,7 +862,8 @@ class PadInfo(commands.Cog):
     @idset.command()
     async def dobetaid3(self, ctx, value: bool = True):
         """Opt in (or out D:) to the id3 beta test!"""
-        await self.config.user(ctx.author).beta_id3(value)
+        await self.config.user(ctx.author).beta_id3.set(value)
+        await ctx.tick()
 
     @is_donor()
     @idset.command()
