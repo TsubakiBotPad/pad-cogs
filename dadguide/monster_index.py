@@ -1,8 +1,5 @@
-import csv
-import io
 import re
 
-import aiohttp
 from redbot.core.utils import AsyncIter
 from tsutils import aobject
 
@@ -12,33 +9,49 @@ SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vf
                  '/pub?gid={}&single=true&output=csv'
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
 GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
-PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 
 class MonsterIndex2(aobject):
     async def __ainit__(self, monsters, db):
-        self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters, db.graph)
+        self.graph = db.graph
+
+        self.idtonick = defaultdict(set)
+        self.idtognick = defaultdict(set)
+        self.sidtopnick = defaultdict(set, {k: set(v) for k, v in SERIES_MAP.items()})
+        self.mwtokens = set()
+
+        nicks = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
+        for nick, mid, *data in nicks:
+            _, i, *_ = data + [None, None]
+            if mid.isdigit() and not i:
+                if " " in nick:
+                    self.mwtokens.add(nick)
+                self.idtonick[int(mid)].add(nick)
+        gnicks = await sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
+        for mid, nick, *data in gnicks:
+            _, i, *_ = data + [None, None]
+            if mid.isdigit() and not i:
+                if " " in nick:
+                    self.mwtokens.add(nick)
+                self.idtognick[int(mid)].add(nick)
+        pnicks = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
+        for nick, _, sid, *_ in pnicks:
+            if sid.isdigit():
+                if " " in nick:
+                    self.mwtokens.add(nick)
+                self.sidtopnick[int(sid)].add(nick)
+
+        self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
 
     __init__ = __ainit__
 
-    async def _build_monster_index(self, monsters, graph):
+    async def _build_monster_index(self, monsters):
         manual = defaultdict(set)
         tokens = defaultdict(set)
         prefix = defaultdict(set)
 
-        nicks = await self._sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
-        idtonick = defaultdict(set)
-        for nick, mid, *data in nicks:
-            if mid.isdigit() and len(data) > 1 and data[1]:
-                idtonick[int(mid)].add(nick)
-        gnicks = await self._sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
-        idtognick = defaultdict(set)
-        for mid, nick, *data in gnicks:
-            if mid.isdigit() and len(data) > 1 and data[1]:
-                idtognick[int(mid)].add(nick)
-
         async for m in AsyncIter(monsters):
-            prefix[m] = self.get_prefixes(m, graph)
+            prefix[m] = await self.get_prefixes(m)
 
             # ID
             tokens[str(m.monster_id)].add(m)
@@ -54,13 +67,13 @@ class MonsterIndex2(aobject):
                             prefix[m].update(pas)
 
             # Monster Nickname
-            for nick in idtonick[m.monster_id]:
+            for nick in self.idtonick[m.monster_id]:
                 tokens[nick].add(m)
                 manual[nick].add(m)
 
             # Tree Nickname
-            base_id = graph.get_base_id(m)
-            for nick in idtognick[base_id]:
+            base_id = self.graph.get_base_id(m)
+            for nick in self.idtognick[base_id]:
                 tokens[nick].add(m)
                 manual[nick].add(m)
 
@@ -80,8 +93,7 @@ class MonsterIndex2(aobject):
                 file = io.StringIO(await response.text())
         return csv.reader(file, delimiter=',')
 
-    @staticmethod
-    def get_prefixes(m, graph):
+    async def get_prefixes(self, m):
         prefix = set()
 
         # Main Color
@@ -100,37 +112,38 @@ class MonsterIndex2(aobject):
                 prefix.add(t1 + "/" + t2)
 
         # Series
-        if m.series_id in SERIES_MAP:
-            for t in SERIES_MAP[m.series_id]:
+        if m.series_id in self.sidtopnick:
+            for t in self.sidtopnick[m.series_id]:
                 prefix.add(t)
 
         # Base
-        if graph.monster_is_base(m):
+        if self.graph.monster_is_base(m):
             for t in EVO_PREFIX_MAP[EvoTypes.BASE]:
                 prefix.add(t)
 
-        special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or
-                       '転生' in m.name_ja or graph.true_evo_type_by_monster(m).value == "Reincarnated" or
-                       'reincarnated' in m.name_en or graph.true_evo_type_by_monster(m).value == "Super Reincarnated" or
+        special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or '転生' in m.name_ja or
+                       self.graph.true_evo_type_by_monster(m).value == "Reincarnated" or
+                       'reincarnated' in m.name_en or
+                       self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated" or
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
+        if self.graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
             for t in EVO_PREFIX_MAP[EvoTypes.EVO]:
                 prefix.add(t)
 
         # Uvo
-        if graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
+        if self.graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
             for t in EVO_PREFIX_MAP[EvoTypes.UVO]:
                 prefix.add(t)
 
         # UUvo
-        if graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
+        if self.graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
             for t in EVO_PREFIX_MAP[EvoTypes.UUVO]:
                 prefix.add(t)
 
         # Transform
-        if not graph.monster_is_transform_base(m):
+        if not self.graph.monster_is_transform_base(m):
             for t in EVO_PREFIX_MAP[EvoTypes.TRANS]:
                 prefix.add(t)
 
@@ -145,19 +158,19 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         # Reincarnated
-        if '転生' in m.name_ja or graph.true_evo_type_by_monster(m).value == "Reincarnated":
+        if '転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
             for t in EVO_PREFIX_MAP[EvoTypes.REVO]:
                 prefix.add(t)
 
         # Super Reincarnated
-        if '超転生' in m.name_ja or graph.true_evo_type_by_monster(m).value == "Super Reincarnated":
+        if '超転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated":
             for t in EVO_PREFIX_MAP[EvoTypes.SREVO]:
                 prefix.add(t)
 
         # Pixel
         if (m.name_ja.startswith('ドット') or
                 m.name_en.startswith('pixel') or
-                graph.true_evo_type_by_monster(m).value == "Pixel"):
+                self.graph.true_evo_type_by_monster(m).value == "Pixel"):
             for t in EVO_PREFIX_MAP[EvoTypes.PIXEL]:
                 prefix.add(t)
         else:
@@ -179,7 +192,7 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         # Farmable
-        if graph.monster_is_farmable_evo(m) or graph.monster_is_mp_evo(m):
+        if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
             for t in MISC_PREFIX_MAP[MiscPrefixes.FARMABLE]:
                 prefix.add(t)
 

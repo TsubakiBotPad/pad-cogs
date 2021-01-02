@@ -170,7 +170,7 @@ class Dadguide(commands.Cog):
 
         logger.info('Loading dg name overrides')
         nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN)
-        basename_overrides = self._csv_to_tuples(BASENAME_FILE_PATTERN)
+        basename_overrides = self._csv_to_tuples(BASENAME_FILE_PATTERN, 5)
         panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN)
 
         self.nickname_overrides = defaultdict(set)
@@ -180,24 +180,24 @@ class Dadguide(commands.Cog):
 
         self.basename_overrides = defaultdict(set)
         for x in basename_overrides:
-            k, v = x
-            if k.isdigit():
+            k, v, _, _, i = x
+            if k.isdigit() and not i:
                 self.basename_overrides[int(k)].add(v.lower())
 
         self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
 
-        logger.debug('Loading dg database')
+        logger.info('Loading dg database')
         self.database = load_database(self.database)
-        logger.debug('Building dg monster index')
+        logger.info('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
                                         self.basename_overrides, self.panthname_overrides)
         self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
-        logger.debug('Writing dg monster computed names')
+        logger.info('Writing dg monster computed names')
         self.write_monster_computed_names()
 
-        logger.debug('Done refreshing dg data')
+        logger.info('Done refreshing dg data')
 
     def write_monster_computed_names(self):
         results = {}

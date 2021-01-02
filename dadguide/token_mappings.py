@@ -1,5 +1,20 @@
 from collections import defaultdict
 from enum import Enum
+import aiohttp
+import csv
+import io
+
+async def sheet_to_reader(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            file = io.StringIO(await response.text())
+    return csv.reader(file, delimiter=',')
+
+SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
+                 '/pub?gid={}&single=true&output=csv'
+PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
+
+
 
 COLOR_MAP = {0: ('r', 'red', 'fire'),
              1: ('b', 'blue', 'water'),
@@ -19,6 +34,7 @@ SERIES_MAP = {130: ('halloween', 'hw', 'h'),
               183: ('gh', 'gungho'),
               117: ('gh', 'gungho'),
               187: ('sam3', 'samurai3', 'samiii')}
+
 
 
 class EvoTypes(Enum):
