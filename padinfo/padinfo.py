@@ -1102,8 +1102,8 @@ class PadInfo(commands.Cog):
         if not monstergen:
             return
 
-        mon = max(monstergen, key=lambda m: (not m.is_equip,
-                                             monsterscore[m],
+        mon = max(monstergen, key=lambda m: (monsterscore[m],
+                                             not m.is_equip,
                                              -DGCOG.database.graph.get_base_id(m),
                                              m.rarity,
                                              m.monster_no_na))
