@@ -1,5 +1,9 @@
 from collections import defaultdict
 from enum import Enum
+import aiohttp
+import csv
+import io
+
 
 COLOR_MAP = {0: ('r', 'red', 'fire'),
              1: ('b', 'blue', 'water'),
@@ -19,6 +23,7 @@ SERIES_MAP = {130: ('halloween', 'hw', 'h'),
               183: ('gh', 'gungho'),
               117: ('gh', 'gungho'),
               187: ('sam3', 'samurai3', 'samiii')}
+
 
 
 class EvoTypes(Enum):

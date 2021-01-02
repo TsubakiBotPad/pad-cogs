@@ -1085,9 +1085,16 @@ class PadInfo(commands.Cog):
 
         def matches(m, t):
             if len(t) < 6:
-                return t in DGCOG.index2.prefix[m]
+                if t in DGCOG.index2.prefix[m]:
+                    monsterscore[m] += 1
+                    return True
             else:
-                return bool(difflib.get_close_matches(t, DGCOG.index2.prefix[m], n=10000, cutoff=.8))
+                dlm = difflib.get_close_matches(t, DGCOG.index2.prefix[m], n=10000, cutoff=.8)
+                if dlm:
+                    monsterscore[m] += max(calc_ratio(t, p) for p in dlm)
+                    return True
+            return False
+
 
         monstergen_base = monstergen
         monstergen = sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), [])
@@ -1107,6 +1114,8 @@ class PadInfo(commands.Cog):
                                              -DGCOG.database.graph.get_base_id(m),
                                              m.rarity,
                                              m.monster_no_na))
+
+
         if base:
             return DGCOG.database.graph.get_base_monster(mon)
         else:
