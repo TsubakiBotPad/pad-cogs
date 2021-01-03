@@ -1024,6 +1024,7 @@ class PadInfo(commands.Cog):
 
     async def findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
+        await DGCOG.wait_until_ready()
         tm = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'token_mappings')
         mi = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'monster_index')
         if DGCOG is None:
@@ -1069,7 +1070,7 @@ class PadInfo(commands.Cog):
             for match in ms:
                 for m in DGCOG.index2.manual[match]:
                     if m not in valid:
-                        monsterscore[m] += calc_ratio(t, match) * 2
+                        monsterscore[m] += calc_ratio(t, match) + .001
                         valid.add(m)
                 for m in DGCOG.index2.tokens[match]:
                     if m not in valid:
