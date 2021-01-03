@@ -8,7 +8,7 @@ from .token_mappings import *
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
                  '/pub?gid={}&single=true&output=csv'
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
+GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
 
@@ -28,7 +28,7 @@ class MonsterIndex2(aobject):
                 if " " in nick:
                     self.mwtokens.add(nick)
                 self.idtonick[int(mid)].add(nick.replace(" ", ""))
-        gnicks = await sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
+        gnicks = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
         for mid, nick, *data in gnicks:
             _, i, *_ = data + [None, None]
             if mid.isdigit() and not i:

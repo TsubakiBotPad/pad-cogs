@@ -38,16 +38,16 @@ try:
     # have any cog data path loaded
     CSV_FILE_PATTERN = '{}.csv'
     NAMES_EXPORT_PATH = _data_file('computed_names.json')
-    BASENAMES_EXPORT_PATH = _data_file('base_names.json')
+    TREENAMES_EXPORT_PATH = _data_file('base_names.json')
     TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
 
     SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
     NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-    GROUP_BASENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
+    GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
     PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 
     NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
-    BASENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('basenames'))
+    TREENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('treenames'))
     PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
     DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
@@ -69,8 +69,8 @@ class Dadguide(commands.Cog):
         # A string -> int mapping, nicknames to monster_id_na
         self.nickname_overrides = {}
 
-        # An int -> set(string), monster_id_na to set of basename overrides
-        self.basename_overrides = defaultdict(set)
+        # An int -> set(string), monster_id_na to set of treename overrides
+        self.treename_overrides = defaultdict(set)
 
         self.panthname_overrides = defaultdict(set)
 
@@ -106,7 +106,7 @@ class Dadguide(commands.Cog):
         await self.wait_until_ready()
         return await MonsterIndex(self.database,
                                   self.nickname_overrides,
-                                  self.basename_overrides,
+                                  self.treename_overrides,
                                   self.panthname_overrides,
                                   accept_filter=accept_filter)
 
@@ -153,7 +153,7 @@ class Dadguide(commands.Cog):
 
     async def reload_config_files(self):
         os.remove(NICKNAME_FILE_PATTERN)
-        os.remove(BASENAME_FILE_PATTERN)
+        os.remove(TREENAME_FILE_PATTERN)
         os.remove(PANTHNAME_FILE_PATTERN)
         await self.download_and_refresh_nicknames()
 
@@ -170,7 +170,7 @@ class Dadguide(commands.Cog):
 
         logger.info('Loading dg name overrides')
         nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN)
-        basename_overrides = self._csv_to_tuples(BASENAME_FILE_PATTERN, 5)
+        treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 5)
         panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN)
 
         self.nickname_overrides = defaultdict(set)
@@ -178,11 +178,11 @@ class Dadguide(commands.Cog):
             if id.isdigit():
                 self.nickname_overrides[int(id)].add(nick.lower())
 
-        self.basename_overrides = defaultdict(set)
-        for x in basename_overrides:
+        self.treename_overrides = defaultdict(set)
+        for x in treename_overrides:
             k, v, _, _, i = x
             if k.isdigit() and not i:
-                self.basename_overrides[int(k)].add(v.lower())
+                self.treename_overrides[int(k)].add(v.lower())
 
         self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
@@ -191,7 +191,7 @@ class Dadguide(commands.Cog):
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
         self.index = await MonsterIndex(self.database, self.nickname_overrides,
-                                        self.basename_overrides, self.panthname_overrides)
+                                        self.treename_overrides, self.panthname_overrides)
         self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
         logger.info('Writing dg monster computed names')
@@ -209,12 +209,12 @@ class Dadguide(commands.Cog):
 
         results = {}
         for nm in self.index.all_monsters:
-            entry = {'bn': list(nm.group_basenames)}
+            entry = {'bn': list(nm.group_treenames)}
             if nm.extra_nicknames:
                 entry['nn'] = list(nm.extra_nicknames)
             results[int(tsutils.get_pdx_id_dadguide(nm))] = entry
 
-        with open(BASENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
+        with open(TREENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
             json.dump(results, f)
 
     def _csv_to_tuples(self, file_path: str, cols: int = 2):
@@ -245,7 +245,7 @@ class Dadguide(commands.Cog):
         await tsutils.async_cached_plain_request(
             NICKNAME_FILE_PATTERN, NICKNAME_OVERRIDES_SHEET, one_hour_secs)
         await tsutils.async_cached_plain_request(
-            BASENAME_FILE_PATTERN, GROUP_BASENAMES_OVERRIDES_SHEET, one_hour_secs)
+            TREENAME_FILE_PATTERN, GROUP_TREENAMES_OVERRIDES_SHEET, one_hour_secs)
         await tsutils.async_cached_plain_request(
             PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
