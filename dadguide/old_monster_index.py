@@ -65,8 +65,7 @@ class MonsterIndex(tsutils.aobject):
             base_monster = monster_database.graph.get_monster(base_id)
             series = base_monster.series
             group_treename_overrides = treename_overrides.get(base_id, [])
-            evolution_tree = [monster_database.graph.get_monster(m) for m in
-                              monster_database.get_evolution_tree_ids(base_id)]
+            evolution_tree = monster_database.graph.get_alt_monsters_by_id(base_id)
             named_mg = NamedMonsterGroup(evolution_tree, group_treename_overrides)
             named_evolution_tree = []
             for monster in evolution_tree:
