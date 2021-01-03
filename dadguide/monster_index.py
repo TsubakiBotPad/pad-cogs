@@ -1,5 +1,9 @@
+import csv
+import difflib
+import io
 import re
 
+import aiohttp
 from redbot.core.utils import AsyncIter
 from tsutils import aobject
 
@@ -26,20 +30,20 @@ class MonsterIndex2(aobject):
             _, i, *_ = data + [None, None]
             if mid.isdigit() and not i:
                 if " " in nick:
-                    self.mwtokens.add(nick)
+                    self.mwtokens.add(tuple(nick.split(" ")))
                 self.idtonick[int(mid)].add(nick.replace(" ", ""))
         gnicks = await sheet_to_reader(GROUP_BASENAMES_OVERRIDES_SHEET)
         for mid, nick, *data in gnicks:
             _, i, *_ = data + [None, None]
             if mid.isdigit() and not i:
                 if " " in nick:
-                    self.mwtokens.add(nick)
+                    self.mwtokens.add(tuple(nick.split(" ")))
                 self.idtognick[int(mid)].add(nick.replace(" ", ""))
         pnicks = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
         for nick, _, sid, *_ in pnicks:
             if sid.isdigit():
                 if " " in nick:
-                    self.mwtokens.add(nick)
+                    self.mwtokens.add(tuple(nick.split(" ")))
                 self.sidtopnick[int(sid)].add(nick.replace(" ", ""))
 
         self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
@@ -109,6 +113,9 @@ class MonsterIndex2(aobject):
         if m.series_id in self.sidtopnick:
             for t in self.sidtopnick[m.series_id]:
                 prefix.add(t)
+
+        # Rarity
+        prefix.add(str(m.rarity)+"*")
 
         # Base
         if self.graph.monster_is_base(m):
@@ -191,6 +198,34 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         return prefix
+
+    def mwreplace(self, query):
+        tokens = []
+        iprg = {}
+        s = 0
+        mwts = sorted(self.mwtokens, key=len, reverse=True)
+        query = query.split()
+        for c1, token in enumerate(query):
+            if s:
+                s -= 1
+                continue
+            for mwt in mwts:
+                if len(mwt) > len(query) - c1:
+                    continue
+                for c2, t in enumerate(mwt):
+                    if calc_ratio(query[c1 + c2], t) < .8:
+                        break
+                else:
+                    s = len(mwt)
+                    tokens.append("".join(mwt))
+                    break
+            else:
+                tokens.append(token)
+        return " ".join(tokens)
+
+
+def calc_ratio(s1, s2):
+    return difflib.SequenceMatcher(None, s1, s2).ratio()
 
 
 # TODO: Move this to TSUtils

@@ -1,8 +1,5 @@
 from collections import defaultdict
 from enum import Enum
-import aiohttp
-import csv
-import io
 
 
 COLOR_MAP = {0: ('r', 'red', 'fire'),
@@ -13,7 +10,7 @@ COLOR_MAP = {0: ('r', 'red', 'fire'),
              6: ('x', 'none', 'null', 'nil')}
 
 SERIES_MAP = {130: ('halloween', 'hw', 'h'),
-              136: ('xmas', 'christmas'),
+              136: ('christmas', 'xmas'),
               125: ('summer', 'beach'),
               114: ('school', 'academy', 'gakuen'),
               139: ('new years', 'ny'),
@@ -21,8 +18,7 @@ SERIES_MAP = {130: ('halloween', 'hw', 'h'),
               154: ('padr',),
               175: ('valentines', 'vday', 'v'),
               183: ('gh', 'gungho'),
-              117: ('gh', 'gungho'),
-              187: ('sam3', 'samurai3', 'samiii')}
+              117: ('gh', 'gungho'),}
 
 
 
@@ -45,13 +41,13 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
                   EvoTypes.EVO: ('evo', 'evolved'),
                   EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
                   EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo'),
-                  EvoTypes.TRANS: ('trans', 'transform', 'transformed'),
-                  EvoTypes.AWOKEN: ('awo', 'a', 'awoken'),
-                  EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'mega'),
+                  EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
+                  EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
+                  EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma'),
                   EvoTypes.REVO: ('revo', 'reincarnated'),
                   EvoTypes.SREVO: ('srevo', 'super', 'sr'),
-                  EvoTypes.PIXEL: ('p', 'pixel', 'dot'),
-                  EvoTypes.NONPIXEL: ('np', 'nonpixel'),
+                  EvoTypes.PIXEL: ('pixel', 'p', 'dot'),
+                  EvoTypes.NONPIXEL: ('nonpixel', 'np'),
                   EvoTypes.EQUIP: ('equip', 'assist')}
 
 
