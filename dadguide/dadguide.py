@@ -102,7 +102,7 @@ class Dadguide(commands.Cog):
         return
 
     async def create_index(self, accept_filter=None):
-        """Exported function that allows a client cog to create a monster index"""
+        """Exported function that allows a client cog to create an id1/2 monster index"""
         await self.wait_until_ready()
         return await MonsterIndex(self.database,
                                   self.nickname_overrides,
@@ -111,9 +111,9 @@ class Dadguide(commands.Cog):
                                   accept_filter=accept_filter)
 
     async def create_index2(self):
-        """Exported function that allows a client cog to create a monster index"""
+        """Exported function that allows a client cog to create an id3 monster index"""
         await self.wait_until_ready()
-        return await MonsterIndex2(self.database.get_all_monsters(False), [])
+        return await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
     def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""

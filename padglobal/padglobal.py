@@ -287,7 +287,7 @@ class PadGlobal(commands.Cog):
         await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
                                        delete_msgs=sent_messages, timeout=30)
 
-    @commands.command()
+    @commands.command(aliases=['fir'])
     @is_padglobal_admin()
     async def forceindexreload(self, ctx):
         async with ctx.typing():
@@ -297,6 +297,15 @@ class PadGlobal(commands.Cog):
             await dadguide_cog.reload_config_files()
             padinfo_cog = self.bot.get_cog('PadInfo')
             await padinfo_cog.refresh_index()
+            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
+
+    @commands.command(aliases=['fir3'])
+    @is_padglobal_admin()
+    async def forceindexreload3(self, ctx):
+        async with ctx.typing():
+            start = time.perf_counter()
+            dadguide_cog = self.bot.get_cog('Dadguide')
+            dadguide_cog.index2 = await dadguide_cog.create_index2()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
