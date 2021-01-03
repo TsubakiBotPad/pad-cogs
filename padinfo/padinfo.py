@@ -1031,6 +1031,7 @@ class PadInfo(commands.Cog):
 
         query = rmdiacritics(query).lower()
         query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
+        query = DGCOG.index2.mwreplace(query)
         query = query.split()
 
         base = False
@@ -1081,15 +1082,13 @@ class PadInfo(commands.Cog):
                     ftr.add(m)
             monstergen = ftr
 
-        # print({m: monsterscore[m] for m in monstergen})
-
         def matches(m, t):
             if len(t) < 6:
                 if t in DGCOG.index2.prefix[m]:
                     monsterscore[m] += 1
                     return True
             else:
-                dlm = difflib.get_close_matches(t, DGCOG.index2.prefix[m], n=10000, cutoff=.8)
+                dlm = difflib.get_close_matches(t, DGCOG.index2.prefix[m], n=1, cutoff=.8)
                 if dlm:
                     monsterscore[m] += max(calc_ratio(t, p) for p in dlm)
                     return True
@@ -1097,14 +1096,16 @@ class PadInfo(commands.Cog):
 
 
         monstergen_base = monstergen
-        monstergen = sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), [])
+        monstergen = set(sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), []))
 
         for t in prefixes:
             monstergen = {m for m in monstergen if matches(m, t)}
             if not monstergen:
                 return
 
-        monstergen = set(monstergen).intersection(monstergen_base) or monstergen
+        monstergen = monstergen.intersection(monstergen_base) or monstergen
+
+        # print({m: monsterscore[m] for m in monstergen})
 
         if not monstergen:
             return
