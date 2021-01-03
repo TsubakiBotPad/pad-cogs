@@ -233,12 +233,12 @@ class PadGlobal(commands.Cog):
                 return 'NONE'
 
         msg += "\n\nNickname original components:"
-        msg += "\n monster_basename: {}".format(m.monster_basename)
-        msg += "\n group_computed_basename: {}".format(m.group_computed_basename)
+        msg += "\n monster_treename: {}".format(m.monster_treename)
+        msg += "\n group_computed_treename: {}".format(m.group_computed_treename)
         msg += "\n extra_nicknames: {}".format(list_or_none(m.extra_nicknames))
 
         msg += "\n\nNickname final components:"
-        msg += "\n basenames: {}".format(list_or_none(m.group_basenames))
+        msg += "\n treenames: {}".format(list_or_none(m.group_treenames))
         msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
 
         msg += "\n\nAccepted nickname entries:"
@@ -730,7 +730,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
 
-        name = nm.group_computed_basename.title()
+        name = nm.group_computed_treename.title()
         monster_id = nm.base_monster_no
         definition = self.settings.which().get(monster_id, None)
         timestamp = "2000-01-01"
@@ -777,7 +777,7 @@ class PadGlobal(commands.Cog):
             nm = monster_id_to_named_monster(monster_id)
             if m is None or nm is None:
                 continue
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
             grp = m.series.name
             monsters[grp].append(name)
 
@@ -852,7 +852,7 @@ class PadGlobal(commands.Cog):
             w %= 10000
 
             nm = monster_id_to_named_monster(w)
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
 
             result = self.settings.which()[w]
             if isinstance(result, list):
@@ -878,7 +878,7 @@ class PadGlobal(commands.Cog):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
         nm, err, deb = await lookup_named_monster(term)
-        base = nm.group_computed_basename.title() if nm else nm
+        base = nm.group_computed_treename.title() if nm else nm
         name = nm.name_en if nm else nm
         monster_id = nm.monster_id if nm else nm
         definition = self.settings.which().get(monster_id, None)
@@ -1127,7 +1127,7 @@ class PadGlobal(commands.Cog):
         if nm is None:
             return None, None, 'No dungeon or monster matched that query'
 
-        name = nm.group_computed_basename.title()
+        name = nm.group_computed_treename.title()
         definition = self.settings.leaderGuide().get(str(nm.base_monster_no), None)
         if definition is None:
             return None, None, 'A monster matched that query but has no guide'
@@ -1151,7 +1151,7 @@ class PadGlobal(commands.Cog):
             nm = monster_id_to_named_monster(monster_id)
             if nm is None:
                 continue
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
             msg += '\n**{}** :\n{}\n'.format(name, definition)
 
         return msg
