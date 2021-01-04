@@ -464,11 +464,12 @@ class PotentialMatches(object):
 
 class NamedMonsterGroup(object):
     def __init__(self, evolution_tree: list, treename_overrides: list):
-        self.is_low_priority = (
-                        self._is_low_priority_monster(evolution_tree[0])
-                        or self._is_low_priority_group(evolution_tree))
+        base_monster = min(evolution_tree, key=lambda m: m.monster_id)
 
-        base_monster = evolution_tree[0]
+
+        self.is_low_priority = (
+                        self._is_low_priority_monster(base_monster)
+                        or self._is_low_priority_group(evolution_tree))
 
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
