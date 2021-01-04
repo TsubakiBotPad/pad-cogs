@@ -21,7 +21,7 @@ class MonsterIndex(tsutils.aobject):
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
-        base_monster_ids = monster_database.get_base_monster_ids()
+        base_monster_ids = monster_database.get_monsters_where(monster_database.graph.monster_is_base)
 
         self.attr_short_prefix_map = {
             Attribute.Fire: ['r'],
