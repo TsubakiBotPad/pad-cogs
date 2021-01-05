@@ -973,7 +973,7 @@ class PadInfo(commands.Cog):
         await ctx.send(box(msg))
 
     async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
-        if self.config.user(ctx.author).beta_id3():
+        if await self.config.user(ctx.author).beta_id3():
             m = await self.findMonster3(query)
             if m:
                 return m, "", ""
