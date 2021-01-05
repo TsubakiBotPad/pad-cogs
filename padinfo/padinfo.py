@@ -1037,20 +1037,12 @@ class PadInfo(commands.Cog):
     async def findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
         await DGCOG.wait_until_ready()
-        tm = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'token_mappings')
-        mi = importlib.import_module(DGCOG.__module__.rstrip("dadguide") + 'monster_index')
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
-        query = re.sub(r'\b([rbgldx]) ([rbgldx])\b', r'main_attr_\1 sub_attr_\2', query)
         query = DGCOG.index2.mwreplace(query)
         query = query.split()
-
-        base = False
-        if 'base' in query:
-            query.remove('base')
-            base = True
 
         prefixes = set()
         name = set()
@@ -1089,11 +1081,7 @@ class PadInfo(commands.Cog):
                         monsterscore[m] += calc_ratio(t, match)
                         valid.add(m)
 
-            ftr = set()
-            for m in valid:
-                if m in monstergen:
-                    ftr.add(m)
-            monstergen = ftr
+            monstergen.intersection_update(valid)
 
         def matches(m, t):
             if len(t) < 6:
@@ -1128,10 +1116,7 @@ class PadInfo(commands.Cog):
                                              m.rarity,
                                              m.monster_no_na))
 
-        if base:
-            return DGCOG.database.graph.get_base_monster(mon)
-        else:
-            return mon
+        return mon
 
 
 class PadInfoSettings(CogSettings):

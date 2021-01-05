@@ -5,21 +5,9 @@ from enum import Enum
 COLOR_MAP = {0: ('r', 'red', 'fire'),
              1: ('b', 'blue', 'water'),
              2: ('g', 'green', 'wood'),
-             3: ('l', 'light', 'yellow', 'white'),
-             4: ('d', 'dark', 'purple', 'black'),
-             6: ('x', 'none', 'null', 'nil')}
-
-SERIES_MAP = {130: ('halloween', 'hw', 'h'),
-              136: ('christmas', 'xmas'),
-              125: ('summer', 'beach'),
-              114: ('school', 'academy', 'gakuen'),
-              139: ('new years', 'ny'),
-              149: ('wedding', 'bride'),
-              154: ('padr',),
-              175: ('valentines', 'vday', 'v'),
-              183: ('gh', 'gungho'),
-              117: ('gh', 'gungho'),}
-
+             3: ('l', 'light', 'yellow'),
+             4: ('d', 'dark', 'purple'),
+             6: ('x', 'none', 'null', 'nil', 'white')}
 
 
 class EvoTypes(Enum):
@@ -43,9 +31,9 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
                   EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo'),
                   EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
                   EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
-                  EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma'),
+                  EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'mega awoken'),
                   EvoTypes.REVO: ('revo', 'reincarnated'),
-                  EvoTypes.SREVO: ('srevo', 'super', 'sr'),
+                  EvoTypes.SREVO: ('srevo', 'super', 'sr', 'super reincarnated'),
                   EvoTypes.PIXEL: ('pixel', 'p', 'dot'),
                   EvoTypes.NONPIXEL: ('nonpixel', 'np'),
                   EvoTypes.EQUIP: ('equip', 'assist')}
@@ -63,7 +51,6 @@ MISC_PREFIX_MAP = {MiscPrefixes.CHIBI: ('chibi', 'mini'),
 
 PREFIX_MAPS = [
     COLOR_MAP,
-    SERIES_MAP,
     EVO_PREFIX_MAP,
     MISC_PREFIX_MAP,
 ]
