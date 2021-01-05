@@ -22,7 +22,7 @@ class MonsterIndex2(aobject):
 
         self.idtonick = defaultdict(set)
         self.idtognick = defaultdict(set)
-        self.sidtopnick = defaultdict(set, {k: set(v) for k, v in SERIES_MAP.items()})
+        self.sidtopnick = defaultdict(set)
         self.mwtokens = set()
 
         nicks = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
@@ -99,16 +99,17 @@ class MonsterIndex2(aobject):
         # Main Color
         for t in COLOR_MAP[m.attr1.value]:
             prefix.add(t)
-            prefix.add('main_attr_' + t)
 
         # Sub Color
-        for t in COLOR_MAP[m.attr2.value]:
-            prefix.add('sub_attr_' + t)
+        if m.attr1.value == 6:
+            for t in COLOR_MAP[m.attr2.value]:
+                prefix.add(t)
 
         # Both Colors
         for t1 in COLOR_MAP[m.attr1.value]:
             for t2 in COLOR_MAP[m.attr2.value]:
-                prefix.add(t1 + t2)
+                if len(t1) + len(t2) == 2:
+                    prefix.add(t1 + t2)
                 prefix.add(t1 + "/" + t2)
 
         # Series
