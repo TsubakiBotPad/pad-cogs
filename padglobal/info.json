@@ -22,7 +22,8 @@
   "requirements": [
     "tsutils",
     "aiohttp",
-    "prettytable"
+    "prettytable",
+    "pytz"
   ],
   "tags": [
     "PAD"
