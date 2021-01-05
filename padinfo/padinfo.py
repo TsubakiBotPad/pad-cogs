@@ -78,9 +78,9 @@ COLORS = {
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
-                 pad_info=None, selected_emoji=None, bot=None,
-                 db_context: "DbContext" = None):
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, pad_info=None, selected_emoji=None, bot=None,
+                 db_context: "DbContext" = None, **kwargs):
+        super().__init__(emoji_to_embed, **kwargs)
         self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -132,8 +132,9 @@ class IdEmojiUpdater(EmojiUpdater):
 
 
 class ScrollEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
-                 ms: "list[int]" = None, selected_emoji=None, pad_info=None, bot=None):
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, ms: "list[int]" = None, selected_emoji=None,
+                 pad_info=None, bot=None, **kwargs):
+        super().__init__(emoji_to_embed, **kwargs)
         self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -267,7 +268,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await ctx.send(IdMenu.monster_header(m))
             await ctx.send(box(m.name_ja))
@@ -302,7 +303,7 @@ class PadInfo(commands.Cog):
         await self._do_id(ctx, query, server_filter=ServerFilter.jp)
 
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
+        m, err, debug_info = await self.findMonster1(query, server_filter=server_filter)
 
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, m.name_en if m else "None"))
@@ -395,7 +396,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
@@ -405,7 +406,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
@@ -415,7 +416,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
             if menu == EMBED_NOT_GENERATED:
@@ -427,7 +428,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def skillups(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.skillups_emoji)
             if menu == EMBED_NOT_GENERATED:
@@ -553,7 +554,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
@@ -563,7 +564,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def links(self, ctx, *, query: str):
         """Monster links"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = IdMenu(ctx)
             embed = await menu.make_links_embed(m)
@@ -576,7 +577,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
@@ -586,7 +587,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
             embed = await menu.make_header_embed(m)
@@ -598,7 +599,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
@@ -609,7 +610,7 @@ class PadInfo(commands.Cog):
     async def seriesscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
         ms.sort(key=lambda x: x.monster_id)
@@ -633,7 +634,7 @@ class PadInfo(commands.Cog):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
         db_context: "DbContext" = DGCOG.database
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
 
         if m is not None:
             await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
@@ -679,9 +680,9 @@ class PadInfo(commands.Cog):
         else:  # no separators
             left_query, right_query = whole_query, None
 
-        left_m, left_err, _ = await self.findMonster(left_query)
+        left_m, left_err, _ = await self.findMonsterCustom(ctx, left_query)
         if right_query:
-            right_m, right_err, _ = await self.findMonster(right_query)
+            right_m, right_err, _ = await self.findMonsterCustom(ctx, right_query)
         else:
             right_m, right_err, = left_m, left_err
 
@@ -707,7 +708,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        m, err, _ = await self.findMonster(query)
+        m, err, _ = await self.findMonsterCustom(ctx, query)
         if err:
             await ctx.send(err)
             return
@@ -774,7 +775,7 @@ class PadInfo(commands.Cog):
         async with ctx.typing():
             for q, r in suite.items():
                 m = await self.findMonster3(q)
-                if m and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
                     o += f"{q.ljust(ml)} - Ex: {m and m.monster_id}, Ac: {r['result']}{reason}\n"
@@ -806,7 +807,7 @@ class PadInfo(commands.Cog):
             server = 'na'
         query = query.strip().lower()
 
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
@@ -942,7 +943,7 @@ class PadInfo(commands.Cog):
         s = 0
         f = []
         async for c, query in AsyncIter(enumerate(hist_aggreg)):
-            m1, err1, debug_info1 = await self.findMonster(query)
+            m1, err1, debug_info1 = await self.findMonsterCustom(ctx, query)
             m2, err2, debug_info2 = await self.findMonster2(query)
             if c % 50 == 0:
                 await ctx.send(inline("{}/{} complete.".format(c, len(hist_aggreg))))
@@ -971,7 +972,17 @@ class PadInfo(commands.Cog):
                'Unexpected results? Use ^helpid for more info.').format(err)
         await ctx.send(box(msg))
 
-    async def findMonster(self, query, server_filter=ServerFilter.any):
+    async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
+        if self.config.user(ctx.author).beta_id3():
+            m = await self.findMonster3(query)
+            if m:
+                return m, "", ""
+            else:
+                return None, "Monster not found", ""
+        else:
+            return await self.findMonster1(query, server_filter)
+
+    async def findMonster1(self, query, server_filter=ServerFilter.any):
         query = rmdiacritics(query)
         nm, err, debug_info = await self._findMonster(query, server_filter)
 
@@ -987,11 +998,11 @@ class PadInfo(commands.Cog):
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
-        if server_filter == ServerFilter.any:
+        if server_filter.value == ServerFilter.any.value:
             monster_index = self.index_all
-        elif server_filter == ServerFilter.na:
+        elif server_filter.value == ServerFilter.na.value:
             monster_index = self.index_na
-        elif server_filter == ServerFilter.jp:
+        elif server_filter.value == ServerFilter.jp.value:
             monster_index = self.index_jp
         else:
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
@@ -1096,7 +1107,6 @@ class PadInfo(commands.Cog):
                     return True
             return False
 
-
         monstergen_base = monstergen
         monstergen = set(sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), []))
 
@@ -1117,7 +1127,6 @@ class PadInfo(commands.Cog):
                                              -DGCOG.database.graph.get_base_id(m),
                                              m.rarity,
                                              m.monster_no_na))
-
 
         if base:
             return DGCOG.database.graph.get_base_monster(mon)
