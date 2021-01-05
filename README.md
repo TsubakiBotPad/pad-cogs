@@ -86,3 +86,4 @@ DadGuide mobile app.
 | padrem     | Rare Egg Machine simulation                                     |
 | padvision  | Utilities relating to PAD image scanning                        |
 | profile    | Global user PAD profile storage and lookup                      |
+| dungeon    | Brings up information on dungeons and enemies                |
