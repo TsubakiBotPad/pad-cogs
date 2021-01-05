@@ -5,6 +5,7 @@ import difflib
 import json
 import logging
 import os
+import pytz
 import re
 import time
 from collections import defaultdict
@@ -16,7 +17,7 @@ import prettytable
 import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box, inline, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
@@ -73,7 +74,7 @@ async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog._findMonster(str(query))
+    nm, err, debug_info = await padinfo_cog.findMonster1(str(query))
     return nm, err, debug_info
 
 
@@ -224,11 +225,11 @@ class PadGlobal(commands.Cog):
         msg = "{}. {}".format(m.monster_no_na, m.name_en)
         msg += "\nLookup type: {}".format(debug_info)
 
-        def list_or_none(l):
-            if len(l) == 1:
-                return '\n\t{}'.format(''.join(l))
-            elif len(l):
-                return '\n\t' + '\n\t'.join(sorted(l))
+        def list_or_none(li):
+            if len(li) == 1:
+                return '\n\t{}'.format(''.join(li))
+            elif len(li):
+                return '\n\t' + '\n\t'.join(sorted(li))
             else:
                 return 'NONE'
 
@@ -359,7 +360,7 @@ class PadGlobal(commands.Cog):
                 ted = self.c_commands[ted]
                 alias = True
             if confirm:
-                conf = await confirm_message(ctx, "Are you sure you want to edit the {}command {}?" \
+                conf = await confirm_message(ctx, "Are you sure you want to edit the {}command {}?"
                                              .format("alias to " if alias else "", ted))
                 if not conf:
                     return
@@ -956,7 +957,7 @@ class PadGlobal(commands.Cog):
         for server_id in self.settings.emojiServers():
             try:
                 emojis.extend(self.bot.get_guild(int(server_id)).emojis)
-            except:
+            except Exception:
                 pass
         return emojis
 
@@ -998,6 +999,9 @@ class PadGlobal(commands.Cog):
             emoji_server = self.bot.get_guild(int(server_id))
             if len(emoji_server.emojis) < 50:
                 break
+        else:
+            await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
+            return
 
         try:
             async with aiohttp.ClientSession() as sess:
@@ -1082,10 +1086,10 @@ class PadGlobal(commands.Cog):
         for p in await self.bot.get_prefix(message):
             if message.content.startswith(p):
                 return p
-        return False
+        return None
 
     def format_cc(self, command, message):
-        results = re.findall(r"\{([^}]+)\}", command)
+        results = re.findall(r"{([^}]+)}", command)
         for result in results:
             param = self.transform_parameter(result, message)
             command = command.replace("{" + result + "}", param)
@@ -1251,10 +1255,17 @@ class PadGlobal(commands.Cog):
 
     @commands.command(aliases=['currentinvade'])
     async def whichinvade(self, ctx):
-        if datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%p") == "AM":
+        pst = pytz.timezone("America/Los_Angeles")
+        curtime = datetime.datetime.now(pst)
+        if datetime.time(6) < curtime.time() < datetime.time(18):
             await ctx.send(self.c_commands['redinvadecurrent'])
+            totime = curtime.replace(hour=18, minute=0, second=0, microsecond=0)
         else:
             await ctx.send(self.c_commands['blueinvadecurrent'])
+            totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
+            if totime < curtime:
+                totime += datetime.timedelta(1)
+        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime-curtime)))
 
     def emojify(self, message):
         emojis = list()
