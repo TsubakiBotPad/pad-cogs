@@ -7,7 +7,7 @@ import os
 import random
 import re
 import urllib.parse
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING
@@ -1046,11 +1046,10 @@ class PadInfo(commands.Cog):
 
         prefixes = set()
         name = set()
-        valid_prefixes = {p for ps in DGCOG.index2.prefix.values() for p in ps}
         for c, t in enumerate(query):
-            if difflib.get_close_matches(t,
-                                         [p for p in valid_prefixes if len(p) > 8],
-                                         n=1, cutoff=.8) or t in valid_prefixes:
+            if t in DGCOG.index2.all_prefixes or difflib.get_close_matches(t,
+                                         [p for p in DGCOG.index2.all_prefixes if len(p) > 8],
+                                         n=1, cutoff=.8):
                 prefixes.add(t)
             else:
                 name.add(t)
@@ -1062,13 +1061,13 @@ class PadInfo(commands.Cog):
 
         # print(prefixes, name)
 
-        monsterscore = {m: 0 for m in DGCOG.database.get_all_monsters()}
-        monstergen = set(monsterscore)
+        monsterscore = defaultdict(int)
+        monstergen = None
 
         for t in name:
             valid = set()
 
-            ms = difflib.get_close_matches(t, list(DGCOG.index2.tokens) + list(DGCOG.index2.manual), n=10000, cutoff=.8)
+            ms = difflib.get_close_matches(t, DGCOG.index2.name_tokens, n=10000, cutoff=.8)
             if not ms:
                 return
             for match in ms:
@@ -1080,8 +1079,19 @@ class PadInfo(commands.Cog):
                     if m not in valid:
                         monsterscore[m] += calc_ratio(t, match)
                         valid.add(m)
+            
+            if monstergen is not None:
+                monstergen.intersection_update(valid)
+            else:
+                monstergen = valid
 
-            monstergen.intersection_update(valid)
+        if monstergen is None:
+            monstergen = {*DGCOG.database.get_all_monsters()}
+            monstergen_evos = monstergen
+        else:
+            monstergen_evos = set()
+            for m in monstergen:
+                monstergen_evos.update(DGCOG.database.graph.get_alt_monsters(m))
 
         def matches(m, t):
             if len(t) < 6:
@@ -1095,15 +1105,12 @@ class PadInfo(commands.Cog):
                     return True
             return False
 
-        monstergen_base = monstergen
-        monstergen = set(sum((list(DGCOG.database.graph.get_alt_monsters(m)) for m in monstergen), []))
-
         for t in prefixes:
-            monstergen = {m for m in monstergen if matches(m, t)}
-            if not monstergen:
+            monstergen_evos = {m for m in monstergen_evos if matches(m, t)}
+            if not monstergen_evos:
                 return
 
-        monstergen = monstergen.intersection(monstergen_base) or monstergen
+        monstergen = monstergen_evos.intersection(monstergen) or monstergen_evos
 
         # print({m: monsterscore[m] for m in monstergen})
 

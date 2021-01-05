@@ -47,6 +47,8 @@ class MonsterIndex2(aobject):
                 self.sidtopnick[int(sid)].add(nick.replace(" ", ""))
 
         self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
+        self.name_tokens = list(self.manual) + list(self.tokens)
+        self.all_prefixes = {p for ps in self.prefix.values() for p in ps}
 
     __init__ = __ainit__
 
@@ -207,7 +209,7 @@ class MonsterIndex2(aobject):
         tokens = []
         iprg = {}
         s = 0
-        mwts = sorted(self.mwtokens, key=len, reverse=True)
+        mwts = sorted(self.mwtokens, key=lambda x: (len(x), len(''.join(x))), reverse=True)
         query = query.split()
         for c1, token in enumerate(query):
             if s:
