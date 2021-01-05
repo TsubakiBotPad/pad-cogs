@@ -1249,6 +1249,13 @@ class PadGlobal(commands.Cog):
         self.settings.rmLeaderGuide(name)
         await ctx.tick()
 
+    @commands.command(aliases=['currentinvade'])
+    async def whichinvade(self, ctx):
+        if datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%p") == "AM":
+            await ctx.send(self.c_commands['redinvadecurrent'])
+        else:
+            await ctx.send(self.c_commands['blueinvadecurrent'])
+
     def emojify(self, message):
         emojis = list()
         emoteservers = self.settings.emojiServers()
