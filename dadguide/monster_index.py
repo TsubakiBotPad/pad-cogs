@@ -94,6 +94,8 @@ class MonsterIndex2(aobject):
     async def get_prefixes(self, m):
         prefix = set()
 
+        basemon = self.graph.get_base_monster(m)
+
         # Main Color
         for t in COLOR_MAP[m.attr1.value]:
             prefix.add(t)
@@ -117,6 +119,7 @@ class MonsterIndex2(aobject):
 
         # Rarity
         prefix.add(str(m.rarity)+"*")
+        prefix.add(str(basemon.rarity)+"*b")
 
         # Base
         if self.graph.monster_is_base(m):

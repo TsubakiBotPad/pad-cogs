@@ -21,7 +21,7 @@ class MonsterIndex(tsutils.aobject):
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
-        base_monster_ids = monster_database.get_base_monster_ids()
+        base_monster_ids = monster_database.get_monsters_where(monster_database.graph.monster_is_base)
 
         self.attr_short_prefix_map = {
             Attribute.Fire: ['r'],
@@ -65,8 +65,7 @@ class MonsterIndex(tsutils.aobject):
             base_monster = monster_database.graph.get_monster(base_id)
             series = base_monster.series
             group_treename_overrides = treename_overrides.get(base_id, [])
-            evolution_tree = [monster_database.graph.get_monster(m) for m in
-                              monster_database.get_evolution_tree_ids(base_id)]
+            evolution_tree = monster_database.graph.get_alt_monsters_by_id(base_id)
             named_mg = NamedMonsterGroup(evolution_tree, group_treename_overrides)
             named_evolution_tree = []
             for monster in evolution_tree:
@@ -465,11 +464,12 @@ class PotentialMatches(object):
 
 class NamedMonsterGroup(object):
     def __init__(self, evolution_tree: list, treename_overrides: list):
-        self.is_low_priority = (
-                        self._is_low_priority_monster(evolution_tree[0])
-                        or self._is_low_priority_group(evolution_tree))
+        base_monster = min(evolution_tree, key=lambda m: m.monster_id)
 
-        base_monster = evolution_tree[0]
+
+        self.is_low_priority = (
+                        self._is_low_priority_monster(base_monster)
+                        or self._is_low_priority_group(evolution_tree))
 
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
