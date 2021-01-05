@@ -771,14 +771,15 @@ class PadInfo(commands.Cog):
         c = 0
         o = ""
         ml = len(max(suite, key=len)) + 2
-        for q, r in suite.items():
-            m = await self.findMonster3(q)
-            if m and m.monster_id != r['result'] or m is None and r['result'] >= 0:
-                reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
-                q = '"' + q + '"'
-                o += f"{q.ljust(ml)} - Ex: {m and m.monster_id}, Ac: {r['result']}{reason}\n"
-            else:
-                c += 1
+        async with ctx.typing():
+            for q, r in suite.items():
+                m = await self.findMonster3(q)
+                if m and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                    reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
+                    q = '"' + q + '"'
+                    o += f"{q.ljust(ml)} - Ex: {m and m.monster_id}, Ac: {r['result']}{reason}\n"
+                else:
+                    c += 1
         if c:
             o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
         else:
