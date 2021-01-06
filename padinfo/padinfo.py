@@ -1130,14 +1130,14 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         m = await self.findMonster3(query)
         bm = DGCOG.database.graph.get_base_monster(m)
-        o = (f"{m.name_en} ({m.monster_id})\n"
-             f"Base: {bm.name_en} ({bm.monster_id})\n"
+        o = (f"[{m.monster_id}] {m.name_en}\n"
+             f"Base: [{bm.monster_id}] {bm.name_en}\n"
              f"Series: {m.series.name_en} ({m.series_id})\n\n"
-             f"Name Tokens: {' '.join(t for t, ms in DGCOG.index2.tokens.items() if m in ms)}\n\n"
+             f"Name Tokens: {' '.join(sorted(t for t, ms in DGCOG.index2.tokens.items() if m in ms))}\n\n"
              f"Manual Tokens: \n"
-             f"\tNicknames: {' '.join(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms)}\n"
-             f"\tTreenames: {' '.join(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms)}\n\n"
-             f"Prefix Tokens: {' '.join(DGCOG.index2.prefix[m])}\n")
+             f"\tTreenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
+             f"\tNicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
+             f"Prefix Tokens: {' '.join(sorted(DGCOG.index2.prefix[m]))}\n")
         for page in pagify(o):
             await ctx.send(box(page))
 
