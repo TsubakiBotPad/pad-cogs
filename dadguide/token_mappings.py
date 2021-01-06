@@ -2,12 +2,33 @@ from collections import defaultdict
 from enum import Enum
 
 
-COLOR_MAP = {0: ('r', 'red', 'fire'),
-             1: ('b', 'blue', 'water'),
-             2: ('g', 'green', 'wood'),
-             3: ('l', 'light', 'yellow'),
-             4: ('d', 'dark', 'purple'),
-             6: ('x', 'none', 'null', 'nil', 'white')}
+class Colors(Enum):
+    RED = 0
+    BLUE = 1
+    GREEN = 2
+    LIGHT = 3
+    DARK = 4
+    NIL = 6
+
+
+COLOR_MAP = {Colors.RED: ('r', 'red', 'fire'),
+             Colors.BLUE: ('b', 'blue', 'water'),
+             Colors.GREEN: ('g', 'green', 'wood'),
+             Colors.LIGHT: ('l', 'light', 'yellow'),
+             Colors.DARK: ('d', 'dark', 'purple'),
+             Colors.NIL: ('x', 'none', 'null', 'nil', 'white')}
+
+
+DUAL_COLOR_MAP = {}
+for cid1, cns1 in COLOR_MAP.items():
+    for cid2, cns2 in COLOR_MAP.items():
+        ts = ()
+        for t1 in cns1:
+            for t2 in cns2:
+                if len(t1) + len(t2) == 2:
+                    ts += (t1 + t2,)
+                ts += (t1 + "/" + t2,)
+        DUAL_COLOR_MAP[(cid1, cid2)] = ts
 
 
 class EvoTypes(Enum):
@@ -34,7 +55,7 @@ EVO_PREFIX_MAP = {EvoTypes.BASE: ('base',),
                   EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'mega awoken'),
                   EvoTypes.REVO: ('revo', 'reincarnated'),
                   EvoTypes.SREVO: ('srevo', 'super', 'sr', 'super reincarnated'),
-                  EvoTypes.PIXEL: ('pixel', 'p', 'dot'),
+                  EvoTypes.PIXEL: ('pixel', 'p', 'dot', 'px'),
                   EvoTypes.NONPIXEL: ('nonpixel', 'np'),
                   EvoTypes.EQUIP: ('equip', 'assist')}
 
@@ -49,11 +70,12 @@ MISC_PREFIX_MAP = {MiscPrefixes.CHIBI: ('chibi', 'mini'),
                    MiscPrefixes.NONCHIBI: ('nonchibi', 'nc'),
                    MiscPrefixes.FARMABLE: ('farmable', 'nrem')}
 
-PREFIX_MAPS = [
-    COLOR_MAP,
-    EVO_PREFIX_MAP,
-    MISC_PREFIX_MAP,
-]
+PREFIX_MAPS = {
+    **COLOR_MAP,
+    **DUAL_COLOR_MAP,
+    **EVO_PREFIX_MAP,
+    **MISC_PREFIX_MAP,
+}
 
 TOKEN_REPLACEMENTS = defaultdict(tuple, {
     'tamadra': ('tama',),
