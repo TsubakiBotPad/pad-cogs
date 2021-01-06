@@ -1124,6 +1124,22 @@ class PadInfo(commands.Cog):
                                              m.monster_no_na))
 
         return mon
+    
+    @commands.command()
+    async def debugid3(self, ctx, *, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        m = await self.findMonster3(query)
+        bm = DGCOG.database.graph.get_base_monster(m)
+        o = (f"{m.name_en} ({m.monster_id})\n"
+             f"Base: {bm.name_en} ({bm.monster_id})\n"
+             f"Series: {m.series.name_en} ({m.series_id})\n\n"
+             f"Name Tokens: {' '.join(t for t, ms in DGCOG.index2.tokens.items() if m in ms)}\n\n"
+             f"Manual Tokens: \n"
+             f"\tNicknames: {' '.join(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms)}\n"
+             f"\tTreenames: {' '.join(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms)}\n\n"
+             f"Prefix Tokens: {' '.join(DGCOG.index2.prefix[m])}\n")
+        for page in pagify(o):
+            await ctx.send(box(page))
 
 
 class PadInfoSettings(CogSettings):
