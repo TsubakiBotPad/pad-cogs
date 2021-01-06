@@ -74,7 +74,7 @@ async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog.findMonster1(str(query))
+    nm, err, debug_info = await padinfo_cog._findMonster(str(query))
     return nm, err, debug_info
 
 
