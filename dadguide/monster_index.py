@@ -46,45 +46,43 @@ class MonsterIndex2(aobject):
                     self.mwtokens.add(tuple(nick.split(" ")))
                 self.sidtopnick[int(sid)].add(nick.replace(" ", ""))
 
-        self.manual, self.tokens, self.prefix = await self._build_monster_index(monsters)
+        self.manual = self.tokens = self.prefix = None
+        await self._build_monster_index(monsters)
+        self.manual = combine_tokens(self.manual_nick, self.manual_tree)
         self.name_tokens = list(self.manual) + list(self.tokens)
         self.all_prefixes = {p for ps in self.prefix.values() for p in ps}
 
     __init__ = __ainit__
 
     async def _build_monster_index(self, monsters):
-        manual = defaultdict(set)
-        tokens = defaultdict(set)
-        prefix = defaultdict(set)
+        self.manual_nick = defaultdict(set)
+        self.manual_tree = defaultdict(set)
+        self.tokens = defaultdict(set)
+        self.prefix = defaultdict(set)
 
         async for m in AsyncIter(monsters):
-            prefix[m] = await self.get_prefixes(m)
+            self.prefix[m] = await self.get_prefixes(m)
 
             # ID
-            tokens[str(m.monster_id)].add(m)
+            self.tokens[str(m.monster_id)].add(m)
 
             # Name Tokens
             for token in self._name_to_tokens(m.name_en):
-                tokens[token.lower()].add(m)
+                self.tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
-                    tokens[repl].add(m)
-                for pm in PREFIX_MAPS:
-                    for pas in pm.values():
-                        if token in pas:
-                            prefix[m].update(pas)
+                    self.tokens[repl].add(m)
+                for pas in PREFIX_MAPS.values():
+                    if token in pas:
+                        self.prefix[m].update(pas)
 
             # Monster Nickname
             for nick in self.idtonick[m.monster_id]:
-                tokens[nick].add(m)
-                manual[nick].add(m)
+                self.manual_nick[nick].add(m)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.idtognick[base_id]:
-                tokens[nick].add(m)
-                manual[nick].add(m)
-
-        return manual, tokens, prefix
+                self.manual_tree[nick].add(m)
 
     @staticmethod
     def _name_to_tokens(oname):
@@ -99,20 +97,17 @@ class MonsterIndex2(aobject):
         basemon = self.graph.get_base_monster(m)
 
         # Main Color
-        for t in COLOR_MAP[m.attr1.value]:
+        for t in COLOR_MAP[Colors(m.attr1.value)]:
             prefix.add(t)
 
         # Sub Color
         if m.attr1.value == 6:
-            for t in COLOR_MAP[m.attr2.value]:
+            for t in COLOR_MAP[Colors(m.attr2.value)]:
                 prefix.add(t)
 
         # Both Colors
-        for t1 in COLOR_MAP[m.attr1.value]:
-            for t2 in COLOR_MAP[m.attr2.value]:
-                if len(t1) + len(t2) == 2:
-                    prefix.add(t1 + t2)
-                prefix.add(t1 + "/" + t2)
+        for t in DUAL_COLOR_MAP[(Colors(m.attr1.value), Colors(m.attr2.value))]:
+            prefix.add(t)
 
         # Series
         if m.series_id in self.sidtopnick:
@@ -240,3 +235,10 @@ async def sheet_to_reader(url):
         async with session.get(url) as response:
             file = io.StringIO(await response.text())
     return csv.reader(file, delimiter=',')
+
+
+def combine_tokens(d1, d2):
+    do = defaultdict(set, d1)
+    for k, v in d2.items():
+        do[k].update(v)
+    return do
