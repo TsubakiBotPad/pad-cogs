@@ -10,6 +10,8 @@ import re
 from collections import defaultdict
 import romkan
 
+from .monster_stats import monster_stats
+
 
 class MonsterModel(BaseModel):
     def __init__(self, **m):
@@ -134,36 +136,10 @@ class MonsterModel(BaseModel):
         return '[{}] New Added'.format(self.reg_date)
 
     def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
-        s_min = float(self.stat_values[key]['min'])
-        s_max = float(self.stat_values[key]['max'])
-        if self.level > 1:
-            scale = self.stat_values[key]['scale']
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** scale
-        else:
-            s_val = s_min
-        if lv > 99:
-            s_val *= 1 + (self.limit_mult / 11 * (lv - 99)) / 100
-        plus_dict = {'hp': 10, 'atk': 5, 'rcv': 3}
-        s_val += plus_dict[key] * max(min(plus, 99), 0)
-        if inherit:
-            inherit_dict = {'hp': 0.10, 'atk': 0.05, 'rcv': 0.15}
-            if not is_plus_297:
-                s_val -= plus_dict[key] * max(min(plus, 99), 0)
-            s_val *= inherit_dict[key]
-        return int(round(s_val))
+        return monster_stats.stat(self, key, lv, plus=plus, inherit=inherit, is_plus_297=is_plus_297)
 
     def stats(self, lv=99, plus=0, inherit=False):
-        is_plus_297 = False
-        if plus == 297:
-            plus = (99, 99, 99)
-            is_plus_297 = True
-        elif plus == 0:
-            plus = (0, 0, 0)
-        hp = self.stat('hp', lv, plus[0], inherit, is_plus_297)
-        atk = self.stat('atk', lv, plus[1], inherit, is_plus_297)
-        rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
-        weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
-        return hp, atk, rcv, weighted
+        return monster_stats.stats(self, lv, plus=plus, inherit=inherit)
 
     @staticmethod
     def make_roma_subname(name_ja):
