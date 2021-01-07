@@ -83,7 +83,7 @@ class Dadguide(commands.Cog):
         self.index2 = None  # type: MonsterIndex2
 
         self.monster_stats = monster_stats
-        self.MonsterStatLatentInput = MonsterStatModifierInput
+        self.MonsterStatModifierInput = MonsterStatModifierInput
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.

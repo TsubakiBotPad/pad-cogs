@@ -18,6 +18,7 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
+from .button_info import button_info
 from .find_monster import find_monster
 from .id_menu import IdMenu
 
@@ -582,6 +583,17 @@ class PadInfo(commands.Cog):
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
             await self.makeFailureMsg(ctx, err)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def buttoninfo(self, ctx, *, query: str):
+        """Button farming theorycrafting info"""
+        monster = await self.findMonster3(query)
+        DGCOG = self.bot.get_cog("Dadguide")
+        info = button_info.get_info(DGCOG, monster)
+        info_str = button_info.to_string(monster, info)
+        for page in pagify(info_str):
+            await ctx.send(box(page))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
