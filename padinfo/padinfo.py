@@ -1049,8 +1049,10 @@ class PadInfo(commands.Cog):
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
             if monster_gen is None:
+                # No monsters match the given name tokens
                 return
         else:
+            # There are no name tokens in the query
             monster_gen = {*DGCOG.database.get_all_monsters()}
             monster_score = defaultdict(int)
 
