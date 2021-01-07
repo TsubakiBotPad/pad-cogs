@@ -1047,8 +1047,7 @@ class PadInfo(commands.Cog):
         # print(prefix_tokens, name_query_tokens)
 
         if name_query_tokens:
-            monster_gen, monster_score = find_monster.process_name_tokens(
-                name_query_tokens, DGCOG.index2.name_tokens, DGCOG.index2.manual, DGCOG.index2.tokens)
+            monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
             if monster_gen is None:
                 return
         else:
@@ -1056,16 +1055,11 @@ class PadInfo(commands.Cog):
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
-        potential_evos = find_monster.get_monster_evos(DGCOG.database, monster_gen)
-        potential_evos = find_monster.process_prefix_tokens(prefix_tokens, monster_score, potential_evos,
-                                                            DGCOG.index2.monster_prefixes)
-        if potential_evos is None:
+        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen)
+        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
+                                                         DGCOG.index2.monster_prefixes)
+        if monster_gen is None:
             # no prefixes match any monster in the evo tree
-            return
-
-        monster_gen = potential_evos.intersection(monster_gen) or potential_evos
-        if not monster_gen:
-            # No results including the monster itself.
             return
 
         # print(monster_gen)

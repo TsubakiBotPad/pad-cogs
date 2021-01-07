@@ -25,7 +25,7 @@ class FindMonster:
                 if len(mwt) > len(tokens) - c1:
                     continue
                 for c2, t in enumerate(mwt):
-                    if tokens[c1 + c2] != t or (len(t) > 5 and calc_ratio(tokens[c1 + c2], t) < .8):
+                    if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < .8:
                         break
                 else:
                     s = len(mwt)
@@ -64,23 +64,22 @@ class FindMonster:
 
         return prefixes, name
 
-    def process_name_tokens(self, name_query_tokens, all_monster_name_tokens, all_name_override_tokens,
-                            all_name_tokens):
+    def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
         monsterscore = defaultdict(int)
 
         for t in name_query_tokens:
             valid = set()
 
-            ms = difflib.get_close_matches(t, all_monster_name_tokens, n=10000, cutoff=.8)
+            ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
             if not ms:
                 return None, None
             for match in ms:
-                for m in all_name_override_tokens[match]:
+                for m in index2.manual[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio(t, match) + .001
                         valid.add(m)
-                for m in all_name_tokens[match]:
+                for m in index2.tokens[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio(t, match)
                         valid.add(m)
