@@ -20,37 +20,39 @@ class MonsterIndex2(aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
 
-        self.idtonick = defaultdict(set)
-        self.idtognick = defaultdict(set)
-        self.sidtopnick = defaultdict(set)
-        self.mwtokens = set()
+        self.monster_id_to_nickname = defaultdict(set)
+        self.monster_id_to_treename = defaultdict(set)
+        self.series_id_to_pantheon_nickname = defaultdict(set)
+        self.multi_word_tokens = set()
 
-        nicks = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
-        for nick, mid, *data in nicks:
+        nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
+        for name, m_id, *data in nickname_data:
             _, i, *_ = data + [None, None]
-            if mid.isdigit() and not i:
-                if " " in nick:
-                    self.mwtokens.add(tuple(nick.split(" ")))
-                self.idtonick[int(mid)].add(nick.replace(" ", ""))
-        gnicks = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
-        for mid, nick, *data in gnicks:
+            if m_id.isdigit() and not i:
+                if " " in name:
+                    self.multi_word_tokens.add(tuple(name.split(" ")))
+                self.monster_id_to_nickname[int(m_id)].add(name.replace(" ", ""))
+
+        treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
+        for m_id, name, *data in treenames_data:
             _, i, *_ = data + [None, None]
-            if mid.isdigit() and not i:
-                if " " in nick:
-                    self.mwtokens.add(tuple(nick.split(" ")))
-                self.idtognick[int(mid)].add(nick.replace(" ", ""))
-        pnicks = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
-        for nick, _, sid, *_ in pnicks:
+            if m_id.isdigit() and not i:
+                if " " in name:
+                    self.multi_word_tokens.add(tuple(name.split(" ")))
+                self.monster_id_to_treename[int(m_id)].add(name.replace(" ", ""))
+
+        pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
+        for name, _, sid, *_ in pantheon_data:
             if sid.isdigit():
-                if " " in nick:
-                    self.mwtokens.add(tuple(nick.split(" ")))
-                self.sidtopnick[int(sid)].add(nick.replace(" ", ""))
+                if " " in name:
+                    self.multi_word_tokens.add(tuple(name.split(" ")))
+                self.series_id_to_pantheon_nickname[int(sid)].add(name.replace(" ", ""))
 
-        self.manual = self.tokens = self.prefix = None
+        self.manual = self.tokens = self.monster_prefixes = None
         await self._build_monster_index(monsters)
         self.manual = combine_tokens(self.manual_nick, self.manual_tree)
         self.name_tokens = list(self.manual) + list(self.tokens)
-        self.all_prefixes = {p for ps in self.prefix.values() for p in ps}
+        self.all_prefixes = {p for ps in self.monster_prefixes.values() for p in ps}
 
     __init__ = __ainit__
 
@@ -58,10 +60,10 @@ class MonsterIndex2(aobject):
         self.manual_nick = defaultdict(set)
         self.manual_tree = defaultdict(set)
         self.tokens = defaultdict(set)
-        self.prefix = defaultdict(set)
+        self.monster_prefixes = defaultdict(set)
 
         async for m in AsyncIter(monsters):
-            self.prefix[m] = await self.get_prefixes(m)
+            self.monster_prefixes[m] = await self.get_prefixes(m)
 
             # ID
             self.tokens[str(m.monster_id)].add(m)
@@ -73,15 +75,15 @@ class MonsterIndex2(aobject):
                     self.tokens[repl].add(m)
                 for pas in PREFIX_MAPS.values():
                     if token in pas:
-                        self.prefix[m].update(pas)
+                        self.monster_prefixes[m].update(pas)
 
             # Monster Nickname
-            for nick in self.idtonick[m.monster_id]:
+            for nick in self.monster_id_to_nickname[m.monster_id]:
                 self.manual_nick[nick].add(m)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
-            for nick in self.idtognick[base_id]:
+            for nick in self.monster_id_to_treename[base_id]:
                 self.manual_tree[nick].add(m)
 
     @staticmethod
@@ -110,8 +112,8 @@ class MonsterIndex2(aobject):
             prefix.add(t)
 
         # Series
-        if m.series_id in self.sidtopnick:
-            for t in self.sidtopnick[m.series_id]:
+        if m.series_id in self.series_id_to_pantheon_nickname:
+            for t in self.series_id_to_pantheon_nickname[m.series_id]:
                 prefix.add(t)
 
         # Rarity
@@ -200,11 +202,10 @@ class MonsterIndex2(aobject):
 
         return prefix
 
-    def mwreplace(self, query):
+    def tokenize_query(self, query):
         tokens = []
-        iprg = {}
         s = 0
-        mwts = sorted(self.mwtokens, key=lambda x: (len(x), len(''.join(x))), reverse=True)
+        mwts = sorted(self.multi_word_tokens, key=lambda x: (len(x), len(''.join(x))), reverse=True)
         query = query.split()
         for c1, token in enumerate(query):
             if s:
@@ -222,8 +223,8 @@ class MonsterIndex2(aobject):
                     break
             else:
                 tokens.append(token)
-        return " ".join(tokens)
 
+        return " ".join(tokens)
 
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
