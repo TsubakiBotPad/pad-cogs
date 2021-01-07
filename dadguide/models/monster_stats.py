@@ -47,16 +47,16 @@ class MonsterStats:
             s_val *= inherit_dict[key]
         return int(round(s_val))
 
-    def stats(self, monster_model, lv=99, plus=0, inherit=False):
+    def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatLatentInput = None):
         is_plus_297 = False
         if plus == 297:
             plus = (99, 99, 99)
             is_plus_297 = True
         elif plus == 0:
             plus = (0, 0, 0)
-        hp = self.stat(monster_model, 'hp', lv, plus[0], inherit, is_plus_297)
-        atk = self.stat(monster_model, 'atk', lv, plus[1], inherit, is_plus_297)
-        rcv = self.stat(monster_model, 'rcv', lv, plus[2], inherit, is_plus_297)
+        hp = self.stat(monster_model, 'hp', lv, plus[0], inherit, is_plus_297, stat_latents)
+        atk = self.stat(monster_model, 'atk', lv, plus[1], inherit, is_plus_297, stat_latents)
+        rcv = self.stat(monster_model, 'rcv', lv, plus[2], inherit, is_plus_297, stat_latents)
         weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
         return hp, atk, rcv, weighted
 
