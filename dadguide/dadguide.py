@@ -20,6 +20,7 @@ from redbot.core import checks, data_manager
 from redbot.core import commands
 
 from .database_manager import *
+from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .old_monster_index import MonsterIndex
 from .monster_index import MonsterIndex2
 from .database_loader import load_database
@@ -80,6 +81,9 @@ class Dadguide(commands.Cog):
         self.database = None
         self.index = None  # type: MonsterIndex
         self.index2 = None  # type: MonsterIndex2
+
+        self.monster_stats = monster_stats
+        self.MonsterStatLatentInput = MonsterStatModifierInput
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.
