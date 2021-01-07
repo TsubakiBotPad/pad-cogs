@@ -48,7 +48,7 @@ class MonsterIndex2(aobject):
                     self.multi_word_tokens.add(tuple(name.split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.replace(" ", ""))
 
-        self.manual = self.tokens = self.monster_prefixes = None
+        self.manual = self.tokens = self.monster_prefixes = defaultdict(set)
         await self._build_monster_index(monsters)
         self.manual = combine_tokens(self.manual_nick, self.manual_tree)
         self.name_tokens = list(self.manual) + list(self.tokens)
@@ -202,29 +202,6 @@ class MonsterIndex2(aobject):
 
         return prefix
 
-    def tokenize_query(self, query):
-        tokens = []
-        s = 0
-        mwts = sorted(self.multi_word_tokens, key=lambda x: (len(x), len(''.join(x))), reverse=True)
-        query = query.split()
-        for c1, token in enumerate(query):
-            if s:
-                s -= 1
-                continue
-            for mwt in mwts:
-                if len(mwt) > len(query) - c1:
-                    continue
-                for c2, t in enumerate(mwt):
-                    if calc_ratio(query[c1 + c2], t) < .8:
-                        break
-                else:
-                    s = len(mwt)
-                    tokens.append("".join(mwt))
-                    break
-            else:
-                tokens.append(token)
-
-        return " ".join(tokens)
 
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()

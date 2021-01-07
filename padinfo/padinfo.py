@@ -1,6 +1,5 @@
 import asyncio
 import difflib
-import importlib
 import json
 import logging
 import os
@@ -19,7 +18,7 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
-from .find_monster import FindMonster
+from .find_monster import find_monster
 from .id_menu import IdMenu
 
 if TYPE_CHECKING:
@@ -327,7 +326,7 @@ class PadInfo(commands.Cog):
             elif userres is False:
                 await self.config.bad.set(await self.config.bad() + 1)
                 m = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
-                                   f" by filling out this survey!\nPRO TIP: Use `{ctx.monster_prefixes}idset"
+                                   f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idset"
                                    f" survey` to adjust how often this shows.\n\n<{url}>")
                 await asyncio.sleep(15)
                 await m.delete()
@@ -524,7 +523,7 @@ class PadInfo(commands.Cog):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
             if idx > 19:
                 await ctx.send(
-                    "There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.monster_prefixes))
+                    "There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.prefix))
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
@@ -1042,33 +1041,37 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         raw_query = rmdiacritics(raw_query).lower()
-        find_monster = FindMonster()
-        prefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query, DGCOG.index2.multi_word_tokens, DGCOG.index2.all_prefixes)
+        prefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query, DGCOG.index2.multi_word_tokens,
+                                                                        DGCOG.index2.all_prefixes)
 
-        monster_gen, monster_score, err = find_monster.process_name_tokens(
-            name_query_tokens, DGCOG.index2.name_tokens, DGCOG.index2.manual, DGCOG.index2.tokens)
-        if err:
-            # failed to recognize any name token
-            return
+        # print(prefix_tokens, name_query_tokens)
+
+        if name_query_tokens:
+            monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
+            if monster_gen is None:
+                # No monsters match the given name tokens
+                return
+        else:
+            # There are no name tokens in the query
+            monster_gen = {*DGCOG.database.get_all_monsters()}
+            monster_score = defaultdict(int)
 
         # Expand search to the evo tree
-        potential_evos = find_monster.get_monster_evos(DGCOG.database, monster_gen)
-        potential_evos, err = find_monster.process_prefix_tokens(prefix_tokens, monster_score, potential_evos, DGCOG.index2.monster_prefixes)
-        if err:
+        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen)
+        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
+                                                         DGCOG.index2.monster_prefixes)
+        if monster_gen is None:
             # no prefixes match any monster in the evo tree
             return
 
-        monster_gen = potential_evos.intersection(monster_gen) or potential_evos
-        if not monster_gen:
-            # No results including the monster itself.
-            return
+        # print(monster_gen)
 
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
-                                             not m.is_equip,
-                                             -DGCOG.database.graph.get_base_id(m),
-                                             m.rarity,
-                                             m.monster_no_na))
+                                              not m.is_equip,
+                                              -DGCOG.database.graph.get_base_id(m),
+                                              m.rarity,
+                                              m.monster_no_na))
 
         return mon
 
@@ -1088,8 +1091,10 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
+
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
+
 
 class PadInfoSettings(CogSettings):
     def make_default_settings(self):
