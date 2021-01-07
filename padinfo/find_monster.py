@@ -5,38 +5,6 @@ from tsutils import rmdiacritics
 from typing import List, Set
 import difflib
 
-COLOR_MAP = {}
-
-for r in ('r', 'red', 'fire'): COLOR_MAP[r] = 'r'
-for b in ('b', 'blue', 'water'): COLOR_MAP[b] = 'b'
-for g in ('g', 'green', 'wood'): COLOR_MAP[g] = 'g'
-for l in ('l', 'light', 'yellow', 'white'): COLOR_MAP[l] = 'l'
-for d in ('d', 'dark', 'purple', 'black'): COLOR_MAP[d] = 'd'
-for x in ('x', 'none', 'null', 'nil'): COLOR_MAP[x] = 'x'
-
-COLORS = 'rbgld?x'
-
-
-def prefix_to_filter(prefix):
-    prefix = prefix.lower()
-
-    # light, nil, wood
-    if prefix in COLOR_MAP:
-        m = COLORS.index(COLOR_MAP[prefix])
-
-        def filter_via_attribute(monster):
-            return monster.attr1.value == m
-
-    # light/red, l/r, yellow/fire
-    match = re.match(r'^({0})/?({0})$'.format('|'.join(COLOR_MAP)), prefix)
-    if match:
-        m, s = [COLORS.index(COLOR_MAP[a]) for a in match.groups()]
-
-        def filter_via_attributes(monster):
-            return monster.attr1.value == m and monster.attr2.value == s
-
-        return filter_via_attributes
-
 
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
@@ -57,7 +25,7 @@ class FindMonster:
                 if len(mwt) > len(tokens) - c1:
                     continue
                 for c2, t in enumerate(mwt):
-                    if calc_ratio(tokens[c1 + c2], t) < .8:
+                    if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < .8:
                         break
                 else:
                     s = len(mwt)
@@ -96,23 +64,22 @@ class FindMonster:
 
         return prefixes, name
 
-    def process_name_tokens(self, name_query_tokens, all_monster_name_tokens, all_name_override_tokens,
-                            all_name_tokens):
+    def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
         monsterscore = defaultdict(int)
 
         for t in name_query_tokens:
             valid = set()
 
-            ms = difflib.get_close_matches(t, all_monster_name_tokens, n=10000, cutoff=.8)
+            ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
             if not ms:
-                return None, None, True
+                return None, None
             for match in ms:
-                for m in all_name_override_tokens[match]:
+                for m in index2.manual[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio(t, match) + .001
                         valid.add(m)
-                for m in all_name_tokens[match]:
+                for m in index2.tokens[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio(t, match)
                         valid.add(m)
@@ -122,23 +89,22 @@ class FindMonster:
             else:
                 monstergen = valid
 
-        return monstergen, monsterscore, False
+        return monstergen, monsterscore
 
     def process_prefix_tokens(self, prefix_query_tokens, monsterscore, potential_evos, monster_prefixes):
         for t in prefix_query_tokens:
             potential_evos = {m for m in potential_evos if self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
             if not potential_evos:
-                return None, True
+                return None
 
-        return potential_evos, False
+        return potential_evos
 
     def get_monster_evos(self, database, monster_gen):
-        if monster_gen is None:
-            # This happens when no name tokens were specified, and we're searching over the entire world
-            return {*database.get_all_monsters()}, None
-
         monster_evos = set()
         for m in monster_gen:
             monster_evos.update(database.graph.get_alt_monsters(m))
 
         return monster_evos
+
+
+find_monster = FindMonster()
