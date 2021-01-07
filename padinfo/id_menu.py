@@ -362,7 +362,8 @@ class IdMenu:
         hp, atk, rcv, weighted = m.stats()
         if m.limit_mult > 0:
             lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-            stats_row_1 = 'Stats (LB, +{}%)'.format(m.limit_mult)
+            stats_icon = self.match_emoji(AWAKENING_ID_TO_EMOJI_NAME_MAP.get(63)) if m.has_voice else ''
+            stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icon, m.limit_mult)
             stats_row_2 = '**HP** {} ({})\n**ATK** {} ({})\n**RCV** {} ({})'.format(
                 hp, lb_hp, atk, lb_atk, rcv, lb_rcv)
         else:
