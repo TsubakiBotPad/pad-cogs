@@ -99,10 +99,14 @@ class FindMonster:
 
         return potential_evos
 
-    def get_monster_evos(self, database, monster_gen):
+    def get_monster_evos(self, database, monster_gen, monster_score):
         monster_evos = set()
-        for m in monster_gen:
-            monster_evos.update(database.graph.get_alt_monsters(m))
+        for m in sorted(monster_gen, key=lambda m: monster_score[m], reverse=True):
+            for evo in database.graph.get_alt_monsters(m):
+                monster_evos.add(evo)
+                if monster_score[evo] < monster_score[m]:
+                    monster_score[evo] = monster_score[m] - .003
+
 
         return monster_evos
 
