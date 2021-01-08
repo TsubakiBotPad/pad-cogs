@@ -1030,8 +1030,9 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         raw_query = rmdiacritics(raw_query).lower()
-        prefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query, DGCOG.index2.multi_word_tokens,
-                                                                        DGCOG.index2.all_prefixes)
+        prefix_tokens, nprefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query,
+                                                                                        DGCOG.index2.multi_word_tokens,
+                                                                                        DGCOG.index2.all_prefixes)
 
         # print(prefix_tokens, name_query_tokens)
 
@@ -1047,7 +1048,7 @@ class PadInfo(commands.Cog):
 
         # Expand search to the evo tree
         monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
-        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
+        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, nprefix_tokens, monster_score, monster_gen,
                                                          DGCOG.index2.monster_prefixes)
         if not monster_gen:
             # no prefixes match any monster in the evo tree
