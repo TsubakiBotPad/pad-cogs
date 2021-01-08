@@ -95,7 +95,7 @@ class IdEmojiUpdater(EmojiUpdater):
         evo_id = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
         if evo_id:
-            evos = sorted({*self.db_context.graph.get_alt_cards(self.m.monster_id)})
+            evos = sorted({*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)})
             index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 new_id = evos[index - 1]
@@ -127,7 +127,7 @@ class IdEmojiUpdater(EmojiUpdater):
 
         self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
                                                                    m=self.m, scroll=sorted(
-                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evo_id else [], menu_type=1)
+                {*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)}) if evo_id else [], menu_type=1)
         return True
 
 
