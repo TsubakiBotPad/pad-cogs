@@ -73,6 +73,8 @@ class FindMonster:
 
             ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
             if not ms:
+                ms = [token for token in index2.name_tokens if token.startswith(t)]
+            if not ms:
                 return None, None
             for match in ms:
                 for m in index2.manual[match]:
