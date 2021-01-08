@@ -1,24 +1,33 @@
 from collections import defaultdict
 from enum import Enum
-
-
-class Colors(Enum):
-    RED = 0
-    BLUE = 1
-    GREEN = 2
-    LIGHT = 3
-    DARK = 4
-    NIL = 6
+from .models.enum_types import Attribute, MonsterType
 
 
 COLOR_MAP = {
-    Colors.RED: ('r', 'red', 'fire'),
-    Colors.BLUE: ('b', 'blue', 'water'),
-    Colors.GREEN: ('g', 'green', 'wood'),
-    Colors.LIGHT: ('l', 'light', 'yellow'),
-    Colors.DARK: ('d', 'dark', 'purple'),
-    Colors.NIL: ('x', 'none', 'null', 'nil', 'white')
+    Attribute.Fire: ('r', 'red', 'fire'),
+    Attribute.Water: ('b', 'blue', 'water'),
+    Attribute.Wood: ('g', 'green', 'wood'),
+    Attribute.Light: ('l', 'light', 'yellow'),
+    Attribute.Dark: ('d', 'dark', 'purple'),
+    Attribute.Nil: ('x', 'none', 'null', 'nil', 'white')
 }
+
+
+TYPE_MAP = {
+    MonsterType.Evolve: (),
+    MonsterType.Balance: ('balanced',),
+    MonsterType.Physical: ('physical',),
+    MonsterType.Healer: ('healer',),
+    MonsterType.Dragon: ('dragon',),
+    MonsterType.God: ('god',),
+    MonsterType.Attacker: ('attacker',),
+    MonsterType.Devil: ('devil',),
+    MonsterType.Machine: ('machine',),
+    MonsterType.Awoken: ('awoken',),
+    MonsterType.Enhance: ('enhance', 'fodder'),
+    MonsterType.Vendor: ('vendor', 'redeemable'),
+}
+
 
 DUAL_COLOR_MAP = {}
 for cid1, cns1 in COLOR_MAP.items():
@@ -157,11 +166,11 @@ AWOKEN_PREFIX_MAP = {
     Awakenings.BLINDRES: (),
     Awakenings.JAMMERRES: (),
     Awakenings.POISONRES: (),
-    Awakenings.ENHANCEDRED: ('oe',),
-    Awakenings.ENHANCEDBLUE: ('oe',),
-    Awakenings.ENHANCEDGREEN: ('oe',),
-    Awakenings.ENHANCEDLIGHT: ('oe',),
-    Awakenings.ENHANCEDDARK: ('oe',),
+    Awakenings.ENHANCEDRED: ('roe', 'oe'),
+    Awakenings.ENHANCEDBLUE: ('boe', 'oe'),
+    Awakenings.ENHANCEDGREEN: ('goe', 'oe'),
+    Awakenings.ENHANCEDLIGHT: ('loe', 'oe'),
+    Awakenings.ENHANCEDDARK: ('doe', 'oe'),
     Awakenings.EXTMOVE: ('te', 'finger'),
     Awakenings.BINDRECOVERY: (),
     Awakenings.SKILLBOOST: ('sb',),
@@ -238,6 +247,7 @@ MISC_PREFIX_MAP = {
 
 PREFIX_MAPS = {
     **COLOR_MAP,
+    **TYPE_MAP,
     **DUAL_COLOR_MAP,
     **EVO_PREFIX_MAP,
     **MISC_PREFIX_MAP,

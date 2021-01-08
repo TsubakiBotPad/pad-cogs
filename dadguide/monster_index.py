@@ -97,17 +97,22 @@ class MonsterIndex2(aobject):
         basemon = self.graph.get_base_monster(m)
 
         # Main Color
-        for t in COLOR_MAP[Colors(m.attr1.value)]:
+        for t in COLOR_MAP[m.attr1]:
             prefix.add(t)
 
         # Sub Color
         if m.attr1.value == 6:
-            for t in COLOR_MAP[Colors(m.attr2.value)]:
+            for t in COLOR_MAP[m.attr2]:
                 prefix.add(t)
 
         # Both Colors
-        for t in DUAL_COLOR_MAP[(Colors(m.attr1.value), Colors(m.attr2.value))]:
+        for t in DUAL_COLOR_MAP[(m.attr1, m.attr2)]:
             prefix.add(t)
+
+        # Type
+        for mt in m.types:
+            for t in TYPE_MAP[mt]:
+                prefix.add(t)
 
         # Series
         if m.series_id in self.sidtopnick:
@@ -182,6 +187,11 @@ class MonsterIndex2(aobject):
         # Equip
         if m.is_equip:
             for t in EVO_PREFIX_MAP[EvoTypes.EQUIP]:
+                prefix.add(t)
+
+        # Awakenings
+        for aw in m.awakenings:
+            for t in AWOKEN_PREFIX_MAP[Awakenings(aw.awoken_skill_id)]:
                 prefix.add(t)
 
         # Chibi
