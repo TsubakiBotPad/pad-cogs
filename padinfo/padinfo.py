@@ -1,5 +1,4 @@
 import asyncio
-import difflib
 import json
 import logging
 import os
@@ -318,7 +317,8 @@ class PadInfo(commands.Cog):
             m1, _, _ = await self.findMonster1(query)
             id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
-            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+            params = urllib.parse.urlencode(
+                {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
@@ -1074,7 +1074,7 @@ class PadInfo(commands.Cog):
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
-        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen)
+        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
         monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
                                                          DGCOG.index2.monster_prefixes)
         if not monster_gen:
