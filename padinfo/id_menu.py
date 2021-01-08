@@ -49,6 +49,8 @@ class IdMenu:
         self.allowed_emojis = allowed_emojis
 
     def match_emoji(self, name):
+        if isinstance(name, int):
+            name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
         for e in self.allowed_emojis:
             if e.name == name:
                 return e
@@ -362,13 +364,25 @@ class IdMenu:
         hp, atk, rcv, weighted = m.stats()
         if m.limit_mult > 0:
             lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-            stats_icon = self.match_emoji(AWAKENING_ID_TO_EMOJI_NAME_MAP.get(63)) if m.has_voice else ''
-            stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icon, m.limit_mult)
-            stats_row_2 = '**HP** {} ({})\n**ATK** {} ({})\n**RCV** {} ({})'.format(
-                hp, lb_hp, atk, lb_atk, rcv, lb_rcv)
+            stats_icons = [
+                self.match_emoji(63) if m.awakening_count(63) and not m.is_equip else '',
+                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
+                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip  else '',
+                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
+            ]
+            stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icons[0], m.limit_mult)
+            stats_row_2 = '**HP** {} ({}) {stats[1]}\n**ATK** {} ({}) {stats[2]}\n**RCV** {} ({}) {stats[3]}'.format(
+                hp, lb_hp, atk, lb_atk, rcv, lb_rcv, stats=stats_icons)
         else:
-            stats_row_1 = 'Stats'
-            stats_row_2 = '**HP** {}\n**ATK** {}\n**RCV** {}'.format(hp, atk, rcv)
+            stats_icons = [
+                '',
+                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
+                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip else '',
+                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
+            ]
+            stats_row_1 = '{} Stats'.format(stats_icons[0])
+            stats_row_2 = '**HP** {} {stats[1]}\n**ATK** {} {stats[2]}\n**RCV** {} {stats[3]}'.format(
+                hp, atk, rcv, stats=stats_icons)
         if any(x if x.name == 'Enhance' else None for x in m.types):
             stats_row_2 += '\n**Fodder EXP** {:,}'.format(m.fodder_exp)
         embed.add_field(name=stats_row_1, value=stats_row_2)
