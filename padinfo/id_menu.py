@@ -365,10 +365,10 @@ class IdMenu:
         if m.limit_mult > 0:
             lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
             stats_icons = [
-                self.match_emoji(63) if m.has_awakening(63) else '',
-                self.match_emoji(1) if m.has_awakening(1) else '',
-                self.match_emoji(2) if m.has_awakening(2) else '',
-                self.match_emoji(3) if m.has_awakening(3) else '',
+                self.match_emoji(63) if m.awakening_count(63) and not m.is_equip else '',
+                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
+                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip  else '',
+                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
             ]
             stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icons[0], m.limit_mult)
             stats_row_2 = '**HP** {} ({}) {stats[1]}\n**ATK** {} ({}) {stats[2]}\n**RCV** {} ({}) {stats[3]}'.format(
@@ -376,9 +376,9 @@ class IdMenu:
         else:
             stats_icons = [
                 '',
-                self.match_emoji(1) if m.has_awakening(1) else self.match_emoji(65) if m.has_awakening(65) else '',
-                self.match_emoji(2) if m.has_awakening(2) else self.match_emoji(66) if m.has_awakening(66) else '',
-                self.match_emoji(3) if m.has_awakening(3) else self.match_emoji(67) if m.has_awakening(67) else '',
+                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
+                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip else '',
+                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
             ]
             stats_row_1 = '{} Stats'.format(stats_icons[0])
             stats_row_2 = '**HP** {} {stats[1]}\n**ATK** {} {stats[2]}\n**RCV** {} {stats[3]}'.format(

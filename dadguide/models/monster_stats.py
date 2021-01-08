@@ -15,17 +15,17 @@ class MonsterStatModifierInput:
     NUM_HP_AWAKENING = 0
     NUM_RCV_AWAKENING = 0
 
-    def __init__(self, num_atk=0, num_hp=0, num_rcv=0, num_atkpp=0, num_hppp=0, num_rcvpp=0, num_all_stat=0,
-                 num_atk_awakening=0, num_hp_awakening=0, num_rcv_awakening=0, num_voice_awakening=0):
-        self.NUM_ATK = num_atk
+    def __init__(self, num_hp=0, num_atk=0, num_rcv=0, num_hppp=0, num_atkpp=0, num_rcvpp=0, num_all_stat=0,
+                 num_hp_awakening=0, num_atk_awakening=0, num_rcv_awakening=0, num_voice_awakening=0):
         self.NUM_HP = num_hp
+        self.NUM_ATK = num_atk
         self.NUM_RCV = num_rcv
-        self.NUM_ATKpp = num_atkpp
         self.NUM_HPpp = num_hppp
+        self.NUM_ATKpp = num_atkpp
         self.NUM_RCVpp = num_rcvpp
         self.NUM_ALL_STAT = num_all_stat
-        self.NUM_ATK_AWAKENING = num_atk_awakening
         self.NUM_HP_AWAKENING = num_hp_awakening
+        self.NUM_ATK_AWAKENING = num_atk_awakening
         self.NUM_RCV_AWAKENING = num_rcv_awakening
         self.NUM_VOICE_AWAKENING = num_voice_awakening
 
@@ -55,7 +55,7 @@ class MonsterStats:
              stat_latents: MonsterStatModifierInput = None):
         s_val = self.base_stat(key, lv, monster_model)
 
-        if stat_latents:
+        if stat_latents and not monster_model.is_equip:
             latents = s_val * stat_latents.get_latent_multiplier(key)
             stat_awakenings = stat_latents.get_awakening_addition(key)
             voice = s_val * stat_latents.NUM_VOICE_AWAKENING * 0.1
@@ -83,9 +83,6 @@ class MonsterStats:
         return s_val
 
     def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatModifierInput = None):
-        if not stat_latents:
-            stat_latents = MonsterStatModifierInput()
-
         is_plus_297 = False
         if plus == 297:
             plus = (99, 99, 99)
@@ -93,7 +90,13 @@ class MonsterStats:
         elif plus == 0:
             plus = (0, 0, 0)
 
-        stat_latents.NUM_VOICE_AWAKENING = len([x for x in monster_model.awakenings if x.awoken_skill_id == 63])
+        if not stat_latents:
+            stat_latents = MonsterStatModifierInput(
+                num_hp_awakening=monster_model.awakening_count(1),
+                num_atk_awakening=monster_model.awakening_count(2),
+                num_rcv_awakening=monster_model.awakening_count(3),
+                num_voice_awakening=monster_model.awakening_count(63)
+            )
 
         hp = self.stat(monster_model, 'hp', lv, plus[0], inherit, is_plus_297, stat_latents)
         atk = self.stat(monster_model, 'atk', lv, plus[1], inherit, is_plus_297, stat_latents)
