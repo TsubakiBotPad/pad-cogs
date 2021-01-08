@@ -188,11 +188,6 @@ class MonsterIndex2(aobject):
             for t in EVO_PREFIX_MAP[EvoTypes.NONPIXEL]:
                 prefix.add(t)
 
-        # Equip
-        if m.is_equip:
-            for t in EVO_PREFIX_MAP[EvoTypes.EQUIP]:
-                prefix.add(t)
-
         # Awakenings
         for aw in m.awakenings:
             for t in AWOKEN_PREFIX_MAP[Awakenings(aw.awoken_skill_id)]:

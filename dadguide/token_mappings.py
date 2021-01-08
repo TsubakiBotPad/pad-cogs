@@ -56,7 +56,6 @@ class EvoTypes(Enum):
     SREVO = 'super reincarnated'
     PIXEL = 'pixel'
     NONPIXEL = 'nonpixel'
-    EQUIP = 'equip'
 
 
 EVO_PREFIX_MAP = {
@@ -71,7 +70,6 @@ EVO_PREFIX_MAP = {
     EvoTypes.SREVO: ('srevo', 'super', 'sr', 'super reincarnated'),
     EvoTypes.PIXEL: ('pixel', 'p', 'dot', 'px'),
     EvoTypes.NONPIXEL: ('nonpixel', 'np'),
-    EvoTypes.EQUIP: ('equip', 'assist')
 }
 
 
@@ -204,7 +202,7 @@ AWOKEN_PREFIX_MAP = {
     Awakenings.ENHTEAMHP: ('teamhp',),
     Awakenings.ENHTEAMRCV: ('teamrcv',),
     Awakenings.VDP: ('vdp',),
-    Awakenings.EQUIP: (),
+    Awakenings.EQUIP: ('equip', 'assist'),
     Awakenings.SUPERFUA: ('sfua',),
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     Awakenings.UNBINDABLE: ('unbindable',),
