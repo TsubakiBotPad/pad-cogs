@@ -306,19 +306,20 @@ class PadInfo(commands.Cog):
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
         m, err, debug_info = await self.findMonster1(query, server_filter=server_filter)
 
-        if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, m.name_en if m else "None"))
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await self.makeFailureMsg(ctx, err)
 
-    async def send_survey_after(self, ctx, query, result):
+    async def send_survey_after(self, ctx, query, result_monster):
         sm = await self.config.user(ctx.author).survey_mode()
         sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
         if random.random() < sms:
-            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
-            url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
+            m1, _, _ = await self.findMonster1(query)
+            id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
+            id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
+            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+            url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
                                                     yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
@@ -388,6 +389,10 @@ class PadInfo(commands.Cog):
 
     async def _do_id3(self, ctx, query):
         m = await self.findMonster3(query)
+
+        if await self.config.do_survey():
+            asyncio.create_task(self.send_survey_after(ctx, query, m))
+
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
