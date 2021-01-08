@@ -135,9 +135,8 @@ class MonsterModel(BaseModel):
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
 
-    @property
-    def has_voice(self):
-        return any([x for x in self.awakenings if x.awoken_skill_id == 63])
+    def has_awakening(self, awid):
+        return any([x for x in self.awakenings if x.awoken_skill_id == awid])
 
     def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
         return monster_stats.stat(self, key, lv, plus=plus, inherit=inherit, is_plus_297=is_plus_297)
