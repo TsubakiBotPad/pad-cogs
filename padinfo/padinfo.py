@@ -1077,7 +1077,7 @@ class PadInfo(commands.Cog):
         monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen)
         monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
                                                          DGCOG.index2.monster_prefixes)
-        if monster_gen is None:
+        if not monster_gen:
             # no prefixes match any monster in the evo tree
             return
 
