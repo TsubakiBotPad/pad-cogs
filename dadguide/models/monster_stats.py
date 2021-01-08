@@ -44,7 +44,7 @@ class MonsterStats:
              stat_latents: MonsterStatModifierInput = None):
         s_val = self.base_stat(key, lv, monster_model)
 
-        if stat_latents and not monster_model.is_equip:
+        if stat_latents and not (monster_model.is_equip or inherit):
             latents = s_val * stat_latents.get_latent_multiplier(key)
             stat_awakenings = stat_latents.get_awakening_addition(key)
             voice = s_val * stat_latents.num_voice_awakening * 0.1
