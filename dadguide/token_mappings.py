@@ -14,17 +14,17 @@ COLOR_MAP = {
 
 
 TYPE_MAP = {
-    MonsterType.Evolve: (),
-    MonsterType.Balance: ('balanced',),
-    MonsterType.Physical: ('physical',),
+    MonsterType.Evolve: ('evolve'),
+    MonsterType.Balance: ('balanced', 'bal'),
+    MonsterType.Physical: ('physical', 'phys'),
     MonsterType.Healer: ('healer',),
-    MonsterType.Dragon: ('dragon',),
+    MonsterType.Dragon: ('dragon', 'dra'),
     MonsterType.God: ('god',),
-    MonsterType.Attacker: ('attacker',),
-    MonsterType.Devil: ('devil',),
-    MonsterType.Machine: ('machine',),
+    MonsterType.Attacker: ('attacker', 'atk'),
+    MonsterType.Devil: ('devil', 'dv'),
+    MonsterType.Machine: ('machine', 'mech'),
     MonsterType.Awoken: ('awoken',),
-    MonsterType.Enhance: ('enhance', 'fodder'),
+    MonsterType.Enhance: ('enhance', 'fodder', 'enh'),
     MonsterType.Vendor: ('vendor', 'redeemable'),
 }
 
