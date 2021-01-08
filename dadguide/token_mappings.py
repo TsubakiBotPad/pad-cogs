@@ -182,7 +182,7 @@ AWOKEN_PREFIX_MAP = {
     Awakenings.DARKROW: ('rowd', 'row'),
     Awakenings.TPA: ('tpa', 'pronged'),
     Awakenings.SKILLBINDRES: ('sbr',),
-    Awakenings.ENHANCEDHEAL: ('htpa', 'hoe'),
+    Awakenings.ENHANCEDHEAL: ('htpa', 'oeh'),
     Awakenings.MULTIBOOST: ('multi',),
     Awakenings.DRAGONKILLER: ('dk', 'drk'),
     Awakenings.GODKILLER: ('gk', 'gok'),
