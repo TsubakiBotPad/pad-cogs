@@ -236,6 +236,10 @@ class MonsterGraph(object):
                     mat, evo_model.to_id, type="material_of", model=evo_model)
                 already_used_in_this_evo.append(mat)
 
+        # Caching
+        for mid in self.graph.nodes:
+            self.graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
+
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
 
@@ -285,7 +289,7 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
-    def get_alt_cards(self, monster_id):
+    def process_alt_versions(self, monster_id):
         ids = set()
         to_check = {monster_id}
         while to_check:
@@ -300,15 +304,18 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
+    def get_alt_ids_by_id(self, monster_id):
+        return self.nodes[monster_id]['alt_versions']
+
     def get_alt_monsters_by_id(self, monster_id):
-        ids = self.get_alt_cards(monster_id)
+        ids = self.get_alt_ids_by_id(monster_id)
         return [self.get_monster(m_id) for m_id in ids]
 
     def get_alt_monsters(self, monster: MonsterModel):
         return self.get_alt_monsters_by_id(monster.monster_id)
 
     def get_base_id_by_id(self, monster_id):
-        alt_cards = self.get_alt_cards(monster_id)
+        alt_cards = self.get_alt_ids_by_id(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[0]
@@ -356,7 +363,7 @@ class MonsterGraph(object):
         return self.monster_is_transform_base_by_id(monster.monster_no)
 
     def get_numerical_sort_top_id_by_id(self, monster_id):
-        alt_cards = self.get_alt_cards(monster_id)
+        alt_cards = self.get_alt_ids_by_id(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[-1]
