@@ -9,8 +9,23 @@ COLOR_MAP = {
     Attribute.Wood: ('g', 'green', 'wood'),
     Attribute.Light: ('l', 'light', 'yellow'),
     Attribute.Dark: ('d', 'dark', 'purple'),
-    Attribute.Nil: ('x', 'none', 'null', 'nil', 'white')
+    Attribute.Nil: ('nil', 'x', 'none', 'null', 'white')
 }
+
+SUB_COLOR_MAP = {k: tuple('?'+t for t in v) for k, v in COLOR_MAP.items()}
+
+DUAL_COLOR_MAP = {}
+for cid1, cns1 in COLOR_MAP.items():
+    for cid2, cns2 in COLOR_MAP.items():
+        ts = ()
+        for t1 in cns1:
+            for t2 in cns2:
+                if t2 in ("white",):
+                    continue
+                if len(t1) + len(t2) == 2:
+                    ts += (t1 + t2,)
+                ts += (t1 + "/" + t2,)
+        DUAL_COLOR_MAP[(cid1, cid2)] = ts
 
 
 TYPE_MAP = {
@@ -27,18 +42,6 @@ TYPE_MAP = {
     MonsterType.Enhance: ('enhance', 'fodder', 'enh'),
     MonsterType.Vendor: ('vendor', 'redeemable'),
 }
-
-
-DUAL_COLOR_MAP = {}
-for cid1, cns1 in COLOR_MAP.items():
-    for cid2, cns2 in COLOR_MAP.items():
-        ts = ()
-        for t1 in cns1:
-            for t2 in cns2:
-                if len(t1) + len(t2) == 2:
-                    ts += (t1 + t2,)
-                ts += (t1 + "/" + t2,)
-        DUAL_COLOR_MAP[(cid1, cid2)] = ts
 
 
 class EvoTypes(Enum):

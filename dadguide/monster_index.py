@@ -101,6 +101,8 @@ class MonsterIndex2(aobject):
             prefix.add(t)
 
         # Sub Color
+        for t in SUB_COLOR_MAP[m.attr1]:
+            prefix.add(t)
         if m.attr1.value == 6:
             for t in COLOR_MAP[m.attr2]:
                 prefix.add(t)
