@@ -28,22 +28,6 @@ class DbContext(object):
                 self.database.query_many(
                     SELECT_AWOKEN_SKILL_IDS, (), as_generator=True)]
 
-    def get_next_evolutions_by_monster(self, monster_id):
-        return self.graph.get_next_evolutions_by_monster_id(monster_id)
-
-    def get_evolution_tree_ids(self, base_monster_id):
-        # is not a tree i lied
-        base_id = base_monster_id
-        evolution_tree = [base_id]
-        n_evos = deque()
-        n_evos.append(base_id)
-        while len(n_evos) > 0:
-            n_evo_id = n_evos.popleft()
-            for e in self.get_next_evolutions_by_monster(n_evo_id):
-                n_evos.append(e)
-                evolution_tree.append(e)
-        return evolution_tree
-
     def get_monsters_where(self, f):
         return [m for m in self.get_all_monsters() if f(m)]
 
@@ -80,16 +64,6 @@ class DbContext(object):
                                                name_ko=se['d_name_ko'],
                                                **se)
             yield ScheduledEventModel(**se)
-
-    def get_base_monster_ids(self):
-        SELECT_BASE_MONSTER_ID = '''
-            SELECT evolutions.from_id as monster_id FROM evolutions WHERE evolutions.from_id NOT IN (SELECT DISTINCT evolutions.to_id FROM evolutions)
-            UNION
-            SELECT monsters.monster_id FROM monsters WHERE monsters.monster_id NOT IN (SELECT evolutions.from_id FROM evolutions UNION SELECT evolutions.to_id FROM evolutions)'''
-        return self.database.query_many(
-            SELECT_BASE_MONSTER_ID,
-            (),
-            as_generator=True)
 
     def has_database(self):
         return self.database.has_database()
