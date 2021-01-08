@@ -1,5 +1,4 @@
 import asyncio
-import difflib
 import json
 import logging
 import os
@@ -318,7 +317,8 @@ class PadInfo(commands.Cog):
             m1, _, _ = await self.findMonster1(query)
             id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
-            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+            params = urllib.parse.urlencode(
+                {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
@@ -1061,7 +1061,7 @@ class PadInfo(commands.Cog):
         prefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query, DGCOG.index2.multi_word_tokens,
                                                                         DGCOG.index2.all_prefixes)
 
-        # print(prefix_tokens, name_query_tokens)
+        print(prefix_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1081,7 +1081,7 @@ class PadInfo(commands.Cog):
             # no prefixes match any monster in the evo tree
             return
 
-        # print(monster_gen)
+        print(monster_gen)
 
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
