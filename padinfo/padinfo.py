@@ -28,28 +28,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
-HELP_MSG = """
-{0.prefix}helpid : shows this message
-{0.prefix}id <query> : look up a monster and show a link to puzzledragonx
-{0.prefix}pic <query> : Look up a monster and display its image inline
-
-Options for <query>
-    <id> : Find a monster by ID
-        {0.prefix}id 1234 (picks sun quan)
-    <name> : Take the best guess for a monster, picks the most recent monster
-        {0.prefix}id kali (picks mega awoken d kali)
-    <prefix> <name> : Limit by element or awoken, e.g.
-        {0.prefix}id ares  (selects the most recent, revo ares)
-        {0.prefix}id aares (explicitly selects awoken ares)
-        {0.prefix}id a ares (spaces work too)
-        {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
-        {0.prefix}id r/d ares (slashes, spaces work too)
-
-computed nickname list and overrides: 
-    https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
-
-submit an override suggestion: 
-    https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
 
 EMBED_NOT_GENERATED = -1
 
@@ -736,12 +714,6 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(aliases=['helppic', 'helpimg'])
-    @checks.bot_has_permissions(embed_links=True)
-    async def helpid(self, ctx):
-        """Whispers you info on how to craft monster queries for [p]id"""
-        await ctx.author.send(box(HELP_MSG.format(ctx)))
-
     @commands.group()
     # @checks.is_owner()
     async def idtest(self, ctx):
@@ -1112,7 +1084,7 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
-    @commands.command()
+    @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):
         """Get help with an id query"""
         if query:
