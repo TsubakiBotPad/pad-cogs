@@ -1094,8 +1094,12 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     async def debugid3(self, ctx, *, query):
+        """Get helpful id information about a monster"""
         DGCOG = self.bot.get_cog("Dadguide")
         m = await self.findMonster3(query)
+        if m is None:
+            await ctx.send(box("Your query didn't match any monsters."))
+            return
         bm = DGCOG.database.graph.get_base_monster(m)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
@@ -1108,9 +1112,17 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
-
-def calc_ratio(s1, s2):
-    return difflib.SequenceMatcher(None, s1, s2).ratio()
+    @commands.command()
+    async def idhelp(self, ctx, *, query=""):
+        """Get help with an id query"""
+        if query:
+            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+                           "documentation on ^id!")
+            await self.debugid3(ctx, query=query)
+        else:
+            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+                           "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "
+                           "help with querying a specific monster.")
 
 
 class PadInfoSettings(CogSettings):
