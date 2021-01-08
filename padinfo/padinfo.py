@@ -956,10 +956,14 @@ class PadInfo(commands.Cog):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     async def makeFailureMsg(self, ctx: discord.abc.Messageable, err):
+        if await self.config.user(ctx.author).beta_id3():
+            await self.idhelp(ctx, is_failed_query=True)
+            return
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
                'Unexpected results? Use ^helpid for more info.').format(err)
         await ctx.send(box(msg))
+        await ctx.send('Looking for the beta test? Type `^idset beta y`')
 
     async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
         if await self.config.user(ctx.author).beta_id3():
@@ -1086,16 +1090,17 @@ class PadInfo(commands.Cog):
             await ctx.send(box(page))
 
     @commands.command(aliases=['helpid'])
-    async def idhelp(self, ctx, *, query=""):
+    async def idhelp(self, ctx, *, query="", is_failed_query=False):
         """Get help with an id query"""
+        failed_query_msg = "Query matched no results! " if is_failed_query else ""
         if query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on ^id!")
             await self.debugid3(ctx, query=query)
         else:
-            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+            await ctx.send("{}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "
-                           "help with querying a specific monster.")
+                           "help with querying a specific monster.".format(failed_query_msg))
 
 
 class PadInfoSettings(CogSettings):
