@@ -154,9 +154,9 @@ class Awakenings(Enum):
 
 
 AWOKEN_PREFIX_MAP = {
-    Awakenings.ENHANCEDHP: ('hp+', '+hp'),
-    Awakenings.ENHANCEDATK: ('atk+', '+atk'),
-    Awakenings.ENHANCEDRCV: ('rcv+', '+rcv'),
+    Awakenings.ENHANCEDHP: ('hp+', 'hp'),
+    Awakenings.ENHANCEDATK: ('atk+', 'atk'),
+    Awakenings.ENHANCEDRCV: ('rcv+', 'rcv'),
     Awakenings.REDUCERED: ('elresr', 'elres'),
     Awakenings.REDUCEBLUE: ('elresb', 'elres'),
     Awakenings.REDUCEGREEN: ('elresg', 'elres'),
