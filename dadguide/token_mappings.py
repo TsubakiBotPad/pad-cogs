@@ -238,12 +238,16 @@ class MiscPrefixes(Enum):
     CHIBI = 'chibi'
     NONCHIBI = 'nonchibi'
     FARMABLE = 'farmable'
+    INJP = 'injp'
+    INNA = 'inna'
 
 
 MISC_PREFIX_MAP = {
     MiscPrefixes.CHIBI: ('chibi', 'mini'),
     MiscPrefixes.NONCHIBI: ('nonchibi', 'nc'),
-    MiscPrefixes.FARMABLE: ('farmable', 'nrem')
+    MiscPrefixes.FARMABLE: ('farmable', 'nrem'),
+    MiscPrefixes.INJP: ('jp',),
+    MiscPrefixes.INNA: ('na',)
 }
 
 PREFIX_MAPS = {

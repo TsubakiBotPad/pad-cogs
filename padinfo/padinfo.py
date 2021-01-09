@@ -1051,14 +1051,14 @@ class PadInfo(commands.Cog):
             raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
         return monster_index.find_monster2(query)
 
-    async def findMonster3(self, raw_query):
+    async def findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
         await DGCOG.wait_until_ready()
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
 
-        raw_query = rmdiacritics(raw_query).lower()
-        prefix_tokens, name_query_tokens = find_monster.interpret_query(raw_query, DGCOG.index2.multi_word_tokens,
+        query = rmdiacritics(query).lower()
+        prefix_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2.multi_word_tokens,
                                                                         DGCOG.index2.all_prefixes)
 
         print(prefix_tokens, name_query_tokens)
@@ -1086,6 +1086,7 @@ class PadInfo(commands.Cog):
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
                                               not m.is_equip,
+                                              m.monster_id > 10000 and re.search("\d{4}", query),
                                               -DGCOG.database.graph.get_base_id(m),
                                               m.rarity,
                                               m.monster_no_na))
