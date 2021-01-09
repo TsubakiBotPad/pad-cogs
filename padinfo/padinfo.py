@@ -767,7 +767,7 @@ class PadInfo(commands.Cog):
                 if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
-                    o += f"{q.ljust(ml)} - Ex: {m and m.monster_id}, Ac: {r['result']}{reason}\n"
+                    o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {m and m.monster_id}{reason}\n"
                 else:
                     c += 1
         if c:
@@ -1063,7 +1063,7 @@ class PadInfo(commands.Cog):
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
                                               not m.is_equip,
-                                              m.monster_id > 10000 and re.search("\d{4}", query), # Match na on id overlap
+                                              bool(m.monster_id > 10000 and re.search(r"\d{4}", query)), # Match na on id overlap
                                               -DGCOG.database.graph.get_base_id(m),
                                               m.rarity,
                                               m.monster_no_na))
