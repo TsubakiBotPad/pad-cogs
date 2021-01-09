@@ -22,10 +22,14 @@ class MonsterIndex2(aobject):
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower()}
+        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
                                                                 for m
                                                                 in db.get_all_monsters()})
-        self.multi_word_tokens = set()
+
+        self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
+                                  for m
+                                  in db.get_all_monsters()
+                                  if " " in m.series.name_en}
 
         nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         for name, m_id, *data in nickname_data:
