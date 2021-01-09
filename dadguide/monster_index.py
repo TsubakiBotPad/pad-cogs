@@ -204,9 +204,17 @@ class MonsterIndex2(aobject):
             for t in MISC_PREFIX_MAP[MiscPrefixes.NONCHIBI]:
                 prefix.add(t)
 
-        # Farmable
+        # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
             for t in MISC_PREFIX_MAP[MiscPrefixes.FARMABLE]:
+                prefix.add(t)
+
+        if self.graph.monster_is_mp_evo(m):
+            for t in MISC_PREFIX_MAP[MiscPrefixes.MP]:
+                prefix.add(t)
+
+        if self.graph.monster_is_rem_evo(m):
+            for t in MISC_PREFIX_MAP[MiscPrefixes.REM]:
                 prefix.add(t)
 
         # Server
@@ -216,7 +224,7 @@ class MonsterIndex2(aobject):
         if m.on_na:
             for t in MISC_PREFIX_MAP[MiscPrefixes.INNA]:
                 prefix.add(t)
-        if m.monster_id+10000 in self.graph.nodes:
+        if m.monster_id + 10000 in self.graph.nodes:
             prefix.add("idjp")
         if m.monster_id > 10000:
             prefix.add("idna")
