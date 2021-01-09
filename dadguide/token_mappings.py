@@ -239,7 +239,7 @@ class MiscPrefixes(Enum):
     NONCHIBI = 'nonchibi'
     FARMABLE = 'farmable'
     REM = 'rem'
-    REM = 'mp'
+    MP = 'mp'
     INJP = 'injp'
     INNA = 'inna'
 
