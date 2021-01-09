@@ -69,6 +69,7 @@ class MonsterIndex2(aobject):
 
             # ID
             self.tokens[str(m.monster_id)].add(m)
+            self.tokens[str(m.monster_id % 10000)].add(m)
 
             # Name Tokens
             for token in self._name_to_tokens(m.name_en):
