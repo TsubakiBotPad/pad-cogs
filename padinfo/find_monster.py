@@ -6,6 +6,13 @@ from typing import Set
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
 
+def calc_ratio_prefix(token, full_word):
+    if full_word == token:
+        return 1
+    elif full_word.startswith(token):
+        return 1 - len(full_word)/100
+    return difflib.SequenceMatcher(None, token, full_word).ratio()
+
 
 class FindMonster:
     def _merge_multi_word_tokens(self, tokens, valid_multi_word_tokens):
@@ -75,16 +82,17 @@ class FindMonster:
             valid = set()
 
             ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
+            ms += [token for token in index2.name_tokens if token.startswith(t)]
             if not ms:
                 return None, None
             for match in ms:
                 for m in index2.manual[match]:
                     if m not in valid:
-                        monsterscore[m] += calc_ratio(t, match) + .001
+                        monsterscore[m] += calc_ratio_prefix(t, match) + .001
                         valid.add(m)
                 for m in index2.tokens[match]:
                     if m not in valid:
-                        monsterscore[m] += calc_ratio(t, match)
+                        monsterscore[m] += calc_ratio_prefix(t, match)
                         valid.add(m)
 
             if monstergen is not None:
