@@ -1063,7 +1063,7 @@ class PadInfo(commands.Cog):
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
                                               not m.is_equip,
-                                              m.monster_id > 10000 and re.search("\d{4}", query),
+                                              m.monster_id > 10000 and re.search("\d{4}", query), # Match na on id overlap
                                               -DGCOG.database.graph.get_base_id(m),
                                               m.rarity,
                                               m.monster_no_na))
