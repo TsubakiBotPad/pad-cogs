@@ -22,7 +22,7 @@ class MonsterIndex2(aobject):
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en}
+        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower()}
                                                                 for m
                                                                 in db.get_all_monsters()})
         self.multi_word_tokens = set()
@@ -32,23 +32,23 @@ class MonsterIndex2(aobject):
             _, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
                 if " " in name:
-                    self.multi_word_tokens.add(tuple(name.split(" ")))
-                self.monster_id_to_nickname[int(m_id)].add(name.replace(" ", ""))
+                    self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
 
         treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
         for m_id, name, *data in treenames_data:
             _, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
                 if " " in name:
-                    self.multi_word_tokens.add(tuple(name.split(" ")))
-                self.monster_id_to_treename[int(m_id)].add(name.replace(" ", ""))
+                    self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
         pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
         for name, _, sid, *_ in pantheon_data:
             if sid.isdigit():
                 if " " in name:
-                    self.multi_word_tokens.add(tuple(name.split(" ")))
-                self.series_id_to_pantheon_nickname[int(sid)].add(name.replace(" ", ""))
+                    self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
         self.manual = self.tokens = self.monster_prefixes = defaultdict(set)
         await self._build_monster_index(monsters)
