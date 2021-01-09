@@ -1038,7 +1038,7 @@ class PadInfo(commands.Cog):
                                                                                         DGCOG.index2.multi_word_tokens,
                                                                                         DGCOG.index2.all_prefixes)
 
-        # print(prefix_tokens, name_query_tokens)
+        print(prefix_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1058,7 +1058,7 @@ class PadInfo(commands.Cog):
             # no prefixes match any monster in the evo tree
             return
 
-        # print(monster_gen)
+        print(monster_gen)
 
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
