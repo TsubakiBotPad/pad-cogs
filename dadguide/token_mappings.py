@@ -199,7 +199,7 @@ AWOKEN_PREFIX_MAP = {
     Awakenings.ENHCOMBO7C: ('7c',),
     Awakenings.GUARDBREAK: ('gb',),
     Awakenings.FUA: ('fua',),
-    Awakenings.ENHTEAMHP: ('teamhp',),
+    Awakenings.ENHTEAMHP: ('teamhp', 'thp'),
     Awakenings.ENHTEAMRCV: ('teamrcv', 'trcv'),
     Awakenings.VDP: ('vdp',),
     Awakenings.EQUIP: ('equip', 'assist', 'eq'),
