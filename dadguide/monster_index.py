@@ -209,6 +209,18 @@ class MonsterIndex2(aobject):
             for t in MISC_PREFIX_MAP[MiscPrefixes.FARMABLE]:
                 prefix.add(t)
 
+        # Server
+        if m.on_jp:
+            for t in MISC_PREFIX_MAP[MiscPrefixes.INJP]:
+                prefix.add(t)
+        if m.on_na:
+            for t in MISC_PREFIX_MAP[MiscPrefixes.INNA]:
+                prefix.add(t)
+        if m.monster_id+10000 in self.graph.nodes:
+            prefix.add("idjp")
+        if m.monster_id > 10000:
+            prefix.add("idna")
+
         return prefix
 
 
