@@ -1,5 +1,4 @@
 import asyncio
-import difflib
 import json
 import logging
 import os
@@ -29,28 +28,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
-HELP_MSG = """
-{0.prefix}helpid : shows this message
-{0.prefix}id <query> : look up a monster and show a link to puzzledragonx
-{0.prefix}pic <query> : Look up a monster and display its image inline
-
-Options for <query>
-    <id> : Find a monster by ID
-        {0.prefix}id 1234 (picks sun quan)
-    <name> : Take the best guess for a monster, picks the most recent monster
-        {0.prefix}id kali (picks mega awoken d kali)
-    <prefix> <name> : Limit by element or awoken, e.g.
-        {0.prefix}id ares  (selects the most recent, revo ares)
-        {0.prefix}id aares (explicitly selects awoken ares)
-        {0.prefix}id a ares (spaces work too)
-        {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
-        {0.prefix}id r/d ares (slashes, spaces work too)
-
-computed nickname list and overrides: 
-    https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
-
-submit an override suggestion: 
-    https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
 
 EMBED_NOT_GENERATED = -1
 
@@ -318,7 +295,8 @@ class PadInfo(commands.Cog):
             m1, _, _ = await self.findMonster1(query)
             id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
-            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+            params = urllib.parse.urlencode(
+                {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
@@ -736,12 +714,6 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(aliases=['helppic', 'helpimg'])
-    @checks.bot_has_permissions(embed_links=True)
-    async def helpid(self, ctx):
-        """Whispers you info on how to craft monster queries for [p]id"""
-        await ctx.author.send(box(HELP_MSG.format(ctx)))
-
     @commands.group()
     # @checks.is_owner()
     async def idtest(self, ctx):
@@ -984,10 +956,14 @@ class PadInfo(commands.Cog):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     async def makeFailureMsg(self, ctx: discord.abc.Messageable, err):
+        if await self.config.user(ctx.author).beta_id3():
+            await self.idhelp(ctx, is_failed_query=True)
+            return
         msg = ('Lookup failed: {}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
                'Unexpected results? Use ^helpid for more info.').format(err)
         await ctx.send(box(msg))
+        await ctx.send('Looking for the beta test? Type `^idset beta y`')
 
     async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
         if await self.config.user(ctx.author).beta_id3():
@@ -1058,8 +1034,9 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
-        prefix_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2.multi_word_tokens,
-                                                                        DGCOG.index2.all_prefixes)
+        prefix_tokens, nprefix_tokens, name_query_tokens = find_monster.interpret_query(query,
+                                                                                        DGCOG.index2.multi_word_tokens,
+                                                                                        DGCOG.index2.all_prefixes)
 
         print(prefix_tokens, name_query_tokens)
 
@@ -1074,8 +1051,8 @@ class PadInfo(commands.Cog):
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
-        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen)
-        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, monster_score, monster_gen,
+        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
+        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, nprefix_tokens, monster_score, monster_gen,
                                                          DGCOG.index2.monster_prefixes)
         if not monster_gen:
             # no prefixes match any monster in the evo tree
@@ -1113,17 +1090,18 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
-    @commands.command()
-    async def idhelp(self, ctx, *, query=""):
+    @commands.command(aliases=['helpid'])
+    async def idhelp(self, ctx, *, query="", is_failed_query=False):
         """Get help with an id query"""
+        failed_query_msg = "Query matched no results! " if is_failed_query else ""
         if query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on ^id!")
             await self.debugid3(ctx, query=query)
         else:
-            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+            await ctx.send("{}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "
-                           "help with querying a specific monster.")
+                           "help with querying a specific monster.".format(failed_query_msg))
 
 
 class PadInfoSettings(CogSettings):

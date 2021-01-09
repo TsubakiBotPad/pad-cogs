@@ -22,7 +22,9 @@ class MonsterIndex2(aobject):
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set)
+        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en}
+                                                                for m
+                                                                in db.get_all_monsters()})
         self.multi_word_tokens = set()
 
         nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
@@ -124,8 +126,8 @@ class MonsterIndex2(aobject):
                 prefix.add(t)
 
         # Rarity
-        prefix.add(str(m.rarity)+"*")
-        prefix.add(str(basemon.rarity)+"*b")
+        prefix.add(str(m.rarity) + "*")
+        prefix.add(str(basemon.rarity) + "*b")
 
         # Base
         if self.graph.monster_is_base(m):

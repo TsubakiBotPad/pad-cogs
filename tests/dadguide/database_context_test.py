@@ -11,7 +11,6 @@ db_context = DbContext(database, graph)
 assert db_context.graph.monster_is_farmable_by_id(4)
 assert not db_context.graph.monster_is_farmable_by_id(5156)
 assert db_context.graph.get_base_monster_by_id(1074).monster_id == 1073  # evo pandora
-assert 6352 in db_context.get_evolution_tree_ids(1074)
 assert db_context.get_monsters_by_series(1)[0].name_en == 'Tyrra'
 assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'
 

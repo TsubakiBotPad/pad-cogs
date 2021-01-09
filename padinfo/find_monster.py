@@ -1,9 +1,6 @@
-import re
-from collections import defaultdict
-
-from tsutils import rmdiacritics
-from typing import List, Set
 import difflib
+from collections import defaultdict
+from typing import Set
 
 
 def calc_ratio(s1, s2):
@@ -59,17 +56,23 @@ class FindMonster:
         tokenized_query = self._merge_multi_word_tokens(tokenized_query, valid_multi_word_tokens)
 
         prefixes = set()
+        nprefixes = set()
         name = set()
         longer_prefixes = [p for p in all_prefixes if len(p) > 8]
         for i, token in enumerate(tokenized_query):
+            negated = token.startswith("-")
+            token = token.lstrip('-')
             if token in all_prefixes or difflib.get_close_matches(token, longer_prefixes, n=1, cutoff=.8):
-                prefixes.add(token)
+                if negated:
+                    nprefixes.add(token)
+                else:
+                    prefixes.add(token)
             else:
                 name.add(token)
                 name.update(tokenized_query[i + 1:])
                 break
 
-        return prefixes, name
+        return prefixes, nprefixes, name
 
     def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
@@ -99,18 +102,28 @@ class FindMonster:
 
         return monstergen, monsterscore
 
-    def process_prefix_tokens(self, prefix_query_tokens, monsterscore, potential_evos, monster_prefixes):
+    def process_prefix_tokens(self, prefix_query_tokens, nprefix_query_tokens, monsterscore, potential_evos,
+                              monster_prefixes):
         for t in prefix_query_tokens:
-            potential_evos = {m for m in potential_evos if self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
+            potential_evos = {m for m in potential_evos if
+                              self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
+            if not potential_evos:
+                return None
+        for t in nprefix_query_tokens:
+            potential_evos = {m for m in potential_evos if
+                              not self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
             if not potential_evos:
                 return None
 
         return potential_evos
 
-    def get_monster_evos(self, database, monster_gen):
+    def get_monster_evos(self, database, monster_gen, monster_score):
         monster_evos = set()
-        for m in monster_gen:
-            monster_evos.update(database.graph.get_alt_monsters(m))
+        for m in sorted(monster_gen, key=lambda m: monster_score[m], reverse=True):
+            for evo in database.graph.get_alt_monsters(m):
+                monster_evos.add(evo)
+                if monster_score[evo] < monster_score[m]:
+                    monster_score[evo] = monster_score[m] - .003
 
         return monster_evos
 
