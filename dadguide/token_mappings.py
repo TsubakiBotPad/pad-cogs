@@ -12,7 +12,7 @@ COLOR_MAP = {
     Attribute.Nil: ('nil', 'x', 'none', 'null', 'white')
 }
 
-SUB_COLOR_MAP = {k: tuple('?'+t for t in v) for k, v in COLOR_MAP.items()}
+SUB_COLOR_MAP = {k: tuple('?'+t for t in v if t != "white") for k, v in COLOR_MAP.items()}
 
 DUAL_COLOR_MAP = {}
 for cid1, cns1 in COLOR_MAP.items():
@@ -24,7 +24,8 @@ for cid1, cns1 in COLOR_MAP.items():
                     continue
                 if len(t1) + len(t2) == 2:
                     ts += (t1 + t2,)
-                ts += (t1 + "/" + t2,)
+                if (len(t1) == 1) == (len(t2) == 1):
+                    ts += (t1 + "/" + t2,)
         DUAL_COLOR_MAP[(cid1, cid2)] = ts
 
 
@@ -246,7 +247,6 @@ class MiscPrefixes(Enum):
 
 MISC_PREFIX_MAP = {
     MiscPrefixes.CHIBI: ('chibi', 'mini'),
-    MiscPrefixes.NONCHIBI: ('nonchibi', 'nc'),
     MiscPrefixes.FARMABLE: ('farmable', 'nrem'),
     MiscPrefixes.REM: ('rem',),
     MiscPrefixes.MP: ('mp',),
@@ -256,11 +256,30 @@ MISC_PREFIX_MAP = {
 
 PREFIX_MAPS = {
     **COLOR_MAP,
-    **TYPE_MAP,
+    **SUB_COLOR_MAP,
     **DUAL_COLOR_MAP,
+    **TYPE_MAP,
+    **AWOKEN_PREFIX_MAP,
     **EVO_PREFIX_MAP,
     **MISC_PREFIX_MAP,
 }
+
+COLOR_TOKENS = {
+    *sum(COLOR_MAP.values(), ()),
+    *sum(SUB_COLOR_MAP.values(), ()),
+    *sum(DUAL_COLOR_MAP.values(), ()),
+}
+
+AWAKENING_TOKENS = {*sum(AWOKEN_PREFIX_MAP.values(), ())}
+EVO_TOKENS = {*sum(EVO_PREFIX_MAP.values(), ())}
+TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
+
+
+OTHER_HIDDEN_TOKENS = set()\
+    .union(COLOR_TOKENS)\
+    .union(AWAKENING_TOKENS)\
+    .union(EVO_TOKENS)\
+    .union(TYPE_TOKENS)
 
 TOKEN_REPLACEMENTS = defaultdict(tuple, {
     'tamadra': ('tama',),

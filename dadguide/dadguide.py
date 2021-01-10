@@ -24,6 +24,7 @@ from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .old_monster_index import MonsterIndex
 from .monster_index import MonsterIndex2
 from .database_loader import load_database
+from . import token_mappings
 
 from .models.monster_model import MonsterModel
 
@@ -84,6 +85,8 @@ class Dadguide(commands.Cog):
 
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
+
+        self.token_maps = token_mappings
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.
