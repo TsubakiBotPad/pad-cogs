@@ -1,11 +1,10 @@
-from datetime import datetime
-from collections import OrderedDict, defaultdict, deque
-from typing import Optional
+from typing import Generator, List
 
 from .database_manager import DadguideDatabase
-from .monster_graph import MonsterGraph
-from .models.scheduled_event_model import ScheduledEventModel
+from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
+from .models.scheduled_event_model import ScheduledEventModel
+from .monster_graph import MonsterGraph
 
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,
@@ -56,7 +55,7 @@ class DbContext(object):
             return [*monsters]
         return monsters
 
-    def get_all_events(self) -> ScheduledEventModel:
+    def get_all_events(self) -> Generator[ScheduledEventModel, None, None]:
         result = self.database.query_many(SCHEDULED_EVENT_QUERY, ())
         for se in result:
             se['dungeon_model'] = DungeonModel(name_ja=se['d_name_ja'],
@@ -64,6 +63,10 @@ class DbContext(object):
                                                name_ko=se['d_name_ko'],
                                                **se)
             yield ScheduledEventModel(**se)
+
+    def get_all_awoken_skills(self) -> List[AwokenSkillModel]:
+        result = self.database.query_many("SELECT * FROM awoken_skills", ())
+        return [AwokenSkillModel(**r) for r in result]
 
     def has_database(self):
         return self.database.has_database()

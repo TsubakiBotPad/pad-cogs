@@ -46,17 +46,17 @@ TYPE_MAP = {
 
 
 class EvoTypes(Enum):
-    BASE = 'base'
-    EVO = 'evolved'
-    UVO = 'ulimate'
-    UUVO = 'super ultimate'
-    TRANS = 'transform'
-    AWOKEN = 'awoken'
-    MEGA = 'mega awoken'
-    REVO = 'reincarnated'
-    SREVO = 'super reincarnated'
-    PIXEL = 'pixel'
-    NONPIXEL = 'nonpixel'
+    BASE = 'Base'
+    EVO = 'Evolved'
+    UVO = 'Ulimate'
+    UUVO = 'Super Ultimate'
+    TRANS = 'Transform'
+    AWOKEN = 'Awoken'
+    MEGA = 'Mega Awoken'
+    REVO = 'Reincarnated'
+    SREVO = 'Super Reincarnated'
+    PIXEL = 'Pixel'
+    NONPIXEL = 'Nonpixel'
 
 
 EVO_PREFIX_MAP = {
@@ -236,18 +236,18 @@ AWOKEN_PREFIX_MAP = {
 
 
 class MiscPrefixes(Enum):
-    CHIBI = 'chibi'
-    NONCHIBI = 'nonchibi'
-    FARMABLE = 'farmable'
-    REM = 'rem'
-    MP = 'mp'
-    INJP = 'injp'
-    INNA = 'inna'
+    CHIBI = 'Chibi'
+    NONCHIBI = 'Non-Chibi'
+    FARMABLE = 'Farmable'
+    REM = 'REM'
+    MP = 'MP'
+    INJP = 'In JP Server'
+    INNA = 'In NA Server'
 
 
 MISC_PREFIX_MAP = {
     MiscPrefixes.CHIBI: ('chibi', 'mini'),
-    MiscPrefixes.FARMABLE: ('farmable', 'nrem'),
+    MiscPrefixes.FARMABLE: ('farmable',),
     MiscPrefixes.REM: ('rem',),
     MiscPrefixes.MP: ('mp',),
     MiscPrefixes.INJP: ('jp',),
