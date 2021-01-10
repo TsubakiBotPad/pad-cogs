@@ -1044,7 +1044,7 @@ class PadInfo(commands.Cog):
     async def findMonster3(self, query):
         m = await self._findMonster3(query)
 
-        monster_no = nm.monster_id if nm else -1
+        monster_no = m.monster_id if m else -1
         self.historic_lookups_id3[query] = monster_no
         json.dump(self.historic_lookups_id3, open(self.historic_lookups_file_path_id3, "w+"))
 
