@@ -959,11 +959,11 @@ class PadInfo(commands.Cog):
         if await self.config.user(ctx.author).beta_id3():
             await self.idhelp(ctx, is_failed_query=True)
             return
-        msg = ('Lookup failed: {}.\n'
+        msg = ('Lookup failed: {0}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
-               'Unexpected results? Use ^helpid for more info.').format(err)
+               'Unexpected results? Use {1.prefix}helpid for more info.').format(err, ctx)
         await ctx.send(box(msg))
-        await ctx.send('Looking for the beta test? Type `^idset beta y`')
+        await ctx.send('Looking for the beta test? Type `{0.prefix}idset beta y`'.format(ctx))
 
     async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
         if await self.config.user(ctx.author).beta_id3():
@@ -1103,12 +1103,12 @@ class PadInfo(commands.Cog):
         failed_query_msg = "Query matched no results! " if is_failed_query else ""
         if query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
-                           "documentation on ^id!")
+                           "documentation on {0.prefix}id!".format(ctx))
             await self.debugid(ctx, query=query)
         else:
-            await ctx.send("{}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
-                           "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "
-                           "help with querying a specific monster.".format(failed_query_msg))
+            await ctx.send("{0}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+                           "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
+                           "help with querying a specific monster.".format(failed_query_msg, ctx))
 
     @commands.command()
     async def exportprefixes(self, ctx):
