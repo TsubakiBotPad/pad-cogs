@@ -7,7 +7,7 @@ class BaseModel(object):
         raise NotImplementedError
 
     def to_string(self):
-        return json.dumps(self.to_dict())
+        return self.__class__.__name__ + "<" + json.dumps(self.to_dict())[1:-1] + ">"
 
     def __repr__(self):
         try:
