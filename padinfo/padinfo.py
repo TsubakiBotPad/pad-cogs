@@ -856,6 +856,16 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).beta_id3.set(value)
         await ctx.tick()
 
+    @idset.command()
+    @checks.is_owner()
+    async def betacount(self, ctx):
+        """Check the number of beta testers"""
+        c = 0
+        for v in (await self.config.all_users()).values():
+            if v['beta_id3']:
+                c += 1
+        await ctx.send(inline(str(c) + " user(s) have opted in."))
+
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
