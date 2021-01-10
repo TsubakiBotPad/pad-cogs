@@ -205,9 +205,6 @@ class MonsterIndex2(aobject):
                 'ミニ' in m.name_ja or '(chibi)' in m.name_en:
             for t in MISC_PREFIX_MAP[MiscPrefixes.CHIBI]:
                 prefix.add(t)
-        else:
-            for t in MISC_PREFIX_MAP[MiscPrefixes.NONCHIBI]:
-                prefix.add(t)
 
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):

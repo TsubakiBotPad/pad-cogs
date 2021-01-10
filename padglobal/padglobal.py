@@ -211,7 +211,7 @@ class PadGlobal(commands.Cog):
         await write_send(mi.all_entries, 'all_entries.csv')
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
-    @commands.command(aliases=['iddebug'])
+    @commands.command(aliases=['iddebug1'])
     @is_padglobal_admin()
     async def debugid1(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
