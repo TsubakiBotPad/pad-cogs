@@ -182,6 +182,9 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
+        self.historic_lookups_file_path_id3 = _data_file('historic_lookups_id3.json')
+        self.historic_lookups_id3 = safe_read_json(self.historic_lookups_file_path_id3)
+
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
@@ -193,6 +196,7 @@ class PadInfo(commands.Cog):
         self.index_jp = None
         self.historic_lookups = {}
         self.historic_lookups_id2 = {}
+        self.historic_lookups_id3 = {}
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -1028,6 +1032,15 @@ class PadInfo(commands.Cog):
         return monster_index.find_monster2(query)
 
     async def findMonster3(self, query):
+        m = self._findMonster3(query)
+
+        monster_no = nm.monster_id if nm else -1
+        self.historic_lookups_id3[query] = monster_no
+        json.dump(self.historic_lookups_id3, open(self.historic_lookups_file_path_id3, "w+"))
+
+        return m
+
+    async def _findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
         await DGCOG.wait_until_ready()
         if DGCOG is None:
