@@ -1112,14 +1112,34 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     async def exportprefixes(self, ctx):
-        tms = self.bot.get_cog("Dadguide").token_maps
+        DGCOG = self.bot.get_cog("Dadguide")
+        tms = DGCOG.token_maps
+        o = ("Jump to:\n\n"
+             "* [Types](#types)\n"
+             "* [Evolutions](#evolutions)\n"
+             "* [Misc](#misc)\n"
+             "* [Awakenings](#awakenings)\n"
+             "* [Attributes](#attributes)\n\n\n\n")
 
-        ctable = []
-        ctable += [(k.name, ",".join(v)) for k, v in tms.COLOR_MAP.items()]
-        ctable += [("sub " + k.name, ",".join(v)) for k, v in tms.SUB_COLOR_MAP.items()]
-        ctable += [(k[0].name + "/" + k[1].name, ",".join(v)) for k, v in tms.DUAL_COLOR_MAP.items()]
+        anames = DGCOG.database.get_all_awoken_skills()
 
-        await ctx.send(file=text_to_file(tabulate(ctable, headers=["Category", "Tokens"], tablefmt="github")))
+        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_PREFIX_MAP.items()]
+        o += "\n\n### Evolutions\n\n"+tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ttable = [(k.name, ", ".join(map(inline, v))) for k, v in tms.TYPE_MAP.items()]
+        o += "\n\n### Types\n\n"+tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
+        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_PREFIX_MAP.items()]
+        o += "\n\n### Misc\n\n"+tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
+        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_PREFIX_MAP.items()]
+        o += "\n\n### Awakenings\n\n"+tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.COLOR_MAP.items()]
+        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.SUB_COLOR_MAP.items()]
+        for k, v in tms.DUAL_COLOR_MAP.items():
+            k0name = k[0].name.replace("Nil", "None")
+            k1name = k[1].name.replace("Nil", "None")
+            ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
+        o += "### Attributes\n\n"+tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+
+        await ctx.send(file=text_to_file(o, filename="table.md"))
 
 
 class PadInfoSettings(CogSettings):
