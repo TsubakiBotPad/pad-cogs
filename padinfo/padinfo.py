@@ -1071,7 +1071,7 @@ class PadInfo(commands.Cog):
         return mon
 
     @commands.command()
-    async def debugid3(self, ctx, *, query):
+    async def debugid(self, ctx, *, query):
         """Get helpful id information about a monster"""
         DGCOG = self.bot.get_cog("Dadguide")
         m = await self.findMonster3(query)
@@ -1097,7 +1097,7 @@ class PadInfo(commands.Cog):
         if query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on ^id!")
-            await self.debugid3(ctx, query=query)
+            await self.debugid(ctx, query=query)
         else:
             await ctx.send("{}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "

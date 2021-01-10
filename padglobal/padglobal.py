@@ -196,7 +196,7 @@ class PadGlobal(commands.Cog):
 
     @commands.command()
     @is_padglobal_admin()
-    async def debugiddump(self, ctx):
+    async def debugid1dump(self, ctx):
         padinfo_cog = self.bot.get_cog('PadInfo')
         mi = padinfo_cog.index_all
 
@@ -213,7 +213,7 @@ class PadGlobal(commands.Cog):
 
     @commands.command(aliases=['iddebug'])
     @is_padglobal_admin()
-    async def debugid(self, ctx, *, query):
+    async def debugid1(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
         # m is a named monster
         m, err, debug_info = await lookup_named_monster(query)
