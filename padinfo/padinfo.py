@@ -14,7 +14,8 @@ import discord
 import tsutils
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, inline, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
+from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
 from .button_info import button_info
@@ -27,7 +28,6 @@ if TYPE_CHECKING:
     from dadguide.old_monster_index import NamedMonster
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
-
 
 EMBED_NOT_GENERATED = -1
 
@@ -1063,14 +1063,15 @@ class PadInfo(commands.Cog):
         # Return most likely candidate based on query.
         mon = max(monster_gen, key=lambda m: (monster_score[m],
                                               not m.is_equip,
-                                              bool(m.monster_id > 10000 and re.search(r"\d{4}", query)), # Match na on id overlap
+                                              bool(m.monster_id > 10000 and re.search(r"\d{4}", query)),
+                                              # Match na on id overlap
                                               -DGCOG.database.graph.get_base_id(m),
                                               m.rarity,
                                               m.monster_no_na))
 
         return mon
 
-    @commands.command()
+    @commands.command(aliases=["iddebug"])
     async def debugid(self, ctx, *, query):
         """Get helpful id information about a monster"""
         DGCOG = self.bot.get_cog("Dadguide")
@@ -1079,14 +1080,20 @@ class PadInfo(commands.Cog):
             await ctx.send(box("Your query didn't match any monsters."))
             return
         bm = DGCOG.database.graph.get_base_monster(m)
+        pfxs = DGCOG.index2.monster_prefixes[m]
+        EVOANDTYPE = DGCOG.token_maps.EVO_TOKENS.union(DGCOG.token_maps.TYPE_TOKENS)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
              f"Series: {m.series.name_en} ({m.series_id})\n\n"
-             f"Name Tokens: {' '.join(sorted(t for t, ms in DGCOG.index2.tokens.items() if m in ms))}\n\n"
-             f"Manual Tokens: \n"
-             f"\tTreenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
-             f"\tNicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
-             f"Prefix Tokens: {' '.join(sorted(DGCOG.index2.monster_prefixes[m]))}\n")
+             f"[Name Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.tokens.items() if m in ms))}\n\n"
+             f"[Manual Tokens]\n"
+             f"     Treenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
+             f"     Nicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
+             f"[Prefix Tokens]\n"
+             f"     Attribute: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.COLOR_TOKENS))}\n"
+             f"     Awakening: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.AWAKENING_TOKENS))}\n"
+             f"    Evo & Type: {' '.join(sorted(t for t in pfxs if t in EVOANDTYPE))}\n"
+             f"         Other: {' '.join(sorted(t for t in pfxs if t not in DGCOG.token_maps.OTHER_HIDDEN_TOKENS))}\n")
         for page in pagify(o):
             await ctx.send(box(page))
 
@@ -1102,6 +1109,17 @@ class PadInfo(commands.Cog):
             await ctx.send("{}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
                            "documentation on `^id`! You can also  run `[p]idhelp <monster id>` to get "
                            "help with querying a specific monster.".format(failed_query_msg))
+
+    @commands.command()
+    async def exportprefixes(self, ctx):
+        tms = self.bot.get_cog("Dadguide").token_maps
+
+        ctable = []
+        ctable += [(k.name, ",".join(v)) for k, v in tms.COLOR_MAP.items()]
+        ctable += [("sub " + k.name, ",".join(v)) for k, v in tms.SUB_COLOR_MAP.items()]
+        ctable += [(k[0].name + "/" + k[1].name, ",".join(v)) for k, v in tms.DUAL_COLOR_MAP.items()]
+
+        await ctx.send(file=text_to_file(tabulate(ctable, headers=["Category", "Tokens"], tablefmt="github")))
 
 
 class PadInfoSettings(CogSettings):
