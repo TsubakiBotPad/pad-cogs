@@ -1042,7 +1042,7 @@ class PadInfo(commands.Cog):
         return monster_index.find_monster2(query)
 
     async def findMonster3(self, query):
-        m = self._findMonster3(query)
+        m = await self._findMonster3(query)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups_id3[query] = monster_no
