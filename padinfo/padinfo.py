@@ -255,7 +255,7 @@ class PadInfo(commands.Cog):
             await ctx.send(IdMenu.monster_header(m))
             await ctx.send(box(m.name_ja))
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(name="id", aliases=["iD", "Id", "ID"])
     @checks.bot_has_permissions(embed_links=True)
@@ -290,7 +290,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     async def send_survey_after(self, ctx, query, result_monster):
         sm = await self.config.user(ctx.author).survey_mode()
@@ -361,7 +361,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -378,7 +378,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await self.makeFailureMsg(ctx, "No monster matched")
+            await self.makeFailureMsg(ctx, query, "No monster matched")
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
@@ -388,7 +388,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat'])
     @checks.bot_has_permissions(embed_links=True)
@@ -398,7 +398,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.mats_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -410,7 +410,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('Not a pantheon monster'))
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -422,7 +422,7 @@ class PadInfo(commands.Cog):
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('No skillups available'))
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         DGCOG = self.bot.get_cog("Dadguide")
@@ -546,7 +546,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -559,7 +559,7 @@ class PadInfo(commands.Cog):
             await ctx.send(embed=embed)
 
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
@@ -569,7 +569,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -592,7 +592,7 @@ class PadInfo(commands.Cog):
             embed = await menu.make_header_embed(m)
             await ctx.send(embed=embed)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -602,7 +602,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['collabscroll'])
     @checks.bot_has_permissions(embed_links=True)
@@ -625,7 +625,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -639,7 +639,7 @@ class PadInfo(commands.Cog):
             await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
                                       self.id_emoji)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -815,7 +815,7 @@ class PadInfo(commands.Cog):
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await self.makeFailureMsg(ctx, err)
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
@@ -969,9 +969,9 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    async def makeFailureMsg(self, ctx: discord.abc.Messageable, err):
+    async def makeFailureMsg(self, ctx: discord.abc.Messageable, query: str, err):
         if await self.config.user(ctx.author).beta_id3():
-            await self.idhelp(ctx, is_failed_query=True)
+            await self.idhelp(ctx, query=query, is_failed_query=True)
             return
         msg = ('Lookup failed: {0}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
@@ -1123,13 +1123,14 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query="", is_failed_query=False):
         """Get help with an id query"""
-        failed_query_msg = "Query matched no results! " if is_failed_query else ""
-        if query:
-            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+        query_display = '`{}` '.format(query) if query != '' else ''
+        failed_query_msg = "Sorry, your query {}didn't match any results :( ".format(query_display) if is_failed_query else ""
+        if not is_failed_query:
+            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
                            "documentation on {0.prefix}id!".format(ctx))
             await self.debugid(ctx, query=query)
         else:
-            await ctx.send("{0}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-User-guide> for "
+            await ctx.send("{0}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
                            "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
                            "help with querying a specific monster.".format(failed_query_msg, ctx))
 
