@@ -13,4 +13,5 @@ aiohttp
 aiofiles
 aioodbc
 networkx
+tabulate
 tsutils
