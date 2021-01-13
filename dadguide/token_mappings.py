@@ -59,7 +59,7 @@ class EvoTypes(Enum):
     NONPIXEL = 'Nonpixel'
 
 
-EVO_PREFIX_MAP = {
+EVO_MOD_MAP = {
     EvoTypes.BASE: ('base',),
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
@@ -154,7 +154,7 @@ class Awakenings(Enum):
     DARKCOMBOCOUNT = 77
 
 
-AWOKEN_PREFIX_MAP = {
+AWOKEN_MOD_MAP = {
     Awakenings.ENHANCEDHP: ('hp+', 'hp'),
     Awakenings.ENHANCEDATK: ('atk+', 'atk'),
     Awakenings.ENHANCEDRCV: ('rcv+', 'rcv'),
@@ -235,7 +235,7 @@ AWOKEN_PREFIX_MAP = {
 }
 
 
-class MiscPrefixes(Enum):
+class MiscModifiers(Enum):
     CHIBI = 'Chibi'
     NONCHIBI = 'Non-Chibi'
     FARMABLE = 'Farmable'
@@ -245,23 +245,23 @@ class MiscPrefixes(Enum):
     INNA = 'In NA Server'
 
 
-MISC_PREFIX_MAP = {
-    MiscPrefixes.CHIBI: ('chibi', 'mini'),
-    MiscPrefixes.FARMABLE: ('farmable',),
-    MiscPrefixes.REM: ('rem',),
-    MiscPrefixes.MP: ('mp',),
-    MiscPrefixes.INJP: ('jp',),
-    MiscPrefixes.INNA: ('na',)
+MISC_MOD_MAP = {
+    MiscModifiers.CHIBI: ('chibi', 'mini'),
+    MiscModifiers.FARMABLE: ('farmable',),
+    MiscModifiers.REM: ('rem',),
+    MiscModifiers.MP: ('mp',),
+    MiscModifiers.INJP: ('jp',),
+    MiscModifiers.INNA: ('na',)
 }
 
-PREFIX_MAPS = {
+MODIFIER_MAPS = {
     **COLOR_MAP,
     **SUB_COLOR_MAP,
     **DUAL_COLOR_MAP,
     **TYPE_MAP,
-    **AWOKEN_PREFIX_MAP,
-    **EVO_PREFIX_MAP,
-    **MISC_PREFIX_MAP,
+    **AWOKEN_MOD_MAP,
+    **EVO_MOD_MAP,
+    **MISC_MOD_MAP,
 }
 
 COLOR_TOKENS = {
@@ -270,8 +270,8 @@ COLOR_TOKENS = {
     *sum(DUAL_COLOR_MAP.values(), ()),
 }
 
-AWAKENING_TOKENS = {*sum(AWOKEN_PREFIX_MAP.values(), ())}
-EVO_TOKENS = {*sum(EVO_PREFIX_MAP.values(), ())}
+AWAKENING_TOKENS = {*sum(AWOKEN_MOD_MAP.values(), ())}
+EVO_TOKENS = {*sum(EVO_MOD_MAP.values(), ())}
 TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
 
 

@@ -1062,11 +1062,11 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
-        prefix_tokens, nprefix_tokens, name_query_tokens = find_monster.interpret_query(query,
-                                                                                        DGCOG.index2.multi_word_tokens,
-                                                                                        DGCOG.index2.all_prefixes)
+        mod_tokens, nmod_tokens, name_query_tokens = find_monster.interpret_query(query,
+                                                                                  DGCOG.index2.multi_word_tokens,
+                                                                                  DGCOG.index2.all_modifiers)
 
-        print(prefix_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1080,10 +1080,10 @@ class PadInfo(commands.Cog):
 
         # Expand search to the evo tree
         monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
-        monster_gen = find_monster.process_prefix_tokens(prefix_tokens, nprefix_tokens, monster_score, monster_gen,
-                                                         DGCOG.index2.monster_prefixes)
+        monster_gen = find_monster.process_modifiers(mod_tokens, nmod_tokens, monster_score, monster_gen,
+                                                     DGCOG.index2.modifiers)
         if not monster_gen:
-            # no prefixes match any monster in the evo tree
+            # no modifiers match any monster in the evo tree
             return
 
         print(monster_gen)
@@ -1108,7 +1108,7 @@ class PadInfo(commands.Cog):
             await ctx.send(box("Your query didn't match any monsters."))
             return
         bm = DGCOG.database.graph.get_base_monster(m)
-        pfxs = DGCOG.index2.monster_prefixes[m]
+        pfxs = DGCOG.index2.modifiers[m]
         EVOANDTYPE = DGCOG.token_maps.EVO_TOKENS.union(DGCOG.token_maps.TYPE_TOKENS)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
@@ -1117,7 +1117,7 @@ class PadInfo(commands.Cog):
              f"[Manual Tokens]\n"
              f"     Treenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
              f"     Nicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
-             f"[Prefix Tokens]\n"
+             f"[Modifier Tokens]\n"
              f"     Attribute: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.COLOR_TOKENS))}\n"
              f"     Awakening: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.AWAKENING_TOKENS))}\n"
              f"    Evo & Type: {' '.join(sorted(t for t in pfxs if t in EVOANDTYPE))}\n"
@@ -1129,7 +1129,8 @@ class PadInfo(commands.Cog):
     async def idhelp(self, ctx, *, query="", is_failed_query=False):
         """Get help with an id query"""
         query_display = '`{}` '.format(query) if query != '' else ''
-        failed_query_msg = "Sorry, your query {}didn't match any results :( ".format(query_display) if is_failed_query else ""
+        failed_query_msg = "Sorry, your query {}didn't match any results :( ".format(
+            query_display) if is_failed_query else ""
         if not is_failed_query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
                            "documentation on {0.prefix}id!".format(ctx))
@@ -1140,7 +1141,7 @@ class PadInfo(commands.Cog):
                            "help with querying a specific monster.".format(failed_query_msg, ctx))
 
     @commands.command()
-    async def exportprefixes(self, ctx):
+    async def exportmodifiers(self, ctx):
         DGCOG = self.bot.get_cog("Dadguide")
         tms = DGCOG.token_maps
         o = ("Jump to:\n\n"
@@ -1152,21 +1153,22 @@ class PadInfo(commands.Cog):
 
         anames = DGCOG.database.get_all_awoken_skills()
 
-        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_PREFIX_MAP.items()]
-        o += "\n\n### Evolutions\n\n"+tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
+        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_MOD_MAP.items()]
+        o += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
         ttable = [(k.name, ", ".join(map(inline, v))) for k, v in tms.TYPE_MAP.items()]
-        o += "\n\n### Types\n\n"+tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
-        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_PREFIX_MAP.items()]
-        o += "\n\n### Misc\n\n"+tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_PREFIX_MAP.items()]
-        o += "\n\n### Awakenings\n\n"+tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
+        o += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
+        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_MOD_MAP.items()]
+        o += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
+        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MOD_MAP.items()]
+        o += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.COLOR_MAP.items()]
-        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.SUB_COLOR_MAP.items()]
+        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
+                   tms.SUB_COLOR_MAP.items()]
         for k, v in tms.DUAL_COLOR_MAP.items():
             k0name = k[0].name.replace("Nil", "None")
             k1name = k[1].name.replace("Nil", "None")
             ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
-        o += "### Attributes\n\n"+tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+        o += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
