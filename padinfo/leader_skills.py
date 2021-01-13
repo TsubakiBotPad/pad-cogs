@@ -45,22 +45,18 @@ def createSingleMultiplierText(ls=None):
     return format_ls_text(hp, atk, rcv, resist, combo, fua, mfua, te)
 
 
+def format_number(val):
+    return '{:.2f}'.format(val).strip('0').rstrip('.')
+
+
 def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
-    def fmtNum(val):
-        return '{:.2f}'.format(val).strip('0').rstrip('.')
+    resist = ' Resist {}%'.format(format_number(100 * resist)) if resist else ''
 
-    text = "{}/{}/{}".format(fmtNum(hp), fmtNum(atk), fmtNum(rcv))
-    if resist != 0:
-        text += ' Resist {}%'.format(fmtNum(100 * resist))
+    combos = '+{}c'.format(combo) if combo else ''
+    true_damage = '{}'.format(humanize_number(fua, 2)) if fua else ''
+    any_fua = 'fua' if fua or mfua else ''
 
-    extras = []
-    if combo:
-        extras.append('+{}c'.format(combo))
-    if fua:
-        extras.append('{} fua'.format(humanize_number(fua, 2)))
-    elif mfua:
-        extras.append('fua')
+    joined = ' '.join((a for a in [combos, true_damage, any_fua] if a))
+    extras = f"[{joined}]" if joined else ''
 
-    if extras:
-        return '[{}] [{}]'.format(text, ' '.join(extras))
-    return '[{}]'.format(text)
+    return f"[{format_number(hp)}/{format_number(atk)}/{format_number(rcv)}{resist}] {extras}"
