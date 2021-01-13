@@ -974,7 +974,7 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    async def makeFailureMsg(self, ctx: discord.abc.Messageable, query: str, err):
+    async def makeFailureMsg(self, ctx, query: str, err):
         if await self.config.user(ctx.author).beta_id3():
             await self.idhelp(ctx, query=query, is_failed_query=True)
             return
