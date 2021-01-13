@@ -61,18 +61,6 @@ class IdMenu:
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
         return embed
 
-    async def make_base_embed_v2(self, m: "MonsterModel"):
-        pdicog = self.ctx.bot.get_cog("PadInfo")
-        color = await self.get_user_embed_color(pdicog)
-        header = MonsterHeader.long_v2(m)
-        main = EmbedMain(
-            color=color,
-            title=header.to_markdown()
-        )
-        footer = EmbedFooter('Requester may click the reactions below to switch tabs')
-        thumbnail = EmbedThumbnail(MonsterImage.icon(m))
-        return main, footer, thumbnail
-
     async def get_user_embed_color(self, pdicog):
         color = await pdicog.config.user(self.ctx.author).color()
         if color is None:
@@ -82,53 +70,12 @@ class IdMenu:
         else:
             return discord.Color(color)
 
-    def _get_evo_list_fields(self, monsters, current_monster):
-        if not len(monsters):
-            return
-        field_data = ''
-        field_values = []
-        for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
-            monster_header = EvosView.evos(ae, link=ae.monster_id != current_monster.monster_id) + '\n'
-            if len(field_data + monster_header) > 1024:
-                field_values.append(field_data)
-                field_data = ""
-            field_data += monster_header
-        field_values.append(field_data)
-        return field_values
-
     async def make_evo_embed_v2(self, m: "MonsterModel"):
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         e = EvosView.embed(m, alt_versions, gem_versions, color)
         return e.to_embed()
-
-    async def make_evo_embed(self, m: "MonsterModel"):
-        embed = await self.make_base_embed(m)
-        alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
-        gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
-
-        if not len(alt_versions):
-            embed.description = 'No alternate evos or evo gem'
-            return embed
-
-        evos = self._get_evo_list_fields(alt_versions, m)
-        if not gem_versions:
-            embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
-            for f in evos[1:]:
-                embed.add_field(name="\u200b", value=f)
-            return embed
-        gems = self._get_evo_list_fields(gem_versions, m)
-
-        embed.add_field(name="{} alternate evo(s)".format(len(alt_versions)), value=evos[0], inline=False)
-        for e in evos[1:]:
-            embed.add_field(name="\u200b", value=e, inline=False)
-
-        embed.add_field(name="{} evolve gem(s)".format(len(gem_versions)), value=gems[0], inline=False)
-        for e in gems[1:]:
-            embed.add_field(name="\u200b", value=e, inline=False)
-
-        return embed
 
     def _add_mats_of_list(self, embed, monster_id_list, field_name):
         if not len(monster_id_list):
