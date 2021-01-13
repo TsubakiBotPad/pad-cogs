@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING
 import discord
 import prettytable
 from discord import Color
-from discordmenu.embed.components import EmbedMain, EmbedFooter, EmbedThumbnail
+from discordmenu.embed.base import Box
+from discordmenu.embed.components import EmbedMain
+from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.text import Text, BoldText
 from redbot.core.utils.chat_formatting import box
 
 from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, awakening_restricted_latent_emoji
@@ -191,21 +194,18 @@ class IdMenu:
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         lls = left_m.leader_skill
         rls = right_m.leader_skill
+        pdicog = self.ctx.bot.get_cog("PadInfo")
 
-        multiplier_text = createMultiplierText(lls, rls)
-
-        embed = await self.make_custom_embed()
-        embed.title = '{}\n\n'.format(multiplier_text)
-        description = ''
-        description += '\n**{}**\n{}'.format(
-            MonsterHeader.short(left_m, link=True),
-            lls.desc if lls else 'None')
-        description += '\n**{}**\n{}'.format(
-            MonsterHeader.short(right_m, link=True),
-            rls.desc if rls else 'None')
-        embed.description = description
-
-        return embed
+        return EmbedView(
+            EmbedMain(
+                title=createMultiplierText(lls, rls),
+                description=Box(
+                    BoldText(MonsterHeader.name(left_m, link=True, show_jp=True)),
+                    Text(lls.desc if lls else 'None'),
+                    BoldText(MonsterHeader.name(right_m, link=True, show_jp=True)),
+                    Text(rls.desc if rls else 'None')),
+                color=await self.get_user_embed_color(pdicog)
+            )).to_embed()
 
     async def make_header_embed(self, m: "MonsterModel"):
         header = MonsterHeader.long(m, link=True)
