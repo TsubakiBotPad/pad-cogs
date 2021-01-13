@@ -21,7 +21,7 @@
   },
   "requirements": [
     "tsutils>=3.0.1",
-    "discordmenu>=0.0.2",
+    "discord-menu>=0.0.2",
     "prettytable"
   ],
   "tags": [
