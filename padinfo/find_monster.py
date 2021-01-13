@@ -39,40 +39,40 @@ class FindMonster:
                 result.append(token)
         return result
 
-    def _monster_has_token(self, monster, token, monsterscore, prefixes_for_monster):
+    def _monster_has_token(self, monster, token, monsterscore, monster_mods):
         if len(token) < 6:
-            if token in prefixes_for_monster:
+            if token in monster_mods:
                 monsterscore[monster] += 1
                 return True
         else:
-            dlm = difflib.get_close_matches(token, prefixes_for_monster, n=1, cutoff=.8)
+            dlm = difflib.get_close_matches(token, monster_mods, n=1, cutoff=.8)
             if dlm:
                 monsterscore[monster] += max(calc_ratio(token, p) for p in dlm)
                 return True
         return False
 
-    def interpret_query(self, raw_query: str, valid_multi_word_tokens, all_prefixes) -> (Set[str], Set[str]):
+    def interpret_query(self, raw_query: str, valid_multi_word_tokens, all_modifiers) -> (Set[str], Set[str]):
         tokenized_query = raw_query.split()
         tokenized_query = self._merge_multi_word_tokens(tokenized_query, valid_multi_word_tokens)
 
-        prefixes = set()
-        nprefixes = set()
+        modifiers = set()
+        negative_modifiers = set()
         name = set()
-        longer_prefixes = [p for p in all_prefixes if len(p) > 8]
+        longmods = [p for p in all_modifiers if len(p) > 8]
         for i, token in enumerate(tokenized_query):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if token in all_prefixes or difflib.get_close_matches(token, longer_prefixes, n=1, cutoff=.8):
+            if token in all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
                 if negated:
-                    nprefixes.add(token)
+                    negative_modifiers.add(token)
                 else:
-                    prefixes.add(token)
+                    modifiers.add(token)
             else:
                 name.add(token)
                 name.update(tokenized_query[i + 1:])
                 break
 
-        return prefixes, nprefixes, name
+        return modifiers, negative_modifiers, name
 
     def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
@@ -102,16 +102,15 @@ class FindMonster:
 
         return monstergen, monsterscore
 
-    def process_prefix_tokens(self, prefix_query_tokens, nprefix_query_tokens, monsterscore, potential_evos,
-                              monster_prefixes):
-        for t in prefix_query_tokens:
+    def process_modifiers(self, mod_tokens, neg_mod_tokens, monsterscore, potential_evos, monster_mods):
+        for t in mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
+                              self._monster_has_token(m, t, monsterscore, monster_mods[m])}
             if not potential_evos:
                 return None
-        for t in nprefix_query_tokens:
+        for t in neg_mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              not self._monster_has_token(m, t, monsterscore, monster_prefixes[m])}
+                              not self._monster_has_token(m, t, monsterscore, monster_mods[m])}
             if not potential_evos:
                 return None
 
