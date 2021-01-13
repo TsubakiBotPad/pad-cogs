@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import tsutils
+from discordmenu.emoji_cache import emoji_cache
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
@@ -21,6 +22,7 @@ from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics
 from .button_info import button_info
 from .find_monster import find_monster
 from .id_menu import IdMenu
+from .view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -189,6 +191,9 @@ class PadInfo(commands.Cog):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
 
+        emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
+        emoji_cache.refresh_from_discord_bot(self.bot)
+
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
@@ -252,7 +257,7 @@ class PadInfo(commands.Cog):
         """Show the Japanese name of a monster"""
         m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
-            await ctx.send(IdMenu.monster_header(m))
+            await ctx.send(MonsterHeader.short(m))
             await ctx.send(box(m.name_ja))
         else:
             await self.makeFailureMsg(ctx, query, err)
@@ -808,7 +813,7 @@ class PadInfo(commands.Cog):
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
-            header = '{} ({})'.format(IdMenu.monster_header(m), server)
+            header = '{} ({})'.format(MonsterHeader.short(m), server)
             if not os.path.exists(voice_file):
                 await ctx.send(inline('Could not find voice for ' + header))
                 return
