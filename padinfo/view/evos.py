@@ -56,7 +56,6 @@ class EvosView:
                     ("{} evolve gem" if len(gem_versions) == 1 else "{} evolve gems").format(len(gem_versions)),
                     Box(*EvosView._evo_lines(gem_versions, m))))
 
-        # todo: deal with field overflow
         return EmbedView(
             EmbedMain(
                 color=color,
