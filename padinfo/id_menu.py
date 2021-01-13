@@ -4,22 +4,26 @@ from typing import TYPE_CHECKING
 
 import discord
 import prettytable
-import tsutils
+from discord import Color
+from discordmenu.embed.components import EmbedMain, EmbedFooter, EmbedThumbnail
 from redbot.core.utils.chat_formatting import box
 
+from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, awakening_restricted_latent_emoji
+from padinfo.view.components.monster.header import MonsterHeader
+from .common.padx import monster_url
 from .leader_skills import createMultiplierText
 from .leader_skills import createSingleMultiplierText
+from .view.components.monster.image import MonsterImage
+from .view.evos import EvosView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
     from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.enum_types import AwakeningRestrictedLatent
 
 INFO_PDX_TEMPLATE = 'http://www.puzzledragonx.com/en/monster.asp?n={}'
 
 MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
 RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
-RPAD_PORTRAIT_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'
 VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'
 GIF_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.gif'
 ORB_SKIN_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}.png'
@@ -28,14 +32,6 @@ ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}cb.png'
 YT_SEARCH_TEMPLATE = 'https://www.youtube.com/results?search_query={}'
 SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
 ILMINA_TEMPLATE = 'https://ilmina.com/#/CARD/{}'
-
-
-def get_pdx_url(m: "MonsterModel"):
-    return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
-
-
-def get_portrait_url(m: "MonsterModel"):
-    return RPAD_PORTRAIT_TEMPLATE.format(m.monster_id)
 
 
 def get_pic_url(m: "MonsterModel"):
@@ -56,45 +52,35 @@ class IdMenu:
                 return e
         return name
 
-    @staticmethod
-    def monster_header(m: "MonsterModel", link=False):
-        # type_emojis = '{} '.format(''.join(
-        #     [str(self.match_emoji('mons_type_{}'.format(t.name.lower()))) for t in m.types])) if show_types else ''
-        type_emojis = ''
-        msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
-        return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
-
-    @staticmethod
-    def monster_ja_suffix(m: "MonsterModel", subname_on_override=True):
-        suffix = ""
-        if m.roma_subname and (subname_on_override or m.name_en_override is None):
-            suffix += ' [{}]'.format(m.roma_subname)
-        if not m.on_na:
-            suffix += ' (JP only)'
-        return suffix
-
-    def monster_long_header(self, m: "MonsterModel", link=False):
-        msg = self.monster_header(m) + self.monster_ja_suffix(m)
-        return '[{}]({})'.format(msg, get_pdx_url(m)) if link else msg
-
-    def monster_evo_header(self, m: "MonsterModel", link=True):
-        prefix = f" {self._get_monster_attr_emoji(m)} "
-        msg = f"{m.monster_no_na} - {m.name_en}"
-        suffix = self.monster_ja_suffix(m, False)
-        return prefix + ("[{}]({})".format(msg, get_pdx_url(m)) if link else msg) + suffix
-
-    @staticmethod
-    def make_thumbnail_url(m: "MonsterModel"):
-        return get_portrait_url(m)
-
     async def make_base_embed(self, m: "MonsterModel"):
-        header = self.monster_long_header(m)
+        header = MonsterHeader.long(m)
         embed = await self.make_custom_embed()
-        embed.set_thumbnail(url=self.make_thumbnail_url(m))
+        embed.set_thumbnail(url=MonsterImage.icon(m))
         embed.title = header
-        embed.url = get_pdx_url(m)
+        embed.url = monster_url(m)
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
         return embed
+
+    async def make_base_embed_v2(self, m: "MonsterModel"):
+        pdicog = self.ctx.bot.get_cog("PadInfo")
+        color = await self.get_user_embed_color(pdicog)
+        header = MonsterHeader.long_v2(m)
+        main = EmbedMain(
+            color=color,
+            title=header.to_markdown()
+        )
+        footer = EmbedFooter('Requester may click the reactions below to switch tabs')
+        thumbnail = EmbedThumbnail(MonsterImage.icon(m))
+        return main, footer, thumbnail
+
+    async def get_user_embed_color(self, pdicog):
+        color = await pdicog.config.user(self.ctx.author).color()
+        if color is None:
+            return Color.default()
+        elif color == "random":
+            return Color(random.randint(0x000000, 0xffffff))
+        else:
+            return discord.Color(color)
 
     def _get_evo_list_fields(self, monsters, current_monster):
         if not len(monsters):
@@ -102,8 +88,7 @@ class IdMenu:
         field_data = ''
         field_values = []
         for ae in sorted(monsters, key=lambda x: int(x.monster_id)):
-            monster_header = self.monster_evo_header(
-                ae, link=ae.monster_id != current_monster.monster_id) + '\n'
+            monster_header = EvosView.evos(ae, link=ae.monster_id != current_monster.monster_id) + '\n'
             if len(field_data + monster_header) > 1024:
                 field_values.append(field_data)
                 field_data = ""
@@ -111,11 +96,12 @@ class IdMenu:
         field_values.append(field_data)
         return field_values
 
-    def _get_monster_attr_emoji(self, monster: "MonsterModel"):
-        attr1 = monster.attr1.name.lower()
-        attr2 = monster.attr2.name.lower()
-        emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
-        return self.match_emoji(emoji)
+    async def make_evo_embed_v2(self, m: "MonsterModel"):
+        alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
+        gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        e = EvosView.embed(m, alt_versions, gem_versions, color)
+        return e.to_embed()
 
     async def make_evo_embed(self, m: "MonsterModel"):
         embed = await self.make_base_embed(m)
@@ -154,7 +140,7 @@ class IdMenu:
             item_count = min(len(monster_id_list), 5)
             monster_list = [self.db_context.graph.get_monster(m) for m in monster_id_list]
             for ae in sorted(monster_list, key=lambda x: x.monster_no_na, reverse=True)[:item_count]:
-                field_data += "{}\n".format(self.monster_long_header(ae, link=True))
+                field_data += "{}\n".format(MonsterHeader.long(ae, link=True))
         embed.add_field(name=field_name, value=field_data)
 
     async def make_evo_mats_embed(self, m: "MonsterModel"):
@@ -166,7 +152,7 @@ class IdMenu:
         field_data = ''
         if len(mats_for_evo) > 0:
             for ae in mats_for_evo:
-                field_data += "{}\n".format(self.monster_long_header(ae, link=True))
+                field_data += "{}\n".format(MonsterHeader.long(ae, link=True))
         else:
             field_data = 'None'
         embed.add_field(name=field_name, value=field_data)
@@ -189,7 +175,7 @@ class IdMenu:
         field_name = 'Pantheon: ' + self.db_context.graph.get_monster(m.monster_no).series.name
         field_data = ''
         for monster in sorted(pantheon_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + self.monster_header(monster, link=True)
+            field_data += '\n' + MonsterHeader.short(monster, link=True)
         embed.add_field(name=field_name, value=field_data)
 
         return embed
@@ -215,7 +201,7 @@ class IdMenu:
             skillups_list = skillups_list[0:8]
 
         for monster in sorted(skillups_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + self.monster_header(monster, link=True)
+            field_data += '\n' + MonsterHeader.short(monster, link=True)
 
         if len(field_data.strip()):
             embed.add_field(name=field_name, value=field_data)
@@ -265,17 +251,17 @@ class IdMenu:
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
-            self.monster_header(left_m, link=True),
+            MonsterHeader.short(left_m, link=True),
             lls.desc if lls else 'None')
         description += '\n**{}**\n{}'.format(
-            self.monster_header(right_m, link=True),
+            MonsterHeader.short(right_m, link=True),
             rls.desc if rls else 'None')
         embed.description = description
 
         return embed
 
     async def make_header_embed(self, m: "MonsterModel"):
-        header = self.monster_long_header(m, link=True)
+        header = MonsterHeader.long(m, link=True)
         embed = await self.make_custom_embed()
         embed.description = header
         return embed
@@ -367,7 +353,7 @@ class IdMenu:
             stats_icons = [
                 self.match_emoji(63) if m.awakening_count(63) and not m.is_equip else '',
                 self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
-                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip  else '',
+                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip else '',
                 self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
             ]
             stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icons[0], m.limit_mult)
@@ -407,7 +393,7 @@ class IdMenu:
         evos_header = "Alternate Evos"
         evos_body = ", ".join(f"**{m2.monster_id}**"
                               if m2.monster_id == m.monster_id
-                              else f"[{m2.monster_id}]({get_pdx_url(m2)})"
+                              else f"[{m2.monster_id}]({monster_url(m2)})"
                               for m2 in
                               sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
                                      key=lambda x: x.monster_id))
@@ -436,14 +422,10 @@ class IdMenu:
         """
         if not m.awakening_restricted_latents:
             return ''
-        return ' ' + ' '.join([self.awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
+        return ' ' + ' '.join([awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
 
     def killer_latent_emoji(self, latent: str):
         return str(self.match_emoji('latent_killer_{}'.format(latent.lower())))
-
-    def awakening_restricted_latent_emoji(self, latent: "AwakeningRestrictedLatent"):
-        return str(
-            self.match_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
         embed = await self.make_base_embed(m)
@@ -521,7 +503,7 @@ class IdMenu:
         embed.title = '{}\n\n'.format(multiplier_text)
         description = ''
         description += '\n**{}**\n{}'.format(
-            self.monster_header(m, link=True),
+            MonsterHeader.short(m, link=True),
             m.leader_skill.desc if m.leader_skill else 'None')
         embed.description = description
 
@@ -536,90 +518,3 @@ class IdMenu:
             return discord.Embed(color=random.randint(0x000000, 0xffffff))
         else:
             return discord.Embed(color=discord.Color(color))
-
-
-AWAKENING_ID_TO_EMOJI_NAME_MAP = {
-    1: 'boost_hp',
-    2: 'boost_atk',
-    3: 'boost_rcv',
-    4: 'reduce_fire',
-    5: 'reduce_water',
-    6: 'reduce_wood',
-    7: 'reduce_light',
-    8: 'reduce_dark',
-    9: 'misc_autoheal',
-    10: 'res_bind',
-    11: 'res_blind',
-    12: 'res_jammer',
-    13: 'res_poison',
-    14: 'oe_fire',
-    15: 'oe_water',
-    16: 'oe_wood',
-    17: 'oe_light',
-    18: 'oe_dark',
-    19: 'misc_te',
-    20: 'misc_bindclear',
-    21: 'misc_sb',
-    22: 'row_fire',
-    23: 'row_water',
-    24: 'row_wood',
-    25: 'row_light',
-    26: 'row_dark',
-    27: 'misc_tpa',
-    28: 'res_skillbind',
-    29: 'oe_heart',
-    30: 'misc_multiboost',
-    31: 'killer_dragon',
-    32: 'killer_god',
-    33: 'killer_devil',
-    34: 'killer_machine',
-    35: 'killer_balance',
-    36: 'killer_attacker',
-    37: 'killer_physical',
-    38: 'killer_healer',
-    39: 'killer_evomat',
-    40: 'killer_awoken',
-    41: 'killer_enhancemat',
-    42: 'killer_vendor',
-    43: 'misc_comboboost',
-    44: 'misc_guardbreak',
-    45: 'misc_extraattack',
-    46: 'teamboost_hp',
-    47: 'teamboost_rcv',
-    48: 'misc_voidshield',
-    49: 'misc_assist',
-    50: 'misc_super_extraattack',
-    51: 'misc_skillcharge',
-    52: 'res_bind_super',
-    53: 'misc_te_super',
-    54: 'res_cloud',
-    55: 'res_seal',
-    56: 'misc_sb_super',
-    57: 'attack_boost_high',
-    58: 'attack_boost_low',
-    59: 'l_shield',
-    60: 'l_attack',
-    61: 'misc_super_comboboost',
-    62: 'orb_combo',
-    63: 'misc_voice',
-    64: 'misc_dungeonbonus',
-    65: 'reduce_hp',
-    66: 'reduce_atk',
-    67: 'reduce_rcv',
-    68: 'res_blind_super',
-    69: 'res_jammer_super',
-    70: 'res_poison_super',
-    71: 'misc_jammerboost',
-    72: 'misc_poisonboost',
-    73: 'cc_fire',
-    74: 'cc_water',
-    75: 'cc_wood',
-    76: 'cc_light',
-    77: 'cc_dark',
-}
-
-AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
-    606: 'unmatchable_clear',
-    607: 'spinner_clear',
-    608: 'absorb_pierce',
-}
