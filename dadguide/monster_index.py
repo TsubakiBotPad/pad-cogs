@@ -101,43 +101,43 @@ class MonsterIndex2(aobject):
         return [t.strip() for t in set(name.split() + oname.split()) if t]
 
     async def get_modifiers(self, m):
-        mods = set()
+        modifiers = set()
 
         basemon = self.graph.get_base_monster(m)
 
         # Main Color
         for t in COLOR_MAP[m.attr1]:
-            mods.add(t)
+            modifiers.add(t)
 
         # Sub Color
         for t in SUB_COLOR_MAP[m.attr2]:
-            mods.add(t)
+            modifiers.add(t)
         if m.attr1.value == 6:
             for t in COLOR_MAP[m.attr2]:
-                mods.add(t)
+                modifiers.add(t)
 
         # Both Colors
         for t in DUAL_COLOR_MAP[(m.attr1, m.attr2)]:
-            mods.add(t)
+            modifiers.add(t)
 
         # Type
         for mt in m.types:
             for t in TYPE_MAP[mt]:
-                mods.add(t)
+                modifiers.add(t)
 
         # Series
         if m.series_id in self.series_id_to_pantheon_nickname:
             for t in self.series_id_to_pantheon_nickname[m.series_id]:
-                mods.add(t)
+                modifiers.add(t)
 
         # Rarity
-        mods.add(str(m.rarity) + "*")
-        mods.add(str(basemon.rarity) + "*b")
+        modifiers.add(str(m.rarity) + "*")
+        modifiers.add(str(basemon.rarity) + "*b")
 
         # Base
         if self.graph.monster_is_base(m):
-            for t in EVO_MOD_MAP[EvoTypes.BASE]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.BASE]:
+                modifiers.add(t)
 
         special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or '転生' in m.name_ja or
                        self.graph.true_evo_type_by_monster(m).value == "Reincarnated" or
@@ -147,91 +147,91 @@ class MonsterIndex2(aobject):
 
         # Evo
         if self.graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
-            for t in EVO_MOD_MAP[EvoTypes.EVO]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.EVO]:
+                modifiers.add(t)
 
         # Uvo
         if self.graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
-            for t in EVO_MOD_MAP[EvoTypes.UVO]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.UVO]:
+                modifiers.add(t)
 
         # UUvo
         if self.graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
-            for t in EVO_MOD_MAP[EvoTypes.UUVO]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.UUVO]:
+                modifiers.add(t)
 
         # Transform
         if not self.graph.monster_is_transform_base(m):
-            for t in EVO_MOD_MAP[EvoTypes.TRANS]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.TRANS]:
+                modifiers.add(t)
 
         # Awoken
         if '覚醒' in m.name_ja or 'awoken' in m.name_en.lower():
-            for t in EVO_MOD_MAP[EvoTypes.AWOKEN]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.AWOKEN]:
+                modifiers.add(t)
 
         # Mega Awoken
         if '極醒' in m.name_ja or 'mega awoken' in m.name_en.lower():
-            for t in EVO_MOD_MAP[EvoTypes.MEGA]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.MEGA]:
+                modifiers.add(t)
 
         # Reincarnated
         if '転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
-            for t in EVO_MOD_MAP[EvoTypes.REVO]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.REVO]:
+                modifiers.add(t)
 
         # Super Reincarnated
         if '超転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated":
-            for t in EVO_MOD_MAP[EvoTypes.SREVO]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.SREVO]:
+                modifiers.add(t)
 
         # Pixel
         if (m.name_ja.startswith('ドット') or
                 m.name_en.startswith('pixel') or
                 self.graph.true_evo_type_by_monster(m).value == "Pixel"):
-            for t in EVO_MOD_MAP[EvoTypes.PIXEL]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.PIXEL]:
+                modifiers.add(t)
         else:
-            for t in EVO_MOD_MAP[EvoTypes.NONPIXEL]:
-                mods.add(t)
+            for t in EVO_MAP[EvoTypes.NONPIXEL]:
+                modifiers.add(t)
 
         # Awakenings
         for aw in m.awakenings:
-            for t in AWOKEN_MOD_MAP[Awakenings(aw.awoken_skill_id)]:
-                mods.add(t)
+            for t in AWOKEN_MAP[Awakenings(aw.awoken_skill_id)]:
+                modifiers.add(t)
 
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
                 'ミニ' in m.name_ja or '(chibi)' in m.name_en:
-            for t in MISC_MOD_MAP[MiscModifiers.CHIBI]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.CHIBI]:
+                modifiers.add(t)
 
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
-            for t in MISC_MOD_MAP[MiscModifiers.FARMABLE]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.FARMABLE]:
+                modifiers.add(t)
 
         if self.graph.monster_is_mp_evo(m):
-            for t in MISC_MOD_MAP[MiscModifiers.MP]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.MP]:
+                modifiers.add(t)
 
         if self.graph.monster_is_rem_evo(m):
-            for t in MISC_MOD_MAP[MiscModifiers.REM]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.REM]:
+                modifiers.add(t)
 
         # Server
         if m.on_jp:
-            for t in MISC_MOD_MAP[MiscModifiers.INJP]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.INJP]:
+                modifiers.add(t)
         if m.on_na:
-            for t in MISC_MOD_MAP[MiscModifiers.INNA]:
-                mods.add(t)
+            for t in MISC_MAP[MiscModifiers.INNA]:
+                modifiers.add(t)
         if m.monster_id + 10000 in self.graph.nodes:
-            mods.add("idjp")
+            modifiers.add("idjp")
         if m.monster_id > 10000:
-            mods.add("idna")
+            modifiers.add("idna")
 
-        return mods
+        return modifiers
 
 
 def calc_ratio(s1, s2):

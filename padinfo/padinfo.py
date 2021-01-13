@@ -1062,9 +1062,9 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
-        mod_tokens, nmod_tokens, name_query_tokens = find_monster.interpret_query(query,
-                                                                                  DGCOG.index2.multi_word_tokens,
-                                                                                  DGCOG.index2.all_modifiers)
+        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query,
+                                                                                          DGCOG.index2.multi_word_tokens,
+                                                                                          DGCOG.index2.all_modifiers)
 
         print(mod_tokens, name_query_tokens)
 
@@ -1080,7 +1080,7 @@ class PadInfo(commands.Cog):
 
         # Expand search to the evo tree
         monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
-        monster_gen = find_monster.process_modifiers(mod_tokens, nmod_tokens, monster_score, monster_gen,
+        monster_gen = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, monster_score, monster_gen,
                                                      DGCOG.index2.modifiers)
         if not monster_gen:
             # no modifiers match any monster in the evo tree
@@ -1153,13 +1153,13 @@ class PadInfo(commands.Cog):
 
         anames = DGCOG.database.get_all_awoken_skills()
 
-        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_MOD_MAP.items()]
+        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_MAP.items()]
         o += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
         ttable = [(k.name, ", ".join(map(inline, v))) for k, v in tms.TYPE_MAP.items()]
         o += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
-        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_MOD_MAP.items()]
+        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_MAP.items()]
         o += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MOD_MAP.items()]
+        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MAP.items()]
         o += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in

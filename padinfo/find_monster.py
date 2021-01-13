@@ -55,8 +55,8 @@ class FindMonster:
         tokenized_query = raw_query.split()
         tokenized_query = self._merge_multi_word_tokens(tokenized_query, valid_multi_word_tokens)
 
-        mods = set()
-        nmods = set()
+        modifiers = set()
+        negative_modifiers = set()
         name = set()
         longmods = [p for p in all_modifiers if len(p) > 8]
         for i, token in enumerate(tokenized_query):
@@ -64,15 +64,15 @@ class FindMonster:
             token = token.lstrip('-')
             if token in all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
                 if negated:
-                    nmods.add(token)
+                    negative_modifiers.add(token)
                 else:
-                    mods.add(token)
+                    modifiers.add(token)
             else:
                 name.add(token)
                 name.update(tokenized_query[i + 1:])
                 break
 
-        return mods, nmods, name
+        return modifiers, negative_modifiers, name
 
     def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
@@ -102,13 +102,13 @@ class FindMonster:
 
         return monstergen, monsterscore
 
-    def process_modifiers(self, mod_tokens, nmod_tokens, monsterscore, potential_evos, monster_mods):
+    def process_modifiers(self, mod_tokens, neg_mod_tokens, monsterscore, potential_evos, monster_mods):
         for t in mod_tokens:
             potential_evos = {m for m in potential_evos if
                               self._monster_has_token(m, t, monsterscore, monster_mods[m])}
             if not potential_evos:
                 return None
-        for t in nmod_tokens:
+        for t in neg_mod_tokens:
             potential_evos = {m for m in potential_evos if
                               not self._monster_has_token(m, t, monsterscore, monster_mods[m])}
             if not potential_evos:

@@ -59,7 +59,7 @@ class EvoTypes(Enum):
     NONPIXEL = 'Nonpixel'
 
 
-EVO_MOD_MAP = {
+EVO_MAP = {
     EvoTypes.BASE: ('base',),
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
@@ -154,7 +154,7 @@ class Awakenings(Enum):
     DARKCOMBOCOUNT = 77
 
 
-AWOKEN_MOD_MAP = {
+AWOKEN_MAP = {
     Awakenings.ENHANCEDHP: ('hp+', 'hp'),
     Awakenings.ENHANCEDATK: ('atk+', 'atk'),
     Awakenings.ENHANCEDRCV: ('rcv+', 'rcv'),
@@ -245,7 +245,7 @@ class MiscModifiers(Enum):
     INNA = 'In NA Server'
 
 
-MISC_MOD_MAP = {
+MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
     MiscModifiers.FARMABLE: ('farmable',),
     MiscModifiers.REM: ('rem',),
@@ -259,9 +259,9 @@ MODIFIER_MAPS = {
     **SUB_COLOR_MAP,
     **DUAL_COLOR_MAP,
     **TYPE_MAP,
-    **AWOKEN_MOD_MAP,
-    **EVO_MOD_MAP,
-    **MISC_MOD_MAP,
+    **AWOKEN_MAP,
+    **EVO_MAP,
+    **MISC_MAP,
 }
 
 COLOR_TOKENS = {
@@ -270,8 +270,8 @@ COLOR_TOKENS = {
     *sum(DUAL_COLOR_MAP.values(), ()),
 }
 
-AWAKENING_TOKENS = {*sum(AWOKEN_MOD_MAP.values(), ())}
-EVO_TOKENS = {*sum(EVO_MOD_MAP.values(), ())}
+AWAKENING_TOKENS = {*sum(AWOKEN_MAP.values(), ())}
+EVO_TOKENS = {*sum(EVO_MAP.values(), ())}
 TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
 
 
