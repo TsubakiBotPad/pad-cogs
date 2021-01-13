@@ -54,13 +54,13 @@ class EvosView:
     def embed(m: "MonsterModel", alt_versions, gem_versions, color):
         fields = [
             EmbedField(
-                "{} alternate evo(s)".format(len(alt_versions)),
+                ("{} evolution" if len(alt_versions) == 1 else "{} evolutions").format(len(alt_versions)),
                 Box(*EvosView._evo_lines(alt_versions, m)))]
 
         if gem_versions:
             fields.append(
                 EmbedField(
-                    "{} evolve gem(s)".format(len(gem_versions)),
+                    ("{} evolve gem" if len(gem_versions) == 1 else "{} evolve gems").format(len(gem_versions)),
                     Box(*EvosView._evo_lines(gem_versions, m))))
 
         # todo: deal with field overflow

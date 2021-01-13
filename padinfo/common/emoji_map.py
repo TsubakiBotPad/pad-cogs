@@ -1,3 +1,5 @@
+from typing import Union
+
 from discord import Emoji
 from discordmenu.emoji_cache import emoji_cache
 
@@ -101,5 +103,7 @@ def get_emoji(name):
     return name
 
 
-def format_emoji(emoji: Emoji):
+def format_emoji(emoji: Union[Emoji,str]):
+    if isinstance(emoji, str):
+        return f":{emoji}:"
     return f"<:{emoji.name}:{emoji.id}>"
