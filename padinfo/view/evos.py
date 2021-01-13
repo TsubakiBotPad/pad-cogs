@@ -25,13 +25,6 @@ class EvosView:
         return get_emoji(emoji)
 
     @staticmethod
-    def evos(m: "MonsterModel", link=True):
-        prefix = f" {EvosView._get_monster_attr_emoji(m)} "
-        msg = f"{m.monster_no_na} - {m.name_en}"
-        suffix = MonsterHeader.ja_suffix(m, False)
-        return prefix + ("[{}]({})".format(msg, monster_url(m)) if link else msg) + suffix
-
-    @staticmethod
     def _evo_line(m: "MonsterModel", link=True):
         msg = f"{m.monster_no_na} - {m.name_en}"
         return Box(
