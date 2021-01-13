@@ -30,8 +30,11 @@ class MonsterHeader:
         return '[{}]({})'.format(msg, monster_url(m)) if link else msg
 
     @staticmethod
-    def short_v2(m: "MonsterModel", link=False):
-        msg = '[{}] {}'.format(m.monster_no_na, m.name_en)
+    def name(m: "MonsterModel", link=False, show_jp=False):
+        msg = '[{}] {}{}'.format(
+            m.monster_no_na,
+            m.name_en,
+            MonsterHeader.ja_suffix(m) if show_jp else '')
         return LinkedText(msg, monster_url(m)) if link else Text(msg)
 
     @staticmethod
