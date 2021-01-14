@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import json
 import logging
 import os
@@ -731,15 +732,15 @@ class PadInfo(commands.Cog):
     @idtest.command(name="add")
     async def idt_add(self, ctx, id: int, *, query):
         async with self.config.test_suite() as suite:
-            suite[query] = {'result': id}
+            suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
         await ctx.tick()
 
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
-        cases = re.findall(r'\s*\d+. (.+?) + - (\d+) *(.*)', queries)
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
-                suite[query] = {'result': int(result), 'reason': reason}
+                suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
         await ctx.tick()
 
     @idtest.command(name="remove", aliases=["delete", "rm"])
@@ -767,6 +768,20 @@ class PadInfo(commands.Cog):
         ml = len(max(suite, key=len))
         for c, kv in enumerate(sorted(suite.items())):
             o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="listrecent")
+    async def idt_listrecent(self, ctx, count: int = 0):
+        suite = await self.config.test_suite()
+        if count == 0:
+            count = len(suite)
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
+            o += f"{kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
