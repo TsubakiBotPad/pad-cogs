@@ -82,8 +82,7 @@ class FindMonster:
                 else:
                     modifiers.add(token)
             else:
-                name.add(token)
-                name.update(tokenized_query[i + 1:])
+                name.update(tokenized_query[i:])
                 break
 
         return modifiers, negative_modifiers, name
