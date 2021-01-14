@@ -68,8 +68,23 @@ class FindMonster:
                 else:
                     modifiers.add(token)
             else:
-                name.add(token)
-                name.update(tokenized_query[i + 1:])
+                tokenized_query = tokenized_query[i:]
+                break
+        else:
+            tokenized_query = []
+
+        tokenized_query = tokenized_query[::-1]
+
+        for i, token in enumerate(tokenized_query):
+            negated = token.startswith("-")
+            token = token.lstrip('-')
+            if difflib.get_close_matches(token, index2.suffixes, n=1, cutoff=.8):
+                if negated:
+                    negative_modifiers.add(token)
+                else:
+                    modifiers.add(token)
+            else:
+                name.update(tokenized_query[i:])
                 break
 
         return modifiers, negative_modifiers, name
