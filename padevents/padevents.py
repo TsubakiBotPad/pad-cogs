@@ -536,7 +536,7 @@ class PadEvents(commands.Cog):
         if group not in GROUPS:
             await ctx.send("Unsupported group, pick one of red, blue, green")
             return
-        if time_offset and user_is_donor(ctx):
+        if time_offset and not user_is_donor(ctx):
             await ctx.send("You must be a donor to set a time offset!")
             return
         if time_offset < 0:
