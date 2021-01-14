@@ -734,6 +734,14 @@ class PadInfo(commands.Cog):
             suite[query] = {'result': id}
         await ctx.tick()
 
+    @idtest.command(name="import")
+    async def idt_import(self, ctx, *, queries):
+        cases = re.findall(r'\s*\d+. (.+?) + - (\d+) *(.*)', queries)
+        async with self.config.test_suite() as suite:
+            for query, result, reason in cases:
+                suite[query] = {'result': int(result), 'reason': reason}
+        await ctx.tick()
+
     @idtest.command(name="remove", aliases=["delete", "rm"])
     async def idt_remove(self, ctx, number: int):
         async with self.config.test_suite() as suite:
