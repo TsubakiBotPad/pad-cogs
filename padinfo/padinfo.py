@@ -1062,9 +1062,7 @@ class PadInfo(commands.Cog):
             raise ValueError("Dadguide cog is not loaded")
 
         query = rmdiacritics(query).lower()
-        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query,
-                                                                                          DGCOG.index2.multi_word_tokens,
-                                                                                          DGCOG.index2.all_modifiers)
+        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
 
         print(mod_tokens, name_query_tokens)
 

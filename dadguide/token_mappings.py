@@ -285,3 +285,9 @@ TOKEN_REPLACEMENTS = defaultdict(tuple, {
     'tamadra': ('tama',),
     'evolution': ('evo',),
 })
+
+LEGAL_END_TOKENS = {
+    "equip",
+    "assist",
+    "eq",
+}

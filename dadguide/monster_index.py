@@ -59,6 +59,7 @@ class MonsterIndex2(aobject):
         self.manual = combine_tokens(self.manual_nick, self.manual_tree)
         self.name_tokens = list(self.manual) + list(self.tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
+        self.suffixes = LEGAL_END_TOKENS
 
     __init__ = __ainit__
 
