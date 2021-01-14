@@ -109,7 +109,7 @@ class PadEvents(commands.Cog):
                             elif aep['regex']:
                                 matches = re.search(aep['searchstr'], event.clean_dungeon_name)
                             else:
-                                matches = aep['searchstr'] in event.clean_dungeon_name
+                                matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
 
                             self.rolepinged_events.add((key, event.key))
                             if matches:
@@ -138,7 +138,7 @@ class PadEvents(commands.Cog):
                                     or (aed['key'], event.key) in self.rolepinged_events:
                                 continue
                             self.rolepinged_events.add((aed['key'], event.key))
-                            if aed['searchstr'] in event.clean_dungeon_name:
+                            if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
                                 offsetstr = " starts now!"
                                 if aed['offset']:
                                     offsetstr = " starts in {} minute(s)!".format(aed['offset'])
