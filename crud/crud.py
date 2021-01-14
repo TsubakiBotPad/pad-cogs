@@ -21,6 +21,14 @@ SERIES_KEYS = {
 }
 
 
+SERIES_TYPES = [
+    "default",
+    "event",
+    "seasonal",
+    "ghcollab",
+    "collab"
+]
+
 async def check_crud_channel(ctx):
     chan = await ctx.bot.get_cog("Crud").config.chan()
     return chan is None or chan == ctx.channel.id or ctx.author.id in ctx.bot.owner_ids
@@ -123,8 +131,12 @@ class Crud(commands.Cog):
             return
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
-        if not all(x in SERIES_KEYS for x in elements):
+        if not (elements and all(x in SERIES_KEYS for x in elements)):
             await ctx.send_help()
+            return
+
+        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
+            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
             return
 
         EXTRAS = {}
@@ -168,8 +180,12 @@ class Crud(commands.Cog):
             return
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
-        if not all(x in SERIES_KEYS for x in elements):
+        if not (elements and all(x in SERIES_KEYS for x in elements)):
             await ctx.send_help()
+            return
+
+        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
+            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
             return
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
