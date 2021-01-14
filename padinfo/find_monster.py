@@ -73,7 +73,9 @@ class FindMonster:
         else:
             tokenized_query = []
 
-        for i, token in enumerate(tokenized_query[::-1]):
+        tokenized_query = tokenized_query[::-1]
+
+        for i, token in enumerate(tokenized_query):
             negated = token.startswith("-")
             token = token.lstrip('-')
             if difflib.get_close_matches(token, index2.suffixes, n=1, cutoff=.8):
