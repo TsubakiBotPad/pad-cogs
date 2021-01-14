@@ -34,6 +34,7 @@ logger = logging.getLogger('red.padbot-cogs.padinfo')
 
 EMBED_NOT_GENERATED = -1
 
+IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide"
 
 class ServerFilter(Enum):
     any = 0
@@ -1005,7 +1006,10 @@ class PadInfo(commands.Cog):
 
     async def makeFailureMsg(self, ctx, query: str, err):
         if await self.config.user(ctx.author).beta_id3():
-            await self.idhelp(ctx, query=query, is_failed_query=True)
+            await ctx.send("Sorry, your query {0} didn't match any results :(\n"
+                           "See <{2}> for "
+                           "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
+                           "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
             return
         msg = ('Lookup failed: {0}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
@@ -1153,19 +1157,12 @@ class PadInfo(commands.Cog):
             await ctx.send(box(page))
 
     @commands.command(aliases=['helpid'])
-    async def idhelp(self, ctx, *, query="", is_failed_query=False):
+    async def idhelp(self, ctx, *, query=""):
         """Get help with an id query"""
-        query_display = '`{}` '.format(query) if query != '' else ''
-        failed_query_msg = "Sorry, your query {}didn't match any results :(\n".format(
-            query_display) if is_failed_query else ""
-        if not is_failed_query:
-            await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
-                           "documentation on {0.prefix}id!".format(ctx))
+        await ctx.send("See <{0}> for documentation on {1.prefix}id!".format(IDGUIDE, ctx))
+        if query:
             await self.debugid(ctx, query=query)
-        else:
-            await ctx.send("{0}See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
-                           "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
-                           "help with querying a specific monster.".format(failed_query_msg, ctx))
+
 
     @commands.command()
     async def exportmodifiers(self, ctx):
