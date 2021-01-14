@@ -51,18 +51,18 @@ class FindMonster:
                 return True
         return False
 
-    def interpret_query(self, raw_query: str, valid_multi_word_tokens, all_modifiers) -> (Set[str], Set[str]):
+    def interpret_query(self, raw_query: str, index2) -> (Set[str], Set[str]):
         tokenized_query = raw_query.split()
-        tokenized_query = self._merge_multi_word_tokens(tokenized_query, valid_multi_word_tokens)
+        tokenized_query = self._merge_multi_word_tokens(tokenized_query, index2.multi_word_tokens)
 
         modifiers = set()
         negative_modifiers = set()
         name = set()
-        longmods = [p for p in all_modifiers if len(p) > 8]
+        longmods = [p for p in index2.all_modifiers if len(p) > 8]
         for i, token in enumerate(tokenized_query):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if token in all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
+            if token in index2.all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
                 if negated:
                     negative_modifiers.add(token)
                 else:
