@@ -8,6 +8,7 @@ from google.protobuf import text_format
 
 from dadguide import DadguideDatabase, database_manager
 from dungeon.encounter import Encounter
+from dungeon.enemy_skill import process_enemy_skill
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
 
@@ -186,34 +187,35 @@ def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
         text = '{} while HP > {}'.format(turn_text, always_trigger_above)
     return text
 
-def format_behavior(behavior: Behavior, database, indent=""):
+def format_behavior(behavior: Behavior, database, group_type: str, indent=""):
     output = ""
     skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
     if skill is None:
         return "Unknown"
     skill_name = skill["name_en"]
     skill_effect = skill["desc_en"]
-    output += indent + 'Skill Name: ' + skill_name
-    output += '\n{}Effect: '.format(indent) + skill_effect
+    output += '**{}Skill Name: {}**'.format(group_type, skill_name)
+    output += '\n{}Effect: {}'.format(indent, skill_effect)
     condition = format_condition(behavior.condition)
     if condition is not None:
-        output += "\n{}Condition: {}".format(indent, condition)
+        output += "\n**{}Condition: {}**".format(indent, condition)
     return output
 
-def format_behavior_group(group: BehaviorGroup, database: DadguideDatabase, indent="", preempt_only: bool = False):
+def format_behavior_group(group: BehaviorGroup, database: DadguideDatabase, indent="", skip_condition: bool = False, preempt_only: bool = False):
     output = ""
     condition = format_condition(group.condition)
-    if condition is not None:
+    if condition is not None and not skip_condition:
         output += "\n{}Condition: {}".format(indent, condition)
         indent += '\u200b \u200b \u200b \u200b \u200b '
     for child in group.children:
         if child.HasField('group'):
             output += format_behavior_group(child.group, database, indent)
         elif child.HasField('behavior'):
+            group_type = indent
             output += '\n'
             if group.group_type == 1 or group.group_type == 2 or group.group_type == 9:
-                output += indent + "({})\t".format(GroupType[group.group_type])
-            output += format_behavior(child.behavior, database, indent)
+                group_type = indent + "({})".format(GroupType[group.group_type])
+            output += format_behavior(child.behavior, database, group_type, indent)
     return output
 
 # Format:
@@ -241,19 +243,22 @@ def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, 
     skill_effect = skill["desc_en"]
     condition = format_condition(behavior.condition)
     if condition is not None:
-        condition = "{}***Condition: {}***".format(indent, condition)
+        condition = "**Condition: {}**".format(condition)
     else:
         condition = ""
     #output += indent + 'Skill Name: ' + skill_name
-    embed.add_field(name="{}Skill Name: {}".format(group_type, skill_name), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+    embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+    #embed.add_field(name="{}Skill{}".format(group_type, skill_name, process_enemy_skill(skill_effect)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+
     #output += '\n{}Effect: '.format(indent) + skill_effect
 
 def format_behavior_group_embed(group: BehaviorGroup, database: DadguideDatabase, embed, indent="", preempt_only: bool = False):
     condition = format_condition(group.condition)
     if condition is not None:
         # output += "\n{}Condition: {}".format(indent, condition)
-        embed.add_field(name="{}Condition: {}".format(indent, condition), value="\u200b", inline=False)
-        indent += "\u200b \u200b \u200b \u200b \u200b "
+        embed.add_field(name="{}Condition: {}".format(indent, condition), value="Following skills are part of a set", inline=False)
+        #indent += "\u200b \u200b \u200b \u200b \u200b "
+        indent += ">>> "
     for child in group.children:
         group_type = indent
         if child.HasField('group'):
@@ -272,7 +277,7 @@ def format_behavior_group_embed(group: BehaviorGroup, database: DadguideDatabase
 def format_monster_embed(mb: MonsterBehavior, q: dict, database: DadguideDatabase, preempt_only: bool = False):
     # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
     embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
-                          description="HP:{} ATK:{} DEF:{} TURN:{}")
+                          description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))
     if mb is None:
         embed.add_field(name="There is no behavior", value="\u200b")
         return embed
