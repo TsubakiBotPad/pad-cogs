@@ -89,7 +89,7 @@ class FindMonster:
                 break
 
         if not name and modifiers and lastmodpos:
-            if modifiers[-1] in index2.name_tokens:
+            if modifiers[-1] in index2.manual:
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
