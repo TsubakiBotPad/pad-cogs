@@ -55,39 +55,45 @@ class FindMonster:
         tokenized_query = raw_query.split()
         tokenized_query = self._merge_multi_word_tokens(tokenized_query, index2.multi_word_tokens)
 
-        modifiers = set()
+        modifiers = []
         negative_modifiers = set()
         name = set()
         longmods = [p for p in index2.all_modifiers if len(p) > 8]
-        for i, token in enumerate(tokenized_query):
-            negated = token.startswith("-")
-            token = token.lstrip('-')
-            if token in index2.all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
-                if negated:
-                    negative_modifiers.add(token)
-                else:
-                    modifiers.add(token)
-            else:
-                tokenized_query = tokenized_query[i:]
-                break
-        else:
-            tokenized_query = []
+        lastmodpos = False
 
-        tokenized_query = tokenized_query[::-1]
-
-        for i, token in enumerate(tokenized_query):
+        for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
             if difflib.get_close_matches(token, index2.suffixes, n=1, cutoff=.8):
                 if negated:
                     negative_modifiers.add(token)
                 else:
-                    modifiers.add(token)
+                    modifiers.append(token)
+            else:
+                if i:
+                    tokenized_query = tokenized_query[:-i]
+                break
+
+        for i, token in enumerate(tokenized_query):
+            negated = token.startswith("-")
+            token = token.lstrip('-')
+            if token in index2.all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
+                if negated:
+                    lastmodpos = False
+                    negative_modifiers.add(token)
+                else:
+                    lastmodpos = True
+                    modifiers.append(token)
             else:
                 name.update(tokenized_query[i:])
                 break
 
-        return modifiers, negative_modifiers, name
+        if not name and modifiers and lastmodpos:
+            if modifiers[-1] in index2.name_tokens:
+                name.add(modifiers[-1])
+                modifiers = modifiers[:-1]
+
+        return set(modifiers), negative_modifiers, name
 
     def process_name_tokens(self, name_query_tokens, index2):
         monstergen = None
