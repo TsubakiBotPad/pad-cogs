@@ -743,12 +743,15 @@ class PadInfo(commands.Cog):
         await ctx.tick()
 
     @idtest.command(name="remove", aliases=["delete", "rm"])
-    async def idt_remove(self, ctx, number: int):
+    async def idt_remove(self, ctx, *, item):
         async with self.config.test_suite() as suite:
-            if number >= len(suite):
+            if item in suite:
+                del suite[item]
+            elif item.isdigit() and int(item) < len(suite):
+                del suite[sorted(suite)[int(item)]]
+            else:
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
-            del suite[sorted(suite)[number]]
         await ctx.tick()
 
     @idtest.command(name="setreason", aliases=["addreason"])
