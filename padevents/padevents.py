@@ -20,6 +20,14 @@ from tsutils import CogSettings, confirm_message, normalize_server_name, DummyOb
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
 
+def user_is_donor(ctx, only_patron=False):
+    if ctx.author.id in ctx.bot.owner_ids:
+        return True
+    donationcog = ctx.bot.get_cog("Donations")
+    if not donationcog:
+        return False
+    return donationcog.is_donor(ctx, only_patron)
+
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR"]
@@ -517,9 +525,8 @@ class PadEvents(commands.Cog):
     async def autoeventdm(self, ctx):
         """Auto Event DMs"""
 
-    @is_donor()
     @autoeventdm.command(name="add")
-    async def aed_add(self, ctx, server, searchstr, group, offset: int = 0):
+    async def aed_add(self, ctx, server, searchstr, group, time_offset: int = 0):
         """Add a new autoeventdm"""
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
@@ -529,7 +536,10 @@ class PadEvents(commands.Cog):
         if group not in GROUPS:
             await ctx.send("Unsupported group, pick one of red, blue, green")
             return
-        if offset < 0:
+        if time_offset and user_is_donor(ctx):
+            await ctx.send("You must be a donor to set a time offset!")
+            return
+        if time_offset < 0:
             await ctx.send("Offset cannot be negative")
             return
 
@@ -538,7 +548,7 @@ class PadEvents(commands.Cog):
             'server': server,
             'group': group,
             'searchstr': searchstr,
-            'offset': offset,
+            'offset': time_offset,
         }
 
         async with self.config.user(ctx.author).dmevents() as dmevents:
@@ -586,7 +596,7 @@ class PadEvents(commands.Cog):
     @is_donor()
     @aed_e.command(name="offset")
     async def aed_e_offset(self, ctx, index, offset):
-        """Set offset of an autoeventdm (Donor only)"""
+        """(DONOR ONLY) Set time offset to an AED to allow you to prepare for a dungeon"""
         if offset < 0:
             await ctx.send("Offset cannot be negative")
             return
