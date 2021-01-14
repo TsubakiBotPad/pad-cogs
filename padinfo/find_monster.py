@@ -70,6 +70,8 @@ class FindMonster:
             else:
                 tokenized_query = tokenized_query[i:]
                 break
+        else:
+            tokenized_query = []
 
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
