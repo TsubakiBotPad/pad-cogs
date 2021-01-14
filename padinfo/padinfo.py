@@ -581,7 +581,10 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
-        monster = await self.findMonster3(query)
+        monster, err, _ = await self.findMonsterCustom(ctx, query)
+        if monster is None:
+            await self.makeFailureMsg(ctx, query, err)
+            return
         DGCOG = self.bot.get_cog("Dadguide")
         info = button_info.get_info(DGCOG, monster)
         info_str = button_info.to_string(monster, info)
@@ -1153,7 +1156,7 @@ class PadInfo(commands.Cog):
     async def idhelp(self, ctx, *, query="", is_failed_query=False):
         """Get help with an id query"""
         query_display = '`{}` '.format(query) if query != '' else ''
-        failed_query_msg = "Sorry, your query {}didn't match any results :( ".format(
+        failed_query_msg = "Sorry, your query {}didn't match any results :(\n".format(
             query_display) if is_failed_query else ""
         if not is_failed_query:
             await ctx.send("See <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide> for "
