@@ -9,16 +9,18 @@ SERIES_TYPE_PRIORITY = [
     "ghcollab",
     "collab",
     None
-][::-1]
+]
+
 
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
+
 
 def calc_ratio_prefix(token, full_word):
     if full_word == token:
         return 1
     elif full_word.startswith(token):
-        return 1 - len(full_word)/100
+        return 1 - len(full_word) / 100
     return difflib.SequenceMatcher(None, token, full_word).ratio()
 
 
@@ -85,7 +87,8 @@ class FindMonster:
         for i, token in enumerate(tokenized_query):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if token in index2.all_modifiers or difflib.get_close_matches(token, longmods, n=1, cutoff=.8):
+            if token in index2.all_modifiers or (
+                    difflib.get_close_matches(token, longmods, n=1, cutoff=.8) and token not in index2.name_tokens):
                 if negated:
                     lastmodpos = False
                     negative_modifiers.add(token)
