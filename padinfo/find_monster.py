@@ -88,7 +88,9 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    difflib.get_close_matches(token, longmods, n=1, cutoff=.8) and token not in index2.name_tokens):
+                    difflib.get_close_matches(token, longmods, n=1, cutoff=.8)
+                    and token not in index2.name_tokens
+                    and len(token) >= 8):
                 if negated:
                     lastmodpos = False
                     negative_modifiers.add(token)
