@@ -22,7 +22,7 @@ SERIES_KEYS = {
 
 
 SERIES_TYPES = [
-    "default",
+    "regular",
     "event",
     "seasonal",
     "ghcollab",
