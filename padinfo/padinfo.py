@@ -1124,7 +1124,7 @@ class PadInfo(commands.Cog):
                   key=lambda m: (monster_score[m],
                                  not m.is_equip,
                                  bool(m.monster_id > 10000 and re.search(r"\d{4}", query)), # Match na on id overlap
-                                 series_priority.index(m.series.series_type),
+                                 -series_priority.index(m.series.series_type),
                                  m.on_na if m.series.series_type == "collab" else 0,
                                  DGCOG.database.graph.monster_is_rem_evo(m),
                                  -DGCOG.database.graph.get_base_id(m),
