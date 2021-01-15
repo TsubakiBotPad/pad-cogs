@@ -1,16 +1,18 @@
-import networkx
 import json
-from typing import Optional
 from collections import defaultdict
+from typing import Optional
+
+import networkx
+
 from .database_manager import DadguideDatabase
-from .models.enum_types import EvoType, InternalEvoType
-from .models.monster_model import MonsterModel
-from .models.leader_skill_model import LeaderSkillModel
 from .models.active_skill_model import ActiveSkillModel
-from .models.series_model import SeriesModel
-from .models.evolution_model import EvolutionModel
-from .models.awoken_skill_model import AwokenSkillModel
 from .models.awakening_model import AwakeningModel
+from .models.awoken_skill_model import AwokenSkillModel
+from .models.enum_types import EvoType, InternalEvoType
+from .models.evolution_model import EvolutionModel
+from .models.leader_skill_model import LeaderSkillModel
+from .models.monster_model import MonsterModel
+from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT
   monsters.*,
@@ -40,6 +42,7 @@ MONSTER_QUERY = """SELECT
   series.name_ja AS s_name_ja,
   series.name_en AS s_name_en,
   series.name_ko AS s_name_ko,
+  series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
@@ -155,7 +158,8 @@ class MonsterGraph(object):
             s_model = SeriesModel(series_id=m.series_id,
                                   name_ja=m.s_name_ja,
                                   name_en=m.s_name_en,
-                                  name_ko=m.s_name_ko
+                                  name_ko=m.s_name_ko,
+                                  series_type=m.s_series_type
                                   )
 
             m_model = MonsterModel(monster_id=m.monster_id,
