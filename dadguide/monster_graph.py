@@ -461,7 +461,7 @@ class MonsterGraph(object):
 
     def monster_is_farmable_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_farmable_by_id(m))
+            m for m in self.get_alt_monsters_by_id(monster_id) if self.monster_is_farmable_by_id(m))
 
     def monster_is_farmable_evo(self, monster: MonsterModel):
         return self.monster_is_farmable_evo_by_id(monster.monster_no)
@@ -475,7 +475,7 @@ class MonsterGraph(object):
 
     def monster_is_mp_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_mp_by_id(m))
+            m for m in self.get_alt_monsters_by_id(monster_id) if self.monster_is_mp_by_id(m))
 
     def monster_is_mp_evo(self, monster: MonsterModel):
         return self.monster_is_mp_evo_by_id(monster.monster_no)
@@ -489,7 +489,7 @@ class MonsterGraph(object):
 
     def monster_is_pem_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_pem_by_id(m))
+            m for m in self.get_alt_monsters_by_id(monster_id) if self.monster_is_pem_by_id(m))
 
     def monster_is_pem_evo(self, monster: MonsterModel):
         return self.monster_is_pem_evo_by_id(monster.monster_no)
@@ -503,7 +503,7 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_rem_by_id(m))
+            m for m in self.get_alt_monsters_by_id(monster_id) if self.monster_is_rem_by_id(m))
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
