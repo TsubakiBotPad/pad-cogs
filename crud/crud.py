@@ -161,7 +161,8 @@ class Crud(commands.Cog):
             'name_ja': elements['name_ja'],
             'name_en': elements['name_en'],
             'name_ko': elements['name_ko'],
-            'series_id': elements['series_id']
+            'series_id': elements['series_id'],
+            'series_type': elements['series_id']
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))

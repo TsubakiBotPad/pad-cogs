@@ -2,6 +2,14 @@ import difflib
 from collections import defaultdict
 from typing import Set
 
+SERIES_TYPE_PRIORITY = [
+    "regular",
+    "event",
+    "seasonal",
+    "ghcollab",
+    "collab",
+    None
+][::-1]
 
 def calc_ratio(s1, s2):
     return difflib.SequenceMatcher(None, s1, s2).ratio()
