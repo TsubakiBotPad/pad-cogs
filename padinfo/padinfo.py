@@ -21,7 +21,7 @@ from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
 from .button_info import button_info
-from .find_monster import find_monster
+from .find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
 from .id_menu import IdMenu
 from .view.components.monster.header import MonsterHeader
 
@@ -1117,16 +1117,18 @@ class PadInfo(commands.Cog):
             # no modifiers match any monster in the evo tree
             return
 
-        print(monster_gen)
+        print({k: v for k, v in monster_score.items() if k in monster_gen})
 
         # Return most likely candidate based on query.
-        mon = max(monster_gen, key=lambda m: (monster_score[m],
-                                              not m.is_equip,
-                                              bool(m.monster_id > 10000 and re.search(r"\d{4}", query)),
-                                              # Match na on id overlap
-                                              -DGCOG.database.graph.get_base_id(m),
-                                              m.rarity,
-                                              m.monster_no_na))
+        mon = max(monster_gen,
+                  key=lambda m: (monster_score[m],
+                                 not m.is_equip,
+                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", query)), # Match na on id overlap
+                                 series_priority.index(m.series.series_type),
+                                 DGCOG.database.graph.monster_is_rem_evo(m),
+                                 -DGCOG.database.graph.get_base_id(m),
+                                 m.rarity,
+                                 m.monster_no_na))
 
         return mon
 
