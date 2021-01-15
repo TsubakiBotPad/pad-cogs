@@ -40,7 +40,7 @@ class FindMonster:
                     if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < .8:
                         break
                 else:
-                    s = len(mwt)
+                    s = len(mwt) - 1
                     result.append("".join(mwt))
                     break
             else:
