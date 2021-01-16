@@ -133,7 +133,7 @@ class MonsterIndex2(aobject):
             return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) >= 2:
+        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 2:
             return cls._name_to_tokens(oname)
         else:
             return cls._name_to_tokens(min(n1, n2, key=lambda n: n.count(" ")))
