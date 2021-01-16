@@ -1,6 +1,7 @@
-import difflib
 from collections import defaultdict
 from typing import Set
+
+from Levenshtein import jaro_winkler
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -13,15 +14,16 @@ SERIES_TYPE_PRIORITY = {
 
 
 def calc_ratio(s1, s2):
-    return difflib.SequenceMatcher(None, s1, s2).ratio()
+    return jaro_winkler(s1, s2, .05)
 
 
 def calc_ratio_prefix(token, full_word):
+    print(token, full_word)
     if full_word == token:
         return 1
     elif full_word.startswith(token):
-        return 1 - len(full_word) / 100
-    return difflib.SequenceMatcher(None, token, full_word).ratio()
+        return 1 - len(full_word) / 1000
+    return jaro_winkler(token, full_word, .05)
 
 
 class FindMonster:
@@ -55,9 +57,9 @@ class FindMonster:
                 monsterscore[monster] += 1
                 return True
         else:
-            dlm = difflib.get_close_matches(token, monster_mods, n=1, cutoff=.8)
-            if dlm:
-                monsterscore[monster] += max(calc_ratio(token, p) for p in dlm)
+            closest = max(jaro_winkler(m, token, .05) for m in monster_mods)
+            if closest > .8:
+                monsterscore[monster] += closest
                 return True
         return False
 
@@ -74,7 +76,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if difflib.get_close_matches(token, index2.suffixes, n=1, cutoff=.8):
+            if any(jaro_winkler(m, token) > .8 for m in index2.suffixes):
                 if negated:
                     negative_modifiers.add(token)
                 else:
@@ -88,7 +90,7 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    difflib.get_close_matches(token, longmods, n=1, cutoff=.8)
+                    any(jaro_winkler(m, token) > .8 for m in longmods)
                     and token not in index2.name_tokens
                     and len(token) >= 8):
                 if negated:
@@ -115,7 +117,8 @@ class FindMonster:
         for t in name_query_tokens:
             valid = set()
 
-            ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
+            ms = sorted([nt for nt in index2.name_tokens if jaro_winkler(t, nt, .05) > .8],
+                        key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
             ms += [token for token in index2.name_tokens if token.startswith(t)]
             if not ms:
                 return None, None

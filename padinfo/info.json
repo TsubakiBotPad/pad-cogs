@@ -22,7 +22,8 @@
   "requirements": [
     "tsutils>=3.0.1",
     "discord-menu>=0.1.0",
-    "prettytable"
+    "prettytable",
+    "python-levenshtein"
   ],
   "tags": [
     "PAD"
