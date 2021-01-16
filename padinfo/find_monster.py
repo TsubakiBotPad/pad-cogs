@@ -3,14 +3,14 @@ from typing import Set
 
 from Levenshtein import jaro_winkler
 
-SERIES_TYPE_PRIORITY = [
-    "regular",
-    "event",
-    "seasonal",
-    "ghcollab",
-    "collab",
-    None
-]
+SERIES_TYPE_PRIORITY = {
+    "regular": 4,
+    "event": 4,
+    "seasonal": 3,
+    "ghcollab": 2,
+    "collab": 1,
+    None: 0
+}
 
 
 def calc_ratio(s1, s2):

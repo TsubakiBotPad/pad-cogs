@@ -69,6 +69,8 @@ class MonsterIndex2(aobject):
         self.tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
+        mod_maps = list(MODIFIER_MAPS.values()) + list(self.series_id_to_pantheon_nickname.values())
+
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
 
@@ -81,7 +83,7 @@ class MonsterIndex2(aobject):
                 self.tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
                     self.tokens[repl].add(m)
-                for pas in MODIFIER_MAPS.values():
+                for pas in mod_maps:
                     if token in pas:
                         self.modifiers[m].update(pas)
 
