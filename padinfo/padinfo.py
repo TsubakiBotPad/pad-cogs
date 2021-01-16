@@ -1099,7 +1099,7 @@ class PadInfo(commands.Cog):
         query = rmdiacritics(query).lower()
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
 
-        print(mod_tokens, name_query_tokens)
+        # print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1119,7 +1119,7 @@ class PadInfo(commands.Cog):
             # no modifiers match any monster in the evo tree
             return
 
-        print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+        # print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
         # Return most likely candidate based on query.
         mon = max(monster_gen,
@@ -1129,6 +1129,8 @@ class PadInfo(commands.Cog):
                                  series_priority.get(m.series.series_type),
                                  m.on_na if m.series.series_type == "collab" else 0,
                                  DGCOG.database.graph.monster_is_rem_evo(m),
+                                 not all(t.value in [0, 12, 14, 15] for t in m.types),
+                                 not any(t.value in [0, 12, 14, 15] for t in m.types),
                                  -DGCOG.database.graph.get_base_id(m),
                                  m.rarity,
                                  m.monster_no_na))
@@ -1149,7 +1151,8 @@ class PadInfo(commands.Cog):
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
              f"Series: {m.series.name_en} ({m.series_id})\n\n"
-             f"[Name Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.tokens.items() if m in ms))}\n\n"
+             f"[Name Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.name_tokens.items() if m in ms))}\n"
+             f"[Fluff Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.fluff_tokens.items() if m in ms))}\n\n"
              f"[Manual Tokens]\n"
              f"     Treenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
              f"     Nicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
