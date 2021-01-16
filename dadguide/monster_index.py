@@ -36,7 +36,7 @@ class MonsterIndex2(aobject):
             lp, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
                 if lp:
-                    self.monster_id_to_nametokens[int(m_id)].add(name.lower().split())
+                    self.monster_id_to_nametokens[int(m_id)].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
