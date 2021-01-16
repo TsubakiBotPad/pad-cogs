@@ -18,7 +18,6 @@ def calc_ratio(s1, s2):
 
 
 def calc_ratio_prefix(token, full_word):
-    print(token, full_word)
     if full_word == token:
         return 1
     elif full_word.startswith(token):
@@ -91,7 +90,7 @@ class FindMonster:
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
                     any(jaro_winkler(m, token) > .8 for m in longmods)
-                    and token not in index2.name_tokens
+                    and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
                     lastmodpos = False
@@ -116,10 +115,9 @@ class FindMonster:
 
         for t in name_query_tokens:
             valid = set()
-
-            ms = sorted([nt for nt in index2.name_tokens if jaro_winkler(t, nt, .05) > .8],
+            ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > .8],
                         key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
-            ms += [token for token in index2.name_tokens if token.startswith(t)]
+            ms += [token for token in index2.all_name_tokens if token.startswith(t)]
             if not ms:
                 return None, None
             for match in ms:
@@ -127,9 +125,13 @@ class FindMonster:
                     if m not in valid:
                         monsterscore[m] += calc_ratio_prefix(t, match) + .001
                         valid.add(m)
-                for m in index2.tokens[match]:
+                for m in index2.name_tokens[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio_prefix(t, match)
+                        valid.add(m)
+                for m in index2.fluff_tokens[match]:
+                    if m not in valid:
+                        monsterscore[m] += calc_ratio_prefix(t, match) / 2
                         valid.add(m)
 
             if monstergen is not None:
