@@ -811,7 +811,7 @@ class PadInfo(commands.Cog):
                     o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {mid}{reason}\n"
                 else:
                     c += 1
-        if c:
+        if c != len(suite):
             o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
         else:
             o += "\n\nAll tests succeeded."
