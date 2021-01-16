@@ -20,6 +20,7 @@ class MonsterIndex2(aobject):
         self.graph = db.graph
 
         self.monster_id_to_nickname = defaultdict(set)
+        self.monster_id_to_nametokens = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
         self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
                                                                 for m
@@ -32,11 +33,14 @@ class MonsterIndex2(aobject):
 
         nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         for name, m_id, *data in nickname_data:
-            _, i, *_ = data + [None, None]
+            lp, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
-                if " " in name:
-                    self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
+                if lp:
+                    self.monster_id_to_nametokens[int(m_id)].add(name.lower().split())
+                else:
+                    if " " in name:
+                        self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                    self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
 
         treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
         for m_id, name, *data in treenames_data:
@@ -79,19 +83,23 @@ class MonsterIndex2(aobject):
             self.name_tokens[str(m.monster_id % 10000)].add(m)
 
             # Name Tokens
-            for token in self._get_fluffy_tokens(m.name_en):
+            if self.monster_id_to_nametokens[m.monster_id]:
+                for t in self.monster_id_to_nametokens[m.monster_id]:
+                    self.name_tokens[t].add(m)
+            else:
+                for token in self._get_important_tokens(m.name_en):
+                    self.name_tokens[token.lower()].add(m)
+                    for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                        self.name_tokens[repl].add(m)
+                    for pas in mod_maps:
+                        if token in pas:
+                            self.modifiers[m].update(pas)
+            for token in self._name_to_tokens(m.name_en):
+                if m in self.name_tokens[token.lower()]:
+                    continue
                 self.fluff_tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
                     self.fluff_tokens[repl].add(m)
-                for pas in mod_maps:
-                    if token in pas:
-                        self.modifiers[m].update(pas)
-            for token in self._name_to_tokens(m.name_en):
-                if m in self.fluff_tokens[token.lower()]:
-                    continue
-                self.name_tokens[token.lower()].add(m)
-                for repl in TOKEN_REPLACEMENTS[token.lower()]:
-                    self.name_tokens[repl].add(m)
                 for pas in mod_maps:
                     if token in pas:
                         self.modifiers[m].update(pas)
@@ -119,17 +127,16 @@ class MonsterIndex2(aobject):
         return [t.strip() for t in set(name.split() + oname.split()) if t]
 
     @classmethod
-    def _get_fluffy_tokens(cls, oname):
+    def _get_important_tokens(cls, oname):
         name = oname.split(", ")
         if len(name) == 1:
-            return []
+            return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 2:
-            return []
+        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) >= 2:
+            return cls._name_to_tokens(oname)
         else:
-            return cls._name_to_tokens(max(n1, n2, key=lambda n: n.count(" ")))
-
+            return cls._name_to_tokens(min(n1, n2, key=lambda n: n.count(" ")))
 
     async def get_modifiers(self, m):
         modifiers = set()
