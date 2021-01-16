@@ -54,10 +54,10 @@ class MonsterIndex2(aobject):
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
-        self.manual = self.tokens = self.modifiers = defaultdict(set)
+        self.manual = self.name_tokens = self.fluff_tokens = self.modifiers = defaultdict(set)
         await self._build_monster_index(monsters)
         self.manual = combine_tokens(self.manual_nick, self.manual_tree)
-        self.name_tokens = list(self.manual) + list(self.tokens)
+        self.all_name_tokens = list(self.manual) + list(self.fluff_tokens) + list(self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
 
@@ -66,7 +66,8 @@ class MonsterIndex2(aobject):
     async def _build_monster_index(self, monsters):
         self.manual_nick = defaultdict(set)
         self.manual_tree = defaultdict(set)
-        self.tokens = defaultdict(set)
+        self.name_tokens = defaultdict(set)
+        self.fluff_tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
         mod_maps = list(MODIFIER_MAPS.values()) + list(self.series_id_to_pantheon_nickname.values())
@@ -75,14 +76,23 @@ class MonsterIndex2(aobject):
             self.modifiers[m] = await self.get_modifiers(m)
 
             # ID
-            self.tokens[str(m.monster_id)].add(m)
-            self.tokens[str(m.monster_id % 10000)].add(m)
+            self.name_tokens[str(m.monster_id)].add(m)
+            self.name_tokens[str(m.monster_id % 10000)].add(m)
 
             # Name Tokens
-            for token in self._name_to_tokens(m.name_en):
-                self.tokens[token.lower()].add(m)
+            for token in self._get_important_tokens(m.name_en):
+                self.name_tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
-                    self.tokens[repl].add(m)
+                    self.name_tokens[repl].add(m)
+                for pas in mod_maps:
+                    if token in pas:
+                        self.modifiers[m].update(pas)
+            for token in self._name_to_tokens(m.name_en):
+                if m in self.name_tokens[token.lower()]:
+                    continue
+                self.fluff_tokens[token.lower()].add(m)
+                for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                    self.fluff_tokens[repl].add(m)
                 for pas in mod_maps:
                     if token in pas:
                         self.modifiers[m].update(pas)
@@ -90,18 +100,37 @@ class MonsterIndex2(aobject):
             # Monster Nickname
             for nick in self.monster_id_to_nickname[m.monster_id]:
                 self.manual_nick[nick].add(m)
+                for pas in mod_maps:
+                    if nick in pas:
+                        self.modifiers[m].update(pas)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
                 self.manual_tree[nick].add(m)
+                for pas in mod_maps:
+                    if nick in pas:
+                        self.modifiers[m].update(pas)
 
     @staticmethod
     def _name_to_tokens(oname):
         oname = oname.lower()
-        name = re.sub(r'[\-+]', ' ', oname)
+        name = re.sub(r'[\-+\']', ' ', oname)
         name = re.sub(r'[^a-z0-9 ]', '', name)
         return [t.strip() for t in set(name.split() + oname.split()) if t]
+
+    @classmethod
+    def _get_important_tokens(cls, oname):
+        name = oname.split(",")
+        if len(name) == 1:
+            return cls._name_to_tokens(oname)
+        *n1, n2 = name
+        n1 = ",".join(n1)
+        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 4:
+            return cls._name_to_tokens(oname)
+        else:
+            return cls._name_to_tokens(min(n1, n2, key=lambda n: n.count(" ")))
+
 
     async def get_modifiers(self, m):
         modifiers = set()

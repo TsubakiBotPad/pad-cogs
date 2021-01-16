@@ -88,8 +88,8 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    difflib.get_close_matches(token, longmods, n=1, cutoff=.8)
-                    and token not in index2.name_tokens
+                    any(jaro_winkler(m, token) > .8 for m in longmods)
+                    and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
                     lastmodpos = False
@@ -114,9 +114,9 @@ class FindMonster:
 
         for t in name_query_tokens:
             valid = set()
-
-            ms = difflib.get_close_matches(t, index2.name_tokens, n=10000, cutoff=.8)
-            ms += [token for token in index2.name_tokens if token.startswith(t)]
+            ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > .8],
+                        key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
+            ms += [token for token in index2.all_name_tokens if token.startswith(t)]
             if not ms:
                 return None, None
             for match in ms:
@@ -124,9 +124,13 @@ class FindMonster:
                     if m not in valid:
                         monsterscore[m] += calc_ratio_prefix(t, match) + .001
                         valid.add(m)
-                for m in index2.tokens[match]:
+                for m in index2.name_tokens[match]:
                     if m not in valid:
                         monsterscore[m] += calc_ratio_prefix(t, match)
+                        valid.add(m)
+                for m in index2.fluff_tokens[match]:
+                    if m not in valid:
+                        monsterscore[m] += calc_ratio_prefix(t, match) / 2
                         valid.add(m)
 
             if monstergen is not None:
