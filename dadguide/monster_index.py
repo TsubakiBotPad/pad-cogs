@@ -3,7 +3,6 @@ import io
 import re
 
 import aiohttp
-from Levenshtein import jaro_winkler
 from redbot.core.utils import AsyncIter
 from tsutils import aobject
 
@@ -235,10 +234,6 @@ class MonsterIndex2(aobject):
             modifiers.add("idna")
 
         return modifiers
-
-
-def calc_ratio(s1, s2):
-    return jaro_winkler(s1, s2)
 
 
 # TODO: Move this to TSUtils
