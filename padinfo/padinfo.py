@@ -1129,6 +1129,8 @@ class PadInfo(commands.Cog):
                                  series_priority.get(m.series.series_type),
                                  m.on_na if m.series.series_type == "collab" else 0,
                                  DGCOG.database.graph.monster_is_rem_evo(m),
+                                 not all(t.value in [0, 12, 14, 15] for t in m.types),
+                                 not any(t.value in [0, 12, 14, 15] for t in m.types),
                                  -DGCOG.database.graph.get_base_id(m),
                                  m.rarity,
                                  m.monster_no_na))

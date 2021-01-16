@@ -79,19 +79,19 @@ class MonsterIndex2(aobject):
             self.name_tokens[str(m.monster_id % 10000)].add(m)
 
             # Name Tokens
-            for token in self._get_important_tokens(m.name_en):
-                self.name_tokens[token.lower()].add(m)
+            for token in self._get_fluffy_tokens(m.name_en):
+                self.fluff_tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
-                    self.name_tokens[repl].add(m)
+                    self.fluff_tokens[repl].add(m)
                 for pas in mod_maps:
                     if token in pas:
                         self.modifiers[m].update(pas)
             for token in self._name_to_tokens(m.name_en):
-                if m in self.name_tokens[token.lower()]:
+                if m in self.fluff_tokens[token.lower()]:
                     continue
-                self.fluff_tokens[token.lower()].add(m)
+                self.name_tokens[token.lower()].add(m)
                 for repl in TOKEN_REPLACEMENTS[token.lower()]:
-                    self.fluff_tokens[repl].add(m)
+                    self.name_tokens[repl].add(m)
                 for pas in mod_maps:
                     if token in pas:
                         self.modifiers[m].update(pas)
@@ -119,16 +119,16 @@ class MonsterIndex2(aobject):
         return [t.strip() for t in set(name.split() + oname.split()) if t]
 
     @classmethod
-    def _get_important_tokens(cls, oname):
-        name = oname.split(",")
+    def _get_fluffy_tokens(cls, oname):
+        name = oname.split(", ")
         if len(name) == 1:
-            return cls._name_to_tokens(oname)
+            return []
         *n1, n2 = name
-        n1 = ",".join(n1)
-        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 4:
-            return cls._name_to_tokens(oname)
+        n1 = ", ".join(n1)
+        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 2:
+            return []
         else:
-            return cls._name_to_tokens(min(n1, n2, key=lambda n: n.count(" ")))
+            return cls._name_to_tokens(max(n1, n2, key=lambda n: n.count(" ")))
 
 
     async def get_modifiers(self, m):
