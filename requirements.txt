@@ -9,6 +9,7 @@ Pillow
 ply
 prettytable
 pymysql
+python-levenshtein
 pytz
 Red-DiscordBot[postgres]
 setuptools
