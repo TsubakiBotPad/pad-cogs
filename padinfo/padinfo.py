@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 import json
 import logging
 import os
@@ -7,6 +6,7 @@ import random
 import re
 import urllib.parse
 from collections import OrderedDict, defaultdict
+from datetime import datetime
 from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING
@@ -35,6 +35,7 @@ logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
 IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide"
+
 
 class ServerFilter(Enum):
     any = 0
@@ -803,10 +804,11 @@ class PadInfo(commands.Cog):
         async with ctx.typing():
             for q, r in suite.items():
                 m = await self.findMonster3(q)
+                mid = m and m.monster_id
                 if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
-                    o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {m and m.monster_id}{reason}\n"
+                    o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {mid}{reason}\n"
                 else:
                     c += 1
         if c:
@@ -1117,13 +1119,13 @@ class PadInfo(commands.Cog):
             # no modifiers match any monster in the evo tree
             return
 
-        print({k: v for k, v in monster_score.items() if k in monster_gen})
+        print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
         # Return most likely candidate based on query.
         mon = max(monster_gen,
                   key=lambda m: (monster_score[m],
                                  not m.is_equip,
-                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", query)), # Match na on id overlap
+                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", query)),  # Match na on id overlap
                                  series_priority.get(m.series.series_type),
                                  m.on_na if m.series.series_type == "collab" else 0,
                                  DGCOG.database.graph.monster_is_rem_evo(m),
@@ -1166,7 +1168,6 @@ class PadInfo(commands.Cog):
         await ctx.send("See <{0}> for documentation on {1.prefix}id!".format(IDGUIDE, ctx))
         if query:
             await self.debugid(ctx, query=query)
-
 
     @commands.command()
     async def exportmodifiers(self, ctx):

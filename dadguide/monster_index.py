@@ -1,5 +1,4 @@
 import csv
-import difflib
 import io
 import re
 
@@ -264,10 +263,6 @@ class MonsterIndex2(aobject):
             modifiers.add("idna")
 
         return modifiers
-
-
-def calc_ratio(s1, s2):
-    return difflib.SequenceMatcher(None, s1, s2).ratio()
 
 
 # TODO: Move this to TSUtils
