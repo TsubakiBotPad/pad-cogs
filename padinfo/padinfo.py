@@ -600,7 +600,7 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
-            embed = await menu.make_header_embed(m)
+            embed = await menu.make_lookup_embed(m)
             await ctx.send(embed=embed)
         else:
             await self.makeFailureMsg(ctx, query, err)

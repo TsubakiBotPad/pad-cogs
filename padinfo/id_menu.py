@@ -19,6 +19,8 @@ from .leader_skills import createSingleMultiplierText
 from .view.components.monster.image import MonsterImage
 from .view.evos import EvosView
 from .view.id import IdView
+from .view.leader_skill import LeaderSkillView
+from .view.lookup import LookupView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -196,26 +198,12 @@ class IdMenu:
         return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
-        lls = left_m.leader_skill
-        rls = right_m.leader_skill
-        pdicog = self.ctx.bot.get_cog("PadInfo")
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return LeaderSkillView.embed(left_m, right_m, color).to_embed()
 
-        return EmbedView(
-            EmbedMain(
-                title=createMultiplierText(lls, rls),
-                description=Box(
-                    BoldText(MonsterHeader.name(left_m, link=True, show_jp=True)),
-                    Text(lls.desc if lls else 'None'),
-                    BoldText(MonsterHeader.name(right_m, link=True, show_jp=True)),
-                    Text(rls.desc if rls else 'None')),
-                color=await self.get_user_embed_color(pdicog)
-            )).to_embed()
-
-    async def make_header_embed(self, m: "MonsterModel"):
-        header = MonsterHeader.long(m, link=True)
-        embed = await self.make_custom_embed()
-        embed.description = header
-        return embed
+    async def make_lookup_embed(self, m: "MonsterModel"):
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return LookupView.embed(m, color).to_embed()
 
     def _monster_acquisition_string(self, m: "MonsterModel"):
         acquire_text = None
