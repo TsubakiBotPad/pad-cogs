@@ -467,7 +467,6 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
-        # id_embed = await menu.make_embed(m)
         id_embed = await menu.make_id_embed_v2(m)
         evo_embed = await menu.make_evo_embed_v2(m)
         mats_embed = await menu.make_evo_mats_embed(m)
@@ -524,7 +523,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = await menu.make_embed(m)
+            emoji_to_embed[emoji] = await menu.make_id_embed_v2(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -708,8 +707,8 @@ class PadInfo(commands.Cog):
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_ls_embed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = await menu.make_embed(left_m)
-        emoji_to_embed[self.right_emoji] = await menu.make_embed(right_m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(left_m)
+        emoji_to_embed[self.right_emoji] = await menu.make_id_embed_v2(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -726,7 +725,7 @@ class PadInfo(commands.Cog):
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = await menu.make_embed(m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
