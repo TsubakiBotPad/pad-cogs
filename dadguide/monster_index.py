@@ -82,19 +82,34 @@ class MonsterIndex2(aobject):
             self.name_tokens[str(m.monster_id)].add(m)
             self.name_tokens[str(m.monster_id % 10000)].add(m)
 
-            # Name Tokens
-            if self.monster_id_to_nametokens[m.monster_id]:
-                for t in self.monster_id_to_nametokens[m.monster_id]:
-                    self.name_tokens[t].add(m)
-            else:
+            # Name and Fluff Tokens
+            manual = False
+            nametokens = self._name_to_tokens(m.name_en)
+            for me in self.graph.get_alt_ids_by_id(m.monster_id):
+                for t in self.monster_id_to_nametokens[me]:
+                    if t in nametokens:
+                        self.name_tokens[t].add(m)
+            if not manual:
                 for token in self._get_important_tokens(m.name_en):
                     self.name_tokens[token.lower()].add(m)
                     for repl in TOKEN_REPLACEMENTS[token.lower()]:
                         self.name_tokens[repl].add(m)
+                    if m.is_equip:
+                        ts = re.findall(r"(\w+)'s", m.name_en.lower())
+                        for me in self.graph.get_alt_monsters(m):
+                            for t2 in ts:
+                                if t2 in me.name_en.lower():
+                                    self.name_tokens[t2].add(me)
+                    else:
+                        for me in self.graph.get_alt_monsters(m):
+                            if token in self._name_to_tokens(me.name_en):
+                                self.name_tokens[token].add(me)
+                                for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                                    self.name_tokens[repl].add(me)
                     for pas in mod_maps:
                         if token in pas:
                             self.modifiers[m].update(pas)
-            for token in self._name_to_tokens(m.name_en):
+            for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
                     continue
                 self.fluff_tokens[token.lower()].add(m)
@@ -133,10 +148,10 @@ class MonsterIndex2(aobject):
             return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if n1.count(" ") == n2.count(" ") or max(n1.count(" "), n2.count(" ")) < 2:
+        if tcount(n1) == tcount(n2) or max(tcount(n1), tcount(n2)) < 3:
             return cls._name_to_tokens(oname)
         else:
-            return cls._name_to_tokens(min(n1, n2, key=lambda n: n.count(" ")))
+            return cls._name_to_tokens(min(n1, n2, key=tcount))
 
     async def get_modifiers(self, m):
         modifiers = set()
@@ -285,3 +300,9 @@ def combine_tokens(d1, d2):
     for k, v in d2.items():
         do[k].update(v)
     return do
+
+
+def tcount(tstr):
+    tstr = re.sub(r"[^\w ]", "", tstr)
+    tstr = re.sub(r"\(.+\)", "", tstr)
+    return len([*filter(None, tstr.split())])
