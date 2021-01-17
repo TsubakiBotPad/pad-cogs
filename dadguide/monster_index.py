@@ -32,7 +32,7 @@ class MonsterIndex2(aobject):
                                   if " " in m.series.name_en}
 
         nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
-        for name, m_id, *data in nickname_data:
+        for m_id, name, *data in nickname_data:
             lp, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
                 if lp:
@@ -51,7 +51,7 @@ class MonsterIndex2(aobject):
                 self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
         pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
-        for name, _, sid, *_ in pantheon_data:
+        for sid, name, *_ in pantheon_data:
             if sid.isdigit():
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))

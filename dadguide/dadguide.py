@@ -181,7 +181,7 @@ class Dadguide(commands.Cog):
         panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN)
 
         self.nickname_overrides = defaultdict(set)
-        for nick, id, _, _, i in nickname_overrides:
+        for id, nick, _, _, i in nickname_overrides:
             if id.isdigit() and not i:
                 self.nickname_overrides[int(id)].add(nick.lower())
 
@@ -190,7 +190,7 @@ class Dadguide(commands.Cog):
             if id.isdigit() and not i:
                 self.treename_overrides[int(id)].add(treename.lower())
 
-        self.panthname_overrides = {x[0].lower(): x[1].lower() for x in panthname_overrides}
+        self.panthname_overrides = {x[1].lower(): x[2].lower() for x in panthname_overrides}
         self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
 
         logger.info('Loading dg database')
