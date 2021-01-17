@@ -467,7 +467,8 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
-        id_embed = await menu.make_embed(m)
+        # id_embed = await menu.make_embed(m)
+        id_embed = await menu.make_id_embed_v2(m)
         evo_embed = await menu.make_evo_embed_v2(m)
         mats_embed = await menu.make_evo_mats_embed(m)
         animated = m.has_animation
