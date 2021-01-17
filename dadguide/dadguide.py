@@ -178,7 +178,7 @@ class Dadguide(commands.Cog):
         logger.info('Loading dg name overrides')
         nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN, 5)
         treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 5)
-        panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN)
+        panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN, 3)
 
         self.nickname_overrides = defaultdict(set)
         for id, nick, _, _, i in nickname_overrides:
