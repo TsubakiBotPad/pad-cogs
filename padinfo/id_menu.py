@@ -18,6 +18,7 @@ from .leader_skills import createMultiplierText
 from .leader_skills import createSingleMultiplierText
 from .view.components.monster.image import MonsterImage
 from .view.evos import EvosView
+from .view.id import IdView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -72,6 +73,17 @@ class IdMenu:
             return Color(random.randint(0x000000, 0xffffff))
         else:
             return discord.Color(color)
+
+    async def make_id_embed_v2(self, m: "MonsterModel"):
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        is_transform_base = self.db_context.graph.monster_is_transform_base(m)
+        true_evo_type_raw = self.db_context.graph.true_evo_type_by_monster(m).value
+        acquire_raw = self._monster_acquisition_string(m)
+        base_rarity = self.db_context.graph.get_base_monster_by_id(m.monster_no).rarity
+        alt_monsters = sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
+                              key=lambda x: x.monster_id)
+        e = IdView.embed(m, color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        return e.to_embed()
 
     async def make_evo_embed_v2(self, m: "MonsterModel"):
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)

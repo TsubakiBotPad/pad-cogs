@@ -94,6 +94,10 @@ def awakening_restricted_latent_emoji(latent: "AwakeningRestrictedLatent"):
     return str(get_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
 
 
+def emoji_markdown(name_or_number: Union[str, int]):
+    return format_emoji(get_emoji(name_or_number))
+
+
 def get_emoji(name):
     if isinstance(name, int):
         name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
@@ -103,7 +107,7 @@ def get_emoji(name):
     return name
 
 
-def format_emoji(emoji: Union[Emoji,str]):
+def format_emoji(emoji: Union[Emoji, str]):
     if isinstance(emoji, str):
         return f":{emoji}:"
     return f"<:{emoji.name}:{emoji.id}>"
