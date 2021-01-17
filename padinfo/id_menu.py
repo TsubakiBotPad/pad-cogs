@@ -11,7 +11,7 @@ from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import Text, BoldText
 from redbot.core.utils.chat_formatting import box
 
-from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, awakening_restricted_latent_emoji
+from padinfo.common.emoji_map import awakening_restricted_latent_emoji
 from padinfo.view.components.monster.header import MonsterHeader
 from .common.padx import monster_url
 from .leader_skills import createMultiplierText
@@ -47,14 +47,6 @@ class IdMenu:
         self.ctx = ctx
         self.db_context = db_context
         self.allowed_emojis = allowed_emojis
-
-    def match_emoji(self, name):
-        if isinstance(name, int):
-            name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
-        for e in self.allowed_emojis:
-            if e.name == name:
-                return e
-        return name
 
     async def make_base_embed(self, m: "MonsterModel"):
         header = MonsterHeader.long(m)
@@ -246,135 +238,6 @@ class IdMenu:
             acquire_text = 'MP Shop Evo'
         return acquire_text
 
-    async def make_embed(self, m: "MonsterModel"):
-        embed = await self.make_base_embed(m)
-
-        # in case we want to readd the type emojis later
-        # types_row = ' '.join(['{} {}'.format(str(match_emoji(allowed_emojis, 'mons_type_{}'.format(t.name.lower()))), t.name) for t in m.types])
-        types_row = '/'.join(['{}'.format(t.name) for t in m.types])
-
-        awakenings_row = ''
-        for idx, a in enumerate(m.awakenings):
-            as_id = a.awoken_skill_id
-            as_name = a.name
-            mapped_awakening = AWAKENING_ID_TO_EMOJI_NAME_MAP.get(as_id, as_name)
-            mapped_awakening = self.match_emoji(mapped_awakening)
-
-            # Wrap superawakenings to the next line
-            if len(m.awakenings) - idx == m.superawakening_count:
-                awakenings_row += '\n{}'.format(self.match_emoji('sa_questionmark'))
-                awakenings_row += ' {}'.format(mapped_awakening)
-            else:
-                awakenings_row += ' {}'.format(mapped_awakening)
-
-        is_transform_base = self.db_context.graph.monster_is_transform_base(m)
-        transform_base = self.db_context.graph.get_transform_base_by_id(m.monster_id) if not is_transform_base else None
-
-        awakenings_row = awakenings_row.strip()
-
-        if not len(awakenings_row):
-            awakenings_row = 'No Awakenings'
-
-        if is_transform_base:
-
-            killers_row = '**Available killers:** [{} slots] {}'.format(m.latent_slots,
-                                                                        self.get_killers_text(m))
-        else:
-            killers_row = '**Avail. killers (pre-xform):** [{} slots] {}'.format(
-                transform_base.latent_slots,
-                self.get_killers_text(transform_base))
-
-        embed.add_field(name=types_row, value='{}\n{}'.format(awakenings_row, killers_row), inline=False)
-
-        info_row_1 = 'Inheritable' if m.is_inheritable else 'Not inheritable'
-        acquire_text = self._monster_acquisition_string(m)
-        tet_text = self.db_context.graph.true_evo_type_by_monster(m).value
-
-        orb_skin = "" if m.orb_skin_id is None else " (Orb Skin)"
-
-        info_row_2 = '**Rarity** {} (**Base** {}){}\n**Cost** {}'.format(
-            m.rarity,
-            self.db_context.graph.get_base_monster_by_id(m.monster_no).rarity,
-            orb_skin,
-            m.cost
-        )
-
-        if acquire_text:
-            info_row_2 += '\n**{}**'.format(acquire_text)
-        if tet_text in ("Reincarnated", "Assist", "Pixel", "Super Reincarnated"):
-            info_row_2 += '\n**{}**'.format(tet_text)
-
-        embed.add_field(name=info_row_1, value=info_row_2)
-
-        hp, atk, rcv, weighted = m.stats()
-        if m.limit_mult > 0:
-            lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-            stats_icons = [
-                self.match_emoji(63) if m.awakening_count(63) and not m.is_equip else '',
-                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
-                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip else '',
-                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
-            ]
-            stats_row_1 = '{} Stats (LB, +{}%)'.format(stats_icons[0], m.limit_mult)
-            stats_row_2 = '**HP** {} ({}) {stats[1]}\n**ATK** {} ({}) {stats[2]}\n**RCV** {} ({}) {stats[3]}'.format(
-                hp, lb_hp, atk, lb_atk, rcv, lb_rcv, stats=stats_icons)
-        else:
-            stats_icons = [
-                '',
-                self.match_emoji(1) if m.awakening_count(1) and not m.is_equip else '',
-                self.match_emoji(2) if m.awakening_count(2) and not m.is_equip else '',
-                self.match_emoji(3) if m.awakening_count(3) and not m.is_equip else '',
-            ]
-            stats_row_1 = '{} Stats'.format(stats_icons[0])
-            stats_row_2 = '**HP** {} {stats[1]}\n**ATK** {} {stats[2]}\n**RCV** {} {stats[3]}'.format(
-                hp, atk, rcv, stats=stats_icons)
-        if any(x if x.name == 'Enhance' else None for x in m.types):
-            stats_row_2 += '\n**Fodder EXP** {:,}'.format(m.fodder_exp)
-        embed.add_field(name=stats_row_1, value=stats_row_2)
-
-        active_header = '**Active Skill**'
-        active_body = 'None'
-        active_skill = m.active_skill
-        if active_skill:
-            active_header = '**Active Skill ({} -> {})**'.format(active_skill.turn_max,
-                                                                 active_skill.turn_min)
-            active_body = active_skill.desc
-        embed.add_field(name=active_header, value=active_body, inline=False)
-
-        leader_skill = m.leader_skill
-        ls_row = m.leader_skill.desc if leader_skill else 'None'
-        ls_header = '**Leader Skill**'
-        if leader_skill:
-            multiplier_text = createMultiplierText(leader_skill)
-            ls_header += " **{}**".format(multiplier_text)
-        embed.add_field(name=ls_header, value=ls_row, inline=False)
-
-        evos_header = "Alternate Evos"
-        evos_body = ", ".join(f"**{m2.monster_id}**"
-                              if m2.monster_id == m.monster_id
-                              else f"[{m2.monster_id}]({monster_url(m2)})"
-                              for m2 in
-                              sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
-                                     key=lambda x: x.monster_id))
-        embed.add_field(name=evos_header, value=evos_body, inline=False)
-
-        return embed
-
-    def get_killers_text(self, m: "MonsterModel"):
-        return_text = ''
-        if 'Any' in m.killers:
-            return_text += 'Any'
-            if m.awakening_restricted_latents:
-                pass
-                # return_text += ', '
-        else:
-            return_text += ' '.join([self.killer_latent_emoji(k) for k in m.killers])
-            if m.awakening_restricted_latents:
-                pass
-                # return_text += ' '
-        # return_text += self.get_awakening_restricted_latents_text(m)
-        return return_text
-
     def get_awakening_restricted_latents_text(self, m: "MonsterModel"):
         """Not currently in use, but potentially could be in the future
         if more ARLatents are added later
@@ -382,9 +245,6 @@ class IdMenu:
         if not m.awakening_restricted_latents:
             return ''
         return ' ' + ' '.join([awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
-
-    def killer_latent_emoji(self, latent: str):
-        return str(self.match_emoji('latent_killer_{}'.format(latent.lower())))
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
         embed = await self.make_base_embed(m)
