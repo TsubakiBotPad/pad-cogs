@@ -1093,9 +1093,9 @@ class PadInfo(commands.Cog):
 
     async def _findMonster3(self, query):
         DGCOG = self.bot.get_cog("Dadguide")
-        await DGCOG.wait_until_ready()
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
+        await DGCOG.wait_until_ready()
 
         query = rmdiacritics(query).lower()
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
