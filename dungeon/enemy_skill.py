@@ -2,6 +2,7 @@ import logging
 import re
 import discord
 
+from dungeon.grouped_skillls import GroupedSkills
 
 TARGET_NAMES = [
     '<targets unset>',
@@ -25,9 +26,13 @@ TARGET_NAMES = [
 
 generic_symbols = {
     'bind': "❌",
-    'blind': "⚫",
-    'super_blind': "😎",
-    'to': "➡"
+    'blind': "😎",
+    'super_blind': "😎😎",
+    'to': "➡",
+    'attack': '🤜',
+    'multi_attack': '🤜🤜',
+    'self': '👹',
+    'health': '❤',
 }
 
 skyfall_symbols = {
@@ -69,6 +74,15 @@ attribute_type_dict = {
     'poison': "☠",
     'mortal poison': "☠☠",
     'jammer': "🗑️",
+    'locked_fire': "🔒🔥",
+    'locked_water': "🔒🌊",
+    'locked_wood': "🔒🌿",
+    'locked_dark': "🔒🌙",
+    'locked_light': "🔒💡",
+    'locked_heal': "🔒🩹",
+    'locked_poison': "🔒☠",
+    'locked_mortal poison': "🔒☠☠",
+    'locked_jammer': "🔒🗑️",
     'unknown': "❓"
 }
 
@@ -93,6 +107,21 @@ status_emoji = {
     'dark_absorb': "🌙🌪️",
     'light_absorb': "💡🌪️",
     'resolve': "👌",
+    'rcv_buff': "🩹⬆️",
+    'atk_debuff': "🗡️⬇️",
+    'rcv_debuff': "🩹⬇️",
+    'time_buff': "☝⬆",
+    'time_debuff': "☝⬇",
+    'roulette': "🎰",
+    'dispel': "(Dispel)",
+    'swap': "🔀",
+    'skill_delay': '🔋',
+    'locked': '🔒',
+    'tape': '🧻',
+    'starting_position': '🎯',
+    'cloud': '☁',
+    'gravity': '💔',
+
 }
 
 """
@@ -117,12 +146,13 @@ def read_bind(effect: str):
 def check_multi(effect: str):
     splits = str.split(" + ")
 
-def process_enemy_skill(effect: str):
+def process_enemy_skill(effect: str, encounter: dict, skill: dict):
+    atk = encounter['atk']
     ret = ""
     split = effect.split(" + ")
     for s in split:
         n = s.split(", Deal")[0]
-        temp = ""
+
         if "Bind" in n: ret += basic_bind(n)
         elif "Blind" in n: ret += blind(n)
         elif "skyfall" in n: ret += skyfall(n)
@@ -131,10 +161,36 @@ def process_enemy_skill(effect: str):
         elif "Reduce damage" in n: ret += enemy_reduce_damage(n)
         elif "Voids status ailments" in n: ret += status_shield(n)
         elif "Absorb damage when" in n: ret += absorb_damage_combo(n)
-        elif re.match("Absorb (.*) damage for (.*) turns?", effect): ret += absorb_attribute(n)
+        elif re.match("Absorb (.*) damage for (.*) turns?", n): ret += absorb_attribute(n)
         elif "Void damage" in n: ret += void_damage(n)
         elif "Survive attacks with" in n: ret += resolve(n)
         elif "recover" in n: ret += recover(n)
+        elif "Spawn" in n: ret += spawn_orb(n)
+        elif "Do nothing" in n: ret += "💤"
+        elif "ATK" in n or "RCV" in n: ret += rcv_atk_debuff(n)
+        elif "Movetime" in n: ret += movetime(n)
+        elif "Specific orbs change every" in n: ret += hells_casino(n)
+        elif "Change own attribute" in n: ret += change_attribute(n)
+        elif "Voids player buff effects" in n: ret += status_emoji['dispel']
+        elif re.match("Player -(.*)% HP", n): ret += gravity(n)
+        elif "Leader changes to random sub" in n: ret += leader_swap(n)
+        elif "Delay active skills" in n: ret += delay_skills(n)
+        elif "Lock" in n: ret += orb_lock(n)
+        elif "Seal the" in n: ret += tape(n)
+        elif "Fix orb movement starting point to random position on the board" in n: ret += status_emoji['starting_position']
+        elif "clouds" in n: ret += clouds(n)
+        elif "Change player HP to" in n: ret += change_player_hp(n)
+        if skill['min_hits'] != 0:
+            emoji = generic_symbols['attack']
+            if skill['min_hits'] > 1:
+                emoji = generic_symbols['multi_attack']
+            damage_per_hit = (int) (atk * (skill['atk_mult'] / 100.0))
+            min_damage = skill['min_hits'] * damage_per_hit
+            max_damage = skill['max_hits'] * damage_per_hit
+            if min_damage != max_damage:
+                ret += "({}:{}~{})".format(emoji, f'{min_damage:,}', f'{max_damage:,}')
+            else:
+                ret += "({}:{})".format(emoji, f'{min_damage:,}')
 
     return ret
 
@@ -189,8 +245,8 @@ def blind(effect: str):
         return "({}{} for {})".format(generic_symbols["super_blind"], blind_random.group(1), blind_random.group(2))
     if blind_skyfall:
         return "({}{}{}% for {})".format(skyfall_symbols["super_blind"], blind_skyfall.group(1), blind_skyfall.group(2), blind_skyfall.group(3))
-    if "blind" in effect:
-        return generic_symbols["blind"]
+    if "Blind all orbs" in effect:
+        return "({}All)".format(generic_symbols["blind"])
     return ""
 """
 
@@ -208,8 +264,12 @@ def skyfall(effect: str):
         return "({}{})".format(skyfall_symbols['no'], no_case.group(1))
     if regular_case:
         types = ""
-        for s in multiple_cull(regular_case.group(1)):
-            types += skyfall_symbols[s]
+        if "Locked" in regular_case.group(1):
+            for a in multiple_cull(regular_case.group(1).strip("Locked ")):
+                types += skyfall_symbols["locked_{}".format(a)]
+        else:
+            for s in multiple_cull(regular_case.group(1)):
+                types += skyfall_symbols[s]
         return "({}{} for {})".format(types, regular_case.group(2), regular_case.group(3))
     return ""
 
@@ -401,22 +461,226 @@ def recover(effect: str):
         return "({}{}{}{})".format(skills_dict['recover'], recover.group(2), generic_symbols['to'], recover.group(1))
     return ""
 """
+    ESJammerChangeSingle,
+    ESJammerChangeRandom,
+      ESPoisonChangeSingle,
+    ESPoisonChangeRandom,
+    ESPoisonChangeRandomCount,
+    ESMortalPoisonChangeRandom,
+
+    ESPoisonChangeRandomAttack,
+       ESBombRandomSpawn,
+    ESBombFixedSpawn,
+    
+    Spawn {number} random {bomb, jammer, poison, mortal poison} orbs
+    Spawn {bomb, jammer, poison, mortal poison} orbs in the specified positions
+"""
+def spawn_orb(effect: str):
+    spawn = re.match("Spawn (.*) random (.*) orbs?", effect)
+    specified = re.match("Spawn (.*) orbs in the specified positions?", effect)
+    if spawn:
+        atts = multiple_cull(spawn.group(2))
+        emoji = ""
+        for a in atts:
+            emoji += attribute_type_dict[a]
+        return "({}{})".format(emoji, spawn.group(2))
+    if specified:
+        atts = multiple_cull(specified.group(2))
+        emoji = ""
+        for a in atts:
+            emoji += attribute_type_dict[a]
+        return "({})".format(emoji)
+    return ""
+
+"""
+RCV and ATK Debuff
+{ATK, RCV} {amount} for 1 turn
+"""
+def rcv_atk_debuff(effect: str):
+    debuff = re.match("(.*) (.*)% for (.*) turns?", effect)
+    if debuff:
+        emoji = ""
+        if "RCV" in debuff.group(1):
+            if int(debuff.group(2)) >= 100:
+                emoji += status_emoji['rcv_buff']
+            else:
+                emoji += status_emoji['rcv_debuff']
+        elif "ATK" in debuff.group(1):
+            emoji += status_emoji['atk_debuff']
+        return "({}{}% for {})".format(emoji, debuff.group(2), debuff.group(3))
+    return ""
+
+"""
+Movetime Debuff/Buff
+Movetime {amount} for {turns} turns?
+"""
+def movetime(effect: str):
+    fingers = re.match("Movetime (.*) for (.*) turns?", effect)
+    if fingers:
+        emoji = status_emoji['time_debuff']
+        if "%" in fingers.group(1):
+            if int(fingers.group(1).strip('%')) >= 100:
+                emoji += status_emoji['time_buff']
+        return "({}{} for {})".format(emoji, fingers.group(1), fingers.group(2))
+    return ""
+
+"""
+Roulette, Spinners, Hell
+Specific orbs change every {1.0}s for {10} turns 
+"""
+def hells_casino(effect: str):
+    speen = re.match("Specific orbs change every (.*) for (.*) turns?", effect)
+    if speen:
+        return "({}{} for {})".format(status_emoji['roulette'], speen.group(1), speen.group(2))
+    return ""
+
+"""
+Change Attribute
+Change own attribute to {att}
+"""
+def change_attribute(effect: str):
+    change = re.match("Change own attribute to (.*)", effect)
+    change_random = re.match("Change own attribute to random one of (.*)", effect)
+    if change_random:
+        emoji = ""
+        atts = multiple_cull(change_random.group(1), 'or')
+        for a in atts:
+            emoji += attribute_type_dict[a]
+        return "({}{}{})".format(generic_symbols['self'], generic_symbols['to'], emoji)
+    if change:
+        return "({}{}{})".format(generic_symbols['self'], generic_symbols['to'], attribute_type_dict[change.group(1)])
+    return ""
+
+"""
+Gravity
+Player {-99%} HP
+"""
+def gravity(effect: str):
+    hit = re.match("Player -(.*)% HP", effect)
+    if hit:
+        return "(-{}%{})".format(hit.group(1), status_emoji['gravity'])
+    return ""
+
+"""
+Leader Swap
+Leader changes to random sub for {1} turn
+"""
+def leader_swap(effect: str):
+    swap = re.match("Leader changes to random sub for (.*) turns?", effect)
+    if swap:
+        return "({} for {})".format(status_emoji['swap'], swap.group(1))
+    return ""
+
+"""
+Skill Delay
+Delay active skills by {3} turns?
+"""
+def delay_skills(effect: str):
+    delay = re.match("Delay active skills by (.*) turns?", effect)
+    if delay:
+        return "({}-[{}])".format(status_emoji['skill_delay'], delay.group(1))
+    return ""
+
+"""
+Orb Lock
+Lock {number random/all} {atts or not specified} orbs
+"""
+def orb_lock(effect: str):
+    '''lock = re.match("Lock (.*) (.*) orbs?", effect)
+    lock_no_atts = re.match("Lock (.*) orbs?", effect)
+    if lock:
+        number = "All"
+        orb_emojis = ""
+        if "random" in lock.group(1):
+            number = lock.group(1).strip(" random")
+        if lock:
+            atts = multiple_cull(lock.group(2))
+            for a in atts:
+                orb_emojis += attribute_type_dict[a]
+        return "({}{}:{})".format(status_emoji['locked'], number, orb_emojis)
+    elif lock_no_atts:
+        number = "All"
+        if "random" in lock_no_atts.group(1):
+            number = lock_no_atts.group(1).strip(" random")
+        return "({}{})".format(status_emoji['locked'], number)'''
+    lock_random_no_atts = re.match("Lock (.*) random orbs?", effect)
+    lock_random = re.match("Lock (.*) random (.*) orbs?", effect)
+    lock_all_atts = re.match("Lock all (.*) orbs?", effect)
+
+    if "Lock all orbs" in effect:
+        return "({}All)".format(status_emoji['locked'])
+    if lock_random_no_atts:
+        return "({}{})".format(status_emoji['locked'], lock_random_no_atts.group(1))
+    if lock_random:
+        number = lock_random.group(1)
+        emoji = ""
+        atts = multiple_cull(lock_random.group(2))
+        for a in atts:
+            emoji += attribute_type_dict[a]
+        return "({}{}:{})".format(status_emoji['locked'], number, emoji)
+    if lock_all_atts:
+        emoji = ""
+        atts = multiple_cull(lock_random.group(1))
+        for a in atts:
+            emoji += attribute_type_dict[a]
+        return "({}All:{})".format(status_emoji['locked'], emoji)
+    return ""
+"""
+Seal Orbs (Tape)
+Seal the {1st and 2nd} columns? for {2} turns?
+Seal the {1st and 2nd} rows? for {2} turns? 
+"""
+def tape(effect: str):
+    tape = re.match("Seal the (.*) (.*) for (.*) turns?", effect)
+    if tape:
+        if "column" in tape.group(2):
+            return "({}C:{} for {})".format(status_emoji['tape'], tape.group(1), tape.group(3))
+        return "({}R:{} for {})".format(status_emoji['tape'], tape.group(1), tape.group(3))
+    return ""
+
+"""
+Cloud
+A {dimensions} {square, rectangle} of clouds appears for {1} turns? at {3rd row, 2nd Column/ a random position}
+"""
+def clouds(effect: str):
+    clouds_random = re.match("A (.*) (.*) of clouds appears for (.*) turns? at a random location", effect)
+    clouds_specific = re.match("A (.*) (.*) of clouds appears for (.*) turns? at (.*) row, (.*) column", effect)
+    if clouds_random:
+        return "({}{} for {})".format(status_emoji['cloud'], clouds_random.group(1), clouds_random.group(3))
+    if clouds_specific:
+        dimensions = clouds_specific.group(1)
+        r = clouds_specific.group(4)
+        c = clouds_specific.group(5)
+        turns = clouds_specific.group(3)
+        return "({}{} at [{},{}] for {})".format(status_emoji['cloud'], dimensions, r, c, turns)
+    return ""
+
+"""
+Change Player HP
+Change player HP to {10,000} for {8} turns?
+"""
+def change_player_hp(effect: str):
+    change = re.match("Change player HP to (.*) for (.*) turns?")
+    if change:
+        return "({}= {} for {})".format(generic_symbols['health'], change.group(1), change.group(2))
+    return ""
+"""
 checks for the following case:
 item1, Item2, and itEM3 x-> [item1, item2, item3 x]
 """
-def multiple_cull(m: str):
+def multiple_cull(m: str, key: str = 'and'):
     individuals = []
     # print(m)
-    if "and" in m:
+    if key in m:
         if "," in m:
             split = m.split(", ")
             for s in split:
-                if 'and' in s:
-                    individuals.append(s.split('and ')[1].lower())
+                if key in s:
+                    individuals.append(s.split('{} '.format(key))[1].lower())
                 else:
                     individuals.append(s.lower())
         else:
-            split = m.split(" and ")
+            split = m.split(" {} ".format(key))
             individuals.append(split[0].lower())
             individuals.append(split[1].lower())
             return individuals
@@ -424,69 +688,42 @@ def multiple_cull(m: str):
         individuals.append(m.lower())
     return individuals
 
+class ProcessedSkill(object):
+    def __init__(self, name: str, effect: str, processed: str, condition: str = None, parent: GroupedSkills = None):
+        self.name = name
+        self.effect = effect
+        self.processed = processed
+        self.condition = condition
+        self.parent = parent
 
+    def find_type(self):
+        up = self.parent
+        while up is not None:
+            if up.type is not None:
+                if "Passive" in up.type or "Preemptive" in up.type:
+                    return "({})".format(up.type)
+            up = up.parent
+        return ""
+    def give_string(self, indent):
+        if len(self.processed) == 0:
+            self.processed = "(N/A)\n"
+        if self.condition is not None:
+            ret = '''**{}{}S: {}**
+            **{}Condition: {}**'''.format(indent, self.find_type(), self.processed, indent, self.condition)
+            return ret
+        else:
+            ret = '''**{}{}S: {}**'''.format(indent, self.find_type(), self.processed)
+            return ret
     # check if
 """
 ENEMY_SKILLS = [
-    
-    
-   
-    ESDispel,
-  
-    
-    ESJammerChangeSingle,
-    ESJammerChangeRandom,
-
-    ESAttackMultihit,
-    ESInactivity16,
-    ESInactivity66,
-   
-    
-    ESDebuffMovetime,
     ESEndBattle,
-    ESChangeAttribute,
-    ESAttackPreemptive,
-
-    ESGravity,
-   
-    ESPoisonChangeSingle,
-    ESPoisonChangeRandom,
-    ESPoisonChangeRandomCount,
-    ESMortalPoisonChangeRandom,
-
-    ESPoisonChangeRandomAttack,
-
-    
-
     ESDeathCry,
-
-    ESLeaderSwap,
-
-    ESBoardChangeAttackFlat,
-    ESAttackSinglehit,
-    ESSkillSet,
-    ESBoardChange,
-    ESBoardChangeAttackBits,
-    
-
-    ESSkillDelay,
-    ESRandomSpawn,
     ESNone,
-    ESOrbLock,
     ESSkillSetOnDeath,
+    ESAttributeBlock
 
-    ESOrbSealColumn,
-    ESOrbSealRow,
-    ESFixedStart,
-    ESBombRandomSpawn,
-    ESBombFixedSpawn,
-    ESCloud,
-    ESDebuffRCV,
-    ESAttributeBlock,
 
-    ESSpinnersRandom,
-    ESSpinnersFixed,
-    ESMaxHPChange,
     ESFixedTarget,
     ESInvulnerableOn,
     ESInvulnerableOnHexazeon,
@@ -495,29 +732,16 @@ ENEMY_SKILLS = [
     ESLeaderAlter,
     ESBoardSizeChange,
 
-    ESFlagOperation,
-    ESBranchFlag0,
-    ESSetCounter,
-    ESBranchHP,
-    ESBranchCounter,
-    ESBranchLevel,
-    ESBranchDamageAttribute,
-    ESBranchSkillUse,
-    ESBranchDamage,
-    ESBranchEraseAttr,
-    ESEndPath,
+
+
     ESCountdown,
     ESSetCounterIf,
-    ESBranchFlag,
-    ESPreemptive,
-    ESBranchCard,
-    ESBranchCombo,
-    ESBranchRemainingEnemies,
+
 
     ESTurnChangePassive,
     ESTurnChangeRemainingEnemies,
-    ESTypeResist,
-    ESDebuffATK,
+
+
     ESSuperResolve,
    
 ]

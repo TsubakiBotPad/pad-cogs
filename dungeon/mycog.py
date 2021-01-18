@@ -8,9 +8,12 @@ from google.protobuf import text_format
 
 from dadguide import DadguideDatabase, database_manager
 from dungeon.encounter import Encounter
-from dungeon.enemy_skill import process_enemy_skill
+from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
+
+from dungeon.grouped_skillls import GroupedSkills
+from dungeon.processed_monster import ProcessedMonster
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
@@ -186,7 +189,7 @@ def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
     elif always_trigger_above:
         text = '{} while HP > {}'.format(turn_text, always_trigger_above)
     return text
-
+"""
 def format_behavior(behavior: Behavior, database, group_type: str, indent=""):
     output = ""
     skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
@@ -234,8 +237,54 @@ def format_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase, pre
         output += format_behavior_group(group, database, "", preempt_only)
 
     return output
+"""
+def process_behavior(behavior: Behavior, database: DadguideDatabase, q: dict, parent: GroupedSkills = None):
+    skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
+    if skill is None:
+        return "Unknown"
+    skill_name = skill["name_en"]
+    skill_effect = skill["desc_en"]
+    skill_processed_text = process_enemy_skill(skill_effect, q, skill)
+    condition = format_condition(behavior.condition)
+    processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition, parent)
+    #embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+    return processed_skill
+def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: dict, parent:GroupedSkills = None):
+    condition = format_condition(group.condition)
+    processed_group: GroupedSkills= GroupedSkills(condition, GroupType[group.group_type], parent)
+    """if condition is not None:
+        # output += "\n{}Condition: {}".format(indent, condition)
+        # embed.add_field(name="{}Condition: {}".format(indent, condition), value="Following skills are part of a group", inline=False)
+        #indent += "\u200b \u200b \u200b \u200b \u200b "
+        indent += ">>> " """
+    for child in group.children:
+        if child.HasField('group'):
+            processed_group.add_group(process_behavior_group(child.group, database, q, processed_group))
+        elif child.HasField('behavior'):
+            processed_group.add_skill(process_behavior(child.behavior, database, q, processed_group))
+    return processed_group
+   # return output
 
-def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, indent=""):
+# Format:
+# Skill Name    Type:Preemptive/Passive/Etc
+# Skill Effect
+# Condition
+def process_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase):
+    # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
+    """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
+                          description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
+    monster: ProcessedMonster = ProcessedMonster(q["name_en"], q['hp'], q['atk'], q['defence'], q['turns'], q['level'])
+    if mb is None:
+        return monster
+    levelBehavior = behaviorForLevel(mb, q["level"])
+    if levelBehavior is None:
+        return monster
+    for group in levelBehavior.groups:
+        monster.add_group(process_behavior_group(group, database, q))
+
+    return monster
+
+def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, q: dict, indent=""):
     skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
     if skill is None:
         return "Unknown"
@@ -247,27 +296,27 @@ def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, 
     else:
         condition = ""
     #output += indent + 'Skill Name: ' + skill_name
-    embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+    embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
     #embed.add_field(name="{}Skill{}".format(group_type, skill_name, process_enemy_skill(skill_effect)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
 
     #output += '\n{}Effect: '.format(indent) + skill_effect
 
-def format_behavior_group_embed(group: BehaviorGroup, database: DadguideDatabase, embed, indent="", preempt_only: bool = False):
+def format_behavior_group_embed(group: BehaviorGroup, database: DadguideDatabase, embed, q: dict, indent="", preempt_only: bool = False):
     condition = format_condition(group.condition)
     if condition is not None:
         # output += "\n{}Condition: {}".format(indent, condition)
-        embed.add_field(name="{}Condition: {}".format(indent, condition), value="Following skills are part of a set", inline=False)
+        embed.add_field(name="{}Condition: {}".format(indent, condition), value="Following skills are part of a group", inline=False)
         #indent += "\u200b \u200b \u200b \u200b \u200b "
         indent += ">>> "
     for child in group.children:
         group_type = indent
         if child.HasField('group'):
-            format_behavior_group_embed(child.group, database, embed, indent)
+            format_behavior_group_embed(child.group, database, embed, q, indent)
         elif child.HasField('behavior'):
             if group.group_type == 1 or group.group_type == 2 or group.group_type == 9:
                 # output += indent + "({})\t".format(GroupType[group.group_type])
                 group_type = indent + "({})\t".format(GroupType[group.group_type])
-            format_behavior_embed(child.behavior, database, embed, group_type, indent)
+            format_behavior_embed(child.behavior, database, embed, group_type, q, indent)
    # return output
 
 # Format:
@@ -286,7 +335,7 @@ def format_monster_embed(mb: MonsterBehavior, q: dict, database: DadguideDatabas
         embed.add_field(name="There is no behavior", value="\u200b")
         return embed
     for group in levelBehavior.groups:
-        format_behavior_group_embed(group, database, embed, "", preempt_only)
+        format_behavior_group_embed(group, database, embed, q, "", preempt_only)
 
     return embed
 
@@ -335,7 +384,7 @@ class Mycog(commands.Cog):
             logger.error('Menu failure', exc_info=True)
 
     @commands.command()
-    async def encounter_info(self, ctx, query: str, old: bool = False):
+    async def encounter_info(self, ctx, query: str, new: bool = False):
         """This does stuff!"""
         dg_cog = self.bot.get_cog('Dadguide')
         # Your code will go here
@@ -350,8 +399,9 @@ class Mycog(commands.Cog):
         behavior_test.ParseFromString(test_result["behavior"])
 
         #await ctx.send(formatOverview(test_result))
-        if old:
-            await ctx.send(format_monster(behavior_test, test_result, dg_cog.database))
+        if new:
+            monster = process_monster(behavior_test, test_result, dg_cog.database)
+            await ctx.send(embed=monster.make_embed2())
         else:
             await ctx.send(embed=format_monster_embed(behavior_test, test_result, dg_cog.database))
         # await ctx.send(text_format.MessageToString(1, as_utf8=True, indent = 2))
@@ -411,10 +461,11 @@ class Mycog(commands.Cog):
         else:
             await ctx.send(formatOverview(test_result))
 
+    #messing with embeds, why can't I indent...
     @commands.command()
     async def dungeon_embed(self, ctx):
 
-        embed = discord.Embed(title="Dungeon Name", description="Difficulty")
+        embed = discord.Embed(title="Dungeon Name", description="Difficulty\nTest\nTest2")
         embed.add_field(name="Dummy 1 (Floor #)",
                         value="ID:111111111  Turn:99 HP:2,000,000,000 ATK: 2,000,000,000 DEF: 2,000,000,000\nSurvive attacks with 1 HP when HP > 50%\nReduce damage from Balanced and Devil types by 50%", inline=True)
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
@@ -427,6 +478,13 @@ class Mycog(commands.Cog):
         \u200b\t\u200b\t\u200b\tEffect: Max 32-bit integer damage 6 hit
         \u200b\t\u200b\t\u200b\t***Condition: I am so done with this***
         ''')
+        test_val = '''
+        This is a test of markdown
+        1. oijw eiof jwojerofj woef jwiejfjweoifj wioejfwewef
+        - oij wefwef wef w e f e wefwefwefwef wef
+            - oijwefoj wefwef r rrrrr rrr r
+        '''
+        embed.add_field(name="🤜", value=test_val)
         embed2.set_footer(text='Requester may click the reactions below to switch tabs')
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.menu.emoji.get(1)] = embed
