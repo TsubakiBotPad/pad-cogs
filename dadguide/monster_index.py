@@ -90,7 +90,7 @@ class MonsterIndex2(aobject):
                     if t in nametokens:
                         self.name_tokens[t].add(m)
             if not manual:
-                for token in self._get_important_tokens(m.name_en):
+                for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.name_tokens[token.lower()].add(m)
                     for repl in TOKEN_REPLACEMENTS[token.lower()]:
                         self.name_tokens[repl].add(m)
@@ -136,6 +136,8 @@ class MonsterIndex2(aobject):
 
     @staticmethod
     def _name_to_tokens(oname):
+        if not oname:
+            return []
         oname = oname.lower()
         name = re.sub(r'[\-+\']', ' ', oname)
         name = re.sub(r'[^a-z0-9 ]', '', name)
