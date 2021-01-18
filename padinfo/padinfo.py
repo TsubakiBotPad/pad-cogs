@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import tsutils
+from Levenshtein import jaro_winkler
 from discordmenu.emoji_cache import emoji_cache
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
@@ -1163,6 +1164,17 @@ class PadInfo(commands.Cog):
              f"         Other: {' '.join(sorted(t for t in pfxs if t not in DGCOG.token_maps.OTHER_HIDDEN_TOKENS))}\n")
         for page in pagify(o):
             await ctx.send(box(page))
+
+    @commands.command()
+    async def debugiddist(self, ctx, s1, s2):
+        dist = jaro_winkler(s1, s2)
+        yes = '\N{WHITE HEAVY CHECK MARK}'
+        no = '\N{CROSS MARK}'
+        await ctx.send(box(f"Jaro-Winkler Distance:    {dist}\n"
+                           f"Modifier token threshold: {find_monster.MODIFIER_JW_DISTANCE}  "
+                           f"{yes if dist >= find_monster.MODIFIER_JW_DISTANCE else no}\n"
+                           f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}  "
+                           f"{yes if dist >= find_monster.TOKEN_JW_DISTANCE else no}"))
 
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):

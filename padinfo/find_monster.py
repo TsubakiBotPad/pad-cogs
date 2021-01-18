@@ -26,6 +26,9 @@ def calc_ratio_prefix(token, full_word):
 
 
 class FindMonster:
+    MODIFIER_JW_DISTANCE = .95
+    TOKEN_JW_DISTANCE = .8
+
     def _merge_multi_word_tokens(self, tokens, valid_multi_word_tokens):
         result = []
         s = 0
@@ -40,7 +43,7 @@ class FindMonster:
                 if len(mwt) > len(tokens) - c1:
                     continue
                 for c2, t in enumerate(mwt):
-                    if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < .8:
+                    if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < self.TOKEN_JW_DISTANCE:
                         break
                 else:
                     s = len(mwt) - 1
@@ -57,7 +60,7 @@ class FindMonster:
                 return True
         else:
             closest = max(jaro_winkler(m, token, .05) for m in monster_mods)
-            if closest > .8:
+            if closest > self.TOKEN_JW_DISTANCE:
                 monsterscore[monster] += closest
                 return True
         return False
@@ -75,7 +78,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if any(jaro_winkler(m, token) > .95 for m in index2.suffixes):
+            if any(jaro_winkler(m, token) > self.MODIFIER_JW_DISTANCE for m in index2.suffixes):
                 if negated:
                     negative_modifiers.add(token)
                 else:
@@ -89,7 +92,7 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    any(jaro_winkler(m, token) > .95 for m in longmods)
+                    any(jaro_winkler(m, token) > self.MODIFIER_JW_DISTANCE for m in longmods)
                     and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
@@ -115,7 +118,7 @@ class FindMonster:
 
         for t in name_query_tokens:
             valid = set()
-            ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > .8],
+            ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
                         key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
             ms += [token for token in index2.all_name_tokens if token.startswith(t)]
             if not ms:
