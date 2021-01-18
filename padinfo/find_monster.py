@@ -75,7 +75,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if any(jaro_winkler(m, token) > .8 for m in index2.suffixes):
+            if any(jaro_winkler(m, token) > .95 for m in index2.suffixes):
                 if negated:
                     negative_modifiers.add(token)
                 else:
@@ -89,7 +89,7 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    any(jaro_winkler(m, token) > .8 for m in longmods)
+                    any(jaro_winkler(m, token) > .95 for m in longmods)
                     and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
