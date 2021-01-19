@@ -58,7 +58,7 @@ class IdView:
             Box(
                 Text(emoji_markdown('sa_questionmark')),
                 *[Text(e) for e in super_awakenings_emojis],
-                delimiter=' ')
+                delimiter=' ') if len(super_awakenings_emojis) > 0 else None
         )
 
     @staticmethod
