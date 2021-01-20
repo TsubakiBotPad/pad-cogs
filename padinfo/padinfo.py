@@ -1106,6 +1106,10 @@ class PadInfo(commands.Cog):
         query = rmdiacritics(query).lower()
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
 
+        for t in mod_tokens.union(neg_mod_tokens):
+            if t not in DGCOG.index2.all_modifiers:
+                self.settings.add_typo_mod(t)
+
         # print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
@@ -1230,6 +1234,7 @@ class PadInfoSettings(CogSettings):
             'alt_id_optout': [],
             'voice_dir_path': '',
             'emoji_use': {},
+            'typo_mods': [],
         }
         return config
 
@@ -1271,4 +1276,8 @@ class PadInfoSettings(CogSettings):
 
     def log_emoji(self, emote):
         self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
+        self.save_settings()
+
+    def add_typo_mod(self, typo):
+        self.bot_settings['typo_mods'].append(typo)
         self.save_settings()
