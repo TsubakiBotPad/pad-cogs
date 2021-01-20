@@ -31,7 +31,7 @@ class MonsterIndex2(aobject):
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
                                   in db.get_all_monsters()
-                                  if " " in m.series.name_en}
+                                  if " " in m.series.name_en}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
 
@@ -115,9 +115,10 @@ class MonsterIndex2(aobject):
                                 self.name_tokens[token].add(me)
                                 for repl in self.replacement_tokens[token.lower()]:
                                     self.name_tokens[repl].add(me)
-                    for pas in mod_maps:
-                        if token in pas:
-                            self.modifiers[m].update(pas)
+                    if token not in HAZARDOUS_IN_NAME_PREFIXES:
+                        for pas in mod_maps:
+                            if token in pas:
+                                self.modifiers[m].update(pas)
             for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
                     continue
@@ -240,7 +241,7 @@ class MonsterIndex2(aobject):
                 modifiers.add(t)
 
         # Reincarnated
-        if '転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
+        if self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
             for t in EVO_MAP[EvoTypes.REVO]:
                 modifiers.add(t)
 

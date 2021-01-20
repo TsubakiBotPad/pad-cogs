@@ -1,6 +1,4 @@
 from enum import Enum
-from .models.enum_types import Attribute, MonsterType
-from enum import Enum
 
 from .models.enum_types import Attribute, MonsterType
 
@@ -66,9 +64,9 @@ EVO_MAP = {
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
-    EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'mega awoken'),
-    EvoTypes.REVO: ('revo', 'reincarnated'),
-    EvoTypes.SREVO: ('srevo', 'super', 'sr', 'super reincarnated'),
+    EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'megaawoken'),
+    EvoTypes.REVO: ('revo', 'reincarnated', 'rv'),
+    EvoTypes.SREVO: ('srevo', 'super', 'sr', 'superreincarnated'),
     EvoTypes.PIXEL: ('pixel', 'p', 'dot', 'px'),
     EvoTypes.NONPIXEL: ('nonpixel', 'np'),
 }
@@ -254,6 +252,11 @@ MISC_MAP = {
     MiscModifiers.INNA: ('na',)
 }
 
+MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
+    'super reincarnated',
+    'mega awoken'
+}}
+
 MODIFIER_MAPS = {
     **COLOR_MAP,
     **SUB_COLOR_MAP,
@@ -284,4 +287,8 @@ LEGAL_END_TOKENS = {
     "equip",
     "assist",
     "eq",
+}
+
+HAZARDOUS_IN_NAME_PREFIXES = {
+    "reincarnated"
 }
