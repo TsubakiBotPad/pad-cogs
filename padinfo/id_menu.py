@@ -123,7 +123,7 @@ class IdMenu:
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
         pantheon_list = list(filter(lambda x: self.db_context.graph.monster_is_base(x), full_pantheon))
-        if len(pantheon_list) == 0 or len(pantheon_list) > 6:
+        if len(pantheon_list) == 0 or len(pantheon_list) > 20:
             return None
 
         embed = await self.make_base_embed(m)
