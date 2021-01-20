@@ -242,7 +242,9 @@ class MiscModifiers(Enum):
     REM = 'REM'
     MP = 'MP'
     INJP = 'In JP Server'
+    ONLYJP = 'Only in JP Server'
     INNA = 'In NA Server'
+    ONLYNA = 'Only in NA Server'
 
 
 MISC_MAP = {
@@ -250,8 +252,10 @@ MISC_MAP = {
     MiscModifiers.FARMABLE: ('farmable',),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
-    MiscModifiers.INJP: ('jp',),
-    MiscModifiers.INNA: ('na',)
+    MiscModifiers.INJP: ('injp',),
+    MiscModifiers.INNA: ('inna',),
+    MiscModifiers.ONLYJP: ('jp',),
+    MiscModifiers.ONLYNA: ('na',)
 }
 
 MODIFIER_MAPS = {
