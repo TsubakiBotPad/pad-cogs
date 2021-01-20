@@ -1,6 +1,7 @@
 import csv
 import io
 import re
+from collections import defaultdict
 
 import aiohttp
 from redbot.core.utils import AsyncIter
@@ -13,6 +14,7 @@ SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vf
 NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
 GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
+NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
 
 
 class MonsterIndex2(aobject):
@@ -30,6 +32,8 @@ class MonsterIndex2(aobject):
                                   for m
                                   in db.get_all_monsters()
                                   if " " in m.series.name_en}
+
+        self.replacement_tokens = defaultdict(set)
 
         nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
         for m_id, name, *data in nickname_data:
@@ -56,6 +60,11 @@ class MonsterIndex2(aobject):
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
+
+        nt_alias_data = await sheet_to_reader(NAME_TOKEN_ALIAS_SHEET)
+        next(nt_alias_data)  # Skip over heading
+        for token, alias, *_ in nt_alias_data:
+            self.replacement_tokens[token].add(alias)
 
         self.manual = self.name_tokens = self.fluff_tokens = self.modifiers = defaultdict(set)
         await self._build_monster_index(monsters)
@@ -92,7 +101,7 @@ class MonsterIndex2(aobject):
             if not manual:
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.name_tokens[token.lower()].add(m)
-                    for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                    for repl in self.replacement_tokens[token.lower()]:
                         self.name_tokens[repl].add(m)
                     if m.is_equip:
                         ts = re.findall(r"(\w+)'s", m.name_en.lower())
@@ -104,7 +113,7 @@ class MonsterIndex2(aobject):
                         for me in self.graph.get_alt_monsters(m):
                             if token in self._name_to_tokens(me.name_en):
                                 self.name_tokens[token].add(me)
-                                for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                                for repl in self.replacement_tokens[token.lower()]:
                                     self.name_tokens[repl].add(me)
                     for pas in mod_maps:
                         if token in pas:
@@ -113,7 +122,7 @@ class MonsterIndex2(aobject):
                 if m in self.name_tokens[token.lower()]:
                     continue
                 self.fluff_tokens[token.lower()].add(m)
-                for repl in TOKEN_REPLACEMENTS[token.lower()]:
+                for repl in self.replacement_tokens[token.lower()]:
                     self.fluff_tokens[repl].add(m)
                 for pas in mod_maps:
                     if token in pas:

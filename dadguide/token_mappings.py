@@ -1,7 +1,8 @@
-from collections import defaultdict
 from enum import Enum
 from .models.enum_types import Attribute, MonsterType
+from enum import Enum
 
+from .models.enum_types import Attribute, MonsterType
 
 COLOR_MAP = {
     Attribute.Fire: ('r', 'red', 'fire'),
@@ -12,7 +13,7 @@ COLOR_MAP = {
     Attribute.Nil: ('nil', 'x', 'none', 'null', 'white')
 }
 
-SUB_COLOR_MAP = {k: tuple('?'+t for t in v if t != "white") for k, v in COLOR_MAP.items()}
+SUB_COLOR_MAP = {k: tuple('?' + t for t in v if t != "white") for k, v in COLOR_MAP.items()}
 
 DUAL_COLOR_MAP = {}
 for cid1, cns1 in COLOR_MAP.items():
@@ -27,7 +28,6 @@ for cid1, cns1 in COLOR_MAP.items():
                 if (len(t1) == 1) == (len(t2) == 1):
                     ts += (t1 + "/" + t2,)
         DUAL_COLOR_MAP[(cid1, cid2)] = ts
-
 
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
@@ -274,17 +274,11 @@ AWAKENING_TOKENS = {*sum(AWOKEN_MAP.values(), ())}
 EVO_TOKENS = {*sum(EVO_MAP.values(), ())}
 TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
 
-
-OTHER_HIDDEN_TOKENS = set()\
-    .union(COLOR_TOKENS)\
-    .union(AWAKENING_TOKENS)\
-    .union(EVO_TOKENS)\
+OTHER_HIDDEN_TOKENS = set() \
+    .union(COLOR_TOKENS) \
+    .union(AWAKENING_TOKENS) \
+    .union(EVO_TOKENS) \
     .union(TYPE_TOKENS)
-
-TOKEN_REPLACEMENTS = defaultdict(tuple, {
-    'tamadra': ('tama',),
-    'evolution': ('evo',),
-})
 
 LEGAL_END_TOKENS = {
     "equip",
