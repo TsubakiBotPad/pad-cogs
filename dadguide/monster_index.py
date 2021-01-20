@@ -288,9 +288,15 @@ class MonsterIndex2(aobject):
         if m.on_jp:
             for t in MISC_MAP[MiscModifiers.INJP]:
                 modifiers.add(t)
+            if not m.on_na:
+                for t in MISC_MAP[MiscModifiers.ONLYJP]:
+                    modifiers.add(t)
         if m.on_na:
             for t in MISC_MAP[MiscModifiers.INNA]:
                 modifiers.add(t)
+            if not m.on_jp:
+                for t in MISC_MAP[MiscModifiers.ONLYNA]:
+                    modifiers.add(t)
         if m.monster_id + 10000 in self.graph.nodes:
             modifiers.add("idjp")
         if m.monster_id > 10000:
