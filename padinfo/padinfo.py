@@ -285,13 +285,19 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id(ctx, query, server_filter=ServerFilter.na)
+        if await self.config.user(ctx.author).beta_id3():
+            await self._do_id3(ctx, "inna " + query)
+        else:
+            await self._do_id(ctx, query, server_filter=ServerFilter.na)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id(ctx, query, server_filter=ServerFilter.jp)
+        if await self.config.user(ctx.author).beta_id3():
+            await self._do_id3(ctx, "injp " + query)
+        else:
+            await self._do_id(ctx, query, server_filter=ServerFilter.jp)
 
     async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
         m, err, debug_info = await self.findMonster1(query, server_filter=server_filter)
