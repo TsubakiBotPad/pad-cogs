@@ -1170,10 +1170,11 @@ class PadInfo(commands.Cog):
         dist = jaro_winkler(s1, s2)
         yes = '\N{WHITE HEAVY CHECK MARK}'
         no = '\N{CROSS MARK}'
-        await ctx.send(box(f"Jaro-Winkler Distance:    {dist}\n"
+        await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
+                       box(f"Jaro-Winkler Distance:    {round(dist, 4)}\n"
                            f"Modifier token threshold: {find_monster.MODIFIER_JW_DISTANCE}  "
                            f"{yes if dist >= find_monster.MODIFIER_JW_DISTANCE else no}\n"
-                           f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}  "
+                           f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}   "
                            f"{yes if dist >= find_monster.TOKEN_JW_DISTANCE else no}"))
 
     @commands.command(aliases=['helpid'])
