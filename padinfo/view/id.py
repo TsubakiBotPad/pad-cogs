@@ -6,7 +6,7 @@ from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 
 from padinfo.common.emoji_map import get_emoji, format_emoji, AWAKENING_ID_TO_EMOJI_NAME_MAP, emoji_markdown
-from padinfo.common.padx import monster_url
+from padinfo.common.external_links import monster_url
 from padinfo.leader_skills import createMultiplierText
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader

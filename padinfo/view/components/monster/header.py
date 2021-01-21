@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.text import LinkedText, Text
 
-from padinfo.common.padx import monster_url
+from padinfo.common.external_links import monster_url
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel

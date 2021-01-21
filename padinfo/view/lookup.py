@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.menu import EmbedView
 
-from padinfo.common.padx import monster_url
+from padinfo.common.external_links import monster_url
 from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:

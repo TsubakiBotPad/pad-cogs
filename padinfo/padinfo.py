@@ -477,8 +477,7 @@ class PadInfo(commands.Cog):
         id_embed = await menu.make_id_embed_v2(m)
         evo_embed = await menu.make_evo_embed_v2(m)
         mats_embed = await menu.make_evo_mats_embed(m)
-        animated = m.has_animation
-        pic_embed = await menu.make_picture_embed(m, animated=animated)
+        pic_embed = await menu.make_picture_embed(m)
         other_info_embed = await menu.make_otherinfo_embed(m)
 
         emoji_to_embed = OrderedDict()

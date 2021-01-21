@@ -7,7 +7,7 @@ from discordmenu.embed.text import Text, LinkedText
 from discordmenu.emoji_cache import emoji_cache
 
 from padinfo.common.emoji_map import get_emoji, format_emoji
-from padinfo.common.padx import monster_url
+from padinfo.common.external_links import monster_url
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
