@@ -1141,7 +1141,7 @@ class PadGlobal(commands.Cog):
             return None, None, 'No dungeon or monster matched that query'
 
         name = nm.group_computed_treename.title()
-        definition = self.settings.leaderGuide().get(str(nm.base_monster_no), None)
+        definition = self.settings.leaderGuide().get(nm.base_monster_no, None)
         if definition is None:
             return None, None, 'A monster matched that query but has no guide'
 
