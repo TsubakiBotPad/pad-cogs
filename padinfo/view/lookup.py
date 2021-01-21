@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.menu import EmbedView
 
-from padinfo.common.external_links import monster_url
+from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
@@ -17,4 +17,4 @@ class LookupView:
             EmbedMain(
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
-                url=monster_url(m)))
+                url=puzzledragonx(m)))

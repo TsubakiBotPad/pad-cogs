@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.menu import EmbedView
 
-from padinfo.common.external_links import monster_url
+from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
@@ -28,7 +28,7 @@ class PantheonView:
             EmbedMain(
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
-                url=monster_url(m)),
+                url=puzzledragonx(m)),
             embed_footer=pad_info_footer(),
             embed_fields=fields,
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),

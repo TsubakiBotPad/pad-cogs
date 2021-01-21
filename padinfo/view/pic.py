@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
 from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import LinkedText, Text
 
-from padinfo.common.external_links import monster_url
+from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
@@ -43,7 +43,7 @@ class PicsView:
             EmbedMain(
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
-                url=monster_url(m)),
+                url=puzzledragonx(m)),
             embed_footer=pad_info_footer(),
             embed_fields=fields,
             embed_body_image=EmbedBodyImage(url),

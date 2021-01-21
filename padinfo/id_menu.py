@@ -9,12 +9,13 @@ from redbot.core.utils.chat_formatting import box
 
 from padinfo.common.emoji_map import awakening_restricted_latent_emoji
 from padinfo.view.components.monster.header import MonsterHeader
-from .common.external_links import monster_url
+from .common.external_links import puzzledragonx
 from .leader_skills import createSingleMultiplierText
 from .view.components.monster.image import MonsterImage
 from .view.evos import EvosView
 from .view.id import IdView
 from .view.leader_skill import LeaderSkillView
+from .view.links import LinksView
 from .view.lookup import LookupView
 from .view.pantheon import PantheonView
 from .view.pic import PicsView
@@ -41,7 +42,7 @@ class IdMenu:
         embed = await self.make_custom_embed()
         embed.set_thumbnail(url=MonsterImage.icon(m))
         embed.title = header
-        embed.url = monster_url(m)
+        embed.url = puzzledragonx(m)
         embed.set_footer(text='Requester may click the reactions below to switch tabs')
         return embed
 
@@ -245,14 +246,8 @@ class IdMenu:
         return embed
 
     async def make_links_embed(self, m: "MonsterModel"):
-        embed = await self.make_base_embed(m)
-        embed.description = "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-            YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
-            SKYOZORA_TEMPLATE.format(m.monster_no_jp),
-            INFO_PDX_TEMPLATE.format(m.monster_no_jp),
-            ILMINA_TEMPLATE.format(m.monster_no_jp))
-        embed.set_footer(text='')
-        return embed
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return LinksView.embed(m, color).to_embed()
 
     async def make_lssingle_embed(self, m: "MonsterModel"):
         multiplier_text = createSingleMultiplierText(m.leader_skill)
