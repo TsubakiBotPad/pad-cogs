@@ -481,6 +481,19 @@ class PadInfo(commands.Cog):
         other_info_embed = await menu.make_otherinfo_embed(m)
 
         emoji_to_embed = OrderedDict()
+
+        # it's impossible for the previous/next ones to be accessed because
+        # IdEmojiUpdater won't allow it, however they have to be defined
+        # so that the buttons display in the first place
+
+        if len(scroll) > 1 and menu_type != 1:
+            emoji_to_embed[self.first_monster_emoji] = None
+        if len(scroll) != 1:
+            emoji_to_embed[self.previous_monster_emoji] = None
+            emoji_to_embed[self.next_monster_emoji] = None
+        if len(scroll) > 1 and menu_type != 1:
+            emoji_to_embed[self.last_monster_emoji] = None
+
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
         emoji_to_embed[self.mats_emoji] = mats_embed
@@ -494,18 +507,6 @@ class PadInfo(commands.Cog):
             emoji_to_embed[self.skillups_emoji] = skillups_embed
 
         emoji_to_embed[self.other_info_emoji] = other_info_embed
-
-        # it's impossible for the previous/next ones to be accessed because
-        # IdEmojiUpdater won't allow it, however they have to be defined
-        # so that the buttons display in the first place
-
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.first_monster_emoji] = None
-        if len(scroll) != 1:
-            emoji_to_embed[self.previous_monster_emoji] = None
-            emoji_to_embed[self.next_monster_emoji] = None
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.last_monster_emoji] = None
 
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
