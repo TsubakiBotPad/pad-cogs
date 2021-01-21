@@ -20,7 +20,6 @@ SERIES_KEYS = {
     "series_type": None,
 }
 
-
 SERIES_TYPES = [
     "regular",
     "event",
@@ -28,6 +27,7 @@ SERIES_TYPES = [
     "ghcollab",
     "collab"
 ]
+
 
 async def check_crud_channel(ctx):
     chan = await ctx.bot.get_cog("Crud").config.chan()
@@ -47,7 +47,8 @@ class Crud(commands.Cog):
         if GADMIN_COG:
             GADMIN_COG.register_perm("crud")
         else:
-            raise errors.CogLoadError("Global Administration cog must be loaded.")
+            raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
+                                      "installed from misc-cogs, and load it via `^load globaladmin`")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
