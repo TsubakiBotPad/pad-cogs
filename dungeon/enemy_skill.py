@@ -83,6 +83,7 @@ attribute_type_dict = {
     'locked_poison': "🔒☠",
     'locked_mortal poison': "🔒☠☠",
     'locked_jammer': "🔒🗑️",
+    'bomb': '💣',
     'unknown': "❓"
 }
 
@@ -114,14 +115,18 @@ status_emoji = {
     'time_debuff': "☝⬇",
     'roulette': "🎰",
     'dispel': "(Dispel)",
-    'swap': "🔀",
+    'swap': "♔🔀",
     'skill_delay': '🔋',
     'locked': '🔒',
     'tape': '🧻',
-    'starting_position': '🎯',
+    'starting_position': '☝🎯',
     'cloud': '☁',
     'gravity': '💔',
-
+    'invincible': '🛡️🛡️🛡️',
+    'invincible_off': '🛡️🛡️🛡️❌',
+    'force_target': '🎯',
+    'leader_alter': '♔➡',
+    'board_size': '🌎'
 }
 
 """
@@ -180,6 +185,11 @@ def process_enemy_skill(effect: str, encounter: dict, skill: dict):
         elif "Fix orb movement starting point to random position on the board" in n: ret += status_emoji['starting_position']
         elif "clouds" in n: ret += clouds(n)
         elif "Change player HP to" in n: ret += change_player_hp(n)
+        elif "Remove damage immunity" in n: ret += remove_damage_immune(n)
+        elif "Immune to damage from all sources" in n: ret += damage_immune(n)
+        elif "Forces attacks to hit" in n: ret += force_target(n)
+        elif "Change leader to" in n: ret += leader_alter(n)
+        elif "Change board size to" in n: ret += board_size(n)
         if skill['min_hits'] != 0:
             emoji = generic_symbols['attack']
             if skill['min_hits'] > 1:
@@ -303,17 +313,17 @@ def change_orbs_regular(effect: str):
             g2_types += attribute_type_dict[g]
         return "({}{}{})".format(g1_types, generic_symbols['to'], g2_types)
     if change_random_types:
-        g2 = multiple_cull((change_all.group(2)))
+        g2 = multiple_cull((change_random_types.group(2)))
         g2_types = ""
         for g in g2:
             g2_types += attribute_type_dict[g]
         return "({}Types{}{})".format(change_random_types.group(1), generic_symbols['to'], g2_types)
     if change_random_orbs:
-        g2 = multiple_cull((change_all.group(2)))
+        g2 = multiple_cull((change_random_orbs.group(2)))
         g2_types = ""
         for g in g2:
             g2_types += attribute_type_dict[g]
-        return "({}Orbs{}{})".format(change_random_types.group(1), generic_symbols['to'], g2_types)
+        return "({}Orbs{}{})".format(change_random_orbs.group(1), generic_symbols['to'], g2_types)
     return ""
 """
 A bunch of simple skills:
@@ -485,7 +495,7 @@ def spawn_orb(effect: str):
             emoji += attribute_type_dict[a]
         return "({}{})".format(emoji, spawn.group(2))
     if specified:
-        atts = multiple_cull(specified.group(2))
+        atts = multiple_cull(specified.group(1))
         emoji = ""
         for a in atts:
             emoji += attribute_type_dict[a]
@@ -625,6 +635,8 @@ def orb_lock(effect: str):
             emoji += attribute_type_dict[a]
         return "({}All:{})".format(status_emoji['locked'], emoji)
     return ""
+
+
 """
 Seal Orbs (Tape)
 Seal the {1st and 2nd} columns? for {2} turns?
@@ -637,6 +649,7 @@ def tape(effect: str):
             return "({}C:{} for {})".format(status_emoji['tape'], tape.group(1), tape.group(3))
         return "({}R:{} for {})".format(status_emoji['tape'], tape.group(1), tape.group(3))
     return ""
+
 
 """
 Cloud
@@ -655,14 +668,65 @@ def clouds(effect: str):
         return "({}{} at [{},{}] for {})".format(status_emoji['cloud'], dimensions, r, c, turns)
     return ""
 
+
 """
 Change Player HP
 Change player HP to {10,000} for {8} turns?
 """
 def change_player_hp(effect: str):
-    change = re.match("Change player HP to (.*) for (.*) turns?")
+    change = re.match("Change player HP to (.*) for (.*) turns?", effect)
     if change:
         return "({}= {} for {})".format(generic_symbols['health'], change.group(1), change.group(2))
+    return ""
+
+
+"""
+Immune to Damage
+Immune to damage from all sources
+"""
+def damage_immune(effect: str):
+    immune = re.match("Immune to damage from all sources", effect)
+    if immune:
+        return "({})".format(status_emoji['invincible'])
+    return ""
+
+
+"""
+Remove damage immunity effect
+"""
+def remove_damage_immune(effect: str):
+    immune = re.match("Remove damage immunity", effect)
+    if immune:
+        return "({})".format(status_emoji['invincible_off'])
+    return ""
+
+
+"""
+Forces attacks to hit this enemy for {} turns
+"""
+def force_target(effect: str):
+    force = re.match("Forces attacks to hit this enemy for (.*) turns?", effect)
+    if force:
+        return "({}{})".format(status_emoji['force_target'], force.group(1))
+    return ""
+"""
+Leader Alter
+Change leader to [{monster_number}] for {10} turns
+"""
+def leader_alter(effect: str):
+    alter = re.match("Change leader to \[(.*)] for (.*) turns?", effect)
+    if alter:
+        return "({}{} for {})".format(status_emoji['leader_alter'], alter.group(1), alter.group(2))
+    return ""
+
+"""
+Board size change
+Change board size to {7x6} for {3} turns
+"""
+def board_size(effect: str):
+    size = re.match("Change board size to (.*) for (.*) turns?", effect)
+    if size:
+        return "({}{} for {})".format(size.group(1), status_emoji['board_size'], size.group(2))
     return ""
 """
 checks for the following case:
@@ -708,8 +772,7 @@ class ProcessedSkill(object):
         if len(self.processed) == 0:
             self.processed = "(N/A)\n"
         if self.condition is not None:
-            ret = '''**{}{}S: {}**
-            **{}Condition: {}**'''.format(indent, self.find_type(), self.processed, indent, self.condition)
+            ret = '''**{}{}S: {}**\n**{}Condition: {}**'''.format(indent, self.find_type(), self.processed, indent, self.condition)
             return ret
         else:
             ret = '''**{}{}S: {}**'''.format(indent, self.find_type(), self.processed)
@@ -724,13 +787,8 @@ ENEMY_SKILLS = [
     ESAttributeBlock
 
 
-    ESFixedTarget,
-    ESInvulnerableOn,
-    ESInvulnerableOnHexazeon,
-    ESInvulnerableOff,
     ESGachaFever,
-    ESLeaderAlter,
-    ESBoardSizeChange,
+
 
 
 

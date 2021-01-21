@@ -24,7 +24,7 @@ class GroupedSkills(object):
     def add_skill(self, skill):
         self.skills.append(skill)
 
-    def give_string(self, top, dict: OrderedDict, nest_level=0):
+    async def give_string(self, top, dict: OrderedDict, nest_level=0):
         # blocked = False
         condition = self.condition
         set = False
@@ -36,7 +36,7 @@ class GroupedSkills(object):
                 set = True
             nest_level += 1
         for g in self.nested_groups:
-            o = g.give_string(top, dict, nest_level)
+            o = await g.give_string(top, dict, nest_level)
             if o is not None:
                 output += o
         for s in self.skills:

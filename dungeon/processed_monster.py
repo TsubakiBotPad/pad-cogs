@@ -17,12 +17,12 @@ class ProcessedMonster(object):
     def add_group(self, group: GroupedSkills):
         self.groups.append(group)
 
-    def make_embed2(self):
+    async def make_embed(self):
         top_level = []
         field_value_dict = OrderedDict()
         desc = ""
         for g in self.groups:
-            g.give_string(top_level, field_value_dict)
+            await g.give_string(top_level, field_value_dict)
         for s in top_level:
             desc += s
         embed = discord.Embed(title="Behavior for: {} at Level: {}".format(self.name, self.level),

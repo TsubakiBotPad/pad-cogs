@@ -130,6 +130,47 @@ GroupType = {
 }
 
 
+class DungeonEmojiUpdater(EmojiUpdater):
+    # a pass-through base class that does nothing to the emoji dictionary
+    # or to the selected emoji
+    def __init__(self, ctx, emoji_to_embed, dungeon_cog = None, selected_emoji = None, pm: ProcessedMonster = None,
+                 pm_dungeon: "list[list[ProcessedMonster]]"= None, pm_floor: "list[ProcessedMonster]" = None):
+        self.emoji_dict = emoji_to_embed
+        self.selected_emoji = selected_emoji
+        self.pm = pm
+        self.pm_floor = pm_floor
+        self.pm_dungeon = pm_dungeon
+        self.ctx = ctx
+        self.dungeon_cog = dungeon_cog
+        print("{} {} {}".format(pm_floor.index(pm), len(pm_dungeon), len(pm_floor)))
+
+    async def on_update(self, ctx, selected_emoji):
+        print("{} {} {}".format(self.pm_floor.index(self.pm), len(self.pm_dungeon), len(self.pm_floor)))
+        index_monster = self.pm_floor.index(self.pm)
+        index_floor = self.pm_dungeon.index(self.pm_floor)
+        if selected_emoji == self.dungeon_cog.previous_monster_emoji:
+            self.pm = self.pm_floor[index_monster - 1]
+        elif selected_emoji == self.dungeon_cog.next_monster_emoji:
+            if index_monster == len(self.pm_floor) - 1:
+                self.pm = self.pm_floor[0]
+            else:
+                self.pm = self.pm_floor[index_monster + 1]
+        elif selected_emoji == self.dungeon_cog.previous_floor:
+            self.pm_floor = self.pm_dungeon[index_floor - 1]
+            self.pm = self.pm_floor[0]
+        elif selected_emoji == self.dungeon_cog.next_floor:
+            if index_floor == len(self.pm_dungeon) - 1:
+                self.pm_floor = self.pm_dungeon[0]
+            else:
+                self.pm_floor = self.pm_dungeon[index_floor + 1]
+            self.pm = self.pm_floor[0]
+        else:
+            self.selected_emoji = selected_emoji
+            return True
+
+        self.emoji_dict = await self.dungeon_cog.make_emoji_dictionary(self.ctx, self.pm)
+        return True
+
 # From pad-data-pipeline
 def format_condition(cond: Condition):
     parts = []
@@ -238,7 +279,10 @@ def format_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase, pre
 
     return output
 """
-def process_behavior(behavior: Behavior, database: DadguideDatabase, q: dict, parent: GroupedSkills = None):
+
+
+
+async def process_behavior(behavior: Behavior, database: DadguideDatabase, q: dict, parent: GroupedSkills = None):
     skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
     if skill is None:
         return "Unknown"
@@ -249,7 +293,7 @@ def process_behavior(behavior: Behavior, database: DadguideDatabase, q: dict, pa
     processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition, parent)
     #embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
     return processed_skill
-def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: dict, parent:GroupedSkills = None):
+async def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: dict, parent:GroupedSkills = None):
     condition = format_condition(group.condition)
     processed_group: GroupedSkills= GroupedSkills(condition, GroupType[group.group_type], parent)
     """if condition is not None:
@@ -259,9 +303,9 @@ def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: 
         indent += ">>> " """
     for child in group.children:
         if child.HasField('group'):
-            processed_group.add_group(process_behavior_group(child.group, database, q, processed_group))
+            processed_group.add_group(await process_behavior_group(child.group, database, q, processed_group))
         elif child.HasField('behavior'):
-            processed_group.add_skill(process_behavior(child.behavior, database, q, processed_group))
+            processed_group.add_skill(await process_behavior(child.behavior, database, q, processed_group))
     return processed_group
    # return output
 
@@ -269,7 +313,7 @@ def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: 
 # Skill Name    Type:Preemptive/Passive/Etc
 # Skill Effect
 # Condition
-def process_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase):
+async def process_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase):
     # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
     """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
                           description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
@@ -280,7 +324,7 @@ def process_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase):
     if levelBehavior is None:
         return monster
     for group in levelBehavior.groups:
-        monster.add_group(process_behavior_group(group, database, q))
+        monster.add_group(await process_behavior_group(group, database, q))
 
     return monster
 
@@ -357,15 +401,38 @@ def behaviorForLevel(mb: MonsterBehavior, num: int):
         return lev
 
 
-class Mycog(commands.Cog):
+class DungeonCog(commands.Cog):
     """My custom cog"""
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.menu = Menu(bot)
+        self.previous_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+        self.previous_page = '\N{BLACK LEFT-POINTING TRIANGLE}'
+        self.next_page = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+        self.next_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
+        self.remove_emoji = self.menu.emoji['no']
+        self.next_floor = '\N{UPWARDS BLACK ARROW}'
+        self.previous_floor = '\N{DOWNWARDS BLACK ARROW}'
+        self.current_monster = '👹'
 
-    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=5):
+    async def make_emoji_dictionary(self, ctx, pm: ProcessedMonster = None, scroll_monsters=None, scroll_floors=None):
+        print(pm.name)
+        if scroll_monsters is None:
+            scroll_monsters = []
+        if scroll_floors is None:
+            scroll_floors = []
+        emoji_to_embed = OrderedDict()
+        emoji_to_embed[self.current_monster] = await pm.make_embed()
+        emoji_to_embed[self.previous_monster_emoji] = None
+        emoji_to_embed[self.next_monster_emoji] = None
+        emoji_to_embed[self.previous_floor] = None
+        emoji_to_embed[self.next_floor] = None
+
+        emoji_to_embed[self.menu.emoji['no']] = self.menu.reaction_delete_message
+        return emoji_to_embed
+    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=60):
         if starting_menu_emoji not in emoji_to_embed.emoji_dict:
             # Selected menu wasn't generated for this monster
             return EMBED_NOT_GENERATED
@@ -400,8 +467,8 @@ class Mycog(commands.Cog):
 
         #await ctx.send(formatOverview(test_result))
         if new:
-            monster = process_monster(behavior_test, test_result, dg_cog.database)
-            await ctx.send(embed=monster.make_embed2())
+            monster = await process_monster(behavior_test, test_result, dg_cog.database)
+            await ctx.send(embed= await monster.make_embed())
         else:
             await ctx.send(embed=format_monster_embed(behavior_test, test_result, dg_cog.database))
         # await ctx.send(text_format.MessageToString(1, as_utf8=True, indent = 2))
@@ -440,11 +507,18 @@ class Mycog(commands.Cog):
             await ctx.send("Sorry, I couldn't find any dungeons by that name! (Or maybe there is no data on it?)")
             return
         elif len(dungeons) > 1:
-            output = "Can you be more specific? Did you mean:"
+            same = True
+            first = dungeons[0]["name_en"]
             for d in dungeons:
-                output += "\n{}".format(d["name_en"])
-            await ctx.send(output)
-            return
+                if d["name_en"] != first:
+                    same = False
+                    break
+            if not same:
+                output = "Can you be more specific? Did you mean:"
+                for d in dungeons:
+                    output += "\n{}".format(d["name_en"])
+                await ctx.send(output)
+                return
         # Now that we have the dungeon we need to get he sub_dungeon_id (difficulty)
         sub_id = dungeons[0]["dungeon_id"] * 1000 + difficulty
         if difficulty == -1:
@@ -463,8 +537,7 @@ class Mycog(commands.Cog):
 
     #messing with embeds, why can't I indent...
     @commands.command()
-    async def dungeon_embed(self, ctx):
-
+    async def test_menu(self, ctx):
         embed = discord.Embed(title="Dungeon Name", description="Difficulty\nTest\nTest2")
         embed.add_field(name="Dummy 1 (Floor #)",
                         value="ID:111111111  Turn:99 HP:2,000,000,000 ATK: 2,000,000,000 DEF: 2,000,000,000\nSurvive attacks with 1 HP when HP > 50%\nReduce damage from Balanced and Devil types by 50%", inline=True)
@@ -527,6 +600,8 @@ class Mycog(commands.Cog):
             await ctx.send("Dungeon not Found")
         else:
             # await ctx.send(formatOverview(test_result))
+            current_stage = 0
+            pm_dungeon = []
             for r in test_result:
                 enc = dg_cog.database.database.query_one(encounter_query.format(r["encounter_id"]), ())
                 behavior_test = MonsterBehavior()
@@ -536,4 +611,14 @@ class Mycog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                await ctx.send(format_monster(behavior_test, enc, dg_cog.database))
+                pm =  await process_monster(behavior_test, enc,dg_cog.database)
+                if r['stage'] > current_stage:
+                    print("Added")
+                    current_stage = r['stage']
+                    floor = [pm]
+                    pm_dungeon.append(floor)
+                else:
+                    pm_dungeon[current_stage - 1].append(pm)
+            emoji_to_embed = await self.make_emoji_dictionary(ctx, pm_dungeon[0][0])
+            dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, self.current_monster, pm_dungeon[0][0], pm_dungeon, pm_dungeon[0])
+            await self._do_menu(ctx, self.current_monster, dmu,60)

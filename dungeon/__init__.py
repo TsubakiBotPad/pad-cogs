@@ -1,6 +1,6 @@
-from .mycog import Mycog
+from .dungeoncog import DungeonCog
 
 
 def setup(bot):
-    n = Mycog(bot)
+    n = DungeonCog(bot)
     bot.add_cog(n)
