@@ -20,7 +20,7 @@
     "padinfo": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [
-    "tsutils",
+    "tsutils>=3.0.2",
     "aiohttp",
     "prettytable",
     "pytz"
