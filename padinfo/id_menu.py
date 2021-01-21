@@ -5,22 +5,18 @@ from typing import TYPE_CHECKING
 import discord
 import prettytable
 from discord import Color
-from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain
-from discordmenu.embed.menu import EmbedView
-from discordmenu.embed.text import Text, BoldText
 from redbot.core.utils.chat_formatting import box
 
 from padinfo.common.emoji_map import awakening_restricted_latent_emoji
 from padinfo.view.components.monster.header import MonsterHeader
-from .common.padx import monster_url
-from .leader_skills import createMultiplierText
+from .common.external_links import monster_url
 from .leader_skills import createSingleMultiplierText
 from .view.components.monster.image import MonsterImage
 from .view.evos import EvosView
 from .view.id import IdView
 from .view.leader_skill import LeaderSkillView
 from .view.lookup import LookupView
+from .view.pic import PicsView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -28,20 +24,9 @@ if TYPE_CHECKING:
 
 INFO_PDX_TEMPLATE = 'http://www.puzzledragonx.com/en/monster.asp?n={}'
 
-MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
-RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
-VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'
-GIF_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.gif'
-ORB_SKIN_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}.png'
-ORB_SKIN_CB_TEMPLATE = MEDIA_PATH + 'orb_skins/jp/{0:03d}cb.png'
-
 YT_SEARCH_TEMPLATE = 'https://www.youtube.com/results?search_query={}'
 SKYOZORA_TEMPLATE = 'http://pad.skyozora.com/pets/{}'
 ILMINA_TEMPLATE = 'https://ilmina.com/#/CARD/{}'
-
-
-def get_pic_url(m: "MonsterModel"):
-    return RPAD_PIC_TEMPLATE.format(m.monster_id)
 
 
 class IdMenu:
@@ -164,38 +149,9 @@ class IdMenu:
 
         return embed
 
-    async def make_picture_embed(self, m: "MonsterModel", animated=False):
-        embed = await self.make_base_embed(m)
-        url = get_pic_url(m)
-        embed.set_image(url=url)
-        # Clear the thumbnail, don't need it on pic
-        embed.set_thumbnail(url='')
-        extra_links = []
-        if animated:
-            extra_links.append('Animation: {} -- {}'.format(self.monster_video_url(m), self.monster_gif_url(m)))
-        if m.orb_skin_id is not None:
-            extra_links.append(
-                'Orb Skin: {} -- {}'.format(self.monster_orb_skin_url(m), self.monster_orb_skin_cb_url(m)))
-        if len(extra_links) > 0:
-            embed.add_field(name='Extra Links', value='\n'.join(extra_links))
-
-        return embed
-
-    @staticmethod
-    def monster_video_url(m: "MonsterModel", link_text='(MP4)'):
-        return '[{}]({})'.format(link_text, VIDEO_TEMPLATE.format(m.monster_no_jp))
-
-    @staticmethod
-    def monster_gif_url(m: "MonsterModel", link_text='(GIF)'):
-        return '[{}]({})'.format(link_text, GIF_TEMPLATE.format(m.monster_no_jp))
-
-    @staticmethod
-    def monster_orb_skin_url(m: "MonsterModel", link_text='Regular'):
-        return '[{}]({})'.format(link_text, ORB_SKIN_TEMPLATE.format(m.orb_skin_id))
-
-    @staticmethod
-    def monster_orb_skin_cb_url(m: "MonsterModel", link_text='Color Blind'):
-        return '[{}]({})'.format(link_text, ORB_SKIN_CB_TEMPLATE.format(m.orb_skin_id))
+    async def make_picture_embed(self, m: "MonsterModel"):
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return PicsView.embed(m, color).to_embed()
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
