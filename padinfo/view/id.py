@@ -6,7 +6,7 @@ from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 
 from padinfo.common.emoji_map import get_emoji, format_emoji, AWAKENING_ID_TO_EMOJI_NAME_MAP, emoji_markdown
-from padinfo.common.external_links import monster_url
+from padinfo.common.external_links import puzzledragonx
 from padinfo.leader_skills import createMultiplierText
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
@@ -160,7 +160,7 @@ class IdView:
             EmbedField(
                 "Alternate Evos",
                 HighlightableLinks(
-                    links=[LinkedText(str(m.monster_id), monster_url(m)) for m in alt_monsters],
+                    links=[LinkedText(str(m.monster_id), puzzledragonx(m)) for m in alt_monsters],
                     highlighted=next(i for i, mon in enumerate(alt_monsters) if m.monster_id == mon.monster_id)
                 )
             )
@@ -170,7 +170,7 @@ class IdView:
             EmbedMain(
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
-                url=monster_url(m)),
+                url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=pad_info_footer(),
             embed_fields=fields)
