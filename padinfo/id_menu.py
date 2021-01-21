@@ -16,6 +16,7 @@ from .view.evos import EvosView
 from .view.id import IdView
 from .view.leader_skill import LeaderSkillView
 from .view.lookup import LookupView
+from .view.pantheon import PantheonView
 from .view.pic import PicsView
 
 if TYPE_CHECKING:
@@ -111,15 +112,9 @@ class IdMenu:
         if len(pantheon_list) == 0 or len(pantheon_list) > 20:
             return None
 
-        embed = await self.make_base_embed(m)
-
-        field_name = 'Pantheon: ' + self.db_context.graph.get_monster(m.monster_no).series.name
-        field_data = ''
-        for monster in sorted(pantheon_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + MonsterHeader.short(monster, link=True)
-        embed.add_field(name=field_name, value=field_data)
-
-        return embed
+        series_name = self.db_context.graph.get_monster(m.monster_no).series.name
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return PantheonView.embed(m, color, pantheon_list, series_name).to_embed()
 
     async def make_skillups_embed(self, m: "MonsterModel"):
         if m.active_skill is None:

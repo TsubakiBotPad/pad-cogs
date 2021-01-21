@@ -1,8 +1,11 @@
 from typing import TYPE_CHECKING
 
+from discordmenu.embed.base import Box
 from discordmenu.embed.text import LinkedText, Text
 
+from padinfo.common.emoji_map import format_emoji
 from padinfo.common.external_links import monster_url
+from padinfo.view.components.monster.emoji import MonsterEmoji
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -41,3 +44,13 @@ class MonsterHeader:
     def long_v2(m: "MonsterModel", link=False):
         msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, MonsterHeader.ja_suffix(m))
         return LinkedText(msg, monster_url(m)) if link else Text(msg)
+
+    @staticmethod
+    def short_with_emoji(m: "MonsterModel", link=True):
+        msg = f"{m.monster_no_na} - {m.name_en}"
+        return Box(
+            Text(format_emoji(MonsterEmoji.attribute(m))),
+            LinkedText(msg, monster_url(m)) if link else Text(msg),
+            Text(MonsterHeader.ja_suffix(m, False)),
+            delimiter=' '
+        )
