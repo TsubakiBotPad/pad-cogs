@@ -507,6 +507,27 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+    
+    def monster_acquisition(self, monster: MonsterModel):
+        acquire_text = None
+        if self.monster_is_farmable(monster) and not self.monster_is_mp_evo(monster):
+            # Some MP shop monsters 'drop' in PADR
+            acquire_text = 'Farmable'
+        elif self.monster_is_farmable_evo(monster) and not self.monster_is_mp_evo(monster):
+            acquire_text = 'Farmable Evo'
+        elif monster.in_pem:
+            acquire_text = 'In PEM'
+        elif self.monster_is_pem_evo(monster):
+            acquire_text = 'PEM Evo'
+        elif monster.in_rem:
+            acquire_text = 'In REM'
+        elif self.monster_is_rem_evo(monster):
+            acquire_text = 'REM Evo'
+        elif monster.in_mpshop:
+            acquire_text = 'MP Shop'
+        elif self.monster_is_mp_evo(monster):
+            acquire_text = 'MP Shop Evo'
+        return acquire_text
 
     def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
         next_monster = None

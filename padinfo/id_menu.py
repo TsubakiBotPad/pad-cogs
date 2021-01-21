@@ -7,7 +7,6 @@ import prettytable
 from discord import Color
 from redbot.core.utils.chat_formatting import box
 
-from padinfo.common.emoji_map import awakening_restricted_latent_emoji
 from padinfo.view.components.monster.header import MonsterHeader
 from .common.external_links import puzzledragonx
 from .leader_skills import createSingleMultiplierText
@@ -59,7 +58,7 @@ class IdMenu:
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         is_transform_base = self.db_context.graph.monster_is_transform_base(m)
         true_evo_type_raw = self.db_context.graph.true_evo_type_by_monster(m).value
-        acquire_raw = self._monster_acquisition_string(m)
+        acquire_raw = self.db_context.graph.monster_acquisition(m)
         base_rarity = self.db_context.graph.get_base_monster_by_id(m.monster_no).rarity
         alt_monsters = sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
                               key=lambda x: x.monster_id)
@@ -156,35 +155,6 @@ class IdMenu:
     async def make_lookup_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         return LookupView.embed(m, color).to_embed()
-
-    def _monster_acquisition_string(self, m: "MonsterModel"):
-        acquire_text = None
-        if self.db_context.graph.monster_is_farmable(m) and not self.db_context.graph.monster_is_mp_evo(m):
-            # Some MP shop monsters 'drop' in PADR
-            acquire_text = 'Farmable'
-        elif self.db_context.graph.monster_is_farmable_evo(m) and not self.db_context.graph.monster_is_mp_evo(m):
-            acquire_text = 'Farmable Evo'
-        elif m.in_pem:
-            acquire_text = 'In PEM'
-        elif self.db_context.graph.monster_is_pem_evo(m):
-            acquire_text = 'PEM Evo'
-        elif m.in_rem:
-            acquire_text = 'In REM'
-        elif self.db_context.graph.monster_is_rem_evo(m):
-            acquire_text = 'REM Evo'
-        elif m.in_mpshop:
-            acquire_text = 'MP Shop'
-        elif self.db_context.graph.monster_is_mp_evo(m):
-            acquire_text = 'MP Shop Evo'
-        return acquire_text
-
-    def get_awakening_restricted_latents_text(self, m: "MonsterModel"):
-        """Not currently in use, but potentially could be in the future
-        if more ARLatents are added later
-        """
-        if not m.awakening_restricted_latents:
-            return ''
-        return ' ' + ' '.join([awakening_restricted_latent_emoji(x) for x in m.awakening_restricted_latents])
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
         embed = await self.make_base_embed(m)
