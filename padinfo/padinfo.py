@@ -21,8 +21,8 @@ from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
-from padinfo.lib.button_info import button_info
-from padinfo.lib.find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
+from padinfo.core.button_info import button_info
+from padinfo.core.find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
 from padinfo.id_menu import IdMenu
 from padinfo.view.components.monster.header import MonsterHeader
 
