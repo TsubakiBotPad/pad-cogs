@@ -20,8 +20,8 @@ def calc_ratio(s1, s2):
 def calc_ratio_prefix(token, full_word):
     if full_word == token:
         return 1
-    elif full_word.startswith(token):
-        return 1 - len(full_word) / 1000
+    elif len(token) >= 3 and full_word.startswith(token):
+        return .995
     return jaro_winkler(token, full_word, .05)
 
 
