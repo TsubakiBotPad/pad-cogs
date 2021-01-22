@@ -92,7 +92,7 @@ class IdMenu:
         evo_gem = self.db_context.graph.evo_gem_monster(m)
         gemusedin = self.db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
         skillups = [su for su in self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
-                    if self.db_context.graph.monster_is_farmable_evo(su)]
+                    if self.db_context.graph.monster_is_farmable_evo(su) and su != m]
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
 
         return VoreView.embed(m, mats, usedin, gemusedin, skillups, color).to_embed()
