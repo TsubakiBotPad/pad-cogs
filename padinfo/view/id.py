@@ -7,7 +7,7 @@ from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLin
 
 from padinfo.common.emoji_map import get_emoji, format_emoji, AWAKENING_ID_TO_EMOJI_NAME_MAP, emoji_markdown
 from padinfo.common.external_links import puzzledragonx
-from padinfo.leader_skills import createMultiplierText
+from padinfo.lib.leader_skills import createMultiplierText
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
