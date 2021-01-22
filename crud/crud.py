@@ -25,7 +25,8 @@ SERIES_TYPES = [
     "event",
     "seasonal",
     "ghcollab",
-    "collab"
+    "collab",
+    "lowpriority",
 ]
 
 

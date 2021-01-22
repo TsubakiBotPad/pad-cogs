@@ -9,6 +9,7 @@ SERIES_TYPE_PRIORITY = {
     "seasonal": 3,
     "ghcollab": 2,
     "collab": 1,
+    "lowpriority": 0,
     None: 0
 }
 
