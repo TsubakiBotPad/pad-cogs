@@ -13,32 +13,36 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-def mat_use_field(usedin, title):
-    if len(usedin) > 5:
+def mat_use_field(usedin, title, overflow=None):
+    if len(usedin) == 0:
         return EmbedField(
             title,
-            Box(f"{len(usedin)} monsters"),
-            inline=True)
-    elif len(usedin) == 0:
+            Box("None"))
+    elif len(usedin) > 5 and overflow is None:
         return EmbedField(
             title,
-            Box("None"),
-            inline=True)
+            Box(f"{len(usedin)} monsters"))
+    elif overflow and len(usedin) > overflow:
+        return EmbedField(
+            title,
+            Box(
+                *(MonsterHeader.short_with_emoji(em) for em in usedin[:overflow]),
+                f"({len(usedin) - overflow} more {title.lower()})"))
     else:
         return EmbedField(
             title,
-            Box(*(MonsterHeader.short(em, True) for em in usedin)),
-            inline=True)
+            Box(*(MonsterHeader.short_with_emoji(em) for em in usedin)))
 
 
-class EvoMatsView:
+class VoreView:
     @staticmethod
-    def embed(m: "MonsterModel", mats, usedin, gemusedin, color):
-        fields = [mat_use_field(mats, "Evo Materials")]
+    def embed(m: "MonsterModel", mats, usedin, gemusedin, skillups, color):
+        fields = [mat_use_field(mats, "Evo materials")]
         if usedin:
-            fields.append(mat_use_field(usedin, "Material For"))
+            fields.append(mat_use_field(usedin, "Material for"))
         if gemusedin:
-            fields.append(mat_use_field(gemusedin, "Evo Gem is Mat For"))
+            fields.append(mat_use_field(gemusedin, "Evo gem is mat for"))
+        fields.append(mat_use_field(skillups, "Skillups", 5))
 
         return EmbedView(
             EmbedMain(
