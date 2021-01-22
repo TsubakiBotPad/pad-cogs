@@ -1106,6 +1106,8 @@ class PadInfo(commands.Cog):
         query = rmdiacritics(query).lower()
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
 
+        name_query_tokens.difference_update({'|'})
+
         for t in mod_tokens.union(neg_mod_tokens):
             if t not in DGCOG.index2.all_modifiers:
                 self.settings.add_typo_mod(t)
