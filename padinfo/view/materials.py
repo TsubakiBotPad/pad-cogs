@@ -12,13 +12,15 @@ from padinfo.view.components.monster.image import MonsterImage
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
+MAX_SKILLUPS_TO_SHOW = 5
+MAX_MATFOR_TO_SHOW = 5
 
 def mat_use_field(usedin, title, overflow=None):
-    if len(usedin) == 0:
+    if not usedin:
         return EmbedField(
             title,
             Box("None"))
-    elif len(usedin) > 5 and overflow is None:
+    elif len(usedin) > MAX_MATFOR_TO_SHOW and overflow is None:
         return EmbedField(
             title,
             Box(f"{len(usedin)} monsters"))
@@ -34,7 +36,7 @@ def mat_use_field(usedin, title, overflow=None):
             Box(*(MonsterHeader.short_with_emoji(em) for em in usedin)))
 
 
-class VoreView:
+class MaterialView:
     @staticmethod
     def embed(m: "MonsterModel", mats, usedin, gemusedin, skillups, color):
         fields = [mat_use_field(mats, "Evo materials")]
@@ -42,7 +44,7 @@ class VoreView:
             fields.append(mat_use_field(usedin, "Material for"))
         if gemusedin:
             fields.append(mat_use_field(gemusedin, "Evo gem is mat for"))
-        fields.append(mat_use_field(skillups, "Skillups", 5))
+        fields.append(mat_use_field(skillups, "Skillups", MAX_SKILLUPS_TO_SHOW))
 
         return EmbedView(
             EmbedMain(

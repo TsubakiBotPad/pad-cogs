@@ -11,7 +11,7 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createSingleMultiplierText
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.evomats import VoreView
+from padinfo.view.materials import MaterialView
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView
@@ -95,7 +95,7 @@ class IdMenu:
                     if self.db_context.graph.monster_is_farmable_evo(su) and su != m]
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
 
-        return VoreView.embed(m, mats, usedin, gemusedin, skillups, color).to_embed()
+        return MaterialView.embed(m, mats, usedin, gemusedin, skillups, color).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
