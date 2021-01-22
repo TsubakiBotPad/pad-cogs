@@ -8,16 +8,16 @@ from discord import Color
 from redbot.core.utils.chat_formatting import box
 
 from padinfo.view.components.monster.header import MonsterHeader
-from .common.external_links import puzzledragonx
-from .leader_skills import createSingleMultiplierText
-from .view.components.monster.image import MonsterImage
-from .view.evos import EvosView
-from .view.id import IdView
-from .view.leader_skill import LeaderSkillView
-from .view.links import LinksView
-from .view.lookup import LookupView
-from .view.pantheon import PantheonView
-from .view.pic import PicsView
+from padinfo.common.external_links import puzzledragonx
+from padinfo.lib.leader_skills import createSingleMultiplierText
+from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view.evos import EvosView
+from padinfo.view.id import IdView
+from padinfo.view.leader_skill import LeaderSkillView
+from padinfo.view.links import LinksView
+from padinfo.view.lookup import LookupView
+from padinfo.view.pantheon import PantheonView
+from padinfo.view.pic import PicsView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
