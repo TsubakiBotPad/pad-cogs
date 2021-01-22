@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import BoldText, Text
 
-from padinfo.lib.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import createMultiplierText
 from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:

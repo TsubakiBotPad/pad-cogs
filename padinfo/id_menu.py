@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import box
 
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.common.external_links import puzzledragonx
-from padinfo.lib.leader_skills import createSingleMultiplierText
+from padinfo.core.leader_skills import createSingleMultiplierText
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
