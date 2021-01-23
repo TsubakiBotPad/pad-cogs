@@ -48,11 +48,15 @@ class MonsterIndex2(aobject):
 
         treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
         for m_id, name, *data in treenames_data:
-            _, i, *_ = data + [None, None]
+            lp, i, *_ = data + [None, None]
             if m_id.isdigit() and not i:
-                if " " in name:
-                    self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
+                if lp:
+                    for em_id in self.graph.get_alt_ids_by_id(int(m_id)):
+                        self.monster_id_to_nametokens[em_id].update(self._name_to_tokens(name))
+                else:
+                    if " " in name:
+                        self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                    self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
         pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
         for sid, name, *_ in pantheon_data:
@@ -93,12 +97,12 @@ class MonsterIndex2(aobject):
 
             # Name and Fluff Tokens
             manual = False
-            nametokens = self._name_to_tokens(m.name_en)
+            nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
             for me in self.graph.get_alt_ids_by_id(m.monster_id):
                 for t in self.monster_id_to_nametokens[me]:
                     if t in nametokens:
                         self.name_tokens[t].add(m)
-            if not manual:
+            if not self.monster_id_to_nametokens[m.monster_id]:
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.name_tokens[token.lower()].add(m)
                     for repl in self.replacement_tokens[token.lower()]:
