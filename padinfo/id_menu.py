@@ -7,10 +7,11 @@ import prettytable
 from discord import Color
 from redbot.core.utils.chat_formatting import box
 
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createSingleMultiplierText
+from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view.materials import MaterialView
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView
@@ -86,25 +87,15 @@ class IdMenu:
         embed.add_field(name=field_name, value=field_data)
 
     async def make_evo_mats_embed(self, m: "MonsterModel"):
-        embed = await self.make_base_embed(m)
-
-        mats_for_evo = self.db_context.graph.evo_mats_by_monster(m)
-
-        field_name = 'Evo materials'
-        field_data = ''
-        if len(mats_for_evo) > 0:
-            for ae in mats_for_evo:
-                field_data += "{}\n".format(MonsterHeader.long(ae, link=True))
-        else:
-            field_data = 'None'
-        embed.add_field(name=field_name, value=field_data)
-
-        self._add_mats_of_list(embed, self.db_context.graph.material_of_ids(m), 'Material for')
+        mats = self.db_context.graph.evo_mats_by_monster(m)
+        usedin = self.db_context.graph.material_of_monsters(m)
         evo_gem = self.db_context.graph.evo_gem_monster(m)
-        if not evo_gem:
-            return embed
-        self._add_mats_of_list(embed, self.db_context.graph.material_of_ids(evo_gem), "Evo gem is mat for")
-        return embed
+        gemusedin = self.db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
+        skillups = [su for su in self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
+                    if self.db_context.graph.monster_is_farmable_evo(su) and su != m] if m.active_skill else []
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+
+        return MaterialView.embed(m, mats, usedin, gemusedin, skillups, color).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
@@ -115,34 +106,6 @@ class IdMenu:
         series_name = self.db_context.graph.get_monster(m.monster_no).series.name
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         return PantheonView.embed(m, color, pantheon_list, series_name).to_embed()
-
-    async def make_skillups_embed(self, m: "MonsterModel"):
-        if m.active_skill is None:
-            return None
-        possible_skillups_list = self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
-        skillups_list = list(filter(
-            lambda x: self.db_context.graph.monster_is_farmable_evo(x), possible_skillups_list))
-
-        if len(skillups_list) == 0:
-            return None
-
-        embed = await self.make_base_embed(m)
-
-        field_name = 'Skillups'
-        field_data = ''
-
-        # Prevent huge skillup lists
-        if len(skillups_list) > 8:
-            field_data = '({} skillups omitted)'.format(len(skillups_list) - 8)
-            skillups_list = skillups_list[0:8]
-
-        for monster in sorted(skillups_list, key=lambda x: x.monster_no_na):
-            field_data += '\n' + MonsterHeader.short(monster, link=True)
-
-        if len(field_data.strip()):
-            embed.add_field(name=field_name, value=field_data)
-
-        return embed
 
     async def make_picture_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
