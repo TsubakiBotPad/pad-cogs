@@ -163,21 +163,18 @@ class IdMenu:
 
         body_text = '\n'
         stat_cols = ['', 'HP', 'ATK', 'RCV']
-        for plus in (0, 297):
-            body_text += '**Stats at +{}:**'.format(plus)
-            tbl = prettytable.PrettyTable(stat_cols)
-            tbl.hrules = prettytable.NONE
-            tbl.vrules = prettytable.NONE
-            tbl.align = "l"
-            levels = (m.level, 110) if m.limit_mult > 0 else (m.level,)
-            for lv in levels:
-                for inh in (False, True):
-                    hp, atk, rcv, _ = m.stats(lv, plus=plus, inherit=inh)
-                    row_name = 'Lv{}'.format(lv)
-                    if inh:
-                        row_name = '(Inh)'
-                    tbl.add_row([row_name.format(plus), hp, atk, rcv])
-            body_text += box(tbl.get_string())
+        body_text += '**Stats at +297:**'
+        tbl = prettytable.PrettyTable(stat_cols)
+        tbl.hrules = prettytable.NONE
+        tbl.vrules = prettytable.NONE
+        tbl.align = "l"
+        levels = (m.level, 110) if m.limit_mult > 0 else (m.level,)
+        for lv in levels:
+            for inh in (False, True):
+                hp, atk, rcv, _ = m.stats(lv, plus=297, inherit=inh)
+                row_name = '(Inh)' if inh else 'Lv{}'.format(lv)
+                tbl.add_row([row_name, hp, atk, rcv])
+        body_text += box(tbl.get_string())
 
         body_text += "\n**JP Name**: {}".format(m.name_ja)
         body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
