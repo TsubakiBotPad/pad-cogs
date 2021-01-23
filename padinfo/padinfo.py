@@ -168,12 +168,11 @@ class PadInfo(commands.Cog):
         # These emojis are the keys into the idmenu submenus
         self.id_emoji = '\N{HOUSE BUILDING}'
         self.evo_emoji = char_to_emoji('e')
-        self.mats_emoji = char_to_emoji('m')
+        self.mats_emoji = '\N{MEAT ON BONE}'
         self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
         self.pantheon_emoji = '\N{CLASSICAL BUILDING}'
-        self.skillups_emoji = '\N{MEAT ON BONE}'
         self.pic_emoji = '\N{FRAME WITH PICTURE}'
         self.other_info_emoji = '\N{SCROLL}'
         self.first_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
@@ -405,7 +404,7 @@ class PadInfo(commands.Cog):
         else:
             await self.makeFailureMsg(ctx, query, err)
 
-    @commands.command(name="mats", aliases=['evomats', 'evomat'])
+    @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
@@ -424,18 +423,6 @@ class PadInfo(commands.Cog):
             menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('Not a pantheon monster'))
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def skillups(self, ctx, *, query: str):
-        """Monster info (evolutions tab)"""
-        m, err, debug_info = await self.findMonsterCustom(ctx, query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.skillups_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline('No skillups available'))
         else:
             await self.makeFailureMsg(ctx, query, err)
 
@@ -501,10 +488,6 @@ class PadInfo(commands.Cog):
         pantheon_embed = await menu.make_pantheon_embed(m)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
-
-        skillups_embed = await menu.make_skillups_embed(m)
-        if skillups_embed:
-            emoji_to_embed[self.skillups_emoji] = skillups_embed
 
         emoji_to_embed[self.other_info_emoji] = other_info_embed
 

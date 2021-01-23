@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, List
 
 import networkx
 
@@ -443,13 +443,13 @@ class MonsterGraph(object):
     def get_next_transform_by_monster(self, monster: MonsterModel):
         return self.get_next_evolutions_by_monster_id(monster.monster_no)
 
-    def evo_mats_by_monster_id(self, monster_id: int) -> list:
+    def evo_mats_by_monster_id(self, monster_id: int) -> List[MonsterModel]:
         evo = self.get_evo_by_monster_id(monster_id)
         if evo is None:
             return []
         return [self.get_monster(mat) for mat in evo.mats]
 
-    def evo_mats_by_monster(self, monster: MonsterModel) -> list:
+    def evo_mats_by_monster(self, monster: MonsterModel) -> List[MonsterModel]:
         return self.evo_mats_by_monster_id(monster.monster_no)
 
     # farmable
@@ -570,8 +570,12 @@ class MonsterGraph(object):
     def evo_gem_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
         return self.evo_gem_monster_by_id(monster.monster_no)
 
-    def material_of_ids_by_id(self, monster_id: int) -> list:
+    def material_of_ids_by_id(self, monster_id: int) -> List[int]:
         return sorted(self._get_edges(self.graph[monster_id], 'material_of'))
 
-    def material_of_ids(self, monster: MonsterModel) -> list:
+    def material_of_ids(self, monster: MonsterModel) -> List[int]:
         return self.material_of_ids_by_id(monster.monster_no)
+
+    def material_of_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
+        return [self.get_monster(m)
+                for m in self.material_of_ids_by_id(monster.monster_no)]
