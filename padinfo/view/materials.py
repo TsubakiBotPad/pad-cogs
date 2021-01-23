@@ -16,10 +16,6 @@ MAX_MONS_TO_SHOW = 5
 
 
 def mat_use_field(usedin, title, overflow=0):
-    if not usedin:
-        return EmbedField(
-            title,
-            Box("None"))
     if len(usedin) > MAX_MONS_TO_SHOW:
         return EmbedField(
             title,
@@ -28,7 +24,8 @@ def mat_use_field(usedin, title, overflow=0):
                 f"({len(usedin) - overflow} more {title.lower()})" if overflow else f"{len(usedin)} monsters"))
     return EmbedField(
         title,
-        Box(*(MonsterHeader.short_with_emoji(em) for em in usedin)))
+        Box(*(MonsterHeader.short_with_emoji(em) for em in usedin),
+            "None" if not usedin else None))
 
 
 class MaterialView:
