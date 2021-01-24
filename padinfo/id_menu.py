@@ -17,6 +17,7 @@ from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
+from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
 from padinfo.view.pic import PicsView
 
@@ -120,63 +121,8 @@ class IdMenu:
         return LookupView.embed(m, color).to_embed()
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
-        embed = await self.make_base_embed(m)
-        # Clear the thumbnail, takes up too much space
-        embed.set_thumbnail(url='')
-
-        body_text = '\n'
-        stat_cols = ['', 'HP', 'ATK', 'RCV']
-        for plus in (0, 297):
-            body_text += '**Stats at +{}:**'.format(plus)
-            tbl = prettytable.PrettyTable(stat_cols)
-            tbl.hrules = prettytable.NONE
-            tbl.vrules = prettytable.NONE
-            tbl.align = "l"
-            levels = (m.level, 110) if m.limit_mult > 0 else (m.level,)
-            for lv in levels:
-                for inh in (False, True):
-                    hp, atk, rcv, _ = m.stats(lv, plus=plus, inherit=inh)
-                    row_name = 'Lv{}'.format(lv)
-                    if inh:
-                        row_name = '(Inh)'
-                    tbl.add_row([row_name.format(plus), hp, atk, rcv])
-            body_text += box(tbl.get_string())
-
-        body_text += "\n**JP Name**: {}".format(m.name_ja)
-        body_text += "\n[YouTube]({}) | [Skyozora]({}) | [PDX]({}) | [Ilimina]({})".format(
-            YT_SEARCH_TEMPLATE.format(urllib.parse.quote(m.name_ja)),
-            SKYOZORA_TEMPLATE.format(m.monster_no_jp),
-            INFO_PDX_TEMPLATE.format(m.monster_no_jp),
-            ILMINA_TEMPLATE.format(m.monster_no_jp))
-
-        if m.history_us:
-            body_text += '\n**History:** {}'.format(m.history_us)
-
-        body_text += '\n**Series:** {}'.format(self.db_context.graph.get_monster(m.monster_no).series.name)
-        body_text += '\n**Sell MP:** {:,}'.format(m.sell_mp)
-        if m.buy_mp is not None:
-            body_text += "  **Buy MP:** {:,}".format(m.buy_mp)
-
-        if m.exp < 1000000:
-            xp_text = '{:,}'.format(m.exp)
-        else:
-            xp_text = '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
-        body_text += '\n**XP to Max:** {}'.format(xp_text)
-        body_text += '  **Max Level:**: {}'.format(m.level)
-
-        # weighted stat calculation & display
-        hp, atk, rcv, weighted = m.stats()
-        body_text += '\n**Weighted stats:** {}'.format(weighted)
-        if m.limit_mult > 0:
-            lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110)
-            body_text += ' | LB {} (+{}%)'.format(lb_weighted, m.limit_mult)
-
-        body_text += '\n**Fodder EXP:** {:,}'.format(m.fodder_exp)
-        body_text += '\n**Rarity:** {} **Cost:** {}'.format(m.rarity, m.cost)
-
-        embed.description = body_text
-
-        return embed
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return OtherInfoView.embed(m, color).to_embed()
 
     async def make_links_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
