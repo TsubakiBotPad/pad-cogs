@@ -1222,13 +1222,14 @@ class PadInfo(commands.Cog):
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
         tms = DGCOG.token_maps
+        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
-        def additmods(l, om):
-            if len(l) == 1:
+        def additmods(ms, om):
+            if len(ms) == 1:
                 return ""
-            return "; Additional modifiers: " + ', '.join(inline(m) for m in l if m != om)
+            return "; Alternate Names: " + ', '.join(inline(m) for m in ms if m != om)
 
         meanings = [
             *["Evo: " + k.value + additmods(v, modifier)
@@ -1245,6 +1246,16 @@ class PadInfo(commands.Cog):
               for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
             *["Series: " + series[k].name_en + additmods(v, modifier)
               for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+<<<<<<< Updated upstream
+=======
+
+            *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", modifier)],
+            *["Base Rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
+            *[f"[UNSUPPORTED] Multiple Awakenings: {m}x {awakenings[a.value].name_en}"
+              f"{additmods([f'{m}*{d}' for d in v], modifier)}"
+              for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), modifier)
+              for a, v in tms.AWOKEN_MAP.items() if ag in v]
+>>>>>>> Stashed changes
         ]
         for k, v in tms.DUAL_COLOR_MAP.items():
             if modifier not in v:
