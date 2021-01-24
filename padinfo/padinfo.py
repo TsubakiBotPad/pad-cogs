@@ -1216,7 +1216,7 @@ class PadInfo(commands.Cog):
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
-    @commands.command(aliases=["idcheckmod", "lookupmod"])
+    @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod"])
     async def idmeaning(self, ctx, *, modifier):
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
@@ -1250,10 +1250,10 @@ class PadInfo(commands.Cog):
                 continue
             k0name = k[0].name.replace("Nil", "None")
             k1name = k[1].name.replace("Nil", "None")
-            meanings.append(k0name + "/" + k1name)
+            meanings.append("Dual Attr: " + k0name + "/" + k1name + additmods(v, modifier))
 
         if meanings:
-            await ctx.send(", ".join(meanings))
+            await ctx.send("\n".join(meanings))
         else:
             await ctx.send(f"There are no modifiers that match `{modifier}`.")
 
