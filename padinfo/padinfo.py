@@ -1216,7 +1216,7 @@ class PadInfo(commands.Cog):
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
-    @commands.command(aliases=["idcheckmod"])
+    @commands.command(aliases=["idcheckmod", "lookupmod"])
     async def idmeaning(self, ctx, *, modifier):
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
@@ -1224,24 +1224,36 @@ class PadInfo(commands.Cog):
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
+        def additmods(l, om):
+            if len(l) == 1:
+                return ""
+            return "; Additional modifiers: " + ', '.join(inline(m) for m in l if m != om)
+
         meanings = [
-            *[k.value for k, v in tms.EVO_MAP.items() if modifier in v],
-            *[k.name for k, v in tms.TYPE_MAP.items() if modifier in v],
-            *[k.value for k, v in tms.MISC_MAP.items() if modifier in v],
-            *[awakenings[k.value].name_en for k, v in tms.AWOKEN_MAP.items() if modifier in v],
-            *["Main Attr " + k.name.replace("Nil", "None") for k, v in tms.COLOR_MAP.items() if modifier in v],
-            *["Sub Attr " + k.name.replace("Nil", "None") for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
-            *[series[k].name_en for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+            *["Evo: " + k.value + additmods(v, modifier)
+                 for k, v in tms.EVO_MAP.items() if modifier in v],
+            *["Type: " + k.name + additmods(v, modifier)
+                 for k, v in tms.TYPE_MAP.items() if modifier in v],
+            *["Misc: " + k.value + additmods(v, modifier)
+                 for k, v in tms.MISC_MAP.items() if modifier in v],
+            *["Awakening: " + awakenings[k.value].name_en + additmods(v, modifier)
+                 for k, v in tms.AWOKEN_MAP.items() if modifier in v],
+            *["Main Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+                 for k, v in tms.COLOR_MAP.items() if modifier in v],
+            *["Sub Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+                 for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+            *["Series: " + series[k].name_en + additmods(v, modifier)
+                 for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
         ]
         for k, v in tms.DUAL_COLOR_MAP.items():
             if modifier not in v:
                 continue
             k0name = k[0].name.replace("Nil", "None")
             k1name = k[1].name.replace("Nil", "None")
-            meanings.append(k0name + "/" + k1name)
+            meanings.append("Dual Color: " + k0name + "/" + k1name + additmods(v, modifier))
 
         if meanings:
-            await ctx.send(", ".join(meanings))
+            await ctx.send("\n".join(meanings))
         else:
             await ctx.send(f"There are no modifiers that match `{modifier}`.")
 
