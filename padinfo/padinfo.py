@@ -1216,7 +1216,7 @@ class PadInfo(commands.Cog):
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
-    @commands.command()
+    @commands.command(aliases=["idcheckmod"])
     async def idmeaning(self, ctx, *, modifier):
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
