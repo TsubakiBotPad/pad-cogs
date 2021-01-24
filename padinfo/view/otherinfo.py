@@ -10,6 +10,7 @@ from redbot.core.utils.chat_formatting import box
 from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
 from padinfo.view.components.base import pad_info_footer
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view.links import LinksView
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -45,13 +46,7 @@ class OtherInfoView:
                     Box(
                         Text(statsbox(m)),
                         LabeledText("JP Name", m.name_ja),
-                        Box(
-                            LinkedText('YouTube', youtube_search(m)),
-                            LinkedText('Skyozora', skyozora(m)),
-                            LinkedText('PDX', puzzledragonx(m)),
-                            LinkedText('Ilmina', ilmina(m)),
-                            delimiter=' | '
-                        ),
+                        LinksView.linksbox(m),
                         LabeledText("History", m.history_us) if m.history_us else None,
                         LabeledText("Series", m.series.name_en),
                         Box(
