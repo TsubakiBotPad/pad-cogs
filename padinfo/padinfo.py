@@ -1175,7 +1175,9 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):
         """Get help with an id query"""
-        await ctx.send("See <{0}> for documentation on {1.prefix}id!".format(IDGUIDE, ctx))
+        await ctx.send(
+            "See <{0}> for documentation on `{1.prefix}id`! Use `{1.prefix}idmeaning` to query the meaning of any modifier token.".format(
+                IDGUIDE, ctx))
         if query:
             await self.debugid(ctx, query=query)
 
