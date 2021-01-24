@@ -1183,14 +1183,16 @@ class PadInfo(commands.Cog):
     async def exportmodifiers(self, ctx):
         DGCOG = self.bot.get_cog("Dadguide")
         tms = DGCOG.token_maps
+        awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
+        series = {s.series_id: s for s in DGCOG.database.get_all_series()}
+
         o = ("Jump to:\n\n"
              "* [Types](#types)\n"
              "* [Evolutions](#evolutions)\n"
              "* [Misc](#misc)\n"
              "* [Awakenings](#awakenings)\n"
+             "* [Series](#series)\n"
              "* [Attributes](#attributes)\n\n\n\n")
-
-        anames = DGCOG.database.get_all_awoken_skills()
 
         etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_MAP.items()]
         o += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
@@ -1198,8 +1200,11 @@ class PadInfo(commands.Cog):
         o += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
         mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_MAP.items()]
         o += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(anames[k.value - 1].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MAP.items()]
+        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MAP.items()]
         o += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
+        stable = [(series[k].name_en, ", ".join(map(inline, v)))
+                  for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items()]
+        o += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
                    tms.SUB_COLOR_MAP.items()]
@@ -1210,6 +1215,35 @@ class PadInfo(commands.Cog):
         o += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
+
+    @commands.command(aliases=["idcheckmod"])
+    async def idmeaning(self, ctx, *, modifier):
+        modifier = modifier.replace(" ", "")
+        DGCOG = self.bot.get_cog("Dadguide")
+        tms = DGCOG.token_maps
+        awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
+        series = {s.series_id: s for s in DGCOG.database.get_all_series()}
+
+        meanings = [
+            *[k.value for k, v in tms.EVO_MAP.items() if modifier in v],
+            *[k.name for k, v in tms.TYPE_MAP.items() if modifier in v],
+            *[k.value for k, v in tms.MISC_MAP.items() if modifier in v],
+            *[awakenings[k.value].name_en for k, v in tms.AWOKEN_MAP.items() if modifier in v],
+            *["Main Attr " + k.name.replace("Nil", "None") for k, v in tms.COLOR_MAP.items() if modifier in v],
+            *["Sub Attr " + k.name.replace("Nil", "None") for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+            *[series[k].name_en for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+        ]
+        for k, v in tms.DUAL_COLOR_MAP.items():
+            if modifier not in v:
+                continue
+            k0name = k[0].name.replace("Nil", "None")
+            k1name = k[1].name.replace("Nil", "None")
+            meanings.append(k0name + "/" + k1name)
+
+        if meanings:
+            await ctx.send(", ".join(meanings))
+        else:
+            await ctx.send(f"There are no modifiers that match `{modifier}`.")
 
 
 class PadInfoSettings(CogSettings):
