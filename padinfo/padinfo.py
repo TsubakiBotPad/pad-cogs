@@ -1238,10 +1238,10 @@ class PadInfo(commands.Cog):
                 continue
             k0name = k[0].name.replace("Nil", "None")
             k1name = k[1].name.replace("Nil", "None")
-            meanings.append(k0name + "/" + k1name)
+            meanings.append("Dual Color: " + k0name + "/" + k1name + additmods(v, modifier))
 
         if meanings:
-            await ctx.send(", ".join(meanings))
+            await ctx.send("\n".join(meanings))
         else:
             await ctx.send(f"There are no modifiers that match `{modifier}`.")
 
