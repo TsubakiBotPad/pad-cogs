@@ -1245,6 +1245,13 @@ class PadInfo(commands.Cog):
               for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
             *["Series: " + series[k].name_en + additmods(v, modifier)
               for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+
+            *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", modifier)],
+            *["Base Rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
+            *[f"[UNSUPPORTED] Multiple Awakenings: {m}x {awakenings[a.value].name_en}"
+              f"{additmods([f'{m}*{d}' for d in v], modifier)}"
+              for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), modifier)
+              for a, v in tms.AWOKEN_MAP.items() if ag in v]
         ]
         for k, v in tms.DUAL_COLOR_MAP.items():
             if modifier not in v:
