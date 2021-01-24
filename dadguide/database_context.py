@@ -4,6 +4,7 @@ from .database_manager import DadguideDatabase
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
 from .models.scheduled_event_model import ScheduledEventModel
+from .models.series_model import SeriesModel
 from .monster_graph import MonsterGraph
 
 SCHEDULED_EVENT_QUERY = """SELECT
@@ -67,6 +68,10 @@ class DbContext(object):
     def get_all_awoken_skills(self) -> List[AwokenSkillModel]:
         result = self.database.query_many("SELECT * FROM awoken_skills", ())
         return [AwokenSkillModel(**r) for r in result]
+
+    def get_all_series(self) -> List[SeriesModel]:
+        result = self.database.query_many("SELECT * FROM series", ())
+        return [SeriesModel(**r) for r in result]
 
     def has_database(self):
         return self.database.has_database()
