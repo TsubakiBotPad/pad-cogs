@@ -86,7 +86,8 @@ class MonsterIndex2(aobject):
         self.fluff_tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
-        mod_maps = list(MODIFIER_MAPS.values()) + list(self.series_id_to_pantheon_nickname.values())
+        mod_maps = [x for xs in list(MODIFIER_MAPS.values()) + list(self.series_id_to_pantheon_nickname.values())
+                    for x in xs]
 
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
@@ -120,33 +121,29 @@ class MonsterIndex2(aobject):
                                 for repl in self.replacement_tokens[token.lower()]:
                                     self.name_tokens[repl].add(me)
                     if token not in HAZARDOUS_IN_NAME_PREFIXES:
-                        for pas in mod_maps:
-                            if token in pas:
-                                self.modifiers[m].update(pas)
+                        if token in mod_maps:
+                            self.modifiers[m].update(token)
             for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
                     continue
                 self.fluff_tokens[token.lower()].add(m)
                 for repl in self.replacement_tokens[token.lower()]:
                     self.fluff_tokens[repl].add(m)
-                for pas in mod_maps:
-                    if token in pas:
-                        self.modifiers[m].update(pas)
+                if token in mod_maps:
+                    self.modifiers[m].update(token)
 
             # Monster Nickname
             for nick in self.monster_id_to_nickname[m.monster_id]:
                 self.manual_nick[nick].add(m)
-                for pas in mod_maps:
-                    if nick in pas:
-                        self.modifiers[m].update(pas)
+                if nick in mod_maps:
+                    self.modifiers[m].update(nick)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
                 self.manual_tree[nick].add(m)
-                for pas in mod_maps:
-                    if nick in pas:
-                        self.modifiers[m].update(pas)
+                if nick in mod_maps:
+                    self.modifiers[m].update(nick)
 
     @staticmethod
     def _name_to_tokens(oname):
