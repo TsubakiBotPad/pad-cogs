@@ -194,9 +194,6 @@ class PadInfo(commands.Cog):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
 
-        emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
-        emoji_cache.refresh_from_discord_bot(self.bot)
-
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
@@ -223,6 +220,8 @@ class PadInfo(commands.Cog):
         while self == self.bot.get_cog('PadInfo'):
             wait_time = 60 * 60 * 1
             try:
+                emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
+                emoji_cache.refresh_from_discord_bot(self.bot)
                 await self.refresh_index()
             except Exception as ex:
                 wait_time = 5
@@ -1233,19 +1232,19 @@ class PadInfo(commands.Cog):
 
         meanings = [
             *["Evo: " + k.value + additmods(v, modifier)
-                 for k, v in tms.EVO_MAP.items() if modifier in v],
+              for k, v in tms.EVO_MAP.items() if modifier in v],
             *["Type: " + k.name + additmods(v, modifier)
-                 for k, v in tms.TYPE_MAP.items() if modifier in v],
+              for k, v in tms.TYPE_MAP.items() if modifier in v],
             *["Misc: " + k.value + additmods(v, modifier)
-                 for k, v in tms.MISC_MAP.items() if modifier in v],
+              for k, v in tms.MISC_MAP.items() if modifier in v],
             *["Awakening: " + awakenings[k.value].name_en + additmods(v, modifier)
-                 for k, v in tms.AWOKEN_MAP.items() if modifier in v],
+              for k, v in tms.AWOKEN_MAP.items() if modifier in v],
             *["Main Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
-                 for k, v in tms.COLOR_MAP.items() if modifier in v],
+              for k, v in tms.COLOR_MAP.items() if modifier in v],
             *["Sub Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
-                 for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+              for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
             *["Series: " + series[k].name_en + additmods(v, modifier)
-                 for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+              for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
         ]
         for k, v in tms.DUAL_COLOR_MAP.items():
             if modifier not in v:
