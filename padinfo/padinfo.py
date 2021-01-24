@@ -1222,13 +1222,14 @@ class PadInfo(commands.Cog):
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
         tms = DGCOG.token_maps
+        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
-        def additmods(l, om):
-            if len(l) == 1:
+        def additmods(ms, om):
+            if len(ms) == 1:
                 return ""
-            return "; Additional modifiers: " + ', '.join(inline(m) for m in l if m != om)
+            return "; Alternate Names: " + ', '.join(inline(m) for m in ms if m != om)
 
         meanings = [
             *["Evo: " + k.value + additmods(v, modifier)
