@@ -1042,7 +1042,8 @@ class PadInfo(commands.Cog):
             if t not in DGCOG.index2.all_modifiers:
                 self.settings.add_typo_mod(t)
 
-        # print(mod_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1062,7 +1063,7 @@ class PadInfo(commands.Cog):
             # no modifiers match any monster in the evo tree
             return
 
-        # print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+        print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
         # Return most likely candidate based on query.
         mon = max(monster_gen,
