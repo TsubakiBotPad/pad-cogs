@@ -4,13 +4,9 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Color
 
-from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import createSingleMultiplierText
-from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
-from padinfo.view.leader_skill import LeaderSkillView
+from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialView
@@ -28,15 +24,6 @@ class IdMenu:
         self.ctx = ctx
         self.db_context = db_context
         self.allowed_emojis = allowed_emojis
-
-    async def make_base_embed(self, m: "MonsterModel"):
-        header = MonsterHeader.long(m)
-        embed = await self.make_custom_embed()
-        embed.set_thumbnail(url=MonsterImage.icon(m))
-        embed.title = header
-        embed.url = puzzledragonx(m)
-        embed.set_footer(text='Requester may click the reactions below to switch tabs')
-        return embed
 
     async def get_user_embed_color(self, pdicog):
         color = await pdicog.config.user(self.ctx.author).color()
@@ -124,24 +111,5 @@ class IdMenu:
         return LinksView.embed(m, color).to_embed()
 
     async def make_lssingle_embed(self, m: "MonsterModel"):
-        multiplier_text = createSingleMultiplierText(m.leader_skill)
-
-        embed = await self.make_custom_embed()
-        embed.title = '{}\n\n'.format(multiplier_text)
-        description = ''
-        description += '\n**{}**\n{}'.format(
-            MonsterHeader.short(m, link=True),
-            m.leader_skill.desc if m.leader_skill else 'None')
-        embed.description = description
-
-        return embed
-
-    async def make_custom_embed(self):
-        pdicog = self.ctx.bot.get_cog("PadInfo")
-        color = await pdicog.config.user(self.ctx.author).color()
-        if color is None:
-            return discord.Embed()
-        elif color == "random":
-            return discord.Embed(color=random.randint(0x000000, 0xffffff))
-        else:
-            return discord.Embed(color=discord.Color(color))
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return LeaderSkillSingleView.embed(m, color).to_embed()
