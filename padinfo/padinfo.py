@@ -377,7 +377,9 @@ class PadInfo(commands.Cog):
         """Monster info (evo materials tab)"""
         m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
-            await self._do_idmenu(ctx, m, self.mats_emoji)
+            menu = await self._do_idmenu(ctx, m, self.mats_emoji)
+            if menu == EMBED_NOT_GENERATED:
+                await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
         else:
             await self.makeFailureMsg(ctx, query, err)
 
@@ -433,6 +435,7 @@ class PadInfo(commands.Cog):
         mats_embed = await menu.make_evo_mats_embed(m)
         pic_embed = await menu.make_picture_embed(m)
         other_info_embed = await menu.make_otherinfo_embed(m)
+        pantheon_embed = await menu.make_pantheon_embed(m)
 
         emoji_to_embed = OrderedDict()
 
@@ -450,9 +453,9 @@ class PadInfo(commands.Cog):
 
         emoji_to_embed[self.id_emoji] = id_embed
         emoji_to_embed[self.evo_emoji] = evo_embed
-        emoji_to_embed[self.mats_emoji] = mats_embed
+        if mats_embed:
+            emoji_to_embed[self.mats_emoji] = mats_embed
         emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = await menu.make_pantheon_embed(m)
         if pantheon_embed:
             emoji_to_embed[self.pantheon_emoji] = pantheon_embed
 
@@ -1046,7 +1049,8 @@ class PadInfo(commands.Cog):
             if t not in DGCOG.index2.all_modifiers:
                 self.settings.add_typo_mod(t)
 
-        # print(mod_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
@@ -1066,7 +1070,7 @@ class PadInfo(commands.Cog):
             # no modifiers match any monster in the evo tree
             return
 
-        # print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+        print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
         # Return most likely candidate based on query.
         mon = max(monster_gen,
