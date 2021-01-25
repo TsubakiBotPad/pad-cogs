@@ -16,15 +16,15 @@ if TYPE_CHECKING:
 MAX_MONS_TO_SHOW = 5
 
 
-def mat_use_field(mons, title):
+def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
     text = None
     if len(mons) == 0:
         text = "None"
-    elif len(mons) > MAX_MONS_TO_SHOW:
-        text = f"({len(mons) - MAX_MONS_TO_SHOW} more monster{'s' if len(mons) - MAX_MONS_TO_SHOW > 1 else ''})"
+    elif len(mons) > max_mons:
+        text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''})"
     return EmbedField(
         title,
-        Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:MAX_MONS_TO_SHOW]), text))
+        Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:max_mons]), text))
 
 def skillup_field(mons, sec, link):
     text = None
@@ -57,9 +57,9 @@ class MaterialView:
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=pad_info_footer(),
             embed_fields=[f for f in [
-                mat_use_field(mats, "Evo materials"),
-                mat_use_field(usedin, "Material for") if usedin else None,
+                mat_use_field(mats, "Evo materials") if 0 not in [t.value for t in m.types] else None,
+                mat_use_field(usedin, "Material for", 10) if usedin else None,
                 mat_use_field(gemusedin, "Evo gem is mat for") if gemusedin else None,
-                skillup_field(skillups, sec, link)
+                skillup_field(skillups, sec, link) if 0 not in [t.value for t in m.types] else None
             ] if f is not None]
         )
