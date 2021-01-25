@@ -228,7 +228,7 @@ class PadBuildImgSettings(CogSettings):
         await self.downloadAssets(REMOTE_ASSET_URL + AWK_CIRCLE + '.png', params.ASSETS_DIR + AWK_CIRCLE + '.png')
         await self.downloadAssets(REMOTE_ASSET_URL + AWK_STAR + '.png', params.ASSETS_DIR + AWK_STAR + '.png')
         await self.downloadAssets(REMOTE_ASSET_URL + DELAY_BUFFER + '.png', params.ASSETS_DIR + DELAY_BUFFER + '.png')
-        font_name = os.path.basename(params.FONT_NAME)
+        font_name = os.path.treename(params.FONT_NAME)
         await self.downloadAssets(REMOTE_ASSET_URL + font_name, params.ASSETS_DIR + font_name)
 
     def dmOnly(self, server_id):
@@ -507,7 +507,7 @@ class PadBuildImageGenerator(object):
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
-                ass_card, err, debug_info = await self.padinfo_cog.findMonster(tok.value)
+                ass_card, err, debug_info = await self.padinfo_cog.findMonster1(tok.value)
                 if ass_card is None:
                     raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
             elif tok.type == 'REPEAT':
@@ -517,7 +517,7 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card, err, debug_info = await self.padinfo_cog.findMonster(tok.value)
+                    card, err, debug_info = await self.padinfo_cog.findMonster1(tok.value)
                     if card is None:
                         raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
                     if not card.is_inheritable:

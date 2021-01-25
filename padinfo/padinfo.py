@@ -5,19 +5,25 @@ import os
 import random
 import re
 import urllib.parse
-from collections import OrderedDict
-from enum import Enum
+from collections import OrderedDict, defaultdict
+from datetime import datetime
 from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
 import tsutils
+from Levenshtein import jaro_winkler
+from discordmenu.emoji_cache import emoji_cache
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, inline
+from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
+from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
-from .id_menu import IdMenu
+from padinfo.core.button_info import button_info
+from padinfo.core.find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
+from padinfo.id_menu import IdMenu
+from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -26,33 +32,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
-HELP_MSG = """
-{0.prefix}helpid : shows this message
-{0.prefix}id <query> : look up a monster and show a link to puzzledragonx
-{0.prefix}pic <query> : Look up a monster and display its image inline
-
-Options for <query>
-    <id> : Find a monster by ID
-        {0.prefix}id 1234 (picks sun quan)
-    <name> : Take the best guess for a monster, picks the most recent monster
-        {0.prefix}id kali (picks mega awoken d kali)
-    <prefix> <name> : Limit by element or awoken, e.g.
-        {0.prefix}id ares  (selects the most recent, revo ares)
-        {0.prefix}id aares (explicitly selects awoken ares)
-        {0.prefix}id a ares (spaces work too)
-        {0.prefix}id rd ares (select a specific evo for ares, the red/dark one)
-        {0.prefix}id r/d ares (slashes, spaces work too)
-
-computed nickname list and overrides: https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/edit
-submit an override suggestion: https://docs.google.com/forms/d/1kJH9Q0S8iqqULwrRqB9dSxMOMebZj6uZjECqi4t9_z0/edit"""
-
 EMBED_NOT_GENERATED = -1
 
-
-class ServerFilter(Enum):
-    any = 0
-    na = 1
-    jp = 2
+IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide"
 
 
 def _data_file(file_name: str) -> str:
@@ -73,9 +55,9 @@ COLORS = {
 
 
 class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
-                 pad_info=None, selected_emoji=None, bot=None,
-                 db_context: "DbContext" = None):
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, pad_info=None, selected_emoji=None, bot=None,
+                 db_context: "DbContext" = None, **kwargs):
+        super().__init__(emoji_to_embed, **kwargs)
         self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -87,10 +69,10 @@ class IdEmojiUpdater(EmojiUpdater):
         self.pad_info.settings.log_emoji("start_" + selected_emoji)
 
     async def on_update(self, ctx, selected_emoji):
-        evoID = self.pad_info.settings.checkEvoID(ctx.author.id)
+        evo_id = self.pad_info.settings.checkEvoID(ctx.author.id)
         self.pad_info.settings.log_emoji(selected_emoji)
-        if evoID:
-            evos = sorted({*self.db_context.graph.get_alt_cards(self.m.monster_id)})
+        if evo_id:
+            evos = sorted({*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)})
             index = evos.index(self.m.monster_id)
             if selected_emoji == self.pad_info.previous_monster_emoji:
                 new_id = evos[index - 1]
@@ -122,13 +104,14 @@ class IdEmojiUpdater(EmojiUpdater):
 
         self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
                                                                    m=self.m, scroll=sorted(
-                {*self.db_context.graph.get_alt_cards(self.m.monster_id)}) if evoID else [], menu_type=1)
+                {*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)}) if evo_id else [], menu_type=1)
         return True
 
 
 class ScrollEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None,
-                 ms: "list[int]" = None, selected_emoji=None, pad_info=None, bot=None):
+    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, ms: "list[int]" = None, selected_emoji=None,
+                 pad_info=None, bot=None, **kwargs):
+        super().__init__(emoji_to_embed, **kwargs)
         self.ctx = ctx
         self.emoji_dict = emoji_to_embed
         self.m = m
@@ -169,8 +152,6 @@ class PadInfo(commands.Cog):
         self.settings = PadInfoSettings("padinfo")
 
         self.index_all = None
-        self.index_na = None
-        self.index_jp = None
         self.index_lock = asyncio.Lock()
 
         self.menu = Menu(bot)
@@ -178,12 +159,11 @@ class PadInfo(commands.Cog):
         # These emojis are the keys into the idmenu submenus
         self.id_emoji = '\N{HOUSE BUILDING}'
         self.evo_emoji = char_to_emoji('e')
-        self.mats_emoji = char_to_emoji('m')
+        self.mats_emoji = '\N{MEAT ON BONE}'
         self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
         self.pantheon_emoji = '\N{CLASSICAL BUILDING}'
-        self.skillups_emoji = '\N{MEAT ON BONE}'
         self.pic_emoji = '\N{FRAME WITH PICTURE}'
         self.other_info_emoji = '\N{SCROLL}'
         self.first_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
@@ -198,17 +178,19 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
         self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
 
+        self.historic_lookups_file_path_id3 = _data_file('historic_lookups_id3.json')
+        self.historic_lookups_id3 = safe_read_json(self.historic_lookups_file_path_id3)
+
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0, color=None)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False)
+        self.config.register_user(survey_mode=0, color=None, beta_id3=False)
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
-        self.index_na = None
-        self.index_jp = None
         self.historic_lookups = {}
         self.historic_lookups_id2 = {}
+        self.historic_lookups_id3 = {}
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -227,6 +209,8 @@ class PadInfo(commands.Cog):
         while self == self.bot.get_cog('PadInfo'):
             wait_time = 60 * 60 * 1
             try:
+                emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
+                emoji_cache.refresh_from_discord_bot(self.bot)
                 await self.refresh_index()
             except Exception as ex:
                 wait_time = 5
@@ -246,13 +230,6 @@ class PadInfo(commands.Cog):
         async with self.index_lock:
             logger.debug('Loading ALL index')
             self.index_all = await dg_cog.create_index()
-
-            logger.debug('Loading NA index')
-            self.index_na = await dg_cog.create_index(lambda m: m.on_na)
-
-            logger.debug('Loading JP index')
-            self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
-
         logger.info('Done refreshing indexes')
 
     def get_monster(self, monster_id: int):
@@ -262,49 +239,58 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
-            await ctx.send(IdMenu.monster_header(m))
+            await ctx.send(MonsterHeader.short(m))
             await ctx.send(box(m.name_ja))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
-    @commands.command(name="id", aliases="iD Id ID".split())
+    @commands.command(name="id", aliases=["iD", "Id", "ID"])
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        prefix = ctx.prefix + "id"
-        query = prefix.join(filter(None, query.split(prefix)))
+        if await self.config.user(ctx.author).beta_id3():
+            await self._do_id3(ctx, query)
+        else:
+            await self._do_id(ctx, query)
+
+    @commands.command(aliases=["idold", "oldid"])
+    @checks.bot_has_permissions(embed_links=True)
+    async def id1(self, ctx, *, query):
+        """Do a search via id1"""
         await self._do_id(ctx, query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id(ctx, query, server_filter=ServerFilter.na)
+        await self._do_id3(ctx, "inna " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id(ctx, query, server_filter=ServerFilter.jp)
+        await self._do_id3(ctx, "injp " + query)
 
-    async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = await self.findMonster(query, server_filter=server_filter)
+    async def _do_id(self, ctx, query: str):
+        m, err, debug_info = await self.findMonster1(query)
 
-        if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, m.name_en if m else "None"))
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
-    async def send_survey_after(self, ctx, query, result):
+    async def send_survey_after(self, ctx, query, result_monster):
         sm = await self.config.user(ctx.author).survey_mode()
         sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
         if random.random() < sms:
-            params = urllib.parse.urlencode({'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': result})
-            url = "https://docs.google.com/forms/d/e/1FAIpQLSf66fE76epgslagdYteQR68HZAhxM43bmgsvurEzmHKsbaBDA/viewform?" + params
+            m1, _, _ = await self.findMonster1(query)
+            id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
+            id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
+            params = urllib.parse.urlencode(
+                {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+            url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
                                                     yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
@@ -347,68 +333,67 @@ class PadInfo(commands.Cog):
         """Monster info (main tab)"""
         await self._do_id2(ctx, query)
 
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id2na(self, ctx, *, query: str):
-        """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id2(ctx, query, server_filter=ServerFilter.na)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id2jp(self, ctx, *, query: str):
-        """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id2(ctx, query, server_filter=ServerFilter.jp)
-
-    async def _do_id2(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = await self.findMonster2(query, server_filter=server_filter)
+    async def _do_id2(self, ctx, query: str):
+        m, err, debug_info = await self.findMonster2(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        await self._do_id3(ctx, query)
+
+    async def _do_id3(self, ctx, query):
+        m = await self.findMonster3(query)
+        if m and m.monster_no_na != m.monster_no_jp:
+            await ctx.send("The NA ID and JP ID of this card differ! "
+                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) + \
+                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
+                           ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
+        if await self.config.do_survey():
+            asyncio.create_task(self.send_survey_after(ctx, query, m))
+
+        if m is not None:
+            await self._do_idmenu(ctx, m, self.id_emoji)
+        else:
+            await self.makeFailureMsg(ctx, query, "No monster matched")
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.evo_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
-    @commands.command(name="mats", aliases=['evomats', 'evomat'])
+    @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
-            await self._do_idmenu(ctx, m, self.mats_emoji)
+            menu = await self._do_idmenu(ctx, m, self.mats_emoji)
+            if menu == EMBED_NOT_GENERATED:
+                await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
             if menu == EMBED_NOT_GENERATED:
                 await ctx.send(inline('Not a pantheon monster'))
         else:
-            await ctx.send(self.makeFailureMsg(err))
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def skillups(self, ctx, *, query: str):
-        """Monster info (evolutions tab)"""
-        m, err, debug_info = await self.findMonster(query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.skillups_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline('No skillups available'))
-        else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         DGCOG = self.bot.get_cog("Dadguide")
@@ -445,27 +430,14 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
-        id_embed = await menu.make_embed(m)
-        evo_embed = await menu.make_evo_embed(m)
+        id_embed = await menu.make_id_embed_v2(m)
+        evo_embed = await menu.make_evo_embed_v2(m)
         mats_embed = await menu.make_evo_mats_embed(m)
-        animated = m.has_animation
-        pic_embed = await menu.make_picture_embed(m, animated=animated)
+        pic_embed = await menu.make_picture_embed(m)
         other_info_embed = await menu.make_otherinfo_embed(m)
+        pantheon_embed = await menu.make_pantheon_embed(m)
 
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.id_emoji] = id_embed
-        emoji_to_embed[self.evo_emoji] = evo_embed
-        emoji_to_embed[self.mats_emoji] = mats_embed
-        emoji_to_embed[self.pic_emoji] = pic_embed
-        pantheon_embed = await menu.make_pantheon_embed(m)
-        if pantheon_embed:
-            emoji_to_embed[self.pantheon_emoji] = pantheon_embed
-
-        skillups_embed = await menu.make_skillups_embed(m)
-        if skillups_embed:
-            emoji_to_embed[self.skillups_emoji] = skillups_embed
-
-        emoji_to_embed[self.other_info_emoji] = other_info_embed
 
         # it's impossible for the previous/next ones to be accessed because
         # IdEmojiUpdater won't allow it, however they have to be defined
@@ -478,6 +450,16 @@ class PadInfo(commands.Cog):
             emoji_to_embed[self.next_monster_emoji] = None
         if len(scroll) > 1 and menu_type != 1:
             emoji_to_embed[self.last_monster_emoji] = None
+
+        emoji_to_embed[self.id_emoji] = id_embed
+        emoji_to_embed[self.evo_emoji] = evo_embed
+        if mats_embed:
+            emoji_to_embed[self.mats_emoji] = mats_embed
+        emoji_to_embed[self.pic_emoji] = pic_embed
+        if pantheon_embed:
+            emoji_to_embed[self.pantheon_emoji] = pantheon_embed
+
+        emoji_to_embed[self.other_info_emoji] = other_info_embed
 
         # remove emoji needs to be last
         emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
@@ -501,7 +483,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = await menu.make_embed(m)
+            emoji_to_embed[emoji] = await menu.make_id_embed_v2(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -528,63 +510,77 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.pic_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def links(self, ctx, *, query: str):
         """Monster links"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = IdMenu(ctx)
             embed = await menu.make_links_embed(m)
             await ctx.send(embed=embed)
 
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.other_info_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def buttoninfo(self, ctx, *, query: str):
+        """Button farming theorycrafting info"""
+        monster, err, _ = await self.findMonsterCustom(ctx, query)
+        if monster is None:
+            await self.makeFailureMsg(ctx, query, err)
+            return
+        DGCOG = self.bot.get_cog("Dadguide")
+        info = button_info.get_info(DGCOG, monster)
+        info_str = button_info.to_string(monster, info)
+        for page in pagify(info_str):
+            await ctx.send(box(page))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
-            embed = await menu.make_header_embed(m)
+            embed = await menu.make_lookup_embed(m)
             await ctx.send(embed=embed)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['collabscroll'])
     @checks.bot_has_permissions(embed_links=True)
     async def seriesscroll(self, ctx, *, query: str):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         ms = DGCOG.database.get_monsters_by_series(m.series.series_id)
 
         ms.sort(key=lambda x: x.monster_id)
@@ -600,7 +596,7 @@ class PadInfo(commands.Cog):
         if m is not None:
             await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -608,13 +604,13 @@ class PadInfo(commands.Cog):
         """Scroll through the monsters in a collab"""
         DGCOG = self.bot.get_cog("Dadguide")
         db_context: "DbContext" = DGCOG.database
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
 
         if m is not None:
             await self._do_scrollmenu(ctx, m, sorted(db_context.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
                                       self.id_emoji)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -629,6 +625,9 @@ class PadInfo(commands.Cog):
         """
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
+
+        # Remove unicode quotation marks
+        whole_query = re.sub("[\u201c\u201d]", '"', whole_query)
 
         # deliberate order in case of multiple different separators.
         for sep in ('"', '/', ',', ' '):
@@ -651,9 +650,9 @@ class PadInfo(commands.Cog):
         else:  # no separators
             left_query, right_query = whole_query, None
 
-        left_m, left_err, _ = await self.findMonster(left_query)
+        left_m, left_err, _ = await self.findMonsterCustom(ctx, left_query)
         if right_query:
-            right_m, right_err, _ = await self.findMonster(right_query)
+            right_m, right_err, _ = await self.findMonsterCustom(ctx, right_query)
         else:
             right_m, right_err, = left_m, left_err
 
@@ -668,8 +667,8 @@ class PadInfo(commands.Cog):
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_ls_embed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = await menu.make_embed(left_m)
-        emoji_to_embed[self.right_emoji] = await menu.make_embed(right_m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(left_m)
+        emoji_to_embed[self.right_emoji] = await menu.make_id_embed_v2(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -679,22 +678,105 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        m, err, _ = await self.findMonster(query)
+        m, err, _ = await self.findMonsterCustom(ctx, query)
         if err:
             await ctx.send(err)
             return
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = await menu.make_embed(m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(aliases=['helppic', 'helpimg'])
-    @checks.bot_has_permissions(embed_links=True)
-    async def helpid(self, ctx):
-        """Whispers you info on how to craft monster queries for [p]id"""
-        await ctx.author.send(box(HELP_MSG.format(ctx)))
+    @commands.group()
+    # @checks.is_owner()
+    async def idtest(self, ctx):
+        """ID Test suite subcommands"""
+
+    @idtest.command(name="add")
+    async def idt_add(self, ctx, id: int, *, query):
+        async with self.config.test_suite() as suite:
+            suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
+        await ctx.tick()
+
+    @idtest.command(name="import")
+    async def idt_import(self, ctx, *, queries):
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
+        async with self.config.test_suite() as suite:
+            for query, result, reason in cases:
+                suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
+        await ctx.tick()
+
+    @idtest.command(name="remove", aliases=["delete", "rm"])
+    async def idt_remove(self, ctx, *, item):
+        async with self.config.test_suite() as suite:
+            if item in suite:
+                del suite[item]
+            elif item.isdigit() and int(item) < len(suite):
+                del suite[sorted(suite)[int(item)]]
+            else:
+                await ctx.react_quietly("\N{CROSS MARK}")
+                return
+        await ctx.tick()
+
+    @idtest.command(name="setreason", aliases=["addreason"])
+    async def idt_setreason(self, ctx, number: int, *, reason):
+        async with self.config.test_suite() as suite:
+            if number >= len(suite):
+                await ctx.react_quietly("\N{CROSS MARK}")
+                return
+            suite[sorted(suite)[number]]['reason'] = reason
+        await ctx.tick()
+
+    @idtest.command(name="list")
+    async def idt_list(self, ctx):
+        suite = await self.config.test_suite()
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items())):
+            o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="listrecent")
+    async def idt_listrecent(self, ctx, count: int = 0):
+        suite = await self.config.test_suite()
+        if count == 0:
+            count = len(suite)
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
+            o += f"{kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="run", aliases=["test"])
+    async def idt_run(self, ctx):
+        suite = await self.config.test_suite()
+        c = 0
+        o = ""
+        ml = len(max(suite, key=len)) + 2
+        async with ctx.typing():
+            for q, r in suite.items():
+                m = await self.findMonster3(q)
+                mid = m and m.monster_id
+                if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                    reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
+                    q = '"' + q + '"'
+                    o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {mid}{reason}\n"
+                else:
+                    c += 1
+        if c != len(suite):
+            o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
+        else:
+            o += "\n\nAll tests succeeded."
+        for page in pagify(o):
+            await ctx.send(box(page))
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -715,7 +797,7 @@ class PadInfo(commands.Cog):
             server = 'na'
         query = query.strip().lower()
 
-        m, err, debug_info = await self.findMonster(query)
+        m, err, debug_info = await self.findMonsterCustom(ctx, query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
@@ -723,14 +805,14 @@ class PadInfo(commands.Cog):
                 return
             base_dir = self.settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
-            header = '{} ({})'.format(IdMenu.monster_header(m), server)
+            header = '{} ({})'.format(MonsterHeader.short(m), server)
             if not os.path.exists(voice_file):
                 await ctx.send(inline('Could not find voice for ' + header))
                 return
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await ctx.send(self.makeFailureMsg(err))
+            await self.makeFailureMsg(ctx, query, err)
 
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
@@ -769,6 +851,22 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send("value must be `always`, `sometimes`, or `never`")
 
+    @idset.command()
+    async def beta(self, ctx, value: bool = True):
+        """Opt in (or out D:) to the id3 beta test!"""
+        await self.config.user(ctx.author).beta_id3.set(value)
+        await ctx.tick()
+
+    @idset.command()
+    @checks.is_owner()
+    async def betacount(self, ctx):
+        """Check the number of beta testers"""
+        c = 0
+        for v in (await self.config.all_users()).values():
+            if v['beta_id3']:
+                c += 1
+        await ctx.send(inline(str(c) + " user(s) have opted in."))
+
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
@@ -786,7 +884,7 @@ class PadInfo(commands.Cog):
         elif re.match(r"^#?[0-9a-fA-F]{6}$", color):
             await self.config.user(ctx.author).color.set(int(color.lstrip("#"), 16))
         else:
-            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n"+", ".join(COLORS))
+            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
             return
         await ctx.tick()
 
@@ -845,7 +943,7 @@ class PadInfo(commands.Cog):
         s = 0
         f = []
         async for c, query in AsyncIter(enumerate(hist_aggreg)):
-            m1, err1, debug_info1 = await self.findMonster(query)
+            m1, err1, debug_info1 = await self.findMonsterCustom(ctx, query)
             m2, err2, debug_info2 = await self.findMonster2(query)
             if c % 50 == 0:
                 await ctx.send(inline("{}/{} complete.".format(c, len(hist_aggreg))))
@@ -868,16 +966,32 @@ class PadInfo(commands.Cog):
         server_ids = [int(sid) for sid in self.settings.emojiServers()]
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
-    @staticmethod
-    def makeFailureMsg(err):
-        msg = ('Lookup failed: {}.\n'
+    async def makeFailureMsg(self, ctx, query: str, err):
+        if await self.config.user(ctx.author).beta_id3():
+            await ctx.send("Sorry, your query {0} didn't match any results :(\n"
+                           "See <{2}> for "
+                           "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
+                           "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
+            return
+        msg = ('Lookup failed: {0}.\n'
                'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
-               'Unexpected results? Use ^helpid for more info.').format(err)
-        return box(msg)
+               'Unexpected results? Use {1.prefix}helpid for more info.').format(err, ctx)
+        await ctx.send(box(msg))
+        await ctx.send('Looking for the beta test? Type `{0.prefix}idset beta y`'.format(ctx))
 
-    async def findMonster(self, query, server_filter=ServerFilter.any):
+    async def findMonsterCustom(self, ctx, query):
+        if await self.config.user(ctx.author).beta_id3():
+            m = await self.findMonster3(query)
+            if m:
+                return m, "", ""
+            else:
+                return None, "Monster not found", ""
+        else:
+            return await self.findMonster1(query)
+
+    async def findMonster1(self, query):
         query = rmdiacritics(query)
-        nm, err, debug_info = await self._findMonster(query, server_filter)
+        nm, err, debug_info = await self._findMonster(query)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups[query] = monster_no
@@ -887,23 +1001,15 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    async def _findMonster(self, query, server_filter=ServerFilter.any) -> "NamedMonster":
+    async def _findMonster(self, query) -> "NamedMonster":
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
-        if server_filter == ServerFilter.any:
-            monster_index = self.index_all
-        elif server_filter == ServerFilter.na:
-            monster_index = self.index_na
-        elif server_filter == ServerFilter.jp:
-            monster_index = self.index_jp
-        else:
-            raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
-        return monster_index.find_monster(query)
+        return self.index_all.find_monster(query)
 
-    async def findMonster2(self, query, server_filter=ServerFilter.any):
+    async def findMonster2(self, query):
         query = rmdiacritics(query)
-        nm, err, debug_info = await self._findMonster2(query, server_filter)
+        nm, err, debug_info = await self._findMonster2(query)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups_id2[query] = monster_no
@@ -913,19 +1019,208 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    async def _findMonster2(self, query, server_filter=ServerFilter.any):
+    async def _findMonster2(self, query):
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
-        if server_filter == ServerFilter.any:
-            monster_index = self.index_all
-        elif server_filter == ServerFilter.na:
-            monster_index = self.index_na
-        elif server_filter == ServerFilter.jp:
-            monster_index = self.index_jp
+        return self.index_all.find_monster2(query)
+
+    async def findMonster3(self, query):
+        m = await self._findMonster3(query)
+
+        monster_no = m.monster_id if m else -1
+        self.historic_lookups_id3[query] = monster_no
+        json.dump(self.historic_lookups_id3, open(self.historic_lookups_file_path_id3, "w+"))
+
+        return m
+
+    async def _findMonster3(self, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        if DGCOG is None:
+            raise ValueError("Dadguide cog is not loaded")
+        await DGCOG.wait_until_ready()
+
+        query = rmdiacritics(query).lower()
+        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
+
+        name_query_tokens.difference_update({'|'})
+
+        for t in mod_tokens.union(neg_mod_tokens):
+            if t not in DGCOG.index2.all_modifiers:
+                self.settings.add_typo_mod(t)
+
+        print(mod_tokens, name_query_tokens)
+        print(mod_tokens, name_query_tokens)
+
+        if name_query_tokens:
+            monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
+            if monster_gen is None:
+                # No monsters match the given name tokens
+                return
         else:
-            raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
-        return monster_index.find_monster2(query)
+            # There are no name tokens in the query
+            monster_gen = {*DGCOG.database.get_all_monsters()}
+            monster_score = defaultdict(int)
+
+        # Expand search to the evo tree
+        monster_gen = find_monster.get_monster_evos(DGCOG.database, monster_gen, monster_score)
+        monster_gen = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, monster_score, monster_gen,
+                                                     DGCOG.index2.modifiers)
+        if not monster_gen:
+            # no modifiers match any monster in the evo tree
+            return
+
+        print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+
+        # Return most likely candidate based on query.
+        mon = max(monster_gen,
+                  key=lambda m: (monster_score[m],
+                                 not m.is_equip,
+                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", query)),  # Match na on id overlap
+                                 series_priority.get(m.series.series_type),
+                                 m.on_na if m.series.series_type == "collab" else 0,
+                                 DGCOG.database.graph.monster_is_rem_evo(m),
+                                 not all(t.value in [0, 12, 14, 15] for t in m.types),
+                                 not any(t.value in [0, 12, 14, 15] for t in m.types),
+                                 -DGCOG.database.graph.get_base_id(m),
+                                 m.rarity,
+                                 m.monster_no_na))
+
+        return mon
+
+    @commands.command(aliases=["iddebug"])
+    async def debugid(self, ctx, *, query):
+        """Get helpful id information about a monster"""
+        DGCOG = self.bot.get_cog("Dadguide")
+        m = await self.findMonster3(query)
+        if m is None:
+            await ctx.send(box("Your query didn't match any monsters."))
+            return
+        bm = DGCOG.database.graph.get_base_monster(m)
+        pfxs = DGCOG.index2.modifiers[m]
+        EVOANDTYPE = DGCOG.token_maps.EVO_TOKENS.union(DGCOG.token_maps.TYPE_TOKENS)
+        o = (f"[{m.monster_id}] {m.name_en}\n"
+             f"Base: [{bm.monster_id}] {bm.name_en}\n"
+             f"Series: {m.series.name_en} ({m.series_id})\n\n"
+             f"[Name Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.name_tokens.items() if m in ms))}\n"
+             f"[Fluff Tokens] {' '.join(sorted(t for t, ms in DGCOG.index2.fluff_tokens.items() if m in ms))}\n\n"
+             f"[Manual Tokens]\n"
+             f"     Treenames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_tree.items() if m in ms))}\n"
+             f"     Nicknames: {' '.join(sorted(t for t, ms in DGCOG.index2.manual_nick.items() if m in ms))}\n\n"
+             f"[Modifier Tokens]\n"
+             f"     Attribute: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.COLOR_TOKENS))}\n"
+             f"     Awakening: {' '.join(sorted(t for t in pfxs if t in DGCOG.token_maps.AWAKENING_TOKENS))}\n"
+             f"    Evo & Type: {' '.join(sorted(t for t in pfxs if t in EVOANDTYPE))}\n"
+             f"         Other: {' '.join(sorted(t for t in pfxs if t not in DGCOG.token_maps.OTHER_HIDDEN_TOKENS))}\n")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @commands.command()
+    async def debugiddist(self, ctx, s1, s2):
+        dist = jaro_winkler(s1, s2)
+        yes = '\N{WHITE HEAVY CHECK MARK}'
+        no = '\N{CROSS MARK}'
+        await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
+                       box(f"Jaro-Winkler Distance:    {round(dist, 4)}\n"
+                           f"Modifier token threshold: {find_monster.MODIFIER_JW_DISTANCE}  "
+                           f"{yes if dist >= find_monster.MODIFIER_JW_DISTANCE else no}\n"
+                           f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}   "
+                           f"{yes if dist >= find_monster.TOKEN_JW_DISTANCE else no}"))
+
+    @commands.command(aliases=['helpid'])
+    async def idhelp(self, ctx, *, query=""):
+        """Get help with an id query"""
+        await ctx.send(
+            "See <{0}> for documentation on `{1.prefix}id`! Use `{1.prefix}idmeaning` to query the meaning of any modifier token.".format(
+                IDGUIDE, ctx))
+        if query:
+            await self.debugid(ctx, query=query)
+
+    @commands.command()
+    async def exportmodifiers(self, ctx):
+        DGCOG = self.bot.get_cog("Dadguide")
+        tms = DGCOG.token_maps
+        awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
+        series = {s.series_id: s for s in DGCOG.database.get_all_series()}
+
+        o = ("Jump to:\n\n"
+             "* [Types](#types)\n"
+             "* [Evolutions](#evolutions)\n"
+             "* [Misc](#misc)\n"
+             "* [Awakenings](#awakenings)\n"
+             "* [Series](#series)\n"
+             "* [Attributes](#attributes)\n\n\n\n")
+
+        etable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.EVO_MAP.items()]
+        o += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ttable = [(k.name, ", ".join(map(inline, v))) for k, v in tms.TYPE_MAP.items()]
+        o += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
+        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in tms.MISC_MAP.items()]
+        o += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
+        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in tms.AWOKEN_MAP.items()]
+        o += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
+        stable = [(series[k].name_en, ", ".join(map(inline, v)))
+                  for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items()]
+        o += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in tms.COLOR_MAP.items()]
+        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
+                   tms.SUB_COLOR_MAP.items()]
+        for k, v in tms.DUAL_COLOR_MAP.items():
+            k0name = k[0].name.replace("Nil", "None")
+            k1name = k[1].name.replace("Nil", "None")
+            ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
+        o += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+
+        await ctx.send(file=text_to_file(o, filename="table.md"))
+
+    @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod"])
+    async def idmeaning(self, ctx, *, modifier):
+        modifier = modifier.replace(" ", "")
+        DGCOG = self.bot.get_cog("Dadguide")
+        tms = DGCOG.token_maps
+        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
+        awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
+        series = {s.series_id: s for s in DGCOG.database.get_all_series()}
+
+        def additmods(ms, om):
+            if len(ms) == 1:
+                return ""
+            return "; Alternate Names: " + ', '.join(inline(m) for m in ms if m != om)
+
+        meanings = [
+            *["Evo: " + k.value + additmods(v, modifier)
+              for k, v in tms.EVO_MAP.items() if modifier in v],
+            *["Type: " + k.name + additmods(v, modifier)
+              for k, v in tms.TYPE_MAP.items() if modifier in v],
+            *["Misc: " + k.value + additmods(v, modifier)
+              for k, v in tms.MISC_MAP.items() if modifier in v],
+            *["Awakening: " + awakenings[k.value].name_en + additmods(v, modifier)
+              for k, v in tms.AWOKEN_MAP.items() if modifier in v],
+            *["Main Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+              for k, v in tms.COLOR_MAP.items() if modifier in v],
+            *["Sub Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+              for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+            *["Series: " + series[k].name_en + additmods(v, modifier)
+              for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+
+            *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", modifier)],
+            *["Base Rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
+            *[f"[UNSUPPORTED] Multiple Awakenings: {m}x {awakenings[a.value].name_en}"
+              f"{additmods([f'{m}*{d}' for d in v], modifier)}"
+              for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), modifier)
+              for a, v in tms.AWOKEN_MAP.items() if ag in v]
+        ]
+        for k, v in tms.DUAL_COLOR_MAP.items():
+            if modifier not in v:
+                continue
+            k0name = k[0].name.replace("Nil", "None")
+            k1name = k[1].name.replace("Nil", "None")
+            meanings.append("Dual Attr: " + k0name + "/" + k1name + additmods(v, modifier))
+
+        if meanings:
+            await ctx.send("\n".join(meanings))
+        else:
+            await ctx.send(f"There are no modifiers that match `{modifier}`.")
 
 
 class PadInfoSettings(CogSettings):
@@ -935,6 +1230,7 @@ class PadInfoSettings(CogSettings):
             'alt_id_optout': [],
             'voice_dir_path': '',
             'emoji_use': {},
+            'typo_mods': [],
         }
         return config
 
@@ -976,4 +1272,8 @@ class PadInfoSettings(CogSettings):
 
     def log_emoji(self, emote):
         self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
+        self.save_settings()
+
+    def add_typo_mod(self, typo):
+        self.bot_settings['typo_mods'].append(typo)
         self.save_settings()

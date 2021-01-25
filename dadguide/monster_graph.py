@@ -1,16 +1,18 @@
-import networkx
 import json
-from typing import Optional
 from collections import defaultdict
+from typing import Optional, List
+
+import networkx
+
 from .database_manager import DadguideDatabase
-from .models.enum_types import EvoType, InternalEvoType
-from .models.monster_model import MonsterModel
-from .models.leader_skill_model import LeaderSkillModel
 from .models.active_skill_model import ActiveSkillModel
-from .models.series_model import SeriesModel
-from .models.evolution_model import EvolutionModel
-from .models.awoken_skill_model import AwokenSkillModel
 from .models.awakening_model import AwakeningModel
+from .models.awoken_skill_model import AwokenSkillModel
+from .models.enum_types import EvoType, InternalEvoType
+from .models.evolution_model import EvolutionModel
+from .models.leader_skill_model import LeaderSkillModel
+from .models.monster_model import MonsterModel
+from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT
   monsters.*,
@@ -40,6 +42,7 @@ MONSTER_QUERY = """SELECT
   series.name_ja AS s_name_ja,
   series.name_en AS s_name_en,
   series.name_ko AS s_name_ko,
+  series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
@@ -155,7 +158,8 @@ class MonsterGraph(object):
             s_model = SeriesModel(series_id=m.series_id,
                                   name_ja=m.s_name_ja,
                                   name_en=m.s_name_en,
-                                  name_ko=m.s_name_ko
+                                  name_ko=m.s_name_ko,
+                                  series_type=m.s_series_type
                                   )
 
             m_model = MonsterModel(monster_id=m.monster_id,
@@ -236,6 +240,10 @@ class MonsterGraph(object):
                     mat, evo_model.to_id, type="material_of", model=evo_model)
                 already_used_in_this_evo.append(mat)
 
+        # Caching
+        for mid in self.graph.nodes:
+            self.graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
+
         self.edges = self.graph.edges
         self.nodes = self.graph.nodes
 
@@ -285,7 +293,7 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
-    def get_alt_cards(self, monster_id):
+    def process_alt_versions(self, monster_id):
         ids = set()
         to_check = {monster_id}
         while to_check:
@@ -300,18 +308,24 @@ class MonsterGraph(object):
             ids.add(mid)
         return ids
 
+    def get_alt_ids_by_id(self, monster_id):
+        return self.nodes[monster_id]['alt_versions']
+
     def get_alt_monsters_by_id(self, monster_id):
-        ids = self.get_alt_cards(monster_id)
+        ids = self.get_alt_ids_by_id(monster_id)
         return [self.get_monster(m_id) for m_id in ids]
 
     def get_alt_monsters(self, monster: MonsterModel):
         return self.get_alt_monsters_by_id(monster.monster_id)
 
     def get_base_id_by_id(self, monster_id):
-        alt_cards = self.get_alt_cards(monster_id)
+        alt_cards = self.get_alt_ids_by_id(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[0]
+
+    def get_base_id(self, monster):
+        return self.get_base_id_by_id(monster.monster_id)
 
     def get_base_monster_by_id(self, monster_id):
         return self.get_monster(self.get_base_id_by_id(monster_id))
@@ -353,7 +367,7 @@ class MonsterGraph(object):
         return self.monster_is_transform_base_by_id(monster.monster_no)
 
     def get_numerical_sort_top_id_by_id(self, monster_id):
-        alt_cards = self.get_alt_cards(monster_id)
+        alt_cards = self.get_alt_ids_by_id(monster_id)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[-1]
@@ -429,13 +443,13 @@ class MonsterGraph(object):
     def get_next_transform_by_monster(self, monster: MonsterModel):
         return self.get_next_evolutions_by_monster_id(monster.monster_no)
 
-    def evo_mats_by_monster_id(self, monster_id: int) -> list:
+    def evo_mats_by_monster_id(self, monster_id: int) -> List[MonsterModel]:
         evo = self.get_evo_by_monster_id(monster_id)
         if evo is None:
             return []
         return [self.get_monster(mat) for mat in evo.mats]
 
-    def evo_mats_by_monster(self, monster: MonsterModel) -> list:
+    def evo_mats_by_monster(self, monster: MonsterModel) -> List[MonsterModel]:
         return self.evo_mats_by_monster_id(monster.monster_no)
 
     # farmable
@@ -447,7 +461,7 @@ class MonsterGraph(object):
 
     def monster_is_farmable_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_farmable_by_id(m))
+            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_farmable_by_id(m))
 
     def monster_is_farmable_evo(self, monster: MonsterModel):
         return self.monster_is_farmable_evo_by_id(monster.monster_no)
@@ -461,7 +475,7 @@ class MonsterGraph(object):
 
     def monster_is_mp_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_mp_by_id(m))
+            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_mp_by_id(m))
 
     def monster_is_mp_evo(self, monster: MonsterModel):
         return self.monster_is_mp_evo_by_id(monster.monster_no)
@@ -475,7 +489,7 @@ class MonsterGraph(object):
 
     def monster_is_pem_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_pem_by_id(m))
+            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_pem_by_id(m))
 
     def monster_is_pem_evo(self, monster: MonsterModel):
         return self.monster_is_pem_evo_by_id(monster.monster_no)
@@ -489,10 +503,31 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo_by_id(self, monster_id):
         return any(
-            m for m in self.get_evo_tree(monster_id) if self.monster_is_rem_by_id(m))
+            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_rem_by_id(m))
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+    
+    def monster_acquisition(self, monster: MonsterModel):
+        acquire_text = None
+        if self.monster_is_farmable(monster) and not self.monster_is_mp_evo(monster):
+            # Some MP shop monsters 'drop' in PADR
+            acquire_text = 'Farmable'
+        elif self.monster_is_farmable_evo(monster) and not self.monster_is_mp_evo(monster):
+            acquire_text = 'Farmable Evo'
+        elif monster.in_pem:
+            acquire_text = 'In PEM'
+        elif self.monster_is_pem_evo(monster):
+            acquire_text = 'PEM Evo'
+        elif monster.in_rem:
+            acquire_text = 'In REM'
+        elif self.monster_is_rem_evo(monster):
+            acquire_text = 'REM Evo'
+        elif monster.in_mpshop:
+            acquire_text = 'MP Shop'
+        elif self.monster_is_mp_evo(monster):
+            acquire_text = 'MP Shop Evo'
+        return acquire_text
 
     def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
         next_monster = None
@@ -535,8 +570,12 @@ class MonsterGraph(object):
     def evo_gem_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
         return self.evo_gem_monster_by_id(monster.monster_no)
 
-    def material_of_ids_by_id(self, monster_id: int) -> list:
+    def material_of_ids_by_id(self, monster_id: int) -> List[int]:
         return sorted(self._get_edges(self.graph[monster_id], 'material_of'))
 
-    def material_of_ids(self, monster: MonsterModel) -> list:
+    def material_of_ids(self, monster: MonsterModel) -> List[int]:
         return self.material_of_ids_by_id(monster.monster_no)
+
+    def material_of_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
+        return [self.get_monster(m)
+                for m in self.material_of_ids_by_id(monster.monster_no)]

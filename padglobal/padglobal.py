@@ -5,6 +5,7 @@ import difflib
 import json
 import logging
 import os
+import pytz
 import re
 import time
 from collections import defaultdict
@@ -16,7 +17,7 @@ import prettytable
 import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box, inline, pagify
+from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
@@ -195,7 +196,7 @@ class PadGlobal(commands.Cog):
 
     @commands.command()
     @is_padglobal_admin()
-    async def debugiddump(self, ctx):
+    async def debugid1dump(self, ctx):
         padinfo_cog = self.bot.get_cog('PadInfo')
         mi = padinfo_cog.index_all
 
@@ -210,9 +211,9 @@ class PadGlobal(commands.Cog):
         await write_send(mi.all_entries, 'all_entries.csv')
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
-    @commands.command(aliases=['iddebug'])
+    @commands.command(aliases=['iddebug1'])
     @is_padglobal_admin()
-    async def debugid(self, ctx, *, query):
+    async def debugid1(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
         # m is a named monster
         m, err, debug_info = await lookup_named_monster(query)
@@ -224,21 +225,21 @@ class PadGlobal(commands.Cog):
         msg = "{}. {}".format(m.monster_no_na, m.name_en)
         msg += "\nLookup type: {}".format(debug_info)
 
-        def list_or_none(l):
-            if len(l) == 1:
-                return '\n\t{}'.format(''.join(l))
-            elif len(l):
-                return '\n\t' + '\n\t'.join(sorted(l))
+        def list_or_none(li):
+            if len(li) == 1:
+                return '\n\t{}'.format(''.join(li))
+            elif len(li):
+                return '\n\t' + '\n\t'.join(sorted(li))
             else:
                 return 'NONE'
 
         msg += "\n\nNickname original components:"
-        msg += "\n monster_basename: {}".format(m.monster_basename)
-        msg += "\n group_computed_basename: {}".format(m.group_computed_basename)
+        msg += "\n monster_treename: {}".format(m.monster_treename)
+        msg += "\n group_computed_treename: {}".format(m.group_computed_treename)
         msg += "\n extra_nicknames: {}".format(list_or_none(m.extra_nicknames))
 
         msg += "\n\nNickname final components:"
-        msg += "\n basenames: {}".format(list_or_none(m.group_basenames))
+        msg += "\n treenames: {}".format(list_or_none(m.group_treenames))
         msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
 
         msg += "\n\nAccepted nickname entries:"
@@ -287,7 +288,7 @@ class PadGlobal(commands.Cog):
         await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
                                        delete_msgs=sent_messages, timeout=30)
 
-    @commands.command()
+    @commands.command(aliases=['fir'])
     @is_padglobal_admin()
     async def forceindexreload(self, ctx):
         async with ctx.typing():
@@ -297,6 +298,15 @@ class PadGlobal(commands.Cog):
             await dadguide_cog.reload_config_files()
             padinfo_cog = self.bot.get_cog('PadInfo')
             await padinfo_cog.refresh_index()
+            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
+
+    @commands.command(aliases=['fir3'])
+    @is_padglobal_admin()
+    async def forceindexreload3(self, ctx):
+        async with ctx.typing():
+            start = time.perf_counter()
+            dadguide_cog = self.bot.get_cog('Dadguide')
+            dadguide_cog.index2 = await dadguide_cog.create_index2()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
@@ -350,7 +360,7 @@ class PadGlobal(commands.Cog):
                 ted = self.c_commands[ted]
                 alias = True
             if confirm:
-                conf = await confirm_message(ctx, "Are you sure you want to edit the {}command {}?" \
+                conf = await confirm_message(ctx, "Are you sure you want to edit the {}command {}?"
                                              .format("alias to " if alias else "", ted))
                 if not conf:
                     return
@@ -730,7 +740,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
 
-        name = nm.group_computed_basename.title()
+        name = nm.group_computed_treename.title()
         monster_id = nm.base_monster_no
         definition = self.settings.which().get(monster_id, None)
         timestamp = "2000-01-01"
@@ -777,7 +787,7 @@ class PadGlobal(commands.Cog):
             nm = monster_id_to_named_monster(monster_id)
             if m is None or nm is None:
                 continue
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
             grp = m.series.name
             monsters[grp].append(name)
 
@@ -852,7 +862,7 @@ class PadGlobal(commands.Cog):
             w %= 10000
 
             nm = monster_id_to_named_monster(w)
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
 
             result = self.settings.which()[w]
             if isinstance(result, list):
@@ -878,7 +888,7 @@ class PadGlobal(commands.Cog):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
         nm, err, deb = await lookup_named_monster(term)
-        base = nm.group_computed_basename.title() if nm else nm
+        base = nm.group_computed_treename.title() if nm else nm
         name = nm.name_en if nm else nm
         monster_id = nm.monster_id if nm else nm
         definition = self.settings.which().get(monster_id, None)
@@ -947,7 +957,7 @@ class PadGlobal(commands.Cog):
         for server_id in self.settings.emojiServers():
             try:
                 emojis.extend(self.bot.get_guild(int(server_id)).emojis)
-            except:
+            except Exception:
                 pass
         return emojis
 
@@ -989,6 +999,9 @@ class PadGlobal(commands.Cog):
             emoji_server = self.bot.get_guild(int(server_id))
             if len(emoji_server.emojis) < 50:
                 break
+        else:
+            await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
+            return
 
         try:
             async with aiohttp.ClientSession() as sess:
@@ -1073,10 +1086,10 @@ class PadGlobal(commands.Cog):
         for p in await self.bot.get_prefix(message):
             if message.content.startswith(p):
                 return p
-        return False
+        return None
 
     def format_cc(self, command, message):
-        results = re.findall(r"\{([^}]+)\}", command)
+        results = re.findall(r"{([^}]+)}", command)
         for result in results:
             param = self.transform_parameter(result, message)
             command = command.replace("{" + result + "}", param)
@@ -1127,8 +1140,8 @@ class PadGlobal(commands.Cog):
         if nm is None:
             return None, None, 'No dungeon or monster matched that query'
 
-        name = nm.group_computed_basename.title()
-        definition = self.settings.leaderGuide().get(str(nm.base_monster_no), None)
+        name = nm.group_computed_treename.title()
+        definition = self.settings.leaderGuide().get(nm.base_monster_no, None)
         if definition is None:
             return None, None, 'A monster matched that query but has no guide'
 
@@ -1151,7 +1164,7 @@ class PadGlobal(commands.Cog):
             nm = monster_id_to_named_monster(monster_id)
             if nm is None:
                 continue
-            name = nm.group_computed_basename.title()
+            name = nm.group_computed_treename.title()
             msg += '\n**{}** :\n{}\n'.format(name, definition)
 
         return msg
@@ -1239,6 +1252,20 @@ class PadGlobal(commands.Cog):
 
         self.settings.rmLeaderGuide(name)
         await ctx.tick()
+
+    @commands.command(aliases=['currentinvade'])
+    async def whichinvade(self, ctx):
+        pst = pytz.timezone("America/Los_Angeles")
+        curtime = datetime.datetime.now(pst)
+        if datetime.time(6) < curtime.time() < datetime.time(18):
+            await ctx.send(self.c_commands['redinvadecurrent'])
+            totime = curtime.replace(hour=18, minute=0, second=0, microsecond=0)
+        else:
+            await ctx.send(self.c_commands['blueinvadecurrent'])
+            totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
+            if totime < curtime:
+                totime += datetime.timedelta(1)
+        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime-curtime)))
 
     def emojify(self, message):
         emojis = list()

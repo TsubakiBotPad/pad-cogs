@@ -17,11 +17,11 @@ from .database_context import DbContext
 
 
 class MonsterIndex(tsutils.aobject):
-    async def __init__(self, monster_database: DbContext, nickname_overrides, basename_overrides,
+    async def __ainit__(self, monster_database: DbContext, nickname_overrides, treename_overrides,
                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
-        base_monster_ids = monster_database.get_base_monster_ids()
+        base_monster_ids = monster_database.get_monsters_where(monster_database.graph.monster_is_base)
 
         self.attr_short_prefix_map = {
             Attribute.Fire: ['r'],
@@ -64,10 +64,9 @@ class MonsterIndex(tsutils.aobject):
             base_id = base_mon.monster_id
             base_monster = monster_database.graph.get_monster(base_id)
             series = base_monster.series
-            group_basename_overrides = basename_overrides.get(base_id, [])
-            evolution_tree = [monster_database.graph.get_monster(m) for m in
-                              monster_database.get_evolution_tree_ids(base_id)]
-            named_mg = NamedMonsterGroup(evolution_tree, group_basename_overrides)
+            group_treename_overrides = treename_overrides.get(base_id, [])
+            evolution_tree = monster_database.graph.get_alt_monsters_by_id(base_id)
+            named_mg = NamedMonsterGroup(evolution_tree, group_treename_overrides)
             named_evolution_tree = []
             for monster in evolution_tree:
                 if accept_filter and not accept_filter(monster):
@@ -135,6 +134,8 @@ class MonsterIndex(tsutils.aobject):
                 for nickname in nicknames:
                     self.all_entries[nickname] = nm
 
+    __init__ = __ainit__
+
     def init_index(self):
         pass
 
@@ -162,6 +163,9 @@ class MonsterIndex(tsutils.aobject):
                 prefixes.add('chibi')
         elif 'ミニ' in m.name_ja:
             # Guarding this separately to prevent 'gemini' from triggering (e.g. 2645)
+            prefixes.add('chibi')
+
+        if 'chibi' in lower_name:
             prefixes.add('chibi')
 
         true_evo_type = self.db_context.graph.true_evo_type_by_monster(m)
@@ -459,70 +463,71 @@ class PotentialMatches(object):
 
 
 class NamedMonsterGroup(object):
-    def __init__(self, evolution_tree: list, basename_overrides: list):
-        self.is_low_priority = (
-                        self._is_low_priority_monster(evolution_tree[0])
-                        or self._is_low_priority_group(evolution_tree))
+    def __init__(self, evolution_tree: list, treename_overrides: list):
+        base_monster = min(evolution_tree, key=lambda m: m.monster_id)
 
-        base_monster = evolution_tree[0]
+
+        self.is_low_priority = (
+                        self._is_low_priority_monster(base_monster)
+                        or self._is_low_priority_group(evolution_tree))
 
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
         self.base_monster_no_na = base_monster.monster_no_na
 
-        self.monster_no_to_basename = {
-            m.monster_id: self._compute_monster_basename(m) for m in evolution_tree
+        self.monster_no_to_treename = {
+            m.monster_id: self._compute_monster_treename(m) for m in evolution_tree
         }
 
-        self.computed_basename = self._compute_group_basename(evolution_tree)
-        self.computed_basenames = {self.computed_basename}
-        if '-' in self.computed_basename:
-            self.computed_basenames.add(self.computed_basename.replace('-', ' '))
+        self.computed_treename = self._compute_group_treename(evolution_tree)
+        self.computed_treenames = {self.computed_treename}
+        if '-' in self.computed_treename:
+            self.computed_treenames.add(self.computed_treename.replace('-', ' '))
 
-        self.basenames = basename_overrides or self.computed_basenames
+        self.treenames = treename_overrides or self.computed_treenames
 
     @staticmethod
-    def _compute_monster_basename(m: MonsterModel):
-        basename = m.name_en.lower()
-        if ',' in basename:
-            name_parts = basename.split(',')
+    def _compute_monster_treename(m: MonsterModel):
+        treename = m.name_en.lower()
+        if ',' in treename:
+            name_parts = treename.split(',')
             if name_parts[1].strip().startswith('the '):
                 # handle names like 'xxx, the yyy' where xxx is the name
-                basename = name_parts[0]
+                treename = name_parts[0]
             else:
                 # otherwise, grab the chunk after the last comma
-                basename = name_parts[-1]
+                treename = name_parts[-1]
 
         for x in ['awoken', 'reincarnated']:
-            if basename.startswith(x):
-                basename = basename.replace(x, '')
+            if treename.startswith(x):
+                treename = treename.replace(x, '')
 
         # Fix for DC collab garbage
-        basename = basename.replace('(comics)', '')
-        basename = basename.replace('(film)', '')
+        treename = treename.replace('(comics)', '')
+        treename = treename.replace('(film)', '')
 
-        return basename.strip()
+        return treename.strip()
 
-    def _compute_group_basename(self, monsters):
-        """Computes the basename for a group of monsters.
+    def _compute_group_treename(self, monsters):
+        """Computes the treename for a group of monsters.
 
-        Prefer a basename with the largest count across the group. If all the
-        groups have equal size, prefer the lowest monster number basename.
+        Prefer a treename with the largest count across the group. If all the
+        groups have equal size, prefer the lowest monster number treename.
         This monster in general has better names, particularly when all the
         names are unique, e.g. for male/female hunters."""
 
         def count_and_id():
             return [0, 0]
 
-        basename_to_info = defaultdict(count_and_id)
+        treename_to_info = defaultdict(count_and_id)
 
         for m in monsters:
-            basename = self.monster_no_to_basename[m.monster_id]
-            entry = basename_to_info[basename]
+            treename = self.monster_no_to_treename[m.monster_id]
+            entry = treename_to_info[treename]
             entry[0] += 1
             entry[1] = max(entry[1], m.monster_id)
 
-        entries = [[count_id[0], -1 * count_id[1], bn] for bn, count_id in basename_to_info.items()]
+        entries = [[count_id[0], -1 * count_id[1], bn] for bn, count_id in treename_to_info.items()]
         return max(entries)[2]
 
     @staticmethod
@@ -563,7 +568,7 @@ class NamedMonster(object):
         self.base_monster_no_na = base_monster.monster_no_na
 
         # This stuff is important for nickname generation
-        self.group_basenames = monster_group.basenames
+        self.group_treenames = monster_group.treenames
         self.prefixes = prefixes
 
         # Pantheon
@@ -580,20 +585,20 @@ class NamedMonster(object):
         self.name_ja = monster.name_ja
 
         # These are just extra metadata
-        self.monster_basename = monster_group.monster_no_to_basename[self.monster_id]
-        self.group_computed_basename = monster_group.computed_basename
+        self.monster_treename = monster_group.monster_no_to_treename[self.monster_id]
+        self.group_computed_treename = monster_group.computed_treename
         self.extra_nicknames = extra_nicknames
 
         # Compute any extra prefixes
-        if self.monster_basename in ('ana', 'ace'):
-            self.prefixes.add(self.monster_basename)
+        if self.monster_treename in ('ana', 'ace'):
+            self.prefixes.add(self.monster_treename)
 
-        # Compute extra basenames by checking for two-word basenames and using the second half
-        self.two_word_basenames = set()
-        for basename in self.group_basenames:
-            basename_words = basename.split(' ')
-            if len(basename_words) == 2:
-                self.two_word_basenames.add(basename_words[1])
+        # Compute extra treenames by checking for two-word treenames and using the second half
+        self.two_word_treenames = set()
+        for treename in self.group_treenames:
+            treename_words = treename.split(' ')
+            if len(treename_words) == 2:
+                self.two_word_treenames.add(treename_words[1])
 
         # The primary result nicknames
         self.final_nicknames = set()
@@ -603,23 +608,23 @@ class NamedMonster(object):
         if monster.roma_subname:
             self.final_nicknames.add(monster.roma_subname)
 
-        # For each basename, add nicknames
-        for basename in self.group_basenames:
-            # Add the basename directly
-            self.final_nicknames.add(basename)
-            # Add the prefix plus basename, and the prefix with a space between basename
+        # For each treename, add nicknames
+        for treename in self.group_treenames:
+            # Add the treename directly
+            self.final_nicknames.add(treename)
+            # Add the prefix plus treename, and the prefix with a space between treename
             for prefix in self.prefixes:
-                self.final_nicknames.add(prefix + basename)
-                self.final_nicknames.add(prefix + ' ' + basename)
+                self.final_nicknames.add(prefix + treename)
+                self.final_nicknames.add(prefix + ' ' + treename)
 
         self.final_two_word_nicknames = set()
-        # Slightly different process for two-word basenames. Does this make sense? Who knows.
-        for basename in self.two_word_basenames:
-            self.final_two_word_nicknames.add(basename)
-            # Add the prefix plus basename, and the prefix with a space between basename
+        # Slightly different process for two-word treenames. Does this make sense? Who knows.
+        for treename in self.two_word_treenames:
+            self.final_two_word_nicknames.add(treename)
+            # Add the prefix plus treename, and the prefix with a space between treename
             for prefix in self.prefixes:
-                self.final_two_word_nicknames.add(prefix + basename)
-                self.final_two_word_nicknames.add(prefix + ' ' + basename)
+                self.final_two_word_nicknames.add(prefix + treename)
+                self.final_two_word_nicknames.add(prefix + ' ' + treename)
 
     def set_evolution_tree(self, evolution_tree):
         """
