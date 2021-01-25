@@ -135,6 +135,11 @@ class MonsterModel(BaseModel):
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
 
+    @property
+    def stackable(self):
+        return any([t in [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
+                    for t in self.types]) and self.level == 1
+
     def awakening_count(self, awid):
         return len([x for x in self.awakenings if x.awoken_skill_id == awid])
 

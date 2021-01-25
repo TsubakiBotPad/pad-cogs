@@ -70,21 +70,27 @@ class IdMenu:
         usedin = self.db_context.graph.material_of_monsters(m)
         evo_gem = self.db_context.graph.evo_gem_monster(m)
         gemusedin = self.db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
-        sums = self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
-        sugs = [self.db_context.graph.evo_gem_monster(su) for su in sums]
-        vsums = []
-        for su in sums:
-            if not any(susu in vsums for susu in self.db_context.graph.get_alt_monsters(su)):
-                vsums.append(su)
-        skillups = [su for su in vsums
-                    if self.db_context.graph.monster_is_farmable_evo(su) and
-                    self.db_context.graph.get_base_id(su) != self.db_context.graph.get_base_id(m) and
-                    su not in sugs] if m.active_skill else []
-        skillup_evo_count = len(sums) - len(vsums)
+        skillups = []
+        skillup_evo_count = 0
+
+        if m.active_skill:
+            sums = [m for m in self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
+                    if self.db_context.graph.monster_is_farmable_evo(m)]
+            sugs = [self.db_context.graph.evo_gem_monster(su) for su in sums]
+            vsums = []
+            for su in sums:
+                if not any(susu in vsums for susu in self.db_context.graph.get_alt_monsters(su)):
+                    vsums.append(su)
+            skillups = [su for su in vsums
+                        if self.db_context.graph.monster_is_farmable_evo(su) and
+                        self.db_context.graph.get_base_id(su) != self.db_context.graph.get_base_id(m) and
+                        su not in sugs] if m.active_skill else []
+            skillup_evo_count = len(sums) - len(vsums)
+
+        if not any([mats, usedin, gemusedin, skillups and not m.stackable]):
+            return None
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
-
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-
         return MaterialView.embed(m, color, mats, usedin, gemusedin, skillups, skillup_evo_count, link).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):

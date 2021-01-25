@@ -26,6 +26,7 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
         title,
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:max_mons]), text))
 
+
 def skillup_field(mons, sec, link):
     text = None
     text2 = None
@@ -36,7 +37,7 @@ def skillup_field(mons, sec, link):
         text2 = Box(
             f"({max(len(mons) - MAX_MONS_TO_SHOW, 0) + sec} ",
             LinkedText(f"more monster{'s' if max(len(mons) - MAX_MONS_TO_SHOW, 0) + sec > 1 else ''}", link),
-            f", incl {sec} alt evo{'s' if sec > 1 else ''})",
+            f", incl. {sec} alt evo{'s' if sec > 1 else ''})",
             delimiter="")
     elif len(mons) > MAX_MONS_TO_SHOW:
         text2 = f"({len(mons) - MAX_MONS_TO_SHOW} more monsters)"
@@ -44,6 +45,7 @@ def skillup_field(mons, sec, link):
     return EmbedField(
         "Skillups",
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
+
 
 class MaterialView:
     @staticmethod
@@ -57,9 +59,9 @@ class MaterialView:
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=pad_info_footer(),
             embed_fields=[f for f in [
-                mat_use_field(mats, "Evo materials") if 0 not in [t.value for t in m.types] else None,
+                mat_use_field(mats, "Evo materials") if mats or not m.stackable else None,
                 mat_use_field(usedin, "Material for", 10) if usedin else None,
                 mat_use_field(gemusedin, "Evo gem is mat for") if gemusedin else None,
-                skillup_field(skillups, sec, link) if 0 not in [t.value for t in m.types] else None
+                skillup_field(skillups, sec, link) if not m.stackable else None
             ] if f is not None]
         )
