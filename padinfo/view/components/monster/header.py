@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class MonsterHeader:
     @staticmethod
-    def ja_suffix(m: "MonsterModel", subname_on_override=True):
+    def jp_suffix(m: "MonsterModel", subname_on_override=True):
         suffix = ""
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
@@ -29,7 +29,7 @@ class MonsterHeader:
 
     @staticmethod
     def long(m: "MonsterModel", link=False):
-        msg = MonsterHeader.short(m) + MonsterHeader.ja_suffix(m)
+        msg = MonsterHeader.short(m) + MonsterHeader.jp_suffix(m)
         return '[{}]({})'.format(msg, puzzledragonx(m)) if link else msg
 
     @staticmethod
@@ -37,12 +37,12 @@ class MonsterHeader:
         msg = '[{}] {}{}'.format(
             m.monster_no_na,
             m.name_en,
-            MonsterHeader.ja_suffix(m) if show_jp else '')
+            MonsterHeader.jp_suffix(m) if show_jp else '')
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @staticmethod
     def long_v2(m: "MonsterModel", link=False):
-        msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, MonsterHeader.ja_suffix(m))
+        msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, MonsterHeader.jp_suffix(m))
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @staticmethod
@@ -51,6 +51,6 @@ class MonsterHeader:
         return Box(
             Text(format_emoji(MonsterEmoji.attribute(m))),
             LinkedText(msg, puzzledragonx(m)) if link else Text(msg),
-            Text(MonsterHeader.ja_suffix(m, False)),
+            Text(MonsterHeader.jp_suffix(m, False)),
             delimiter=' '
         )
