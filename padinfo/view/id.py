@@ -160,7 +160,7 @@ class IdView:
             EmbedField(
                 "Alternate Evos",
                 HighlightableLinks(
-                    links=[LinkedText(str(m.monster_id), puzzledragonx(m)) for m in alt_monsters],
+                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in alt_monsters],
                     highlighted=next(i for i, mon in enumerate(alt_monsters) if m.monster_id == mon.monster_id)
                 )
             )

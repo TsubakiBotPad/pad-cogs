@@ -348,7 +348,11 @@ class PadInfo(commands.Cog):
 
     async def _do_id3(self, ctx, query):
         m = await self.findMonster3(query)
-
+        if m and m.monster_no_na != m.monster_no_jp:
+            await ctx.send("The NA ID and JP ID of this card differ! "
+                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) + \
+                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
+                           ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, m))
 

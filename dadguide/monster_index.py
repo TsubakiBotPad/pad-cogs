@@ -93,8 +93,12 @@ class MonsterIndex2(aobject):
             self.modifiers[m] = await self.get_modifiers(m)
 
             # ID
-            self.name_tokens[str(m.monster_id)].add(m)
-            self.name_tokens[str(m.monster_id % 10000)].add(m)
+            self.name_tokens[str(m.monster_no_na)].add(m)
+            if m.monster_id > 10000:
+                self.name_tokens[str(m.monster_id)].add(m)
+            if m.monster_no_na != m.monster_no_jp:
+                self.name_tokens['na'+str(m.monster_no_na)].add(m)
+                self.name_tokens['jp'+str(m.monster_no_jp)].add(m)
 
             # Name and Fluff Tokens
             manual = False
