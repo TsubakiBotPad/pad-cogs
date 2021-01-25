@@ -4,10 +4,6 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Color
 
-from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import createSingleMultiplierText
-from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
