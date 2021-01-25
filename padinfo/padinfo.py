@@ -7,7 +7,6 @@ import re
 import urllib.parse
 from collections import OrderedDict, defaultdict
 from datetime import datetime
-from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -36,12 +35,6 @@ logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
 IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide"
-
-
-class ServerFilter(Enum):
-    any = 0
-    na = 1
-    jp = 2
 
 
 def _data_file(file_name: str) -> str:
@@ -159,8 +152,6 @@ class PadInfo(commands.Cog):
         self.settings = PadInfoSettings("padinfo")
 
         self.index_all = None
-        self.index_na = None
-        self.index_jp = None
         self.index_lock = asyncio.Lock()
 
         self.menu = Menu(bot)
@@ -197,8 +188,6 @@ class PadInfo(commands.Cog):
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.index_all = None
-        self.index_na = None
-        self.index_jp = None
         self.historic_lookups = {}
         self.historic_lookups_id2 = {}
         self.historic_lookups_id3 = {}
@@ -241,13 +230,6 @@ class PadInfo(commands.Cog):
         async with self.index_lock:
             logger.debug('Loading ALL index')
             self.index_all = await dg_cog.create_index()
-
-            logger.debug('Loading NA index')
-            self.index_na = await dg_cog.create_index(lambda m: m.on_na)
-
-            logger.debug('Loading JP index')
-            self.index_jp = await dg_cog.create_index(lambda m: m.on_jp)
-
         logger.info('Done refreshing indexes')
 
     def get_monster(self, monster_id: int):
@@ -283,22 +265,16 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        if await self.config.user(ctx.author).beta_id3():
-            await self._do_id3(ctx, "inna " + query)
-        else:
-            await self._do_id(ctx, query, server_filter=ServerFilter.na)
+        await self._do_id3(ctx, "inna " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
-        if await self.config.user(ctx.author).beta_id3():
-            await self._do_id3(ctx, "injp " + query)
-        else:
-            await self._do_id(ctx, query, server_filter=ServerFilter.jp)
+        await self._do_id3(ctx, "injp " + query)
 
-    async def _do_id(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = await self.findMonster1(query, server_filter=server_filter)
+    async def _do_id(self, ctx, query: str):
+        m, err, debug_info = await self.findMonster1(query)
 
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
@@ -357,20 +333,8 @@ class PadInfo(commands.Cog):
         """Monster info (main tab)"""
         await self._do_id2(ctx, query)
 
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id2na(self, ctx, *, query: str):
-        """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id2(ctx, query, server_filter=ServerFilter.na)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id2jp(self, ctx, *, query: str):
-        """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id2(ctx, query, server_filter=ServerFilter.jp)
-
-    async def _do_id2(self, ctx, query: str, server_filter=ServerFilter.any):
-        m, err, debug_info = await self.findMonster2(query, server_filter=server_filter)
+    async def _do_id2(self, ctx, query: str):
+        m, err, debug_info = await self.findMonster2(query)
         if m is not None:
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
@@ -1008,7 +972,7 @@ class PadInfo(commands.Cog):
         await ctx.send(box(msg))
         await ctx.send('Looking for the beta test? Type `{0.prefix}idset beta y`'.format(ctx))
 
-    async def findMonsterCustom(self, ctx, query, server_filter=ServerFilter.any):
+    async def findMonsterCustom(self, ctx, query):
         if await self.config.user(ctx.author).beta_id3():
             m = await self.findMonster3(query)
             if m:
@@ -1016,11 +980,11 @@ class PadInfo(commands.Cog):
             else:
                 return None, "Monster not found", ""
         else:
-            return await self.findMonster1(query, server_filter)
+            return await self.findMonster1(query)
 
-    async def findMonster1(self, query, server_filter=ServerFilter.any):
+    async def findMonster1(self, query):
         query = rmdiacritics(query)
-        nm, err, debug_info = await self._findMonster(query, server_filter)
+        nm, err, debug_info = await self._findMonster(query)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups[query] = monster_no
@@ -1030,23 +994,15 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    async def _findMonster(self, query, server_filter=ServerFilter.any) -> "NamedMonster":
+    async def _findMonster(self, query) -> "NamedMonster":
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
-        if server_filter.value == ServerFilter.any.value:
-            monster_index = self.index_all
-        elif server_filter.value == ServerFilter.na.value:
-            monster_index = self.index_na
-        elif server_filter.value == ServerFilter.jp.value:
-            monster_index = self.index_jp
-        else:
-            raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
-        return monster_index.find_monster(query)
+        return self.index_all.find_monster(query)
 
-    async def findMonster2(self, query, server_filter=ServerFilter.any):
+    async def findMonster2(self, query):
         query = rmdiacritics(query)
-        nm, err, debug_info = await self._findMonster2(query, server_filter)
+        nm, err, debug_info = await self._findMonster2(query)
 
         monster_no = nm.monster_id if nm else -1
         self.historic_lookups_id2[query] = monster_no
@@ -1056,19 +1012,11 @@ class PadInfo(commands.Cog):
 
         return m, err, debug_info
 
-    async def _findMonster2(self, query, server_filter=ServerFilter.any):
+    async def _findMonster2(self, query):
         while self.index_lock.locked():
             await asyncio.sleep(1)
 
-        if server_filter == ServerFilter.any:
-            monster_index = self.index_all
-        elif server_filter == ServerFilter.na:
-            monster_index = self.index_na
-        elif server_filter == ServerFilter.jp:
-            monster_index = self.index_jp
-        else:
-            raise ValueError("server_filter must be type ServerFilter not " + str(type(server_filter)))
-        return monster_index.find_monster2(query)
+        return self.index_all.find_monster2(query)
 
     async def findMonster3(self, query):
         m = await self._findMonster3(query)
