@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import BoldText, Text
 
-from padinfo.core.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import createMultiplierText, createSingleMultiplierText
 from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
@@ -25,5 +25,17 @@ class LeaderSkillView:
                     Text(lls.desc if lls else 'None'),
                     BoldText(MonsterHeader.name(right_m, link=True, show_jp=True)),
                     Text(rls.desc if rls else 'None')),
-                color=color
-            ))
+                color=color))
+
+
+class LeaderSkillSingleView:
+    @staticmethod
+    def embed(m: "MonsterModel", color):
+        ls = m.leader_skill
+        return EmbedView(
+            EmbedMain(
+                title=createSingleMultiplierText(ls),
+                description=Box(
+                    BoldText(MonsterHeader.name(m, link=True, show_jp=True)),
+                    Text(ls.desc if ls else 'None')),
+                color=color))
