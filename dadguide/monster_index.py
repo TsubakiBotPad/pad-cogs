@@ -116,7 +116,7 @@ class MonsterIndex2(aobject):
                         ts = re.findall(r"(\w+)'s", m.name_en.lower())
                         for me in self.graph.get_alt_monsters(m):
                             for t2 in ts:
-                                if t2 in me.name_en.lower():
+                                if t2 in self._name_to_tokens(me.name_en.lower()):
                                     self.name_tokens[t2].add(me)
                     else:
                         for me in self.graph.get_alt_monsters(m):
