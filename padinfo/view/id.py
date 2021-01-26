@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.menu import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 
-from padinfo.common.emoji_map import get_emoji, format_emoji, AWAKENING_ID_TO_EMOJI_NAME_MAP, emoji_markdown
+from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
 from padinfo.view.components.base import pad_info_footer
@@ -18,16 +18,15 @@ if TYPE_CHECKING:
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
-    return format_emoji(get_emoji(
-        AWAKENING_ID_TO_EMOJI_NAME_MAP.get(awakening.awoken_skill_id, awakening.name)))
+    return get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
 
 
 def _killer_latent_emoji(latent_name: str):
-    return emoji_markdown('latent_killer_{}'.format(latent_name.lower()))
+    return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
 def _get_awakening_emoji_for_stats(m: "MonsterModel", i: int):
-    return emoji_markdown(i) if m.awakening_count(i) and not m.is_equip else ''
+    return get_awakening_emoji(i) if m.awakening_count(i) and not m.is_equip else ''
 
 
 def _get_stat_text(stat, lb_stat, icon):
@@ -56,7 +55,7 @@ class IdView:
         return Box(
             Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' '),
             Box(
-                Text(emoji_markdown('sa_questionmark')),
+                Text(get_emoji('sa_questionmark')),
                 *[Text(e) for e in super_awakenings_emojis],
                 delimiter=' ') if len(super_awakenings_emojis) > 0 else None
         )
@@ -101,7 +100,7 @@ class IdView:
 
     @staticmethod
     def stats_header(m: "MonsterModel"):
-        voice = emoji_markdown(63) if m.awakening_count(63) and not m.is_equip else ''
+        voice = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
         header = Box(
             Text(voice),
             Text('Stats'),

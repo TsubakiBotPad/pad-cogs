@@ -20,6 +20,7 @@ from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
+from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
 from padinfo.id_menu import IdMenu
@@ -1185,37 +1186,36 @@ class PadInfo(commands.Cog):
         def additmods(ms, om):
             if len(ms) == 1:
                 return ""
-            return "; Alternate Names: " + ', '.join(inline(m) for m in ms if m != om)
+            return "\nAlternate names: (" + ', '.join(inline(m) for m in ms if m != om) + ")"
 
         meanings = [
             *["Evo: " + k.value + additmods(v, modifier)
               for k, v in tms.EVO_MAP.items() if modifier in v],
-            *["Type: " + k.name + additmods(v, modifier)
+            *["Type: " + get_type_emoji(k) + ' ' + k.name + additmods(v, modifier)
               for k, v in tms.TYPE_MAP.items() if modifier in v],
             *["Misc: " + k.value + additmods(v, modifier)
               for k, v in tms.MISC_MAP.items() if modifier in v],
-            *["Awakening: " + awakenings[k.value].name_en + additmods(v, modifier)
+            *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, modifier)
               for k, v in tms.AWOKEN_MAP.items() if modifier in v],
-            *["Main Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+            *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") + \
+              additmods(v, modifier)
               for k, v in tms.COLOR_MAP.items() if modifier in v],
-            *["Sub Attr: " + k.name.replace("Nil", "None") + additmods(v, modifier)
+            *["Sub attr: " + get_attribute_emoji_by_enum(False, k) + ' ' + k.name.replace("Nil", "None") + \
+              additmods(v, modifier)
               for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+            *["Dual attr: " + get_attribute_emoji_by_enum(k[0], k[1]) + ' ' + k[0].name.replace("Nil", "None") + \
+              '/' + k[1].name.replace("Nil", "None") + additmods(v, modifier)
+              for k, v in tms.DUAL_COLOR_MAP.items() if modifier in v],
             *["Series: " + series[k].name_en + additmods(v, modifier)
               for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
 
             *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", modifier)],
-            *["Base Rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
-            *[f"[UNSUPPORTED] Multiple Awakenings: {m}x {awakenings[a.value].name_en}"
+            *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
+            *[f"[UNSUPPORTED] Multiple awakenings: {m}x {awakenings[a.value].name_en}"
               f"{additmods([f'{m}*{d}' for d in v], modifier)}"
               for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), modifier)
               for a, v in tms.AWOKEN_MAP.items() if ag in v]
         ]
-        for k, v in tms.DUAL_COLOR_MAP.items():
-            if modifier not in v:
-                continue
-            k0name = k[0].name.replace("Nil", "None")
-            k1name = k[1].name.replace("Nil", "None")
-            meanings.append("Dual Attr: " + k0name + "/" + k1name + additmods(v, modifier))
 
         if meanings:
             await ctx.send("\n".join(meanings))
