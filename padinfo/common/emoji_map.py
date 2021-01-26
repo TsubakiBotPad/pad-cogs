@@ -1,6 +1,6 @@
-from typing import Union
+from enum import Enum
+from typing import Union, Optional, Literal
 
-from discord import Emoji
 from discordmenu.emoji_cache import emoji_cache
 
 AWAKENING_ID_TO_EMOJI_NAME_MAP = {
@@ -91,11 +91,28 @@ AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
 
 
 def awakening_restricted_latent_emoji(latent: "AwakeningRestrictedLatent"):
-    return str(get_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value])))
+    return get_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value]))
 
 
-def emoji_markdown(name_or_number: Union[str, int]):
-    return format_emoji(get_emoji(name_or_number))
+def get_type_emoji(type: Enum):
+    return get_emoji('mons_type_'+type.name.lower())
+
+
+def get_attribute_emoji_by_monster(monster: "MonsterModel"):
+    attr1 = monster.attr1.name.lower()
+    attr2 = monster.attr2.name.lower()
+    emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
+    return get_emoji(emoji)
+
+def get_attribute_emoji_by_enum(type1: Union[Enum, Literal[False]], type2: Optional[Union[Enum, Literal[bool]]] = None):
+    attr1 = 'nil' if type1 is False else type1.name.lower()
+    attr2 = 'nil' if type2 is False else type2.name.lower() if type2 else attr1
+    emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
+    return get_emoji(emoji)
+
+
+def get_awakening_emoji(awid: Union[Enum, int], default: str = None):
+    return get_emoji(AWAKENING_ID_TO_EMOJI_NAME_MAP.get(awid if isinstance(awid, int) else awid.value, default))
 
 
 def get_emoji(name):
@@ -103,11 +120,5 @@ def get_emoji(name):
         name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
     for e in emoji_cache.custom_emojis:
         if e.name == name:
-            return e
-    return name
-
-
-def format_emoji(emoji: Union[Emoji, str]):
-    if isinstance(emoji, str):
-        return f":{emoji}:"
-    return f"<:{emoji.name}:{emoji.id}>"
+            return str(e)
+    return ":{}:".format(name)
