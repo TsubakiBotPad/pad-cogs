@@ -56,6 +56,7 @@ class IdMenu:
         mats = self.db_context.graph.evo_mats_by_monster(m)
         usedin = self.db_context.graph.material_of_monsters(m)
         evo_gem = self.db_context.graph.evo_gem_monster(m)
+        gemid = str(evo_gem.monster_no_na) if evo_gem else None
         gemusedin = self.db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
         skillups = []
         skillup_evo_count = 0
@@ -78,7 +79,7 @@ class IdMenu:
             return None
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return MaterialView.embed(m, color, mats, usedin, gemusedin, skillups, skillup_evo_count, link).to_embed()
+        return MaterialView.embed(m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
