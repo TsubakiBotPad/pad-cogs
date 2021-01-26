@@ -1186,7 +1186,7 @@ class PadInfo(commands.Cog):
         def additmods(ms, om):
             if len(ms) == 1:
                 return ""
-            return "\nAlternate names: (" + ', '.join(inline(m) for m in ms if m != om) + ")"
+            return "\n\tAlternate names: " + ', '.join(inline(m) for m in ms if m != om)
 
         meanings = [
             *["Evo: " + k.value + additmods(v, modifier)
