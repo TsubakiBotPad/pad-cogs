@@ -384,7 +384,7 @@ class PadInfo(commands.Cog):
         else:
             await self.makeFailureMsg(ctx, query, err)
 
-    @commands.command()
+    @commands.command(aliases=["series"])
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
