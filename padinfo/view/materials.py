@@ -49,7 +49,7 @@ def skillup_field(mons, sec, link):
 
 class MaterialView:
     @staticmethod
-    def embed(m: "MonsterModel", color, mats, usedin, gemusedin, skillups, sec, link):
+    def embed(m: "MonsterModel", color, mats, usedin, gemid, gemusedin, skillups, sec, link):
         return EmbedView(
             EmbedMain(
                 color=color,
@@ -61,7 +61,7 @@ class MaterialView:
             embed_fields=[f for f in [
                 mat_use_field(mats, "Evo materials") if mats or not m.stackable else None,
                 mat_use_field(usedin, "Material for", 10) if usedin else None,
-                mat_use_field(gemusedin, "Evo gem is mat for") if gemusedin else None,
+                mat_use_field(gemusedin, "Evo gem ({}) is mat for".format(gemid)) if gemusedin else None,
                 skillup_field(skillups, sec, link) if not m.stackable else None
             ] if f is not None]
         )
