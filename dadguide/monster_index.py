@@ -101,29 +101,31 @@ class MonsterIndex2(aobject):
 
             # Name Tokens
             nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
+            # Propagate name tokens throughout all evos
             for me in self.graph.get_alt_ids_by_id(m.monster_id):
                 for t in self.monster_id_to_nametokens[me]:
                     if t in nametokens:
                         self.add_name_token(self.name_tokens, t, m)
             if not self.monster_id_to_nametokens[m.monster_id]:
+                # Add important name tokens
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.add_name_token(self.name_tokens, token, m)
                     if m.is_equip:
-                        ts = re.findall(r"(\w+)'s", m.name_en.lower())
-                        for me in self.graph.get_alt_monsters(m):
-                            for t2 in ts:
-                                if t2 in self._name_to_tokens(me.name_en.lower()):
-                                    self.add_name_token(self.name_tokens, t2, me)
+                        possessives = re.findall(r"(\w+)'s", m.name_en.lower())
+                        for mevo in self.graph.get_alt_monsters(m):
+                            for token2 in possessives:
+                                if token2 in self._name_to_tokens(mevo.name_en.lower()):
+                                    self.add_name_token(self.name_tokens, token2, mevo)
                     else:
-                        for me in self.graph.get_alt_monsters(m):
-                            if token in self._name_to_tokens(me.name_en):
-                                self.add_name_token(self.name_tokens, token, me)
+                        for mevo in self.graph.get_alt_monsters(m):
+                            if token in self._name_to_tokens(mevo.name_en):
+                                self.add_name_token(self.name_tokens, token, mevo)
                 # Add all name tokens as treenames for equips
                 if m.is_equip:
-                    for me in self.graph.get_alt_monsters(m):
-                        if not me.is_equip:
-                            for nt in self._get_important_tokens(me.name_en):
-                                self.add_name_token(self.name_tokens, nt, m)
+                    for mevo in self.graph.get_alt_monsters(m):
+                        if not mevo.is_equip:
+                            for token2 in self._get_important_tokens(mevo.name_en):
+                                self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
             for token in nametokens:
