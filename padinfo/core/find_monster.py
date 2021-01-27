@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Set
+from typing import Set, List, Tuple
 
 from Levenshtein import jaro_winkler
 
@@ -30,7 +30,7 @@ class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def _merge_multi_word_tokens(self, tokens, valid_multi_word_tokens):
+    def merge_multi_word_tokens(self, tokens, valid_multi_word_tokens):
         result = []
         s = 0
         multi_word_tokens_sorted = sorted(valid_multi_word_tokens,
@@ -66,10 +66,7 @@ class FindMonster:
                 return True
         return False
 
-    def interpret_query(self, raw_query: str, index2) -> (Set[str], Set[str]):
-        tokenized_query = raw_query.split()
-        tokenized_query = self._merge_multi_word_tokens(tokenized_query, index2.multi_word_tokens)
-
+    def interpret_query(self, tokenized_query: List[str], index2) -> Tuple[Set[str], Set[str], Set[str]]:
         modifiers = []
         negative_modifiers = set()
         name = set()
