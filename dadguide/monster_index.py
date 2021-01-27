@@ -35,9 +35,8 @@ class MonsterIndex2(aobject):
 
         self.replacement_tokens = defaultdict(set)
 
-        nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET)
-        for m_id, name, *data in nickname_data:
-            lp, i, *_ = data + [None, None]
+        nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 4)
+        for m_id, name, lp, i in nickname_data:
             if m_id.isdigit() and not i:
                 if lp:
                     self.monster_id_to_nametokens[int(m_id)].update(self._name_to_tokens(name))
@@ -46,11 +45,10 @@ class MonsterIndex2(aobject):
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
 
-        treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET)
-        for m_id, name, *data in treenames_data:
-            lp, i, *_ = data + [None, None]
+        treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 4)
+        for m_id, name, mp, i in treenames_data:
             if m_id.isdigit() and not i:
-                if lp:
+                if mp:
                     for em_id in self.graph.get_alt_ids_by_id(int(m_id)):
                         self.monster_id_to_nametokens[em_id].update(self._name_to_tokens(name))
                 else:
@@ -58,21 +56,25 @@ class MonsterIndex2(aobject):
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
-        pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET)
-        for sid, name, *_ in pantheon_data:
+        pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2)
+        for sid, name in pantheon_data:
             if sid.isdigit():
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
-        nt_alias_data = await sheet_to_reader(NAME_TOKEN_ALIAS_SHEET)
+        nt_alias_data = await sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2)
         next(nt_alias_data)  # Skip over heading
-        for token, alias, *_ in nt_alias_data:
+        for token, alias in nt_alias_data:
             self.replacement_tokens[token].add(alias)
+
+        self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
+                            for x in xs}.union(KNOWN_MODIFIERS)
 
         self.manual = self.name_tokens = self.fluff_tokens = self.modifiers = defaultdict(set)
         await self._build_monster_index(monsters)
-        self.manual = combine_tokens(self.manual_nick, self.manual_tree)
+
+        self.manual = combine_tokens_dicts(self.manual_nick, self.manual_tree)
         self.all_name_tokens = list(self.manual) + list(self.fluff_tokens) + list(self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
@@ -86,9 +88,6 @@ class MonsterIndex2(aobject):
         self.fluff_tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
-        known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
-                    for x in xs}.union(KNOWN_MODIFIERS)
-
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
 
@@ -97,64 +96,57 @@ class MonsterIndex2(aobject):
             if m.monster_id > 10000:
                 self.name_tokens[str(m.monster_id)].add(m)
             if m.monster_no_na != m.monster_no_jp:
-                self.name_tokens['na'+str(m.monster_no_na)].add(m)
-                self.name_tokens['jp'+str(m.monster_no_jp)].add(m)
+                self.name_tokens['na' + str(m.monster_no_na)].add(m)
+                self.name_tokens['jp' + str(m.monster_no_jp)].add(m)
 
-            # Name and Fluff Tokens
+            # Name Tokens
             nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
+            # Propagate name tokens throughout all evos
             for me in self.graph.get_alt_ids_by_id(m.monster_id):
                 for t in self.monster_id_to_nametokens[me]:
                     if t in nametokens:
-                        self.name_tokens[t].add(m)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
-                        self.modifiers[m].add(t)
+                        self.add_name_token(self.name_tokens, t, m)
             if not self.monster_id_to_nametokens[m.monster_id]:
+                # Add important name tokens
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
-                    self.name_tokens[token.lower()].add(m)
-                    for repl in self.replacement_tokens[token.lower()]:
-                        self.name_tokens[repl].add(m)
+                    self.add_name_token(self.name_tokens, token, m)
                     if m.is_equip:
-                        ts = re.findall(r"(\w+)'s", m.name_en.lower())
-                        for me in self.graph.get_alt_monsters(m):
-                            for t2 in ts:
-                                if t2 in self._name_to_tokens(me.name_en.lower()):
-                                    self.name_tokens[t2].add(me)
+                        possessives = re.findall(r"(\w+)'s", m.name_en.lower())
+                        for mevo in self.graph.get_alt_monsters(m):
+                            for token2 in possessives:
+                                if token2 in self._name_to_tokens(mevo.name_en.lower()):
+                                    self.add_name_token(self.name_tokens, token2, mevo)
                     else:
-                        for me in self.graph.get_alt_monsters(m):
-                            if token in self._name_to_tokens(me.name_en):
-                                self.name_tokens[token].add(me)
-                                for repl in self.replacement_tokens[token.lower()]:
-                                    self.name_tokens[repl].add(me)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
-                        self.modifiers[m].add(token)
-                # Add all name tokens as treenames for equips
-                if m.is_equip:
-                    for me in self.graph.get_alt_monsters(m):
-                        if not me.is_equip:
-                            for nt in self._get_important_tokens(me.name_en):
-                                self.name_tokens[nt].add(m)
+                        for mevo in self.graph.get_alt_monsters(m):
+                            if token in self._name_to_tokens(mevo.name_en):
+                                self.add_name_token(self.name_tokens, token, mevo)
 
+                # For equips only, add every name token from every other non-equip monster in the tree.
+                # This has the effect of making automated name tokens behave slightly more like treenames
+                # as opposed to nicknames, but only when dealing with equips, and is valuable so that we get
+                # the moving-through-tree effect with higher priority, but without having to add
+                # significantly more complicated logic in the lookup later on.
+                # Test case: Mizutsune is a nickname for Dark Aurora, ID 4148. Issue: #614
+                if m.is_equip:
+                    for mevo in self.graph.get_alt_monsters(m):
+                        if not mevo.is_equip:
+                            for token2 in self._get_important_tokens(mevo.name_en):
+                                self.add_name_token(self.name_tokens, token2, m)
+
+            # Fluff tokens
             for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
                     continue
-                self.fluff_tokens[token.lower()].add(m)
-                for repl in self.replacement_tokens[token.lower()]:
-                    self.fluff_tokens[repl].add(m)
-                if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
-                    self.modifiers[m].add(token)
+                self.add_name_token(self.fluff_tokens, token, m)
 
             # Monster Nickname
             for nick in self.monster_id_to_nickname[m.monster_id]:
-                self.manual_nick[nick].add(m)
-                if nick in known_mods:
-                    self.modifiers[m].add(nick)
+                self.add_name_token(self.manual_nick, nick, m)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
-                self.manual_tree[nick].add(m)
-                if nick in known_mods:
-                    self.modifiers[m].add(nick)
+                self.add_name_token(self.manual_tree, nick, m)
 
     @staticmethod
     def _name_to_tokens(oname):
@@ -316,20 +308,30 @@ class MonsterIndex2(aobject):
 
         return modifiers
 
+    def add_name_token(self, token_dict, token, m):
+        for t in self.replacement_tokens[token.lower()].union({token.lower()}):
+            token_dict[t].add(m)
+            if t.lower() in self._known_mods and t.lower() not in HAZARDOUS_IN_NAME_PREFIXES:
+                self.modifiers[m].add(t.lower())
+
 
 # TODO: Move this to TSUtils
-async def sheet_to_reader(url):
+async def sheet_to_reader(url, length=None):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             file = io.StringIO(await response.text())
-    return csv.reader(file, delimiter=',')
+    if length is None:
+        return csv.reader(file, delimiter=',')
+    else:
+        return ((line + [None] * length)[:length] for line in csv.reader(file, delimiter=','))
 
 
-def combine_tokens(d1, d2):
-    do = defaultdict(set, d1)
-    for k, v in d2.items():
-        do[k].update(v)
-    return do
+def combine_tokens_dicts(d1, *ds):
+    combined = defaultdict(set, d1)
+    for d2 in ds:
+        for k, v in d2.items():
+            combined[k].update(v)
+    return combined
 
 
 def tcount(tstr):
