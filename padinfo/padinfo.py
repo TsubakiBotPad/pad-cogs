@@ -152,9 +152,6 @@ class PadInfo(commands.Cog):
 
         self.settings = PadInfoSettings("padinfo")
 
-        self.index_all = None
-        self.index_lock = asyncio.Lock()
-
         self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
@@ -188,7 +185,6 @@ class PadInfo(commands.Cog):
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
-        self.index_all = None
         self.historic_lookups = {}
         self.historic_lookups_id2 = {}
         self.historic_lookups_id3 = {}
@@ -227,11 +223,6 @@ class PadInfo(commands.Cog):
             return
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
-
-        async with self.index_lock:
-            logger.debug('Loading ALL index')
-            self.index_all = await dg_cog.create_index()
-        logger.info('Done refreshing indexes')
 
     def get_monster(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
@@ -1003,10 +994,10 @@ class PadInfo(commands.Cog):
         return m, err, debug_info
 
     async def _findMonster(self, query) -> "NamedMonster":
-        while self.index_lock.locked():
-            await asyncio.sleep(1)
+        DGCOG = self.bot.get_cog("Dadguide")
+        await DGCOG.wait_until_ready()
 
-        return self.index_all.find_monster(query)
+        return DGCOG.index.find_monster(query)
 
     async def findMonster2(self, query):
         query = rmdiacritics(query)
@@ -1021,10 +1012,10 @@ class PadInfo(commands.Cog):
         return m, err, debug_info
 
     async def _findMonster2(self, query):
-        while self.index_lock.locked():
-            await asyncio.sleep(1)
+        DGCOG = self.bot.get_cog("Dadguide")
+        await DGCOG.wait_until_ready()
 
-        return self.index_all.find_monster2(query)
+        return DGCOG.index.find_monster2(query)
 
     async def findMonster3(self, query):
         m = await self._findMonster3(query)
