@@ -127,6 +127,13 @@ class MonsterIndex2(aobject):
                                     self.name_tokens[repl].add(me)
                     if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
                         self.modifiers[m].add(token)
+                # Add all name tokens as treenames for equips
+                if m.is_equip:
+                    for me in self.graph.get_alt_monsters(m):
+                        if not me.is_equip:
+                            for nt in self._get_important_tokens(me.name_en):
+                                self.name_tokens[nt].add(m)
+
             for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
                     continue
