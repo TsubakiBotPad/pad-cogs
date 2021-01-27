@@ -1036,10 +1036,6 @@ class PadInfo(commands.Cog):
         return m
 
     async def _findMonster3(self, query):
-        mscore_regular = await self.find_monster_search(query)
-        mscore_skipmw = await self.find_monster_search(query, skip_mwtokens=True)
-        return max(mscore_regular, mscore_skipmw)[1]
-    async def find_monster_search(self, query, *, skip_mwtokens = False):
         DGCOG = self.bot.get_cog("Dadguide")
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
@@ -1047,9 +1043,15 @@ class PadInfo(commands.Cog):
 
         query = rmdiacritics(query).lower()
         tokenized_query = query.split()
-        if not skip_mwtokens:
-            tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, DGCOG.index2.multi_word_tokens)
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, DGCOG.index2.multi_word_tokens)
 
+        return max(
+            await self.find_monster_search(tokenized_query, DGCOG),
+            await self.find_monster_search(mw_tokenized_query, DGCOG)
+                if tokenized_query != mw_tokenized_query else (None, None),
+        )[1]
+
+    async def find_monster_search(self, tokenized_query, DGCOG):
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(tokenized_query, DGCOG.index2)
 
         name_query_tokens.difference_update({'|'})
