@@ -353,7 +353,7 @@ class PadInfo(commands.Cog):
             await ctx.send("The NA ID and JP ID of this card differ! "
                            "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) + \
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
-                           ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
+                            ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, m))
 
@@ -1048,7 +1048,7 @@ class PadInfo(commands.Cog):
         return max(
             await self.find_monster_search(tokenized_query, DGCOG),
             await self.find_monster_search(mw_tokenized_query, DGCOG)
-                if tokenized_query != mw_tokenized_query else (None, None),
+            if tokenized_query != mw_tokenized_query else (0.0, None),
         )[1]
 
     async def find_monster_search(self, tokenized_query, DGCOG):
@@ -1066,7 +1066,7 @@ class PadInfo(commands.Cog):
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
             if monster_gen is None:
                 # No monsters match the given name tokens
-                return None, None
+                return 0, None
         else:
             # There are no name tokens in the query
             monster_gen = {*DGCOG.database.get_all_monsters()}
@@ -1078,7 +1078,7 @@ class PadInfo(commands.Cog):
                                                      DGCOG.index2.modifiers)
         if not monster_gen:
             # no modifiers match any monster in the evo tree
-            return None, None
+            return 0, None
 
         print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
@@ -1086,7 +1086,8 @@ class PadInfo(commands.Cog):
         mon = max(monster_gen,
                   key=lambda m: (monster_score[m],
                                  not m.is_equip,
-                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", query)),  # Match na on id overlap
+                                 # Match na on id overlap
+                                 bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                                  series_priority.get(m.series.series_type),
                                  m.on_na if m.series.series_type == "collab" else 0,
                                  DGCOG.database.graph.monster_is_rem_evo(m),
