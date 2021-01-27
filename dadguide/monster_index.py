@@ -86,8 +86,8 @@ class MonsterIndex2(aobject):
         self.fluff_tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
-        known_mods = [x for xs in list(MODIFIER_MAPS.values()) + list(self.series_id_to_pantheon_nickname.values())
-                    for x in xs]
+        known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
+                    for x in xs}.union(KNOWN_MODIFIERS)
 
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
@@ -101,12 +101,13 @@ class MonsterIndex2(aobject):
                 self.name_tokens['jp'+str(m.monster_no_jp)].add(m)
 
             # Name and Fluff Tokens
-            manual = False
             nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
             for me in self.graph.get_alt_ids_by_id(m.monster_id):
                 for t in self.monster_id_to_nametokens[me]:
                     if t in nametokens:
                         self.name_tokens[t].add(m)
+                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
+                        self.modifiers[m].add(t)
             if not self.monster_id_to_nametokens[m.monster_id]:
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.name_tokens[token.lower()].add(m)
@@ -124,9 +125,8 @@ class MonsterIndex2(aobject):
                                 self.name_tokens[token].add(me)
                                 for repl in self.replacement_tokens[token.lower()]:
                                     self.name_tokens[repl].add(me)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES:
-                        if token in known_mods:
-                            self.modifiers[m].add(token)
+                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
+                        self.modifiers[m].add(token)
                 # Add all name tokens as treenames for equips
                 if m.is_equip:
                     for me in self.graph.get_alt_monsters(m):
@@ -140,7 +140,7 @@ class MonsterIndex2(aobject):
                 self.fluff_tokens[token.lower()].add(m)
                 for repl in self.replacement_tokens[token.lower()]:
                     self.fluff_tokens[repl].add(m)
-                if token in known_mods:
+                if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
                     self.modifiers[m].add(token)
 
             # Monster Nickname
