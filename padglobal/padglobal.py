@@ -309,7 +309,7 @@ class PadGlobal(commands.Cog):
     @commands.command(aliases=['fir3'])
     @is_padglobal_admin()
     async def forceindexreload3(self, ctx):
-        if self.fir_lock3.locked():
+        if self.fir3_lock.locked():
             await ctx.send("Index2 is already being reloaded.")
             return
 
