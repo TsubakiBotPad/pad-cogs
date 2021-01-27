@@ -807,7 +807,7 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
-    @idt_name.command(name="name")
+    @idt_name.command(name="run", aliases=["test"])
     async def idtn_run(self, ctx):
         """Run all name/fluff tests"""
         suite = await self.config.fluff_suite()
