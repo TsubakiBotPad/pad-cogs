@@ -86,6 +86,9 @@ class MonsterIndex2(aobject):
         self.fluff_tokens = defaultdict(set)
         self.modifiers = defaultdict(set)
 
+        known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
+                    for x in xs}.union(KNOWN_MODIFIERS)
+
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
 
@@ -103,7 +106,7 @@ class MonsterIndex2(aobject):
                 for t in self.monster_id_to_nametokens[me]:
                     if t in nametokens:
                         self.name_tokens[t].add(m)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in KNOWN_MODIFIERS:
+                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
                         self.modifiers[m].add(t)
             if not self.monster_id_to_nametokens[m.monster_id]:
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
@@ -122,7 +125,7 @@ class MonsterIndex2(aobject):
                                 self.name_tokens[token].add(me)
                                 for repl in self.replacement_tokens[token.lower()]:
                                     self.name_tokens[repl].add(me)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in KNOWN_MODIFIERS:
+                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
                         self.modifiers[m].add(token)
             for token in nametokens:
                 if m in self.name_tokens[token.lower()]:
@@ -130,20 +133,20 @@ class MonsterIndex2(aobject):
                 self.fluff_tokens[token.lower()].add(m)
                 for repl in self.replacement_tokens[token.lower()]:
                     self.fluff_tokens[repl].add(m)
-                if token not in HAZARDOUS_IN_NAME_PREFIXES and token in KNOWN_MODIFIERS:
+                if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
                     self.modifiers[m].add(token)
 
             # Monster Nickname
             for nick in self.monster_id_to_nickname[m.monster_id]:
                 self.manual_nick[nick].add(m)
-                if nick in KNOWN_MODIFIERS:
+                if nick in known_mods:
                     self.modifiers[m].add(nick)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
                 self.manual_tree[nick].add(m)
-                if nick in KNOWN_MODIFIERS:
+                if nick in known_mods:
                     self.modifiers[m].add(nick)
 
     @staticmethod
