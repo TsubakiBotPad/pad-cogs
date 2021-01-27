@@ -1036,13 +1036,21 @@ class PadInfo(commands.Cog):
         return m
 
     async def _findMonster3(self, query):
+        mscore_regular = await self.find_monster_search(query)
+        mscore_skipmw = await self.find_monster_search(query, skip_mwtokens=True)
+        return max(mscore_regular, mscore_skipmw)[1]
+    async def find_monster_search(self, query, *, skip_mwtokens = False):
         DGCOG = self.bot.get_cog("Dadguide")
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
         await DGCOG.wait_until_ready()
 
         query = rmdiacritics(query).lower()
-        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(query, DGCOG.index2)
+        tokenized_query = query.split()
+        if not skip_mwtokens:
+            tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, DGCOG.index2.multi_word_tokens)
+
+        mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(tokenized_query, DGCOG.index2)
 
         name_query_tokens.difference_update({'|'})
 
@@ -1051,13 +1059,12 @@ class PadInfo(commands.Cog):
                 self.settings.add_typo_mod(t)
 
         print(mod_tokens, name_query_tokens)
-        print(mod_tokens, name_query_tokens)
 
         if name_query_tokens:
             monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, DGCOG.index2)
             if monster_gen is None:
                 # No monsters match the given name tokens
-                return
+                return None, None
         else:
             # There are no name tokens in the query
             monster_gen = {*DGCOG.database.get_all_monsters()}
@@ -1069,7 +1076,7 @@ class PadInfo(commands.Cog):
                                                      DGCOG.index2.modifiers)
         if not monster_gen:
             # no modifiers match any monster in the evo tree
-            return
+            return None, None
 
         print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
@@ -1087,7 +1094,7 @@ class PadInfo(commands.Cog):
                                  m.rarity,
                                  m.monster_no_na))
 
-        return mon
+        return monster_score[mon], mon
 
     @commands.command(aliases=["iddebug"])
     async def debugid(self, ctx, *, query):
