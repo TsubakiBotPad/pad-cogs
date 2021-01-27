@@ -261,15 +261,15 @@ MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
     'mega awoken'
 }}
 
-MODIFIER_MAPS = {
-    **COLOR_MAP,
-    **SUB_COLOR_MAP,
-    **DUAL_COLOR_MAP,
-    **TYPE_MAP,
-    **AWOKEN_MAP,
-    **EVO_MAP,
-    **MISC_MAP,
-}
+KNOWN_MODIFIERS = {v for vs in {
+    *COLOR_MAP.values(),
+    *SUB_COLOR_MAP.values(),
+    *DUAL_COLOR_MAP.values(),
+    *TYPE_MAP.values(),
+    *AWOKEN_MAP.values(),
+    *EVO_MAP.values(),
+    *MISC_MAP.values(),
+} for v in vs}
 
 COLOR_TOKENS = {
     *sum(COLOR_MAP.values(), ()),
