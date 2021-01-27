@@ -114,6 +114,9 @@ class PadGlobal(commands.Cog):
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
 
+        self.fir_lock = asyncio.Lock()
+        self.fir3_lock = asyncio.Lock()
+
         self._export_data()
 
     async def red_get_data_for_user(self, *, user_id):
@@ -291,19 +294,26 @@ class PadGlobal(commands.Cog):
     @commands.command(aliases=['fir'])
     @is_padglobal_admin()
     async def forceindexreload(self, ctx):
-        async with ctx.typing():
+        if self.fir_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir_lock:
             start = time.perf_counter()
             await ctx.send('Starting reload...')
             dadguide_cog = self.bot.get_cog('Dadguide')
             await dadguide_cog.reload_config_files()
-            padinfo_cog = self.bot.get_cog('PadInfo')
-            await padinfo_cog.refresh_index()
+            await dadguide_cog.wait_until_ready()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.command(aliases=['fir3'])
     @is_padglobal_admin()
     async def forceindexreload3(self, ctx):
-        async with ctx.typing():
+        if self.fir_lock3.locked():
+            await ctx.send("Index2 is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir3_lock:
             start = time.perf_counter()
             dadguide_cog = self.bot.get_cog('Dadguide')
             dadguide_cog.index2 = await dadguide_cog.create_index2()
