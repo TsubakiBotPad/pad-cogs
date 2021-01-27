@@ -125,7 +125,8 @@ class MonsterIndex2(aobject):
                 # This has the effect of making automated name tokens behave slightly more like treenames
                 # as opposed to nicknames, but only when dealing with equips, and is valuable so that we get
                 # the moving-through-tree effect with higher priority, but without having to add
-                # significantly more complicated logic in the lookup later on.  Issue: #614
+                # significantly more complicated logic in the lookup later on.
+                # Test case: Mizutsune is a nickname for Dark Aurora, ID 4148. Issue: #614
                 if m.is_equip:
                     for mevo in self.graph.get_alt_monsters(m):
                         if not mevo.is_equip:
