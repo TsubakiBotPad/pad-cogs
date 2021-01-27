@@ -8,7 +8,7 @@ import urllib.parse
 from collections import OrderedDict, defaultdict
 from datetime import datetime
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple, Optional
 
 import discord
 import tsutils
@@ -181,7 +181,7 @@ class PadInfo(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite={})
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -208,21 +208,13 @@ class PadInfo(commands.Cog):
             try:
                 emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
                 emoji_cache.refresh_from_discord_bot(self.bot)
-                await self.refresh_index()
+                dg_cog = self.bot.get_cog('Dadguide')
+                await dg_cog.wait_until_ready()
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
 
             await asyncio.sleep(wait_time)
-
-    async def refresh_index(self):
-        """Refresh the monster indexes."""
-        dg_cog = self.bot.get_cog('Dadguide')
-        if not dg_cog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
 
     def get_monster(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
@@ -342,7 +334,7 @@ class PadInfo(commands.Cog):
         m = await self.findMonster3(query)
         if m and m.monster_no_na != m.monster_no_jp:
             await ctx.send("The NA ID and JP ID of this card differ! "
-                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) + \
+                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
         if await self.config.do_survey():
@@ -1026,7 +1018,7 @@ class PadInfo(commands.Cog):
 
         return m
 
-    async def _findMonster3(self, query):
+    async def _findMonster3(self, query) -> Optional["MonsterModel"]:
         DGCOG = self.bot.get_cog("Dadguide")
         if DGCOG is None:
             raise ValueError("Dadguide cog is not loaded")
@@ -1042,7 +1034,7 @@ class PadInfo(commands.Cog):
             if tokenized_query != mw_tokenized_query else (0.0, None),
         )[1]
 
-    async def find_monster_search(self, tokenized_query, DGCOG):
+    async def find_monster_search(self, tokenized_query, DGCOG) -> Tuple[int, Optional["MonsterModel"]]:
         mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(tokenized_query, DGCOG.index2)
 
         name_query_tokens.difference_update({'|'})
@@ -1198,13 +1190,13 @@ class PadInfo(commands.Cog):
               for k, v in tms.MISC_MAP.items() if modifier in v],
             *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, modifier)
               for k, v in tms.AWOKEN_MAP.items() if modifier in v],
-            *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") + \
+            *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") +
               additmods(v, modifier)
               for k, v in tms.COLOR_MAP.items() if modifier in v],
-            *["Sub attr: " + get_attribute_emoji_by_enum(False, k) + ' ' + k.name.replace("Nil", "None") + \
+            *["Sub attr: " + get_attribute_emoji_by_enum(False, k) + ' ' + k.name.replace("Nil", "None") +
               additmods(v, modifier)
               for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
-            *["Dual attr: " + get_attribute_emoji_by_enum(k[0], k[1]) + ' ' + k[0].name.replace("Nil", "None") + \
+            *["Dual attr: " + get_attribute_emoji_by_enum(k[0], k[1]) + ' ' + k[0].name.replace("Nil", "None") +
               '/' + k[1].name.replace("Nil", "None") + additmods(v, modifier)
               for k, v in tms.DUAL_COLOR_MAP.items() if modifier in v],
             *["Series: " + series[k].name_en + additmods(v, modifier)
