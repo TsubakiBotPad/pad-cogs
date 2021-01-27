@@ -102,13 +102,24 @@ class MonsterIndex2(aobject):
 
             # Name and Fluff Tokens
             nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
-            for me in self.graph.get_alt_ids_by_id(m.monster_id):
-                for t in self.monster_id_to_nametokens[me]:
+            last_token = m.name_en.split(',')[-1].strip()
+            autotoken = True
+
+            # Propagate name tokens throughout all evos
+            for me in self.graph.get_alt_monsters(m):
+                if last_token != me.name_en.split(',')[-1].strip():
+                    autotoken = False
+                for t in self.monster_id_to_nametokens[me.monster_id]:
                     if t in nametokens:
-                        self.name_tokens[t].add(m)
-                    if token not in HAZARDOUS_IN_NAME_PREFIXES and token in known_mods:
-                        self.modifiers[m].add(t)
-            if not self.monster_id_to_nametokens[m.monster_id]:
+                        self.add_name_token(self.name_tokens, t, m)
+
+            # Add important tokens
+            if autotoken:
+                # Add a consistant last token as important token
+                for token in self._name_to_tokens(m.name_en.split(',')[-1].strip()):
+                    self.add_name_token(self.name_tokens, token, m)
+            elif not self.monster_id_to_nametokens[m.monster_id]:
+                # Add name tokens by guessing which ones are important
                 for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
                     self.name_tokens[token.lower()].add(m)
                     for repl in self.replacement_tokens[token.lower()]:
