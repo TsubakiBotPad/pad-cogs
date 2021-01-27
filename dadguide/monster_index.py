@@ -120,11 +120,12 @@ class MonsterIndex2(aobject):
                         for mevo in self.graph.get_alt_monsters(m):
                             if token in self._name_to_tokens(mevo.name_en):
                                 self.add_name_token(self.name_tokens, token, mevo)
+
                 # For equips only, add every name token from every other non-equip monster in the tree.
                 # This has the effect of making automated name tokens behave slightly more like treenames
                 # as opposed to nicknames, but only when dealing with equips, and is valuable so that we get
                 # the moving-through-tree effect with higher priority, but without having to add
-                # significantly more complicated logic in the lookup later on.
+                # significantly more complicated logic in the lookup later on.  Issue: #614
                 if m.is_equip:
                     for mevo in self.graph.get_alt_monsters(m):
                         if not mevo.is_equip:
