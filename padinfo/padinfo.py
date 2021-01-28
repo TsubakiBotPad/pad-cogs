@@ -181,7 +181,7 @@ class PadInfo(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={})
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite={})
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
