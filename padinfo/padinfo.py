@@ -312,7 +312,7 @@ class PadInfo(commands.Cog):
     async def id2(self, ctx, *, query: str):
         """Monster info (main tab)"""
         await ctx.send("id2 has been discontinued!  For an even better searching experience,"
-                       " opt into the id3 beta using `{0.prefix}idset beta y`".format(ctx.prefix))
+                       " opt into the id3 beta using `{}idset beta y`".format(ctx.prefix))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
