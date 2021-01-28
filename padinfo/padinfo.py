@@ -636,20 +636,25 @@ class PadInfo(commands.Cog):
                     return
                 suite.remove(old)
 
-            suite.append({
+            case = {
                 'id': id,
                 'token': token,
                 'fluff': fluffy,
                 'reason': '',
                 'ts': datetime.now().timestamp()
-            })
-            if await tsutils.get_reaction(ctx, f"Added with id `{len(suite)-1}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+            }
+
+            suite.append(case)
+            suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
+
+            if await tsutils.get_reaction(ctx, f"Added with id `{suite.index(case)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
                 suite.pop()
                 if old:
                     suite.append(old)
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.tick()
+                m = await ctx.send(f"Successfully added new case with id `{suite.index(case)}`")
+                await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
