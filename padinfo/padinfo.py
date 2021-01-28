@@ -629,7 +629,7 @@ class PadInfo(commands.Cog):
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -643,7 +643,7 @@ class PadInfo(commands.Cog):
     async def idtn_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -664,7 +664,7 @@ class PadInfo(commands.Cog):
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to del from the id3 test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -682,7 +682,7 @@ class PadInfo(commands.Cog):
     async def idtn_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to del from the fluff/name test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -696,7 +696,7 @@ class PadInfo(commands.Cog):
     async def idt_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an id3 test case"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -711,7 +711,7 @@ class PadInfo(commands.Cog):
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the name/fluff test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
