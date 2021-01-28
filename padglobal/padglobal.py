@@ -1264,6 +1264,7 @@ class PadGlobal(commands.Cog):
 
     @commands.command(aliases=['currentinvade'])
     async def whichinvade(self, ctx):
+        """Display which yinyangdra is currently invading for Mystics & Spectres event"""
         pst = pytz.timezone("America/Los_Angeles")
         curtime = datetime.datetime.now(pst)
         if datetime.time(6) < curtime.time() < datetime.time(18):
