@@ -643,7 +643,7 @@ class PadInfo(commands.Cog):
                 'reason': '',
                 'ts': datetime.now().timestamp()
             })
-            if await tsutils.get_reaction(ctx, f"Added with id `{len(suite)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+            if await tsutils.get_reaction(ctx, f"Added with id `{len(suite)-1}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
                 suite.pop()
                 if old:
                     suite.append(old)
