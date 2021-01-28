@@ -34,7 +34,7 @@ class IdMenu:
         else:
             return discord.Color(color)
 
-    async def make_id_embed_v2(self, m: "MonsterModel"):
+    async def make_id_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         is_transform_base = self.db_context.graph.monster_is_transform_base(m)
         true_evo_type_raw = self.db_context.graph.true_evo_type_by_monster(m).value
@@ -45,7 +45,7 @@ class IdMenu:
         e = IdView.embed(m, color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
         return e.to_embed()
 
-    async def make_evo_embed_v2(self, m: "MonsterModel"):
+    async def make_evo_embed(self, m: "MonsterModel"):
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
