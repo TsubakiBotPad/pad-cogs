@@ -600,8 +600,19 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).lastaction.set('id3')
 
         async with self.config.test_suite() as suite:
+            oldd = suite.get(query)
+
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
-        await ctx.tick()
+
+            if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
+                                    "\N{LEFTWARDS ARROW WITH HOOK}"):
+                if oldd:
+                    suite[query] = oldd
+                else:
+                    del suite[query]
+                await ctx.react_quietly("\N{CROSS MARK}")
+            else:
+                await ctx.tick()
 
     @idtest.group(name="name/fluff", aliases=["name", "fluff"])
     async def idt_name(self, ctx):
@@ -616,6 +627,10 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).lastaction.set('name')
 
         async with self.config.fluff_suite() as suite:
+            if any(t['id'] == id and t['token'] == token for t in suite):
+                await ctx.send("This test already exists.")
+                return
+
             suite.append({
                 'id': id,
                 'token': token,
@@ -623,7 +638,11 @@ class PadInfo(commands.Cog):
                 'reason': '',
                 'ts': datetime.now().timestamp()
             })
-        await ctx.tick()
+            if await tsutils.get_reaction(ctx, f"Added with id `{len(suite)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+                suite.pop()
+                await ctx.react_quietly("\N{CROSS MARK}")
+            else:
+                await ctx.tick()
 
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
