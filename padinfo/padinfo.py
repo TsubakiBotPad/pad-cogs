@@ -590,8 +590,10 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).lastaction.set('id3')
 
         async with self.config.test_suite() as suite:
-            oldd = suite.get(query)
-
+            oldd = suite.get(query, {})
+            if oldd['result'] == id:
+                await ctx.send("This test case already exists.")
+                return
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
 
             if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
@@ -704,6 +706,8 @@ class PadInfo(commands.Cog):
     @idtest.command(name="setreason", aliases=["addreason"])
     async def idt_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an id3 test case"""
+        if reason == '""':
+            reason = ""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
@@ -719,6 +723,8 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="setreason", aliases=["addreason"])
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
+        if reason == '""':
+            reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
