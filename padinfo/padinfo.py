@@ -618,15 +618,16 @@ class PadInfo(commands.Cog):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
+        fluffy = 'fluff' in ctx.message.content
         async with self.config.fluff_suite() as suite:
-            if any(t['id'] == id and t['token'] == token for t in suite):
+            if any(t['id'] == id and t['token'] == token and t['fluff'] == fluffy for t in suite):
                 await ctx.send("This test already exists.")
                 return
 
             suite.append({
                 'id': id,
                 'token': token,
-                'fluff': 'fluff' in ctx.message.content,
+                'fluff': fluffy,
                 'reason': '',
                 'ts': datetime.now().timestamp()
             })
