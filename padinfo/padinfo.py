@@ -720,6 +720,7 @@ class PadInfo(commands.Cog):
         async with self.config.fluff_suite() as suite:
             if item >= len(suite):
                 await ctx.send("There are not that many items.")
+                return
             suite.remove(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item])
         await ctx.tick()
 
@@ -856,8 +857,53 @@ class PadInfo(commands.Cog):
     @idtest.command(name="runall")
     async def idt_runall(self, ctx):
         """Run all tests"""
-        await self.idtn_run(ctx)
-        await self.idt_run(ctx)
+        rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
+
+        qsuite = await self.config.test_suite()
+        qo = ""
+        qc = 0
+        ml = len(max(qsuite, key=len)) + 2
+        async with ctx.typing():
+            for c, q in enumerate(sorted(qsuite)):
+                m = await self.findMonster3(q)
+                mid = m and m.monster_id
+                if m is not None and m.monster_id != qsuite[q]['result'] or m is None and qsuite[q]['result'] >= 0:
+                    reason = '   Reason: ' + r.get('reason') if qsuite[q].get('reason') else ''
+                    q = '"' + q + '"'
+                    qo += f"{str(c).rjust(4)}. {q.ljust(ml)} - {rcircle} Ex: {qsuite[q]['result']}, Ac: {mid}{reason}\n"
+                else:
+                    qc += 1
+
+        fsuite = await self.config.fluff_suite()
+        fo = ""
+        fc = 0
+        async with ctx.typing():
+            for c, v in enumerate(fsuite):
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+
+                if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
+                    q = '"{}"'.format(v['token'])
+                    fo += f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml-5)} - " \
+                          f"{ycircle if name or fluff else rcircle} " \
+                          f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
+                else:
+                    fc += 1
+
+        o = ""
+        if fo:
+            o += "[Failed Token Tests]\n" + fo
+        if qo:
+            o += "\n[Failed Query Tests]\n" + qo
+
+        if qc + fc != len(fsuite) + len(qsuite):
+            o += f"\n\nTests complete.  {qc + fc}/{len(fsuite) + len(qsuite)} succeeded."
+        else:
+            o += "\n\n\N{LARGE GREEN CIRCLE} \N{LARGE GREEN CIRCLE} All tests succeeded" \
+                 + random.choice(['.']*5 + ['!!']*5 + ['???'])
+        for page in pagify(o):
+            await ctx.send(box(page))
+
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
