@@ -685,7 +685,7 @@ class PadInfo(commands.Cog):
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
         await ctx.tick()
 
-    @idtest.group(name="name", aliases=["fluff"])
+    @idtest.group(name="name/fluff", aliases=["name", "fluff"])
     async def idt_name(self, ctx):
         """Name/Fluff subcommands"""
 
@@ -696,7 +696,9 @@ class PadInfo(commands.Cog):
             suite.append({
                 'id': id,
                 'token': token,
-                'fluff': 'fluff' in ctx.message.content
+                'fluff': 'fluff' in ctx.message.content,
+                'reason': '',
+                'ts': datetime.now().timestamp()
             })
         await ctx.tick()
 
@@ -707,6 +709,22 @@ class PadInfo(commands.Cog):
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
                 suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
+        await ctx.tick()
+
+    @idt_name.command(name="import")
+    async def idtn_import(self, ctx, *, queries):
+        """Import id3 tests"""
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
+        async with self.config.fluff_suite() as suite:
+            for query, result, fluff, reason in cases:
+                print(query, result, fluff, reason)
+                if not any(c['id'] == int(result) and c['token'] == query for c in suite):
+                    suite.append({
+                        'id': int(result),
+                        'token': query,
+                        'fluff': fluff == 'fluff',
+                        'reason': reason,
+                        'ts': datetime.now().timestamp()})
         await ctx.tick()
 
     @idtest.command(name="remove", aliases=["delete", "rm"])
@@ -741,6 +759,16 @@ class PadInfo(commands.Cog):
             suite[sorted(suite)[number]]['reason'] = reason
         await ctx.tick()
 
+    @idt_name.command(name="setreason", aliases=["addreason"])
+    async def idtn_setreason(self, ctx, number: int, *, reason):
+        """Set a reason for an name/fluff test case"""
+        async with self.config.fluff_suite() as suite:
+            if number >= len(suite):
+                await ctx.react_quietly("\N{CROSS MARK}")
+                return
+            sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[number]['reason'] = reason
+        await ctx.tick()
+
     @idtest.command(name="list")
     async def idt_list(self, ctx):
         """List id3 tests"""
@@ -761,7 +789,7 @@ class PadInfo(commands.Cog):
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
             o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
-                 f"\t{'fluff' if v['fluff'] else 'name'}\n"
+                 f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
