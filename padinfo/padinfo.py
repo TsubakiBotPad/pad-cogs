@@ -173,9 +173,6 @@ class PadInfo(commands.Cog):
         self.historic_lookups_file_path = _data_file('historic_lookups.json')
         self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
 
-        self.historic_lookups_file_path_id2 = _data_file('historic_lookups_id2.json')
-        self.historic_lookups_id2 = safe_read_json(self.historic_lookups_file_path_id2)
-
         self.historic_lookups_file_path_id3 = _data_file('historic_lookups_id3.json')
         self.historic_lookups_id3 = safe_read_json(self.historic_lookups_file_path_id3)
 
@@ -186,7 +183,6 @@ class PadInfo(commands.Cog):
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.historic_lookups = {}
-        self.historic_lookups_id2 = {}
         self.historic_lookups_id3 = {}
 
     async def red_get_data_for_user(self, *, user_id):
@@ -312,17 +308,11 @@ class PadInfo(commands.Cog):
         await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
 
     @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
+    @checks.bot_has_permissions()
     async def id2(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        await self._do_id2(ctx, query)
-
-    async def _do_id2(self, ctx, query: str):
-        m, err, debug_info = await self.findMonster2(query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
+        await ctx.send("id2 has been discontinued!  For an even better searching experience,"
+                       " opt into the id3 beta using `{0.prefix}idset beta y`".format(ctx.prefix))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -414,8 +404,8 @@ class PadInfo(commands.Cog):
 
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
-        id_embed = await menu.make_id_embed_v2(m)
-        evo_embed = await menu.make_evo_embed_v2(m)
+        id_embed = await menu.make_id_embed(m)
+        evo_embed = await menu.make_evo_embed(m)
         mats_embed = await menu.make_evo_mats_embed(m)
         pic_embed = await menu.make_picture_embed(m)
         other_info_embed = await menu.make_otherinfo_embed(m)
@@ -467,7 +457,7 @@ class PadInfo(commands.Cog):
                 return
             else:
                 emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = await menu.make_id_embed_v2(m)
+            emoji_to_embed[emoji] = await menu.make_id_embed(m)
             if m.monster_id == sm.monster_id:
                 starting_menu_emoji = emoji
 
@@ -651,8 +641,8 @@ class PadInfo(commands.Cog):
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_ls_embed(left_m, right_m)
-        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(left_m)
-        emoji_to_embed[self.right_emoji] = await menu.make_id_embed_v2(right_m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed(left_m)
+        emoji_to_embed[self.right_emoji] = await menu.make_id_embed(right_m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -669,7 +659,7 @@ class PadInfo(commands.Cog):
         menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = await menu.make_id_embed_v2(m)
+        emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
@@ -1026,14 +1016,14 @@ class PadInfo(commands.Cog):
     @checks.is_owner()
     @padinfo.command()
     async def iddiff(self, ctx):
-        """Runs the diff checker for id and id2"""
+        """Runs the diff checker for id and id3"""
         await ctx.send("Running diff checker...")
         hist_aggreg = list(self.historic_lookups)
         s = 0
         f = []
         async for c, query in AsyncIter(enumerate(hist_aggreg)):
-            m1, err1, debug_info1 = await self.findMonsterCustom(ctx, query)
-            m2, err2, debug_info2 = await self.findMonster2(query)
+            m1, err1, debug_info1 = await self.findMonster1(query)
+            m2, err2, debug_info2 = await self.findMonster3(query)
             if c % 50 == 0:
                 await ctx.send(inline("{}/{} complete.".format(c, len(hist_aggreg))))
             if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
@@ -1095,24 +1085,6 @@ class PadInfo(commands.Cog):
         await DGCOG.wait_until_ready()
 
         return DGCOG.index.find_monster(query)
-
-    async def findMonster2(self, query):
-        query = rmdiacritics(query)
-        nm, err, debug_info = await self._findMonster2(query)
-
-        monster_no = nm.monster_id if nm else -1
-        self.historic_lookups_id2[query] = monster_no
-        json.dump(self.historic_lookups_id2, open(self.historic_lookups_file_path_id2, "w+"))
-
-        m = self.get_monster(nm.monster_id) if nm else None
-
-        return m, err, debug_info
-
-    async def _findMonster2(self, query):
-        DGCOG = self.bot.get_cog("Dadguide")
-        await DGCOG.wait_until_ready()
-
-        return DGCOG.index.find_monster2(query)
 
     async def findMonster3(self, query):
         m = await self._findMonster3(query)
