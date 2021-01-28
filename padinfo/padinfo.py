@@ -23,6 +23,7 @@ from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, SERIES_TYPE_PRIORITY as series_priority
+from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
 from padinfo.id_menu import IdMenu
 from padinfo.view.components.monster.header import MonsterHeader
 
@@ -53,94 +54,6 @@ COLORS = {
     'random': 'random',
     'clear': 0,
 }
-
-
-class IdEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, pad_info=None, selected_emoji=None, bot=None,
-                 db_context: "DbContext" = None, **kwargs):
-        super().__init__(emoji_to_embed, **kwargs)
-        self.ctx = ctx
-        self.emoji_dict = emoji_to_embed
-        self.m = m
-        self.pad_info = pad_info
-        self.selected_emoji = selected_emoji
-        self.bot = bot
-        self.db_context = db_context
-
-        self.pad_info.settings.log_emoji("start_" + selected_emoji)
-
-    async def on_update(self, ctx, selected_emoji):
-        evo_id = self.pad_info.settings.checkEvoID(ctx.author.id)
-        self.pad_info.settings.log_emoji(selected_emoji)
-        if evo_id:
-            evos = sorted({*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)})
-            index = evos.index(self.m.monster_id)
-            if selected_emoji == self.pad_info.previous_monster_emoji:
-                new_id = evos[index - 1]
-            elif selected_emoji == self.pad_info.next_monster_emoji:
-                if index == len(evos) - 1:
-                    new_id = evos[0]
-                else:
-                    new_id = evos[index + 1]
-            else:
-                self.selected_emoji = selected_emoji
-                return True
-            if new_id == self.m.monster_id:
-                return False
-            self.m = self.db_context.graph.get_monster(new_id)
-        else:
-            if selected_emoji == self.pad_info.previous_monster_emoji:
-                prev_monster = self.db_context.graph.numeric_prev_monster(self.m)
-                if prev_monster is None:
-                    return False
-                self.m = prev_monster
-            elif selected_emoji == self.pad_info.next_monster_emoji:
-                next_monster = self.db_context.graph.numeric_next_monster(self.m)
-                if next_monster is None:
-                    return False
-                self.m = next_monster
-            else:
-                self.selected_emoji = selected_emoji
-                return True
-
-        self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx,
-                                                                   m=self.m, scroll=sorted(
-                {*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)}) if evo_id else [], menu_type=1)
-        return True
-
-
-class ScrollEmojiUpdater(EmojiUpdater):
-    def __init__(self, ctx, emoji_to_embed, m: "MonsterModel" = None, ms: "list[int]" = None, selected_emoji=None,
-                 pad_info=None, bot=None, **kwargs):
-        super().__init__(emoji_to_embed, **kwargs)
-        self.ctx = ctx
-        self.emoji_dict = emoji_to_embed
-        self.m = m
-        self.ms = ms
-        self.pad_info = pad_info
-        self.selected_emoji = selected_emoji
-        self.bot = bot
-
-    async def on_update(self, ctx, selected_emoji):
-        index = self.ms.index(self.m)
-
-        if selected_emoji == self.pad_info.first_monster_emoji:
-            self.m = self.ms[0]
-        elif selected_emoji == self.pad_info.previous_monster_emoji:
-            self.m = self.ms[index - 1]
-        elif selected_emoji == self.pad_info.next_monster_emoji:
-            if index == len(self.ms) - 1:
-                self.m = self.ms[0]
-            else:
-                self.m = self.ms[index + 1]
-        elif selected_emoji == self.pad_info.last_monster_emoji:
-            self.m = self.ms[-1]
-        else:
-            self.selected_emoji = selected_emoji
-            return True
-
-        self.emoji_dict = await self.pad_info.get_id_emoji_options(self.ctx, m=self.m, scroll=self.ms)
-        return True
 
 
 class PadInfo(commands.Cog):
@@ -180,7 +93,7 @@ class PadInfo(commands.Cog):
         self.historic_lookups_id3 = safe_read_json(self.historic_lookups_file_path_id3)
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0, color=None, beta_id3=False)
+        self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
     def cog_unload(self):
@@ -681,6 +594,11 @@ class PadInfo(commands.Cog):
     @idtest.command(name="add")
     async def idt_add(self, ctx, id: int, *, query):
         """Add a test for the id3 test suite"""
+        if await self.config.user(ctx.author).lastaction() != 'id3' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('id3')
+
         async with self.config.test_suite() as suite:
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
         await ctx.tick()
@@ -692,6 +610,11 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="add")
     async def idtn_add(self, ctx, id: int, token):
         """Add a name token test to the id3 test suite"""
+        if await self.config.user(ctx.author).lastaction() != 'name' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('name')
+
         async with self.config.fluff_suite() as suite:
             suite.append({
                 'id': id,
@@ -705,6 +628,11 @@ class PadInfo(commands.Cog):
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
+        if await self.config.user(ctx.author).lastaction() != 'id3' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('id3')
+
         cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
@@ -714,6 +642,11 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="import")
     async def idtn_import(self, ctx, *, queries):
         """Import id3 tests"""
+        if await self.config.user(ctx.author).lastaction() != 'name' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('name')
+
         cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
@@ -730,6 +663,11 @@ class PadInfo(commands.Cog):
     @idtest.command(name="remove", aliases=["delete", "rm"])
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
+        if await self.config.user(ctx.author).lastaction() != 'id3' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to del from the id3 test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('id3')
+
         async with self.config.test_suite() as suite:
             if item in suite:
                 del suite[item]
@@ -743,6 +681,11 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="remove", aliases=["rm", "delete"])
     async def idtn_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
+        if await self.config.user(ctx.author).lastaction() != 'name' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to del from the fluff/name test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('name')
+
         async with self.config.fluff_suite() as suite:
             if item >= len(suite):
                 await ctx.send("There are not that many items.")
