@@ -808,23 +808,23 @@ class PadInfo(commands.Cog):
             await ctx.send(box(page))
 
     @idt_name.command(name="list")
-    async def idtn_list(self, ctx, exclusive = True):
+    async def idtn_list(self, ctx, inclusive: bool = False):
         """List name tests"""
-        await self.norf_list(ctx, False, exclusive)
+        await self.norf_list(ctx, False, inclusive)
 
     @idt_fluff.command(name="list")
-    async def idtf_list(self, ctx, exclusive = True):
+    async def idtf_list(self, ctx, inclusive: bool = False):
         """List fluff tests"""
-        await self.norf_list(ctx, True, exclusive)
+        await self.norf_list(ctx, True, inclusive)
 
-    async def norf_list(self, ctx, fluff, exclusive):
+    async def norf_list(self, ctx, fluff, inclusive):
         """List name/fluff tests"""
         await self.config.user(ctx.author).lastaction.set('name')
 
         suite = await self.config.fluff_suite()
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-            if not (exclusive and v['fluff'] != fluff):
+            if inclusive or v['fluff'] == fluff:
                 o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
                      f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
         if not o:
