@@ -5,20 +5,21 @@ import difflib
 import json
 import logging
 import os
-import pytz
 import re
-import time
 from collections import defaultdict
 from io import StringIO, BytesIO
 
 import aiohttp
 import discord
 import prettytable
+import pytz
+import time
 import tsutils
 from redbot.core import checks, data_manager
-from redbot.core import commands
+from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
-from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
+from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
+    auth_check
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -62,14 +63,6 @@ commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 
-def is_padglobal_admin_check(ctx):
-    return checks.is_owner() or ctx.bot.get_cog("PadGlobal").settings.check_admin(ctx.author.id)
-
-
-def is_padglobal_admin():
-    return commands.check(is_padglobal_admin_check)
-
-
 async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
@@ -110,6 +103,14 @@ class PadGlobal(commands.Cog):
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
         self.bot = bot
+
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("contentadmin")
+        else:
+            raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
+                                      "installed from misc-cogs and load it via `^load globaladmin`")
+
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
@@ -158,7 +159,7 @@ class PadGlobal(commands.Cog):
             json.dump(results, f, indent=4)
 
     @commands.command()
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def breakglass(self, ctx, *, reason: str):
         """Shuts down the bot, for emergency use only.
 
@@ -198,7 +199,7 @@ class PadGlobal(commands.Cog):
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
 
     @commands.command()
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debugid1dump(self, ctx):
         padinfo_cog = self.bot.get_cog('PadInfo')
         mi = padinfo_cog.index_all
@@ -215,7 +216,7 @@ class PadGlobal(commands.Cog):
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
     @commands.command(aliases=['iddebug1'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debugid1(self, ctx, *, query):
         padinfo_cog = self.bot.get_cog('PadInfo')
         # m is a named monster
@@ -292,7 +293,7 @@ class PadGlobal(commands.Cog):
                                        delete_msgs=sent_messages, timeout=30)
 
     @commands.command(aliases=['fir'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def forceindexreload(self, ctx):
         if self.fir_lock.locked():
             await ctx.send("Index is already being reloaded.")
@@ -307,7 +308,7 @@ class PadGlobal(commands.Cog):
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.command(aliases=['fir3'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def forceindexreload3(self, ctx):
         if self.fir3_lock.locked():
             await ctx.send("Index2 is already being reloaded.")
@@ -320,7 +321,7 @@ class PadGlobal(commands.Cog):
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def padglobal(self, ctx):
         """PAD global custom commands."""
 
@@ -740,9 +741,7 @@ class PadGlobal(commands.Cog):
         await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
-
         db_context = self.bot.get_cog('Dadguide').database
-        db_context: "DbContext"
 
         term = term.lower().replace('?', '')
         nm, _, _ = await lookup_named_monster(term)
@@ -893,7 +892,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(box(page))
 
     @commands.command(aliases=['lookupdebug'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debuglookup(self, ctx, *, term: str):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
@@ -1275,7 +1274,7 @@ class PadGlobal(commands.Cog):
             totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
             if totime < curtime:
                 totime += datetime.timedelta(1)
-        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime-curtime)))
+        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
 
     def emojify(self, message):
         emojis = list()
