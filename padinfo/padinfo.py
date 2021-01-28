@@ -624,6 +624,11 @@ class PadInfo(commands.Cog):
                 await ctx.send("This test already exists.")
                 return
 
+            old = None
+            if any(t['id'] == id and t['token'] == token for t in suite):
+                old = [t for t in suite if t['id'] == id and t['token'] == token][0]
+                suite.remove(old)
+
             suite.append({
                 'id': id,
                 'token': token,
@@ -633,6 +638,8 @@ class PadInfo(commands.Cog):
             })
             if await tsutils.get_reaction(ctx, f"Added with id `{len(suite)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
                 suite.pop()
+                if old:
+                    suite.append(old)
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
                 await ctx.tick()
