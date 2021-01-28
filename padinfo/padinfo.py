@@ -590,8 +590,21 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).lastaction.set('id3')
 
         async with self.config.test_suite() as suite:
+            oldd = suite.get(query, {})
+            if oldd['result'] == id:
+                await ctx.send(f"This test case already exists with id `{sorted(suite).index(query)}`.")
+                return
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
-        await ctx.tick()
+
+            if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
+                                    "\N{LEFTWARDS ARROW WITH HOOK}"):
+                if oldd:
+                    suite[query] = oldd
+                else:
+                    del suite[query]
+                await ctx.react_quietly("\N{CROSS MARK}")
+            else:
+                await ctx.tick()
 
     @idtest.group(name="name/fluff", aliases=["name", "fluff"])
     async def idt_name(self, ctx):
@@ -605,15 +618,43 @@ class PadInfo(commands.Cog):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
+        fluffy = 'fluff' in ctx.message.content
         async with self.config.fluff_suite() as suite:
-            suite.append({
+            if any(t['id'] == id and t['token'] == token and t['fluff'] == fluffy for t in suite):
+                await ctx.send("This test already exists.")
+                return
+
+            old = None
+            if any(t['id'] == id and t['token'] == token for t in suite):
+                old = [t for t in suite if t['id'] == id and t['token'] == token][0]
+                if not await tsutils.confirm_message(ctx, f"Are you sure you want to change"
+                                                          f" the type of test case #{suite.index(old)}"
+                                                          f" `{id} - {token}` from "
+                                                          f" **{'fluff' if fluffy else 'name'}** to"
+                                                          f" **{'name' if fluffy else 'fluff'}**?"):
+                    await ctx.react_quietly("\N{CROSS MARK}")
+                    return
+                suite.remove(old)
+
+            case = {
                 'id': id,
                 'token': token,
-                'fluff': 'fluff' in ctx.message.content,
+                'fluff': fluffy,
                 'reason': '',
                 'ts': datetime.now().timestamp()
-            })
-        await ctx.tick()
+            }
+
+            suite.append(case)
+            suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
+
+            if await tsutils.get_reaction(ctx, f"Added with id `{suite.index(case)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+                suite.pop()
+                if old:
+                    suite.append(old)
+                await ctx.react_quietly("\N{CROSS MARK}")
+            else:
+                m = await ctx.send(f"Successfully added new case with id `{suite.index(case)}`")
+                await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
@@ -685,6 +726,8 @@ class PadInfo(commands.Cog):
     @idtest.command(name="setreason", aliases=["addreason"])
     async def idt_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an id3 test case"""
+        if reason == '""':
+            reason = ""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
@@ -700,6 +743,8 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="setreason", aliases=["addreason"])
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
+        if reason == '""':
+            reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
