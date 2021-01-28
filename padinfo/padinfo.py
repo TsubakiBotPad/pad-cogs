@@ -606,19 +606,30 @@ class PadInfo(commands.Cog):
             else:
                 await ctx.tick()
 
-    @idtest.group(name="name/fluff", aliases=["name", "fluff"])
+    @idtest.group(name="name")
     async def idt_name(self, ctx):
-        """Name/Fluff subcommands"""
+        """Name subcommands"""
+
+    @idtest.group(name="fluff")
+    async def idt_fluff(self, ctx):
+        """Fluff subcommands"""
 
     @idt_name.command(name="add")
     async def idtn_add(self, ctx, id: int, token):
         """Add a name token test to the id3 test suite"""
+        await self.norf_add(ctx, id, token, False)
+
+    @idt_fluff.command(name="add")
+    async def idtf_add(self, ctx, id: int, token):
+        """Add a fluff token test to the id3 test suite"""
+        await self.norf_add(ctx, id, token, True)
+
+    async def norf_add(self, ctx, id: int, token, fluffy):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
-        fluffy = 'fluff' in ctx.message.content
         async with self.config.fluff_suite() as suite:
             if any(t['id'] == id and t['token'] == token and t['fluff'] == fluffy for t in suite):
                 await ctx.send("This test already exists.")
@@ -672,7 +683,15 @@ class PadInfo(commands.Cog):
 
     @idt_name.command(name="import")
     async def idtn_import(self, ctx, *, queries):
-        """Import id3 tests"""
+        """Import name/fluff tests"""
+        await self.norf_import(ctx, id, queries)
+
+    @idt_fluff.command(name="import")
+    async def idtf_import(self, ctx, *, queries):
+        """Import name/fluff tests"""
+        await self.norf_import(ctx, id, queries)
+
+    async def norf_import(self, ctx, queries):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
@@ -709,9 +728,17 @@ class PadInfo(commands.Cog):
                 return
         await ctx.tick()
 
-    @idt_name.command(name="remove", aliases=["rm", "delete"])
+    @idt_name.command(name="remove")
     async def idtn_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
+        await self.norf_remove(ctx, item)
+
+    @idt_fluff.command(name="remove")
+    async def idtf_remove(self, ctx, *, item: int):
+        """Remove a name/fluff test"""
+        await self.norf_remove(ctx, item)
+
+    async def norf_remove(self, ctx, item):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
@@ -740,9 +767,17 @@ class PadInfo(commands.Cog):
             suite[sorted(suite)[number]]['reason'] = reason
         await ctx.tick()
 
-    @idt_name.command(name="setreason", aliases=["addreason"])
+    @idt_name.command(name="setreason")
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
+        await self.norf_setreason(ctx, number, reason)
+
+    @idt_fluff.command(name="setreason")
+    async def idtf_setreason(self, ctx, number: int, *, reason):
+        """Set a reason for an name/fluff test case"""
+        await self.norf_setreason(ctx, number, reason)
+
+    async def norf_setreason(self, ctx, number, reason):
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
@@ -773,15 +808,25 @@ class PadInfo(commands.Cog):
             await ctx.send(box(page))
 
     @idt_name.command(name="list")
-    async def idtn_list(self, ctx):
+    async def idtn_list(self, ctx, exclusive = True):
+        """List name tests"""
+        await self.norf_list(ctx, False, exclusive)
+
+    @idt_fluff.command(name="list")
+    async def idtf_list(self, ctx, exclusive = True):
+        """List fluff tests"""
+        await self.norf_list(ctx, True, exclusive)
+
+    async def norf_list(self, ctx, fluff, exclusive):
         """List name/fluff tests"""
         await self.config.user(ctx.author).lastaction.set('name')
 
         suite = await self.config.fluff_suite()
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-            o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
-                 f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
+            if not (exclusive and v['fluff'] != fluff):
+                o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
+                     f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -827,8 +872,17 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
-    @idt_name.command(name="run", aliases=["test"])
+    @idt_name.command(name="run")
     async def idtn_run(self, ctx):
+        """Run all name/fluff tests"""
+        await self.norf_run(ctx)
+
+    @idt_fluff.command(name="run")
+    async def idtf_run(self, ctx):
+        """Run all name/fluff tests"""
+        await self.norf_run(ctx)
+
+    async def norf_run(self, ctx):
         """Run all name/fluff tests"""
         suite = await self.config.fluff_suite()
         c = 0
