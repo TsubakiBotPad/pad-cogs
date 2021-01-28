@@ -695,6 +695,11 @@ class PadInfo(commands.Cog):
     @idtest.command(name="setreason", aliases=["addreason"])
     async def idt_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an id3 test case"""
+        if await self.config.user(ctx.author).lastaction() != 'id3' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('id3')
+
         async with self.config.test_suite() as suite:
             if number >= len(suite):
                 await ctx.react_quietly("\N{CROSS MARK}")
@@ -705,6 +710,11 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="setreason", aliases=["addreason"])
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
+        if await self.config.user(ctx.author).lastaction() != 'name' and \
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the name/fluff test suite?"):
+            return
+        await self.config.user(ctx.author).lastaction.set('name')
+
         async with self.config.fluff_suite() as suite:
             if number >= len(suite):
                 await ctx.react_quietly("\N{CROSS MARK}")
@@ -715,6 +725,8 @@ class PadInfo(commands.Cog):
     @idtest.command(name="list")
     async def idt_list(self, ctx):
         """List id3 tests"""
+        await self.config.user(ctx.author).lastaction.set('id3')
+
         suite = await self.config.test_suite()
         o = ""
         ml = len(max(suite, key=len))
@@ -728,6 +740,8 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="list")
     async def idtn_list(self, ctx):
         """List name/fluff tests"""
+        await self.config.user(ctx.author).lastaction.set('name')
+
         suite = await self.config.fluff_suite()
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
