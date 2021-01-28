@@ -627,6 +627,10 @@ class PadInfo(commands.Cog):
             old = None
             if any(t['id'] == id and t['token'] == token for t in suite):
                 old = [t for t in suite if t['id'] == id and t['token'] == token][0]
+                if not await tsutils.confirm_message(ctx, f"Are you sure you want to change"
+                                                          f" test #{suite.index(old)}'s type?"):
+                    await ctx.react_quietly("\N{CROSS MARK}")
+                    return
                 suite.remove(old)
 
             suite.append({
