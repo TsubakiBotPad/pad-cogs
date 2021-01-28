@@ -181,7 +181,7 @@ class PadInfo(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite={})
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
@@ -680,12 +680,29 @@ class PadInfo(commands.Cog):
 
     @idtest.command(name="add")
     async def idt_add(self, ctx, id: int, *, query):
+        """Add a test for the id3 test suite"""
         async with self.config.test_suite() as suite:
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
         await ctx.tick()
 
+    @idtest.group(name="name", aliases=["fluff"])
+    async def idt_name(self, ctx):
+        """Name/Fluff subcommands"""
+
+    @idt_name.command(name="add")
+    async def idtn_add(self, ctx, id: int, token):
+        """Add a name token test to the id3 test suite"""
+        async with self.config.fluff_suite() as suite:
+            suite.append({
+                'id': id,
+                'token': token,
+                'fluff': 'fluff' in ctx.message.content
+            })
+        await ctx.tick()
+
     @idtest.command(name="import")
     async def idt_import(self, ctx, *, queries):
+        """Import id3 tests"""
         cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
@@ -694,6 +711,7 @@ class PadInfo(commands.Cog):
 
     @idtest.command(name="remove", aliases=["delete", "rm"])
     async def idt_remove(self, ctx, *, item):
+        """Remove an id3 test"""
         async with self.config.test_suite() as suite:
             if item in suite:
                 del suite[item]
@@ -704,8 +722,18 @@ class PadInfo(commands.Cog):
                 return
         await ctx.tick()
 
+    @idt_name.command(name="remove", aliases=["rm", "delete"])
+    async def idtn_remove(self, ctx, *, item: int):
+        """Remove a name/fluff test"""
+        async with self.config.fluff_suite() as suite:
+            if item >= len(suite):
+                await ctx.send("There are not that many items.")
+            suite.remove(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item])
+        await ctx.tick()
+
     @idtest.command(name="setreason", aliases=["addreason"])
     async def idt_setreason(self, ctx, number: int, *, reason):
+        """Set a reason for an id3 test case"""
         async with self.config.test_suite() as suite:
             if number >= len(suite):
                 await ctx.react_quietly("\N{CROSS MARK}")
@@ -715,6 +743,7 @@ class PadInfo(commands.Cog):
 
     @idtest.command(name="list")
     async def idt_list(self, ctx):
+        """List id3 tests"""
         suite = await self.config.test_suite()
         o = ""
         ml = len(max(suite, key=len))
@@ -725,8 +754,22 @@ class PadInfo(commands.Cog):
         for page in pagify(o):
             await ctx.send(box(page))
 
+    @idt_name.command(name="list")
+    async def idtn_list(self, ctx):
+        """List name/fluff tests"""
+        suite = await self.config.fluff_suite()
+        o = ""
+        for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
+                 f"\t{'fluff' if v['fluff'] else 'name'}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
     @idtest.command(name="listrecent")
     async def idt_listrecent(self, ctx, count: int = 0):
+        """List recent id3 tests"""
         suite = await self.config.test_suite()
         if count == 0:
             count = len(suite)
@@ -741,10 +784,12 @@ class PadInfo(commands.Cog):
 
     @idtest.command(name="run", aliases=["test"])
     async def idt_run(self, ctx):
+        """Run all id3 tests"""
         suite = await self.config.test_suite()
         c = 0
         o = ""
         ml = len(max(suite, key=len)) + 2
+        rcircle = '\N{LARGE RED CIRCLE}'
         async with ctx.typing():
             for q, r in suite.items():
                 m = await self.findMonster3(q)
@@ -752,15 +797,47 @@ class PadInfo(commands.Cog):
                 if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
-                    o += f"{q.ljust(ml)} - Ex: {r['result']}, Ac: {mid}{reason}\n"
+                    o += f"{q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
                 else:
                     c += 1
         if c != len(suite):
             o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
         else:
-            o += "\n\nAll tests succeeded."
+            o += "\n\n\N{LARGE GREEN CIRCLE} All tests succeeded" + random.choice('.....!!!!!?')
         for page in pagify(o):
             await ctx.send(box(page))
+
+    @idt_name.command(name="name")
+    async def idtn_run(self, ctx):
+        """Run all name/fluff tests"""
+        suite = await self.config.fluff_suite()
+        c = 0
+        o = ""
+        rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
+        async with ctx.typing():
+            for v in suite:
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+
+                if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
+                    q = '"{}"'.format(v['token'])
+                    o += f"{str(v['id']).ljust(4)} {q.ljust(10)} - " \
+                         f"{ycircle if name or fluff else rcircle} " \
+                         f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
+                else:
+                    c += 1
+        if c != len(suite):
+            o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
+        else:
+            o += "\n\n\N{LARGE GREEN CIRCLE} All tests succeeded."
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="runall")
+    async def idt_runall(self, ctx):
+        """Run all tests"""
+        await self.idtn_run(ctx)
+        await self.idt_run(ctx)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
