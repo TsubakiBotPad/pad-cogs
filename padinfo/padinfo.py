@@ -591,7 +591,7 @@ class PadInfo(commands.Cog):
 
         async with self.config.test_suite() as suite:
             oldd = suite.get(query, {})
-            if oldd['result'] == id:
+            if oldd.get('result') == id:
                 await ctx.send(f"This test case already exists with id `{sorted(suite).index(query)}`.")
                 return
             suite[query] = {'result': id, 'ts': datetime.now().timestamp()}
