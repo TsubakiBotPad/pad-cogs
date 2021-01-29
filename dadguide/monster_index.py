@@ -286,6 +286,22 @@ class MonsterIndex2(aobject):
             for t in MISC_MAP[MiscModifiers.CHIBI]:
                 modifiers.add(t)
 
+        # Story
+        def is_story(m, do_transform=True):
+            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats_by_monster(m)):
+                return True
+            if do_transform:
+                for pt in self.graph.get_transform_monsters(m):
+                    if is_story(pt, False):
+                        return True
+            pe = self.graph.get_prev_evolution_by_monster(m)
+            if pe and is_story(pe):
+                return True
+            return False
+        if is_story(m):
+            for t in MISC_MAP[MiscModifiers.STORY]:
+                modifiers.add(t)
+
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
             for t in MISC_MAP[MiscModifiers.FARMABLE]:
