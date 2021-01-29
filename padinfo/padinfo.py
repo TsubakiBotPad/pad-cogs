@@ -583,7 +583,7 @@ class PadInfo(commands.Cog):
 
     @idtest.command(name="add")
     async def idt_add(self, ctx, id: int, *, query):
-        """Add a test for the id3 test suite"""
+        """Add a test for the id3 test suite (Append `| reason` to add a reason)"""
         query, *reason = query.split("|")
         query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
@@ -622,16 +622,17 @@ class PadInfo(commands.Cog):
         """Fluff subcommands"""
 
     @idt_name.command(name="add")
-    async def idtn_add(self, ctx, id: int, token):
+    async def idtn_add(self, ctx, id: int, token, *, reason=""):
         """Add a name token test to the id3 test suite"""
-        await self.norf_add(ctx, id, token, False)
+        await self.norf_add(ctx, id, token, reason, False)
 
     @idt_fluff.command(name="add")
-    async def idtf_add(self, ctx, id: int, token):
+    async def idtf_add(self, ctx, id: int, token, *, reason=""):
         """Add a fluff token test to the id3 test suite"""
-        await self.norf_add(ctx, id, token, True)
+        await self.norf_add(ctx, id, token, reason, True)
 
-    async def norf_add(self, ctx, id: int, token, fluffy):
+    async def norf_add(self, ctx, id: int, token, reason, fluffy):
+        reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
             return
@@ -658,7 +659,7 @@ class PadInfo(commands.Cog):
                 'id': id,
                 'token': token,
                 'fluff': fluffy,
-                'reason': '',
+                'reason': reason,
                 'ts': datetime.now().timestamp()
             }
 
