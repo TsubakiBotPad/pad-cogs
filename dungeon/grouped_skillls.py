@@ -51,4 +51,11 @@ class GroupedSkills(object):
             top += output
         else:
             return output
+    async def collect_skills(self):
+        skill_copy = self.skills.copy()
+        for g in self.nested_groups:
+            skill_copy.extend(await g.collect_skills())
+        return skill_copy
+
+
     # return output

@@ -97,3 +97,29 @@ class ProcessedMonster(object):
 
             # embed.add_field(name=k, value=content, inline=False)
         return embed
+
+    async def make_preempt_embed(self, spawn: "list[int]" = None, floor: "list[int]" = None):
+        skills = await self.collect_skills()
+        desc = ""
+        for s in skills:
+            if "Passive" in s.type or "Preemptive" in s.type:
+                desc += "\n{}".format(s.give_string(verbose=True))
+        if spawn is not None:
+            embed = discord.Embed(
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
+                                                                             floor[0], floor[1]),
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
+                                                                   f'{self.turns:,}', desc))
+        else:
+            embed = discord.Embed(
+                title="Enemy:{} at Level: {}".format(self.name, self.level),
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
+                                                                   f'{self.turns:,}', desc))
+        return embed
+
+    async def collect_skills(self):
+        skills = []
+        for g in self.groups:
+            skills.extend(await g.collect_skills())
+        return skills
+

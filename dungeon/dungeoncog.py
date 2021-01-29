@@ -89,7 +89,8 @@ monsters.name_en,
 monsters.name_ja,
 monsters.name_ko,
 encounters.*,
-enemy_data.behavior
+enemy_data.behavior,
+enemy_data.status
 FROM
 encounters
 LEFT OUTER JOIN enemy_data ON encounters.enemy_id = enemy_data.enemy_id
@@ -173,6 +174,7 @@ class DungeonEmojiUpdater(EmojiUpdater):
                 index_floor = len(self.pm_dungeon) - 1
             else:
                 index_floor -= 1
+            index_monster = 0
         elif selected_emoji == self.dungeon_cog.next_floor:
             if index_floor == len(self.pm_dungeon) - 1:
                 self.pm_floor = self.pm_dungeon[0]
@@ -181,6 +183,7 @@ class DungeonEmojiUpdater(EmojiUpdater):
                 self.pm_floor = self.pm_dungeon[index_floor + 1]
                 index_floor += 1
             self.pm = self.pm_floor[0]
+            index_monster = 0
         else:
             self.selected_emoji = selected_emoji
             return True
@@ -386,10 +389,11 @@ class DungeonCog(commands.Cog):
         self.previous_floor = '\N{DOWNWARDS BLACK ARROW}'
         self.current_monster = '👹'
         self.verbose_monster = '📜'
+        self.preempt_monster = '⚡'
 
     async def make_emoji_dictionary(self, ctx, pm: ProcessedMonster = None, scroll_monsters=None, scroll_floors=None,
                                     floor_info: "list[int]" = None, dungeon_info: "list[int]" = None):
-        print(pm.name)
+        # print(pm.name)
         if scroll_monsters is None:
             scroll_monsters = []
         if scroll_floors is None:
@@ -397,6 +401,7 @@ class DungeonCog(commands.Cog):
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.current_monster] = await pm.make_embed(spawn=floor_info, floor=dungeon_info)
         emoji_to_embed[self.verbose_monster] = await pm.make_embed(verbose=True, spawn=floor_info, floor=dungeon_info)
+        emoji_to_embed[self.preempt_monster] = await pm.make_preempt_embed(spawn=floor_info, floor=dungeon_info)
         emoji_to_embed[self.previous_monster_emoji] = None
         emoji_to_embed[self.next_monster_emoji] = None
         emoji_to_embed[self.previous_floor] = None
@@ -423,7 +428,7 @@ class DungeonCog(commands.Cog):
             logger.error('Menu failure', exc_info=True)
 
     @commands.command()
-    async def encounter_info(self, ctx, query: str, new: bool = False):
+    async def encounter_info(self, ctx, query: str, new: bool = False, raw: bool = False):
         """This does stuff!"""
         dg_cog = self.bot.get_cog('Dadguide')
         # Your code will go here
@@ -435,10 +440,13 @@ class DungeonCog(commands.Cog):
         #sub_id = 4301003
         test_result = dg_cog.database.database.query_one(encounter_query.format(query), ())
         behavior_test = MonsterBehavior()
+        # print(test_result)
         behavior_test.ParseFromString(test_result["behavior"])
 
         #await ctx.send(formatOverview(test_result))
-        if new:
+        if raw:
+            print("idk")
+        elif new:
             monster = await process_monster(behavior_test, test_result, dg_cog.database)
             await ctx.send(embed= await monster.make_embed())
         else:
@@ -516,10 +524,17 @@ class DungeonCog(commands.Cog):
         emoji_to_embed[self.menu.emoji.get(2)] = embed2
         await self._do_menu(ctx, self.menu.emoji.get(1), EmojiUpdater(emoji_to_embed))
 
-    # For Tsubakibot devs: If this ever gets merged delete this command
+    # 1 is Condensed, 2 is detailed, 3 is preempts
     @commands.command()
-    async def dungeon_vomit(self, ctx, name: str, difficulty: int = -1):
+    async def dungeon_vomit(self, ctx, name: str, difficulty: int = -1, starting: int = 1):
+        '''
+        Difficulty: Default to the highest difficulty
+        Starting: 1 is condensed information. 2 is detailed information. 3 is preempts only
+        '''
         #load dadguide cog for database access
+        start_selection = {1 : self.current_monster,
+                           2 : self.verbose_monster,
+                           3 : self.preempt_monster}
         dg_cog = self.bot.get_cog('Dadguide')
         if not dg_cog:
             logger.warning("Cog 'Dadguide' not loaded")
@@ -571,6 +586,93 @@ class DungeonCog(commands.Cog):
                     pm_dungeon.append(floor)
                 else:
                     pm_dungeon[current_stage - 1].append(pm)
-            emoji_to_embed = await self.make_emoji_dictionary(ctx, pm_dungeon[0][0])
-            dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, self.current_monster, pm_dungeon[0][0], pm_dungeon, pm_dungeon[0])
-            await self._do_menu(ctx, self.current_monster, dmu,60)
+            emoji_to_embed = await self.make_emoji_dictionary(ctx, pm_dungeon[0][0], floor_info=[1, len(pm_dungeon[0])], dungeon_info=[1, len(pm_dungeon)])
+            dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, start_selection[starting], pm_dungeon[0][0], pm_dungeon, pm_dungeon[0])
+            await self._do_menu(ctx, start_selection[starting], dmu, 60)
+    @commands.command()
+    async def spinner_help(self, ctx, spin_time, move_time):
+        embed = discord.Embed(title="Spinner Helper {}s Rotation {}s Move Time".format(spin_time, move_time),
+                              description="Assuming orbs are set and are NOT moved during movement:")
+        casino = ["🔥","🌊","🌿","💡","🌙","🩹"]
+        cycles = float(move_time) / float(spin_time)
+        rounded = int(cycles)
+        casino_dict = OrderedDict()
+        for c in casino:
+            casino_dict.update({c : casino[(casino.index(c) + rounded) % 6]})
+        casino_dict.update({"Other" : casino[(rounded - 1) % 6]})
+        output = ""
+        for k, v in casino_dict.items():
+            output += "\n{} {} {}".format(k, "➡", v)
+        embed.add_field(name="Original -> Final", value=output)
+        await ctx.send(embed=embed)
+    @commands.command()
+    async def weather_warning(self, ctx, difficulty: int = -1):
+        '''
+                Difficulty: Default to the highest difficulty
+                Starting: 1 is condensed information. 2 is detailed information. 3 is preempts only
+                '''
+        # load dadguide cog for database access
+        start_selection = {1: self.current_monster,
+                           2: self.verbose_monster,
+                           3: self.preempt_monster}
+        dg_cog = self.bot.get_cog('Dadguide')
+        if not dg_cog:
+            logger.warning("Cog 'Dadguide' not loaded")
+            return
+        logger.info('Waiting until DG is ready')
+        await dg_cog.wait_until_ready()
+
+        dungeons = dg_cog.database.database.query_many(dungeon_search_query.format(name), ())
+        if len(dungeons) == 0:
+            await ctx.send("Sorry, I couldn't find any dungeons by that name! (Or maybe there is no data on it?)")
+            return
+        elif len(dungeons) > 1:
+            output = "Can you be more specific? Did you mean:"
+            for d in dungeons:
+                output += "\n{}".format(d["name_en"])
+            await ctx.send(output)
+            return
+        # Now that we have the dungeon we need to get he sub_dungeon_id (difficulty)
+        sub_id = dungeons[0]["dungeon_id"] * 1000 + difficulty
+        if difficulty == -1:
+            sub_id = dg_cog.database.database.query_one(dungeon_sub_id_query.format(dungeons[0]["dungeon_id"]), ())[
+                "sub_dungeon_id"]
+        elif dg_cog.database.database.query_one(sub_dungeon_exists_query.format(sub_id), ()) is None:
+            await ctx.send("That difficulty doesn't exist, following data is for the highest difficulty:")
+            sub_id = dg_cog.database.database.query_one(dungeon_sub_id_query.format(dungeons[0]["dungeon_id"]), ())[
+                "sub_dungeon_id"]
+
+        test_result = dg_cog.database.database.query_many(dungeon_query.format(sub_id), ())
+        if test_result is None:
+            await ctx.send("Dungeon not Found")
+        else:
+            # await ctx.send(formatOverview(test_result))
+            current_stage = 0
+            pm_dungeon = []
+            for r in test_result:
+                enc = dg_cog.database.database.query_one(encounter_query.format(r["encounter_id"]), ())
+                behavior_test = MonsterBehavior()
+                if enc["behavior"] is not None:
+                    behavior_test.ParseFromString(enc["behavior"])
+                else:
+                    behavior_test = None
+
+                # await ctx.send(formatOverview(test_result))
+                pm = await process_monster(behavior_test, enc, dg_cog.database)
+                if r['stage'] > current_stage:
+                    # print("Added")
+                    current_stage = r['stage']
+                    floor = [pm]
+                    pm_dungeon.append(floor)
+                else:
+                    pm_dungeon[current_stage - 1].append(pm)
+        skills = []
+        for f in pm_dungeon:
+            for m in f:
+                skills.extend(await m.collect_skills())
+
+"""
+"list all hazard resist that appears in dg
+.... as preempt
+.... at all"
+"""
