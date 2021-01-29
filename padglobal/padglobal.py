@@ -1277,6 +1277,17 @@ class PadGlobal(commands.Cog):
                 totime += datetime.timedelta(1)
         await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
 
+    @commands.command(aliases=['resettime', 'newday', 'whenreset'])
+    async def daychange(self, ctx):
+        """Show how much time is left until the game day changes."""
+        curtime = datetime.datetime.now(pytz.timezone("UTC"))
+        resetdelta = curtime.replace(hour=8, minute=0, second=0, microsecond=0) - curtime
+        newdaydelta = curtime.replace(hour=12, minute=0, second=0, microsecond=0) - curtime
+        await ctx.send(inline("Reset (when dungeons and events expire) is in " + \
+            humanize_timedelta(timedelta=resetdelta)))
+        await ctx.send(inline("The new day (when daily mails arrive) is in " + \
+            humanize_timedelta(timedelta=newdaydelta)))
+
     def emojify(self, message):
         emojis = list()
         emoteservers = self.settings.emojiServers()
