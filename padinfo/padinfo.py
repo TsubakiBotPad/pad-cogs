@@ -584,7 +584,8 @@ class PadInfo(commands.Cog):
     @idtest.command(name="add")
     async def idt_add(self, ctx, id: int, *, query):
         """Add a test for the id3 test suite"""
-        query, *reason = query.split(" | ")
+        query, *reason = query.split("|")
+        query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
                 not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
             return
@@ -595,7 +596,11 @@ class PadInfo(commands.Cog):
             if oldd.get('result') == id:
                 await ctx.send(f"This test case already exists with id `{sorted(suite).index(query)}`.")
                 return
-            suite[query] = {'result': id, 'ts': datetime.now().timestamp(), 'reason': reason[0] if reason else ''}
+            suite[query] = {
+                'result': id,
+                'ts': datetime.now().timestamp(),
+                'reason': reason[0].strip() if reason else ''
+            }
 
             if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
                                     "\N{LEFTWARDS ARROW WITH HOOK}"):
@@ -605,6 +610,7 @@ class PadInfo(commands.Cog):
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
+                await ctx.send(f"Successfully added test case with id `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
