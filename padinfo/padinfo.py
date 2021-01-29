@@ -860,6 +860,7 @@ class PadInfo(commands.Cog):
     async def idt_run(self, ctx):
         """Run all id3 tests"""
         suite = await self.config.test_suite()
+        await self.config.user(ctx.author).lastaction.set('id3')
         c = 0
         o = ""
         ml = len(max(suite, key=len)) + 2
@@ -894,6 +895,7 @@ class PadInfo(commands.Cog):
     async def norf_run(self, ctx):
         """Run all name/fluff tests"""
         suite = await self.config.fluff_suite()
+        await self.config.user(ctx.author).lastaction.set('name')
         c = 0
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
