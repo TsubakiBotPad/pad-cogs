@@ -1279,14 +1279,30 @@ class PadGlobal(commands.Cog):
 
     @commands.command(aliases=['resettime', 'newday', 'whenreset'])
     async def daychange(self, ctx):
-        """Show how much time is left until the game day changes."""
+        """Show if it is currently DST and how much time is left until the game day changes."""
         curtime = datetime.datetime.now(pytz.timezone("UTC"))
-        resetdelta = curtime.replace(hour=8, minute=0, second=0, microsecond=0) - curtime
-        newdaydelta = curtime.replace(hour=12, minute=0, second=0, microsecond=0) - curtime
-        await ctx.send(inline("Reset (when dungeons and events expire) is in " + \
-            humanize_timedelta(timedelta=resetdelta)))
-        await ctx.send(inline("The new day (when daily mails arrive) is in " + \
-            humanize_timedelta(timedelta=newdaydelta)))
+        reset = curtime.replace(hour=8, minute=0, second=0, microsecond=0)
+        if reset < curtime:
+            reset += datetime.timedelta(1)
+
+        newday = curtime.replace(hour=12, minute=0, second=0, microsecond=0)
+        if newday < curtime:
+            newday += datetime.timedelta(1)
+
+        pst = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
+        # TODO: so do I need to localize() or not?? @__@
+        if pst.dst():
+            await ctx.send("Daylight Savings Time in North America is **ON**!\n" # It ends in X days.\n"
+                + "Reset (when dungeons and events expire) is in **" \
+                + humanize_timedelta(timedelta=reset - curtime) + "** (1:00 am PDT).\n" \
+                + "The new day (when daily mails arrive) is in **" \
+                + humanize_timedelta(timedelta=newday - curtime) + "** (5:00 am PDT).")
+        else:
+            await ctx.send("Daylight Savings Time in North America is **OFF**!\n" # It starts in X days.\n"
+                + "Reset (when dungeons and events expire) is in **" \
+                + humanize_timedelta(timedelta=reset - curtime) + "** (12:00 midnight PST).\n" \
+                + "The new day (when daily mails arrive) is in **" \
+                + humanize_timedelta(timedelta=newday - curtime) + "** (4:00 am PST).")
 
     def emojify(self, message):
         emojis = list()
