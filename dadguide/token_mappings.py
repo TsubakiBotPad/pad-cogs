@@ -235,7 +235,7 @@ AWOKEN_MAP = {
 
 class MiscModifiers(Enum):
     CHIBI = 'Chibi'
-    NONCHIBI = 'Non-Chibi'
+    STORY = 'Story'
     FARMABLE = 'Farmable'
     REM = 'REM'
     MP = 'MP'
@@ -247,6 +247,7 @@ class MiscModifiers(Enum):
 
 MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
+    MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
