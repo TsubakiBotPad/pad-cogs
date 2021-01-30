@@ -16,7 +16,7 @@ from Levenshtein import jaro_winkler
 from discordmenu.emoji_cache import emoji_cache
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, inline, pagify, text_to_file
+from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import CogSettings, EmojiUpdater, Menu, char_to_emoji, rmdiacritics, safe_read_json, is_donor
 
@@ -603,7 +603,7 @@ class PadInfo(commands.Cog):
             }
 
             if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
-                                    "\N{LEFTWARDS ARROW WITH HOOK}"):
+                                          "\N{LEFTWARDS ARROW WITH HOOK}"):
                 if oldd:
                     suite[query] = oldd
                 else:
@@ -948,7 +948,7 @@ class PadInfo(commands.Cog):
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
-                    fo += f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml-5)} - " \
+                    fo += f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml - 5)} - " \
                           f"{ycircle if name or fluff else rcircle} " \
                           f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
                 else:
@@ -964,10 +964,9 @@ class PadInfo(commands.Cog):
             o += f"\n\nTests complete.  {qc + fc}/{len(fsuite) + len(qsuite)} succeeded."
         else:
             o += "\n\n\N{LARGE GREEN CIRCLE} \N{LARGE GREEN CIRCLE} All tests succeeded" \
-                 + random.choice(['.']*5 + ['!!']*5 + ['???'])
+                 + random.choice(['.'] * 5 + ['!!'] * 5 + ['???'])
         for page in pagify(o):
             await ctx.send(box(page))
-
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -1358,12 +1357,36 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod"])
     async def idmeaning(self, ctx, *, modifier):
+        """Get all the meanings of a token (bold signifies base of a tree)"""
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
         tms = DGCOG.token_maps
         awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
+
+        o = ""
+
+        def write_name_token(dict, type, mwtoken=False):
+            def f(m, s):
+                return bold(s) if DGCOG.database.graph.monster_is_base(m) else s
+            o = ""
+            so = []
+            for m in sorted(dict[modifier], key=lambda m: m.monster_id):
+                if (m in DGCOG.index2.mwtoken_creators[modifier]) == mwtoken:
+                    so.append(m)
+            if len(so) > 5:
+                o += f"\n\n{type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
+                o += f"... ({len(so)} total)" if len(so) > 10 else ""
+            elif so:
+                o += f"\n\n{type}\n" + "\n".join(f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
+            return o
+
+        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", 1)
+        o += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
+        o += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
+        o += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
+
 
         def additmods(ms, om):
             if len(ms) == 1:
@@ -1399,8 +1422,9 @@ class PadInfo(commands.Cog):
               for a, v in tms.AWOKEN_MAP.items() if ag in v]
         ]
 
-        if meanings:
-            await ctx.send("\n".join(meanings))
+        if meanings or o:
+            for page in pagify("\n".join(meanings) + "\n\n" + o.strip()):
+                await ctx.send(page)
         else:
             await ctx.send(f"There are no modifiers that match `{modifier}`.")
 

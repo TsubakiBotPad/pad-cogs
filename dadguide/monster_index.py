@@ -28,6 +28,8 @@ class MonsterIndex2(aobject):
                                                                 for m
                                                                 in db.get_all_monsters()})
 
+        self.mwtoken_creators = defaultdict(set)
+
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
                                   in db.get_all_monsters()
@@ -42,6 +44,7 @@ class MonsterIndex2(aobject):
                     self.monster_id_to_nametokens[int(m_id)].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(int(m_id)))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
 
@@ -53,6 +56,7 @@ class MonsterIndex2(aobject):
                         self.monster_id_to_nametokens[em_id].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(int(m_id)))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
