@@ -1360,6 +1360,9 @@ class PadInfo(commands.Cog):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         modifier = modifier.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
+
+        await DGCOG.wait_until_ready()
+        
         tms = DGCOG.token_maps
         awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
