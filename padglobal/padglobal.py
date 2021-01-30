@@ -1277,6 +1277,47 @@ class PadGlobal(commands.Cog):
                 totime += datetime.timedelta(1)
         await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
 
+    @commands.command(aliases=['resettime', 'newday', 'whenreset'])
+    async def daychange(self, ctx):
+        """Show DST information and how much time is left until the game day changes."""
+        curtime = datetime.datetime.now(pytz.timezone("UTC"))
+        reset = curtime.replace(hour=8, minute=0, second=0, microsecond=0)
+        if reset < curtime:
+            reset += datetime.timedelta(1)
+        resetdelta = reset - curtime
+        # strip leftover seconds
+        resetdelta -= datetime.timedelta(seconds=resetdelta.total_seconds() % 60)
+        totalresetmins = int(resetdelta.total_seconds() // 60)
+        resethours = totalresetmins // 60
+        newdayhours = resethours + 4
+        mins = totalresetmins % 60
+
+        pst = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
+        if pst.dst():
+            # earliest possible date of the first Sunday in November
+            dstthresh = pst.replace(month=11, day=1)
+        else:
+            # earliest possible date of the second Sunday in March
+            dstthresh = pst.replace(month=3, day=8)
+            
+        # calculate the day DST changes
+        if dstthresh < pst:
+            dstthresh = dstthresh.replace(year=(dstthresh.year + 1))
+        # add days to make day of week equal 6 (Sunday, when Monday is 0)
+        dstthresh += datetime.timedelta(6 - dstthresh.weekday())
+
+        msg = "Reset (dungeons/events): **{}h {}m** ".format(resethours, mins)
+        msg += "(1:00 am PDT)" if pst.dst() else "(12:00 midnight PST)"
+        msg += ".\nNew day (mails): **{}h {}m** ".format(newdayhours, mins)
+        msg += "(5:00 am PDT)" if pst.dst() else "(4:00 am PST)"
+        msg += ".\nDST in North America is "
+        msg += "ACTIVE" if pst.dst() else "NOT ACTIVE"
+        msg += "! It will "
+        msg += "end" if pst.dst() else "start"
+        msg += " in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
+
+        await ctx.send(msg)
+
     def emojify(self, message):
         emojis = list()
         emoteservers = self.settings.emojiServers()
