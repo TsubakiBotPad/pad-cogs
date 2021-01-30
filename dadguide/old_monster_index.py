@@ -335,47 +335,6 @@ class MonsterIndex(tsutils.aobject):
         return max(named_monster_list, key=lambda x: (not x.is_low_priority, x.rarity, x.monster_no_na))
 
 
-class PotentialMatches(object):
-    def __init__(self):
-        self.match_list = set()
-
-    def add(self, m):
-        self.match_list.add(m)
-
-    def update(self, monster_list):
-        self.match_list.update(monster_list)
-
-    def length(self):
-        return len(self.match_list)
-
-    def update_list(self, query_prefixes):
-        self._add_trees()
-        self._remove_any_without_all_prefixes(query_prefixes)
-
-    def _add_trees(self):
-        to_add = set()
-        for m in self.match_list:
-            for evo in m.evolution_tree:
-                to_add.add(evo)
-        self.match_list.update(to_add)
-
-    def _remove_any_without_all_prefixes(self, query_prefixes):
-        to_remove = set()
-        for m in self.match_list:
-            for prefix in query_prefixes:
-                if prefix not in m.prefixes:
-                    to_remove.add(m)
-                    break
-        self.match_list.difference_update(to_remove)
-
-    def get_monsters_from_potential_pantheon_match(self, pantheon, pantheon_nick_to_name, pantheons):
-        full_name = pantheon_nick_to_name[pantheon]
-        self.update(pantheons[full_name])
-
-    def pick_best_monster(self):
-        return max(self.match_list, key=lambda x: (not x.is_low_priority, x.rarity, x.monster_no_na))
-
-
 class NamedMonsterGroup(object):
     def __init__(self, evolution_tree: list, treename_overrides: list):
         base_monster = min(evolution_tree, key=lambda m: m.monster_id)
