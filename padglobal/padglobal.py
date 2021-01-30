@@ -1287,7 +1287,10 @@ class PadGlobal(commands.Cog):
         resetdelta = reset - curtime
         # strip leftover seconds
         resetdelta -= datetime.timedelta(seconds=resetdelta.total_seconds() % 60)
-        newdaydelta = resetdelta + datetime.timedelta(hours=4)
+        totalresetmins = int(resetdelta.total_seconds() // 60)
+        resethours = totalresetmins // 60
+        newdayhours = resethours + 4
+        mins = totalresetmins % 60
 
         pst = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
         if pst.dst():
@@ -1303,9 +1306,9 @@ class PadGlobal(commands.Cog):
         # add days to make day of week equal 6 (Sunday, when Monday is 0)
         dstthresh += datetime.timedelta(6 - dstthresh.weekday())
 
-        msg = "Reset (dungeons/events): **" + humanize_timedelta(timedelta=resetdelta) + "** "
+        msg = "Reset (dungeons/events): **{}h {}m** ".format(resethours, mins)
         msg += "(1:00 am PDT)" if pst.dst() else "(12:00 midnight PST)"
-        msg += ".\nNew day (mails): **" + humanize_timedelta(timedelta=newdaydelta) + "** "
+        msg += ".\nNew day (mails): **{}h {}m** ".format(newdayhours, mins)
         msg += "(5:00 am PDT)" if pst.dst() else "(4:00 am PST)"
         msg += ".\nDST in North America is **"
         msg += "ACTIVE" if pst.dst() else "NOT ACTIVE"
