@@ -1310,9 +1310,9 @@ class PadGlobal(commands.Cog):
         msg += "(1:00 am PDT)" if pst.dst() else "(12:00 midnight PST)"
         msg += ".\nNew day (mails): **{}h {}m** ".format(newdayhours, mins)
         msg += "(5:00 am PDT)" if pst.dst() else "(4:00 am PST)"
-        msg += ".\nDST in North America is **"
+        msg += ".\nDST in North America is "
         msg += "ACTIVE" if pst.dst() else "NOT ACTIVE"
-        msg += "**! It will "
+        msg += "! It will "
         msg += "end" if pst.dst() else "start"
         msg += " in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
 
