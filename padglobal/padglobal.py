@@ -1284,25 +1284,44 @@ class PadGlobal(commands.Cog):
         reset = curtime.replace(hour=8, minute=0, second=0, microsecond=0)
         if reset < curtime:
             reset += datetime.timedelta(1)
+        resetdelta = reset - curtime
+        # strip leftover seconds
+        resetdelta -= datetime.timedelta(seconds=resetdelta.total_seconds() % 60)
 
         newday = curtime.replace(hour=12, minute=0, second=0, microsecond=0)
         if newday < curtime:
             newday += datetime.timedelta(1)
+        newdaydelta = newday - curtime
+        newdaydelta -= datetime.timedelta(seconds=newdaydelta.total_seconds() % 60)
 
         pst = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
-        # TODO: so do I need to localize() or not?? @__@
         if pst.dst():
-            await ctx.send("Daylight Savings Time in North America is **ON**!\n" # It ends in X days.\n"
-                + "Reset (when dungeons and events expire) is in **" \
-                + humanize_timedelta(timedelta=reset - curtime) + "** (1:00 am PDT).\n" \
-                + "The new day (when daily mails arrive) is in **" \
-                + humanize_timedelta(timedelta=newday - curtime) + "** (5:00 am PDT).")
+            # calculate the day that DST ends:
+            # earliest possible date of the first Sunday in November
+            nov = pst.replace(month=11, day=1)
+            if nov < pst:
+                nov = nov.replace(year=(nov.year + 1))
+            # add days to make day of week equal 6 (Sunday, when Monday is 0)
+            nov += datetime.timedelta(6 - nov.weekday())
+            await ctx.send("Daylight Savings Time in North America is **ACTIVE**! " \
+                + "It will end in " + humanize_timedelta(timedelta=nov - pst) + ".\n" \
+                + "Reset (dungeons/events) is in **" \
+                + humanize_timedelta(timedelta=resetdelta) + "** (1:00 am PDT).\n" \
+                + "New day (mails) is in **" \
+                + humanize_timedelta(timedelta=newdaydelta) + "** (5:00 am PDT).")
         else:
-            await ctx.send("Daylight Savings Time in North America is **OFF**!\n" # It starts in X days.\n"
-                + "Reset (when dungeons and events expire) is in **" \
-                + humanize_timedelta(timedelta=reset - curtime) + "** (12:00 midnight PST).\n" \
-                + "The new day (when daily mails arrive) is in **" \
-                + humanize_timedelta(timedelta=newday - curtime) + "** (4:00 am PST).")
+            # calculate the day that DST starts:
+            # earliest possible date of the second Sunday in March
+            mar = pst.replace(month=3, day=8)
+            if mar < pst:
+                mar = mar.replace(year=(mar.year + 1))
+            mar += datetime.timedelta(6 - mar.weekday())
+            await ctx.send("Daylight Savings Time in North America is **NOT ACTIVE**! " \
+                + "It will start in " + humanize_timedelta(timedelta=mar - pst) + ".\n" \
+                + "Reset (dungeons/events) is in **" \
+                + humanize_timedelta(timedelta=resetdelta) + "** (12:00 midnight PST).\n" \
+                + "New day (mails) is in **" \
+                + humanize_timedelta(timedelta=newdaydelta) + "** (4:00 am PST).")
 
     def emojify(self, message):
         emojis = list()
