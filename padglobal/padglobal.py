@@ -1312,7 +1312,9 @@ class PadGlobal(commands.Cog):
         msg += "(5:00 am PDT)" if pst.dst() else "(4:00 am PST)"
         msg += ".\nDST in North America is **"
         msg += "ACTIVE" if pst.dst() else "NOT ACTIVE"
-        msg += "**! It will end in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
+        msg += "**! It will "
+        msg += "end" if pst.dst() else "start"
+        msg += " in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
 
         await ctx.send(msg)
 
