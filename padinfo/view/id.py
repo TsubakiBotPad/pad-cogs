@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji

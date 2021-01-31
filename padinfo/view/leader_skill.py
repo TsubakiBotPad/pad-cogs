@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import BoldText, Text
 
 from padinfo.core.leader_skills import createMultiplierText, createSingleMultiplierText

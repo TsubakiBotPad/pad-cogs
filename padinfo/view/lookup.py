@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.components import EmbedMain, EmbedAuthor
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader

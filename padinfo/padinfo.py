@@ -14,7 +14,6 @@ import discord
 import tsutils
 from Levenshtein import jaro_winkler
 from discord import Color
-from discordmenu.discord_client import send_embed_control
 from discordmenu.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
@@ -161,7 +160,7 @@ class PadInfo(commands.Cog):
                 'dgcog': dgcog,
                 'user_config': user_config
             }
-            embed_menu.transition(message, ims, emoji_clicked, **data)
+            await embed_menu.transition(message, ims, emoji_clicked, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -580,8 +579,8 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
-        ec = LeaderSkillMenu.ls_control(state)
-        await send_embed_control(ctx, ec)
+        menu = LeaderSkillMenu.menu(original_author_id)
+        await menu.create(ctx, state)
 
     async def leaderskill_perform_query(self, dgcog, raw_query, beta_id3):
         # Remove unicode quotation marks

@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from discordmenu.discord_client import diff_emojis, update_embed_control, remove_reaction
+from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
@@ -37,10 +37,10 @@ class LeaderSkillMenu:
             MessageOwnerReactionFilter(original_author_id)
         ]
 
-        return EmbedMenu(reaction_filters, transitions)
+        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control)
 
     @staticmethod
-    def respond_to_r(message, ims, **data):
+    async def respond_to_r(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
@@ -48,11 +48,10 @@ class LeaderSkillMenu:
         ims['query'] = ims['r_query']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
-        emoji_diff = diff_emojis(message, id_control)
-        await update_embed_control(message, id_control, emoji_diff)
+        return id_control
 
     @staticmethod
-    def respond_to_l(message, ims, **data):
+    async def respond_to_l(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
@@ -60,17 +59,15 @@ class LeaderSkillMenu:
         ims['query'] = ims['l_query']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
-        emoji_diff = diff_emojis(message, id_control)
-        await update_embed_control(message, id_control, emoji_diff)
+        return id_control
 
     @staticmethod
-    def respond_to_house(message, ims, **data):
+    async def respond_to_house(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
         ls_view_state = await LeaderSkillViewState.deserialize(dgcog, user_config, ims)
-        id_control = LeaderSkillMenu.ls_control(ls_view_state)
-        emoji_diff = diff_emojis(message, id_control)
-        await update_embed_control(message, id_control, emoji_diff)
+        ls_control = LeaderSkillMenu.ls_control(ls_view_state)
+        return ls_control
 
     @staticmethod
     def ls_control(state: LeaderSkillViewState):
