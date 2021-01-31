@@ -6,9 +6,9 @@ from typing import Set, List, Tuple, Optional, TYPE_CHECKING
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
 
-from padinfo.historic_lookups import historic_lookups, historic_lookups_file_path, historic_lookups_id3, \
+from padinfo.core.historic_lookups import historic_lookups, historic_lookups_file_path, historic_lookups_id3, \
     historic_lookups_file_path_id3
-from padinfo.padinfo_settings import settings
+from padinfo.core.padinfo_settings import settings
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
