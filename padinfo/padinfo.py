@@ -645,15 +645,13 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['tfinfo'])
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-        # prepend transformbase modifier
-        m, err, _ = await self.findMonsterCustom(ctx, query)
+        dgcog = await self.get_dgcog()
+        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if err:
             await ctx.send(err)
             return
 
-        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.transform_emoji] = await menu.make_transforminfo_embed(m)
         # base and transform
