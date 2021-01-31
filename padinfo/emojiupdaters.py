@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from tsutils import EmojiUpdater
 
+from padinfo.padinfo_settings import settings
+
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
     from dadguide.models.monster_model import MonsterModel
@@ -19,11 +21,11 @@ class IdEmojiUpdater(EmojiUpdater):
         self.bot = bot
         self.db_context = db_context
 
-        self.pad_info.settings.log_emoji("start_" + selected_emoji)
+        settings.log_emoji("start_" + selected_emoji)
 
     async def on_update(self, ctx, selected_emoji):
-        evo_id = self.pad_info.settings.checkEvoID(ctx.author.id)
-        self.pad_info.settings.log_emoji(selected_emoji)
+        evo_id = settings.checkEvoID(ctx.author.id)
+        settings.log_emoji(selected_emoji)
         if evo_id:
             evos = sorted({*self.db_context.graph.get_alt_ids_by_id(self.m.monster_id)})
             index = evos.index(self.m.monster_id)

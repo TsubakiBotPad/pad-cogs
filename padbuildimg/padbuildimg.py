@@ -1,11 +1,13 @@
-import aiohttp
 import csv
-import discord
 import math
 import os
 import re
 import urllib
 from io import BytesIO
+from shutil import rmtree
+
+import aiohttp
+import discord
 from PIL import Image
 from PIL import ImageChops
 from PIL import ImageDraw
@@ -13,7 +15,6 @@ from PIL import ImageFont
 from ply import lex
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
-from shutil import rmtree
 from tsutils import CogSettings
 
 HELP_MSG = """
@@ -134,7 +135,7 @@ AWO_RES_LATENT_TO_AWO_MAP = {
     607: 20,
     608: 62,
 }
-LATENTS_MAP.update({-k: 'n'+LATENTS_MAP[k] for k in AWO_RES_LATENT_TO_AWO_MAP})
+LATENTS_MAP.update({-k: 'n' + LATENTS_MAP[k] for k in AWO_RES_LATENT_TO_AWO_MAP})
 REVERSE_LATENTS_MAP = {v: k for k, v in LATENTS_MAP.items()}
 TYPE_TO_KILLERS_MAP = {
     'God': [207],  # devil
@@ -392,7 +393,7 @@ def validate_latents(card_dict, card, ass_card):
     card_types = [t.name for t in card.types]
     awos = {a.awoken_skill_id for a in card.awakenings[:-card.superawakening_count]}
     if card_dict['SUPER'] and card.superawakening_count:
-        awos.add(card.awakenings[-card.superawakening_count+card_dict['SUPER']-1].awoken_skill_id)
+        awos.add(card.awakenings[-card.superawakening_count + card_dict['SUPER'] - 1].awoken_skill_id)
     if ass_card and ass_card.is_equip:
         awos |= {a.awoken_skill_id for a in ass_card.awakenings}
     if latents is None:
@@ -434,9 +435,10 @@ def idx_to_xy(idx):
 
 
 class PadBuildImageGenerator(object):
-    def __init__(self, params, padinfo_cog, build_name='pad_build'):
+    def __init__(self, params, padinfo_cog, dg_cog, build_name='pad_build'):
         self.params = params
         self.padinfo_cog = padinfo_cog
+        self.dg_cog = dg_cog
         self.lexer = PaDTeamLexer().build()
         self.build = {
             'NAME': build_name,
@@ -507,7 +509,7 @@ class PadBuildImageGenerator(object):
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
-                ass_card, err, debug_info = await self.padinfo_cog.findMonster1(tok.value)
+                ass_card, err, debug_info = await self.padinfo_cog.fm1(self.dg_cog, tok.value)
                 if ass_card is None:
                     raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
             elif tok.type == 'REPEAT':
@@ -517,7 +519,7 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card, err, debug_info = await self.padinfo_cog.findMonster1(tok.value)
+                    card, err, debug_info = await self.padinfo_cog.fm1(self.dg_cog, tok.value)
                     if card is None:
                         raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
                     if not card.is_inheritable:
@@ -793,7 +795,7 @@ class PadBuildImage(commands.Cog):
         async with ctx.typing():
             params = self.settings.buildImgParams()
             try:
-                pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'))
+                pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'), self.bot.get_cog('Dadguide'))
                 await pbg.process_build(build_str)
                 pbg.generate_build_image()
             except commands.UserFeedbackCheckFailure as ex:

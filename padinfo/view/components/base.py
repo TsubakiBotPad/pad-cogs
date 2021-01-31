@@ -1,18 +1,17 @@
-from discordmenu.embed.components import EmbedFooter, EmbedMain
+from discordmenu.embed.components import EmbedFooter
+from discordmenu.intra_message_state import IntraMessageState
 
-from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import monster_thumbnail
+from padinfo.view_state.base import ViewState
 
-
-async def make_base_embed_v2(m: "MonsterModel", embed_color):
-    main = EmbedMain(
-        color=embed_color,
-        title=MonsterHeader.long_v2(m)
-    )
-    footer = EmbedFooter('Requester may click the reactions below to switch tabs')
-    thumbnail = monster_thumbnail(m)
-    return main, footer, thumbnail
+TSUBAKI_FLOWER_ICON_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/tsubaki/tsubakiflower.png'
 
 
 def pad_info_footer():
     return EmbedFooter('Requester may click the reactions below to switch tabs')
+
+
+def pad_info_footer_with_state(state: ViewState):
+    url = IntraMessageState.serialize(TSUBAKI_FLOWER_ICON_URL, state.serialize())
+    return EmbedFooter(
+        'Requester may click the reactions below to switch tabs',
+        icon_url=url)
