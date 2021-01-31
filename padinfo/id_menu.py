@@ -40,7 +40,7 @@ class IdMenu:
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         acquire_raw, alt_monsters, base_rarity, is_transform_base, true_evo_type_raw = \
             await get_monster_misc_info(self.db_context, m)
-        state = IdViewState("", "TODO", "todo", m, color, is_transform_base, true_evo_type_raw, acquire_raw,
+        state = IdViewState("", "TODO", "todo", "", m, color, is_transform_base, true_evo_type_raw, acquire_raw,
                             base_rarity, alt_monsters)
         e = IdView.embed(state)
         return e.to_embed()
