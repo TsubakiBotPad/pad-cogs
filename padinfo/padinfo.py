@@ -85,8 +85,9 @@ class PadInfo(commands.Cog):
         self.previous_monster_emoji = '\N{BLACK LEFT-POINTING TRIANGLE}'
         self.next_monster_emoji = '\N{BLACK RIGHT-POINTING TRIANGLE}'
         self.last_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-        self.transform_emoji = '\N{HOUSE BUILDING}'
-        self.tfid_emoji = '\N{SQUARED ID}'
+        self.tfhome_emoji = '\N{HOUSE BUILDING}'
+        self.base_emoji = '\N{DOWNWARDS BLACK ARROW}'
+        self.transformed_emoji = '\N{UPWARDS BLACK ARROW}'
         self.remove_emoji = self.menu.emoji['no']
 
         self.config = Config.get_conf(self, identifier=9401770)
@@ -646,18 +647,25 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         dgcog = await self.get_dgcog()
+        # TODO: use transformbase modifier instead of relying on base
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if err:
             await ctx.send(err)
             return
 
+        bm = dgcog.database.graph.get_base_monster(m)
+        tfm = dgcog.database.graph.get_monster(dgcog.database.graph.get_next_transform_id_by_monster(bm))
+        if not tfm:
+            await ctx.send(f'This monster ([{m.monster_id}] {m.name_en}) does not transform.')
+            return
+
         menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.transform_emoji] = await menu.make_transforminfo_embed(m)
-        # base and transform
-        emoji_to_embed[self.tfid_emoji] = await menu.make_id_embed(m)
+        emoji_to_embed[self.tfhome_emoji] = await menu.make_transforminfo_embed(bm, tfm)
+        emoji_to_embed[self.base_emoji] = await menu.make_id_embed(bm)
+        emoji_to_embed[self.transformed_emoji] = await menu.make_id_embed(tfm)
 
-        await self._do_menu(ctx, self.transform_emoji, EmojiUpdater(emoji_to_embed))
+        await self._do_menu(ctx, self.tfhome_emoji, EmojiUpdater(emoji_to_embed))
 
     @commands.group()
     # @checks.is_owner()
