@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
@@ -8,9 +8,10 @@ from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLin
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
-from padinfo.view.components.base import pad_info_footer
+from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view_state.id import IdViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -128,19 +129,19 @@ class IdView:
         )
 
     @staticmethod
-    def embed(m: "MonsterModel", color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity,
-              alt_monsters: List["MonsterModel"]):
+    def embed(state: IdViewState):
+        m = state.monster
         fields = [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
                     IdView.awakenings_row(m),
-                    IdView.killers_row(m, is_transform_base)
+                    IdView.killers_row(m, state.is_transform_base)
                 )
             ),
             EmbedField(
                 'Inheritable' if m.is_inheritable else 'Not inheritable',
-                IdView.misc_info(m, true_evo_type_raw, acquire_raw, base_rarity),
+                IdView.misc_info(m, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
                 inline=True
             ),
             EmbedField(
@@ -159,17 +160,17 @@ class IdView:
             EmbedField(
                 "Alternate Evos",
                 HighlightableLinks(
-                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in alt_monsters],
-                    highlighted=next(i for i, mon in enumerate(alt_monsters) if m.monster_id == mon.monster_id)
+                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
+                    highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
                 )
             )
         ]
 
         return EmbedView(
             EmbedMain(
-                color=color,
+                color=state.color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer(),
+            embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)
