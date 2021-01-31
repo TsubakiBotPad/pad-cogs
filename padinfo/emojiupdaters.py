@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from tsutils import EmojiUpdater
 
-from padinfo.padinfo_settings import settings
+from padinfo.core.padinfo_settings import settings
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext

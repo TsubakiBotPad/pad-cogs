@@ -29,10 +29,10 @@ from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     findMonsterCustom2, findMonsterCustom
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
-from padinfo.historic_lookups import historic_lookups
+from padinfo.core.historic_lookups import historic_lookups
 from padinfo.id_menu import IdMenu
 from padinfo.ls_menu import LeaderSkillMenu
-from padinfo.padinfo_settings import settings
+from padinfo.core.padinfo_settings import settings
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
