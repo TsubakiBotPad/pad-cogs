@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Color
 
+from padinfo.core.id import get_monster_misc_info
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
@@ -13,6 +14,7 @@ from padinfo.view.materials import MaterialView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
 from padinfo.view.pic import PicsView
+from padinfo.view_state.id import IdViewState
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -36,13 +38,11 @@ class IdMenu:
 
     async def make_id_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        is_transform_base = self.db_context.graph.monster_is_transform_base(m)
-        true_evo_type_raw = self.db_context.graph.true_evo_type_by_monster(m).value
-        acquire_raw = self.db_context.graph.monster_acquisition(m)
-        base_rarity = self.db_context.graph.get_base_monster_by_id(m.monster_no).rarity
-        alt_monsters = sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
-                              key=lambda x: x.monster_id)
-        e = IdView.embed(m, color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        acquire_raw, alt_monsters, base_rarity, is_transform_base, true_evo_type_raw = \
+            await get_monster_misc_info(self.db_context, m)
+        state = IdViewState("", "TODO", "todo", "", m, color, is_transform_base, true_evo_type_raw, acquire_raw,
+                            base_rarity, alt_monsters)
+        e = IdView.embed(state)
         return e.to_embed()
 
     async def make_evo_embed(self, m: "MonsterModel"):
@@ -79,7 +79,8 @@ class IdMenu:
             return None
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return MaterialView.embed(m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link).to_embed()
+        return MaterialView.embed(m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
+                                  link).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
@@ -97,7 +98,8 @@ class IdMenu:
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return LeaderSkillView.embed(left_m, right_m, color).to_embed()
+        embed = LeaderSkillView.embed(left_m, right_m, color)
+        return embed.to_embed()
 
     async def make_lookup_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
