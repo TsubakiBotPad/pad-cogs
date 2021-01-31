@@ -13,6 +13,7 @@ from padinfo.view.materials import MaterialView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
 from padinfo.view.pic import PicsView
+from padinfo.view.transform import TransformInfoView
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -114,3 +115,7 @@ class IdMenu:
     async def make_lssingle_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         return LeaderSkillSingleView.embed(m, color).to_embed()
+
+    async def make_transforminfo_embed(self, m: "MonsterModel"):
+        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
+        return TransformInfoView.embed(m, color).to_embed()

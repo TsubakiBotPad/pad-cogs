@@ -81,6 +81,8 @@ class PadInfo(commands.Cog):
         self.previous_monster_emoji = '\N{BLACK LEFT-POINTING TRIANGLE}'
         self.next_monster_emoji = '\N{BLACK RIGHT-POINTING TRIANGLE}'
         self.last_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
+        self.transform_emoji = '\N{HOUSE BUILDING}'
+        self.tfid_emoji = '\N{SQUARED ID}'
         self.remove_emoji = self.menu.emoji['no']
 
         self.historic_lookups_file_path = _data_file('historic_lookups.json')
@@ -575,6 +577,25 @@ class PadInfo(commands.Cog):
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+
+    @commands.command(aliases=['tfinfo'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def transforminfo(self, ctx, *, query):
+        DGCOG = self.bot.get_cog("Dadguide")
+        db_context = DGCOG.database
+        # prepend transformbase modifier
+        m, err, _ = await self.findMonsterCustom(ctx, query)
+        if err:
+            await ctx.send(err)
+            return
+
+        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        emoji_to_embed = OrderedDict()
+        emoji_to_embed[self.transform_emoji] = await menu.make_transforminfo_embed(m)
+        # base and transform
+        emoji_to_embed[self.tfid_emoji] = await menu.make_id_embed(m)
+
+        await self._do_menu(ctx, self.transform_emoji, EmojiUpdater(emoji_to_embed))
 
     @commands.group()
     # @checks.is_owner()
