@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import re
@@ -37,7 +38,13 @@ class MonsterIndex2(aobject):
 
         self.replacement_tokens = defaultdict(set)
 
-        nickname_data = await sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 4)
+        nickname_data, treenames_data, pantheon_data, nt_alias_data = await asyncio.gather(
+            sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 4),
+            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 4),
+            sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2),
+            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2)
+        )
+
         for m_id, name, lp, i in nickname_data:
             if m_id.isdigit() and not i:
                 if lp:
@@ -48,7 +55,6 @@ class MonsterIndex2(aobject):
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
 
-        treenames_data = await sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 4)
         for m_id, name, mp, i in treenames_data:
             if m_id.isdigit() and not i:
                 if mp:
@@ -60,14 +66,12 @@ class MonsterIndex2(aobject):
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
 
-        pantheon_data = await sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2)
         for sid, name in pantheon_data:
             if sid.isdigit():
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
-        nt_alias_data = await sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2)
         next(nt_alias_data)  # Skip over heading
         for token, alias in nt_alias_data:
             self.replacement_tokens[token].add(alias)
@@ -302,6 +306,7 @@ class MonsterIndex2(aobject):
             if pe and is_story(pe):
                 return True
             return False
+
         if is_story(m):
             for t in MISC_MAP[MiscModifiers.STORY]:
                 modifiers.add(t)
