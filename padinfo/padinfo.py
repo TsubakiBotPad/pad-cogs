@@ -14,7 +14,7 @@ import discord
 import tsutils
 from Levenshtein import jaro_winkler
 from discord import Color
-from discordmenu.discord_client import send_embed_control, update_embed_control, diff_emojis
+from discordmenu.discord_client import send_embed_control
 from discordmenu.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
@@ -35,8 +35,6 @@ from padinfo.id_menu import IdMenu
 from padinfo.ls_menu import LeaderSkillMenu
 from padinfo.padinfo_settings import settings
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.leader_skill import LeaderSkillView
-from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
 if TYPE_CHECKING:
@@ -159,26 +157,11 @@ class PadInfo(commands.Cog):
 
             dgcog = await self.get_dgcog()
             user_config = await BotConfig.get_user(self.config, original_author_id)
-            if emoji_clicked == '\N{HOUSE BUILDING}':
-                ls_view_state = await LeaderSkillViewState.deserialize(dgcog, user_config, ims)
-                id_control = LeaderSkillMenu.ls_control(ls_view_state)
-                emoji_diff = diff_emojis(message, id_control)
-                await update_embed_control(message, id_control, emoji_diff)
-            elif emoji_clicked == char_to_emoji('l'):
-                # Extract the query from the ls state
-                ims['query'] = ims['l_query']
-                id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-                id_control = LeaderSkillMenu.id_control(id_view_state)
-                emoji_diff = diff_emojis(message, id_control)
-                await update_embed_control(message, id_control, emoji_diff)
-            elif emoji_clicked == char_to_emoji('r'):
-                # Extract the query from the ls state
-                ims['query'] = ims['r_query']
-                id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-                id_control = LeaderSkillMenu.id_control(id_view_state)
-                emoji_diff = diff_emojis(message, id_control)
-                await update_embed_control(message, id_control, emoji_diff)
-
+            data = {
+                'dgcog': dgcog,
+                'user_config': user_config
+            }
+            embed_menu.transition(message, ims, emoji_clicked, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):

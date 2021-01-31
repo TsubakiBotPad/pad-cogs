@@ -5,23 +5,19 @@ from padinfo.view_state.base import ViewState
 
 class LeaderSkillViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query):
-        self.r_query = r_query
-        self.l_query = l_query
-        self.menu_type = menu_type
-        self.original_author_id = original_author_id
-        self.raw_query = raw_query
-        self.l_mon = l_mon
-        self.r_mon = r_mon
+        super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
+        self.l_mon = l_mon
+        self.l_query = l_query
+        self.r_mon = r_mon
+        self.r_query = r_query
 
     def serialize(self):
-        ret = {
-            'menu_type': self.menu_type,
-            'original_author_id': self.original_author_id,
-            'raw_query': self.raw_query,
+        ret = super().serialize()
+        ret.update({
             'l_query': self.l_query,
             'r_query': self.r_query,
-        }
+        })
         return ret
 
     @staticmethod

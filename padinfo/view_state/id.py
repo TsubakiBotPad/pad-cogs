@@ -10,30 +10,24 @@ if TYPE_CHECKING:
 
 class IdViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel", color,
-                 is_transform_base,
-                 true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"], extra_state=None):
-        self.extra_state = extra_state
-        self.query = query
-        self.base_rarity = base_rarity
+                 is_transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
+                 extra_state=None):
+        super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
         self.acquire_raw = acquire_raw
-        self.monster = monster
-        self.menu_type = menu_type
-        self.original_author_id = original_author_id
-        self.raw_query = raw_query
-        self.is_transform_base = is_transform_base
-        self.true_evo_type_raw = true_evo_type_raw
         self.alt_monsters = alt_monsters
         self.color = color
+        self.base_rarity = base_rarity
+        self.is_transform_base = is_transform_base
+        self.monster = monster
+        self.query = query
+        self.true_evo_type_raw = true_evo_type_raw
 
     def serialize(self):
-        ret = {
-            'raw_query': self.raw_query,
+        ret = super().serialize()
+        ret.update({
             'query': self.query,
-            'menu_type': self.menu_type,
-            'original_author_id': self.original_author_id,
             'resolved_monster_id': self.monster.monster_id,
-        }
-        ret.update(self.extra_state)
+        })
         return ret
 
     @staticmethod
