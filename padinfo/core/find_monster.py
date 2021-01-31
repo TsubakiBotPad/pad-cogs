@@ -1,7 +1,17 @@
+import json
+import re
 from collections import defaultdict
-from typing import Set, List, Tuple
+from typing import Set, List, Tuple, Optional, TYPE_CHECKING
 
 from Levenshtein import jaro_winkler
+from tsutils import rmdiacritics
+
+from padinfo.core.historic_lookups import historic_lookups, historic_lookups_file_path, historic_lookups_id3, \
+    historic_lookups_file_path_id3
+from padinfo.core.padinfo_settings import settings
+
+if TYPE_CHECKING:
+    from dadguide.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -165,6 +175,119 @@ class FindMonster:
                     monster_score[evo] = monster_score[m] - .003
 
         return monster_evos
+
+
+async def findMonsterCustom(dgcog, ctx, config, query):
+    if await config.user(ctx.author).beta_id3():
+        m = await findMonster3(dgcog, query)
+        if m:
+            return m, "", ""
+        else:
+            return None, "Monster not found", ""
+    else:
+        return await findMonster1(dgcog, query)
+
+
+async def findMonsterCustom2(dgcog, beta_id3, query):
+    if beta_id3:
+        m = await findMonster3(dgcog, query)
+        if m:
+            return m, "", ""
+        else:
+            return None, "Monster not found", ""
+    else:
+        return await findMonster1(dgcog, query)
+
+
+async def findMonster1(dgcog, query):
+    query = rmdiacritics(query)
+    nm, err, debug_info = await _findMonster(dgcog, query)
+
+    monster_no = nm.monster_id if nm else -1
+    historic_lookups[query] = monster_no
+    json.dump(historic_lookups, open(historic_lookups_file_path, "w+"))
+
+    m = dgcog.get_monster(nm.monster_id) if nm else None
+
+    return m, err, debug_info
+
+
+async def _findMonster(dgcog, query) -> "NamedMonster":
+    await dgcog.wait_until_ready()
+    return dgcog.index.find_monster(query)
+
+
+async def findMonster3(dgcog, query):
+    m = await _findMonster3(dgcog, query)
+
+    monster_no = m.monster_id if m else -1
+    historic_lookups_id3[query] = monster_no
+    json.dump(historic_lookups_id3, open(historic_lookups_file_path_id3, "w+"))
+
+    return m
+
+
+async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
+    await dgcog.wait_until_ready()
+
+    query = rmdiacritics(query).lower()
+    tokenized_query = query.split()
+    mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+
+    return max(
+        await find_monster_search(tokenized_query, dgcog),
+        await find_monster_search(mw_tokenized_query, dgcog)
+        if tokenized_query != mw_tokenized_query else (0.0, None),
+    )[1]
+
+
+async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["MonsterModel"]]:
+    mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(tokenized_query, dgcog.index2)
+
+    name_query_tokens.difference_update({'|'})
+
+    for t in mod_tokens.union(neg_mod_tokens):
+        if t not in dgcog.index2.all_modifiers:
+            settings.add_typo_mod(t)
+
+    print(mod_tokens, name_query_tokens)
+
+    if name_query_tokens:
+        monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, dgcog.index2)
+        if monster_gen is None:
+            # No monsters match the given name tokens
+            return 0, None
+    else:
+        # There are no name tokens in the query
+        monster_gen = {*dgcog.database.get_all_monsters()}
+        monster_score = defaultdict(int)
+
+    # Expand search to the evo tree
+    monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, monster_score)
+    monster_gen = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, monster_score, monster_gen,
+                                                 dgcog.index2.modifiers)
+    if not monster_gen:
+        # no modifiers match any monster in the evo tree
+        return 0, None
+
+    print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+
+    # Return most likely candidate based on query.
+    mon = max(monster_gen,
+              key=lambda m: (monster_score[m],
+                             not m.is_equip,
+                             # Match na on id overlap
+                             bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
+                             SERIES_TYPE_PRIORITY.get(m.series.series_type),
+                             m.on_na if m.series.series_type == "collab" else 0,
+                             dgcog.database.graph.monster_is_rem_evo(m),
+                             not all(t.value in [0, 12, 14, 15] for t in m.types),
+                             not any(t.value in [0, 12, 14, 15] for t in m.types),
+                             -dgcog.database.graph.get_base_id(m),
+                             m.rarity,
+                             m.monster_no_na))
+
+    return monster_score[mon], mon
 
 
 find_monster = FindMonster()

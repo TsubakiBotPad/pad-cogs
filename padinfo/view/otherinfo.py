@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import LabeledText, LinkedText, Text
 from redbot.core.utils.chat_formatting import box
 

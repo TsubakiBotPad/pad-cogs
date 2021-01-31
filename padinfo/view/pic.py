@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import LinkedText, Text
 
 from padinfo.common.external_links import puzzledragonx
