@@ -643,9 +643,10 @@ class PadInfo(commands.Cog):
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
 
-    @commands.command(aliases=['tfinfo'])
+    @commands.command(aliases=['tfinfo', 'xforminfo'])
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
+        """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
         # TODO: use transformbase modifier instead of relying on base
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)

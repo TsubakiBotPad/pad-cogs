@@ -118,6 +118,6 @@ class IdMenu:
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         return LeaderSkillSingleView.embed(m, color).to_embed()
 
-    async def make_transforminfo_embed(self, m: "MonsterModel"):
+    async def make_transforminfo_embed(self, base_m: "MonsterModel", tf_m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return TransformInfoView.embed(m, color).to_embed()
+        return TransformInfoView.embed(base_m, tf_m, color).to_embed()
