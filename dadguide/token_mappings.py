@@ -259,7 +259,7 @@ MISC_MAP = {
     MiscModifiers.INNA: ('inna',),
     MiscModifiers.ONLYJP: ('jp',),
     MiscModifiers.ONLYNA: ('na',),
-    MiscModifiers.EVENT: ('regular',),
+    MiscModifiers.REGULAR: ('regular',),
     MiscModifiers.EVENT: ('event',),
     MiscModifiers.SEASONAL: ('seasonal',),
     MiscModifiers.COLLAB: ('collab',)
