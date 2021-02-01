@@ -63,7 +63,7 @@ EVO_MAP = {
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
-    EvoTypes.BASETRANS: ('basetransform', 'basetrans'),
+    EvoTypes.BASETRANS: ('transformbase', 'transbase'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
     EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'megaawoken'),
