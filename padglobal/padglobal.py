@@ -202,8 +202,8 @@ class PadGlobal(commands.Cog):
     @commands.command()
     @auth_check('contentadmin')
     async def debugid1dump(self, ctx):
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        mi = padinfo_cog.index_all
+        dg_cog = self.bot.get_cog('Dadguide')
+        mi = dg_cog.index
 
         async def write_send(nn_map, file_name):
             data_holder = StringIO()
