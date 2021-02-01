@@ -257,7 +257,11 @@ MISC_MAP = {
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
     MiscModifiers.ONLYJP: ('jp',),
-    MiscModifiers.ONLYNA: ('na',)
+    MiscModifiers.ONLYNA: ('na',),
+    MiscModifiers.REGULAR: ('regular',),
+    MiscModifiers.EVENT: ('event',),
+    MiscModifiers.SEASONAL: ('seasonal',),
+    MiscModifiers.COLLAB: ('collab',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
