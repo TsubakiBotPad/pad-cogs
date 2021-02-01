@@ -206,8 +206,8 @@ AWOKEN_MAP = {
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     Awakenings.UNBINDABLE: ('unbindable',),
     Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
-    Awakenings.CLOUDRESIST: ('cloudres',),  # don't have cloud because that's a name token
-    Awakenings.TAPERESIST: ('taperes',),
+    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),  # don't have cloud because that's a name token
+    Awakenings.TAPERESIST: ('taperes', 'tape'),
     Awakenings.SKILLBOOSTPLUS: ('sb+',),
     Awakenings.HP80ORMORE: ('>80', 'highhp'),
     Awakenings.HP50ORLESS: ('<50', 'lowhp'),
@@ -225,11 +225,11 @@ AWOKEN_MAP = {
     Awakenings.UNPOISONABLE: ('resp+', 'p+',),
     Awakenings.JAMMERBLESSING: ('jblessing', 'sfj', 'jsurge'),
     Awakenings.POISONBLESSING: ('pblessing', 'sfp', 'psurge'),
-    Awakenings.REDCOMBOCOUNT: ('ccr',),
-    Awakenings.BLUECOMBOCOUNT: ('ccb',),
-    Awakenings.GREENCOMBOCOUNT: ('ccg',),
-    Awakenings.LIGHTCOMBOCOUNT: ('ccl',),
-    Awakenings.DARKCOMBOCOUNT: ('ccd',),
+    Awakenings.REDCOMBOCOUNT: ('ccr', 'cc'),
+    Awakenings.BLUECOMBOCOUNT: ('ccb', 'cc'),
+    Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
+    Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
+    Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
 }
 
 
