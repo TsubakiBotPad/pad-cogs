@@ -50,13 +50,16 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog._findMonster(query)
+        nm, err, debug_info = await padinfo_cog.fm_(query)
         if not nm:
             await ctx.send(err)
             return
         async with self.config.pcs() as pcs:
             if str(nm.base_monster_no) not in pcs:
-                await ctx.send("{} does not have PC data.".format(nm.name_en))
+                if nm.sell_mp < 100:
+                    await ctx.send("{} does not have PC data.".format(nm.name_en))
+                else:
+                    await ctx.send("{} is not tradable.".format(nm.name_en))
                 return
             sc, foot = pcs[str(nm.base_monster_no)]
         pct = PC_TEXT.format(name=nm.name_en,
@@ -87,7 +90,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog._findMonster(query)
+        nm, err, debug_info = await padinfo_cog.fm_(query)
         if not nm:
             await ctx.send(err)
             return
@@ -107,7 +110,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog._findMonster(query)
+        nm, err, debug_info = await padinfo_cog.fm_(query)
         if not nm:
             await ctx.send(err)
             return
@@ -127,7 +130,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog._findMonster(query)
+        nm, err, debug_info = await padinfo_cog.fm_(query)
         if not nm:
             await ctx.send(err)
             return
@@ -138,7 +141,7 @@ class PriceCheck(commands.Cog):
             del pcs[str(nm.base_monster_no)]
         await ctx.send(inline("Removed PC data from {}.".format(nm.name_en)))
 
-    @pcadmin.command(aliases=['set-demon-ly'])
+    @pcadmin.command()
     async def setdmonly(self, ctx, value: bool = True):
         """Tells a channel to send [p]pricecheck in dms."""
         await self.config.channel(ctx.channel).dm.set(value)
