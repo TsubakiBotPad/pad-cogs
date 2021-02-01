@@ -206,7 +206,7 @@ AWOKEN_MAP = {
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     Awakenings.UNBINDABLE: ('unbindable',),
     Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
-    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),  # don't have cloud because that's a name token
+    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),
     Awakenings.TAPERESIST: ('taperes', 'tape'),
     Awakenings.SKILLBOOSTPLUS: ('sb+',),
     Awakenings.HP80ORMORE: ('>80', 'highhp'),
