@@ -137,7 +137,7 @@ class PadInfo(commands.Cog):
         except discord.errors.NotFound:
             return
 
-        ims = IntraMessageState.extract_data(message.embeds[0])
+        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
         if not ims:
             return
 
