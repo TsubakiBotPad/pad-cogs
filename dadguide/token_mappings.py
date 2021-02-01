@@ -243,6 +243,7 @@ class MiscModifiers(Enum):
     ONLYJP = 'Only in JP Server'
     INNA = 'In NA Server'
     ONLYNA = 'Only in NA Server'
+    REGULAR = 'Metaseries: REGULAR'
     EVENT = 'Metaseries: Event'
     SEASONAL = 'Metaseries: Seasonal'
     COLLAB = 'Metaseries: Collab'
@@ -257,7 +258,11 @@ MISC_MAP = {
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
     MiscModifiers.ONLYJP: ('jp',),
-    MiscModifiers.ONLYNA: ('na',)
+    MiscModifiers.ONLYNA: ('na',),
+    MiscModifiers.EVENT: ('regular',),
+    MiscModifiers.EVENT: ('event',),
+    MiscModifiers.SEASONAL: ('seasonal',),
+    MiscModifiers.COLLAB: ('collab',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
