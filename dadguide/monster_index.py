@@ -276,12 +276,14 @@ class MonsterIndex2(aobject):
             modifiers.update(MISC_MAP[MiscModifiers.CHIBI])
 
         # Series Type
-        if m.series.series_type == 'collab':
-            modifiers.update(MISC_MAP[MiscModifiers.COLLAB])
-        if m.series.series_type == 'seasonal':
-            modifiers.update(MISC_MAP[MiscModifiers.SEASONAL])
+        if m.series.series_type == 'regular':
+            modifiers.update(MISC_MAP[MiscModifiers.REGULAR])
         if m.series.series_type == 'event':
             modifiers.update(MISC_MAP[MiscModifiers.EVENT])
+        if m.series.series_type == 'seasonal':
+            modifiers.update(MISC_MAP[MiscModifiers.SEASONAL])
+        if m.series.series_type == 'collab':
+            modifiers.update(MISC_MAP[MiscModifiers.COLLAB])
 
         # Story
         def is_story(m, do_transform=True):
