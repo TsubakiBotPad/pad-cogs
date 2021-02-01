@@ -243,6 +243,9 @@ class MiscModifiers(Enum):
     ONLYJP = 'Only in JP Server'
     INNA = 'In NA Server'
     ONLYNA = 'Only in NA Server'
+    EVENT = 'Metaseries: Event'
+    SEASONAL = 'Metaseries: Seasonal'
+    COLLAB = 'Metaseries: Collab'
 
 
 MISC_MAP = {
