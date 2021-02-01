@@ -48,6 +48,7 @@ class EvoTypes(Enum):
     EVO = 'Evolved'
     UVO = 'Ulimate'
     UUVO = 'Super Ultimate'
+    BASETRANS = 'Base Transform'
     TRANS = 'Transform'
     AWOKEN = 'Awoken'
     MEGA = 'Mega Awoken'
@@ -62,6 +63,7 @@ EVO_MAP = {
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
+    EvoTypes.BASETRANS: ('basetransform', 'basetrans'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
     EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'megaawoken'),
