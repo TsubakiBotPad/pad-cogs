@@ -859,13 +859,52 @@ class PadInfo(commands.Cog):
         await self.norf_list(ctx, True, inclusive)
 
     async def norf_list(self, ctx, fluff, inclusive):
-        """List name/fluff tests"""
         await self.config.user(ctx.author).lastaction.set('name')
 
         suite = await self.config.fluff_suite()
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
             if inclusive or v['fluff'] == fluff:
+                o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
+                     f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="listnoreason")
+    async def idt_listnoreason(self, ctx):
+        """List id3 tests with no reasons"""
+        await self.config.user(ctx.author).lastaction.set('id3')
+
+        suite = await self.config.test_suite()
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items())):
+            if not kv[1].get('reason'):
+                o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idt_name.command(name="listnoreason")
+    async def idtn_listnoreason(self, ctx, inclusive: bool = False):
+        """List name tests with no reasons"""
+        await self.norf_listnoreason(ctx, False, inclusive)
+
+    @idt_fluff.command(name="listnoreason")
+    async def idtf_lisnoreasont(self, ctx, inclusive: bool = False):
+        """List fluff tests with no reasons"""
+        await self.norf_listnoreason(ctx, True, inclusive)
+
+    async def norf_listnoreason(self, ctx, fluff, inclusive):
+        await self.config.user(ctx.author).lastaction.set('name')
+
+        suite = await self.config.fluff_suite()
+        o = ""
+        for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            if inclusive or v['fluff'] == fluff and not v['reason']:
                 o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
                      f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
         if not o:
