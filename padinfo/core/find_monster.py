@@ -161,7 +161,7 @@ class FindMonster:
         for match in ms:
             score = calc_ratio_prefix(t, match)
             if index2.mwt_to_len[match] != 1:
-                score = score ** 10 * index2.mwt_to_len[match]
+                score = score ** 4 * index2.mwt_to_len[match]
             for m in index2.manual[match]:
                 if m not in valid:
                     monsterscore[m] += score + .001
