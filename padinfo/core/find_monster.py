@@ -76,10 +76,11 @@ class FindMonster:
                 return True
         return False
 
-    def interpret_query(self, tokenized_query: List[str], index2) -> Tuple[Set[str], Set[str], Set[str]]:
+    def interpret_query(self, tokenized_query: List[str], index2) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
         modifiers = []
         negative_modifiers = set()
         name = set()
+        negative_name = set()
         longmods = [p for p in index2.all_modifiers if len(p) > 8]
         lastmodpos = False
 
@@ -110,47 +111,70 @@ class FindMonster:
                     lastmodpos = True
                     modifiers.append(token)
             else:
-                name.update(tokenized_query[i:])
+                tokenized_query = tokenized_query[i:]
                 break
+        else:
+            tokenized_query = []
 
-        if not name and modifiers and lastmodpos:
+        for token in tokenized_query:
+            negated = token.startswith("-")
+            token = token.lstrip('-')
+            if negated:
+                negative_name.add(token)
+            else:
+                name.add(token)
+
+        if not (name or negative_name) and modifiers and lastmodpos:
             if index2.manual[modifiers[-1]]:
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
-        return set(modifiers), negative_modifiers, name
+        return set(modifiers), negative_modifiers, name, negative_name
 
-    def process_name_tokens(self, name_query_tokens, index2):
-        monstergen = None
+    def process_name_tokens(self, name_query_tokens, neg_name_tokens, index2):
+        monstergen: set = None
         monsterscore = defaultdict(int)
 
         for t in name_query_tokens:
-            valid = set()
-            ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
-                        key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
-            ms += [token for token in index2.all_name_tokens if token.startswith(t)]
-            if not ms:
-                return None, None
-            for match in ms:
-                for m in index2.manual[match]:
-                    if m not in valid:
-                        monsterscore[m] += calc_ratio_prefix(t, match) + .001
-                        valid.add(m)
-                for m in index2.name_tokens[match]:
-                    if m not in valid:
-                        monsterscore[m] += calc_ratio_prefix(t, match)
-                        valid.add(m)
-                for m in index2.fluff_tokens[match]:
-                    if m not in valid:
-                        monsterscore[m] += calc_ratio_prefix(t, match) / 2
-                        valid.add(m)
-
+            valid = self.get_valid_monsters_from_name_token(t, index2, monsterscore)
             if monstergen is not None:
                 monstergen.intersection_update(valid)
             else:
                 monstergen = valid
 
+        for t in neg_name_tokens:
+            invalid = self.get_valid_monsters_from_name_token(t, index2, defaultdict(int))
+            if monstergen is not None:
+                monstergen.difference_update(invalid)
+            else:
+                monstergen = set()
+
         return monstergen, monsterscore
+
+    def get_valid_monsters_from_name_token(self, t, index2, monsterscore):
+        valid = set()
+        ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
+                    key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
+        ms += [token for token in index2.all_name_tokens if token.startswith(t)]
+        if not ms:
+            return None, None
+        for match in ms:
+            score = calc_ratio_prefix(t, match)
+            if index2.mwt_to_len[match] != 1:
+                score = score ** 10 * index2.mwt_to_len[match]
+            for m in index2.manual[match]:
+                if m not in valid:
+                    monsterscore[m] += score + .001
+                    valid.add(m)
+            for m in index2.name_tokens[match]:
+                if m not in valid:
+                    monsterscore[m] += score
+                    valid.add(m)
+            for m in index2.fluff_tokens[match]:
+                if m not in valid:
+                    monsterscore[m] += score / 2
+                    valid.add(m)
+        return valid
 
     def process_modifiers(self, mod_tokens, neg_mod_tokens, monsterscore, potential_evos, monster_mods):
         for t in mod_tokens:
@@ -238,11 +262,13 @@ async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
         await find_monster_search(tokenized_query, dgcog),
         await find_monster_search(mw_tokenized_query, dgcog)
         if tokenized_query != mw_tokenized_query else (0.0, None),
+        key=lambda t: t[0]
     )[1]
 
 
 async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["MonsterModel"]]:
-    mod_tokens, neg_mod_tokens, name_query_tokens = find_monster.interpret_query(tokenized_query, dgcog.index2)
+    mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens = \
+        find_monster.interpret_query(tokenized_query, dgcog.index2)
 
     name_query_tokens.difference_update({'|'})
 
@@ -250,10 +276,10 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
         if t not in dgcog.index2.all_modifiers:
             settings.add_typo_mod(t)
 
-    print(mod_tokens, name_query_tokens)
+    # print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
 
     if name_query_tokens:
-        monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, dgcog.index2)
+        monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, neg_name_tokens, dgcog.index2)
         if monster_gen is None:
             # No monsters match the given name tokens
             return 0, None
@@ -270,7 +296,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
         # no modifiers match any monster in the evo tree
         return 0, None
 
-    print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+    # print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
     # Return most likely candidate based on query.
     mon = max(monster_gen,
