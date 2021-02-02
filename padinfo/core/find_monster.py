@@ -236,7 +236,7 @@ async def findMonster1(dgcog, query):
     return m, err, debug_info
 
 
-async def _findMonster(dgcog, query) -> "NamedMonster":
+async def _findMonster(dgcog, query) -> Tuple["NamedMonster", Optional[str], Optional[str]]:
     await dgcog.wait_until_ready()
     return dgcog.index.find_monster(query)
 

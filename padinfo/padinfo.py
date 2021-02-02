@@ -213,6 +213,12 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await findMonster1(dgcog, query)
 
         if m is not None:
+            async def send_error(err):
+                if err:
+                    await asyncio.sleep(1)
+                    await ctx.send(err)
+            asyncio.create_task(send_error(err))
+
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await self.makeFailureMsg(ctx, query, err)
