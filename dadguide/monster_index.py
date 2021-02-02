@@ -241,6 +241,8 @@ class MonsterIndex2(aobject):
         # Transform
         if not self.graph.monster_is_transform_base(m):
             modifiers.update(EVO_MAP[EvoTypes.TRANS])
+        elif self.graph.get_next_transform_by_monster(m):
+            modifiers.update(EVO_MAP[EvoTypes.BASETRANS])
 
         # Awoken
         if '覚醒' in m.name_ja or 'awoken' in m.name_en.lower():
