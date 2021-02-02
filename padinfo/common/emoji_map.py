@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Union, Optional, Literal
 
-from discordmenu.emoji_cache import emoji_cache
+from discordmenu.emoji.emoji_cache import emoji_cache
 
 AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     1: 'boost_hp',
