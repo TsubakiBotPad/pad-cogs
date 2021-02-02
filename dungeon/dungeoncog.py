@@ -7,6 +7,7 @@ from redbot.core import commands
 from google.protobuf import text_format
 
 from dadguide import DadguideDatabase, database_manager
+from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
@@ -130,6 +131,7 @@ GroupType = {
     9: "Highest Priority"
 }
 
+json_file = "C:\\Users\\pop_p\\PycharmProjects\\pad-json-intepreter\\enemey_skill_data.json"
 
 class DungeonEmojiUpdater(EmojiUpdater):
     # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
@@ -266,6 +268,8 @@ async def process_behavior(behavior: Behavior, database: DadguideDatabase, q: di
     skill_name = skill["name_en"]
     skill_effect = skill["desc_en"]
     skill_processed_text = process_enemy_skill(skill_effect, q, skill)
+    # skill_processed_text = process_enemy_skill(q, skill, )
+
     condition = format_condition(behavior.condition)
     processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition, parent)
     #embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
@@ -390,6 +394,7 @@ class DungeonCog(commands.Cog):
         self.current_monster = '👹'
         self.verbose_monster = '📜'
         self.preempt_monster = '⚡'
+        self.esd = EnemySkillDatabase(json_file)
 
     async def make_emoji_dictionary(self, ctx, pm: ProcessedMonster = None, scroll_monsters=None, scroll_floors=None,
                                     floor_info: "list[int]" = None, dungeon_info: "list[int]" = None):
