@@ -27,12 +27,13 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom2, findMonsterCustom
-from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
+    findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
-from padinfo.id_menu import IdMenu
-from padinfo.ls_menu import LeaderSkillMenu
+from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
+from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
+from padinfo.id_menu import IdMenu
+from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
@@ -129,29 +130,27 @@ class PadInfo(commands.Cog):
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster(monster_id)
 
-    @commands.Cog.listener('on_raw_reaction_add')
-    async def test_reaction_add(self, event):
-        channel = self.bot.get_channel(event.channel_id)
-        try:
-            message = await channel.fetch_message(event.message_id)
-        except discord.errors.NotFound:
-            return
-
-        ims = IntraMessageState.extract_data(message.embeds[0])
-        if not ims:
-            return
-
-        emoji_obj = event.emoji
+    @commands.Cog.listener('on_reaction_add')
+    async def test_reaction_add(self, reaction, member):
+        emoji_obj = reaction.emoji
         if isinstance(emoji_obj, str):
             emoji_clicked = emoji_obj
         else:
-            emoji_clicked = event.emoji.name
+            emoji_clicked = emoji_obj.name
+
+        if emoji_clicked not in ls_menu_emoji_button_names:
+            return
+
+        message = reaction.message
+        ims = IntraMessageState.extract_data(message.embeds[0])
+        if not ims:
+            return
 
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         if menu_type == LeaderSkillMenu.MENU_TYPE:
             embed_menu = LeaderSkillMenu.menu(original_author_id)
-            if not (await embed_menu.should_respond(message, event)):
+            if not (await embed_menu.should_respond(message, reaction, member)):
                 return
 
             dgcog = await self.get_dgcog()
@@ -565,7 +564,7 @@ class PadInfo(commands.Cog):
         """
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        l_err, l_mon, l_query, r_err, r_mon, r_query = await self.leaderskill_perform_query(dgcog, raw_query, beta_id3)
+        l_err, l_mon, l_query, r_err, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, beta_id3)
 
         err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, try separating the queries with / or wrap with quotes.'
         if l_err:
@@ -581,37 +580,6 @@ class PadInfo(commands.Cog):
                                      l_query, r_query)
         menu = LeaderSkillMenu.menu(original_author_id)
         await menu.create(ctx, state)
-
-    async def leaderskill_perform_query(self, dgcog, raw_query, beta_id3):
-        # Remove unicode quotation marks
-        query = re.sub("[\u201c\u201d]", '"', raw_query)
-
-        # deliberate order in case of multiple different separators.
-        for sep in ('"', '/', ',', ' '):
-            if sep in query:
-
-                left_query, *right_query = [x.strip() for x in query.split(sep) if x.strip()] or (
-                    '', '')  # or in case of ^ls [sep] which is empty list
-                # split on first separator, with if x.strip() block to prevent null values from showing up, mainly for quotes support
-                # right query is the rest of query but in list form because of how .strip() works. bring it back to string form with ' '.join
-                right_query = ' '.join(q for q in right_query)
-                if sep == ' ':
-                    # Handle a very specific failure case, user typing something like "uuvo ragdra"
-                    nm, err, debug_info = dgcog.index.find_monster(query)
-                    if not err and left_query in nm.prefixes:
-                        left_query = query
-                        right_query = None
-
-                break
-
-        else:  # no separators
-            left_query, right_query = query, None
-        left_m, left_err, _ = await findMonsterCustom2(dgcog, beta_id3, left_query)
-        if right_query:
-            right_m, right_err, _ = await findMonsterCustom2(dgcog, beta_id3, right_query)
-        else:
-            right_m, right_err, = left_m, left_err
-        return left_err, left_m, left_query, right_err, right_m, right_query
 
     async def get_user_embed_color(self, ctx):
         color = await self.config.user(ctx.author).color()
