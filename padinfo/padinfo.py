@@ -638,15 +638,16 @@ class PadInfo(commands.Cog):
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
-                                          "\N{LEFTWARDS ARROW WITH HOOK}"):
+            if await tsutils.get_reaction(ctx, f"Added test case `{id} - {query}`"
+                                               f" with ref `{sorted(suite).index(query)}`",
+                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
                     suite[query] = oldd
                 else:
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.send(f"Successfully added test case with id `{sorted(suite).index(query)}`")
+                await ctx.send(f"Successfully added test case `{id} - {query}` with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -702,13 +703,16 @@ class PadInfo(commands.Cog):
             suite.append(case)
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
-            if await tsutils.get_reaction(ctx, f"Added with id `{suite.index(case)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+            if await tsutils.get_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
+                                               f"case `{id} - {token}` with ref `{suite.index(case)}`",
+                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 suite.pop()
                 if old:
                     suite.append(old)
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                m = await ctx.send(f"Successfully added new case with id `{suite.index(case)}`")
+                m = await ctx.send(f"Successfully added {'fluff' if fluffy else 'name'} "
+                                   f"case `{id} - {token}` with ref `{suite.index(case)}`")
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
