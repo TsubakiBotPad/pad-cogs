@@ -1217,7 +1217,7 @@ class PadInfo(commands.Cog):
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
-             f"Series: {m.series.name_en} ({m.series_id})\n\n"
+             f"Series: {m.series.name_en} ({m.series_id}, {m.series_type})\n\n"
              f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.name_tokens.items() if m in ms))}\n"
              f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.fluff_tokens.items() if m in ms))}\n\n"
              f"[Manual Tokens]\n"
