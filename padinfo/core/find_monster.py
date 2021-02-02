@@ -143,7 +143,7 @@ class FindMonster:
                 monstergen = valid
 
         for t in neg_name_tokens:
-            invalid = self.get_valid_monsters_from_name_token(t, index2, defaultdict(int))
+            invalid = self.get_valid_monsters_from_name_token(t, index2, monsterscore, mult=-10)
             if monstergen is not None:
                 monstergen.difference_update(invalid)
             else:
@@ -151,7 +151,7 @@ class FindMonster:
 
         return monstergen, monsterscore
 
-    def get_valid_monsters_from_name_token(self, t, index2, monsterscore):
+    def get_valid_monsters_from_name_token(self, t, index2, monsterscore, mult=1):
         valid = set()
         ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
                     key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
@@ -164,15 +164,15 @@ class FindMonster:
                 score = score ** 4 * index2.mwt_to_len[match]
             for m in index2.manual[match]:
                 if m not in valid:
-                    monsterscore[m] += score + .001
+                    monsterscore[m] += (score + .001) * mult
                     valid.add(m)
             for m in index2.name_tokens[match]:
                 if m not in valid:
-                    monsterscore[m] += score
+                    monsterscore[m] += score * mult
                     valid.add(m)
             for m in index2.fluff_tokens[match]:
                 if m not in valid:
-                    monsterscore[m] += score / 2
+                    monsterscore[m] += score * mult / 2
                     valid.add(m)
         return valid
 
