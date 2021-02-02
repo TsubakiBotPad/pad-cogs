@@ -252,7 +252,8 @@ class MonsterIndex(tsutils.aobject):
                    f" Please start using `^id {self.bad_entries[query]}` instead, with a space."
                    " For more information, check out:"
                    " <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>"
-                   " or join the Tsubaki server (see `^tsubakiserver` for the link).")
+                   " or join the Tsubaki server (<https://discord.gg/QCRxNtC>)."
+                   " To start using the beta now, type `^idset beta y`!")
 
         # handle exact nickname match
         if query in self.all_entries:
