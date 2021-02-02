@@ -363,6 +363,9 @@ class MonsterGraph(object):
     def get_transform_base_by_id(self, monster_id):
         return self.get_monster(self.get_transform_base_id_by_id(monster_id))
 
+    def get_transform_base(self, monster):
+        return self.get_transform_base_by_id(monster.monster_id)
+
     def monster_is_transform_base_by_id(self, monster_id: int) -> bool:
         return self.get_transform_base_id_by_id(monster_id) == monster_id
 

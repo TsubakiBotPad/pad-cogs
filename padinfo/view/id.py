@@ -62,9 +62,10 @@ class IdView:
         )
 
     @staticmethod
-    def killers_row(m: "MonsterModel", is_transform_base):
-        killers_text = 'Any' if 'Any' in m.killers else ' '.join([_killer_latent_emoji(k) for k in m.killers])
-        available_killer_text = 'Available killers:' if is_transform_base else 'Avail. killers (pre-xform):'
+    def killers_row(m: "MonsterModel", transform_base):
+        killers_text = 'Any' if 'Any' in m.killers else \
+            ' '.join(_killer_latent_emoji(k) for k in transform_base.killers)
+        available_killer_text = 'Available killers:' if m==transform_base else 'Avail. killers (pre-xform):'
         return Box(
             BoldText(available_killer_text),
             Text('[{} slots]'.format(m.latent_slots)),
@@ -136,7 +137,7 @@ class IdView:
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
                     IdView.awakenings_row(m),
-                    IdView.killers_row(m, state.is_transform_base)
+                    IdView.killers_row(m, state.transform_base)
                 )
             ),
             EmbedField(
