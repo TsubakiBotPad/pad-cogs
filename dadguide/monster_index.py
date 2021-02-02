@@ -86,6 +86,7 @@ class MonsterIndex2(aobject):
         self.all_name_tokens = list(self.manual) + list(self.fluff_tokens) + list(self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
+        self.mwt_to_len = defaultdict(lambda: 1, {"".join(mw): len(mw) for mw in self.multi_word_tokens})
 
     __init__ = __ainit__
 
