@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from discord import Message
+from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
@@ -15,7 +16,8 @@ from padinfo.view_state.leader_skill import LeaderSkillViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r')]
+emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), 'x2']
+menu_emoji_config = EmbedMenuEmojiConfig(delete_message='x2')
 
 
 class LeaderSkillMenu:
@@ -37,7 +39,7 @@ class LeaderSkillMenu:
             MessageOwnerReactionFilter(original_author_id)
         ]
 
-        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control)
+        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control, menu_emoji_config)
 
     @staticmethod
     async def respond_to_r(message: Optional[Message], ims, **data):
