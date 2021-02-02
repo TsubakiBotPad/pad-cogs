@@ -5,7 +5,7 @@ from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
-    MessageOwnerReactionFilter, FriendReactionFilter
+    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
 from padinfo.view.id import IdView
@@ -25,7 +25,7 @@ class LeaderSkillMenu:
     MENU_TYPE = 'LeaderSkill'
 
     @staticmethod
-    def menu(original_author_id, friend_ids):
+    def menu(original_author_id, friend_ids, bot_id):
         transitions = {
             LeaderSkillMenu.INITIAL_EMOJI: LeaderSkillMenu.respond_to_house,
             emoji_button_names[1]: LeaderSkillMenu.respond_to_l,
@@ -36,6 +36,7 @@ class LeaderSkillMenu:
         reaction_filters = [
             ValidEmojiReactionFilter(valid_emoji_names),
             NotPosterEmojiReactionFilter(),
+            BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
 

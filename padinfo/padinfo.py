@@ -151,7 +151,7 @@ class PadInfo(commands.Cog):
         if menu_type == LeaderSkillMenu.MENU_TYPE:
             friend_cog = self.bot.get_cog("Friend")
             friends = friend_cog and (await friend_cog.get_friends(original_author_id))
-            embed_menu = LeaderSkillMenu.menu(original_author_id, friends)
+            embed_menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
             if not (await embed_menu.should_respond(message, reaction, member)):
                 return
 
@@ -161,7 +161,7 @@ class PadInfo(commands.Cog):
                 'dgcog': dgcog,
                 'user_config': user_config
             }
-            await embed_menu.transition(message, ims, emoji_clicked, **data)
+            await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -582,7 +582,7 @@ class PadInfo(commands.Cog):
         friends = friend_cog and (await friend_cog.get_friends(original_author_id))
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
-        menu = LeaderSkillMenu.menu(original_author_id, friends)
+        menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 
     async def get_user_embed_color(self, ctx):
