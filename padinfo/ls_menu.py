@@ -16,8 +16,8 @@ from padinfo.view_state.leader_skill import LeaderSkillViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), 'x2']
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='x2')
+emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), '\N{CROSS MARK}']
+menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class LeaderSkillMenu:
