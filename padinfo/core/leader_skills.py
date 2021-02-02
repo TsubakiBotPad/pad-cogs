@@ -83,7 +83,7 @@ async def perform_leaderskill_query(dgcog, raw_query, beta_id3):
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
                 nm, err, debug_info = dgcog.index.find_monster(query)
-                if not err and left_query in nm.prefixes:
+                if nm and left_query in nm.prefixes:
                     left_query = query
                     right_query = None
 
