@@ -48,6 +48,7 @@ class EvoTypes(Enum):
     EVO = 'Evolved'
     UVO = 'Ulimate'
     UUVO = 'Super Ultimate'
+    BASETRANS = 'Base Transform'
     TRANS = 'Transform'
     AWOKEN = 'Awoken'
     MEGA = 'Mega Awoken'
@@ -62,6 +63,7 @@ EVO_MAP = {
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
+    EvoTypes.BASETRANS: ('transformbase', 'transbase'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
     EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'megaawoken'),
@@ -206,8 +208,8 @@ AWOKEN_MAP = {
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     Awakenings.UNBINDABLE: ('unbindable',),
     Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
-    Awakenings.CLOUDRESIST: ('cloudres',),  # don't have cloud because that's a name token
-    Awakenings.TAPERESIST: ('taperes',),
+    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),
+    Awakenings.TAPERESIST: ('taperes', 'tape'),
     Awakenings.SKILLBOOSTPLUS: ('sb+',),
     Awakenings.HP80ORMORE: ('>80', 'highhp'),
     Awakenings.HP50ORLESS: ('<50', 'lowhp'),
@@ -225,11 +227,11 @@ AWOKEN_MAP = {
     Awakenings.UNPOISONABLE: ('resp+', 'p+',),
     Awakenings.JAMMERBLESSING: ('jblessing', 'sfj', 'jsurge'),
     Awakenings.POISONBLESSING: ('pblessing', 'sfp', 'psurge'),
-    Awakenings.REDCOMBOCOUNT: ('ccr',),
-    Awakenings.BLUECOMBOCOUNT: ('ccb',),
-    Awakenings.GREENCOMBOCOUNT: ('ccg',),
-    Awakenings.LIGHTCOMBOCOUNT: ('ccl',),
-    Awakenings.DARKCOMBOCOUNT: ('ccd',),
+    Awakenings.REDCOMBOCOUNT: ('ccr', 'cc'),
+    Awakenings.BLUECOMBOCOUNT: ('ccb', 'cc'),
+    Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
+    Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
+    Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
 }
 
 
@@ -243,6 +245,10 @@ class MiscModifiers(Enum):
     ONLYJP = 'Only in JP Server'
     INNA = 'In NA Server'
     ONLYNA = 'Only in NA Server'
+    REGULAR = 'Metaseries: REGULAR'
+    EVENT = 'Metaseries: Event'
+    SEASONAL = 'Metaseries: Seasonal'
+    COLLAB = 'Metaseries: Collab'
 
 
 MISC_MAP = {
@@ -254,7 +260,11 @@ MISC_MAP = {
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
     MiscModifiers.ONLYJP: ('jp',),
-    MiscModifiers.ONLYNA: ('na',)
+    MiscModifiers.ONLYNA: ('na',),
+    MiscModifiers.REGULAR: ('regular',),
+    MiscModifiers.EVENT: ('event',),
+    MiscModifiers.SEASONAL: ('seasonal',),
+    MiscModifiers.COLLAB: ('collab',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {

@@ -92,8 +92,8 @@ class PadInfo(commands.Cog):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
-        self.fm1 = fm.findMonster1
-        self.fm_ = fm._findMonster
+        self.fm1 = lambda q: fm.findMonster1(bot.get_cog("Dadguide"), q)
+        self.fm_ = lambda q: fm._findMonster(bot.get_cog("Dadguide"), q)
 
     def cog_unload(self):
         """Manually nulling out database because the GC for cogs seems to be pretty shitty"""
@@ -142,7 +142,7 @@ class PadInfo(commands.Cog):
             return
 
         message = reaction.message
-        ims = IntraMessageState.extract_data(message.embeds[0])
+        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
         if not ims:
             return
 
