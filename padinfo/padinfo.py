@@ -14,7 +14,7 @@ import discord
 import tsutils
 from Levenshtein import jaro_winkler
 from discord import Color
-from discordmenu.emoji_cache import emoji_cache
+from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
@@ -149,7 +149,9 @@ class PadInfo(commands.Cog):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         if menu_type == LeaderSkillMenu.MENU_TYPE:
-            embed_menu = LeaderSkillMenu.menu(original_author_id)
+            friend_cog = self.bot.get_cog("Friend")
+            friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+            embed_menu = LeaderSkillMenu.menu(original_author_id, friends)
             if not (await embed_menu.should_respond(message, reaction, member)):
                 return
 
@@ -576,9 +578,11 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
-        menu = LeaderSkillMenu.menu(original_author_id)
+        menu = LeaderSkillMenu.menu(original_author_id, friends)
         await menu.create(ctx, state)
 
     async def get_user_embed_color(self, ctx):
