@@ -1,24 +1,21 @@
 import difflib
-
-from redbot.core.utils import AsyncIter
-from discord.utils import find as find_first
-import tsutils
-
 from collections import defaultdict
 
-from .models.monster_model import MonsterModel
-from .models.enum_types import Attribute
-from .models.enum_types import EvoType
-from .models.enum_types import InternalEvoType
+import tsutils
+from discord.utils import find as find_first
+from redbot.core.utils import AsyncIter
+
 from dadguide.models.enum_types import Attribute, MonsterType
 from dadguide.models.monster_model import MonsterModel
 from dadguide.models.series_model import SeriesModel
 from .database_context import DbContext
+from .models.enum_types import EvoType
+from .models.enum_types import InternalEvoType
 
 
 class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monster_database: DbContext, nickname_overrides, treename_overrides,
-                       panthname_overrides, accept_filter=None):
+                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
         base_monster_ids = monster_database.get_monsters_where(monster_database.graph.monster_is_base)
@@ -120,7 +117,7 @@ class MonsterIndex(tsutils.aobject):
             for nickname in nm.final_two_word_nicknames:
                 self.two_word_entries[nickname] = nm
             for nickname in nm.bad_nicknames:
-                self.bad_entries[nickname] = nm
+                self.bad_entries[nickname] = nm.bad_nicknames[nickname]
             if nm.series:
                 for pantheon in self.all_pantheon_names:
                     if pantheon.lower() == nm.series.lower():
@@ -251,8 +248,11 @@ class MonsterIndex(tsutils.aobject):
 
         err = None
         if query in self.bad_entries:
-            err = ("This query looks like a query type that will not be supported soon."
-                   " Please put a space between modifiers and name tokens")
+            err = ("It looks like this query won't be supported soon!"
+                   f" Please start using `^id {self.bad_entries[query]}` instead, with a space."
+                   " For more information, check out:"
+                   " <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>"
+                   " or join the Tsubaki server (see `^tsubakiserver` for the link).")
 
         # handle exact nickname match
         if query in self.all_entries:
@@ -263,8 +263,6 @@ class MonsterIndex(tsutils.aobject):
             return None, 'Japanese queries must be at least 2 characters', None
         elif len(query) < 4 and not contains_ja:
             return None, 'Your query must be at least 4 letters', None
-
-
 
         # TODO: this should be a length-limited priority queue
         matches = set()
@@ -331,7 +329,7 @@ class MonsterIndex(tsutils.aobject):
         matches = set()
         for nickname, m in self.all_entries.items():
             if (all(map(lambda x: x in m.name_en.lower(), query.split())) or
-                            all(map(lambda x: x in m.name_ja.lower(), query.split()))):
+                    all(map(lambda x: x in m.name_ja.lower(), query.split()))):
                 matches.add(m)
         if len(matches):
             return self.pick_best_monster(matches), err, 'All word match on full name, max of {}'.format(
@@ -349,10 +347,9 @@ class NamedMonsterGroup(object):
     def __init__(self, evolution_tree: list, treename_overrides: list):
         base_monster = min(evolution_tree, key=lambda m: m.monster_id)
 
-
         self.is_low_priority = (
-                        self._is_low_priority_monster(base_monster)
-                        or self._is_low_priority_group(evolution_tree))
+                self._is_low_priority_monster(base_monster)
+                or self._is_low_priority_group(evolution_tree))
 
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
@@ -492,7 +489,7 @@ class NamedMonster(object):
         if monster.roma_subname:
             self.final_nicknames.add(monster.roma_subname)
 
-        self.bad_nicknames = set()
+        self.bad_nicknames = dict()
 
         # For each treename, add nicknames
         for treename in self.group_treenames:
@@ -501,8 +498,8 @@ class NamedMonster(object):
             # Add the prefix plus treename, and the prefix with a space between treename
             for prefix in self.prefixes:
                 self.final_nicknames.add(prefix + treename)
-                self.bad_nicknames.add(prefix + treename)
                 self.final_nicknames.add(prefix + ' ' + treename)
+                self.bad_nicknames[prefix + treename] = prefix + ' ' + treename
 
         self.final_two_word_nicknames = set()
 
@@ -512,8 +509,8 @@ class NamedMonster(object):
             # Add the prefix plus treename, and the prefix with a space between treename
             for prefix in self.prefixes:
                 self.final_two_word_nicknames.add(prefix + treename)
-                self.bad_nicknames.add(prefix + treename)
                 self.final_two_word_nicknames.add(prefix + ' ' + treename)
+                self.bad_nicknames[prefix + treename] = prefix + ' ' + treename
 
     def set_evolution_tree(self, evolution_tree):
         """
