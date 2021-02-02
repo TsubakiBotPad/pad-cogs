@@ -17,7 +17,7 @@ class EnemySkillDatabase(object):
                 params = []
                 for i in range(4, len(r)):
                     params.append(r[i])
-                es = EnemySkill(int(r[0]), r[1], int(r[2]), r[3], params)
+                es = EnemySkill(r)
                 enemy_skills.append(es)
         self.enemy_skills_dict = {es.id: es for es in enemy_skills}
 
