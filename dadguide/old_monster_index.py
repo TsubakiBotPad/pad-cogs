@@ -462,6 +462,7 @@ class NamedMonster(object):
         self.is_low_priority = monster_group.is_low_priority or monster.is_equip
         self.group_size = monster_group.group_size
         self.rarity = monster.rarity
+        self.sell_mp = monster.sell_mp
 
         # Used in fallback searches
         self.name_en = monster.name_en
