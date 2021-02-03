@@ -28,12 +28,18 @@ def calc_ratio(s1, s2):
     return jaro_winkler(s1, s2, .05)
 
 
-def calc_ratio_prefix(token, full_word):
+def calc_ratio_prefix(token, full_word, index2, factor=.05):
     if full_word == token:
-        return 1
+        score = 1
     elif len(token) >= 3 and full_word.startswith(token):
-        return .995
-    return jaro_winkler(token, full_word, .05)
+        score = .995
+    else:
+        score = jaro_winkler(token, full_word, factor)
+
+    if index2.mwt_to_len[full_word] != 1:
+        score = score ** 4 * index2.mwt_to_len[full_word]
+
+    return score
 
 
 class FindMonster:
@@ -153,15 +159,13 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, t, index2, monsterscore, mult=1):
         valid = set()
-        ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
-                    key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
+        ms = sorted([nt for nt in index2.all_name_tokens if calc_ratio_prefix(t, nt, index2) > self.TOKEN_JW_DISTANCE],
+                    key=lambda nt: calc_ratio_prefix(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
         if not ms:
             return None, None
         for match in ms:
-            score = calc_ratio_prefix(t, match)
-            if index2.mwt_to_len[match] != 1:
-                score = score ** 4 * index2.mwt_to_len[match]
+            score = calc_ratio_prefix(t, match, index2)
             for m in index2.manual[match]:
                 if m not in valid:
                     monsterscore[m] += (score + .001) * mult
@@ -174,6 +178,7 @@ class FindMonster:
                 if m not in valid:
                     monsterscore[m] += score * mult / 2
                     valid.add(m)
+
         return valid
 
     def process_modifiers(self, mod_tokens, neg_mod_tokens, monsterscore, potential_evos, monster_mods):
