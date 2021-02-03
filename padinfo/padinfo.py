@@ -27,7 +27,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom
+    findMonsterCustom, calc_ratio_prefix
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.transforminfo import perform_transforminfo_query
@@ -1318,15 +1318,24 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     async def debugiddist(self, ctx, s1, s2):
+        """Find the distance between two queries.
+
+        For name tokens, the full word goes second as name token matching is not commutitive
+        """
+
+        dgcog = self.bot.get_cog("Dadguide")
+
         dist = jaro_winkler(s1, s2)
+        dist2 = calc_ratio_prefix(s1, s2, dgcog.index2)
         yes = '\N{WHITE HEAVY CHECK MARK}'
         no = '\N{CROSS MARK}'
         await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
                        box(f"Jaro-Winkler Distance:    {round(dist, 4)}\n"
+                           f"Name Matching Distance:   {round(dist2, 4)}\n"
                            f"Modifier token threshold: {find_monster.MODIFIER_JW_DISTANCE}  "
                            f"{yes if dist >= find_monster.MODIFIER_JW_DISTANCE else no}\n"
                            f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}   "
-                           f"{yes if dist >= find_monster.TOKEN_JW_DISTANCE else no}"))
+                           f"{yes if dist2 >= find_monster.TOKEN_JW_DISTANCE else no}"))
 
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):

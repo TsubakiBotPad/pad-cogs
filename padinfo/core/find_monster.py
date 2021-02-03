@@ -12,6 +12,7 @@ from padinfo.core.padinfo_settings import settings
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
+    from dadguide.old_monster_index import NamedMonster
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -28,12 +29,23 @@ def calc_ratio(s1, s2):
     return jaro_winkler(s1, s2, .05)
 
 
-def calc_ratio_prefix(token, full_word):
+def calc_ratio_prefix(token, full_word, index2, factor=.05):
+    mw = index2.mwt_to_len[full_word] != 1
+    jw = jaro_winkler(token, full_word, factor)
+
     if full_word == token:
-        return 1
+        score = 1
     elif len(token) >= 3 and full_word.startswith(token):
-        return .995
-    return jaro_winkler(token, full_word, .05)
+        score = .995
+        if mw and jw < score:
+            return score
+    else:
+        score = jw
+
+    if mw:
+        score = score ** 4 * index2.mwt_to_len[full_word]
+
+    return score
 
 
 class FindMonster:
@@ -132,7 +144,7 @@ class FindMonster:
         return set(modifiers), negative_modifiers, name, negative_name
 
     def process_name_tokens(self, name_query_tokens, neg_name_tokens, index2):
-        monstergen: set = None
+        monstergen = None
         monsterscore = defaultdict(int)
 
         for t in name_query_tokens:
@@ -153,15 +165,13 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, t, index2, monsterscore, mult=1):
         valid = set()
-        ms = sorted([nt for nt in index2.all_name_tokens if jaro_winkler(t, nt, .05) > self.TOKEN_JW_DISTANCE],
-                    key=lambda nt: jaro_winkler(t, nt, .05), reverse=True)
+        ms = sorted([nt for nt in index2.all_name_tokens if calc_ratio_prefix(t, nt, index2) > self.TOKEN_JW_DISTANCE],
+                    key=lambda nt: calc_ratio_prefix(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
         if not ms:
             return None, None
         for match in ms:
-            score = calc_ratio_prefix(t, match)
-            if index2.mwt_to_len[match] != 1:
-                score = score ** 4 * index2.mwt_to_len[match]
+            score = calc_ratio_prefix(t, match, index2)
             for m in index2.manual[match]:
                 if m not in valid:
                     monsterscore[m] += (score + .001) * mult
@@ -174,6 +184,7 @@ class FindMonster:
                 if m not in valid:
                     monsterscore[m] += score * mult / 2
                     valid.add(m)
+
         return valid
 
     def process_modifiers(self, mod_tokens, neg_mod_tokens, monsterscore, potential_evos, monster_mods):
@@ -276,7 +287,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
         if t not in dgcog.index2.all_modifiers:
             settings.add_typo_mod(t)
 
-    # print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
+    print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
 
     if name_query_tokens:
         monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, neg_name_tokens, dgcog.index2)
@@ -296,7 +307,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
         # no modifiers match any monster in the evo tree
         return 0, None
 
-    # print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
+    print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
     # Return most likely candidate based on query.
     mon = max(monster_gen,
