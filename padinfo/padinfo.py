@@ -30,10 +30,12 @@ from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, 
     findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
+from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
 from padinfo.id_menu import IdMenu
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
+from padinfo.tf_menu import TransformInfoMenu
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
@@ -627,29 +629,23 @@ class PadInfo(commands.Cog):
         """Show info about a transform card, including some helpful details about the base card."""
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        bm, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, 'transformbase ' + query)
+        bm, err, _, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
+            perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3)
+
         if err:
             await ctx.send(err)
             return
 
-        tfm = dgcog.database.graph.get_monster(dgcog.database.graph.get_next_transform_id_by_monster(bm))
         if not tfm:
-            await ctx.send(f'Did not find a transforming monster.')
+            await ctx.send('Your query ({}) did not find a monster that transforms.'.format(query))
             return
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        # also dang figure out what to do about the duplication of ls query function...
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, color, bm,
-            tfm, query, base_rarity, acquire_raw, true_evo_type_raw)
-
-        menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
-        emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.tfhome_emoji] = await menu.make_transforminfo_embed(bm, tfm)
-        emoji_to_embed[self.base_emoji] = await menu.make_id_embed(bm)
-        emoji_to_embed[self.transformed_emoji] = await menu.make_id_embed(tfm)
-
-        await self._do_menu(ctx, self.tfhome_emoji, EmojiUpdater(emoji_to_embed))
+            tfm, base_rarity, acquire_raw, true_evo_type_raw)
+        menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.group()
     # @checks.is_owner()
