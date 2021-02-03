@@ -14,7 +14,7 @@ import discord
 import tsutils
 from Levenshtein import jaro_winkler
 from discord import Color
-from discordmenu.emoji_cache import emoji_cache
+from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
@@ -27,12 +27,13 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom2, findMonsterCustom
-from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
+    findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
-from padinfo.id_menu import IdMenu
-from padinfo.ls_menu import LeaderSkillMenu
+from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
+from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
+from padinfo.id_menu import IdMenu
+from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
@@ -94,8 +95,8 @@ class PadInfo(commands.Cog):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
-        self.fm1 = fm.findMonster1
-        self.fm_ = fm._findMonster
+        self.fm1 = lambda q: fm.findMonster1(bot.get_cog("Dadguide"), q)
+        self.fm_ = lambda q: fm._findMonster(bot.get_cog("Dadguide"), q)
 
     def cog_unload(self):
         """Manually nulling out database because the GC for cogs seems to be pretty shitty"""
@@ -132,29 +133,29 @@ class PadInfo(commands.Cog):
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster(monster_id)
 
-    @commands.Cog.listener('on_raw_reaction_add')
-    async def test_reaction_add(self, event):
-        channel = self.bot.get_channel(event.channel_id)
-        try:
-            message = await channel.fetch_message(event.message_id)
-        except discord.errors.NotFound:
-            return
-
-        ims = IntraMessageState.extract_data(message.embeds[0])
-        if not ims:
-            return
-
-        emoji_obj = event.emoji
+    @commands.Cog.listener('on_reaction_add')
+    async def test_reaction_add(self, reaction, member):
+        emoji_obj = reaction.emoji
         if isinstance(emoji_obj, str):
             emoji_clicked = emoji_obj
         else:
-            emoji_clicked = event.emoji.name
+            emoji_clicked = emoji_obj.name
+
+        if emoji_clicked not in ls_menu_emoji_button_names:
+            return
+
+        message = reaction.message
+        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
+        if not ims:
+            return
 
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         if menu_type == LeaderSkillMenu.MENU_TYPE:
-            embed_menu = LeaderSkillMenu.menu(original_author_id)
-            if not (await embed_menu.should_respond(message, event)):
+            friend_cog = self.bot.get_cog("Friend")
+            friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+            embed_menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
+            if not (await embed_menu.should_respond(message, reaction, member)):
                 return
 
             dgcog = await self.get_dgcog()
@@ -163,7 +164,7 @@ class PadInfo(commands.Cog):
                 'dgcog': dgcog,
                 'user_config': user_config
             }
-            await embed_menu.transition(message, ims, emoji_clicked, **data)
+            await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -215,6 +216,12 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await findMonster1(dgcog, query)
 
         if m is not None:
+            async def send_error(err):
+                if err:
+                    await asyncio.sleep(1)
+                    await ctx.send(err)
+            asyncio.create_task(send_error(err))
+
             await self._do_idmenu(ctx, m, self.id_emoji)
         else:
             await self.makeFailureMsg(ctx, query, err)
@@ -568,7 +575,7 @@ class PadInfo(commands.Cog):
         """
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        l_err, l_mon, l_query, r_err, r_mon, r_query = await self.leaderskill_perform_query(dgcog, raw_query, beta_id3)
+        l_err, l_mon, l_query, r_err, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, beta_id3)
 
         err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, try separating the queries with / or wrap with quotes.'
         if l_err:
@@ -580,41 +587,12 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
-        menu = LeaderSkillMenu.menu(original_author_id)
+        menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
-
-    async def leaderskill_perform_query(self, dgcog, raw_query, beta_id3):
-        # Remove unicode quotation marks
-        query = re.sub("[\u201c\u201d]", '"', raw_query)
-
-        # deliberate order in case of multiple different separators.
-        for sep in ('"', '/', ',', ' '):
-            if sep in query:
-
-                left_query, *right_query = [x.strip() for x in query.split(sep) if x.strip()] or (
-                    '', '')  # or in case of ^ls [sep] which is empty list
-                # split on first separator, with if x.strip() block to prevent null values from showing up, mainly for quotes support
-                # right query is the rest of query but in list form because of how .strip() works. bring it back to string form with ' '.join
-                right_query = ' '.join(q for q in right_query)
-                if sep == ' ':
-                    # Handle a very specific failure case, user typing something like "uuvo ragdra"
-                    nm, err, debug_info = dgcog.index.find_monster(query)
-                    if not err and left_query in nm.prefixes:
-                        left_query = query
-                        right_query = None
-
-                break
-
-        else:  # no separators
-            left_query, right_query = query, None
-        left_m, left_err, _ = await findMonsterCustom2(dgcog, beta_id3, left_query)
-        if right_query:
-            right_m, right_err, _ = await findMonsterCustom2(dgcog, beta_id3, right_query)
-        else:
-            right_m, right_err, = left_m, left_err
-        return left_err, left_m, left_query, right_err, right_m, right_query
 
     async def get_user_embed_color(self, ctx):
         color = await self.config.user(ctx.author).color()
@@ -699,15 +677,16 @@ class PadInfo(commands.Cog):
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_reaction(ctx, f"Added with id `{sorted(suite).index(query)}`",
-                                          "\N{LEFTWARDS ARROW WITH HOOK}"):
+            if await tsutils.get_reaction(ctx, f"Added test case `{id} - {query}`"
+                                               f" with ref `{sorted(suite).index(query)}`",
+                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
                     suite[query] = oldd
                 else:
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.send(f"Successfully added test case with id `{sorted(suite).index(query)}`")
+                await ctx.send(f"Successfully added test case `{id} - {query}` with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -763,13 +742,16 @@ class PadInfo(commands.Cog):
             suite.append(case)
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
-            if await tsutils.get_reaction(ctx, f"Added with id `{suite.index(case)}`", "\N{LEFTWARDS ARROW WITH HOOK}"):
+            if await tsutils.get_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
+                                               f"case `{id} - {token}` with ref `{suite.index(case)}`",
+                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 suite.pop()
                 if old:
                     suite.append(old)
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                m = await ctx.send(f"Successfully added new case with id `{suite.index(case)}`")
+                m = await ctx.send(f"Successfully added {'fluff' if fluffy else 'name'} "
+                                   f"case `{id} - {token}` with ref `{suite.index(case)}`")
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
@@ -924,13 +906,52 @@ class PadInfo(commands.Cog):
         await self.norf_list(ctx, True, inclusive)
 
     async def norf_list(self, ctx, fluff, inclusive):
-        """List name/fluff tests"""
         await self.config.user(ctx.author).lastaction.set('name')
 
         suite = await self.config.fluff_suite()
         o = ""
         for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
             if inclusive or v['fluff'] == fluff:
+                o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
+                     f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idtest.command(name="listnoreason")
+    async def idt_listnoreason(self, ctx):
+        """List id3 tests with no reasons"""
+        await self.config.user(ctx.author).lastaction.set('id3')
+
+        suite = await self.config.test_suite()
+        o = ""
+        ml = len(max(suite, key=len))
+        for c, kv in enumerate(sorted(suite.items())):
+            if not kv[1].get('reason'):
+                o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        if not o:
+            await ctx.send("There are no test cases.")
+        for page in pagify(o):
+            await ctx.send(box(page))
+
+    @idt_name.command(name="listnoreason")
+    async def idtn_listnoreason(self, ctx, inclusive: bool = False):
+        """List name tests with no reasons"""
+        await self.norf_listnoreason(ctx, False, inclusive)
+
+    @idt_fluff.command(name="listnoreason")
+    async def idtf_lisnoreasont(self, ctx, inclusive: bool = False):
+        """List fluff tests with no reasons"""
+        await self.norf_listnoreason(ctx, True, inclusive)
+
+    async def norf_listnoreason(self, ctx, fluff, inclusive):
+        await self.config.user(ctx.author).lastaction.set('name')
+
+        suite = await self.config.fluff_suite()
+        o = ""
+        for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            if inclusive or v['fluff'] == fluff and not v['reason']:
                 o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
                      f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
         if not o:
@@ -1282,7 +1303,7 @@ class PadInfo(commands.Cog):
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
-             f"Series: {m.series.name_en} ({m.series_id})\n\n"
+             f"Series: {m.series.name_en} ({m.series_id}, {m.series.series_type})\n\n"
              f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.name_tokens.items() if m in ms))}\n"
              f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.fluff_tokens.items() if m in ms))}\n\n"
              f"[Manual Tokens]\n"

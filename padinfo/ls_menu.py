@@ -1,10 +1,11 @@
 from typing import TYPE_CHECKING, Optional
 
 from discord import Message
+from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from discordmenu.emoji_cache import emoji_cache
+from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
-    MessageOwnerReactionFilter
+    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
 from padinfo.view.id import IdView
@@ -15,7 +16,8 @@ from padinfo.view_state.leader_skill import LeaderSkillViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r')]
+emoji_button_names = ['\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), '\N{CROSS MARK}']
+menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class LeaderSkillMenu:
@@ -23,7 +25,7 @@ class LeaderSkillMenu:
     MENU_TYPE = 'LeaderSkill'
 
     @staticmethod
-    def menu(original_author_id):
+    def menu(original_author_id, friend_ids, bot_id):
         transitions = {
             LeaderSkillMenu.INITIAL_EMOJI: LeaderSkillMenu.respond_to_house,
             emoji_button_names[1]: LeaderSkillMenu.respond_to_l,
@@ -34,10 +36,11 @@ class LeaderSkillMenu:
         reaction_filters = [
             ValidEmojiReactionFilter(valid_emoji_names),
             NotPosterEmojiReactionFilter(),
-            MessageOwnerReactionFilter(original_author_id)
+            BotAuthoredMessageReactionFilter(bot_id),
+            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
 
-        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control)
+        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control, menu_emoji_config)
 
     @staticmethod
     async def respond_to_r(message: Optional[Message], ims, **data):

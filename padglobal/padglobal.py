@@ -65,10 +65,9 @@ commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "shor
 
 async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog.fm_(dg_cog, str(query))
+    nm, err, debug_info = await padinfo_cog.fm_(str(query))
     return nm, err, debug_info
 
 
@@ -202,8 +201,8 @@ class PadGlobal(commands.Cog):
     @commands.command()
     @auth_check('contentadmin')
     async def debugid1dump(self, ctx):
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        mi = padinfo_cog.index_all
+        dg_cog = self.bot.get_cog('Dadguide')
+        mi = dg_cog.index
 
         async def write_send(nn_map, file_name):
             data_holder = StringIO()
@@ -219,7 +218,7 @@ class PadGlobal(commands.Cog):
     @commands.command(aliases=['iddebug1'])
     @auth_check('contentadmin')
     async def debugid1(self, ctx, *, query):
-        padinfo_cog = self.bot.get_cog('PadInfo')
+        dg_cog = self.bot.get_cog('Dadguide')
         # m is a named monster
         m, err, debug_info = await lookup_named_monster(query)
 
@@ -248,9 +247,9 @@ class PadGlobal(commands.Cog):
         msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
 
         msg += "\n\nAccepted nickname entries:"
-        accepted_nn = list(filter(lambda nn: m.monster_id == padinfo_cog.index_all.all_entries[nn].monster_id,
+        accepted_nn = list(filter(lambda nn: m.monster_id == dg_cog.index.all_entries[nn].monster_id,
                                   m.final_nicknames))
-        accepted_twnn = list(filter(lambda nn: m.monster_id == padinfo_cog.index_all.two_word_entries[nn].monster_id,
+        accepted_twnn = list(filter(lambda nn: m.monster_id == dg_cog.index.two_word_entries[nn].monster_id,
                                     m.final_two_word_nicknames))
 
         msg += "\n nicknames: {}".format(list_or_none(accepted_nn))
@@ -264,9 +263,9 @@ class PadGlobal(commands.Cog):
                                     m.final_two_word_nicknames))
 
         replaced_nn_info = map(lambda nn: (
-            nn, padinfo_cog.index_all.all_entries[nn]), replaced_nn)
+            nn, dg_cog.index.all_entries[nn]), replaced_nn)
         replaced_twnn_info = map(
-            lambda nn: (nn, padinfo_cog.index_all.two_word_entries[nn]), replaced_twnn)
+            lambda nn: (nn, dg_cog.index.two_word_entries[nn]), replaced_twnn)
 
         replaced_nn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
             nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),

@@ -86,6 +86,7 @@ class MonsterIndex2(aobject):
         self.all_name_tokens = list(self.manual) + list(self.fluff_tokens) + list(self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
+        self.mwt_to_len = defaultdict(lambda: 1, {"".join(mw): len(mw) for mw in self.multi_word_tokens})
 
     __init__ = __ainit__
 
@@ -194,29 +195,23 @@ class MonsterIndex2(aobject):
         basemon = self.graph.get_base_monster(m)
 
         # Main Color
-        for t in COLOR_MAP[m.attr1]:
-            modifiers.add(t)
+        modifiers.update(COLOR_MAP[m.attr1])
 
         # Sub Color
-        for t in SUB_COLOR_MAP[m.attr2]:
-            modifiers.add(t)
+        modifiers.update(SUB_COLOR_MAP[m.attr2])
         if m.attr1.value == 6:
-            for t in COLOR_MAP[m.attr2]:
-                modifiers.add(t)
+            modifiers.update(COLOR_MAP[m.attr2])
 
         # Both Colors
-        for t in DUAL_COLOR_MAP[(m.attr1, m.attr2)]:
-            modifiers.add(t)
+        modifiers.update(DUAL_COLOR_MAP[(m.attr1, m.attr2)])
 
         # Type
         for mt in m.types:
-            for t in TYPE_MAP[mt]:
-                modifiers.add(t)
+            modifiers.update(TYPE_MAP[mt])
 
         # Series
         if m.series_id in self.series_id_to_pantheon_nickname:
-            for t in self.series_id_to_pantheon_nickname[m.series_id]:
-                modifiers.add(t)
+            modifiers.update(self.series_id_to_pantheon_nickname[m.series_id])
 
         # Rarity
         modifiers.add(str(m.rarity) + "*")
@@ -224,8 +219,7 @@ class MonsterIndex2(aobject):
 
         # Base
         if self.graph.monster_is_base(m):
-            for t in EVO_MAP[EvoTypes.BASE]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.BASE])
 
         special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or '転生' in m.name_ja or
                        self.graph.true_evo_type_by_monster(m).value == "Reincarnated" or
@@ -235,64 +229,64 @@ class MonsterIndex2(aobject):
 
         # Evo
         if self.graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
-            for t in EVO_MAP[EvoTypes.EVO]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
         if self.graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
-            for t in EVO_MAP[EvoTypes.UVO]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.UVO])
 
         # UUvo
         if self.graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
-            for t in EVO_MAP[EvoTypes.UUVO]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.UUVO])
 
         # Transform
         if not self.graph.monster_is_transform_base(m):
-            for t in EVO_MAP[EvoTypes.TRANS]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.TRANS])
+        elif self.graph.get_next_transform_by_monster(m):
+            modifiers.update(EVO_MAP[EvoTypes.BASETRANS])
 
         # Awoken
         if '覚醒' in m.name_ja or 'awoken' in m.name_en.lower():
-            for t in EVO_MAP[EvoTypes.AWOKEN]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.AWOKEN])
 
         # Mega Awoken
         if '極醒' in m.name_ja or 'mega awoken' in m.name_en.lower():
-            for t in EVO_MAP[EvoTypes.MEGA]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.MEGA])
 
         # Reincarnated
         if self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
-            for t in EVO_MAP[EvoTypes.REVO]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.REVO])
 
         # Super Reincarnated
         if '超転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated":
-            for t in EVO_MAP[EvoTypes.SREVO]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.SREVO])
 
         # Pixel
         if (m.name_ja.startswith('ドット') or
                 m.name_en.startswith('pixel') or
                 self.graph.true_evo_type_by_monster(m).value == "Pixel"):
-            for t in EVO_MAP[EvoTypes.PIXEL]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.PIXEL])
         else:
-            for t in EVO_MAP[EvoTypes.NONPIXEL]:
-                modifiers.add(t)
+            modifiers.update(EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
         for aw in m.awakenings:
-            for t in AWOKEN_MAP[Awakenings(aw.awoken_skill_id)]:
-                modifiers.add(t)
+            modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
 
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
                 'ミニ' in m.name_ja or '(chibi)' in m.name_en:
-            for t in MISC_MAP[MiscModifiers.CHIBI]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.CHIBI])
+
+        # Series Type
+        if m.series.series_type == 'regular':
+            modifiers.update(MISC_MAP[MiscModifiers.REGULAR])
+        if m.series.series_type == 'event':
+            modifiers.update(MISC_MAP[MiscModifiers.EVENT])
+        if m.series.series_type == 'seasonal':
+            modifiers.update(MISC_MAP[MiscModifiers.SEASONAL])
+        if m.series.series_type == 'collab':
+            modifiers.update(MISC_MAP[MiscModifiers.COLLAB])
 
         # Story
         def is_story(m, do_transform=True):
@@ -308,35 +302,27 @@ class MonsterIndex2(aobject):
             return False
 
         if is_story(m):
-            for t in MISC_MAP[MiscModifiers.STORY]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.STORY])
 
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
-            for t in MISC_MAP[MiscModifiers.FARMABLE]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
 
         if self.graph.monster_is_mp_evo(m):
-            for t in MISC_MAP[MiscModifiers.MP]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.MP])
 
         if self.graph.monster_is_rem_evo(m):
-            for t in MISC_MAP[MiscModifiers.REM]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.REM])
 
         # Server
         if m.on_jp:
-            for t in MISC_MAP[MiscModifiers.INJP]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.INJP])
             if not m.on_na:
-                for t in MISC_MAP[MiscModifiers.ONLYJP]:
-                    modifiers.add(t)
+                modifiers.update(MISC_MAP[MiscModifiers.ONLYJP])
         if m.on_na:
-            for t in MISC_MAP[MiscModifiers.INNA]:
-                modifiers.add(t)
+            modifiers.update(MISC_MAP[MiscModifiers.INNA])
             if not m.on_jp:
-                for t in MISC_MAP[MiscModifiers.ONLYNA]:
-                    modifiers.add(t)
+                modifiers.update(MISC_MAP[MiscModifiers.ONLYNA])
         if m.monster_id + 10000 in self.graph.nodes:
             modifiers.add("idjp")
         if m.monster_id > 10000:
