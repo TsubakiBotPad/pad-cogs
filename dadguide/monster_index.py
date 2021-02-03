@@ -228,7 +228,7 @@ class MonsterIndex2(aobject):
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if self.graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
+        if self.graph.cur_evo_type_by_monster(m).value == 1:
             modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
