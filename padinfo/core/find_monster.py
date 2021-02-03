@@ -30,14 +30,19 @@ def calc_ratio(s1, s2):
 
 
 def calc_ratio_prefix(token, full_word, index2, factor=.05):
+    mw = index2.mwt_to_len[full_word] != 1
+    jw = jaro_winkler(token, full_word, factor)
+
     if full_word == token:
         score = 1
     elif len(token) >= 3 and full_word.startswith(token):
         score = .995
+        if mw and jw < score:
+            return score
     else:
-        score = jaro_winkler(token, full_word, factor)
+        score = jw
 
-    if index2.mwt_to_len[full_word] != 1:
+    if mw:
         score = score ** 4 * index2.mwt_to_len[full_word]
 
     return score
