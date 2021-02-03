@@ -647,18 +647,23 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
+        beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        # TODO: use transformbase modifier instead of relying on base
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        bm, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, 'transformbase ' + query)
         if err:
             await ctx.send(err)
             return
 
-        bm = dgcog.database.graph.get_base_monster(m)
         tfm = dgcog.database.graph.get_monster(dgcog.database.graph.get_next_transform_id_by_monster(bm))
         if not tfm:
-            await ctx.send(f'This monster ([{m.monster_id}] {m.name_en}) does not transform.')
+            await ctx.send(f'Did not find a transforming monster.')
             return
+
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        # also dang figure out what to do about the duplication of ls query function...
+        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, color, bm,
+            tfm, query, base_rarity, acquire_raw, true_evo_type_raw)
 
         menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
