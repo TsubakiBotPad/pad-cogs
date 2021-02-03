@@ -12,6 +12,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.id import IdView
 from padinfo.view_state.id import IdViewState
+from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -92,9 +93,9 @@ class TransformInfoView:
 
         return EmbedView(
             EmbedMain(
-                color=color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
-                url=puzzledragonx(m)
+                color=state.color,
+                title=MonsterHeader.long_v2(t_mon).to_markdown(),
+                url=puzzledragonx(t_mon)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(t_mon)),
             embed_footer=pad_info_footer_with_state(state),

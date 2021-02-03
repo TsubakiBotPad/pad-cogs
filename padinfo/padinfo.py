@@ -38,6 +38,7 @@ from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji
 from padinfo.tf_menu import TransformInfoMenu
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     pass
@@ -629,8 +630,8 @@ class PadInfo(commands.Cog):
         """Show info about a transform card, including some helpful details about the base card."""
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        bm, err, _, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
-            perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3)
+        bm, err, debug_info, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
+            await perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3)
 
         if err:
             await ctx.send(err)
@@ -642,8 +643,10 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, color, bm,
-            tfm, base_rarity, acquire_raw, true_evo_type_raw)
+        friend_cog = self.bot.get_cog("Friend")
+        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query, color,
+            bm, tfm, base_rarity, acquire_raw, true_evo_type_raw)
         menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 

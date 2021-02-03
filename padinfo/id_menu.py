@@ -14,7 +14,6 @@ from padinfo.view.materials import MaterialView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
 from padinfo.view.pic import PicsView
-from padinfo.view.transform import TransformInfoView
 from padinfo.view_state.id import IdViewState
 
 if TYPE_CHECKING:
