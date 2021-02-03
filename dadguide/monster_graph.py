@@ -410,7 +410,9 @@ class MonsterGraph(object):
         return False
 
     def monster_is_regular_evo(self, monster: MonsterModel) -> bool:
-        return not (self.monster_is_reversable_evo(monster) or self.monster_is_reincarnated(monster))
+        return not (self.monster_is_reversable_evo(monster)
+                    or self.monster_is_reincarnated(monster)
+                    or self.monster_is_base(monster))
 
     def monster_is_second_ultimate(self, monster: MonsterModel) -> bool:
         if self.monster_is_reversable_evo(monster) == EvoType.UvoAwoken:
