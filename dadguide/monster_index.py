@@ -228,11 +228,11 @@ class MonsterIndex2(aobject):
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if self.graph.monster_is_regular_evo(m):
+        if self.graph.monster_is_normal_evo(m):
             modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
-        if self.graph.monster_is_reversable_evo(m) and not special_evo:
+        if self.graph.monster_is_reversible_evo(m) and not special_evo:
             modifiers.update(EVO_MAP[EvoTypes.UVO])
 
         # UUvo
