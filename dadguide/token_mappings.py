@@ -37,7 +37,7 @@ TYPE_MAP = {
     MonsterType.Attacker: ('attacker', 'atk'),
     MonsterType.Devil: ('devil', 'dv'),
     MonsterType.Machine: ('machine', 'mech'),
-    MonsterType.Awoken: ('awoken',),
+    MonsterType.Awoken: ('awokentype', 'awotype'),
     MonsterType.Enhance: ('enhance', 'fodder', 'enh'),
     MonsterType.Vendor: ('vendor', 'redeemable'),
 }
