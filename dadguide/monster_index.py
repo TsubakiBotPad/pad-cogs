@@ -184,10 +184,10 @@ class MonsterIndex2(aobject):
             return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if tcount(n1) == tcount(n2) or max(tcount(n1), tcount(n2)) < 3:
+        if token_count(n1) == token_count(n2) or max(token_count(n1), token_count(n2)) < 3:
             return cls._name_to_tokens(oname)
         else:
-            return cls._name_to_tokens(min(n1, n2, key=tcount))
+            return cls._name_to_tokens(min(n1, n2, key=token_count))
 
     async def get_modifiers(self, m):
         modifiers = set()
@@ -356,7 +356,7 @@ def combine_tokens_dicts(d1, *ds):
     return combined
 
 
-def tcount(tstr):
+def token_count(tstr):
     tstr = re.sub(r"[^\w ]", "", tstr)
     tstr = re.sub(r"\(.+\)", "", tstr)
     return len([*filter(None, tstr.split())])
