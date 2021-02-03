@@ -75,7 +75,7 @@ class IdMenu:
                         su not in sugs] if m.active_skill else []
             skillup_evo_count = len(sums) - len(vsums)
 
-        if not any([mats, usedin, gemusedin, skillups and not m.stackable]):
+        if not any([mats, usedin, gemusedin, skillups and not m.is_stackable]):
             return None
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))

@@ -59,9 +59,9 @@ class MaterialView:
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=pad_info_footer(),
             embed_fields=[f for f in [
-                mat_use_field(mats, "Evo materials") if mats or not m.stackable else None,
+                mat_use_field(mats, "Evo materials") if mats or not m.is_stackable else None,
                 mat_use_field(usedin, "Material for", 10) if usedin else None,
                 mat_use_field(gemusedin, "Evo gem ({}) is mat for".format(gemid)) if gemusedin else None,
-                skillup_field(skillups, sec, link) if not m.stackable else None
+                skillup_field(skillups, sec, link) if not m.is_stackable else None
             ] if f is not None]
         )

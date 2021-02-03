@@ -64,6 +64,7 @@ class MonsterModel(BaseModel):
         self.attr2 = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable = m['is_inheritable']
+        self.is_stackable = m['is_stackable']
         self.evo_gem_id = m['evo_gem_id']
         self.orb_skin_id = m['orb_skin_id']
         self.cost = m['cost']
@@ -134,11 +135,6 @@ class MonsterModel(BaseModel):
     @property
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
-
-    @property
-    def stackable(self):
-        return any([t in [MonsterType.Evolve, MonsterType.Enhance, MonsterType.Awoken, MonsterType.Vendor]
-                    for t in self.types]) and self.level == 1
 
     def awakening_count(self, awid):
         return len([x for x in self.awakenings if x.awoken_skill_id == awid])
