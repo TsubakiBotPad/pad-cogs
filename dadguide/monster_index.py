@@ -228,15 +228,15 @@ class MonsterIndex2(aobject):
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if self.graph.cur_evo_type_by_monster(m).value == 1:
+        if self.graph.monster_is_regular_evo(m):
             modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
-        if self.graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
+        if self.graph.monster_is_reversable_evo(m) and not special_evo:
             modifiers.update(EVO_MAP[EvoTypes.UVO])
 
         # UUvo
-        if self.graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
+        if self.graph.monster_is_second_ultimate(m):
             modifiers.update(EVO_MAP[EvoTypes.UUVO])
 
         # Transform

@@ -192,6 +192,7 @@ class MonsterGraph(object):
                                    type_2_id=m.type_2_id,
                                    type_3_id=m.type_3_id,
                                    is_inheritable=m.inheritable == 1,
+                                   is_stackable=m.stackable == 1,
                                    evo_gem_id=m.evo_gem_id,
                                    orb_skin_id=m.orb_skin_id,
                                    cost=m.cost,
@@ -384,12 +385,38 @@ class MonsterGraph(object):
     def get_evo_by_monster_id(self, monster_id) -> Optional[EvolutionModel]:
         return self._get_edge_model(self.graph[monster_id], 'back_evolution')
 
+    def get_evo_by_monster(self, monster) -> Optional[EvolutionModel]:
+        return self._get_edge_model(self.graph[monster.monster_id], 'back_evolution')
+
     def cur_evo_type_by_monster_id(self, monster_id: int) -> EvoType:
         prev_evo = self.get_evo_by_monster_id(monster_id)
         return EvoType(prev_evo.evolution_type) if prev_evo else EvoType.Base
 
     def cur_evo_type_by_monster(self, monster: MonsterModel) -> EvoType:
         return self.cur_evo_type_by_monster_id(monster.monster_no)
+
+    def monster_is_reversable_evo(self, monster: MonsterModel) -> bool:
+        prev_evo = self.get_evo_by_monster(monster)
+        return prev_evo is not None and prev_evo.reversible
+
+    def monster_is_reincarnated(self, monster: MonsterModel) -> bool:
+        if self.monster_is_reversable_evo(monster):
+            return False
+        prev = self.get_prev_evolution_by_monster(monster)
+        while prev:
+            if not self.monster_is_reversable_evo(prev):
+                return True
+            prev = self.get_prev_evolution_by_monster(prev)
+        return False
+
+    def monster_is_regular_evo(self, monster: MonsterModel) -> bool:
+        return not (self.monster_is_reversable_evo(monster) or self.monster_is_reincarnated(monster))
+
+    def monster_is_second_ultimate(self, monster: MonsterModel) -> bool:
+        if self.monster_is_reversable_evo(monster) == EvoType.UvoAwoken:
+            prev = self.get_prev_evolution_by_monster(monster)
+            if prev is not None:
+                return self.monster_is_reversable_evo(prev) == EvoType.UvoAwoken
 
     def true_evo_type_by_monster_id(self, monster_id: int) -> InternalEvoType:
         if self.get_base_id_by_id(monster_id) == monster_id:
