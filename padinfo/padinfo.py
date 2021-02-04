@@ -150,7 +150,7 @@ class PadInfo(commands.Cog):
         menu_type = ims['menu_type']
         if menu_type == LeaderSkillMenu.MENU_TYPE:
             friend_cog = self.bot.get_cog("Friend")
-            friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+            friends = friend_cog and (await friend_cog.get_friends(original_author_id)) or []
             embed_menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
             if not (await embed_menu.should_respond(message, reaction, member)):
                 return
