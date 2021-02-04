@@ -169,7 +169,7 @@ class FindMonster:
                     key=lambda nt: calc_ratio_prefix(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
         if not ms:
-            return None, None
+            return None
         for match in ms:
             score = calc_ratio_prefix(t, match, index2)
             for m in index2.manual[match]:
@@ -200,6 +200,25 @@ class FindMonster:
                 return None
 
         return potential_evos
+
+    def get_most_eligable_monster(self, monsters, dgcog, tokenized_query=None, monster_score=None):
+        if monster_score is None:
+            monster_score = defaultdict(int)
+        if tokenized_query is None:
+            tokenized_query = []
+        return max(monsters,
+                   key=lambda m: (monster_score[m],
+                                  not m.is_equip,
+                                  # Match na on id overlap
+                                  bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
+                                  SERIES_TYPE_PRIORITY.get(m.series.series_type),
+                                  m.on_na if m.series.series_type == "collab" else 0,
+                                  dgcog.database.graph.monster_is_rem_evo(m),
+                                  not all(t.value in [0, 12, 14, 15] for t in m.types),
+                                  not any(t.value in [0, 12, 14, 15] for t in m.types),
+                                  -dgcog.database.graph.get_base_id(m),
+                                  m.rarity,
+                                  m.monster_no_na))
 
     def get_monster_evos(self, database, monster_gen, monster_score):
         monster_evos = set()
@@ -247,9 +266,17 @@ async def findMonster1(dgcog, query):
     return m, err, debug_info
 
 
-async def _findMonster(dgcog, query) -> Tuple["NamedMonster", Optional[str], Optional[str]]:
+async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional[str], Optional[str]]:
     await dgcog.wait_until_ready()
-    return dgcog.index.find_monster(query)
+    try:
+        return dgcog.index.find_monster(query)
+    except:
+        prefix = (await dgcog.bot.get_valid_prefixes())[0]
+        return (None,
+                f"Sorry, id1 doesn't support this query and we are no longer"
+                f" developing id1 features. Please use `{prefix}id3 {query}`! You can"
+                f" opt into using the beta all the time by running `{prefix}idset beta y`!",
+                None)
 
 
 async def findMonster3(dgcog, query):
@@ -265,7 +292,7 @@ async def findMonster3(dgcog, query):
 async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
     await dgcog.wait_until_ready()
 
-    query = rmdiacritics(query).lower()
+    query = rmdiacritics(query).lower().replace(",", "")
     tokenized_query = query.split()
     mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
@@ -291,16 +318,16 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
 
     if name_query_tokens:
         monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, neg_name_tokens, dgcog.index2)
-        if monster_gen is None:
+        if not monster_gen:
             # No monsters match the given name tokens
             return 0, None
+        monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, monster_score)
     else:
         # There are no name tokens in the query
         monster_gen = {*dgcog.database.get_all_monsters()}
         monster_score = defaultdict(int)
 
     # Expand search to the evo tree
-    monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, monster_score)
     monster_gen = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, monster_score, monster_gen,
                                                  dgcog.index2.modifiers)
     if not monster_gen:
@@ -310,19 +337,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
     print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
     # Return most likely candidate based on query.
-    mon = max(monster_gen,
-              key=lambda m: (monster_score[m],
-                             not m.is_equip,
-                             # Match na on id overlap
-                             bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
-                             SERIES_TYPE_PRIORITY.get(m.series.series_type),
-                             m.on_na if m.series.series_type == "collab" else 0,
-                             dgcog.database.graph.monster_is_rem_evo(m),
-                             not all(t.value in [0, 12, 14, 15] for t in m.types),
-                             not any(t.value in [0, 12, 14, 15] for t in m.types),
-                             -dgcog.database.graph.get_base_id(m),
-                             m.rarity,
-                             m.monster_no_na))
+    mon = find_monster.get_most_eligable_monster(monster_gen, dgcog, tokenized_query, monster_score)
 
     return monster_score[mon], mon
 
