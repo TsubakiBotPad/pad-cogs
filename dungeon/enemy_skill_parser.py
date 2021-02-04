@@ -2,7 +2,7 @@ from collections import OrderedDict
 from typing import List
 
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
-from dungeon.models.EnemySkill import EnemySkill
+from dungeon.models.EnemySkill import EnemySkill, ESNone
 
 generic_symbols = {
     'bind': "❌",
@@ -138,7 +138,8 @@ emoji_dict = {
     'skill_bind': '❌🪄',
     'do_nothing': '💤',
     'awoken_bind': '❌👁️',
-    'no_skyfall': 'No🌧'
+    'no_skyfall': 'No🌧',
+    'bind': "❌"
 }
 TargetType = {
     'Unset': -1,
@@ -279,8 +280,13 @@ Types = {
 "Additionally a lot of these are based on the pipeline"
 
 
-def process_enemy_skill(encounter: dict, skill: dict, es: EnemySkill, esd: EnemySkillDatabase):
+def process_enemy_skill2(encounter: dict, skill: dict, es: EnemySkill, esd: EnemySkillDatabase):
     effect = ''
+    if isinstance(es, ESNone):
+        if es.type == -1:
+            return '(Countdown)'
+        else:
+            return ''
     try:
         func = SkillDictionary[es.type]
     except KeyError:
@@ -411,14 +417,14 @@ def attributes_to_emoji(atts, emoji_map=Attributes):
 
 def minmax(min, max, extra: str = ""):
     if min == max:
-        return max + extra
+        return str(max) + extra
     else:
         return "{}{}-{}{}".format(min, extra, max, extra)
 
 
 # These are helper level functions
 def ESOrbSingleChange(from_attr, to_attr):
-    return "{}{}{}".format(Attributes[from_attr], generic_symbols['to'], Attributes[to_attr])
+    return "{}{}{}".format(attributes_to_emoji(from_attr), generic_symbols['to'], attributes_to_emoji(to_attr))
 
 
 def ESOrbCount(from_attr, to_attr, amount):
@@ -455,9 +461,9 @@ def ESBoardChange(attributes):
 
 def ESOrbSeal(positions, turns, row_col):
     if row_col == 0:
-        return '{}C: {} for {}'.format(emoji_dict['tape'], ','.join(positions), turns)
+        return '{}C: {} for {}'.format(emoji_dict['tape'], ','.join(str(p) for p in positions), turns)
     else:
-        return '{}R: {} for {}'.format(emoji_dict['tape'], ','.join(positions), turns)
+        return '{}R: {} for {}'.format(emoji_dict['tape'], ','.join(str(p) for p in positions), turns)
 
 
 # I don't know what I am doing, start simple by manually doing every skill type
@@ -710,7 +716,7 @@ def ES73Resolve(es: EnemySkill):
 def ES74DamageShield(es: EnemySkill):
     turns = es.params[1]
     shield_percent = es.params[2]
-    emoji = emoji_dict['defense' + shield_percent]
+    emoji = emoji_dict['defense' + str(shield_percent)]
     if emoji is None:
         emoji = emoji_dict['defense'] + shield_percent + '%'
     return "{} for {}".format(emoji, turns)
@@ -722,6 +728,7 @@ def ES75LeaderSwap(es: EnemySkill):
 
 
 def ES76ColumnSpawnMulti(es: EnemySkill):
+    return 'TODO'
     position1 = position_bitmap(es.params[1])
     position2 = position_bitmap(es.params[3])
     att1 = attribute_bitmap(es.params[2])
@@ -734,10 +741,11 @@ def ES77ColumnSpawnMultiAttack(es: EnemySkill):
 
 
 def ES78RowSpawnMulti(es: EnemySkill):
+    return 'TODO'
     position1 = position_bitmap(es.params[1])
     position2 = position_bitmap(es.params[3])
     att1 = attribute_bitmap(es.params[2])
-    att2 = attribute_bitmap(es.params[3])
+    att2 = attribute_bitmap(es.params[4])
     return ESColumnRow(position1, att1, position2, att2, 1)
 
 
@@ -769,9 +777,9 @@ def ES83SkillSet(es: EnemySkill, esd: EnemySkillDatabase):
                     for e in effect:
                         effects.append(e)
                 else:
-                    effects.append(func(es))
+                    effects.append(func(skill))
         except KeyError:
-            effects.append(ESUnknown(es))
+            effects.append(ESUnknown(skill))
 
     return effects
     # TODO Finish this
@@ -919,7 +927,7 @@ def ES107AttributeUnmatchable(es: EnemySkill):
 
 
 def ES108OrbChangeAttackBits(es: EnemySkill):
-    return ESOrbSingleChange(es.params[2], es.params[3])
+    return ESOrbSingleChange(attribute_bitmap(es.params[2]), attribute_bitmap(es.params[3]))
 
 
 def ES109SpinnerRandom(es: EnemySkill):

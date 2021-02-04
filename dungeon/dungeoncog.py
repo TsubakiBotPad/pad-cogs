@@ -1,4 +1,7 @@
 import logging
+from io import BytesIO
+from typing import List
+
 import discord
 
 from tsutils import Menu, EmojiUpdater
@@ -10,12 +13,18 @@ from dadguide import DadguideDatabase, database_manager
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
+from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
 
 from dungeon.grouped_skillls import GroupedSkills
 from dungeon.processed_monster import ProcessedMonster
 
+# If these are unused remember to remove
+import numpy as np
+import pandas as pd
+# import weasyprint as wsp
+from pyppeteer import launch
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
@@ -257,52 +266,6 @@ def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
         text = '{} while HP > {}'.format(turn_text, always_trigger_above)
     return text
 
-"""
-Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
-(for me) objects
-"""
-async def process_behavior(behavior: Behavior, database: DadguideDatabase, q: dict, parent: GroupedSkills = None):
-    skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
-    if skill is None:
-        return "Unknown"
-    skill_name = skill["name_en"]
-    skill_effect = skill["desc_en"]
-    skill_processed_text = process_enemy_skill(skill_effect, q, skill)
-    # skill_processed_text = process_enemy_skill(q, skill, )
-
-    condition = format_condition(behavior.condition)
-    processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition, parent)
-    #embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
-    return processed_skill
-async def process_behavior_group(group: BehaviorGroup, database: DadguideDatabase, q: dict, parent:GroupedSkills = None):
-    condition = format_condition(group.condition)
-    processed_group: GroupedSkills= GroupedSkills(condition, GroupType[group.group_type], parent)
-    for child in group.children:
-        if child.HasField('group'):
-            processed_group.add_group(await process_behavior_group(child.group, database, q, processed_group))
-        elif child.HasField('behavior'):
-            processed_group.add_skill(await process_behavior(child.behavior, database, q, processed_group))
-    return processed_group
-   # return output
-
-# Format:
-# Skill Name    Type:Preemptive/Passive/Etc
-# Skill Effect
-# Condition
-async def process_monster(mb: MonsterBehavior, q: dict, database: DadguideDatabase):
-    # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
-    """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
-                          description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
-    monster: ProcessedMonster = ProcessedMonster(q["name_en"], q['hp'], q['atk'], q['defence'], q['turns'], q['level'])
-    if mb is None:
-        return monster
-    levelBehavior = behaviorForLevel(mb, q["level"])
-    if levelBehavior is None:
-        return monster
-    for group in levelBehavior.groups:
-        monster.add_group(await process_behavior_group(group, database, q))
-
-    return monster
 
 def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, q: dict, indent=""):
     skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
@@ -394,7 +357,66 @@ class DungeonCog(commands.Cog):
         self.current_monster = '👹'
         self.verbose_monster = '📜'
         self.preempt_monster = '⚡'
-        self.esd = EnemySkillDatabase(json_file)
+        self.esd: EnemySkillDatabase = EnemySkillDatabase(json_file)
+
+    """
+    Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
+    (for me) objects
+    """
+
+    async def process_behavior(self, behavior: Behavior, database: DadguideDatabase, q: dict, parent: GroupedSkills = None):
+        skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
+        if skill is None:
+            return "Unknown"
+        skill_name = skill["name_en"]
+        skill_effect = skill["desc_en"]
+        # skill_processed_text = process_enemy_skill(skill_effect, q, skill)
+        es = self.esd.get_es_from_id(skill['enemy_skill_id'])
+        skill_processed_text = process_enemy_skill2(q, skill, es, self.esd)
+        es_type = [es.type]
+        if es.type in (83, 95):
+            for s in list(filter(None, es.params[1:11])):
+                es_type.append(self.esd.get_es_from_id(s).type)
+
+
+        condition = format_condition(behavior.condition)
+        processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition,
+                                                         parent, es_type)
+        # embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
+        return processed_skill
+
+    async def process_behavior_group(self, group: BehaviorGroup, database: DadguideDatabase, q: dict,
+                                     parent: GroupedSkills = None):
+        condition = format_condition(group.condition)
+        processed_group: GroupedSkills = GroupedSkills(condition, GroupType[group.group_type], parent)
+        for child in group.children:
+            if child.HasField('group'):
+                processed_group.add_group(await self.process_behavior_group(child.group, database, q, processed_group))
+            elif child.HasField('behavior'):
+                processed_group.add_skill(await self.process_behavior(child.behavior, database, q, processed_group))
+        return processed_group
+
+    # return output
+
+    # Format:
+    # Skill Name    Type:Preemptive/Passive/Etc
+    # Skill Effect
+    # Condition
+    async def process_monster(self, mb: MonsterBehavior, q: dict, database: DadguideDatabase):
+        # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
+        """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
+                              description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
+        monster: ProcessedMonster = ProcessedMonster(q["name_en"], q['hp'], q['atk'], q['defence'], q['turns'],
+                                                     q['level'])
+        if mb is None:
+            return monster
+        levelBehavior = behaviorForLevel(mb, q["level"])
+        if levelBehavior is None:
+            return monster
+        for group in levelBehavior.groups:
+            monster.add_group(await self.process_behavior_group(group, database, q))
+
+        return monster
 
     async def make_emoji_dictionary(self, ctx, pm: ProcessedMonster = None, scroll_monsters=None, scroll_floors=None,
                                     floor_info: "list[int]" = None, dungeon_info: "list[int]" = None):
@@ -414,6 +436,8 @@ class DungeonCog(commands.Cog):
 
         emoji_to_embed[self.menu.emoji['no']] = self.menu.reaction_delete_message
         return emoji_to_embed
+
+
     async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=60):
         if starting_menu_emoji not in emoji_to_embed.emoji_dict:
             # Selected menu wasn't generated for this monster
@@ -432,6 +456,18 @@ class DungeonCog(commands.Cog):
         except Exception as ex:
             logger.error('Menu failure', exc_info=True)
 
+    @commands.command()
+    async def dumb_table(self, ctx):
+        cars = {'Brand': ['Honda Civic', 'Toyota Corolla', 'Ford Focus', 'Audi A4'],
+                'Price': [22000, 25000, 27000, 35000]
+                }
+        df = pd.DataFrame(cars, columns=['Brand', 'Price'])
+        browser = await launch()
+        page = await browser.newPage()
+        await page.setContent(df.to_html())
+        img = BytesIO(await page.screenshot())
+        img.seek(0)
+        await ctx.send('Test', file=discord.File(img, filename='test.png'))
     @commands.command()
     async def encounter_info(self, ctx, query: str, new: bool = False, raw: bool = False):
         """This does stuff!"""
@@ -452,7 +488,7 @@ class DungeonCog(commands.Cog):
         if raw:
             print("idk")
         elif new:
-            monster = await process_monster(behavior_test, test_result, dg_cog.database)
+            monster = await self.process_monster(behavior_test, test_result, dg_cog.database)
             await ctx.send(embed= await monster.make_embed())
         else:
             await ctx.send(embed=format_monster_embed(behavior_test, test_result, dg_cog.database))
@@ -583,7 +619,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                pm =  await process_monster(behavior_test, enc,dg_cog.database)
+                pm =  await self.process_monster(behavior_test, enc,dg_cog.database)
                 if r['stage'] > current_stage:
                     # print("Added")
                     current_stage = r['stage']
@@ -610,8 +646,9 @@ class DungeonCog(commands.Cog):
             output += "\n{} {} {}".format(k, "➡", v)
         embed.add_field(name="Original -> Final", value=output)
         await ctx.send(embed=embed)
+
     @commands.command()
-    async def weather_warning(self, ctx, difficulty: int = -1):
+    async def weather_warning(self, ctx, name: str, difficulty: int = -1):
         '''
                 Difficulty: Default to the highest difficulty
                 Starting: 1 is condensed information. 2 is detailed information. 3 is preempts only
@@ -663,7 +700,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                pm = await process_monster(behavior_test, enc, dg_cog.database)
+                pm = await self.process_monster(behavior_test, enc, dg_cog.database)
                 if r['stage'] > current_stage:
                     # print("Added")
                     current_stage = r['stage']
@@ -672,9 +709,62 @@ class DungeonCog(commands.Cog):
                 else:
                     pm_dungeon[current_stage - 1].append(pm)
         skills = []
+        # array of params for a table of hell:
+        # [[resolves], [debuffs], Absurd Preempt Damage, awoken bind, regular bind, skill delay,[hazard emojis], [skyfall hazard emojis], fucks with leader,
+        # unmatchables, [skyfalls]]
+
+        idk = []
         for f in pm_dungeon:
+            print('Hi')
+            floor_skills = []
             for m in f:
-                skills.extend(await m.collect_skills())
+                floor_skills.extend(await m.collect_skills())
+            floor_dangers = await self.danger_skill_checker(floor_skills)
+            idk.append(floor_dangers)
+
+        df = pd.DataFrame(idk, columns=['Resolves', 'Debuffs', 'Attack', 'A. Bind'])
+        browser = await launch()
+        page = await browser.newPage()
+        await page.setContent(df.to_html())
+        img = BytesIO(await page.screenshot())
+        img.seek(0)
+        await ctx.send('Test', file=discord.File(img, filename='test.png'))
+
+
+
+    async def danger_skill_checker(self, skills: List[ProcessedSkill]):
+        resolves = set()
+        debuffs = set()
+        absurd_preempt = 'Maybe Later'
+        awoken_bind = set()
+        regular_bind = set()
+        skill_delay = set()
+        hazards = set()
+        skyfalls = set()
+        leader_fuck = set()
+        unmatchables = set()
+        skyfalls = set()
+        for s in skills:
+            for es_id in s.es_type:
+                if s.is_passive_preempt:
+                    if es_id == 73:
+                        print(es_id)
+                        resolves.add(emoji_dict['resolve'])
+                    elif es_id == 129:
+                        resolves.add(emoji_dict['super_resolve'])
+                    elif es_id == 39:
+                        debuffs.add(emoji_dict['time_debuff'])
+                    elif es_id == 105:
+                        debuffs.add(emoji_dict['rcv_debuff'] if emoji_dict['rcv_debuff'] in s.processed else emoji_dict['rcv_buff'])
+                    elif es_id == 130:
+                        debuffs.add(emoji_dict['atk_debuff'])
+                    elif es_id == 88:
+                        awoken_bind.add(emoji_dict['awoken_bind'])
+        ret = [''.join(resolves), ''.join(debuffs), absurd_preempt, ''.join(awoken_bind)]
+        print(ret)
+        return ret
+
+
 
 """
 "list all hazard resist that appears in dg

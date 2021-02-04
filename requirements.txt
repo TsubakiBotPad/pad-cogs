@@ -17,4 +17,6 @@ tabulate
 tsutils
 wheel
 protobuf
-
+numpy
+pandas
+pyppeteer

@@ -16,3 +16,11 @@ class EnemySkill(object):
 
     def process(self):
         return "Unknown: [{},{},{},{}]".format(self.id, self.name, self.type, self.params)
+
+class ESNone(EnemySkill):
+    def __init__(self, id = None):
+        self.enemy_skill_id = id
+        self.name = None
+        self.type = None
+        self.flags = None
+        self.params = None

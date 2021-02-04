@@ -3,7 +3,7 @@ import json
 from io import StringIO
 
 from dungeon.json_guff import itsRawMate
-from dungeon.models.EnemySkill import EnemySkill
+from dungeon.models.EnemySkill import EnemySkill, ESNone
 
 
 class EnemySkillDatabase(object):
@@ -25,4 +25,7 @@ class EnemySkillDatabase(object):
         self.enemy_skills_dict = {es.enemy_skill_id: es for es in enemy_skills}
 
     def get_es_from_id(self, id):
-        return self.enemy_skills_dict[id]
+        try:
+            return self.enemy_skills_dict[id]
+        except KeyError:
+            return ESNone(id)
