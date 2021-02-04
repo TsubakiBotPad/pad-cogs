@@ -1251,11 +1251,11 @@ class PadInfo(commands.Cog):
                            "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
                            "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
             return
-        msg = ('Lookup failed: {0}.\n'
-               'Try one of <id>, <name>, [argbld]/[rgbld] <name>. '
-               'Unexpected results? Use {1.prefix}helpid for more info.').format(err, ctx)
-        await ctx.send(box(msg))
-        await ctx.send('Looking for the beta test? Type `{0.prefix}idset beta y`'.format(ctx))
+        msg = ('Lookup failed: {0}\n\n').format(err)
+        await ctx.send(msg+ 'Try opting into the beta of our new id lookup for better results!'
+                       ' Try `{0.prefix}id3 {1}` to use it one time, or `{0.prefix}idset beta y`'
+                       ' to permanently opt into it (you can opt out with `{0.prefix}idset beta n`'
+                       ' if you want to later).'.format(ctx, query))
 
     @commands.command(aliases=["iddebug"])
     async def debugid(self, ctx, *, query):
