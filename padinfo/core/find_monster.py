@@ -337,7 +337,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
     print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
     # Return most likely candidate based on query.
-    mon = find_monster.get_most_eligable_monster(dgcog, tokenized_query, monster_score)
+    mon = find_monster.get_most_eligable_monster(monster_gen, dgcog, tokenized_query, monster_score)
 
     return monster_score[mon], mon
 
