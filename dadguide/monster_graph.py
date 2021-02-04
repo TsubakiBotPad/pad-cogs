@@ -415,10 +415,11 @@ class MonsterGraph(object):
                     or self.monster_is_base(monster))
 
     def monster_is_second_ultimate(self, monster: MonsterModel) -> bool:
-        if self.monster_is_reversible_evo(monster) == EvoType.UvoAwoken:
+        if self.monster_is_reversible_evo(monster):
             prev = self.get_prev_evolution_by_monster(monster)
             if prev is not None:
-                return self.monster_is_reversible_evo(prev) == EvoType.UvoAwoken
+                return self.monster_is_reversible_evo(prev)
+        return False
 
     def true_evo_type_by_monster_id(self, monster_id: int) -> InternalEvoType:
         if self.get_base_id_by_id(monster_id) == monster_id:
