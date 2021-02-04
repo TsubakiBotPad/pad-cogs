@@ -217,6 +217,7 @@ class PadInfo(commands.Cog):
                 if err:
                     await asyncio.sleep(1)
                     await ctx.send(err)
+
             asyncio.create_task(send_error(err))
 
             await self._do_idmenu(ctx, m, self.id_emoji)
@@ -1252,10 +1253,10 @@ class PadInfo(commands.Cog):
                            "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
             return
         msg = ('Lookup failed: {0}\n\n').format(err)
-        await ctx.send(msg+ 'Try opting into the beta of our new id lookup for better results!'
-                       ' Try `{0.prefix}id3 {1}` to use it one time, or `{0.prefix}idset beta y`'
-                       ' to permanently opt into it (you can opt out with `{0.prefix}idset beta n`'
-                       ' if you want to later).'.format(ctx, query))
+        await ctx.send(msg + 'Try opting into the beta of our new id lookup for better results!'
+                             ' Try `{0.prefix}id3 {1}` to use it one time, or `{0.prefix}idset beta y`'
+                             ' to permanently opt into it (you can opt out with `{0.prefix}idset beta n`'
+                             ' if you want to later).'.format(ctx, query))
 
     @commands.command(aliases=["iddebug"])
     async def debugid(self, ctx, *, query):
@@ -1352,9 +1353,9 @@ class PadInfo(commands.Cog):
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod"])
-    async def idmeaning(self, ctx, *, modifier):
+    async def idmeaning(self, ctx, *, token):
         """Get all the meanings of a token (bold signifies base of a tree)"""
-        modifier = modifier.replace(" ", "")
+        token = token.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
 
         await DGCOG.wait_until_ready()
@@ -1372,8 +1373,8 @@ class PadInfo(commands.Cog):
 
             o = ""
             so = []
-            for m in sorted(dict[modifier], key=lambda m: m.monster_id):
-                if (m in DGCOG.index2.mwtoken_creators[modifier]) == mwtoken:
+            for m in sorted(dict[token], key=lambda m: m.monster_id):
+                if (m in DGCOG.index2.mwtoken_creators[token]) == mwtoken:
                     so.append(m)
             if len(so) > 5:
                 o += f"\n\n{type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
@@ -1387,37 +1388,49 @@ class PadInfo(commands.Cog):
         o += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
         o += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
 
+        submwtokens = [t for t in DGCOG.index2.multi_word_tokens if token in t]
+        if submwtokens:
+            o += "\n\n[Multi-word Super-tokens]\n"
+            for t in submwtokens:
+                creators = sorted(DGCOG.index2.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
+                o += f"{' '.join(t).title()}"
+                o += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
+                o += (" ( \u2014> " +
+                      str(find_monster.get_most_eligable_monster(DGCOG.index2.all_name_tokens[''.join(t)],
+                                                                 DGCOG).monster_id)
+                      + ")\n")
+
         def additmods(ms, om):
             if len(ms) == 1:
                 return ""
             return "\n\tAlternate names: " + ', '.join(inline(m) for m in ms if m != om)
 
         meanings = [
-            *["Evo: " + k.value + additmods(v, modifier)
-              for k, v in tms.EVO_MAP.items() if modifier in v],
-            *["Type: " + get_type_emoji(k) + ' ' + k.name + additmods(v, modifier)
-              for k, v in tms.TYPE_MAP.items() if modifier in v],
-            *["Misc: " + k.value + additmods(v, modifier)
-              for k, v in tms.MISC_MAP.items() if modifier in v],
-            *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, modifier)
-              for k, v in tms.AWOKEN_MAP.items() if modifier in v],
+            *["Evo: " + k.value + additmods(v, token)
+              for k, v in tms.EVO_MAP.items() if token in v],
+            *["Type: " + get_type_emoji(k) + ' ' + k.name + additmods(v, token)
+              for k, v in tms.TYPE_MAP.items() if token in v],
+            *["Misc: " + k.value + additmods(v, token)
+              for k, v in tms.MISC_MAP.items() if token in v],
+            *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, token)
+              for k, v in tms.AWOKEN_MAP.items() if token in v],
             *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") +
-              additmods(v, modifier)
-              for k, v in tms.COLOR_MAP.items() if modifier in v],
+              additmods(v, token)
+              for k, v in tms.COLOR_MAP.items() if token in v],
             *["Sub attr: " + get_attribute_emoji_by_enum(False, k) + ' ' + k.name.replace("Nil", "None") +
-              additmods(v, modifier)
-              for k, v in tms.SUB_COLOR_MAP.items() if modifier in v],
+              additmods(v, token)
+              for k, v in tms.SUB_COLOR_MAP.items() if token in v],
             *["Dual attr: " + get_attribute_emoji_by_enum(k[0], k[1]) + ' ' + k[0].name.replace("Nil", "None") +
-              '/' + k[1].name.replace("Nil", "None") + additmods(v, modifier)
-              for k, v in tms.DUAL_COLOR_MAP.items() if modifier in v],
-            *["Series: " + series[k].name_en + additmods(v, modifier)
-              for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if modifier in v],
+              '/' + k[1].name.replace("Nil", "None") + additmods(v, token)
+              for k, v in tms.DUAL_COLOR_MAP.items() if token in v],
+            *["Series: " + series[k].name_en + additmods(v, token)
+              for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if token in v],
 
-            *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", modifier)],
-            *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", modifier)],
+            *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", token)],
+            *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", token)],
             *[f"[UNSUPPORTED] Multiple awakenings: {m}x {awakenings[a.value].name_en}"
-              f"{additmods([f'{m}*{d}' for d in v], modifier)}"
-              for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), modifier)
+              f"{additmods([f'{m}*{d}' for d in v], token)}"
+              for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), token)
               for a, v in tms.AWOKEN_MAP.items() if ag in v]
         ]
 
@@ -1425,4 +1438,4 @@ class PadInfo(commands.Cog):
             for page in pagify("\n".join(meanings) + "\n\n" + o.strip()):
                 await ctx.send(page)
         else:
-            await ctx.send(f"There are no modifiers that match `{modifier}`.")
+            await ctx.send(f"There are no modifiers that match `{token}`.")
