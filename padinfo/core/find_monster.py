@@ -247,9 +247,16 @@ async def findMonster1(dgcog, query):
     return m, err, debug_info
 
 
-async def _findMonster(dgcog, query) -> Tuple["NamedMonster", Optional[str], Optional[str]]:
+async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional[str], Optional[str]]:
     await dgcog.wait_until_ready()
-    return dgcog.index.find_monster(query)
+    try:
+        return dgcog.index.find_monster(query)
+    except:
+        return (None,
+                "Sorry, id1 doesn't support this query and we are no longer"
+                " developing id1 features. Please use `^id3 <query>`! You can"
+                " opt into using the beta all the time by running `^idset beta y`!",
+                None)
 
 
 async def findMonster3(dgcog, query):
