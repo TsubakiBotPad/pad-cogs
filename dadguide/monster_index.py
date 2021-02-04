@@ -121,6 +121,13 @@ class MonsterIndex2(aobject):
                     if t in nametokens:
                         self.add_name_token(self.name_tokens, t, m)
 
+            # Find likely treenames
+            treenames = set()
+            for me in self.graph.get_alt_monsters(m):
+                match = re.match("(?:Awoken|Reincarnated) (.*)", me.name_en)
+                if match:
+                    treenames.add(match.group(1))
+
             # Add important tokens
             if autotoken:
                 # Add a consistant last token as important token
@@ -128,7 +135,7 @@ class MonsterIndex2(aobject):
                     self.add_name_token(self.name_tokens, token, m)
             elif not self.monster_id_to_nametokens[m.monster_id]:
                 # Add name tokens by guessing which ones are important
-                for token in self._get_important_tokens(m.name_en) + self._name_to_tokens(m.roma_subname):
+                for token in self._get_important_tokens(m.name_en, treenames) + self._name_to_tokens(m.roma_subname):
                     self.add_name_token(self.name_tokens, token, m)
                     if m.is_equip:
                         possessives = re.findall(r"(\w+)'s", m.name_en.lower())
@@ -150,7 +157,7 @@ class MonsterIndex2(aobject):
                 if m.is_equip:
                     for mevo in self.graph.get_alt_monsters(m):
                         if not mevo.is_equip:
-                            for token2 in self._get_important_tokens(mevo.name_en):
+                            for token2 in self._get_important_tokens(mevo.name_en, treenames):
                                 self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
@@ -172,19 +179,24 @@ class MonsterIndex2(aobject):
     def _name_to_tokens(oname):
         if not oname:
             return []
-        oname = oname.lower()
+        oname = oname.lower().replace(',', '')
         name = re.sub(r'[\-+\']', ' ', oname)
         name = re.sub(r'[^a-z0-9 ]', '', name)
         return [t.strip() for t in set(name.split() + oname.split()) if t]
 
     @classmethod
-    def _get_important_tokens(cls, oname):
+    def _get_important_tokens(cls, oname, treenames=None):
+        if treenames is None:
+            treenames = set()
+
         name = oname.split(", ")
         if len(name) == 1:
             return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if token_count(n1) == token_count(n2) or max(token_count(n1), token_count(n2)) < 3:
+        if treenames.intersection((n1, n2)):
+            return [t for n in treenames.intersection((n1, n2)) for t in cls._name_to_tokens(n)]
+        elif token_count(n1) == token_count(n2) or max(token_count(n1), token_count(n2)) < 3:
             return cls._name_to_tokens(oname)
         else:
             return cls._name_to_tokens(min(n1, n2, key=token_count))
@@ -357,6 +369,5 @@ def combine_tokens_dicts(d1, *ds):
 
 
 def token_count(tstr):
-    tstr = re.sub(r"[^\w ]", "", tstr)
     tstr = re.sub(r"\(.+\)", "", tstr)
-    return len([*filter(None, tstr.split())])
+    return len(re.split(r'\W+', tstr))
