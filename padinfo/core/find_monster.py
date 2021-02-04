@@ -43,7 +43,7 @@ def calc_ratio_prefix(token, full_word, index2, factor=.05):
         score = jw
 
     if mw:
-        score = score ** 4 * index2.mwt_to_len[full_word]
+        score = score ** 10 * index2.mwt_to_len[full_word]
 
     return score
 
