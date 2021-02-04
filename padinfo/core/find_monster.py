@@ -201,6 +201,25 @@ class FindMonster:
 
         return potential_evos
 
+    def get_most_eligable_monster(self, monsters, dgcog, tokenized_query=None, monster_score=None):
+        if monster_score is None:
+            monster_score = defaultdict(int)
+        if tokenized_query is None:
+            tokenized_query = []
+        return max(monsters,
+                   key=lambda m: (monster_score[m],
+                                  not m.is_equip,
+                                  # Match na on id overlap
+                                  bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
+                                  SERIES_TYPE_PRIORITY.get(m.series.series_type),
+                                  m.on_na if m.series.series_type == "collab" else 0,
+                                  dgcog.database.graph.monster_is_rem_evo(m),
+                                  not all(t.value in [0, 12, 14, 15] for t in m.types),
+                                  not any(t.value in [0, 12, 14, 15] for t in m.types),
+                                  -dgcog.database.graph.get_base_id(m),
+                                  m.rarity,
+                                  m.monster_no_na))
+
     def get_monster_evos(self, database, monster_gen, monster_score):
         monster_evos = set()
         for m in sorted(monster_gen, key=lambda m: monster_score[m], reverse=True):
@@ -318,19 +337,7 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
     print({k: v for k, v in sorted(monster_score.items(), key=lambda kv: kv[1], reverse=True) if k in monster_gen})
 
     # Return most likely candidate based on query.
-    mon = max(monster_gen,
-              key=lambda m: (monster_score[m],
-                             not m.is_equip,
-                             # Match na on id overlap
-                             bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
-                             SERIES_TYPE_PRIORITY.get(m.series.series_type),
-                             m.on_na if m.series.series_type == "collab" else 0,
-                             dgcog.database.graph.monster_is_rem_evo(m),
-                             not all(t.value in [0, 12, 14, 15] for t in m.types),
-                             not any(t.value in [0, 12, 14, 15] for t in m.types),
-                             -dgcog.database.graph.get_base_id(m),
-                             m.rarity,
-                             m.monster_no_na))
+    mon = find_monster.get_most_eligable_monster(dgcog, tokenized_query, monster_score)
 
     return monster_score[mon], mon
 
