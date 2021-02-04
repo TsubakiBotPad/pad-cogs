@@ -169,7 +169,7 @@ class FindMonster:
                     key=lambda nt: calc_ratio_prefix(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
         if not ms:
-            return None, None
+            return None
         for match in ms:
             score = calc_ratio_prefix(t, match, index2)
             for m in index2.manual[match]:
@@ -265,7 +265,7 @@ async def findMonster3(dgcog, query):
 async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
     await dgcog.wait_until_ready()
 
-    query = rmdiacritics(query).lower()
+    query = rmdiacritics(query).lower().replace(",", "")
     tokenized_query = query.split()
     mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
@@ -291,16 +291,16 @@ async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["Mo
 
     if name_query_tokens:
         monster_gen, monster_score = find_monster.process_name_tokens(name_query_tokens, neg_name_tokens, dgcog.index2)
-        if monster_gen is None:
+        if not monster_gen:
             # No monsters match the given name tokens
             return 0, None
+        monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, monster_score)
     else:
         # There are no name tokens in the query
         monster_gen = {*dgcog.database.get_all_monsters()}
         monster_score = defaultdict(int)
 
     # Expand search to the evo tree
-    monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, monster_score)
     monster_gen = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, monster_score, monster_gen,
                                                  dgcog.index2.modifiers)
     if not monster_gen:
