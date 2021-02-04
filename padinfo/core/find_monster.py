@@ -247,9 +247,17 @@ async def findMonster1(dgcog, query):
     return m, err, debug_info
 
 
-async def _findMonster(dgcog, query) -> Tuple["NamedMonster", Optional[str], Optional[str]]:
+async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional[str], Optional[str]]:
     await dgcog.wait_until_ready()
-    return dgcog.index.find_monster(query)
+    try:
+        return dgcog.index.find_monster(query)
+    except:
+        prefix = (await dgcog.bot.get_valid_prefixes())[0]
+        return (None,
+                f"Sorry, id1 doesn't support this query and we are no longer"
+                f" developing id1 features. Please use `{prefix}id3 {query}`! You can"
+                f" opt into using the beta all the time by running `{prefix}idset beta y`!",
+                None)
 
 
 async def findMonster3(dgcog, query):
