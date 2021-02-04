@@ -184,10 +184,10 @@ class MonsterIndex2(aobject):
             return cls._name_to_tokens(oname)
         *n1, n2 = name
         n1 = ", ".join(n1)
-        if tcount(n1) == tcount(n2) or max(tcount(n1), tcount(n2)) < 3:
+        if token_count(n1) == token_count(n2) or max(token_count(n1), token_count(n2)) < 3:
             return cls._name_to_tokens(oname)
         else:
-            return cls._name_to_tokens(min(n1, n2, key=tcount))
+            return cls._name_to_tokens(min(n1, n2, key=token_count))
 
     async def get_modifiers(self, m):
         modifiers = set()
@@ -228,15 +228,15 @@ class MonsterIndex2(aobject):
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if self.graph.cur_evo_type_by_monster(m).value == 1 and not special_evo:
+        if self.graph.monster_is_normal_evo(m):
             modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
-        if self.graph.cur_evo_type_by_monster(m).value == 2 and not special_evo:
+        if self.graph.monster_is_reversible_evo(m) and not special_evo:
             modifiers.update(EVO_MAP[EvoTypes.UVO])
 
         # UUvo
-        if self.graph.cur_evo_type_by_monster(m).value == 3 and not special_evo:
+        if self.graph.monster_is_second_ultimate(m):
             modifiers.update(EVO_MAP[EvoTypes.UUVO])
 
         # Transform
@@ -356,7 +356,7 @@ def combine_tokens_dicts(d1, *ds):
     return combined
 
 
-def tcount(tstr):
+def token_count(tstr):
     tstr = re.sub(r"[^\w ]", "", tstr)
     tstr = re.sub(r"\(.+\)", "", tstr)
     return len([*filter(None, tstr.split())])
