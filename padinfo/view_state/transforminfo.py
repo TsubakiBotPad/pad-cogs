@@ -19,7 +19,8 @@ class TransformInfoViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            # 'query': self.query
+            'b_id': self.b_mon.monster_id,
+            't_id': self.t_mon.monster_id
         })
         return ret
 
@@ -30,9 +31,9 @@ class TransformInfoViewState(ViewState):
         menu_type = ims['menu_type']
 
         # just doing this to imitate ./id.py....
-        query = ims.get('query') or raw_query
+        # query = ims.get('query') or raw_query
 
         b_mon, t_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
             raw_query, user_config.beta_id3)
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color, b_mon,
-            t_mon, query, base_rarity, acquire_raw, true_evo_type_raw)
+            t_mon, base_rarity, acquire_raw, true_evo_type_raw)

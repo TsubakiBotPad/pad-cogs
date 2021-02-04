@@ -15,7 +15,7 @@ from padinfo.view_state.transforminfo import TransformInfoViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWNWARDS BLACK ARROW}', '\N{UPWARDS BLACK ARROW}']
+emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWNWARDS BLACK ARROW}', '\N{UPWARDS BLACK ARROW}', '\N{CROSS MARK}']
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 class TransformInfoMenu:
@@ -41,20 +41,12 @@ class TransformInfoMenu:
         return EmbedMenu(reaction_filters, transitions, TransformInfoMenu.tf_control, menu_emoji_config)
 
     @staticmethod
-    async def respond_to_house(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
-        user_config = data['user_config']
-        tf_view_state = await TransformInfoViewState.deserialize(dgcog, user_config, ims)
-        tf_control = TransformInfoMenu.tf_control(tf_view_state)
-        return tf_control
-
-    @staticmethod
     async def respond_to_down(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
         # TODO: make sure this works??
-        ims['query'] = ims['b_mon'].monster_id
+        ims['query'] = ims['b_id']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
@@ -65,10 +57,18 @@ class TransformInfoMenu:
         user_config = data['user_config']
 
         # see above
-        ims['query'] = ims['t_mon'].monster_id
+        ims['query'] = ims['t_id']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
+
+    @staticmethod
+    async def respond_to_house(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        tf_view_state = await TransformInfoViewState.deserialize(dgcog, user_config, ims)
+        tf_control = TransformInfoMenu.tf_control(tf_view_state)
+        return tf_control
 
     @staticmethod
     def tf_control(state: TransformInfoViewState):

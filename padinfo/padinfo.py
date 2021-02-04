@@ -628,18 +628,17 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
-        beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
         bm, err, debug_info, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
-            await perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3)
-
-        if err:
-            await ctx.send(err)
-            return
-
+            await perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3=True)
+        
         if not tfm:
-            await ctx.send('Your query ({}) did not find a monster that transforms.'.format(query))
+            await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
             return
+
+        # if err:
+        #     await ctx.send(err)
+        #     return
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
