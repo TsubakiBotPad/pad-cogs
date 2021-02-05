@@ -17,6 +17,9 @@ from padinfo.view.evos import EvosView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
     pass
@@ -27,9 +30,9 @@ emoji_button_names = [
     '\N{HOUSE BUILDING}',
     char_to_emoji('e'),
     '\N{MEAT ON BONE}',
-    # '\N{FRAME WITH PICTURE}',
-    # '\N{CLASSICAL BUILDING}',
-    # '\N{SCROLL}',
+    '\N{FRAME WITH PICTURE}',
+    '\N{CLASSICAL BUILDING}',
+    '\N{SCROLL}',
     '\N{CROSS MARK}',
 ]
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
@@ -47,10 +50,9 @@ class IdMenu:
             IdMenu.INITIAL_EMOJI: IdMenu.respond_with_current_id,
             emoji_button_names[1]: IdMenu.respond_with_evos,
             emoji_button_names[2]: IdMenu.respond_with_mats,
-            # emoji_button_names[5]: respond_to_e,
-            emoji_button_names[6]: IdMenu.respond_with_picture,
-            # emoji_button_names[7]: respond_to_building,
-            # emoji_button_names[8]: respond_to_scroll,
+            emoji_button_names[3]: IdMenu.respond_with_picture,
+            emoji_button_names[4]: IdMenu.repond_with_pantheon,
+            emoji_button_names[5]: IdMenu.respond_with_otherinfo,
         }
 
         valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(transitions.keys())
@@ -123,15 +125,30 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_picture(message: Optional[Message], ims, **data):
-        pass
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-    # @staticmethod
-    # async def respond_to_building(message: Optional[Message], ims, **data):
-    #     pass
-    #
-    # @staticmethod
-    # async def respond_to_scroll(message: Optional[Message], ims, **data):
-    #     pass
+        view_state = await PicViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.pic_control(view_state)
+        return control
+
+    @staticmethod
+    async def repond_with_pantheon(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+
+        view_state = await PantheonViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.pantheon_control(view_state)
+        return control
+
+    @staticmethod
+    async def respond_with_otherinfo(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+
+        view_state = await OtherInfoViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.otherinfo_control(view_state)
+        return control
 
     @staticmethod
     def id_control(state: IdViewState):
@@ -148,30 +165,30 @@ class IdMenu:
         )
 
     @staticmethod
-    def mats_control(state: IdViewState):
+    def mats_control(state: MaterialsViewState):
         return EmbedControl(
             [MaterialsView.embed(state)],
             [emoji_cache.get_by_name(e) for e in emoji_button_names]
         )
 
     @staticmethod
-    def pic_control(state: IdViewState):
+    def pic_control(state: PicViewState):
         return EmbedControl(
             [PicView.embed(state)],
             [emoji_cache.get_by_name(e) for e in emoji_button_names]
         )
 
-    # @staticmethod
-    # def pantheon_control(state: IdViewState):
-    #     return EmbedControl(
-    #         [PantheonView.embed(state)],
-    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
-    #     )
-    #
-    # @staticmethod
-    # def otherinfo_view(state: IdViewState):
-    #     return EmbedControl(
-    #         [OtherInfoView.embed(state)],
-    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
-    #     )
+    @staticmethod
+    def pantheon_control(state: PantheonViewState):
+        return EmbedControl(
+            [PantheonView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+        )
+
+    @staticmethod
+    def otherinfo_control(state: OtherInfoViewState):
+        return EmbedControl(
+            [OtherInfoView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+        )
 

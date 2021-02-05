@@ -17,6 +17,9 @@ from padinfo.view.pic import PicView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -42,7 +45,7 @@ class IdMenu:
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
             await get_monster_misc_info(self.db_context, m)
-        state = IdViewState("", "TODO", "todo", "", m, color, transform_base, true_evo_type_raw, acquire_raw,
+        state = IdViewState("", "TODO", "todo", "", color, m, transform_base, true_evo_type_raw, acquire_raw,
                             base_rarity, alt_monsters)
         e = IdView.embed(state)
         return e.to_embed()
@@ -51,7 +54,7 @@ class IdMenu:
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        state = EvosViewState("", "TODO", "todo", "", m, alt_versions, gem_versions, color)
+        state = EvosViewState("", "TODO", "todo", "", color, m, alt_versions, gem_versions)
         e = EvosView.embed(state)
         return e.to_embed()
 
@@ -83,7 +86,7 @@ class IdMenu:
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
 
-        state = MaterialsViewState("", "TODO", "todo", "", m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
+        state = MaterialsViewState("", "TODO", "todo", "", color, m, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
                                    link)
 
         return MaterialsView.embed(state).to_embed()
@@ -96,11 +99,13 @@ class IdMenu:
 
         series_name = m.series.name_en
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return PantheonView.embed(m, color, pantheon_list, series_name).to_embed()
+        state = PantheonViewState('', '', '', '', color, m, pantheon_list, series_name)
+        return PantheonView.embed(state).to_embed()
 
     async def make_picture_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return PicView.embed(m, color).to_embed()
+        state = PicViewState('', '', '', '', color, m)
+        return PicView.embed(state).to_embed()
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
@@ -113,7 +118,8 @@ class IdMenu:
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return OtherInfoView.embed(m, color).to_embed()
+        state = OtherInfoViewState('', '', '', '', color, m)
+        return OtherInfoView.embed(state).to_embed()
 
     async def make_links_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))

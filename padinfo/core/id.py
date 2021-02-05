@@ -50,6 +50,28 @@ async def perform_mats_query(dgcog, raw_query, beta_id3):
     return monster, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
 
 
+async def perform_pic_query(dgcog, raw_query, beta_id3):
+    monster, _, _ = await findMonsterCustom2(dgcog, beta_id3, raw_query)
+    return monster
+
+
+async def perform_pantheon_query(dgcog, raw_query, beta_id3):
+    db_context = dgcog.database
+    monster, _, _ = await findMonsterCustom2(dgcog, beta_id3, raw_query)
+    full_pantheon = db_context.get_monsters_by_series(monster.series_id)
+    pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
+    if len(pantheon_list) == 0 or len(pantheon_list) > 20:
+        return None
+
+    series_name = monster.series.name_en
+
+    return monster, pantheon_list, series_name
+
+
+async def perform_otherinfo_query(dgcog, raw_query, beta_id3):
+    monster, _, _ = await findMonsterCustom2(dgcog, beta_id3, raw_query)
+    return monster
+
 
 async def get_monster_misc_info(db_context, monster):
     transform_base = db_context.graph.get_transform_base(monster)
