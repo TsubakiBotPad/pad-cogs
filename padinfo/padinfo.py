@@ -28,12 +28,15 @@ from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     findMonsterCustom, calc_ratio_name, calc_ratio_modifier
 from padinfo.core.historic_lookups import historic_lookups
+from padinfo.core.id import perform_id_query
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
+from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.id_menu import IdMenu
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
 if TYPE_CHECKING:
@@ -177,10 +180,22 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        if await self.config.user(ctx.author).beta_id3():
-            await self._do_id3(ctx, query)
-        else:
-            await self._do_id(ctx, query)
+        # if await self.config.user(ctx.author).beta_id3():
+        #     await self._do_id3(ctx, query)
+        # else:
+        #     await self._do_id(ctx, query)
+        dgcog = await self.get_dgcog()
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+        monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+            await perform_id_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query,
+                            monster, color, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=["idold", "oldid"])
     @checks.bot_has_permissions(embed_links=True)
@@ -369,7 +384,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
         id_embed = await menu.make_id_embed(m)
         evo_embed = await menu.make_evo_embed(m)
@@ -414,7 +429,7 @@ class PadInfo(commands.Cog):
         monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
-        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         starting_menu_emoji = None
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
@@ -465,7 +480,7 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
-            menu = IdMenu(ctx)
+            menu = IdMenuOld(ctx)
             embed = await menu.make_links_embed(m)
             await ctx.send(embed=embed)
 
@@ -505,7 +520,7 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
-            menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
+            menu = IdMenuOld(ctx, allowed_emojis=self.get_emojis())
             embed = await menu.make_lookup_embed(m)
             await ctx.send(embed=embed)
         else:
@@ -611,7 +626,7 @@ class PadInfo(commands.Cog):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
