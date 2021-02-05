@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class PicsView:
+class PicView:
     @staticmethod
     def embed(m: "MonsterModel", color):
         url = MonsterImage.picture(m)

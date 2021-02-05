@@ -9,13 +9,14 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
 from tsutils import char_to_emoji
 
 from padinfo.view.id import IdView
-from padinfo.view.materials import MaterialView
+from padinfo.view.materials import MaterialsView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
-from padinfo.view.pic import PicsView
+from padinfo.view.pic import PicView
 from padinfo.view.evos import EvosView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
+from padinfo.view_state.materials import MaterialsViewState
 
 if TYPE_CHECKING:
     pass
@@ -25,7 +26,7 @@ emoji_button_names = [
     # '\N{BLACK RIGHT-POINTING TRIANGLE}',
     '\N{HOUSE BUILDING}',
     char_to_emoji('e'),
-    # '\N{MEAT ON BONE}',
+    '\N{MEAT ON BONE}',
     # '\N{FRAME WITH PICTURE}',
     # '\N{CLASSICAL BUILDING}',
     # '\N{SCROLL}',
@@ -43,11 +44,11 @@ class IdMenu:
         transitions = {
             # emoji_button_names[0]: respond_to_left,
             # emoji_button_names[1]: respond_to_right,
-            IdMenu.INITIAL_EMOJI: IdMenu.respond_to_house,
-            emoji_button_names[1]: IdMenu.respond_to_e,
-            # emoji_button_names[4]: respond_to_bone,
+            IdMenu.INITIAL_EMOJI: IdMenu.respond_with_current_id,
+            emoji_button_names[1]: IdMenu.respond_with_evos,
+            emoji_button_names[2]: IdMenu.respond_with_mats,
             # emoji_button_names[5]: respond_to_e,
-            # emoji_button_names[6]: respond_to_picture,
+            emoji_button_names[6]: IdMenu.respond_with_picture,
             # emoji_button_names[7]: respond_to_building,
             # emoji_button_names[8]: respond_to_scroll,
         }
@@ -60,7 +61,6 @@ class IdMenu:
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
         embed = EmbedMenu(reaction_filters, transitions, IdMenu.id_control, menu_emoji_config)
-        print(embed.emoji_config.to_list())
         return embed
 
     @staticmethod
@@ -95,32 +95,36 @@ class IdMenu:
         pass
 
     @staticmethod
-    async def respond_to_house(message: Optional[Message], ims, **data):
+    async def respond_with_current_id(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        id_control = IdMenu.id_control(id_view_state)
-        return id_control
+        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.id_control(view_state)
+        return control
 
     @staticmethod
-    async def respond_to_e(message: Optional[Message], ims, **data):
-        print('hello')
+    async def respond_with_evos(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        evos_view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
-        evos_control = IdMenu.evos_control(evos_view_state)
-        return evos_control
+        view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.evos_control(view_state)
+        return control
 
-    # @staticmethod
-    # async def respond_to_bone(message: Optional[Message], ims, **data):
-    #     pass
-    #
-    # @staticmethod
-    # async def respond_to_picture(message: Optional[Message], ims, **data):
-    #     pass
-    #
+    @staticmethod
+    async def respond_with_mats(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+
+        view_state = await MaterialsViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.mats_control(view_state)
+        return control
+
+    @staticmethod
+    async def respond_with_picture(message: Optional[Message], ims, **data):
+        pass
+
     # @staticmethod
     # async def respond_to_building(message: Optional[Message], ims, **data):
     #     pass
@@ -138,20 +142,25 @@ class IdMenu:
 
     @staticmethod
     def evos_control(state: EvosViewState):
-        print('hi here')
-        print(state)
         return EmbedControl(
             [EvosView.embed(state)],
             [emoji_cache.get_by_name(e) for e in emoji_button_names]
         )
 
-    # @staticmethod
-    # def mats_control(state: IdViewState):
-    #     return EmbedControl(
-    #         [MaterialView.embed(state)],
-    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
-    #     )
-    #
+    @staticmethod
+    def mats_control(state: IdViewState):
+        return EmbedControl(
+            [MaterialsView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+        )
+
+    @staticmethod
+    def pic_control(state: IdViewState):
+        return EmbedControl(
+            [PicView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+        )
+
     # @staticmethod
     # def pantheon_control(state: IdViewState):
     #     return EmbedControl(
@@ -163,13 +172,6 @@ class IdMenu:
     # def otherinfo_view(state: IdViewState):
     #     return EmbedControl(
     #         [OtherInfoView.embed(state)],
-    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
-    #     )
-    #
-    # @staticmethod
-    # def pic_control(state: IdViewState):
-    #     return EmbedControl(
-    #         [PicsView.embed(state)],
     #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
     #     )
 

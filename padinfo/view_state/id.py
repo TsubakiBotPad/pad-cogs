@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class IdViewState(ViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel", color,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
@@ -43,6 +43,6 @@ class IdViewState(ViewState):
         monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await perform_id_query(dgcog, query, user_config.beta_id3)
 
-        return IdViewState(original_author_id, menu_type, raw_query, query, monster, user_config.color,
+        return IdViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                            transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
                            extra_state=ims)

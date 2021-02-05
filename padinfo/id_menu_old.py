@@ -10,12 +10,13 @@ from padinfo.view.id import IdView
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
-from padinfo.view.materials import MaterialView
+from padinfo.view.materials import MaterialsView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
-from padinfo.view.pic import PicsView
+from padinfo.view.pic import PicView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
+from padinfo.view_state.materials import MaterialsViewState
 
 if TYPE_CHECKING:
     from dadguide.database_context import DbContext
@@ -81,8 +82,11 @@ class IdMenu:
             return None
         link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return MaterialView.embed(m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
-                                  link).to_embed()
+
+        state = MaterialsViewState("", "TODO", "todo", "", m, color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
+                                   link)
+
+        return MaterialsView.embed(state).to_embed()
 
     async def make_pantheon_embed(self, m: "MonsterModel"):
         full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
@@ -96,7 +100,7 @@ class IdMenu:
 
     async def make_picture_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return PicsView.embed(m, color).to_embed()
+        return PicView.embed(m, color).to_embed()
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))

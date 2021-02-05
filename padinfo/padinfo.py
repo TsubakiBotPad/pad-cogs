@@ -203,8 +203,8 @@ class PadInfo(commands.Cog):
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await perform_id_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query,
-                            monster, color, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 
@@ -780,7 +780,7 @@ class PadInfo(commands.Cog):
         cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
-                print(query, result, fluff, reason)
+                # print(query, result, fluff, reason)
                 if not any(c['id'] == int(result) and c['token'] == query for c in suite):
                     suite.append({
                         'id': int(result),

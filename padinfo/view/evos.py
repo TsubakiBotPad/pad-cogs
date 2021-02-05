@@ -1,18 +1,12 @@
-from typing import TYPE_CHECKING
-
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer
+from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-
 from padinfo.view_state.evos import EvosViewState
-
-if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
 
 
 def _evo_lines(monsters, current_monster):
@@ -44,5 +38,5 @@ class EvosView:
                 title=MonsterHeader.long_v2(state.monster).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
-            embed_footer=pad_info_footer(),
+            embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)
