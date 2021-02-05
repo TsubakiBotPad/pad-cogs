@@ -631,7 +631,7 @@ class PadInfo(commands.Cog):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
         bm, err, debug_info, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
-            await perform_transforminfo_query(dgcog, 'transformbase ' + query, beta_id3=True)
+            await perform_transforminfo_query(dgcog, query, beta_id3=True)
         
         if not tfm:
             await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
