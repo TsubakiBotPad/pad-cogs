@@ -243,7 +243,7 @@ class MonsterIndex2(aobject):
                        m.is_equip or '極醒' in m.name_ja)
 
         # Evo
-        if self.graph.monster_is_normal_evo(m):
+        if self.graph.monster_is_normal_evo(m) or self.graph.monster_is_first_evo(m):
             modifiers.update(EVO_MAP[EvoTypes.EVO])
 
         # Uvo
