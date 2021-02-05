@@ -25,11 +25,11 @@ SERIES_TYPE_PRIORITY = {
 }
 
 
-def calc_ratio(s1, s2):
+def calc_ratio_modifier(s1, s2, dist=.05):
     return jaro_winkler(s1, s2, .05)
 
 
-def calc_ratio_prefix(token, full_word, index2, factor=.05):
+def calc_ratio_name(token, full_word, index2, factor=.05):
     mw = index2.mwt_to_len[full_word] != 1
     jw = jaro_winkler(token, full_word, factor)
 
@@ -66,7 +66,8 @@ class FindMonster:
                 if len(mwt) > len(tokens) - c1:
                     continue
                 for c2, t in enumerate(mwt):
-                    if (tokens[c1 + c2] != t and len(t) < 5) or calc_ratio(tokens[c1 + c2], t) < self.TOKEN_JW_DISTANCE:
+                    if (tokens[c1 + c2] != t and len(t) < 5) \
+                            or calc_ratio_modifier(tokens[c1 + c2], t) < self.TOKEN_JW_DISTANCE:
                         break
                 else:
                     s = len(mwt) - 1
@@ -82,7 +83,7 @@ class FindMonster:
                 monsterscore[monster] += 1
                 return True
         else:
-            closest = max(jaro_winkler(m, token, .05) for m in monster_mods)
+            closest = max(calc_ratio_modifier(m, token) for m in monster_mods)
             if closest > self.TOKEN_JW_DISTANCE:
                 monsterscore[monster] += closest
                 return True
@@ -99,7 +100,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if any(jaro_winkler(m, token) > self.MODIFIER_JW_DISTANCE for m in index2.suffixes):
+            if any(calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in index2.suffixes):
                 if negated:
                     negative_modifiers.add(token)
                 else:
@@ -113,7 +114,7 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    any(jaro_winkler(m, token) > self.MODIFIER_JW_DISTANCE for m in longmods)
+                    any(calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in longmods)
                     and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
@@ -165,13 +166,13 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, t, index2, monsterscore, mult=1):
         valid = set()
-        ms = sorted([nt for nt in index2.all_name_tokens if calc_ratio_prefix(t, nt, index2) > self.TOKEN_JW_DISTANCE],
-                    key=lambda nt: calc_ratio_prefix(t, nt, index2), reverse=True)
+        ms = sorted([nt for nt in index2.all_name_tokens if calc_ratio_name(t, nt, index2) > self.TOKEN_JW_DISTANCE],
+                    key=lambda nt: calc_ratio_name(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
         if not ms:
             return None
         for match in ms:
-            score = calc_ratio_prefix(t, match, index2)
+            score = calc_ratio_name(t, match, index2)
             for m in index2.manual[match]:
                 if m not in valid:
                     monsterscore[m] += (score + .001) * mult
