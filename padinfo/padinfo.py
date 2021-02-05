@@ -33,7 +33,7 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
 from padinfo.id_menu_old import IdMenu as IdMenuOld
-from padinfo.id_menu import IdMenu
+from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.id import IdViewState
@@ -140,7 +140,8 @@ class PadInfo(commands.Cog):
         else:
             emoji_clicked = emoji_obj.name
 
-        if emoji_clicked not in ls_menu_emoji_button_names:
+        if not (emoji_clicked in ls_menu_emoji_button_names or
+                emoji_clicked in id_menu_emoji_button_names):
             return
 
         message = reaction.message
@@ -150,20 +151,29 @@ class PadInfo(commands.Cog):
 
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        if menu_type == LeaderSkillMenu.MENU_TYPE:
-            friend_cog = self.bot.get_cog("Friend")
-            friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-            embed_menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
-            if not (await embed_menu.should_respond(message, reaction, member)):
-                return
+        menu_map = {
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
+            IdMenu.MENU_TYPE: IdMenu.menu,
+        }
 
-            dgcog = await self.get_dgcog()
-            user_config = await BotConfig.get_user(self.config, original_author_id)
-            data = {
-                'dgcog': dgcog,
-                'user_config': user_config
-            }
-            await embed_menu.transition(message, ims, emoji_clicked, member, **data)
+        menu_func = menu_map.get(menu_type)
+
+        if not menu_func:
+            return
+
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        embed_menu = menu_func(original_author_id, friends, self.bot.user.id)
+        if not (await embed_menu.should_respond(message, reaction, member)):
+            return
+
+        dgcog = await self.get_dgcog()
+        user_config = await BotConfig.get_user(self.config, original_author_id)
+        data = {
+            'dgcog': dgcog,
+            'user_config': user_config
+        }
+        await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
