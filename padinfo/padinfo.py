@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 
 import discord
 import tsutils
-from Levenshtein import jaro_winkler
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
@@ -27,7 +26,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_prefix
+    findMonsterCustom, calc_ratio_name, calc_ratio_modifier
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -1294,8 +1293,8 @@ class PadInfo(commands.Cog):
 
         dgcog = self.bot.get_cog("Dadguide")
 
-        dist = jaro_winkler(s1, s2)
-        dist2 = calc_ratio_prefix(s1, s2, dgcog.index2)
+        dist = calc_ratio_modifier(s1, s2)
+        dist2 = calc_ratio_name(s1, s2, dgcog.index2)
         yes = '\N{WHITE HEAVY CHECK MARK}'
         no = '\N{CROSS MARK}'
         await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +

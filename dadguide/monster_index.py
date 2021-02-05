@@ -113,6 +113,9 @@ class MonsterIndex2(aobject):
             last_token = m.name_en.split(',')[-1].strip()
             autotoken = True
 
+            for jpt in m.name_ja.split(" "):
+                self.name_tokens[jpt].add(m)
+
             # Propagate name tokens throughout all evos
             for me in self.graph.get_alt_monsters(m):
                 if last_token != me.name_en.split(',')[-1].strip():
@@ -361,10 +364,10 @@ async def sheet_to_reader(url, length=None):
 
 
 def combine_tokens_dicts(d1, *ds):
-    combined = defaultdict(set, d1)
+    combined = defaultdict(set, d1.copy())
     for d2 in ds:
         for k, v in d2.items():
-            combined[k].update(v)
+            combined[k] = combined[k].union(v)
     return combined
 
 
