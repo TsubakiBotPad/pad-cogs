@@ -414,6 +414,12 @@ class MonsterGraph(object):
                     or self.monster_is_reincarnated(monster)
                     or self.monster_is_base(monster))
 
+    def monster_is_first_evo(self, monster: MonsterModel) -> bool:
+        prev = self.get_prev_evolution_by_monster(monster)
+        if prev:
+            return self.get_prev_evolution_by_monster(prev) is None
+        return False
+
     def monster_is_second_ultimate(self, monster: MonsterModel) -> bool:
         if self.monster_is_reversible_evo(monster):
             prev = self.get_prev_evolution_by_monster(monster)
