@@ -59,7 +59,9 @@ class IdMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        return EmbedMenu(reaction_filters, transitions, IdMenu.id_control, menu_emoji_config)
+        embed = EmbedMenu(reaction_filters, transitions, IdMenu.id_control, menu_emoji_config)
+        print(embed.emoji_config.to_list())
+        return embed
 
     @staticmethod
     async def respond_to_left(message: Optional[Message], ims, **data):
@@ -111,21 +113,21 @@ class IdMenu:
         evos_control = IdMenu.evos_control(evos_view_state)
         return evos_control
 
-    @staticmethod
-    async def respond_to_bone(message: Optional[Message], ims, **data):
-        pass
-
-    @staticmethod
-    async def respond_to_picture(message: Optional[Message], ims, **data):
-        pass
-
-    @staticmethod
-    async def respond_to_building(message: Optional[Message], ims, **data):
-        pass
-
-    @staticmethod
-    async def respond_to_scroll(message: Optional[Message], ims, **data):
-        pass
+    # @staticmethod
+    # async def respond_to_bone(message: Optional[Message], ims, **data):
+    #     pass
+    #
+    # @staticmethod
+    # async def respond_to_picture(message: Optional[Message], ims, **data):
+    #     pass
+    #
+    # @staticmethod
+    # async def respond_to_building(message: Optional[Message], ims, **data):
+    #     pass
+    #
+    # @staticmethod
+    # async def respond_to_scroll(message: Optional[Message], ims, **data):
+    #     pass
 
     @staticmethod
     def id_control(state: IdViewState):
@@ -143,31 +145,31 @@ class IdMenu:
             [emoji_cache.get_by_name(e) for e in emoji_button_names]
         )
 
-    @staticmethod
-    def mats_control(state: IdViewState):
-        return EmbedControl(
-            [MaterialView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
-        )
-
-    @staticmethod
-    def pantheon_control(state: IdViewState):
-        return EmbedControl(
-            [PantheonView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
-        )
-
-    @staticmethod
-    def otherinfo_view(state: IdViewState):
-        return EmbedControl(
-            [OtherInfoView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
-        )
-
-    @staticmethod
-    def pic_control(state: IdViewState):
-        return EmbedControl(
-            [PicsView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
-        )
+    # @staticmethod
+    # def mats_control(state: IdViewState):
+    #     return EmbedControl(
+    #         [MaterialView.embed(state)],
+    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
+    #     )
+    #
+    # @staticmethod
+    # def pantheon_control(state: IdViewState):
+    #     return EmbedControl(
+    #         [PantheonView.embed(state)],
+    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
+    #     )
+    #
+    # @staticmethod
+    # def otherinfo_view(state: IdViewState):
+    #     return EmbedControl(
+    #         [OtherInfoView.embed(state)],
+    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
+    #     )
+    #
+    # @staticmethod
+    # def pic_control(state: IdViewState):
+    #     return EmbedControl(
+    #         [PicsView.embed(state)],
+    #         [emoji_cache.get_by_name(e) for e in emoji_button_names]
+    #     )
 
