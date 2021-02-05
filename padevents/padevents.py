@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import itertools
 import logging
 import re
 from collections import defaultdict
@@ -10,6 +9,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
+import itertools
 import prettytable
 import pytz
 from redbot.core import checks
@@ -20,6 +20,7 @@ from tsutils import CogSettings, confirm_message, normalize_server_name, DummyOb
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
 
+
 def user_is_donor(ctx, only_patron=False):
     if ctx.author.id in ctx.bot.owner_ids:
         return True
@@ -27,6 +28,7 @@ def user_is_donor(ctx, only_patron=False):
     if not donationcog:
         return False
     return donationcog.is_donor(ctx, only_patron)
+
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
@@ -141,7 +143,7 @@ class PadEvents(commands.Cog):
                             continue
                         for aed in data.get('dmevents', []):
                             if event.start_from_now_sec() > aed['offset'] * 60 \
-                                    or event.group != aed['group'] \
+                                    or (event.group not in (aed['group'], None)) \
                                     or event.server != aed['server'] \
                                     or (aed['key'], event.key) in self.rolepinged_events:
                                 continue
