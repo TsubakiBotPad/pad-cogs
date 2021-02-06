@@ -1,26 +1,23 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
-from padinfo.core.id import perform_id_query
+from padinfo.core.id import perform_pantheon_query
 from padinfo.view_state.base import ViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class IdViewState(ViewState):
+class PantheonViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
+                 pantheon_list: List["MonsterModel"], series_name: str,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
-        self.acquire_raw = acquire_raw
-        self.alt_monsters = alt_monsters
+        self.series_name = series_name
+        self.pantheon_list = pantheon_list
         self.color = color
-        self.base_rarity = base_rarity
-        self.transform_base = transform_base
         self.monster = monster
         self.query = query
-        self.true_evo_type_raw = true_evo_type_raw
 
     def serialize(self):
         ret = super().serialize()
@@ -40,9 +37,8 @@ class IdViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
-            await perform_id_query(dgcog, query, user_config.beta_id3)
+        monster, pantheon_list, series_name = await perform_pantheon_query(dgcog, query, user_config.beta_id3)
 
-        return IdViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                           transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
-                           extra_state=ims)
+        return PantheonViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                            pantheon_list, series_name,
+                            extra_state=ims)
