@@ -11,7 +11,6 @@ class TransformInfoViewState(ViewState):
         self.color = color
         self.b_mon = b_mon
         self.t_mon = t_mon
-        # self.query = query
         self.base_rarity = base_rarity
         self.acquire_raw = acquire_raw
         self.true_evo_type_raw = true_evo_type_raw
@@ -19,8 +18,8 @@ class TransformInfoViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'b_id': self.b_mon.monster_id,
-            't_id': self.t_mon.monster_id
+            'b_query': str(self.b_mon.monster_id),
+            't_query': str(self.t_mon.monster_id)
         })
         return ret
 
@@ -30,10 +29,7 @@ class TransformInfoViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        # just doing this to imitate ./id.py....
-        # query = ims.get('query') or raw_query
-
-        b_mon, t_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
+        b_mon, _, _, t_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
             raw_query, user_config.beta_id3)
-        return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color, b_mon,
-            t_mon, base_rarity, acquire_raw, true_evo_type_raw)
+        return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
+            b_mon, t_mon, base_rarity, acquire_raw, true_evo_type_raw)

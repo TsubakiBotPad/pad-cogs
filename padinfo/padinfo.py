@@ -36,7 +36,7 @@ from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
-from padinfo.tf_menu import TransformInfoMenu
+from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
@@ -147,7 +147,8 @@ class PadInfo(commands.Cog):
             emoji_clicked = emoji_obj.name
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
-                emoji_clicked in id_menu_emoji_button_names):
+                emoji_clicked in id_menu_emoji_button_names or
+                emoji_clicked in tf_menu_emoji_button_names):
             return
 
         message = reaction.message
@@ -160,6 +161,7 @@ class PadInfo(commands.Cog):
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
             IdMenu.MENU_TYPE: IdMenu.menu,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu
         }
 
         menu_func = menu_map.get(menu_type)
@@ -654,17 +656,18 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
+        beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
         bm, err, debug_info, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
-            await perform_transforminfo_query(dgcog, query, beta_id3=True)
+            await perform_transforminfo_query(dgcog, query, beta_id3)
         
         if not tfm:
             await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
             return
 
-        # if err:
-        #     await ctx.send(err)
-        #     return
+        if err:
+            await ctx.send(err)
+            return
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id

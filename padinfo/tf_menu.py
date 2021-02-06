@@ -45,8 +45,7 @@ class TransformInfoMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        # TODO: make sure this works??
-        ims['query'] = ims['b_id']
+        ims['query'] = ims['b_query']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
@@ -56,8 +55,7 @@ class TransformInfoMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        # see above
-        ims['query'] = ims['t_id']
+        ims['query'] = ims['t_query']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
