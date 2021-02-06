@@ -37,34 +37,42 @@ class MonsterIndex2(aobject):
                                   if " " in m.series.name_en}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
+        self.treename_overrides = set()
 
         nickname_data, treenames_data, pantheon_data, nt_alias_data = await asyncio.gather(
-            sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 4),
-            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 4),
+            sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 5),
+            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 5),
             sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2),
             sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2)
         )
 
-        for m_id, name, lp, i in nickname_data:
+        for m_id, name, lp, ov, i in nickname_data:
             if m_id.isdigit() and not i:
+                mid = int(m_id)
+                if ov:
+                    self.treename_overrides.add(mid)
                 if lp:
-                    self.monster_id_to_nametokens[int(m_id)].update(self._name_to_tokens(name))
+                    self.monster_id_to_nametokens[mid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(int(m_id)))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                    self.monster_id_to_nickname[int(m_id)].add(name.lower().replace(" ", ""))
+                    self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
-        for m_id, name, mp, i in treenames_data:
+        for m_id, name, mp, ov, i in treenames_data:
             if m_id.isdigit() and not i:
+                mid = int(m_id)
+                if ov:
+                    for emid in self.graph.get_alt_ids_by_id(mid):
+                        self.treename_overrides.add(emid)
                 if mp:
-                    for em_id in self.graph.get_alt_ids_by_id(int(m_id)):
-                        self.monster_id_to_nametokens[em_id].update(self._name_to_tokens(name))
+                    for emid in self.graph.get_alt_ids_by_id(mid):
+                        self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(int(m_id)))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                    self.monster_id_to_treename[int(m_id)].add(name.lower().replace(" ", ""))
+                    self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
 
         for sid, name in pantheon_data:
             if sid.isdigit():
@@ -109,7 +117,7 @@ class MonsterIndex2(aobject):
                 self.name_tokens['jp' + str(m.monster_no_jp)].add(m)
 
             # Name Tokens
-            nametokens = self._name_to_tokens(m.name_en) + list(self.monster_id_to_nametokens[m.monster_id])
+            nametokens = self._name_to_tokens(m.name_en)
             last_token = m.name_en.split(',')[-1].strip()
             autotoken = True
 
@@ -132,11 +140,15 @@ class MonsterIndex2(aobject):
                     treenames.add(match.group(1))
 
             # Add important tokens
-            if autotoken:
+            for t in self.monster_id_to_nametokens[m.monster_id]:
+                self.add_name_token(self.name_tokens, t, m)
+            if m.monster_id in self.treename_overrides:
+                pass
+            elif autotoken:
                 # Add a consistant last token as important token
                 for token in self._name_to_tokens(m.name_en.split(',')[-1].strip()):
                     self.add_name_token(self.name_tokens, token, m)
-            elif not self.monster_id_to_nametokens[m.monster_id]:
+            else:
                 # Add name tokens by guessing which ones are important
                 for token in self._get_important_tokens(m.name_en, treenames) + self._name_to_tokens(m.roma_subname):
                     self.add_name_token(self.name_tokens, token, m)
