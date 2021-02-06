@@ -176,17 +176,17 @@ class Dadguide(commands.Cog):
         await self._download_override_files()
 
         logger.info('Loading dg name overrides')
-        nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN, 5)
-        treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 5)
+        nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN, 6)
+        treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 6)
         panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN, 3)
 
         self.nickname_overrides = defaultdict(set)
-        for id, nick, _, _, i in nickname_overrides:
+        for id, nick, _, _, _, i in nickname_overrides:
             if id.isdigit() and not i:
                 self.nickname_overrides[int(id)].add(nick.lower())
 
         self.treename_overrides = defaultdict(set)
-        for id, treename, _, _, i in treename_overrides:
+        for id, treename, _, _, _, i in treename_overrides:
             if id.isdigit() and not i:
                 self.treename_overrides[int(id)].add(treename.lower())
 
