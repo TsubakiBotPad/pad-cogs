@@ -381,15 +381,6 @@ class PadInfo(commands.Cog):
                            db_context=db_context)
         )
 
-    async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
-        emoji_to_embed = await self.get_id_emoji_options(ctx, m=m, scroll=ms)
-        return await self._do_menu(
-            ctx,
-            starting_menu_emoji,
-            ScrollEmojiUpdater(ctx, emoji_to_embed, pad_info=self, bot=self.bot,
-                               m=m, ms=ms, selected_emoji=starting_menu_emoji)
-        )
-
     async def get_id_emoji_options(self, ctx, m=None, scroll=None, menu_type=0):
         if scroll is None:
             scroll = []
@@ -546,43 +537,6 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
-    @commands.command(aliases=['collabscroll'])
-    @checks.bot_has_permissions(embed_links=True)
-    async def seriesscroll(self, ctx, *, query: str):
-        """Scroll through the monsters in a collab"""
-        dgcog = self.bot.get_cog("Dadguide")
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        ms = dgcog.database.get_monsters_by_series(m.series.series_id)
-
-        ms.sort(key=lambda x: x.monster_id)
-        ms = [m for m in ms if m.sell_mp >= 100]
-
-        if not ms:
-            await ctx.send("There are no monsters in that series worth more than 99 monster points.")
-            return
-
-        if m not in ms:
-            m = m if m in ms else ms[0]
-
-        if m is not None:
-            await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def evoscroll(self, ctx, *, query: str):
-        """Scroll through the monsters in a collab"""
-        dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-
-        if m is not None:
-            await self._do_scrollmenu(ctx, m,
-                                      sorted(dgcog.database.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
-                                      self.id_emoji)
         else:
             await self.makeFailureMsg(ctx, query, err)
 
