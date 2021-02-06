@@ -19,14 +19,14 @@ from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
-from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor
+from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
 
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_name, calc_ratio_modifier
+    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.id import get_monster_by_query, get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
@@ -1465,3 +1465,29 @@ class PadInfo(commands.Cog):
                 await ctx.send(page)
         else:
             await ctx.send(f"There are no modifiers that match `{token}`.")
+
+    @commands.command()
+    async def idtraceback(self, ctx, *, query):
+        dgcog = self.bot.get_cog("Dadguide")
+
+        await dgcog.wait_until_ready()
+
+        query = rmdiacritics(query).lower().replace(",", "")
+        tokenized_query = query.split()
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+
+        monster, score, tokens = max(
+            await find_monster_search(tokenized_query, dgcog),
+            await find_monster_search(mw_tokenized_query, dgcog)
+            if tokenized_query != mw_tokenized_query else (None, 0.0, set()),
+            key=lambda t: t[1]
+        )
+
+        if monster is None:
+            await ctx.send("No monster matched.")
+            return
+
+        tokenstr = '\n'.join(sorted(tokens))
+        await ctx.send(f"**Monster matched**: {monster.name_en} ({monster.monster_id})\n\n"
+                       f"**Total Score**: {score}\n\n"
+                       f"**Matched tokens**:\n" + tokenstr)
