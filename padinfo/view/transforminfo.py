@@ -51,7 +51,7 @@ class TransformInfoView:
                 ),
             ),
             EmbedField(
-                'Fresh and cool information',
+                'Card info',
                 IdView.misc_info(t_mon, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
                 inline=True
             ),
