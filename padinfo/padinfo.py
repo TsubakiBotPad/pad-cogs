@@ -195,14 +195,10 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        if await self.config.user(ctx.author).beta_id3():
-            await self._do_id3(ctx, query)
-        else:
-            await self._do_id(ctx, query)
-
-    @commands.command(name="i")
-    @checks.bot_has_permissions(embed_links=True)
-    async def _id_testing(self, ctx, *, query: str):
+        # if await self.config.user(ctx.author).beta_id3():
+        #     await self._do_id3(ctx, query)
+        # else:
+        #     await self._do_id(ctx, query)
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
