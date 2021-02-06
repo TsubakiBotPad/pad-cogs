@@ -72,6 +72,12 @@ class IdMenu:
 
     @staticmethod
     def get_pane_types():
+        # This lets us write the functionality for the arrows, we need to know what current pane
+        # corresponds to what response type.
+
+        # The strings are pane_types as defined in ViewState serialize functions, the functions are
+        # IdMenu responses.
+
         return {
             'id': IdMenu.respond_with_current_id,
             'evos': IdMenu.respond_with_evos,

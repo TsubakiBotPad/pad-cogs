@@ -28,10 +28,9 @@ from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     findMonsterCustom, calc_ratio_name, calc_ratio_modifier, findMonsterCustom2
 from padinfo.core.historic_lookups import historic_lookups
-from padinfo.core.id import get_monster_by_query, get_id_view_state_data
+from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
-from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
 from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
@@ -202,9 +201,6 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        # if await self.config.user(ctx.author).beta_id3():
-        #     await self._do_id3(ctx, query)
-        # else:
         await self._do_id(ctx, query)
 
     @commands.command(aliases=["idold", "oldid"])
@@ -413,49 +409,6 @@ class PadInfo(commands.Cog):
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
-
-    async def get_id_emoji_options(self, ctx, m=None, scroll=None, menu_type=0):
-        if scroll is None:
-            scroll = []
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-
-        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
-
-        id_embed = await menu.make_id_embed(m)
-        evo_embed = await menu.make_evo_embed(m)
-        mats_embed = await menu.make_evo_mats_embed(m)
-        pic_embed = await menu.make_picture_embed(m)
-        other_info_embed = await menu.make_otherinfo_embed(m)
-        pantheon_embed = await menu.make_pantheon_embed(m)
-
-        emoji_to_embed = OrderedDict()
-
-        # it's impossible for the previous/next ones to be accessed because
-        # IdEmojiUpdater won't allow it, however they have to be defined
-        # so that the buttons display in the first place
-
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.first_monster_emoji] = None
-        if len(scroll) != 1:
-            emoji_to_embed[self.previous_monster_emoji] = None
-            emoji_to_embed[self.next_monster_emoji] = None
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.last_monster_emoji] = None
-
-        emoji_to_embed[self.id_emoji] = id_embed
-        emoji_to_embed[self.evo_emoji] = evo_embed
-        if mats_embed:
-            emoji_to_embed[self.mats_emoji] = mats_embed
-        emoji_to_embed[self.pic_emoji] = pic_embed
-        if pantheon_embed:
-            emoji_to_embed[self.pantheon_emoji] = pantheon_embed
-
-        emoji_to_embed[self.other_info_emoji] = other_info_embed
-
-        # remove emoji needs to be last
-        emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
-        return emoji_to_embed
 
     async def _do_evolistmenu(self, ctx, sm):
         DGCOG = self.bot.get_cog("Dadguide")
