@@ -440,8 +440,7 @@ class PadInfo(commands.Cog):
             return
 
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
-
-        if len(pantheon_list) > 20:
+        if pantheon_list is None:
             await ctx.send(inline('Too many monsters in this series to display'))
             return
 

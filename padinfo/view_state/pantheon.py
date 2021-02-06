@@ -58,9 +58,11 @@ class PantheonViewState(ViewState):
     async def query(dgcog, monster):
         db_context = dgcog.database
         full_pantheon = db_context.get_monsters_by_series(monster.series_id)
+        if not full_pantheon:
+            return None, None
         pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
         if len(pantheon_list) == 0 or len(pantheon_list) > 20:
-            return None
+            return None, None
 
         series_name = monster.series.name_en
 
