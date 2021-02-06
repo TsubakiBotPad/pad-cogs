@@ -26,7 +26,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_name, calc_ratio_modifier
+    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, findMonsterCustom2
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.id import get_monster_by_query, get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
@@ -39,6 +39,10 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
     pass
@@ -205,7 +209,13 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if not monster:
+            await self.makeFailureMsg(ctx, query, err)
+            return
+
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
@@ -335,54 +345,111 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        # dgcog = await self.get_dgcog()
-        # raw_query = query
-        # color = await self.get_user_embed_color(ctx)
-        # original_author_id = ctx.message.author.id
-        # friend_cog = self.bot.get_cog("Friend")
-        # friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        # monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
-        #
-        # alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
-        #
-        # state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-        #                       monster, alt_versions, gem_versions,
-        #                       use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        # menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
-        # await menu.create(ctx, state)
-
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.evo_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                              monster, alt_versions, gem_versions,
+                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.evos_control)
+        await menu.create(ctx, state)
+
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        # if m is not None:
+        #     await self._do_idmenu(ctx, m, self.evo_emoji)
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        # if m is not None:
+        #     menu = await self._do_idmenu(ctx, m, self.mats_emoji)
+        #     if menu == EMBED_NOT_GENERATED:
+        #         await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
+
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.mats_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if not monster:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
+            await MaterialsViewState.query(dgcog, monster)
+
+        if mats is None:
+            await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
+            return
+
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link,
+                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.mats_control)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=["series"])
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        # if m is not None:
+        #     menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
+        #     if menu == EMBED_NOT_GENERATED:
+        #         await ctx.send(inline('Not a pantheon monster'))
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline('Not a pantheon monster'))
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+
+        if len(pantheon_list) > 20:
+            await ctx.send(inline('Too many monsters in this series to display'))
+            return
+
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                                  monster, pantheon_list, series_name,
+                                  use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
+        await menu.create(ctx, state)
 
     async def _do_idmenu(self, ctx, m, starting_menu_emoji):
         DGCOG = self.bot.get_cog("Dadguide")
@@ -490,12 +557,32 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        # if m is not None:
+        #     await self._do_idmenu(ctx, m, self.pic_emoji)
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
+
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.pic_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                             monster,
+                             use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pic_control)
+        await menu.create(ctx, state)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -515,12 +602,32 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        # if m is not None:
+        #     await self._do_idmenu(ctx, m, self.other_info_emoji)
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
+
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.other_info_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                                   monster,
+                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.otherinfo_control)
+        await menu.create(ctx, state)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -631,7 +738,7 @@ class PadInfo(commands.Cog):
         query, *reason = query.split("|")
         query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -679,7 +786,8 @@ class PadInfo(commands.Cog):
     async def norf_add(self, ctx, id: int, token, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
+                        not await tsutils.confirm_message(ctx,
+                                                          "Are you sure you want to add to the fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -727,7 +835,7 @@ class PadInfo(commands.Cog):
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -749,7 +857,7 @@ class PadInfo(commands.Cog):
 
     async def norf_import(self, ctx, queries):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -770,7 +878,7 @@ class PadInfo(commands.Cog):
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -796,7 +904,7 @@ class PadInfo(commands.Cog):
 
     async def norf_remove(self, ctx, item):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -813,7 +921,7 @@ class PadInfo(commands.Cog):
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -838,7 +946,7 @@ class PadInfo(commands.Cog):
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
