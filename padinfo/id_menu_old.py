@@ -42,11 +42,6 @@ class IdMenu:
         e = IdView.embed(state)
         return e.to_embed()
 
-    async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        embed = LeaderSkillView.embed(left_m, right_m, color)
-        return embed.to_embed()
-
     async def make_lookup_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         return LookupView.embed(m, color).to_embed()
