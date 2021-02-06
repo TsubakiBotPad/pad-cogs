@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 class PantheonViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  pantheon_list: List["MonsterModel"], series_name: str,
+                 use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
         self.series_name = series_name
@@ -18,25 +19,21 @@ class PantheonViewState(ViewState):
         self.color = color
         self.monster = monster
         self.query = query
+        self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
+            'pane_type': 'pantheon',
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
-            'pane_type': 'pantheon',
+            'use_evo_scroll': str(self.use_evo_scroll),
         })
         return ret
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
-
-        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
-        query = ims.get('query') or raw_query
-
-        original_author_id = ims['original_author_id']
-        menu_type = ims['menu_type']
 
         resolved_monster_id = int(ims.get('resolved_monster_id'))
 
@@ -45,9 +42,17 @@ class PantheonViewState(ViewState):
 
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 
+        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
+        query = ims.get('query') or raw_query
+
+        original_author_id = ims['original_author_id']
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+        menu_type = ims['menu_type']
+
         return PantheonViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                            pantheon_list, series_name,
-                            extra_state=ims)
+                                 pantheon_list, series_name,
+                                 use_evo_scroll=use_evo_scroll,
+                                 extra_state=ims)
 
     @staticmethod
     async def query(dgcog, monster):

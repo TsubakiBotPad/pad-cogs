@@ -36,6 +36,7 @@ from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_n
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
@@ -208,7 +209,8 @@ class PadInfo(commands.Cog):
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
+                            use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 
@@ -333,6 +335,22 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
+        # dgcog = await self.get_dgcog()
+        # raw_query = query
+        # color = await self.get_user_embed_color(ctx)
+        # original_author_id = ctx.message.author.id
+        # friend_cog = self.bot.get_cog("Friend")
+        # friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        # monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
+        #
+        # alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        #
+        # state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+        #                       monster, alt_versions, gem_versions,
+        #                       use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        # menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        # await menu.create(ctx, state)
+
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:

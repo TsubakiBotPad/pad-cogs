@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 class IdViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
+                 use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
         self.acquire_raw = acquire_raw
@@ -21,13 +22,15 @@ class IdViewState(ViewState):
         self.monster = monster
         self.query = query
         self.true_evo_type_raw = true_evo_type_raw
+        self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
+            'pane_type': 'id',
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
-            'pane_type': 'id',
+            'use_evo_scroll': str(self.use_evo_scroll),
         })
         return ret
 
@@ -35,20 +38,21 @@ class IdViewState(ViewState):
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
 
-        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
-        query = ims.get('query') or raw_query
-
-        original_author_id = ims['original_author_id']
-        menu_type = ims['menu_type']
-
         resolved_monster_id = int(ims.get('resolved_monster_id'))
-
         monster = await (get_monster_by_id(dgcog, resolved_monster_id)
                          if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
 
+        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
+        query = ims.get('query') or raw_query
+
+        menu_type = ims['menu_type']
+        original_author_id = ims['original_author_id']
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+
         return IdViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                            transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
+                           use_evo_scroll=use_evo_scroll,
                            extra_state=ims)

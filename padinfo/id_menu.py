@@ -42,7 +42,7 @@ menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class IdMenu:
-    INITIAL_EMOJI = emoji_button_names[2]
+    INITIAL_EMOJI = emoji_button_names[3]
     MENU_TYPE = 'IdMenu'
 
     @staticmethod
@@ -50,7 +50,7 @@ class IdMenu:
         transitions = {
             emoji_button_names[0]: IdMenu.respond_with_left,
             emoji_button_names[1]: IdMenu.respond_with_right,
-            IdMenu.INITIAL_EMOJI: IdMenu.respond_with_current_id,
+            emoji_button_names[2]: IdMenu.respond_with_current_id,
             emoji_button_names[3]: IdMenu.respond_with_evos,
             emoji_button_names[4]: IdMenu.respond_with_mats,
             emoji_button_names[5]: IdMenu.respond_with_picture,
@@ -86,8 +86,7 @@ class IdMenu:
         m = db_context.graph.get_monster(ims['resolved_monster_id'])
 
         # TODO: stop re-getting this user_config from ctx
-        user_config = data['user_config']
-        use_evo_scroll = settings.checkEvoID(ims['original_author_id'])
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id
         pane_type = ims['pane_type']
@@ -113,8 +112,7 @@ class IdMenu:
         m = db_context.graph.get_monster(ims['resolved_monster_id'])
 
         # TODO: stop re-getting this user_config from ctx
-        user_config = data['user_config']
-        use_evo_scroll = settings.checkEvoID(ims['original_author_id'])
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id
         pane_type = ims.get('pane_type')

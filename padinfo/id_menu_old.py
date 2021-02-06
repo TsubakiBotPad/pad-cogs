@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Color
 
+from padinfo.core.padinfo_settings import settings
+
 from padinfo.core.id import get_monster_misc_info
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
@@ -46,7 +48,8 @@ class IdMenu:
         acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
             await get_monster_misc_info(self.db_context, m)
         state = IdViewState("", "TODO", "todo", "", color, m, transform_base, true_evo_type_raw, acquire_raw,
-                            base_rarity, alt_monsters)
+                            base_rarity, alt_monsters,
+                            use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
         e = IdView.embed(state)
         return e.to_embed()
 
@@ -54,7 +57,8 @@ class IdMenu:
         alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
         gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        state = EvosViewState("", "TODO", "todo", "", color, m, alt_versions, gem_versions)
+        state = EvosViewState("", "TODO", "todo", "", color, m, alt_versions, gem_versions,
+                              use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
         e = EvosView.embed(state)
         return e.to_embed()
 
@@ -87,7 +91,8 @@ class IdMenu:
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
 
         state = MaterialsViewState("", "TODO", "todo", "", color, m, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count,
-                                   link)
+                                   link,
+                                   use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
 
         return MaterialsView.embed(state).to_embed()
 
@@ -99,12 +104,14 @@ class IdMenu:
 
         series_name = m.series.name_en
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        state = PantheonViewState('', '', '', '', color, m, pantheon_list, series_name)
+        state = PantheonViewState('', '', '', '', color, m, pantheon_list, series_name,
+                                  use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
         return PantheonView.embed(state).to_embed()
 
     async def make_picture_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        state = PicViewState('', '', '', '', color, m)
+        state = PicViewState('', '', '', '', color, m,
+                             use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
         return PicView.embed(state).to_embed()
 
     async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
@@ -118,7 +125,8 @@ class IdMenu:
 
     async def make_otherinfo_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        state = OtherInfoViewState('', '', '', '', color, m)
+        state = OtherInfoViewState('', '', '', '', color, m,
+                                   use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
         return OtherInfoView.embed(state).to_embed()
 
     async def make_links_embed(self, m: "MonsterModel"):

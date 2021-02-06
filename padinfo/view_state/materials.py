@@ -13,6 +13,7 @@ class MaterialsViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
+                 use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
         self.link = link
@@ -25,25 +26,21 @@ class MaterialsViewState(ViewState):
         self.query = query
         self.monster = monster
         self.color = color
+        self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
+            'pane_type': 'materials',
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
-            'pane_type': 'materials',
+            'use_evo_scroll': str(self.use_evo_scroll),
         })
         return ret
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
-
-        original_author_id = ims['original_author_id']
-
-        menu_type = ims['menu_type']
-
-        query = ims.get('query') or raw_query
 
         resolved_monster_id = int(ims.get('resolved_monster_id'))
 
@@ -52,8 +49,17 @@ class MaterialsViewState(ViewState):
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = await MaterialsViewState.query(dgcog, monster)
 
+        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
+        query = ims.get('query') or raw_query
+
+        menu_type = ims['menu_type']
+        original_author_id = ims['original_author_id']
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+
         return MaterialsViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                                  mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, extra_state=ims)
+                                  mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link,
+                                  use_evo_scroll=use_evo_scroll,
+                                  extra_state=ims)
 
     @staticmethod
     async def query(dgcog, monster):
@@ -82,6 +88,6 @@ class MaterialsViewState(ViewState):
             skillup_evo_count = len(sums) - len(vsums)
 
         if not any([mats, usedin, gemusedin, skillups and not monster.is_stackable]):
-            return None, None, None, None, None, None, None, None
+            return None, None, None, None, None, None, None
 
         return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
