@@ -279,7 +279,6 @@ class PadInfo(commands.Cog):
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
 
         if beta_id3 and await self.config.do_survey():
-            print('uhh')
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
@@ -291,7 +290,6 @@ class PadInfo(commands.Cog):
         await menu.create(ctx, state)
 
     async def send_survey_after(self, ctx, query, result_monster):
-        print('hello here')
         dgcog = await self.get_dgcog()
         sm = await self.config.user(ctx.author).survey_mode()
         sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
