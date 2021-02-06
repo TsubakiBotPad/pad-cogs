@@ -42,11 +42,13 @@ menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class IdMenu:
-    INITIAL_EMOJI = emoji_button_names[3]
+    INITIAL_EMOJI = emoji_button_names[2]
     MENU_TYPE = 'IdMenu'
 
     @staticmethod
-    def menu(original_author_id, friend_ids, bot_id):
+    def menu(original_author_id, friend_ids, bot_id, initial_control=None):
+        if initial_control is None:
+            initial_control = IdMenu.id_control
         transitions = {
             emoji_button_names[0]: IdMenu.respond_with_left,
             emoji_button_names[1]: IdMenu.respond_with_right,
@@ -65,7 +67,7 @@ class IdMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, transitions, IdMenu.id_control, menu_emoji_config)
+        embed = EmbedMenu(reaction_filters, transitions, initial_control, menu_emoji_config)
         return embed
 
     @staticmethod
@@ -74,7 +76,7 @@ class IdMenu:
             'id': IdMenu.respond_with_current_id,
             'evos': IdMenu.respond_with_evos,
             'materials': IdMenu.respond_with_mats,
-            'otherinfo': IdMenu.respond_with_mats,
+            'otherinfo': IdMenu.respond_with_otherinfo,
             'pantheon': IdMenu.respond_with_pantheon,
             'pic': IdMenu.respond_with_picture,
         }
