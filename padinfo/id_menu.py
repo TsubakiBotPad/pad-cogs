@@ -45,8 +45,8 @@ class IdMenu:
     @staticmethod
     def menu(original_author_id, friend_ids, bot_id):
         transitions = {
-            # emoji_button_names[0]: respond_to_left,
-            # emoji_button_names[1]: respond_to_right,
+            # emoji_button_names[0]: IdMenu.respond_with_left,
+            # emoji_button_names[1]: IdMenu.respond_with_right,
             IdMenu.INITIAL_EMOJI: IdMenu.respond_with_current_id,
             emoji_button_names[1]: IdMenu.respond_with_evos,
             emoji_button_names[2]: IdMenu.respond_with_mats,
@@ -66,24 +66,22 @@ class IdMenu:
         return embed
 
     @staticmethod
-    async def respond_to_left(message: Optional[Message], ims, **data):
+    async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
         # Extract the query from the id state
-        # TODO: let the user switch scroll modes in between then and now
         ims['query'] = ims['left_arrow']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = IdMenu.id_control(id_view_state)
         return id_control
 
     @staticmethod
-    async def respond_to_right(message: Optional[Message], ims, **data):
+    async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
         # Extract the query from the id state
-        # TODO: let the user switch scroll modes in between then and now
         ims['query'] = ims['right_arrow']
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = IdMenu.id_control(id_view_state)
