@@ -21,6 +21,7 @@ class OtherInfoViewState(ViewState):
         ret.update({
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
+            'pane_type': 'otherinfo',
         })
         return ret
 
@@ -34,7 +35,7 @@ class OtherInfoViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        resolved_monster_id = ims.get('resolved_monster_id')
+        resolved_monster_id = int(ims.get('resolved_monster_id'))
 
         monster = await (get_monster_by_id(dgcog, resolved_monster_id)
                          if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))

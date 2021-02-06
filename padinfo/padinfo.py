@@ -195,19 +195,22 @@ class PadInfo(commands.Cog):
         else:
             await self._do_id(ctx, query)
 
-        # dgcog = await self.get_dgcog()
-        # raw_query = query
-        # color = await self.get_user_embed_color(ctx)
-        # original_author_id = ctx.message.author.id
-        # friend_cog = self.bot.get_cog("Friend")
-        # friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        # monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
-        # transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
-        #     await get_id_view_state_data(dgcog, monster)
-        # state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-        #                     monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
-        # menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
-        # await menu.create(ctx, state)
+    @commands.command(name="i")
+    @checks.bot_has_permissions(embed_links=True)
+    async def _id_testing(self, ctx, *, query: str):
+        dgcog = await self.get_dgcog()
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+            await get_id_view_state_data(dgcog, monster)
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=["idold", "oldid"])
     @checks.bot_has_permissions(embed_links=True)
