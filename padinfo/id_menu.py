@@ -87,7 +87,6 @@ class IdMenu:
         db_context: "DbContext" = dgcog.database
         m = db_context.graph.get_monster(ims['resolved_monster_id'])
 
-        # TODO: stop re-getting this user_config from ctx
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id
@@ -113,7 +112,6 @@ class IdMenu:
         db_context: "DbContext" = dgcog.database
         m = db_context.graph.get_monster(ims['resolved_monster_id'])
 
-        # TODO: stop re-getting this user_config from ctx
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id

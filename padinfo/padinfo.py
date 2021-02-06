@@ -233,20 +233,6 @@ class PadInfo(commands.Cog):
 
     async def _do_id(self, ctx, query: str, force_id3_pref=None):
         # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonster1(dgcog, query)
-        #
-        # if m is not None:
-        #     async def send_error(err):
-        #         if err:
-        #             await asyncio.sleep(1)
-        #             await ctx.send(err)
-        #
-        #     asyncio.create_task(send_error(err))
-        #
-        #     await self._do_idmenu(ctx, m, self.id_emoji)
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
-
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         if force_id3_pref is not None:
             beta_id3 = force_id3_pref
@@ -369,26 +355,10 @@ class PadInfo(commands.Cog):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.evos_control)
         await menu.create(ctx, state)
 
-        # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        # if m is not None:
-        #     await self._do_idmenu(ctx, m, self.evo_emoji)
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
-
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        # if m is not None:
-        #     menu = await self._do_idmenu(ctx, m, self.mats_emoji)
-        #     if menu == EMBED_NOT_GENERATED:
-        #         await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
-
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
@@ -419,14 +389,6 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
-        # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        # if m is not None:
-        #     menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
-        #     if menu == EMBED_NOT_GENERATED:
-        #         await ctx.send(inline('Not a pantheon monster'))
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
@@ -451,24 +413,6 @@ class PadInfo(commands.Cog):
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
-
-    async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-
-        alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
-        emoji_to_embed = await self.get_id_emoji_options(ctx,
-                                                         m=m, scroll=sorted({*alt_versions}, key=lambda
-                x: x.monster_id) if settings.checkEvoID(
-                ctx.author.id) else [], menu_type=1)
-
-        return await self._do_menu(
-            ctx,
-            starting_menu_emoji,
-            IdEmojiUpdater(ctx, emoji_to_embed, pad_info=self,
-                           m=m, selected_emoji=starting_menu_emoji, bot=self.bot,
-                           db_context=db_context)
-        )
 
     async def get_id_emoji_options(self, ctx, m=None, scroll=None, menu_type=0):
         if scroll is None:
@@ -558,13 +502,6 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
-        # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        # if m is not None:
-        #     await self._do_idmenu(ctx, m, self.pic_emoji)
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
-
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
@@ -603,13 +540,6 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
-        # dgcog = await self.get_dgcog()
-        # m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        # if m is not None:
-        #     await self._do_idmenu(ctx, m, self.other_info_emoji)
-        # else:
-        #     await self.makeFailureMsg(ctx, query, err)
-
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
