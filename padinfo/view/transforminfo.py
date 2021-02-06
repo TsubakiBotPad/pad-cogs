@@ -18,37 +18,16 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-# stole a lot directly from ./id.py. code duplication?
-def _get_awakening_text(awakening: "AwakeningModel"):
-    return get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
-
-def _killer_latent_emoji(latent_name: str):
-    return get_emoji('latent_killer_{}'.format(latent_name.lower()))
-
 def base_info(m: "MonsterModel"):
-    if len(m.awakenings) == 0:
-        return Box(Text('No Awakenings'))
-
-    normal_awakenings = len(m.awakenings) - m.superawakening_count
-    normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
-    super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
-
-    killers_text = 'Any' if 'Any' in m.killers else ' '.join([_killer_latent_emoji(k) for k in m.killers])
-
     return Box(
         Box(
             '\N{DOWN-POINTING RED TRIANGLE}',
-            *[Text(e) for e in normal_awakenings_emojis],
-            delimiter=' '),
-        Box(
-            Text(get_emoji('sa_questionmark')),
-            *[Text(e) for e in super_awakenings_emojis],
-            delimiter=' ') if len(super_awakenings_emojis) > 0 else None,
-        Box(
-            BoldText('Available killers: '),
-            Text(killers_text),
+            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0 else Box(Text('No Awakenings')),
             delimiter=' '
-        )
+        ),
+        IdView.super_awakenings_row(m),
+        # the transform base of the base is the same
+        IdView.killers_row(m, m)
     )
 
 def base_skill(m: "MonsterModel"):
@@ -67,7 +46,7 @@ class TransformInfoView:
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in t_mon.types]),
                 Box(
-                    IdView.awakenings_row(t_mon),
+                    IdView.normal_awakenings_row(t_mon),
                     base_info(b_mon)
                 ),
             ),
