@@ -28,12 +28,15 @@ from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     findMonsterCustom, calc_ratio_name, calc_ratio_modifier
 from padinfo.core.historic_lookups import historic_lookups
+from padinfo.core.id import perform_id_query
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
-from padinfo.id_menu import IdMenu
+from padinfo.id_menu_old import IdMenu as IdMenuOld
+from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
 if TYPE_CHECKING:
@@ -137,7 +140,8 @@ class PadInfo(commands.Cog):
         else:
             emoji_clicked = emoji_obj.name
 
-        if emoji_clicked not in ls_menu_emoji_button_names:
+        if not (emoji_clicked in ls_menu_emoji_button_names or
+                emoji_clicked in id_menu_emoji_button_names):
             return
 
         message = reaction.message
@@ -147,20 +151,29 @@ class PadInfo(commands.Cog):
 
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        if menu_type == LeaderSkillMenu.MENU_TYPE:
-            friend_cog = self.bot.get_cog("Friend")
-            friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-            embed_menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
-            if not (await embed_menu.should_respond(message, reaction, member)):
-                return
+        menu_map = {
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
+            IdMenu.MENU_TYPE: IdMenu.menu,
+        }
 
-            dgcog = await self.get_dgcog()
-            user_config = await BotConfig.get_user(self.config, original_author_id)
-            data = {
-                'dgcog': dgcog,
-                'user_config': user_config
-            }
-            await embed_menu.transition(message, ims, emoji_clicked, member, **data)
+        menu_func = menu_map.get(menu_type)
+
+        if not menu_func:
+            return
+
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        embed_menu = menu_func(original_author_id, friends, self.bot.user.id)
+        if not (await embed_menu.should_respond(message, reaction, member)):
+            return
+
+        dgcog = await self.get_dgcog()
+        user_config = await BotConfig.get_user(self.config, original_author_id)
+        data = {
+            'dgcog': dgcog,
+            'user_config': user_config
+        }
+        await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -181,6 +194,19 @@ class PadInfo(commands.Cog):
             await self._do_id3(ctx, query)
         else:
             await self._do_id(ctx, query)
+
+        # dgcog = await self.get_dgcog()
+        # raw_query = query
+        # color = await self.get_user_embed_color(ctx)
+        # original_author_id = ctx.message.author.id
+        # friend_cog = self.bot.get_cog("Friend")
+        # friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        # monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+        #     await perform_id_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
+        # state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+        #                     monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
+        # menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        # await menu.create(ctx, state)
 
     @commands.command(aliases=["idold", "oldid"])
     @checks.bot_has_permissions(embed_links=True)
@@ -369,7 +395,7 @@ class PadInfo(commands.Cog):
         DGCOG = self.bot.get_cog("Dadguide")
         db_context = DGCOG.database
 
-        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
 
         id_embed = await menu.make_id_embed(m)
         evo_embed = await menu.make_evo_embed(m)
@@ -414,7 +440,7 @@ class PadInfo(commands.Cog):
         monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
-        menu = IdMenu(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
         starting_menu_emoji = None
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
@@ -465,7 +491,7 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
-            menu = IdMenu(ctx)
+            menu = IdMenuOld(ctx)
             embed = await menu.make_links_embed(m)
             await ctx.send(embed=embed)
 
@@ -505,7 +531,7 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
-            menu = IdMenu(ctx, allowed_emojis=self.get_emojis())
+            menu = IdMenuOld(ctx, allowed_emojis=self.get_emojis())
             embed = await menu.make_lookup_embed(m)
             await ctx.send(embed=embed)
         else:
@@ -611,7 +637,7 @@ class PadInfo(commands.Cog):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenu(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
@@ -754,7 +780,7 @@ class PadInfo(commands.Cog):
         cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
-                print(query, result, fluff, reason)
+                # print(query, result, fluff, reason)
                 if not any(c['id'] == int(result) and c['token'] == query for c in suite):
                     suite.append({
                         'id': int(result),
