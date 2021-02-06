@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
-from padinfo.core.id import perform_pantheon_query
+from padinfo.core.id import get_monster_by_id, get_monster_by_query
 from padinfo.view_state.base import ViewState
 
 if TYPE_CHECKING:
@@ -37,8 +37,25 @@ class PantheonViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        monster, pantheon_list, series_name = await perform_pantheon_query(dgcog, query, user_config.beta_id3)
+        resolved_monster_id = ims.get('resolved_monster_id')
+
+        monster = await (get_monster_by_id(dgcog, resolved_monster_id)
+                         if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))
+
+        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 
         return PantheonViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                             pantheon_list, series_name,
                             extra_state=ims)
+
+    @staticmethod
+    async def query(dgcog, monster):
+        db_context = dgcog.database
+        full_pantheon = db_context.get_monsters_by_series(monster.series_id)
+        pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
+        if len(pantheon_list) == 0 or len(pantheon_list) > 20:
+            return None
+
+        series_name = monster.series.name_en
+
+        return pantheon_list, series_name
