@@ -1,16 +1,12 @@
-from typing import TYPE_CHECKING
-
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer
+from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-
-if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+from padinfo.view_state.evos import EvosViewState
 
 
 def _evo_lines(monsters, current_monster):
@@ -24,23 +20,23 @@ def _evo_lines(monsters, current_monster):
 
 class EvosView:
     @staticmethod
-    def embed(m: "MonsterModel", alt_versions, gem_versions, color):
+    def embed(state: EvosViewState):
         fields = [
             EmbedField(
-                ("{} evolution" if len(alt_versions) == 1 else "{} evolutions").format(len(alt_versions)),
-                Box(*_evo_lines(alt_versions, m)))]
+                ("{} evolution" if len(state.alt_versions) == 1 else "{} evolutions").format(len(state.alt_versions)),
+                Box(*_evo_lines(state.alt_versions, state.monster)))]
 
-        if gem_versions:
+        if state.gem_versions:
             fields.append(
                 EmbedField(
-                    ("{} evolve gem" if len(gem_versions) == 1 else "{} evolve gems").format(len(gem_versions)),
-                    Box(*_evo_lines(gem_versions, m))))
+                    ("{} evolve gem" if len(state.gem_versions) == 1 else "{} evolve gems").format(len(state.gem_versions)),
+                    Box(*_evo_lines(state.gem_versions, state.monster))))
 
         return EmbedView(
             EmbedMain(
-                color=color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
-                url=puzzledragonx(m)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer(),
+                color=state.color,
+                title=MonsterHeader.long_v2(state.monster).to_markdown(),
+                url=puzzledragonx(state.monster)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
+            embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)

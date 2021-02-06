@@ -26,3 +26,7 @@ def skyozora(m: "MonsterModel"):
 
 def ilmina(m: "MonsterModel"):
     return ILMINA_TEMPLATE.format(m.monster_no_jp)
+
+
+def ilmina_skill(m: "MonsterModel"):
+    return "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
