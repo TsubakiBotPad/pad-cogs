@@ -133,6 +133,13 @@ class PadInfo(commands.Cog):
 
             await asyncio.sleep(wait_time)
 
+    async def get_dgcog(self):
+        dgcog = self.bot.get_cog("Dadguide")
+        if dgcog is None:
+            raise ValueError("Dadguide cog is not loaded")
+        await dgcog.wait_until_ready()
+        return dgcog
+
     def get_monster(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster(monster_id)
@@ -198,19 +205,82 @@ class PadInfo(commands.Cog):
         # if await self.config.user(ctx.author).beta_id3():
         #     await self._do_id3(ctx, query)
         # else:
-        #     await self._do_id(ctx, query)
+        await self._do_id(ctx, query)
+
+    @commands.command(aliases=["idold", "oldid"])
+    @checks.bot_has_permissions(embed_links=True)
+    async def id1(self, ctx, *, query):
+        """Do a search via id1"""
+        await self._do_id(ctx, query, force_id3_pref=False)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def idna(self, ctx, *, query: str):
+        """Monster info (limited to NA monsters ONLY)"""
+        await self._do_id(ctx, "inna " + query, force_id3_pref=True)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def idjp(self, ctx, *, query: str):
+        """Monster info (limited to JP monsters ONLY)"""
+        await self._do_id(ctx, "injp " + query, force_id3_pref=True)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        await self._do_id(ctx, query, force_id3_pref=True)
+
+    async def _do_id(self, ctx, query: str, force_id3_pref=None):
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonster1(dgcog, query)
+        #
+        # if m is not None:
+        #     async def send_error(err):
+        #         if err:
+        #             await asyncio.sleep(1)
+        #             await ctx.send(err)
+        #
+        #     asyncio.create_task(send_error(err))
+        #
+        #     await self._do_idmenu(ctx, m, self.id_emoji)
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
+
+        beta_id3 = await self.config.user(ctx.author).beta_id3()
+        if force_id3_pref is not None:
+            beta_id3 = force_id3_pref
+
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+        monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3,
                                                             raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
             return
+
+        async def send_error(error):
+            if error:
+                await asyncio.sleep(1)
+                await ctx.send(error)
+
+        asyncio.create_task(send_error(err))
+
+        # id3 messaging stuff
+        if beta_id3 and monster and monster.monster_no_na != monster.monster_no_jp:
+            await ctx.send("The NA ID and JP ID of this card differ! "
+                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
+                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
+                            ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
+
+        if beta_id3 and await self.config.do_survey():
+            print('uhh')
+            asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
@@ -220,48 +290,8 @@ class PadInfo(commands.Cog):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 
-    @commands.command(aliases=["idold", "oldid"])
-    @checks.bot_has_permissions(embed_links=True)
-    async def id1(self, ctx, *, query):
-        """Do a search via id1"""
-        await self._do_id(ctx, query)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def idna(self, ctx, *, query: str):
-        """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id3(ctx, "inna " + query)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def idjp(self, ctx, *, query: str):
-        """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id3(ctx, "injp " + query)
-
-    async def get_dgcog(self):
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
-            raise ValueError("Dadguide cog is not loaded")
-        await dgcog.wait_until_ready()
-        return dgcog
-
-    async def _do_id(self, ctx, query: str):
-        dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonster1(dgcog, query)
-
-        if m is not None:
-            async def send_error(err):
-                if err:
-                    await asyncio.sleep(1)
-                    await ctx.send(err)
-
-            asyncio.create_task(send_error(err))
-
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
     async def send_survey_after(self, ctx, query, result_monster):
+        print('hello here')
         dgcog = await self.get_dgcog()
         sm = await self.config.user(ctx.author).survey_mode()
         sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
@@ -314,28 +344,6 @@ class PadInfo(commands.Cog):
         """Monster info (main tab)"""
         await ctx.send("id2 has been discontinued!  For an even better searching experience,"
                        " opt into the id3 beta using `{}idset beta y`".format(ctx.prefix))
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id3(self, ctx, *, query: str):
-        """Monster info (main tab)"""
-        await self._do_id3(ctx, query)
-
-    async def _do_id3(self, ctx, query):
-        dgcog = await self.get_dgcog()
-        m = await findMonster3(dgcog, query)
-        if m and m.monster_no_na != m.monster_no_jp:
-            await ctx.send("The NA ID and JP ID of this card differ! "
-                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
-                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
-                            ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
-        if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, m))
-
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, "No monster matched")
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
