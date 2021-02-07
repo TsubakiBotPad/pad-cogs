@@ -628,13 +628,13 @@ class PadInfo(commands.Cog, IdTest):
         dgcog = await self.get_dgcog()
         base_mon, err, debug_info, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = \
             await perform_transforminfo_query(dgcog, query, beta_id3)
+
+        if not base_mon:
+            await self.makeFailureMsg(ctx, query, err)
+            return
         
         if not transformed_mon:
             await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
-            return
-
-        if err:
-            await ctx.send(err)
             return
 
         color = await self.get_user_embed_color(ctx)
