@@ -38,9 +38,6 @@ class IdViewState(ViewState):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        if ims['menu_type'] == 'LeaderSkill':
-            ims['resolved_monster_id'] = None
-
         monster = await get_monster_from_ims(dgcog, user_config, ims)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
