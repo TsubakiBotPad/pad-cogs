@@ -1,16 +1,3 @@
-from padinfo.core.find_monster import findMonsterCustom2
-
-
-async def get_monster_by_query(dgcog, raw_query, beta_id3):
-    monster, _, _ = await findMonsterCustom2(dgcog, beta_id3, raw_query)
-    return monster
-
-
-async def get_monster_by_id(dgcog, id):
-    monster = dgcog.database.graph.get_monster(id)
-    return monster
-
-
 async def get_id_view_state_data(dgcog, monster):
     db_context = dgcog.database
     acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
