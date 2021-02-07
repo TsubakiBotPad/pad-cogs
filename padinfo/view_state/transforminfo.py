@@ -1,6 +1,5 @@
 from padinfo.common.config import UserConfig
 from padinfo.core.transforminfo import perform_transforminfo_query
-from padinfo.core.id import get_monster_misc_info
 from padinfo.view_state.base import ViewState
 
 

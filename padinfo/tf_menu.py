@@ -46,6 +46,7 @@ class TransformInfoMenu:
         user_config = data['user_config']
 
         ims['query'] = ims['b_query']
+        ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
@@ -56,6 +57,7 @@ class TransformInfoMenu:
         user_config = data['user_config']
 
         ims['query'] = ims['t_query']
+        ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
