@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from padinfo.common.config import UserConfig
 from padinfo.core.id import get_monster_by_id, get_monster_by_query
+from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ class OtherInfoViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'pane_type': 'otherinfo',
+            'pane_type': IdMenuPaneNames.otherinfo,
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
@@ -38,7 +39,6 @@ class OtherInfoViewState(ViewState):
                          if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))
 
         query = ims.get('query') or raw_query
-
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
