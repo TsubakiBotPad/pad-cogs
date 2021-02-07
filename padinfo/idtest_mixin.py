@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 
 import tsutils
-from redbot.core import commands, Config
+from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
 from padinfo.core.find_monster import findMonster3
@@ -17,11 +17,11 @@ class IdTest:
         self.config = Config.get_conf(self, identifier=-1)
 
     @commands.group()
-    # @checks.is_owner()
     async def idtest(self, ctx):
         """ID Test suite subcommands"""
 
     @idtest.command(name="add")
+    @checks.is_owner()
     async def idt_add(self, ctx, id: int, *, query):
         """Add a test for the id3 test suite (Append `| reason` to add a reason)"""
         query, *reason = query.split("|")
@@ -63,11 +63,13 @@ class IdTest:
         """Fluff subcommands"""
 
     @idt_name.command(name="add")
+    @checks.is_owner()
     async def idtn_add(self, ctx, id: int, token, *, reason=""):
         """Add a name token test to the id3 test suite"""
         await self.norf_add(ctx, id, token, reason, False)
 
     @idt_fluff.command(name="add")
+    @checks.is_owner()
     async def idtf_add(self, ctx, id: int, token, *, reason=""):
         """Add a fluff token test to the id3 test suite"""
         await self.norf_add(ctx, id, token, reason, True)
@@ -121,6 +123,7 @@ class IdTest:
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
+    @checks.is_owner()
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
@@ -135,11 +138,13 @@ class IdTest:
         await ctx.tick()
 
     @idt_name.command(name="import")
+    @checks.is_owner()
     async def idtn_import(self, ctx, *, queries):
         """Import name/fluff tests"""
         await self.norf_import(ctx, queries)
 
     @idt_fluff.command(name="import")
+    @checks.is_owner()
     async def idtf_import(self, ctx, *, queries):
         """Import name/fluff tests"""
         await self.norf_import(ctx, queries)
@@ -164,6 +169,7 @@ class IdTest:
         await ctx.tick()
 
     @idtest.command(name="remove", aliases=["delete", "rm"])
+    @checks.is_owner()
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
@@ -182,11 +188,13 @@ class IdTest:
         await ctx.tick()
 
     @idt_name.command(name="remove")
+    @checks.is_owner()
     async def idtn_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
         await self.norf_remove(ctx, item)
 
     @idt_fluff.command(name="remove")
+    @checks.is_owner()
     async def idtf_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
         await self.norf_remove(ctx, item)
@@ -205,6 +213,7 @@ class IdTest:
         await ctx.tick()
 
     @idtest.command(name="setreason", aliases=["addreason"])
+    @checks.is_owner()
     async def idt_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an id3 test case"""
         if reason == '""':
@@ -222,11 +231,13 @@ class IdTest:
         await ctx.tick()
 
     @idt_name.command(name="setreason")
+    @checks.is_owner()
     async def idtn_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
         await self.norf_setreason(ctx, number, reason)
 
     @idt_fluff.command(name="setreason")
+    @checks.is_owner()
     async def idtf_setreason(self, ctx, number: int, *, reason):
         """Set a reason for an name/fluff test case"""
         await self.norf_setreason(ctx, number, reason)
