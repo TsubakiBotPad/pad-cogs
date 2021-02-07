@@ -634,7 +634,12 @@ class PadInfo(commands.Cog, IdTest):
             return
         
         if not transformed_mon:
-            await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
+            await ctx.send('Your query `{}` found [{}] {}, which has no evos that transform.'.format(query,
+                base_mon.monster_id, base_mon.name_en))
+            return
+
+        if err:
+            await ctx.send(err)
             return
 
         color = await self.get_user_embed_color(ctx)
