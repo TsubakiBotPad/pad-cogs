@@ -5,6 +5,7 @@ from typing import List
 import discord
 
 from dungeon.grouped_skillls import GroupedSkills
+from dungeon.models.EnemySkill import EnemySkill
 
 TARGET_NAMES = [
     '<targets unset>',
@@ -1063,7 +1064,7 @@ def multiple_cull(m: str, key: str = 'and'):
 
 class ProcessedSkill(object):
     def __init__(self, name: str, effect: str, processed: str, condition: str = None, parent: GroupedSkills = None,
-                 es_type: List[int] = None):
+                 es_raw: List[EnemySkill] = None):
         self.name = name
         self.effect = effect
         self.processed = processed
@@ -1071,7 +1072,7 @@ class ProcessedSkill(object):
         self.parent = parent
         self.type = self.find_type()
         self.is_passive_preempt = len(self.process_type()) != 0
-        self.es_type = es_type
+        self.es_raw = es_raw
 
     def find_type(self):
         up = self.parent

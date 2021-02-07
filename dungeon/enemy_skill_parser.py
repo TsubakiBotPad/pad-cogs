@@ -4,6 +4,8 @@ from typing import List
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.models.EnemySkill import EnemySkill, ESNone
 
+
+
 generic_symbols = {
     'bind': "❌",
     'blind': "😎",
@@ -141,7 +143,7 @@ emoji_dict = {
     'no_skyfall': 'No🌧',
     'bind': "❌"
 }
-TargetType = {
+"""TargetType = {
     'Unset': -1,
     # Selective Subs
     'Random': 0,
@@ -161,7 +163,25 @@ TargetType = {
     # Full Team Aspect
     'awokens': 10,
     'actives': 11,
+}"""
+
+TargetType = {
+    -1 : 'Unset',
+    0: 'Random',
+    1: 'Leader',
+    2: 'Both Leaders',
+    3: 'Friend Leaders',
+    4: 'Subs',
+    5: 'Attributes',
+    6: 'Types',
+    6.5: 'Cards',
+    7: 'Player',
+    8: 'Enemy',
+    9: 'Enemy Ally',
+    10: 'Awokens',
+    11: 'Actives',
 }
+
 OrbShape = {
     'L': 0,
     'X': 1,
@@ -356,7 +376,7 @@ def bind_bitmap(bits) -> List[int]:
         targets.append(1)
     if (bits >> 1) & 1 == 1:
         if len(targets) > 0:
-            targets = 2
+            targets = [2]
         else:
             targets.append(3)
     if (bits >> 2) & 1 == 1:
@@ -648,7 +668,8 @@ def ES63BindAttack(es: EnemySkill):
     targets = bind_bitmap(es.params[4])
     min_turns = es.params[2] or 0
     max_turns = es.params[3]
-    if 'leader' not in ''.join(map(str, targets)):
+    target_count = None
+    if 1 not in targets:
         target_count = es.params[5]
     if target_count is None:
         return "{}{} for {}".format(generic_symbols["bind"], TargetType[targets[0]], minmax(min_turns, max_turns))
@@ -661,7 +682,7 @@ def ES64PoisonChangeRandomAttack(es: EnemySkill):
 
 
 def ES65BindRandomSub(es: EnemySkill):
-    targets = TargetType['Subs']
+    targets = 4
     target_count = es.params[1]
     min_turns = es.params[2] or 0
     max_turns = es.params[3]
@@ -716,7 +737,10 @@ def ES73Resolve(es: EnemySkill):
 def ES74DamageShield(es: EnemySkill):
     turns = es.params[1]
     shield_percent = es.params[2]
-    emoji = emoji_dict['defense' + str(shield_percent)]
+    try:
+        emoji = emoji_dict['defense' + str(shield_percent)]
+    except:
+        emoji = emoji_dict['defense']
     if emoji is None:
         emoji = emoji_dict['defense'] + shield_percent + '%'
     return "{} for {}".format(emoji, turns)
@@ -908,9 +932,9 @@ def ES104Cloud(es: EnemySkill):
 
 
 def ES105DebuffRCV(es: EnemySkill):
-    turns = es.params[1]
-    amount = es.params[2]
-    emoji = emoji_dict['rcv_debuff'] if es.params[2] < 100 else emoji_dict['rcv_buff']
+    turns = es.params[1] or 0
+    amount = es.params[2] or 0
+    emoji = emoji_dict['rcv_debuff'] if amount < 100 else emoji_dict['rcv_buff']
     return '{}{}% for {}'.format(emoji, amount, turns)
 
 
