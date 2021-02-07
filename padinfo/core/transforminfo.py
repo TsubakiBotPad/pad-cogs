@@ -21,6 +21,7 @@ async def perform_transforminfo_query(dgcog, raw_query, beta_id3):
     if not transformed_mon:
         return monster, err, debug_info, transformed_mon, None, None, None
 
-    acquire_raw, _, base_rarity, _, true_evo_type_raw = await get_monster_misc_info(db_context, transformed_mon)
+    acquire_raw, _, base_rarity, _, true_evo_type_raw = \
+        await get_monster_misc_info(db_context, transformed_mon)
 
     return base_mon, err, debug_info, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw

@@ -96,9 +96,6 @@ class PadInfo(commands.Cog, IdTest):
         self.previous_monster_emoji = '\N{BLACK LEFT-POINTING TRIANGLE}'
         self.next_monster_emoji = '\N{BLACK RIGHT-POINTING TRIANGLE}'
         self.last_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-        self.tfhome_emoji = '\N{HOUSE BUILDING}'
-        self.base_emoji = '\N{DOWNWARDS BLACK ARROW}'
-        self.transformed_emoji = '\N{UPWARDS BLACK ARROW}'
         self.remove_emoji = self.menu.emoji['no']
 
         self.config = Config.get_conf(self, identifier=9401770)
@@ -634,8 +631,8 @@ class PadInfo(commands.Cog, IdTest):
             return
         
         if not transformed_mon:
-            await ctx.send('Your query `{}` found [{}] {}, which has no evos that transform.'.format(query,
-                base_mon.monster_id, base_mon.name_en))
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, base_mon.monster_id,
+                           base_mon.name_en) + 'which has no evos that transform.')
             return
 
         if err:
@@ -646,8 +643,9 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query, color,
-            base_mon, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw)
+        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
+                                       color, base_mon, transformed_mon, base_rarity, acquire_raw,
+                                       true_evo_type_raw)
         menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 

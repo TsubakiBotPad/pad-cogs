@@ -22,7 +22,8 @@ def base_info(m: "MonsterModel"):
     return Box(
         Box(
             '\N{DOWN-POINTING RED TRIANGLE}',
-            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0 else Box(Text('No Awakenings')),
+            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
+                else Box(Text('No Awakenings')),
             delimiter=' '
         ),
         IdView.super_awakenings_row(m),
@@ -46,13 +47,15 @@ class TransformInfoView:
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
-                    IdView.normal_awakenings_row(transformed_mon),
+                    IdView.normal_awakenings_row(transformed_mon)
+                        if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                     base_info(base_mon)
                 ),
             ),
             EmbedField(
                 'Card info',
-                IdView.misc_info(transformed_mon, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
+                IdView.misc_info(transformed_mon, state.true_evo_type_raw, state.acquire_raw,
+                                 state.base_rarity),
                 inline=True
             ),
             EmbedField(

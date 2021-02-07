@@ -28,7 +28,8 @@ class TransformInfoViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        base_mon, _, _, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
-            raw_query, user_config.beta_id3)
+        base_mon, _, _, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = \
+            await perform_transforminfo_query(dgcog, raw_query, user_config.beta_id3)
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-            base_mon, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw)
+                                      base_mon, transformed_mon, base_rarity, acquire_raw,
+                                      true_evo_type_raw)

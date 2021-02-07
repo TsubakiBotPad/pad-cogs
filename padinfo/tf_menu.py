@@ -15,7 +15,8 @@ from padinfo.view_state.transforminfo import TransformInfoViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWNWARDS BLACK ARROW}', '\N{UPWARDS BLACK ARROW}', '\N{CROSS MARK}']
+emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWNWARDS BLACK ARROW}', '\N{UPWARDS BLACK ARROW}',
+                      '\N{CROSS MARK}']
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 class TransformInfoMenu:
@@ -35,10 +36,12 @@ class TransformInfoMenu:
             ValidEmojiReactionFilter(valid_emoji_names),
             NotPosterEmojiReactionFilter(),
             BotAuthoredMessageReactionFilter(bot_id),
-            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
+            MessageOwnerReactionFilter(original_author_id,
+                                       FriendReactionFilter(original_author_id, friend_ids))
         ]
 
-        return EmbedMenu(reaction_filters, transitions, TransformInfoMenu.tf_control, menu_emoji_config)
+        return EmbedMenu(reaction_filters, transitions, TransformInfoMenu.tf_control,
+                         menu_emoji_config)
 
     @staticmethod
     async def respond_with_base(message: Optional[Message], ims, **data):
