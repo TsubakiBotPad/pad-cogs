@@ -298,9 +298,9 @@ async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
     return max(
         await find_monster_search(tokenized_query, dgcog),
         await find_monster_search(mw_tokenized_query, dgcog)
-        if tokenized_query != mw_tokenized_query else (0.0, None),
-        key=lambda t: t[0]
-    )[1]
+        if tokenized_query != mw_tokenized_query else (None, {}),
+        key=lambda t: t[1].get(t[0], MonsterMatch()).score
+    )[0]
 
 
 async def find_monster_search(tokenized_query, dgcog) -> Tuple[int, Optional["MonsterModel"]]:
