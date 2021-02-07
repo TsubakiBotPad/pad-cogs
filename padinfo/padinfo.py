@@ -22,13 +22,13 @@ from tabulate import tabulate
 from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
 
 from padinfo.common.config import BotConfig
-from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji
+from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
+    get_attribute_emoji_by_monster
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search
 from padinfo.core.historic_lookups import historic_lookups
-from padinfo.core.id import get_monster_by_query, get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
@@ -36,7 +36,6 @@ from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_n
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 
 if TYPE_CHECKING:
@@ -765,12 +764,12 @@ class PadInfo(commands.Cog):
     @idt_name.command(name="import")
     async def idtn_import(self, ctx, *, queries):
         """Import name/fluff tests"""
-        await self.norf_import(ctx, id, queries)
+        await self.norf_import(ctx, queries)
 
     @idt_fluff.command(name="import")
     async def idtf_import(self, ctx, *, queries):
         """Import name/fluff tests"""
-        await self.norf_import(ctx, id, queries)
+        await self.norf_import(ctx, queries)
 
     async def norf_import(self, ctx, queries):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
@@ -871,6 +870,7 @@ class PadInfo(commands.Cog):
             if number >= len(suite):
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
+            # noinspection PyTypeChecker
             sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[number]['reason'] = reason
         await ctx.tick()
 
@@ -1409,7 +1409,7 @@ class PadInfo(commands.Cog):
                 o += f"\n\n{type}\n" + "\n".join(f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
             return o
 
-        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", 1)
+        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
         o += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
         o += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
         o += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
@@ -1466,28 +1466,59 @@ class PadInfo(commands.Cog):
         else:
             await ctx.send(f"There are no modifiers that match `{token}`.")
 
-    @commands.command()
+    @commands.command(aliases=["tracebackid", "tbid", "idtb"])
     async def idtraceback(self, ctx, *, query):
-        dgcog = self.bot.get_cog("Dadguide")
+        """Get the traceback of an id query"""
+        mid = None
+        if "/" in query:
+            query, mid = query.split("/", 1)
+            if not mid.strip().isdigit():
+                await ctx.send("Monster id must be an int.")
+                return
+            mid = int(mid.strip())
 
+        dgcog = self.bot.get_cog("Dadguide")
         await dgcog.wait_until_ready()
 
-        query = rmdiacritics(query).lower().replace(",", "")
+        query = rmdiacritics(query).strip().lower().replace(",", "")
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        monster, score, tokens = max(
+        bestmatch, matches = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
-            if tokenized_query != mw_tokenized_query else (None, 0.0, set()),
-            key=lambda t: t[1]
+            if tokenized_query != mw_tokenized_query else (None, {None: 0.0}, {None: set()}),
+            key=lambda t: t[1][t[0]].score if t[0] else 0
         )
 
-        if monster is None:
+        if bestmatch is None:
             await ctx.send("No monster matched.")
             return
 
-        tokenstr = '\n'.join(sorted(tokens))
-        await ctx.send(f"**Monster matched**: {monster.name_en} ({monster.monster_id})\n\n"
+        if mid is not None:
+            selected = {m for m in matches if m.monster_id == mid}
+            if not selected:
+                await ctx.send("The requested monster was not found as a result of the query.")
+                return
+            monster = selected.pop()
+        else:
+            monster = bestmatch
+
+        score = matches[monster].score
+        ntokens = matches[monster].name
+        mtokens = matches[monster].mod
+        lower_prio = {m for m in matches if matches[m].score == matches[monster].score}.difference({monster})
+        if len(lower_prio) > 10:
+            lpstr = f"{len(lower_prio)} other monsters."
+        else:
+            lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
+
+        mtokenstr = '\n'.join(sorted(mtokens))
+        ntokenstr = '\n'.join(sorted(ntokens))
+
+        await ctx.send(f"**Monster matched**: "
+                       f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})\n"
                        f"**Total Score**: {score}\n\n"
-                       f"**Matched tokens**:\n" + tokenstr)
+                       f"**Matched Name Tokens**:\n{ntokenstr}\n\n"
+                       f"**Matched Mod Tokens**:\n{mtokenstr}\n\n" +
+                       (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
