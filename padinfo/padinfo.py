@@ -27,16 +27,22 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search
+    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom2
 from padinfo.core.historic_lookups import historic_lookups
+from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
-from padinfo.emojiupdaters import IdEmojiUpdater, ScrollEmojiUpdater
-from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
+from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view_state.evos import EvosViewState
+from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
     pass
@@ -127,6 +133,13 @@ class PadInfo(commands.Cog):
 
             await asyncio.sleep(wait_time)
 
+    async def get_dgcog(self):
+        dgcog = self.bot.get_cog("Dadguide")
+        if dgcog is None:
+            raise ValueError("Dadguide cog is not loaded")
+        await dgcog.wait_until_ready()
+        return dgcog
+
     def get_monster(self, monster_id: int):
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster(monster_id)
@@ -140,7 +153,7 @@ class PadInfo(commands.Cog):
             emoji_clicked = emoji_obj.name
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
-                emoji_clicked in id_menu_emoji_button_names):
+                emoji_clicked in IdMenuPanes.emoji_names()):
             return
 
         message = reaction.message
@@ -189,65 +202,75 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        if await self.config.user(ctx.author).beta_id3():
-            await self._do_id3(ctx, query)
-        else:
-            await self._do_id(ctx, query)
-
-        # dgcog = await self.get_dgcog()
-        # raw_query = query
-        # color = await self.get_user_embed_color(ctx)
-        # original_author_id = ctx.message.author.id
-        # friend_cog = self.bot.get_cog("Friend")
-        # friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        # monster = await get_monster_by_query(dgcog, raw_query, await self.config.user(ctx.author).beta_id3())
-        # transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
-        #     await get_id_view_state_data(dgcog, monster)
-        # state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-        #                     monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
-        # menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
-        # await menu.create(ctx, state)
+        await self._do_id(ctx, query)
 
     @commands.command(aliases=["idold", "oldid"])
     @checks.bot_has_permissions(embed_links=True)
     async def id1(self, ctx, *, query):
         """Do a search via id1"""
-        await self._do_id(ctx, query)
+        await self._do_id(ctx, query, force_id3_pref=False)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id3(ctx, "inna " + query)
+        await self._do_id(ctx, "inna " + query, force_id3_pref=True)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id3(ctx, "injp " + query)
+        await self._do_id(ctx, "injp " + query, force_id3_pref=True)
 
-    async def get_dgcog(self):
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
-            raise ValueError("Dadguide cog is not loaded")
-        await dgcog.wait_until_ready()
-        return dgcog
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def id3(self, ctx, *, query: str):
+        """Monster info (main tab)"""
+        await self._do_id(ctx, query, force_id3_pref=True)
 
-    async def _do_id(self, ctx, query: str):
+    async def _do_id(self, ctx, query: str, force_id3_pref=None):
+        # dgcog = await self.get_dgcog()
+        beta_id3 = await self.config.user(ctx.author).beta_id3()
+        if force_id3_pref is not None:
+            beta_id3 = force_id3_pref
+
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonster1(dgcog, query)
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3,
+                                                            raw_query)
 
-        if m is not None:
-            async def send_error(err):
-                if err:
-                    await asyncio.sleep(1)
-                    await ctx.send(err)
-
-            asyncio.create_task(send_error(err))
-
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
+        if not monster:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        async def send_error(error):
+            if error:
+                await asyncio.sleep(1)
+                await ctx.send(error)
+
+        asyncio.create_task(send_error(err))
+
+        # id3 messaging stuff
+        if beta_id3 and monster and monster.monster_no_na != monster.monster_no_jp:
+            await ctx.send("The NA ID and JP ID of this card differ! "
+                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
+                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
+                            ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
+
+        if beta_id3 and await self.config.do_survey():
+            asyncio.create_task(self.send_survey_after(ctx, query, monster))
+
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+            await get_id_view_state_data(dgcog, monster)
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
+                            use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     async def send_survey_after(self, ctx, query, result_monster):
         dgcog = await self.get_dgcog()
@@ -303,134 +326,90 @@ class PadInfo(commands.Cog):
         await ctx.send("id2 has been discontinued!  For an even better searching experience,"
                        " opt into the id3 beta using `{}idset beta y`".format(ctx.prefix))
 
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def id3(self, ctx, *, query: str):
-        """Monster info (main tab)"""
-        await self._do_id3(ctx, query)
-
-    async def _do_id3(self, ctx, query):
-        dgcog = await self.get_dgcog()
-        m = await findMonster3(dgcog, query)
-        if m and m.monster_no_na != m.monster_no_jp:
-            await ctx.send("The NA ID and JP ID of this card differ! "
-                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
-                           (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
-                            ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
-        if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, m))
-
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, "No monster matched")
-
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.evo_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                              monster, alt_versions, gem_versions,
+                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.evos_control)
+        await menu.create(ctx, state)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.mats_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if not monster:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
+            await MaterialsViewState.query(dgcog, monster)
+
+        if mats is None:
+            await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
+            return
+
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link,
+                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.mats_control)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=["series"])
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            menu = await self._do_idmenu(ctx, m, self.pantheon_emoji)
-            if menu == EMBED_NOT_GENERATED:
-                await ctx.send(inline('Not a pantheon monster'))
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
 
-    async def _do_idmenu(self, ctx, m, starting_menu_emoji):
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
+        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+        if pantheon_list is None:
+            await ctx.send(inline('Too many monsters in this series to display'))
+            return
 
-        alt_versions = db_context.graph.get_alt_monsters_by_id(m.monster_id)
-        emoji_to_embed = await self.get_id_emoji_options(ctx,
-                                                         m=m, scroll=sorted({*alt_versions}, key=lambda
-                x: x.monster_id) if settings.checkEvoID(
-                ctx.author.id) else [], menu_type=1)
-
-        return await self._do_menu(
-            ctx,
-            starting_menu_emoji,
-            IdEmojiUpdater(ctx, emoji_to_embed, pad_info=self,
-                           m=m, selected_emoji=starting_menu_emoji, bot=self.bot,
-                           db_context=db_context)
-        )
-
-    async def _do_scrollmenu(self, ctx, m, ms, starting_menu_emoji):
-        emoji_to_embed = await self.get_id_emoji_options(ctx, m=m, scroll=ms)
-        return await self._do_menu(
-            ctx,
-            starting_menu_emoji,
-            ScrollEmojiUpdater(ctx, emoji_to_embed, pad_info=self, bot=self.bot,
-                               m=m, ms=ms, selected_emoji=starting_menu_emoji)
-        )
-
-    async def get_id_emoji_options(self, ctx, m=None, scroll=None, menu_type=0):
-        if scroll is None:
-            scroll = []
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-
-        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
-
-        id_embed = await menu.make_id_embed(m)
-        evo_embed = await menu.make_evo_embed(m)
-        mats_embed = await menu.make_evo_mats_embed(m)
-        pic_embed = await menu.make_picture_embed(m)
-        other_info_embed = await menu.make_otherinfo_embed(m)
-        pantheon_embed = await menu.make_pantheon_embed(m)
-
-        emoji_to_embed = OrderedDict()
-
-        # it's impossible for the previous/next ones to be accessed because
-        # IdEmojiUpdater won't allow it, however they have to be defined
-        # so that the buttons display in the first place
-
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.first_monster_emoji] = None
-        if len(scroll) != 1:
-            emoji_to_embed[self.previous_monster_emoji] = None
-            emoji_to_embed[self.next_monster_emoji] = None
-        if len(scroll) > 1 and menu_type != 1:
-            emoji_to_embed[self.last_monster_emoji] = None
-
-        emoji_to_embed[self.id_emoji] = id_embed
-        emoji_to_embed[self.evo_emoji] = evo_embed
-        if mats_embed:
-            emoji_to_embed[self.mats_emoji] = mats_embed
-        emoji_to_embed[self.pic_emoji] = pic_embed
-        if pantheon_embed:
-            emoji_to_embed[self.pantheon_emoji] = pantheon_embed
-
-        emoji_to_embed[self.other_info_emoji] = other_info_embed
-
-        # remove emoji needs to be last
-        emoji_to_embed[self.remove_emoji] = self.menu.reaction_delete_message
-        return emoji_to_embed
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                                  monster, pantheon_list, series_name,
+                                  use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
+        await menu.create(ctx, state)
 
     async def _do_evolistmenu(self, ctx, sm):
         DGCOG = self.bot.get_cog("Dadguide")
@@ -478,11 +457,24 @@ class PadInfo(commands.Cog):
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.pic_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                             monster,
+                             use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pic_control)
+        await menu.create(ctx, state)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -503,11 +495,24 @@ class PadInfo(commands.Cog):
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        if m is not None:
-            await self._do_idmenu(ctx, m, self.other_info_emoji)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
+                                                            raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
+                                   monster,
+                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.otherinfo_control)
+        await menu.create(ctx, state)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -545,43 +550,6 @@ class PadInfo(commands.Cog):
         m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
-    @commands.command(aliases=['collabscroll'])
-    @checks.bot_has_permissions(embed_links=True)
-    async def seriesscroll(self, ctx, *, query: str):
-        """Scroll through the monsters in a collab"""
-        dgcog = self.bot.get_cog("Dadguide")
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-        ms = dgcog.database.get_monsters_by_series(m.series.series_id)
-
-        ms.sort(key=lambda x: x.monster_id)
-        ms = [m for m in ms if m.sell_mp >= 100]
-
-        if not ms:
-            await ctx.send("There are no monsters in that series worth more than 99 monster points.")
-            return
-
-        if m not in ms:
-            m = m if m in ms else ms[0]
-
-        if m is not None:
-            await self._do_scrollmenu(ctx, m, ms, self.id_emoji)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def evoscroll(self, ctx, *, query: str):
-        """Scroll through the monsters in a collab"""
-        dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
-
-        if m is not None:
-            await self._do_scrollmenu(ctx, m,
-                                      sorted(dgcog.database.graph.get_alt_monsters(m), key=lambda x: x.monster_id),
-                                      self.id_emoji)
         else:
             await self.makeFailureMsg(ctx, query, err)
 
@@ -703,7 +671,8 @@ class PadInfo(commands.Cog):
     async def norf_add(self, ctx, id: int, token, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the fluff/name test suite?"):
+                not await tsutils.confirm_message(ctx,
+                                                  "Are you sure you want to add to the fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 

@@ -171,8 +171,6 @@ class FindMonster:
         ms = sorted([nt for nt in index2.all_name_tokens if calc_ratio_name(t, nt, index2) > self.TOKEN_JW_DISTANCE],
                     key=lambda nt: calc_ratio_name(t, nt, index2), reverse=True)
         ms += [token for token in index2.all_name_tokens if token.startswith(t)]
-        if not ms:
-            return None
         for match in ms:
             score = calc_ratio_name(t, match, index2)
             for m in index2.manual[match]:
