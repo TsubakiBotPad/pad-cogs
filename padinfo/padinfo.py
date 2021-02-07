@@ -1456,7 +1456,7 @@ class PadInfo(commands.Cog):
         bestmatch, matches = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
-            if tokenized_query != mw_tokenized_query else (None, {None: 0.0}, {None: set()}),
+            if tokenized_query != mw_tokenized_query else (None, {}),
             key=lambda t: t[1][t[0]].score if t[0] else 0
         )
 
