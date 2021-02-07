@@ -1,11 +1,12 @@
 from padinfo.common.config import UserConfig
+from padinfo.core.id import get_monster_misc_info
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.view_state.base import ViewState
 
 
 class TransformInfoViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-        base_rarity, acquire_raw, true_evo_type_raw):
+                 base_rarity, acquire_raw, true_evo_type_raw):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
@@ -17,8 +18,8 @@ class TransformInfoViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'b_resolved_monster_id': str(self.base_mon.monster_id),
-            't_resolved_monster_id': str(self.transformed_mon.monster_id)
+            'b_resolved_monster_id': self.base_mon.monster_id,
+            't_resolved_monster_id': self.transformed_mon.monster_id
         })
         return ret
 
@@ -27,9 +28,23 @@ class TransformInfoViewState(ViewState):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
+        base_mon_id = ims['b_resolved_monster_id']
+        transformed_mon_id = ims['t_resolved_monster_id']
 
-        base_mon, _, _, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = \
-            await perform_transforminfo_query(dgcog, raw_query, user_config.beta_id3)
+        base_mon = dgcog.get_monster(base_mon_id)
+        transformed_mon = dgcog.get_monster(transformed_mon_id)
+
+        acquire_raw, base_rarity, true_evo_type_raw = \
+            await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
                                       base_mon, transformed_mon, base_rarity, acquire_raw,
                                       true_evo_type_raw)
+
+    @staticmethod
+    async def query(dgcog, base_mon, transformed_mon):
+        db_context = dgcog.database
+        acquire_raw, _, base_rarity, _, true_evo_type_raw = \
+            await get_monster_misc_info(db_context, transformed_mon)
+
+        return acquire_raw, base_rarity, true_evo_type_raw

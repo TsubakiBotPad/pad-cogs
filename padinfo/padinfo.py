@@ -623,7 +623,7 @@ class PadInfo(commands.Cog, IdTest):
         """Show info about a transform card, including some helpful details about the base card."""
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        base_mon, err, debug_info, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = \
+        base_mon, err, debug_info, transformed_mon = \
             await perform_transforminfo_query(dgcog, query, beta_id3)
 
         if not base_mon:
@@ -643,6 +643,8 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        acquire_raw, base_rarity, true_evo_type_raw = \
+            await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
                                        color, base_mon, transformed_mon, base_rarity, acquire_raw,
                                        true_evo_type_raw)
