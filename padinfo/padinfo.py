@@ -26,7 +26,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, findMonsterCustom2, find_monster_search
+    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom2
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
@@ -940,7 +940,7 @@ class PadInfo(commands.Cog, IdTest):
                 o += f"\n\n{type}\n" + "\n".join(f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
             return o
 
-        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", 1)
+        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
         o += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
         o += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
         o += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
