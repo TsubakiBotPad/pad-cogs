@@ -2,6 +2,7 @@ from typing import List, TYPE_CHECKING
 
 from padinfo.common.config import UserConfig
 from padinfo.core.id import get_monster_by_query, get_id_view_state_data, get_monster_by_id
+from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class IdViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'pane_type': 'id',
+            'pane_type': IdMenuPaneNames.id,
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
@@ -47,7 +48,6 @@ class IdViewState(ViewState):
 
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
         query = ims.get('query') or raw_query
-
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'

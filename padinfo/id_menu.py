@@ -8,15 +8,14 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
-from padinfo.core.padinfo_settings import settings
-
 from dadguide.database_context import DbContext
+from padinfo.pane_names import IdMenuPaneNames
+from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.materials import MaterialsView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
 from padinfo.view.pic import PicView
-from padinfo.view.evos import EvosView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.materials import MaterialsViewState
@@ -27,65 +26,26 @@ from padinfo.view_state.pic import PicViewState
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
-emoji_button_names = [
-    '\N{BLACK LEFT-POINTING TRIANGLE}',
-    '\N{BLACK RIGHT-POINTING TRIANGLE}',
-    '\N{HOUSE BUILDING}',
-    char_to_emoji('e'),
-    '\N{MEAT ON BONE}',
-    '\N{FRAME WITH PICTURE}',
-    '\N{CLASSICAL BUILDING}',
-    '\N{SCROLL}',
-    '\N{CROSS MARK}',
-]
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class IdMenu:
-    INITIAL_EMOJI = emoji_button_names[2]
     MENU_TYPE = 'IdMenu'
 
     @staticmethod
     def menu(original_author_id, friend_ids, bot_id, initial_control=None):
         if initial_control is None:
             initial_control = IdMenu.id_control
-        transitions = {
-            emoji_button_names[0]: IdMenu.respond_with_left,
-            emoji_button_names[1]: IdMenu.respond_with_right,
-            emoji_button_names[2]: IdMenu.respond_with_current_id,
-            emoji_button_names[3]: IdMenu.respond_with_evos,
-            emoji_button_names[4]: IdMenu.respond_with_mats,
-            emoji_button_names[5]: IdMenu.respond_with_picture,
-            emoji_button_names[6]: IdMenu.respond_with_pantheon,
-            emoji_button_names[7]: IdMenu.respond_with_otherinfo,
-        }
 
-        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(transitions.keys())
+        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(IdMenuPanes.emoji_names())
         reaction_filters = [
             ValidEmojiReactionFilter(valid_emoji_names),
             NotPosterEmojiReactionFilter(),
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, transitions, initial_control, menu_emoji_config)
+        embed = EmbedMenu(reaction_filters, IdMenuPanes.transitions(), initial_control, menu_emoji_config)
         return embed
-
-    @staticmethod
-    def get_pane_types():
-        # This lets us write the functionality for the arrows, we need to know what current pane
-        # corresponds to what response type.
-
-        # The strings are pane_types as defined in ViewState serialize functions, the functions are
-        # IdMenu responses.
-
-        return {
-            'id': IdMenu.respond_with_current_id,
-            'evos': IdMenu.respond_with_evos,
-            'materials': IdMenu.respond_with_mats,
-            'otherinfo': IdMenu.respond_with_otherinfo,
-            'pantheon': IdMenu.respond_with_pantheon,
-            'pic': IdMenu.respond_with_picture,
-        }
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
@@ -97,7 +57,7 @@ class IdMenu:
         new_monster_id = str(IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id
         pane_type = ims['pane_type']
-        pane_type_to_func_map = IdMenu.get_pane_types()
+        pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
 
@@ -122,7 +82,7 @@ class IdMenu:
         new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
         ims['resolved_monster_id'] = new_monster_id
         pane_type = ims.get('pane_type')
-        pane_type_to_func_map = IdMenu.get_pane_types()
+        pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
 
@@ -199,41 +159,66 @@ class IdMenu:
     def id_control(state: IdViewState):
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def evos_control(state: EvosViewState):
         return EmbedControl(
             [EvosView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def mats_control(state: MaterialsViewState):
         return EmbedControl(
             [MaterialsView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def pic_control(state: PicViewState):
         return EmbedControl(
             [PicView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def pantheon_control(state: PantheonViewState):
         return EmbedControl(
             [PantheonView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def otherinfo_control(state: OtherInfoViewState):
         return EmbedControl(
             [OtherInfoView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
+
+class IdMenuPanes:
+    INITIAL_EMOJI = '\N{HOUSE BUILDING}'
+    DATA = {
+        IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
+        IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
+        IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdMenuPaneNames.id),
+        IdMenu.respond_with_evos: (char_to_emoji('e'), IdMenuPaneNames.evos),
+        IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', IdMenuPaneNames.materials),
+        IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
+        IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
+        IdMenu.respond_with_otherinfo: ('\N{SCROLL}', IdMenuPaneNames.otherinfo),
+    }
+
+    @classmethod
+    def emoji_names(cls):
+        return [v[0] for k, v in cls.DATA.items()]
+
+    @classmethod
+    def transitions(cls):
+        return {v[0]: k for k, v in cls.DATA.items()}
+
+    @classmethod
+    def pane_types(cls):
+        return {v[1]: k for k, v in cls.DATA.items() if v[1]}
