@@ -1,8 +1,10 @@
 from typing import List, TYPE_CHECKING
 
 from padinfo.common.config import UserConfig
-from padinfo.core.id import get_monster_by_query, get_id_view_state_data, get_monster_by_id
+from padinfo.core.id import get_id_view_state_data
+from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
+from padinfo.view_state.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -27,7 +29,7 @@ class IdViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'pane_type': 'id',
+            'pane_type': IdMenuPaneNames.id,
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
@@ -36,18 +38,13 @@ class IdViewState(ViewState):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        raw_query = ims['raw_query']
-
-        resolved_monster_id = int(ims.get('resolved_monster_id'))
-        monster = await (get_monster_by_id(dgcog, resolved_monster_id)
-                         if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))
-
+        monster = await get_monster_from_ims(dgcog, user_config, ims)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
 
+        raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
         query = ims.get('query') or raw_query
-
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'

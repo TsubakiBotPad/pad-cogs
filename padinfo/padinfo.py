@@ -32,7 +32,7 @@ from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.core.padinfo_settings import settings
-from padinfo.id_menu import IdMenu, emoji_button_names as id_menu_emoji_button_names
+from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
@@ -158,7 +158,7 @@ class PadInfo(commands.Cog):
             emoji_clicked = emoji_obj.name
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
-                emoji_clicked in id_menu_emoji_button_names or
+                emoji_clicked in IdMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
             return
 
@@ -656,7 +656,7 @@ class PadInfo(commands.Cog):
         query, *reason = query.split("|")
         query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -704,8 +704,8 @@ class PadInfo(commands.Cog):
     async def norf_add(self, ctx, id: int, token, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                        not await tsutils.confirm_message(ctx,
-                                                          "Are you sure you want to add to the fluff/name test suite?"):
+                not await tsutils.confirm_message(ctx,
+                                                  "Are you sure you want to add to the fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -753,7 +753,7 @@ class PadInfo(commands.Cog):
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -775,7 +775,7 @@ class PadInfo(commands.Cog):
 
     async def norf_import(self, ctx, queries):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -796,7 +796,7 @@ class PadInfo(commands.Cog):
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -822,7 +822,7 @@ class PadInfo(commands.Cog):
 
     async def norf_remove(self, ctx, item):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -839,7 +839,7 @@ class PadInfo(commands.Cog):
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -864,7 +864,7 @@ class PadInfo(commands.Cog):
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                        not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
