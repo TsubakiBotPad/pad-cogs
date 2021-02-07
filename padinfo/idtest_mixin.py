@@ -363,14 +363,14 @@ class IdTest:
         ml = len(max(suite, key=len)) + 2
         rcircle = '\N{LARGE RED CIRCLE}'
         async with ctx.typing():
-            for c, qr in enumerate(sorted(suite.items())):
+            for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
                 m = await findMonster3(dgcog, q)
                 mid = m and m.monster_id
                 if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
-                    o += f"{c}. {q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
+                    o += f"{i}. {q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
                 else:
                     c += 1
         if c != len(suite):
@@ -398,13 +398,13 @@ class IdTest:
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
-            for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            for i, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
                 fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
                 name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
-                    o += f"{c}. {str(v['id']).ljust(4)} {q.ljust(10)} - " \
+                    o += f"{i}. {str(v['id']).ljust(4)} {q.ljust(10)} - " \
                          f"{ycircle if name or fluff else rcircle} " \
                          f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
                 else:
@@ -431,8 +431,9 @@ class IdTest:
                 mid = m and m.monster_id
                 if m is not None and m.monster_id != qsuite[q]['result'] or m is None and qsuite[q]['result'] >= 0:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
-                    q = '"' + q + '"'
-                    qo += f"{str(c).rjust(4)}. {q.ljust(ml)} - {rcircle} Ex: {qsuite[q]['result']}, Ac: {mid}{reason}\n"
+                    qq = '"' + q + '"'
+                    qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "
+                           f"Ex: {qsuite[q]['result']}, Ac: {mid}{reason}\n")
                 else:
                     qc += 1
 
