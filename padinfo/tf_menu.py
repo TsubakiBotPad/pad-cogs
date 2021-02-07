@@ -26,8 +26,8 @@ class TransformInfoMenu:
     def menu(original_author_id, friend_ids, bot_id):
         transitions = {
             TransformInfoMenu.INITIAL_EMOJI: TransformInfoMenu.respond_to_house,
-            emoji_button_names[1]: TransformInfoMenu.respond_to_down,
-            emoji_button_names[2]: TransformInfoMenu.respond_to_up,
+            emoji_button_names[1]: TransformInfoMenu.respond_with_base,
+            emoji_button_names[2]: TransformInfoMenu.respond_with_transform,
         }
 
         valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(transitions.keys())
@@ -41,22 +41,22 @@ class TransformInfoMenu:
         return EmbedMenu(reaction_filters, transitions, TransformInfoMenu.tf_control, menu_emoji_config)
 
     @staticmethod
-    async def respond_to_down(message: Optional[Message], ims, **data):
+    async def respond_with_base(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        ims['query'] = ims['b_query']
+        ims['query'] = ims['b_resolved_monster_id']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
         return id_control
 
     @staticmethod
-    async def respond_to_up(message: Optional[Message], ims, **data):
+    async def respond_with_transform(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        ims['query'] = ims['t_query']
+        ims['query'] = ims['t_resolved_monster_id']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)

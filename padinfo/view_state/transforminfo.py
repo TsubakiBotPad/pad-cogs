@@ -4,12 +4,12 @@ from padinfo.view_state.base import ViewState
 
 
 class TransformInfoViewState(ViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, color, b_mon, t_mon,
+    def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
         base_rarity, acquire_raw, true_evo_type_raw):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
-        self.b_mon = b_mon
-        self.t_mon = t_mon
+        self.base_mon = base_mon
+        self.transformed_mon = transformed_mon
         self.base_rarity = base_rarity
         self.acquire_raw = acquire_raw
         self.true_evo_type_raw = true_evo_type_raw
@@ -17,8 +17,8 @@ class TransformInfoViewState(ViewState):
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'b_query': str(self.b_mon.monster_id),
-            't_query': str(self.t_mon.monster_id)
+            'b_resolved_monster_id': str(self.base_mon.monster_id),
+            't_resolved_monster_id': str(self.transformed_mon.monster_id)
         })
         return ret
 
@@ -28,7 +28,7 @@ class TransformInfoViewState(ViewState):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        b_mon, _, _, t_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
+        base_mon, _, _, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = await perform_transforminfo_query(dgcog,
             raw_query, user_config.beta_id3)
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-            b_mon, t_mon, base_rarity, acquire_raw, true_evo_type_raw)
+            base_mon, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw)

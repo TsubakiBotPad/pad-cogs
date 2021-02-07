@@ -39,44 +39,44 @@ def base_skill(m: "MonsterModel"):
 class TransformInfoView:
     @staticmethod
     def embed(state: TransformInfoViewState):
-        b_mon = state.b_mon
-        t_mon = state.t_mon
+        base_mon = state.base_mon
+        transformed_mon = state.transformed_mon
 
         fields = [
             EmbedField(
-                '/'.join(['{}'.format(t.name) for t in t_mon.types]),
+                '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
-                    IdView.normal_awakenings_row(t_mon),
-                    base_info(b_mon)
+                    IdView.normal_awakenings_row(transformed_mon),
+                    base_info(base_mon)
                 ),
             ),
             EmbedField(
                 'Card info',
-                IdView.misc_info(t_mon, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
+                IdView.misc_info(transformed_mon, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(t_mon).to_markdown(),
-                IdView.stats(t_mon),
+                IdView.stats_header(transformed_mon).to_markdown(),
+                IdView.stats(transformed_mon),
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(t_mon).to_markdown() + base_skill(b_mon),
-                Text(t_mon.active_skill.desc if t_mon.active_skill else 'None')
+                IdView.active_skill_header(transformed_mon).to_markdown() + base_skill(base_mon),
+                Text(transformed_mon.active_skill.desc if transformed_mon.active_skill else 'None')
             ),
             EmbedField(
-                IdView.leader_skill_header(t_mon).to_markdown(),
-                Text(t_mon.leader_skill.desc if t_mon.leader_skill else 'None')
+                IdView.leader_skill_header(transformed_mon).to_markdown(),
+                Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill else 'None')
             )
         ]
 
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(t_mon).to_markdown(),
-                url=puzzledragonx(t_mon)
+                title=MonsterHeader.long_v2(transformed_mon).to_markdown(),
+                url=puzzledragonx(transformed_mon)
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(t_mon)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields
         )

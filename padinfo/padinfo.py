@@ -626,10 +626,10 @@ class PadInfo(commands.Cog, IdTest):
         """Show info about a transform card, including some helpful details about the base card."""
         beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        bm, err, debug_info, tfm, base_rarity, acquire_raw, true_evo_type_raw = \
+        base_mon, err, debug_info, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw = \
             await perform_transforminfo_query(dgcog, query, beta_id3)
         
-        if not tfm:
+        if not transformed_mon:
             await ctx.send('Your query (`{}`) did not find a monster that transforms.'.format(query))
             return
 
@@ -642,7 +642,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = friend_cog and (await friend_cog.get_friends(original_author_id))
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query, color,
-            bm, tfm, base_rarity, acquire_raw, true_evo_type_raw)
+            base_mon, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw)
         menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 
