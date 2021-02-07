@@ -26,7 +26,7 @@ class TransformInfoMenu:
     @staticmethod
     def menu(original_author_id, friend_ids, bot_id):
         transitions = {
-            TransformInfoMenu.INITIAL_EMOJI: TransformInfoMenu.respond_to_house,
+            TransformInfoMenu.INITIAL_EMOJI: TransformInfoMenu.respond_with_overview,
             emoji_button_names[1]: TransformInfoMenu.respond_with_base,
             emoji_button_names[2]: TransformInfoMenu.respond_with_transform,
         }
@@ -66,7 +66,7 @@ class TransformInfoMenu:
         return id_control
 
     @staticmethod
-    async def respond_to_house(message: Optional[Message], ims, **data):
+    async def respond_with_overview(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
         tf_view_state = await TransformInfoViewState.deserialize(dgcog, user_config, ims)
