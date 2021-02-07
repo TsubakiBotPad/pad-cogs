@@ -2,9 +2,9 @@ from typing import List, TYPE_CHECKING, Optional
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
-from padinfo.core.id import get_monster_by_id, get_monster_by_query
 from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
+from padinfo.view_state.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -41,16 +41,12 @@ class MaterialsViewState(ViewState):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        raw_query = ims['raw_query']
 
-        resolved_monster_id = int(ims.get('resolved_monster_id'))
-
-        monster = await (get_monster_by_id(dgcog, resolved_monster_id)
-                         if resolved_monster_id else get_monster_by_query(dgcog, raw_query, user_config.beta_id3))
-
+        monster = await get_monster_from_ims(dgcog, user_config, ims)
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
             await MaterialsViewState.query(dgcog, monster)
 
+        raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
