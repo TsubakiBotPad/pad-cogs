@@ -645,7 +645,7 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
-        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query, color,
             base_mon, transformed_mon, base_rarity, acquire_raw, true_evo_type_raw)
         menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
