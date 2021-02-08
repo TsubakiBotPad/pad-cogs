@@ -1,4 +1,3 @@
-import random
 import re
 from datetime import datetime
 
@@ -376,7 +375,7 @@ class IdTest:
         if c != len(suite):
             o += f"\n\nTests complete.  {c}/{len(suite)} succeeded."
         else:
-            o += "\n\n\N{LARGE GREEN CIRCLE} All tests succeeded" + random.choice('.....!!!!!?')
+            o += "\n\n\N{LARGE GREEN CIRCLE} All tests succeeded!"
         for page in pagify(o):
             await ctx.send(box(page))
 
@@ -462,7 +461,6 @@ class IdTest:
         if qc + fc != len(fsuite) + len(qsuite):
             o += f"\n\nTests complete.  {qc + fc}/{len(fsuite) + len(qsuite)} succeeded."
         else:
-            o += "\n\n\N{LARGE GREEN CIRCLE} \N{LARGE GREEN CIRCLE} All tests succeeded" \
-                 + random.choice(['.'] * 5 + ['!!'] * 5 + ['???'])
+            o += "\n\n\N{LARGE GREEN CIRCLE} \N{LARGE GREEN CIRCLE} All tests succeeded!!"
         for page in pagify(o):
             await ctx.send(box(page))
