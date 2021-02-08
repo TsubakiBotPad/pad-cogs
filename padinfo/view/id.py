@@ -45,20 +45,28 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 class IdView:
     @staticmethod
-    def awakenings_row(m: "MonsterModel"):
+    def normal_awakenings_row(m: "MonsterModel"):
+        normal_awakenings = len(m.awakenings) - m.superawakening_count
+        normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
+        return Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' ')
+
+    @staticmethod
+    def super_awakenings_row(m: "MonsterModel"):
+        normal_awakenings = len(m.awakenings) - m.superawakening_count
+        super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
+        return Box(
+            Text(get_emoji('sa_questionmark')),
+            *[Text(e) for e in super_awakenings_emojis],
+            delimiter=' ') if len(super_awakenings_emojis) > 0 else None
+
+    @staticmethod
+    def all_awakenings_row(m: "MonsterModel"):
         if len(m.awakenings) == 0:
             return Box(Text('No Awakenings'))
 
-        normal_awakenings = len(m.awakenings) - m.superawakening_count
-        normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
-        super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
-
         return Box(
-            Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' '),
-            Box(
-                Text(get_emoji('sa_questionmark')),
-                *[Text(e) for e in super_awakenings_emojis],
-                delimiter=' ') if len(super_awakenings_emojis) > 0 else None
+            IdView.normal_awakenings_row(m),
+            IdView.super_awakenings_row(m)
         )
 
     @staticmethod
@@ -136,7 +144,7 @@ class IdView:
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
-                    IdView.awakenings_row(m),
+                    IdView.all_awakenings_row(m),
                     IdView.killers_row(m, state.transform_base)
                 )
             ),

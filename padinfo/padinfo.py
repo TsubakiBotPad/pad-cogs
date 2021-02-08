@@ -30,11 +30,13 @@ from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, 
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
+from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
+from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
@@ -43,6 +45,7 @@ from padinfo.view_state.materials import MaterialsViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
 from padinfo.view_state.pic import PicViewState
+from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     pass
@@ -153,7 +156,8 @@ class PadInfo(commands.Cog, IdTest):
             emoji_clicked = emoji_obj.name
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
-                emoji_clicked in IdMenuPanes.emoji_names()):
+                emoji_clicked in IdMenuPanes.emoji_names() or
+                emoji_clicked in tf_menu_emoji_button_names):
             return
 
         message = reaction.message
@@ -166,6 +170,7 @@ class PadInfo(commands.Cog, IdTest):
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
             IdMenu.MENU_TYPE: IdMenu.menu,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu
         }
 
         menu_func = menu_map.get(menu_type)
@@ -611,6 +616,40 @@ class PadInfo(commands.Cog, IdTest):
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
 
         await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+
+    @commands.command(aliases=['tfinfo', 'xforminfo'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def transforminfo(self, ctx, *, query):
+        """Show info about a transform card, including some helpful details about the base card."""
+        beta_id3 = await self.config.user(ctx.author).beta_id3()
+        dgcog = await self.get_dgcog()
+        base_mon, err, debug_info, transformed_mon = \
+            await perform_transforminfo_query(dgcog, query, beta_id3)
+
+        if not base_mon:
+            await self.makeFailureMsg(ctx, query, err)
+            return
+        
+        if not transformed_mon:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, base_mon.monster_id,
+                           base_mon.name_en) + 'which has no evos that transform.')
+            return
+
+        if err:
+            await ctx.send(err)
+            return
+
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        acquire_raw, base_rarity, true_evo_type_raw = \
+            await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
+                                       color, base_mon, transformed_mon, base_rarity, acquire_raw,
+                                       true_evo_type_raw)
+        menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
