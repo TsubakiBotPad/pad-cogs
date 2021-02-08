@@ -249,8 +249,8 @@ class PadInfo(commands.Cog, IdTest):
         goodquery = None
         if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index2.all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:1] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index2.all_name_tokens:
-            goodquery = [query[:1], query[2:]]
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index2.all_name_tokens:
+            goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
