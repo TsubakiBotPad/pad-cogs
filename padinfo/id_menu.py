@@ -163,14 +163,18 @@ class IdMenu:
         )
 
     @staticmethod
-    def evos_control(state: EvosViewState):
+    def evos_control(state: Optional[EvosViewState]):
+        if state is None:
+            return None
         return EmbedControl(
             [EvosView.embed(state)],
             [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
-    def mats_control(state: MaterialsViewState):
+    def mats_control(state: Optional[MaterialsViewState]):
+        if state is None:
+            return None
         return EmbedControl(
             [MaterialsView.embed(state)],
             [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -184,7 +188,9 @@ class IdMenu:
         )
 
     @staticmethod
-    def pantheon_control(state: PantheonViewState):
+    def pantheon_control(state: Optional[PantheonViewState]):
+        if state is None:
+            return None
         return EmbedControl(
             [PantheonView.embed(state)],
             [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]

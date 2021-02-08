@@ -5,8 +5,6 @@ from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
 from padinfo.view_state.common import get_monster_from_ims
 
-from discordmenu.errors import UnsupportedPaneType
-
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
@@ -40,7 +38,8 @@ class EvosViewState(ViewState):
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
         if alt_versions is None:
-            raise UnsupportedPaneType
+            return None
+        print('def not kittens')
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
