@@ -1,16 +1,17 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 
-from padinfo.common.emoji_map import get_emoji, format_emoji, AWAKENING_ID_TO_EMOJI_NAME_MAP, emoji_markdown
+from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
-from padinfo.view.components.base import pad_info_footer
+from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view_state.id import IdViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -18,16 +19,15 @@ if TYPE_CHECKING:
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
-    return format_emoji(get_emoji(
-        AWAKENING_ID_TO_EMOJI_NAME_MAP.get(awakening.awoken_skill_id, awakening.name)))
+    return get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
 
 
 def _killer_latent_emoji(latent_name: str):
-    return emoji_markdown('latent_killer_{}'.format(latent_name.lower()))
+    return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
 def _get_awakening_emoji_for_stats(m: "MonsterModel", i: int):
-    return emoji_markdown(i) if m.awakening_count(i) and not m.is_equip else ''
+    return get_awakening_emoji(i) if m.awakening_count(i) and not m.is_equip else ''
 
 
 def _get_stat_text(stat, lb_stat, icon):
@@ -45,26 +45,35 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 class IdView:
     @staticmethod
-    def awakenings_row(m: "MonsterModel"):
+    def normal_awakenings_row(m: "MonsterModel"):
+        normal_awakenings = len(m.awakenings) - m.superawakening_count
+        normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
+        return Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' ')
+
+    @staticmethod
+    def super_awakenings_row(m: "MonsterModel"):
+        normal_awakenings = len(m.awakenings) - m.superawakening_count
+        super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
+        return Box(
+            Text(get_emoji('sa_questionmark')),
+            *[Text(e) for e in super_awakenings_emojis],
+            delimiter=' ') if len(super_awakenings_emojis) > 0 else None
+
+    @staticmethod
+    def all_awakenings_row(m: "MonsterModel"):
         if len(m.awakenings) == 0:
             return Box(Text('No Awakenings'))
 
-        normal_awakenings = len(m.awakenings) - m.superawakening_count
-        normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
-        super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
-
         return Box(
-            Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' '),
-            Box(
-                Text(emoji_markdown('sa_questionmark')),
-                *[Text(e) for e in super_awakenings_emojis],
-                delimiter=' ') if len(super_awakenings_emojis) > 0 else None
+            IdView.normal_awakenings_row(m),
+            IdView.super_awakenings_row(m)
         )
 
     @staticmethod
-    def killers_row(m: "MonsterModel", is_transform_base):
-        killers_text = 'Any' if 'Any' in m.killers else ' '.join([_killer_latent_emoji(k) for k in m.killers])
-        available_killer_text = 'Available killers:' if is_transform_base else 'Avail. killers (pre-xform):'
+    def killers_row(m: "MonsterModel", transform_base):
+        killers_text = 'Any' if 'Any' in m.killers else \
+            ' '.join(_killer_latent_emoji(k) for k in transform_base.killers)
+        available_killer_text = 'Available killers:' if m==transform_base else 'Avail. killers (pre-xform):'
         return Box(
             BoldText(available_killer_text),
             Text('[{} slots]'.format(m.latent_slots)),
@@ -101,7 +110,7 @@ class IdView:
 
     @staticmethod
     def stats_header(m: "MonsterModel"):
-        voice = emoji_markdown(63) if m.awakening_count(63) and not m.is_equip else ''
+        voice = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
         header = Box(
             Text(voice),
             Text('Stats'),
@@ -129,19 +138,19 @@ class IdView:
         )
 
     @staticmethod
-    def embed(m: "MonsterModel", color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity,
-              alt_monsters: List["MonsterModel"]):
+    def embed(state: IdViewState):
+        m = state.monster
         fields = [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
-                    IdView.awakenings_row(m),
-                    IdView.killers_row(m, is_transform_base)
+                    IdView.all_awakenings_row(m),
+                    IdView.killers_row(m, state.transform_base)
                 )
             ),
             EmbedField(
                 'Inheritable' if m.is_inheritable else 'Not inheritable',
-                IdView.misc_info(m, true_evo_type_raw, acquire_raw, base_rarity),
+                IdView.misc_info(m, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
                 inline=True
             ),
             EmbedField(
@@ -160,17 +169,17 @@ class IdView:
             EmbedField(
                 "Alternate Evos",
                 HighlightableLinks(
-                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in alt_monsters],
-                    highlighted=next(i for i, mon in enumerate(alt_monsters) if m.monster_id == mon.monster_id)
+                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
+                    highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
                 )
             )
         ]
 
         return EmbedView(
             EmbedMain(
-                color=color,
+                color=state.color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer(),
+            embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)

@@ -37,7 +37,7 @@ TYPE_MAP = {
     MonsterType.Attacker: ('attacker', 'atk'),
     MonsterType.Devil: ('devil', 'dv'),
     MonsterType.Machine: ('machine', 'mech'),
-    MonsterType.Awoken: ('awoken',),
+    MonsterType.Awoken: ('awokentype', 'awotype'),
     MonsterType.Enhance: ('enhance', 'fodder', 'enh'),
     MonsterType.Vendor: ('vendor', 'redeemable'),
 }
@@ -48,6 +48,7 @@ class EvoTypes(Enum):
     EVO = 'Evolved'
     UVO = 'Ulimate'
     UUVO = 'Super Ultimate'
+    BASETRANS = 'Base Transform'
     TRANS = 'Transform'
     AWOKEN = 'Awoken'
     MEGA = 'Mega Awoken'
@@ -62,6 +63,7 @@ EVO_MAP = {
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
+    EvoTypes.BASETRANS: ('transformbase', 'transbase'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
     EvoTypes.MEGA: ('mega', 'mawoken', 'mawo', 'ma', 'megaawoken'),
@@ -183,18 +185,18 @@ AWOKEN_MAP = {
     Awakenings.SKILLBINDRES: ('sbr',),
     Awakenings.ENHANCEDHEAL: ('htpa', 'oeh'),
     Awakenings.MULTIBOOST: ('multi', 'mb'),
-    Awakenings.DRAGONKILLER: ('dk', 'drk', 'killer'),
-    Awakenings.GODKILLER: ('gk', 'gok', 'killer'),
-    Awakenings.DEVILKILLER: ('vk', 'dek', 'killer'),
-    Awakenings.MACHINEKILLER: ('mk', 'mak', 'killer'),
-    Awakenings.BALANCEDKILLER: ('bk', 'bak', 'killer'),
-    Awakenings.ATTACKERKILLER: ('ak', 'aak', 'killer'),
-    Awakenings.PHYSICALKILLER: ('pk', 'phk', 'killer'),
-    Awakenings.HEALERKILLER: ('hk', 'hek', 'killer'),
-    Awakenings.EVOMATKILLER: ('evok', 'a2killer'),
-    Awakenings.AWOKENKILLER: ('awok', 'a2killer'),
-    Awakenings.FODDERKILLER: ('enhk', 'a2killer'),
-    Awakenings.REDEEMKILLER: ('vendork', 'a2killer'),
+    Awakenings.DRAGONKILLER: ('dragonkiller', 'dk', 'drk', 'killer'),
+    Awakenings.GODKILLER: ('godkiller', 'gk', 'gok', 'killer'),
+    Awakenings.DEVILKILLER: ('devilkiller', 'vk', 'dek', 'killer'),
+    Awakenings.MACHINEKILLER: ('machinekiller', 'mk', 'mak', 'killer'),
+    Awakenings.BALANCEDKILLER: ('balancedkiller', 'bk', 'bak', 'killer'),
+    Awakenings.ATTACKERKILLER: ('attackerkiller', 'ak', 'aak', 'killer'),
+    Awakenings.PHYSICALKILLER: ('physicalkiller', 'pk', 'phk', 'killer'),
+    Awakenings.HEALERKILLER: ('healerkiller', 'hk', 'hek', 'killer'),
+    Awakenings.EVOMATKILLER: ('evokiller', 'evok', 'a2killer'),
+    Awakenings.AWOKENKILLER: ('awokenkiller', 'awok', 'a2killer'),
+    Awakenings.FODDERKILLER: ('enhancekiller', 'enhk', 'a2killer'),
+    Awakenings.REDEEMKILLER: ('vendorkiller', 'vendork', 'a2killer'),
     Awakenings.ENHCOMBO7C: ('7c',),
     Awakenings.GUARDBREAK: ('gb',),
     Awakenings.FUA: ('fua',),
@@ -206,8 +208,8 @@ AWOKEN_MAP = {
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     Awakenings.UNBINDABLE: ('unbindable',),
     Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
-    Awakenings.CLOUDRESIST: ('cloudres',),  # don't have cloud because that's a name token
-    Awakenings.TAPERESIST: ('taperes',),
+    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),
+    Awakenings.TAPERESIST: ('taperes', 'tape'),
     Awakenings.SKILLBOOSTPLUS: ('sb+',),
     Awakenings.HP80ORMORE: ('>80', 'highhp'),
     Awakenings.HP50ORLESS: ('<50', 'lowhp'),
@@ -225,17 +227,17 @@ AWOKEN_MAP = {
     Awakenings.UNPOISONABLE: ('resp+', 'p+',),
     Awakenings.JAMMERBLESSING: ('jblessing', 'sfj', 'jsurge'),
     Awakenings.POISONBLESSING: ('pblessing', 'sfp', 'psurge'),
-    Awakenings.REDCOMBOCOUNT: ('ccr',),
-    Awakenings.BLUECOMBOCOUNT: ('ccb',),
-    Awakenings.GREENCOMBOCOUNT: ('ccg',),
-    Awakenings.LIGHTCOMBOCOUNT: ('ccl',),
-    Awakenings.DARKCOMBOCOUNT: ('ccd',),
+    Awakenings.REDCOMBOCOUNT: ('ccr', 'cc'),
+    Awakenings.BLUECOMBOCOUNT: ('ccb', 'cc'),
+    Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
+    Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
+    Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
 }
 
 
 class MiscModifiers(Enum):
     CHIBI = 'Chibi'
-    NONCHIBI = 'Non-Chibi'
+    STORY = 'Story'
     FARMABLE = 'Farmable'
     REM = 'REM'
     MP = 'MP'
@@ -243,17 +245,26 @@ class MiscModifiers(Enum):
     ONLYJP = 'Only in JP Server'
     INNA = 'In NA Server'
     ONLYNA = 'Only in NA Server'
+    REGULAR = 'Metaseries: REGULAR'
+    EVENT = 'Metaseries: Event'
+    SEASONAL = 'Metaseries: Seasonal'
+    COLLAB = 'Metaseries: Collab'
 
 
 MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
+    MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
     MiscModifiers.ONLYJP: ('jp',),
-    MiscModifiers.ONLYNA: ('na',)
+    MiscModifiers.ONLYNA: ('na',),
+    MiscModifiers.REGULAR: ('regular',),
+    MiscModifiers.EVENT: ('event',),
+    MiscModifiers.SEASONAL: ('seasonal',),
+    MiscModifiers.COLLAB: ('collab',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
@@ -261,15 +272,17 @@ MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
     'mega awoken'
 }}
 
-MODIFIER_MAPS = {
-    **COLOR_MAP,
-    **SUB_COLOR_MAP,
-    **DUAL_COLOR_MAP,
-    **TYPE_MAP,
-    **AWOKEN_MAP,
-    **EVO_MAP,
-    **MISC_MAP,
+ALL_TOKEN_DICTS = {
+    *COLOR_MAP.values(),
+    *SUB_COLOR_MAP.values(),
+    *DUAL_COLOR_MAP.values(),
+    *TYPE_MAP.values(),
+    *AWOKEN_MAP.values(),
+    *EVO_MAP.values(),
+    *MISC_MAP.values(),
 }
+
+KNOWN_MODIFIERS = {v for vs in ALL_TOKEN_DICTS for v in vs}
 
 COLOR_TOKENS = {
     *sum(COLOR_MAP.values(), ()),
@@ -296,3 +309,7 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_PREFIXES = {
     "reincarnated"
 }
+
+ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
+                 'bg', 'bb', 'bl', 'bd', 'bx', 'g', 'gr', 'gg', 'gb', 'gl', 'gd', 'gx', 'l', 'lr', 'lg', 'lb', 'll',
+                 'ld', 'lx', 'd', 'dr', 'dg', 'db', 'dl', 'dd', 'dx', 'x', 'xr', 'xg', 'xb', 'xl', 'xd', 'xx'}

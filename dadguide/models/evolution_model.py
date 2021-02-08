@@ -4,6 +4,7 @@ from .base_model import BaseModel
 class EvolutionModel(BaseModel):
     def __init__(self, **kwargs):
         self.evolution_type = kwargs['evolution_type']
+        self.reversible = kwargs['reversible']
         self.from_id = kwargs['from_id']
         self.to_id = kwargs['to_id']
         self.mat_1_id = kwargs['mat_1_id']

@@ -1,24 +1,21 @@
 import difflib
-
-from redbot.core.utils import AsyncIter
-from discord.utils import find as find_first
-import tsutils
-
 from collections import defaultdict
 
-from .models.monster_model import MonsterModel
-from .models.enum_types import Attribute
-from .models.enum_types import EvoType
-from .models.enum_types import InternalEvoType
+import tsutils
+from discord.utils import find as find_first
+from redbot.core.utils import AsyncIter
+
 from dadguide.models.enum_types import Attribute, MonsterType
 from dadguide.models.monster_model import MonsterModel
 from dadguide.models.series_model import SeriesModel
 from .database_context import DbContext
+from .models.enum_types import EvoType
+from .models.enum_types import InternalEvoType
 
 
 class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monster_database: DbContext, nickname_overrides, treename_overrides,
-                       panthname_overrides, accept_filter=None):
+                        panthname_overrides, accept_filter=None):
         # Important not to hold onto anything except IDs here so we don't leak memory
         self.db_context = monster_database
         base_monster_ids = monster_database.get_monsters_where(monster_database.graph.monster_is_base)
@@ -111,6 +108,7 @@ class MonsterIndex(tsutils.aobject):
         self.all_prefixes = set()
         self.pantheons = defaultdict(set)
         self.all_entries = {}
+        self.bad_entries = {}
         self.two_word_entries = {}
         for nm in named_monsters:
             self.all_prefixes.update(nm.prefixes)
@@ -118,6 +116,8 @@ class MonsterIndex(tsutils.aobject):
                 self.all_entries[nickname] = nm
             for nickname in nm.final_two_word_nicknames:
                 self.two_word_entries[nickname] = nm
+            for nickname in nm.bad_nicknames:
+                self.bad_entries[nickname] = nm.bad_nicknames[nickname]
             if nm.series:
                 for pantheon in self.all_pantheon_names:
                     if pantheon.lower() == nm.series.lower():
@@ -246,9 +246,18 @@ class MonsterIndex(tsutils.aobject):
 
         # TODO: need to handle na_only?
 
+        err = None
+        if query in self.bad_entries:
+            err = ("It looks like this query won't be supported soon!"
+                   f" Please start using `^id {self.bad_entries[query]}` instead, with a space."
+                   " For more information, check out:"
+                   " <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>"
+                   " or join the Tsubaki server (<https://discord.gg/QCRxNtC>)."
+                   " To start using the beta now, type `^idset beta y`!")
+
         # handle exact nickname match
         if query in self.all_entries:
-            return self.all_entries[query], None, "Exact nickname"
+            return self.all_entries[query], err, "Exact nickname"
 
         contains_ja = tsutils.contains_ja(query)
         if len(query) < 2 and contains_ja:
@@ -272,7 +281,7 @@ class MonsterIndex(tsutils.aobject):
             if nickname.startswith(query + ' '):
                 matches.add(m)
         if len(matches):
-            return self.pick_best_monster(matches), None, "Space nickname prefix, max of {}".format(len(matches))
+            return self.pick_best_monster(matches), err, "Space nickname prefix, max of {}".format(len(matches))
 
         # prefix search for nicknames, take max id
         for nickname, m in self.all_entries.items():
@@ -280,7 +289,7 @@ class MonsterIndex(tsutils.aobject):
                 matches.add(m)
         if len(matches):
             all_names = ",".join(map(lambda x: x.name_en, matches))
-            return self.pick_best_monster(matches), None, "Nickname prefix, max of {}, matches=({})".format(
+            return self.pick_best_monster(matches), err, "Nickname prefix, max of {}, matches=({})".format(
                 len(matches), all_names)
 
         # prefix search for full name, take max id
@@ -288,11 +297,11 @@ class MonsterIndex(tsutils.aobject):
             if m.name_en.lower().startswith(query) or m.name_ja.lower().startswith(query):
                 matches.add(m)
         if len(matches):
-            return self.pick_best_monster(matches), None, "Full name, max of {}".format(len(matches))
+            return self.pick_best_monster(matches), err, "Full name, max of {}".format(len(matches))
 
         # for nicknames with 2 names, prefix search 2nd word, take max id
         if query in self.two_word_entries:
-            return self.two_word_entries[query], None, "Second-word nickname prefix, max of {}".format(len(matches))
+            return self.two_word_entries[query], err, "Second-word nickname prefix, max of {}".format(len(matches))
 
         # TODO: refactor 2nd search characteristcs for 2nd word
 
@@ -301,119 +310,33 @@ class MonsterIndex(tsutils.aobject):
             if query in m.name_en.lower() or query in m.name_ja.lower():
                 matches.add(m)
         if len(matches):
-            return self.pick_best_monster(matches), None, 'Nickname contains nickname match ({})'.format(
+            return self.pick_best_monster(matches), err, 'Nickname contains nickname match ({})'.format(
                 len(matches))
 
         # No decent matches. Try near hits on nickname instead
         matches = difflib.get_close_matches(query, self.all_entries.keys(), n=1, cutoff=.8)
         if len(matches):
             match = matches[0]
-            return self.all_entries[match], None, 'Close nickname match ({})'.format(match)
+            return self.all_entries[match], err, 'Close nickname match ({})'.format(match)
 
         # Still no decent matches. Try near hits on full name instead
         matches = difflib.get_close_matches(
             query, self.all_en_name_to_monsters.keys(), n=1, cutoff=.9)
         if len(matches):
             match = matches[0]
-            return self.all_en_name_to_monsters[match], None, 'Close name match ({})'.format(match)
+            return self.all_en_name_to_monsters[match], err, 'Close name match ({})'.format(match)
 
         # About to give up, try matching all words
         matches = set()
         for nickname, m in self.all_entries.items():
             if (all(map(lambda x: x in m.name_en.lower(), query.split())) or
-                            all(map(lambda x: x in m.name_ja.lower(), query.split()))):
+                    all(map(lambda x: x in m.name_ja.lower(), query.split()))):
                 matches.add(m)
         if len(matches):
-            return self.pick_best_monster(matches), None, 'All word match on full name, max of {}'.format(
+            return self.pick_best_monster(matches), err, 'All word match on full name, max of {}'.format(
                 len(matches))
 
         # couldn't find anything
-        return None, "Could not find a match for: " + query, None
-
-    def find_monster2(self, query):
-        """Search with alternative method for resolving prefixes.
-
-        Implements the lookup for id2, where you are allowed to specify multiple prefixes for a card.
-        All prefixes are required to be exactly matched by the card.
-        Follows a similar logic to the regular id but after each check, will remove any potential match that doesn't
-        contain every single specified prefix.
-        """
-        query = tsutils.rmdiacritics(query).lower().strip()
-        # id search
-        if query.isdigit():
-            m = self.monster_no_na_to_named_monster.get(int(query))
-            if m is None:
-                return None, 'Looks like a monster ID but was not found', None
-            else:
-                return m, None, "ID lookup"
-
-        # handle exact nickname match
-        if query in self.all_entries:
-            return self.all_entries[query], None, "Exact nickname"
-
-        contains_ja = tsutils.contains_ja(query)
-        if len(query) < 2 and contains_ja:
-            return None, 'Japanese queries must be at least 2 characters', None
-        elif len(query) < 4 and not contains_ja:
-            return None, 'Your query must be at least 4 letters', None
-
-        # we want to look up only the main part of the query, and then verify that each result has the prefixes
-        # so break up the query into an array of prefixes, and a string (new_query) that will be the lookup
-        query_prefixes = []
-        parts_of_query = query.split()
-        new_query = ''
-        for i, part in enumerate(parts_of_query):
-            if part in self.all_prefixes:
-                query_prefixes.append(part)
-            else:
-                new_query = ' '.join(parts_of_query[i:])
-                break
-
-        # if we don't have any prefixes, then default to using the regular id lookup
-        if len(query_prefixes) < 1:
-            return self.find_monster(query)
-
-        matches = PotentialMatches()
-
-        # prefix search for ids, take max id
-        for nickname, m in self.all_entries.items():
-            if query.endswith("base {}".format(m.monster_id)):
-                matches.add(
-                    find_first(lambda mo: m.base_monster_no == mo.monster_id, self.all_entries.values()))
-        matches.update_list(query_prefixes)
-
-        # first try to get matches from nicknames
-        for nickname, m in self.all_entries.items():
-            if new_query in nickname:
-                matches.add(m)
-        matches.update_list(query_prefixes)
-
-        # if we don't have any candidates yet, pick a new method
-        if not matches.length():
-            # try matching on exact names next
-            for nickname, m in self.all_en_name_to_monsters.items():
-                if new_query in m.name_en.lower() or new_query in m.name_ja.lower():
-                    matches.add(m)
-            matches.update_list(query_prefixes)
-
-        # check for exact match on pantheon name but only if needed
-        if not matches.length():
-            for pantheon in self.all_pantheon_nicknames:
-                if new_query == pantheon.lower():
-                    matches.get_monsters_from_potential_pantheon_match(pantheon, self.pantheon_nick_to_name,
-                                                                       self.pantheons)
-            matches.update_list(query_prefixes)
-
-        # check for any match on pantheon name, again but only if needed
-        if not matches.length():
-            for pantheon in self.all_pantheon_nicknames:
-                if new_query in pantheon.lower():
-                    matches.get_monsters_from_potential_pantheon_match(pantheon, self.pantheon_nick_to_name,
-                                                                       self.pantheons)
-            matches.update_list(query_prefixes)
-
-        if matches.length():
-            return matches.pick_best_monster(), None, None
         return None, "Could not find a match for: " + query, None
 
     @staticmethod
@@ -421,55 +344,13 @@ class MonsterIndex(tsutils.aobject):
         return max(named_monster_list, key=lambda x: (not x.is_low_priority, x.rarity, x.monster_no_na))
 
 
-class PotentialMatches(object):
-    def __init__(self):
-        self.match_list = set()
-
-    def add(self, m):
-        self.match_list.add(m)
-
-    def update(self, monster_list):
-        self.match_list.update(monster_list)
-
-    def length(self):
-        return len(self.match_list)
-
-    def update_list(self, query_prefixes):
-        self._add_trees()
-        self._remove_any_without_all_prefixes(query_prefixes)
-
-    def _add_trees(self):
-        to_add = set()
-        for m in self.match_list:
-            for evo in m.evolution_tree:
-                to_add.add(evo)
-        self.match_list.update(to_add)
-
-    def _remove_any_without_all_prefixes(self, query_prefixes):
-        to_remove = set()
-        for m in self.match_list:
-            for prefix in query_prefixes:
-                if prefix not in m.prefixes:
-                    to_remove.add(m)
-                    break
-        self.match_list.difference_update(to_remove)
-
-    def get_monsters_from_potential_pantheon_match(self, pantheon, pantheon_nick_to_name, pantheons):
-        full_name = pantheon_nick_to_name[pantheon]
-        self.update(pantheons[full_name])
-
-    def pick_best_monster(self):
-        return max(self.match_list, key=lambda x: (not x.is_low_priority, x.rarity, x.monster_no_na))
-
-
 class NamedMonsterGroup(object):
     def __init__(self, evolution_tree: list, treename_overrides: list):
         base_monster = min(evolution_tree, key=lambda m: m.monster_id)
 
-
         self.is_low_priority = (
-                        self._is_low_priority_monster(base_monster)
-                        or self._is_low_priority_group(evolution_tree))
+                self._is_low_priority_monster(base_monster)
+                or self._is_low_priority_group(evolution_tree))
 
         self.group_size = len(evolution_tree)
         self.base_monster_no = base_monster.monster_id
@@ -579,6 +460,7 @@ class NamedMonster(object):
         self.is_low_priority = monster_group.is_low_priority or monster.is_equip
         self.group_size = monster_group.group_size
         self.rarity = monster.rarity
+        self.sell_mp = monster.sell_mp
 
         # Used in fallback searches
         self.name_en = monster.name_en
@@ -608,6 +490,8 @@ class NamedMonster(object):
         if monster.roma_subname:
             self.final_nicknames.add(monster.roma_subname)
 
+        self.bad_nicknames = dict()
+
         # For each treename, add nicknames
         for treename in self.group_treenames:
             # Add the treename directly
@@ -616,8 +500,10 @@ class NamedMonster(object):
             for prefix in self.prefixes:
                 self.final_nicknames.add(prefix + treename)
                 self.final_nicknames.add(prefix + ' ' + treename)
+                self.bad_nicknames[prefix + treename] = prefix + ' ' + treename
 
         self.final_two_word_nicknames = set()
+
         # Slightly different process for two-word treenames. Does this make sense? Who knows.
         for treename in self.two_word_treenames:
             self.final_two_word_nicknames.add(treename)
@@ -625,6 +511,7 @@ class NamedMonster(object):
             for prefix in self.prefixes:
                 self.final_two_word_nicknames.add(prefix + treename)
                 self.final_two_word_nicknames.add(prefix + ' ' + treename)
+                self.bad_nicknames[prefix + treename] = prefix + ' ' + treename
 
     def set_evolution_tree(self, evolution_tree):
         """

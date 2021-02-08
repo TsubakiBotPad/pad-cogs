@@ -1,115 +1,224 @@
-import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-import discord
-from discord import Color
+from discord import Message
+from discordmenu.embed.emoji import EmbedMenuEmojiConfig
+from discordmenu.embed.menu import EmbedMenu, EmbedControl
+from discordmenu.emoji.emoji_cache import emoji_cache
+from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
+    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
+from tsutils import char_to_emoji
 
+from dadguide.database_context import DbContext
+from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
-from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
-from padinfo.view.links import LinksView
-from padinfo.view.lookup import LookupView
-from padinfo.view.materials import MaterialView
+from padinfo.view.materials import MaterialsView
 from padinfo.view.otherinfo import OtherInfoView
 from padinfo.view.pantheon import PantheonView
-from padinfo.view.pic import PicsView
+from padinfo.view.pic import PicView
+from padinfo.view_state.evos import EvosViewState
+from padinfo.view_state.id import IdViewState
+from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
-    from dadguide.database_context import DbContext
     from dadguide.models.monster_model import MonsterModel
+
+menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class IdMenu:
-    def __init__(self, ctx, db_context: "DbContext" = None, allowed_emojis: list = None):
-        self.ctx = ctx
-        self.db_context = db_context
-        self.allowed_emojis = allowed_emojis
+    MENU_TYPE = 'IdMenu'
 
-    async def get_user_embed_color(self, pdicog):
-        color = await pdicog.config.user(self.ctx.author).color()
-        if color is None:
-            return Color.default()
-        elif color == "random":
-            return Color(random.randint(0x000000, 0xffffff))
+    @staticmethod
+    def menu(original_author_id, friend_ids, bot_id, initial_control=None):
+        if initial_control is None:
+            initial_control = IdMenu.id_control
+
+        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(IdMenuPanes.emoji_names())
+        reaction_filters = [
+            ValidEmojiReactionFilter(valid_emoji_names),
+            NotPosterEmojiReactionFilter(),
+            BotAuthoredMessageReactionFilter(bot_id),
+            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
+        ]
+        embed = EmbedMenu(reaction_filters, IdMenuPanes.transitions(), initial_control, menu_emoji_config)
+        return embed
+
+    @staticmethod
+    async def respond_with_left(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        db_context: "DbContext" = dgcog.database
+        m = db_context.graph.get_monster(ims['resolved_monster_id'])
+
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+        new_monster_id = str(IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll))
+        ims['resolved_monster_id'] = new_monster_id
+        pane_type = ims['pane_type']
+        pane_type_to_func_map = IdMenuPanes.pane_types()
+        response_func = pane_type_to_func_map[pane_type]
+        return await response_func(message, ims, **data)
+
+    @staticmethod
+    def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
+        if use_evo_scroll:
+            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            index = evos.index(monster.monster_id)
+            new_id = evos[index - 1]
+            return new_id
         else:
-            return discord.Color(color)
+            prev_monster = db_context.graph.numeric_prev_monster(monster)
+            return prev_monster.monster_id if prev_monster else monster.monster_id
 
-    async def make_id_embed_v2(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        is_transform_base = self.db_context.graph.monster_is_transform_base(m)
-        true_evo_type_raw = self.db_context.graph.true_evo_type_by_monster(m).value
-        acquire_raw = self.db_context.graph.monster_acquisition(m)
-        base_rarity = self.db_context.graph.get_base_monster_by_id(m.monster_no).rarity
-        alt_monsters = sorted({*self.db_context.graph.get_alt_monsters_by_id(m.monster_no)},
-                              key=lambda x: x.monster_id)
-        e = IdView.embed(m, color, is_transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters)
-        return e.to_embed()
+    @staticmethod
+    async def respond_with_right(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        db_context: "DbContext" = dgcog.database
+        m = db_context.graph.get_monster(ims['resolved_monster_id'])
 
-    async def make_evo_embed_v2(self, m: "MonsterModel"):
-        alt_versions = self.db_context.graph.get_alt_monsters_by_id(m.monster_no)
-        gem_versions = list(filter(None, map(self.db_context.graph.evo_gem_monster, alt_versions)))
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        e = EvosView.embed(m, alt_versions, gem_versions, color)
-        return e.to_embed()
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
+        ims['resolved_monster_id'] = new_monster_id
+        pane_type = ims.get('pane_type')
+        pane_type_to_func_map = IdMenuPanes.pane_types()
+        response_func = pane_type_to_func_map[pane_type]
+        return await response_func(message, ims, **data)
 
-    async def make_evo_mats_embed(self, m: "MonsterModel"):
-        mats = self.db_context.graph.evo_mats_by_monster(m)
-        usedin = self.db_context.graph.material_of_monsters(m)
-        evo_gem = self.db_context.graph.evo_gem_monster(m)
-        gemusedin = self.db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
-        skillups = []
-        skillup_evo_count = 0
+    @staticmethod
+    def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
+        if use_evo_scroll:
+            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            index = evos.index(monster.monster_id)
+            if index == len(evos) - 1:
+                # cycle back to the beginning of the evos list
+                new_id = evos[0]
+            else:
+                new_id = evos[index + 1]
+            return new_id
+        else:
+            next_monster = db_context.graph.numeric_next_monster(monster)
+            return next_monster.monster_id if next_monster else monster.monster_id
 
-        if m.active_skill:
-            sums = [m for m in self.db_context.get_monsters_by_active(m.active_skill.active_skill_id)
-                    if self.db_context.graph.monster_is_farmable_evo(m)]
-            sugs = [self.db_context.graph.evo_gem_monster(su) for su in sums]
-            vsums = []
-            for su in sums:
-                if not any(susu in vsums for susu in self.db_context.graph.get_alt_monsters(su)):
-                    vsums.append(su)
-            skillups = [su for su in vsums
-                        if self.db_context.graph.monster_is_farmable_evo(su) and
-                        self.db_context.graph.get_base_id(su) != self.db_context.graph.get_base_id(m) and
-                        su not in sugs] if m.active_skill else []
-            skillup_evo_count = len(sums) - len(vsums)
+    @staticmethod
+    async def respond_with_current_id(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-        if not any([mats, usedin, gemusedin, skillups and not m.stackable]):
-            return None
-        link = "https://ilmina.com/#/SKILL/{}".format(m.active_skill.active_skill_id) if m.active_skill else None
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return MaterialView.embed(m, color, mats, usedin, gemusedin, skillups, skillup_evo_count, link).to_embed()
+        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.id_control(view_state)
+        return control
 
-    async def make_pantheon_embed(self, m: "MonsterModel"):
-        full_pantheon = self.db_context.get_monsters_by_series(m.series_id)
-        pantheon_list = list(filter(lambda x: self.db_context.graph.monster_is_base(x), full_pantheon))
-        if len(pantheon_list) == 0 or len(pantheon_list) > 20:
-            return None
+    @staticmethod
+    async def respond_with_evos(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-        series_name = m.series.name_en
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return PantheonView.embed(m, color, pantheon_list, series_name).to_embed()
+        view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.evos_control(view_state)
+        return control
 
-    async def make_picture_embed(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return PicsView.embed(m, color).to_embed()
+    @staticmethod
+    async def respond_with_mats(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-    async def make_ls_embed(self, left_m: "MonsterModel", right_m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return LeaderSkillView.embed(left_m, right_m, color).to_embed()
+        view_state = await MaterialsViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.mats_control(view_state)
+        return control
 
-    async def make_lookup_embed(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return LookupView.embed(m, color).to_embed()
+    @staticmethod
+    async def respond_with_picture(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-    async def make_otherinfo_embed(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return OtherInfoView.embed(m, color).to_embed()
+        view_state = await PicViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.pic_control(view_state)
+        return control
 
-    async def make_links_embed(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return LinksView.embed(m, color).to_embed()
+    @staticmethod
+    async def respond_with_pantheon(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
 
-    async def make_lssingle_embed(self, m: "MonsterModel"):
-        color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        return LeaderSkillSingleView.embed(m, color).to_embed()
+        view_state = await PantheonViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.pantheon_control(view_state)
+        return control
+
+    @staticmethod
+    async def respond_with_otherinfo(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+
+        view_state = await OtherInfoViewState.deserialize(dgcog, user_config, ims)
+        control = IdMenu.otherinfo_control(view_state)
+        return control
+
+    @staticmethod
+    def id_control(state: IdViewState):
+        return EmbedControl(
+            [IdView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+    @staticmethod
+    def evos_control(state: EvosViewState):
+        return EmbedControl(
+            [EvosView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+    @staticmethod
+    def mats_control(state: MaterialsViewState):
+        return EmbedControl(
+            [MaterialsView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+    @staticmethod
+    def pic_control(state: PicViewState):
+        return EmbedControl(
+            [PicView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+    @staticmethod
+    def pantheon_control(state: PantheonViewState):
+        return EmbedControl(
+            [PantheonView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+    @staticmethod
+    def otherinfo_control(state: OtherInfoViewState):
+        return EmbedControl(
+            [OtherInfoView.embed(state)],
+            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        )
+
+
+class IdMenuPanes:
+    INITIAL_EMOJI = '\N{HOUSE BUILDING}'
+    DATA = {
+        IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
+        IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
+        IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdMenuPaneNames.id),
+        IdMenu.respond_with_evos: (char_to_emoji('e'), IdMenuPaneNames.evos),
+        IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', IdMenuPaneNames.materials),
+        IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
+        IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
+        IdMenu.respond_with_otherinfo: ('\N{SCROLL}', IdMenuPaneNames.otherinfo),
+    }
+
+    @classmethod
+    def emoji_names(cls):
+        return [v[0] for k, v in cls.DATA.items()]
+
+    @classmethod
+    def transitions(cls):
+        return {v[0]: k for k, v in cls.DATA.items()}
+
+    @classmethod
+    def pane_types(cls):
+        return {v[1]: k for k, v in cls.DATA.items() if v[1]}

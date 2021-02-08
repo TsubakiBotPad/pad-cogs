@@ -2,13 +2,14 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.menu import EmbedView
+from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import LinkedText
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer
+from padinfo.view.components.base import pad_info_footer, pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view_state.materials import MaterialsViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -47,21 +48,22 @@ def skillup_field(mons, sec, link):
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
 
 
-class MaterialView:
+class MaterialsView:
     @staticmethod
-    def embed(m: "MonsterModel", color, mats, usedin, gemusedin, skillups, sec, link):
+    def embed(state: MaterialsViewState):
+        # m: "MonsterModel", color, mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
         return EmbedView(
             EmbedMain(
-                color=color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
-                url=puzzledragonx(m)
+                color=state.color,
+                title=MonsterHeader.long_v2(state.monster).to_markdown(),
+                url=puzzledragonx(state.monster)
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer(),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
+            embed_footer=pad_info_footer_with_state(state),
             embed_fields=[f for f in [
-                mat_use_field(mats, "Evo materials") if mats or not m.stackable else None,
-                mat_use_field(usedin, "Material for", 10) if usedin else None,
-                mat_use_field(gemusedin, "Evo gem is mat for") if gemusedin else None,
-                skillup_field(skillups, sec, link) if not m.stackable else None
+                mat_use_field(state.mats, "Evo materials") if state.mats or not state.monster.is_stackable else None,
+                mat_use_field(state.usedin, "Material for", 10) if state.usedin else None,
+                mat_use_field(state.gemusedin, "Evo gem ({}) is mat for".format(state.gemid)) if state.gemusedin else None,
+                skillup_field(state.skillups, state.skillup_evo_count, state.link) if not state.monster.is_stackable else None
             ] if f is not None]
         )

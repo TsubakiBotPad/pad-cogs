@@ -49,7 +49,7 @@ class Crud(commands.Cog):
             GADMIN_COG.register_perm("crud")
         else:
             raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
-                                      "installed from misc-cogs, and load it via `^load globaladmin`")
+                                      "installed from misc-cogs and load it via `^load globaladmin`")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -164,7 +164,7 @@ class Crud(commands.Cog):
             'name_en': elements['name_en'],
             'name_ko': elements['name_ko'],
             'series_id': elements['series_id'],
-            'series_type': elements['series_id']
+            'series_type': elements['series_type']
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))

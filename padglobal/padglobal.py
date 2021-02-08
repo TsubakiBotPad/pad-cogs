@@ -5,20 +5,21 @@ import difflib
 import json
 import logging
 import os
-import pytz
 import re
-import time
 from collections import defaultdict
 from io import StringIO, BytesIO
 
 import aiohttp
 import discord
 import prettytable
+import pytz
+import time
 import tsutils
 from redbot.core import checks, data_manager
-from redbot.core import commands
+from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
-from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json
+from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
+    auth_check
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -62,19 +63,11 @@ commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 
-def is_padglobal_admin_check(ctx):
-    return checks.is_owner() or ctx.bot.get_cog("PadGlobal").settings.check_admin(ctx.author.id)
-
-
-def is_padglobal_admin():
-    return commands.check(is_padglobal_admin_check)
-
-
 async def lookup_named_monster(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog._findMonster(str(query))
+    nm, err, debug_info = await padinfo_cog.fm_(str(query))
     return nm, err, debug_info
 
 
@@ -110,9 +103,20 @@ class PadGlobal(commands.Cog):
         global PADGLOBAL_COG
         PADGLOBAL_COG = self
         self.bot = bot
+
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("contentadmin")
+        else:
+            raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
+                                      "installed from misc-cogs and load it via `^load globaladmin`")
+
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
+
+        self.fir_lock = asyncio.Lock()
+        self.fir3_lock = asyncio.Lock()
 
         self._export_data()
 
@@ -155,7 +159,7 @@ class PadGlobal(commands.Cog):
             json.dump(results, f, indent=4)
 
     @commands.command()
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def breakglass(self, ctx, *, reason: str):
         """Shuts down the bot, for emergency use only.
 
@@ -195,10 +199,10 @@ class PadGlobal(commands.Cog):
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
 
     @commands.command()
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debugid1dump(self, ctx):
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        mi = padinfo_cog.index_all
+        dg_cog = self.bot.get_cog('Dadguide')
+        mi = dg_cog.index
 
         async def write_send(nn_map, file_name):
             data_holder = StringIO()
@@ -212,9 +216,9 @@ class PadGlobal(commands.Cog):
         await write_send(mi.two_word_entries, 'two_word_entries.csv')
 
     @commands.command(aliases=['iddebug1'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debugid1(self, ctx, *, query):
-        padinfo_cog = self.bot.get_cog('PadInfo')
+        dg_cog = self.bot.get_cog('Dadguide')
         # m is a named monster
         m, err, debug_info = await lookup_named_monster(query)
 
@@ -243,9 +247,9 @@ class PadGlobal(commands.Cog):
         msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
 
         msg += "\n\nAccepted nickname entries:"
-        accepted_nn = list(filter(lambda nn: m.monster_id == padinfo_cog.index_all.all_entries[nn].monster_id,
+        accepted_nn = list(filter(lambda nn: m.monster_id == dg_cog.index.all_entries[nn].monster_id,
                                   m.final_nicknames))
-        accepted_twnn = list(filter(lambda nn: m.monster_id == padinfo_cog.index_all.two_word_entries[nn].monster_id,
+        accepted_twnn = list(filter(lambda nn: m.monster_id == dg_cog.index.two_word_entries[nn].monster_id,
                                     m.final_two_word_nicknames))
 
         msg += "\n nicknames: {}".format(list_or_none(accepted_nn))
@@ -259,9 +263,9 @@ class PadGlobal(commands.Cog):
                                     m.final_two_word_nicknames))
 
         replaced_nn_info = map(lambda nn: (
-            nn, padinfo_cog.index_all.all_entries[nn]), replaced_nn)
+            nn, dg_cog.index.all_entries[nn]), replaced_nn)
         replaced_twnn_info = map(
-            lambda nn: (nn, padinfo_cog.index_all.two_word_entries[nn]), replaced_twnn)
+            lambda nn: (nn, dg_cog.index.two_word_entries[nn]), replaced_twnn)
 
         replaced_nn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
             nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
@@ -289,28 +293,35 @@ class PadGlobal(commands.Cog):
                                        delete_msgs=sent_messages, timeout=30)
 
     @commands.command(aliases=['fir'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def forceindexreload(self, ctx):
-        async with ctx.typing():
+        if self.fir_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir_lock:
             start = time.perf_counter()
             await ctx.send('Starting reload...')
             dadguide_cog = self.bot.get_cog('Dadguide')
             await dadguide_cog.reload_config_files()
-            padinfo_cog = self.bot.get_cog('PadInfo')
-            await padinfo_cog.refresh_index()
+            await dadguide_cog.wait_until_ready()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.command(aliases=['fir3'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def forceindexreload3(self, ctx):
-        async with ctx.typing():
+        if self.fir3_lock.locked():
+            await ctx.send("Index2 is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir3_lock:
             start = time.perf_counter()
             dadguide_cog = self.bot.get_cog('Dadguide')
             dadguide_cog.index2 = await dadguide_cog.create_index2()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def padglobal(self, ctx):
         """PAD global custom commands."""
 
@@ -730,9 +741,7 @@ class PadGlobal(commands.Cog):
         await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
-
         db_context = self.bot.get_cog('Dadguide').database
-        db_context: "DbContext"
 
         term = term.lower().replace('?', '')
         nm, _, _ = await lookup_named_monster(term)
@@ -883,7 +892,7 @@ class PadGlobal(commands.Cog):
             await ctx.send(box(page))
 
     @commands.command(aliases=['lookupdebug'])
-    @is_padglobal_admin()
+    @auth_check('contentadmin')
     async def debuglookup(self, ctx, *, term: str):
         """Shows why a query matches to a monster"""
         term = term.lower().replace('?', '')
@@ -1255,6 +1264,7 @@ class PadGlobal(commands.Cog):
 
     @commands.command(aliases=['currentinvade'])
     async def whichinvade(self, ctx):
+        """Display which yinyangdra is currently invading for Mystics & Spectres event"""
         pst = pytz.timezone("America/Los_Angeles")
         curtime = datetime.datetime.now(pst)
         if datetime.time(6) < curtime.time() < datetime.time(18):
@@ -1265,7 +1275,48 @@ class PadGlobal(commands.Cog):
             totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
             if totime < curtime:
                 totime += datetime.timedelta(1)
-        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime-curtime)))
+        await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
+
+    @commands.command(aliases=['resettime', 'newday', 'whenreset'])
+    async def daychange(self, ctx):
+        """Show DST information and how much time is left until the game day changes."""
+        curtime = datetime.datetime.now(pytz.timezone("UTC"))
+        reset = curtime.replace(hour=8, minute=0, second=0, microsecond=0)
+        if reset < curtime:
+            reset += datetime.timedelta(1)
+        resetdelta = reset - curtime
+        # strip leftover seconds
+        resetdelta -= datetime.timedelta(seconds=resetdelta.total_seconds() % 60)
+        totalresetmins = int(resetdelta.total_seconds() // 60)
+        resethours = totalresetmins // 60
+        newdayhours = resethours + 4
+        mins = totalresetmins % 60
+
+        pst = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
+        if pst.dst():
+            # earliest possible date of the first Sunday in November
+            dstthresh = pst.replace(month=11, day=1)
+        else:
+            # earliest possible date of the second Sunday in March
+            dstthresh = pst.replace(month=3, day=8)
+            
+        # calculate the day DST changes
+        if dstthresh < pst:
+            dstthresh = dstthresh.replace(year=(dstthresh.year + 1))
+        # add days to make day of week equal 6 (Sunday, when Monday is 0)
+        dstthresh += datetime.timedelta(6 - dstthresh.weekday())
+
+        msg = "Reset (dungeons/events): **{}h {}m** ".format(resethours, mins)
+        msg += "(1:00 am PDT)" if pst.dst() else "(12:00 midnight PST)"
+        msg += ".\nNew day (mails): **{}h {}m** ".format(newdayhours, mins)
+        msg += "(5:00 am PDT)" if pst.dst() else "(4:00 am PST)"
+        msg += ".\nDST in North America is "
+        msg += "ACTIVE" if pst.dst() else "NOT ACTIVE"
+        msg += "! It will "
+        msg += "end" if pst.dst() else "start"
+        msg += " in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
+
+        await ctx.send(msg)
 
     def emojify(self, message):
         emojis = list()
