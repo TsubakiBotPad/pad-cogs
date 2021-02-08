@@ -6,6 +6,8 @@ from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
 from padinfo.view_state.common import get_monster_from_ims
 
+from discordmenu.errors import UnsupportedPaneType
+
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
@@ -45,6 +47,9 @@ class MaterialsViewState(ViewState):
         monster = await get_monster_from_ims(dgcog, user_config, ims)
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
             await MaterialsViewState.query(dgcog, monster)
+
+        if mats is None:
+            raise UnsupportedPaneType
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query

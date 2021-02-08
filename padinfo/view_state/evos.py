@@ -5,6 +5,8 @@ from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewState
 from padinfo.view_state.common import get_monster_from_ims
 
+from discordmenu.errors import UnsupportedPaneType
+
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
@@ -37,6 +39,9 @@ class EvosViewState(ViewState):
         monster = await get_monster_from_ims(dgcog, user_config, ims)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
+        if alt_versions is None:
+            raise UnsupportedPaneType
+
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -54,4 +59,6 @@ class EvosViewState(ViewState):
         alt_versions = sorted({*db_context.graph.get_alt_monsters_by_id(monster.monster_no)},
                               key=lambda x: x.monster_id)
         gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
+        if len(alt_versions) == 1 and len(gem_versions) == 0:
+            return None, None
         return alt_versions, gem_versions
