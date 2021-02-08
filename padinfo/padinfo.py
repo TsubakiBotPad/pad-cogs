@@ -245,6 +245,27 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        goodquery = None
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index2.all_name_tokens:
+            goodquery = [query[0], query[1:]]
+        elif query[:1] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index2.all_name_tokens:
+            goodquery = [query[:1], query[2:]]
+
+        if goodquery:
+            bad = False
+            for m in dgcog.index2.all_name_tokens[goodquery[1]]:
+                for p in dgcog.index2.modifiers[m]:
+                    if p == 'xm' and goodquery[0] == 'x':
+                        goodquery[0] = 'xm'
+                    if p == goodquery[0]:
+                        bad = True
+            if bad and query not in dgcog.index2.all_name_tokens:
+                await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
+                               f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
+                               f" info about `id3` check out"
+                               f" <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>!")
+
         monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3,
                                                             raw_query)
 
