@@ -26,12 +26,12 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
-    findMonsterCustom, calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom2
+    calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
-from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.core.padinfo_settings import settings
+from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
@@ -102,8 +102,10 @@ class PadInfo(commands.Cog, IdTest):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
-        self.fm1 = lambda q: fm.findMonster1(bot.get_cog("Dadguide"), q)
+        self.fm3 = lambda q: fm.findMonsterCustom(bot.get_cog("Dadguide"), q)
         self.fm_ = lambda q: fm._findMonster(bot.get_cog("Dadguide"), q)
+
+        self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
 
     def cog_unload(self):
         """Manually nulling out database because the GC for cogs seems to be pretty shitty"""
@@ -196,7 +198,7 @@ class PadInfo(commands.Cog, IdTest):
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is not None:
             await ctx.send(MonsterHeader.short(m))
             await ctx.send(box(m.name_ja))
@@ -234,11 +236,6 @@ class PadInfo(commands.Cog, IdTest):
         await self._do_id(ctx, query, force_id3_pref=True)
 
     async def _do_id(self, ctx, query: str, force_id3_pref=None):
-        # dgcog = await self.get_dgcog()
-        beta_id3 = await self.config.user(ctx.author).beta_id3()
-        if force_id3_pref is not None:
-            beta_id3 = force_id3_pref
-
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
@@ -266,8 +263,7 @@ class PadInfo(commands.Cog, IdTest):
                                f" info about `id3` check out"
                                f" <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>!")
 
-        monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3,
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
@@ -281,13 +277,13 @@ class PadInfo(commands.Cog, IdTest):
         asyncio.create_task(send_error(err))
 
         # id3 messaging stuff
-        if beta_id3 and monster and monster.monster_no_na != monster.monster_no_jp:
+        if monster and monster.monster_no_na != monster.monster_no_jp:
             await ctx.send("The NA ID and JP ID of this card differ! "
                            "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
 
-        if beta_id3 and await self.config.do_survey():
+        if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
@@ -349,8 +345,7 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions()
     async def id2(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        await ctx.send("id2 has been discontinued!  For an even better searching experience,"
-                       " opt into the id3 beta using `{}idset beta y`".format(ctx.prefix))
+        await ctx.send("id2 has been discontinued!".format(ctx.prefix))
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
@@ -363,8 +358,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
@@ -388,8 +382,7 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
@@ -419,8 +412,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
@@ -489,8 +481,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
@@ -507,7 +498,7 @@ class PadInfo(commands.Cog, IdTest):
     async def links(self, ctx, *, query: str):
         """Monster links"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is not None:
             menu = IdMenuOld(ctx)
             embed = await menu.make_links_embed(m)
@@ -527,8 +518,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
-        monster, err, debug_info = await findMonsterCustom2(dgcog, await self.config.user(ctx.author).beta_id3(),
-                                                            raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
@@ -545,7 +535,7 @@ class PadInfo(commands.Cog, IdTest):
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
         dgcog = await self.get_dgcog()
-        monster, err, _ = await findMonsterCustom(dgcog, ctx, self.config, query)
+        monster, err, _ = await findMonsterCustom(dgcog, query)
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
             return
@@ -560,7 +550,7 @@ class PadInfo(commands.Cog, IdTest):
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is not None:
             menu = IdMenuOld(ctx, allowed_emojis=self.get_emojis())
             embed = await menu.make_lookup_embed(m)
@@ -573,7 +563,7 @@ class PadInfo(commands.Cog, IdTest):
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is not None:
             await self._do_evolistmenu(ctx, m)
         else:
@@ -590,9 +580,8 @@ class PadInfo(commands.Cog, IdTest):
         [p]ls r sonia "revo lu bu"
         [p]ls sonia lubu
         """
-        beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
-        l_err, l_mon, l_query, r_err, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, beta_id3)
+        l_err, l_mon, l_query, r_err, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query)
 
         err_msg = '{} query failed to match a monster: [ {} ]. If your query is multiple words, try separating the queries with / or wrap with quotes.'
         if l_err:
@@ -627,7 +616,7 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if err:
             await ctx.send(err)
             return
@@ -642,18 +631,17 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
-        beta_id3 = await self.config.user(ctx.author).beta_id3()
         dgcog = await self.get_dgcog()
         base_mon, err, debug_info, transformed_mon = \
-            await perform_transforminfo_query(dgcog, query, beta_id3)
+            await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
             await self.makeFailureMsg(ctx, query, err)
             return
-        
+
         if not transformed_mon:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, base_mon.monster_id,
-                           base_mon.name_en) + 'which has no evos that transform.')
+                                                                    base_mon.name_en) + 'which has no evos that transform.')
             return
 
         if err:
@@ -692,7 +680,7 @@ class PadInfo(commands.Cog, IdTest):
         query = query.strip().lower()
 
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, ctx, self.config, query)
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is not None:
             voice_id = m.voice_id_jp if server == 'jp' else m.voice_id_na
             if voice_id is None:
@@ -746,22 +734,6 @@ class PadInfo(commands.Cog, IdTest):
         else:
             await ctx.send("value must be `always`, `sometimes`, or `never`")
 
-    @idset.command()
-    async def beta(self, ctx, value: bool = True):
-        """Opt in (or out D:) to the id3 beta test!"""
-        await self.config.user(ctx.author).beta_id3.set(value)
-        await ctx.tick()
-
-    @idset.command()
-    @checks.is_owner()
-    async def betacount(self, ctx):
-        """Check the number of beta testers"""
-        c = 0
-        for v in (await self.config.all_users()).values():
-            if v['beta_id3']:
-                c += 1
-        await ctx.send(inline(str(c) + " user(s) have opted in."))
-
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
@@ -782,6 +754,11 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send("Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
             return
         await ctx.tick()
+
+    @idset.command()
+    async def beta(self, ctx, *, text):
+        """Discontinued"""
+        await ctx.send("You can no longer opt out of `id3`.  Use `{0.prefix}id1` if you need to use it.".format(ctx))
 
     @commands.group()
     @checks.is_owner()
@@ -863,17 +840,10 @@ class PadInfo(commands.Cog, IdTest):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     async def makeFailureMsg(self, ctx, query: str, err):
-        if await self.config.user(ctx.author).beta_id3():
-            await ctx.send("Sorry, your query {0} didn't match any results :(\n"
-                           "See <{2}> for "
-                           "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
-                           "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
-            return
-        msg = ('Lookup failed: {0}\n\n').format(err)
-        await ctx.send(msg + 'Try opting into the beta of our new id lookup for better results!'
-                             ' Try `{0.prefix}id3 {1}` to use it one time, or `{0.prefix}idset beta y`'
-                             ' to permanently opt into it (you can opt out with `{0.prefix}idset beta n`'
-                             ' if you want to later).'.format(ctx, query))
+        await ctx.send("Sorry, your query {0} didn't match any results :(\n"
+                       "See <{2}> for "
+                       "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
+                       "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
 
     @commands.command(aliases=["iddebug"])
     async def debugid(self, ctx, *, query):

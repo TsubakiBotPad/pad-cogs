@@ -1,6 +1,6 @@
 import re
 
-from padinfo.core.find_monster import findMonsterCustom2
+from padinfo.core.find_monster import findMonsterCustom
 
 
 def humanize_number(number, sigfigs=2):
@@ -67,7 +67,7 @@ def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     return f"[{format_number(hp)}/{format_number(atk)}/{format_number(rcv)}{resist}] {extras}"
 
 
-async def perform_leaderskill_query(dgcog, raw_query, beta_id3):
+async def perform_leaderskill_query(dgcog, raw_query):
     # Remove unicode quotation marks
     query = re.sub("[\u201c\u201d]", '"', raw_query)
 
@@ -82,8 +82,8 @@ async def perform_leaderskill_query(dgcog, raw_query, beta_id3):
             right_query = ' '.join(q for q in right_query)
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
-                nm, err, debug_info = dgcog.index.find_monster(query)
-                if nm and left_query in nm.prefixes:
+                m, err, debug_info = await findMonsterCustom(dgcog, query)
+                if m and left_query in dgcog.index2.modifiers[m]:
                     left_query = query
                     right_query = None
 
@@ -91,9 +91,9 @@ async def perform_leaderskill_query(dgcog, raw_query, beta_id3):
 
     else:  # no separators
         left_query, right_query = query, None
-    left_m, left_err, _ = await findMonsterCustom2(dgcog, beta_id3, left_query)
+    left_m, left_err, _ = await findMonsterCustom(dgcog, left_query)
     if right_query:
-        right_m, right_err, _ = await findMonsterCustom2(dgcog, beta_id3, right_query)
+        right_m, right_err, _ = await findMonsterCustom(dgcog, right_query)
     else:
         right_m, right_err, = left_m, left_err
     return left_err, left_m, left_query, right_err, right_m, right_query

@@ -236,26 +236,12 @@ class FindMonster:
         return monster_evos
 
 
-async def findMonsterCustom(dgcog, ctx, config, query):
-    if await config.user(ctx.author).beta_id3():
-        m = await findMonster3(dgcog, query)
-        if m:
-            return m, "", ""
-        else:
-            return None, "Monster not found", ""
+async def findMonsterCustom(dgcog, query):
+    m = await findMonster3(dgcog, query)
+    if m:
+        return m, "", ""
     else:
-        return await findMonster1(dgcog, query)
-
-
-async def findMonsterCustom2(dgcog, beta_id3, query):
-    if beta_id3:
-        m = await findMonster3(dgcog, query)
-        if m:
-            return m, "", ""
-        else:
-            return None, "Monster not found", ""
-    else:
-        return await findMonster1(dgcog, query)
+        return None, "Monster not found", ""
 
 
 async def findMonster1(dgcog, query):
@@ -279,8 +265,7 @@ async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional
         prefix = (await dgcog.bot.get_valid_prefixes())[0]
         return (None,
                 f"Sorry, id1 doesn't support this query and we are no longer"
-                f" developing id1 features. Please use `{prefix}id3 {query}`! You can"
-                f" opt into using the beta all the time by running `{prefix}idset beta y`!",
+                f" developing id1 features. Please use `{prefix}id {query}`!",
                 None)
 
 
