@@ -260,7 +260,7 @@ class PadInfo(commands.Cog, IdTest):
                         goodquery[0] = 'xm'
                     if p == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.index2.all_name_tokens:
+            if bad and query not in dgcog.index2.`all_name_tokens`:
                 await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
                                f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                f" info about `id3` check out"
@@ -885,6 +885,7 @@ class PadInfo(commands.Cog, IdTest):
             return
         bm = dgcog.database.graph.get_base_monster(m)
         pfxs = dgcog.index2.modifiers[m]
+        manmods = dgcog.index2.manual_prefixes[m.monster_id]
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         o = (f"[{m.monster_id}] {m.name_en}\n"
              f"Base: [{bm.monster_id}] {bm.name_en}\n"
@@ -898,7 +899,8 @@ class PadInfo(commands.Cog, IdTest):
              f"     Attribute: {' '.join(sorted(t for t in pfxs if t in dgcog.token_maps.COLOR_TOKENS))}\n"
              f"     Awakening: {' '.join(sorted(t for t in pfxs if t in dgcog.token_maps.AWAKENING_TOKENS))}\n"
              f"    Evo & Type: {' '.join(sorted(t for t in pfxs if t in EVOANDTYPE))}\n"
-             f"         Other: {' '.join(sorted(t for t in pfxs if t not in dgcog.token_maps.OTHER_HIDDEN_TOKENS))}\n")
+             f"         Other: {' '.join(sorted(t for t in pfxs if t not in dgcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
+             f"Manually Added: {' '.join(sorted(manmods))}\n")
         for page in pagify(o):
             await ctx.send(box(page))
 
@@ -1022,7 +1024,7 @@ class PadInfo(commands.Cog, IdTest):
                 return ""
             return "\n\tAlternate names: " + ', '.join(inline(m) for m in ms if m != om)
 
-        meanings = [
+        meanings = '\n'.join([
             *["Evo: " + k.value + additmods(v, token)
               for k, v in tms.EVO_MAP.items() if token in v],
             *["Type: " + get_type_emoji(k) + ' ' + k.name + additmods(v, token)
@@ -1049,10 +1051,10 @@ class PadInfo(commands.Cog, IdTest):
               f"{additmods([f'{m}*{d}' for d in v], token)}"
               for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), token)
               for a, v in tms.AWOKEN_MAP.items() if ag in v]
-        ]
+        ])
 
         if meanings or o:
-            for page in pagify("\n".join(meanings) + "\n\n" + o.strip()):
+            for page in pagify(meanings + "\n\n" + o.strip()):
                 await ctx.send(page)
         else:
             await ctx.send(f"There are no modifiers that match `{token}`.")

@@ -16,6 +16,9 @@ NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
 GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
 PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
 NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
+MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('2089525837')
+TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
+
 
 
 class MonsterIndex2(aobject):
@@ -39,11 +42,13 @@ class MonsterIndex2(aobject):
         self.replacement_tokens = defaultdict(set)
         self.treename_overrides = set()
 
-        nickname_data, treenames_data, pantheon_data, nt_alias_data = await asyncio.gather(
+        nickname_data, treenames_data, pantheon_data, nt_alias_data, mod_data, treemod_data = await asyncio.gather(
             sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 5),
             sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 5),
             sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2),
-            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2)
+            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2),
+            sheet_to_reader(MODIFIER_OVERRIDE_SHEET, 2),
+            sheet_to_reader(TREE_MODIFIER_OVERRIDE_SHEET, 2),
         )
 
         for m_id, name, lp, ov, i in nickname_data:
@@ -84,10 +89,39 @@ class MonsterIndex2(aobject):
         for token, alias in nt_alias_data:
             self.replacement_tokens[token].add(alias)
 
+        self.manual_prefixes = defaultdict(set)
+        for mid, mods in mod_data:
+            if mid.isdigit():
+                mid = int(mid)
+                for mod in mods.split(","):
+                    mod = mod.strip()
+                    if " " in mod:
+                        self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
+                    mod = mod.lower().replace(" ", "")
+                    self.manual_prefixes[mid].update(get_modifier_aliases(mod))
+
+        for mid, mods in treemod_data:
+            if mid.isdigit():
+                mid = int(mid)
+                for mod in mods.split(","):
+                    mod = mod.strip().lower()
+                    if " " in mod:
+                        self.multi_word_tokens.add(tuple(mod.split(" ")))
+                    mod = mod.replace(" ", "")
+                    aliases = get_modifier_aliases(mod)
+                    for emid in self.graph.get_alt_ids_by_id(mid):
+                        self.manual_prefixes[emid].update(aliases)
+
+
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
 
-        self.manual = self.name_tokens = self.fluff_tokens = self.modifiers = defaultdict(set)
+        self.manual_nick = defaultdict(set)
+        self.manual_tree = defaultdict(set)
+        self.name_tokens = defaultdict(set)
+        self.fluff_tokens = defaultdict(set)
+        self.modifiers = defaultdict(set)
+
         await self._build_monster_index(monsters)
 
         self.manual = combine_tokens_dicts(self.manual_nick, self.manual_tree)
@@ -99,12 +133,6 @@ class MonsterIndex2(aobject):
     __init__ = __ainit__
 
     async def _build_monster_index(self, monsters):
-        self.manual_nick = defaultdict(set)
-        self.manual_tree = defaultdict(set)
-        self.name_tokens = defaultdict(set)
-        self.fluff_tokens = defaultdict(set)
-        self.modifiers = defaultdict(set)
-
         async for m in AsyncIter(monsters):
             self.modifiers[m] = await self.get_modifiers(m)
 
@@ -217,7 +245,7 @@ class MonsterIndex2(aobject):
             return cls._name_to_tokens(min(n1, n2, key=token_count))
 
     async def get_modifiers(self, m):
-        modifiers = set()
+        modifiers = self.manual_prefixes[m.monster_id].copy()
 
         basemon = self.graph.get_base_monster(m)
 
@@ -375,6 +403,12 @@ async def sheet_to_reader(url, length=None):
         return ((line + [None] * length)[:length] for line in csv.reader(file, delimiter=','))
 
 
+def copydict(token_dict):
+    copy = defaultdict(set)
+    for k, v in token_dict.items():
+        copy[k] = v.copy()
+    return copy
+
 def combine_tokens_dicts(d1, *ds):
     combined = defaultdict(set, d1.copy())
     for d2 in ds:
@@ -386,3 +420,10 @@ def combine_tokens_dicts(d1, *ds):
 def token_count(tstr):
     tstr = re.sub(r"\(.+\)", "", tstr)
     return len(re.split(r'\W+', tstr))
+
+def get_modifier_aliases(mod):
+    output = {mod}
+    for mods in ALL_TOKEN_DICTS:
+        if mod in mods:
+            output.update(mods)
+    return output
