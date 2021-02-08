@@ -260,7 +260,7 @@ class PadInfo(commands.Cog, IdTest):
                         goodquery[0] = 'xm'
                     if p == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.index2.`all_name_tokens`:
+            if bad and query not in dgcog.index2.all_name_tokens:
                 await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
                                f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                f" info about `id3` check out"
