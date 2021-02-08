@@ -147,22 +147,22 @@ class FindMonster:
 
         return set(modifiers), negative_modifiers, name, negative_name
 
-    def process_name_tokens(self, name_query_tokens, neg_name_tokens, index2, matches):
+    def process_name_tokens(self, name_query_tokens, neg_name_tokens, dgcog, matches):
         monstergen = None
 
         for t in name_query_tokens:
-            valid = self.get_valid_monsters_from_name_token(t, index2, matches)
+            valid = self.get_valid_monsters_from_name_token(t, dgcog.index2, matches)
             if monstergen is not None:
                 monstergen.intersection_update(valid)
             else:
                 monstergen = valid
 
         for t in neg_name_tokens:
-            invalid = self.get_valid_monsters_from_name_token(t, index2, matches, mult=-10)
+            invalid = self.get_valid_monsters_from_name_token(t, dgcog.index2, matches, mult=-10)
             if monstergen is not None:
                 monstergen.difference_update(invalid)
             else:
-                monstergen = set()
+                monstergen = set(dgcog.database.get_all_monsters()).difference(invalid)
 
         return monstergen
 
@@ -317,6 +317,9 @@ class MonsterMatch:
         if mod is None:
             self.mod = set()
 
+    def __repr__(self):
+        return str((self.score, [t.split(' - ')[0] for t in self.name], [t.split(' - ')[0] for t in self.mod]))
+
 
 async def find_monster_search(tokenized_query, dgcog) -> \
         Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch]]:
@@ -332,10 +335,10 @@ async def find_monster_search(tokenized_query, dgcog) -> \
     print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
     matches = defaultdict(MonsterMatch)
 
-    if name_query_tokens:
+    if name_query_tokens or neg_name_tokens:
         monster_gen = find_monster.process_name_tokens(name_query_tokens,
                                                        neg_name_tokens,
-                                                       dgcog.index2,
+                                                       dgcog,
                                                        matches)
         if not monster_gen:
             # No monsters match the given name tokens
