@@ -7,7 +7,7 @@ from dungeon.models.EnemySkill import EnemySkill, ESNone
 
 
 class EnemySkillDatabase(object):
-    def __init__(self, json_csv: str):
+    def __init__(self, json_csv):
         with open(json_csv, encoding='utf-8') as file:
             data = json.load(file)
         f = StringIO(itsRawMate(data['enemy_skills']))
@@ -23,6 +23,8 @@ class EnemySkillDatabase(object):
                 es = EnemySkill(r)
                 enemy_skills.append(es)
         self.enemy_skills_dict = {es.enemy_skill_id: es for es in enemy_skills}
+        f.close()
+        file.close()
 
     def get_es_from_id(self, id):
         try:

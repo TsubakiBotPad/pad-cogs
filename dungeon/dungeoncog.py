@@ -1,11 +1,15 @@
+import asyncio
 import logging
+import os
+import urllib.request
 from io import BytesIO
 from typing import List
 
 import discord
+import tsutils
 
 from tsutils import Menu, EmojiUpdater
-from redbot.core import commands
+from redbot.core import commands, data_manager
 
 from google.protobuf import text_format
 
@@ -184,8 +188,11 @@ DungeonNickNames = {
     'iwoc': 4400001,
     'alt. iwoc': 4400001,
 }
+def _data_file(file_name: str) -> str:
+    return os.path.join(str(data_manager.cog_data_path(raw_name='dungeon')), file_name)
 
-json_file = "C:\\Users\\pop_p\\PycharmProjects\\pad-json-intepreter\\enemey_skill_data.json"
+RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
+RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
 class DungeonEmojiUpdater(EmojiUpdater):
     # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
@@ -205,10 +212,8 @@ class DungeonEmojiUpdater(EmojiUpdater):
         self.ctx = ctx
         self.dungeon_cog = dungeon_cog
         self.dungeon_type = dungeon_type
-        # print("{} {} {}".format(pm_floor.index(pm), len(pm_dungeon), len(pm_floor)))
 
     async def on_update(self, ctx, selected_emoji):
-        # print("{} {} {}".format(self.pm_floor.index(self.pm), len(self.pm_dungeon), len(self.pm_floor)))
         index_monster = self.pm_floor.index(self.pm)
         index_floor = self.pm_dungeon.index(self.pm_floor)
         if selected_emoji == self.dungeon_cog.previous_monster_emoji:
@@ -403,8 +408,12 @@ class DungeonCog(commands.Cog):
         self.current_monster = '👹'
         self.verbose_monster = '📜'
         self.preempt_monster = '⚡'
-        self.esd: EnemySkillDatabase = EnemySkillDatabase(json_file)
+        self.esd: EnemySkillDatabase = self.load_raw()
 
+    def load_raw(self):
+        print(RAW_ENEMY_SKILLS_DUMP)
+        urllib.request.urlretrieve(RAW_ENEMY_SKILLS_URL, RAW_ENEMY_SKILLS_DUMP)
+        return EnemySkillDatabase(RAW_ENEMY_SKILLS_DUMP)
 
     def nicknames(self, dungeon_name: str):
         if dungeon_name.lower() in DungeonNickNames:
@@ -473,7 +482,6 @@ class DungeonCog(commands.Cog):
     Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
     (for me) objects
     """
-
     async def process_behavior(self, behavior: Behavior, database, q: dict, parent: GroupedSkills = None):
         skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
         if skill is None:
@@ -775,7 +783,6 @@ class DungeonCog(commands.Cog):
 
         idk = []
         for f in pm_dungeon:
-            print('Hi')
             floor_skills = []
             for m in f:
                 floor_skills.extend(await m.collect_skills())
@@ -808,7 +815,6 @@ class DungeonCog(commands.Cog):
             for es_raw in s.es_raw:
                 if s.is_passive_preempt:
                     if es_raw.type == 73:
-                        print(es_raw)
                         resolves.add(emoji_dict['resolve'])
                     elif es_raw.type == 129:
                         resolves.add(emoji_dict['super_resolve'])
@@ -821,7 +827,6 @@ class DungeonCog(commands.Cog):
                     elif es_raw.type == 88:
                         awoken_bind.add(emoji_dict['awoken_bind'])
         ret = [''.join(resolves), ''.join(debuffs), absurd_preempt, ''.join(awoken_bind)]
-        print(ret)
         return ret
 
 
