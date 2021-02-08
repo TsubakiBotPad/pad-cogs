@@ -207,7 +207,7 @@ class FindMonster:
 
     def get_most_eligable_monster(self, monsters, dgcog, tokenized_query=None, matches=None):
         if matches is None:
-            monster_score = defaultdict(MonsterMatch)
+            matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
             tokenized_query = []
         return max(monsters,
