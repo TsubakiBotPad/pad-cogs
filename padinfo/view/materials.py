@@ -2,17 +2,17 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import LinkedText
+from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer, pad_info_footer_with_state
+from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view_state.materials import MaterialsViewState
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    pass
 
 MAX_MONS_TO_SHOW = 5
 
@@ -61,9 +61,14 @@ class MaterialsView:
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=[f for f in [
-                mat_use_field(state.mats, "Evo materials") if state.mats or not state.monster.is_stackable else None,
-                mat_use_field(state.usedin, "Material for", 10) if state.usedin else None,
-                mat_use_field(state.gemusedin, "Evo gem ({}) is mat for".format(state.gemid)) if state.gemusedin else None,
-                skillup_field(state.skillups, state.skillup_evo_count, state.link) if not state.monster.is_stackable else None
+                mat_use_field(state.mats, "Evo materials")
+                if state.mats or not (state.monster.is_stackable or state.gem_override) else None,
+                mat_use_field(state.usedin, "Material for", 10)
+                if state.usedin else None,
+                mat_use_field(state.gemusedin, "Evo gem ({}) is mat for".format(state.gemid),
+                              10 if state.gem_override else 5)
+                if state.gemusedin else None,
+                skillup_field(state.skillups, state.skillup_evo_count, state.link)
+                if not (state.monster.is_stackable or state.gem_override) else None
             ] if f is not None]
         )

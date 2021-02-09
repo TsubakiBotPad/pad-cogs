@@ -14,7 +14,7 @@ class MaterialsViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
-                 use_evo_scroll: bool = True,
+                 gem_override: bool, use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
         self.link = link
@@ -24,6 +24,7 @@ class MaterialsViewState(ViewState):
         self.mats = mats
         self.usedin = usedin
         self.gemid = gemid
+        self.gem_override = gem_override
         self.query = query
         self.monster = monster
         self.color = color
@@ -43,7 +44,7 @@ class MaterialsViewState(ViewState):
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
 
         monster = await get_monster_from_ims(dgcog, user_config, ims)
-        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
+        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable = \
             await MaterialsViewState.query(dgcog, monster)
 
         raw_query = ims['raw_query']
@@ -53,7 +54,7 @@ class MaterialsViewState(ViewState):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
 
         return MaterialsViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                                  mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link,
+                                  mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                                   use_evo_scroll=use_evo_scroll,
                                   extra_state=ims)
 
@@ -82,8 +83,13 @@ class MaterialsViewState(ViewState):
                         db_context.graph.get_base_id(su) != db_context.graph.get_base_id(monster) and
                         su not in sugs] if monster.active_skill else []
             skillup_evo_count = len(sums) - len(vsums)
+        gem_override = False
 
         if not any([mats, usedin, gemusedin, skillups and not monster.is_stackable]):
-            return None, None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None
+        if not any([mats, usedin, skillups and not monster.is_stackable]):
+            mats, gemusedin, _, usedin, skillups, skillup_evo_count, link, _ \
+                = await MaterialsViewState.query(dgcog, evo_gem)
+            gem_override = True
 
-        return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
+        return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override
