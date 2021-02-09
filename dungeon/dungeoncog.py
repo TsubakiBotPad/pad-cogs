@@ -782,7 +782,7 @@ class DungeonCog(commands.Cog):
             for m in f:
                 monster_dangers = await self.danger_skill_checker_simple(await m.collect_skills())
                 floor_skills.append(''.join(monster_dangers))
-            idk.append("Floor {}: {}".format(pm_dungeon.index(f), '\t'.join(floor_skills)))
+            idk.append("Floor {}: {}".format((pm_dungeon.index(f) + 1), '\t'.join(floor_skills)))
 
         """df = pd.DataFrame(idk, columns=['Resolves', 'Debuffs', 'Attack', 'A. Bind'])
         browser = await launch()

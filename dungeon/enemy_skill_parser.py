@@ -428,6 +428,8 @@ def attributes_to_emoji(atts, emoji_map=Attributes):
     if not isinstance(atts, list):
         atts = [atts]
     emoji = ''
+    if len(atts) >= 6:
+        return 'All'
     for a in atts:
         emoji += emoji_map[a]
     return emoji
@@ -1033,7 +1035,7 @@ def ES126BoardSizeChange(es: EnemySkill):
     turns = es.params[1]
     board_size = es.params[2]
     size = {1: '7x6', 2: '5x4', 3: '6x5'}.get(board_size, 'unknown')
-    return "{}{} for {}".format(board_size, emoji_dict['board_size'], turns)
+    return "{}{} for {}".format(size, emoji_dict['board_size'], turns)
 
 
 def ES127NoSkyfall(es: EnemySkill):
