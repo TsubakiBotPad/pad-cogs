@@ -1013,6 +1013,8 @@ class PadInfo(commands.Cog, IdTest):
         if submwtokens:
             o += "\n\n[Multi-word Super-tokens]\n"
             for t in submwtokens:
+                if not DGCOG.index2.all_name_tokens[''.join(t)]:
+                    continue
                 creators = sorted(DGCOG.index2.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
                 o += f"{' '.join(t).title()}"
                 o += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
