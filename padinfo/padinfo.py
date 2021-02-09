@@ -899,8 +899,10 @@ class PadInfo(commands.Cog, IdTest):
     async def idhelp(self, ctx, *, query=""):
         """Get help with an id query"""
         await ctx.send(
-            "See <{0}> for documentation on `{1.prefix}id`! Use `{1.prefix}idmeaning` to query the meaning of any modifier token.".format(
-                IDGUIDE, ctx))
+            "See <{0}> for documentation on `{1.prefix}id`!"
+            " Use `{1.prefix}idmeaning` to query the meaning of any modifier token."
+            " Remember that other than `equip`, modifiers must be at the start of the query."
+            "".format(IDGUIDE, ctx))
         if query:
             await self.debugid(ctx, query=query)
 
