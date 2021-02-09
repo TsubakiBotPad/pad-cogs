@@ -4,8 +4,6 @@ from typing import List
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.models.EnemySkill import EnemySkill, ESNone
 
-
-
 generic_symbols = {
     'bind': "❌",
     'blind': "😎",
@@ -166,7 +164,7 @@ emoji_dict = {
 }"""
 
 TargetType = {
-    -1 : 'Unset',
+    -1: 'Unset',
     0: 'Random',
     1: 'Leader',
     2: 'Both Leaders',
@@ -458,19 +456,19 @@ def ESRandomTypeCount(to_attr, amount_types):
 
 def ESColumnRow(pos1, att1, pos2, att2, rc):
     if rc == 0:
-        row_col = 'Col:'
+        row_col = 'Col'
     else:
-        row_col = 'Row:'
+        row_col = 'Row'
     first = ''
     effect2 = ''
     for p in pos1:
         first = str(p) + ', '
-    effect1 = '{}: {}{}{}'.format(row_col, first, generic_symbols['to'], Attributes[att1])
+    effect1 = '{}: {}{}{}'.format(row_col, first[:-2], generic_symbols['to'], attributes_to_emoji(att1))
     if pos2:
         second = ''
         for p in pos2:
             second = str(p) + ', '
-        effect2 = '{}: {}{}{}'.format(row_col, second, generic_symbols['to'], Attributes[att2])
+        effect2 = '{}: {}{}{}'.format(row_col, second[:-2], generic_symbols['to'], attributes_to_emoji(att2))
     return '{} {}'.format(effect1, effect2 or '')
 
 
@@ -720,7 +718,7 @@ def ES69DeathCry(es: EnemySkill):
 def ES71VoidShield(es: EnemySkill):
     turns = es.params[1]
     void_threshold = es.params[3]
-    return "{}{} for {}".format(emoji_dict['void'], void_threshold, turns)
+    return "{}{} for {}".format(emoji_dict['void'], f'{void_threshold:,}', turns)
 
 
 def ES72AttributeResist(es: EnemySkill):
@@ -752,11 +750,16 @@ def ES75LeaderSwap(es: EnemySkill):
 
 
 def ES76ColumnSpawnMulti(es: EnemySkill):
-    return 'TODO'
-    position1 = position_bitmap(es.params[1])
-    position2 = position_bitmap(es.params[3])
-    att1 = attribute_bitmap(es.params[2])
-    att2 = attribute_bitmap(es.params[3])
+    position1 = None
+    position2 = None
+    att1 = None
+    att2 = None
+    if es.params[1] and es.params[2]:
+        position1 = position_bitmap(es.params[1])
+        att1 = attribute_bitmap(es.params[2])
+    if es.params[3] and es.params[4]:
+        position1 = position_bitmap(es.params[3])
+        att1 = attribute_bitmap(es.params[4])
     return ESColumnRow(position1, att1, position2, att2, 0)
 
 
@@ -765,11 +768,16 @@ def ES77ColumnSpawnMultiAttack(es: EnemySkill):
 
 
 def ES78RowSpawnMulti(es: EnemySkill):
-    return 'TODO'
-    position1 = position_bitmap(es.params[1])
-    position2 = position_bitmap(es.params[3])
-    att1 = attribute_bitmap(es.params[2])
-    att2 = attribute_bitmap(es.params[4])
+    position1 = None
+    position2 = None
+    att1 = None
+    att2 = None
+    if es.params[1] and es.params[2]:
+        position1 = position_bitmap(es.params[1])
+        att1 = attribute_bitmap(es.params[2])
+    if es.params[3] and es.params[4]:
+        position1 = position_bitmap(es.params[3])
+        att1 = attribute_bitmap(es.params[4])
     return ESColumnRow(position1, att1, position2, att2, 1)
 
 
@@ -825,7 +833,7 @@ def ES86RecoverEnemy(es: EnemySkill):
 def ES87AbsorbThreshold(es: EnemySkill):
     turns = es.params[1]
     threshold = es.params[2]
-    return "{}{} for {}".format(emoji_dict['damage_absorb'], threshold, turns)
+    return "{}{} for {}".format(emoji_dict['damage_absorb'], f'{threshold:,}', turns)
 
 
 def ES88BindAwoken(es: EnemySkill):

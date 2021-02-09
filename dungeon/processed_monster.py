@@ -1,6 +1,8 @@
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
 import discord
+
+
 # Called to check if a field/value/description hits character limit
 def field_value_split(data: str, limit):
     names = []
@@ -39,10 +41,9 @@ def field_value_split(data: str, limit):
     return names, content
 
 
-
 class ProcessedMonster(object):
 
-    def __init__(self, name: str, hp, atk, defense, turns, level, error = None):
+    def __init__(self, name: str, hp, atk, defense, turns, level, error=None):
         self.name = name
         self.hp = hp
         self.atk = atk
@@ -58,7 +59,8 @@ class ProcessedMonster(object):
     def add_group(self, group: GroupedSkills):
         self.groups.append(group)
 
-    async def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None, dungeon_type: int = None, has_invade = False):
+    async def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
+                         technical: int = None, has_invade=False):
         top_level = []
         field_value_dict = OrderedDict()
         desc = ""
@@ -67,7 +69,6 @@ class ProcessedMonster(object):
         for s in top_level:
             desc += s
         names, values = field_value_split(desc, 2048)
-        print(dungeon_type)
         index = 0
         fields = []
         for val in values:
@@ -76,18 +77,20 @@ class ProcessedMonster(object):
             else:
                 fields.append({names[index - 1], val})
             index += 1
-        if dungeon_type == 0:
+        if technical == 0:
             desc = ""
         if spawn is not None:
-            embed = discord.Embed(title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1], floor[0], floor[1]),
-                                  description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
-                                                                                     f'{self.turns:,}', desc))
+            embed = discord.Embed(
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
+                                                                             floor[0], floor[1]),
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
+                                                                   f'{self.turns:,}', desc))
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(self.name, self.level),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc))
-        if dungeon_type == 0:
+        if technical == 0:
             return embed
         for n, v in fields:
             embed.add_field(name=n, value=v, inline=False)
@@ -105,13 +108,13 @@ class ProcessedMonster(object):
             # embed.add_field(name=k, value=content, inline=False)
         return embed
 
-    async def make_preempt_embed(self, spawn: "list[int]" = None, floor: "list[int]" = None, dungeon_type: int = None):
+    async def make_preempt_embed(self, spawn: "list[int]" = None, floor: "list[int]" = None, technical: int = None):
         skills = await self.collect_skills()
         desc = ""
         for s in skills:
             if "Passive" in s.type or "Preemptive" in s.type:
                 desc += "\n{}".format(s.give_string(verbose=True))
-        if dungeon_type == 0:
+        if technical == 0:
             desc = ""
         if spawn is not None:
             embed = discord.Embed(
@@ -131,4 +134,3 @@ class ProcessedMonster(object):
         for g in self.groups:
             skills.extend(await g.collect_skills())
         return skills
-

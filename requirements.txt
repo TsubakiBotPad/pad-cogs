@@ -1,7 +1,7 @@
 aiofiles
 aiohttp
 aioodbc
-discord-menu
+discord-menu>=0.12.0
 git+git://github.com/TsubakiBotPad/python-romkan
 networkx
 opencv-python
@@ -17,6 +17,3 @@ tabulate
 tsutils
 wheel
 protobuf
-numpy
-pandas
-pyppeteer
