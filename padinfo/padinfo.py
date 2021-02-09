@@ -388,7 +388,7 @@ class PadInfo(commands.Cog, IdTest):
             await self.makeFailureMsg(ctx, query, err)
             return
 
-        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link = \
+        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.query(dgcog, monster)
 
         if mats is None:
@@ -396,7 +396,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
-                                   mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link,
+                                   mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
