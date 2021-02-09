@@ -54,7 +54,7 @@ logger = logging.getLogger('red.padbot-cogs.padinfo')
 
 EMBED_NOT_GENERATED = -1
 
-IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide"
+IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/id-user-guide"
 
 
 def _data_file(file_name: str) -> str:
@@ -261,7 +261,7 @@ class PadInfo(commands.Cog, IdTest):
                 await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
                                f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                f" info about `id3` check out"
-                               f" <https://github.com/TsubakiBotPad/pad-cogs/wiki/%5Eid-user-guide>!")
+                               f" <{IDGUIDE}>!")
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -756,9 +756,11 @@ class PadInfo(commands.Cog, IdTest):
         await ctx.tick()
 
     @idset.command()
-    async def beta(self, ctx, *, text):
+    async def beta(self, ctx, *, text=""):
         """Discontinued"""
-        await ctx.send("You can no longer opt out of `id3`.  Use `{0.prefix}id1` if you need to use it.".format(ctx))
+        await ctx.send(f"`id3 `is now enabled globally, see"
+                       f" {IDGUIDE} for more information."
+                       f" `{ctx.prefix}id1` is temporarily available if you need to use it.")
 
     @commands.group()
     @checks.is_owner()
