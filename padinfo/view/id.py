@@ -71,8 +71,9 @@ class IdView:
 
     @staticmethod
     def killers_row(m: "MonsterModel", transform_base):
-        killers_text = 'Any' if 'Any' in m.killers else \
-            ' '.join(_killer_latent_emoji(k) for k in transform_base.killers)
+        killers = m.killers if m==transform_base else transform_base.killers
+        killers_text = 'Any' if 'Any' in killers else \
+            ' '.join(_killer_latent_emoji(k) for k in killers)
         available_killer_text = 'Available killers:' if m==transform_base else 'Avail. killers (pre-xform):'
         return Box(
             BoldText(available_killer_text),
