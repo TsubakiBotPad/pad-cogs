@@ -8,7 +8,6 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
-from dadguide.database_context import DbContext
 from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
@@ -25,6 +24,7 @@ from padinfo.view_state.pic import PicViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
+    from dadguide.database_context import DbContext
 
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 

@@ -1,10 +1,10 @@
-from padinfo.core.find_monster import findMonsterCustom2
+from padinfo.core.find_monster import findMonsterCustom
 
 
-async def perform_transforminfo_query(dgcog, raw_query, beta_id3):
+async def perform_transforminfo_query(dgcog, raw_query):
     db_context = dgcog.database
     mgraph = dgcog.database.graph
-    found_monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3, raw_query)
+    found_monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
     if not found_monster:
         return found_monster, err, debug_info, None
