@@ -163,10 +163,15 @@ class MonsterIndex2(aobject):
 
             # Find likely treenames
             treenames = set()
+            regexes = [
+                r"(?:Awoken|Reincarnated) (.*)",
+                r".*, (.*'s Gem)",
+            ]
             for me in alt_monsters:
-                match = re.match("(?:Awoken|Reincarnated) (.*)", me.name_en)
-                if match:
-                    treenames.add(match.group(1))
+                for r in regexes:
+                    match = re.match(r, me.name_en)
+                    if match:
+                        treenames.add(match.group(1))
 
             # Add important tokens
             for t in self.monster_id_to_nametokens[m.monster_id]:
