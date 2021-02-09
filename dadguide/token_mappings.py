@@ -185,18 +185,18 @@ AWOKEN_MAP = {
     Awakenings.SKILLBINDRES: ('sbr',),
     Awakenings.ENHANCEDHEAL: ('htpa', 'oeh'),
     Awakenings.MULTIBOOST: ('multi', 'mb'),
-    Awakenings.DRAGONKILLER: ('dk', 'drk', 'killer'),
-    Awakenings.GODKILLER: ('gk', 'gok', 'killer'),
-    Awakenings.DEVILKILLER: ('vk', 'dek', 'killer'),
-    Awakenings.MACHINEKILLER: ('mk', 'mak', 'killer'),
-    Awakenings.BALANCEDKILLER: ('bk', 'bak', 'killer'),
-    Awakenings.ATTACKERKILLER: ('ak', 'aak', 'killer'),
-    Awakenings.PHYSICALKILLER: ('pk', 'phk', 'killer'),
-    Awakenings.HEALERKILLER: ('hk', 'hek', 'killer'),
-    Awakenings.EVOMATKILLER: ('evok', 'a2killer'),
-    Awakenings.AWOKENKILLER: ('awok', 'a2killer'),
-    Awakenings.FODDERKILLER: ('enhk', 'a2killer'),
-    Awakenings.REDEEMKILLER: ('vendork', 'a2killer'),
+    Awakenings.DRAGONKILLER: ('dragonkiller', 'dk', 'drk', 'killer'),
+    Awakenings.GODKILLER: ('godkiller', 'gk', 'gok', 'killer'),
+    Awakenings.DEVILKILLER: ('devilkiller', 'vk', 'dek', 'killer'),
+    Awakenings.MACHINEKILLER: ('machinekiller', 'mk', 'mak', 'killer'),
+    Awakenings.BALANCEDKILLER: ('balancedkiller', 'bk', 'bak', 'killer'),
+    Awakenings.ATTACKERKILLER: ('attackerkiller', 'ak', 'aak', 'killer'),
+    Awakenings.PHYSICALKILLER: ('physicalkiller', 'pk', 'phk', 'killer'),
+    Awakenings.HEALERKILLER: ('healerkiller', 'hk', 'hek', 'killer'),
+    Awakenings.EVOMATKILLER: ('evokiller', 'evok', 'a2killer'),
+    Awakenings.AWOKENKILLER: ('awokenkiller', 'awok', 'a2killer'),
+    Awakenings.FODDERKILLER: ('enhancekiller', 'enhk', 'a2killer'),
+    Awakenings.REDEEMKILLER: ('vendorkiller', 'vendork', 'a2killer'),
     Awakenings.ENHCOMBO7C: ('7c',),
     Awakenings.GUARDBREAK: ('gb',),
     Awakenings.FUA: ('fua',),
@@ -272,7 +272,7 @@ MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
     'mega awoken'
 }}
 
-KNOWN_MODIFIERS = {v for vs in {
+ALL_TOKEN_DICTS = {
     *COLOR_MAP.values(),
     *SUB_COLOR_MAP.values(),
     *DUAL_COLOR_MAP.values(),
@@ -280,7 +280,9 @@ KNOWN_MODIFIERS = {v for vs in {
     *AWOKEN_MAP.values(),
     *EVO_MAP.values(),
     *MISC_MAP.values(),
-} for v in vs}
+}
+
+KNOWN_MODIFIERS = {v for vs in ALL_TOKEN_DICTS for v in vs}
 
 COLOR_TOKENS = {
     *sum(COLOR_MAP.values(), ()),
@@ -307,3 +309,7 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_PREFIXES = {
     "reincarnated"
 }
+
+ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
+                 'bg', 'bb', 'bl', 'bd', 'bx', 'g', 'gr', 'gg', 'gb', 'gl', 'gd', 'gx', 'l', 'lr', 'lg', 'lb', 'll',
+                 'ld', 'lx', 'd', 'dr', 'dg', 'db', 'dl', 'dd', 'dx', 'x', 'xr', 'xg', 'xb', 'xl', 'xd', 'xx'}

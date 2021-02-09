@@ -71,12 +71,14 @@ class IdView:
 
     @staticmethod
     def killers_row(m: "MonsterModel", transform_base):
-        killers_text = 'Any' if 'Any' in m.killers else \
-            ' '.join(_killer_latent_emoji(k) for k in transform_base.killers)
-        available_killer_text = 'Available killers:' if m==transform_base else 'Avail. killers (pre-xform):'
+        killers = m.killers if m==transform_base else transform_base.killers
+        killers_text = 'Any' if 'Any' in killers else \
+            ' '.join(_killer_latent_emoji(k) for k in killers)
         return Box(
-            BoldText(available_killer_text),
-            Text('[{} slots]'.format(m.latent_slots)),
+            BoldText('Available killers:'),
+            Text('\N{DOWN-POINTING RED TRIANGLE}' if m!=transform_base else ''),
+            Text('[{} slots]'.format(m.latent_slots if m==transform_base \
+                else transform_base.latent_slots)),
             Text(killers_text),
             delimiter=' '
         )
