@@ -86,7 +86,7 @@ class FindMonster:
         else:
             closest = max(monster_mods, key=lambda m: calc_ratio_modifier(m, token))
             rat = calc_ratio_modifier(closest, token)
-            if rat > self.TOKEN_JW_DISTANCE:
+            if rat > self.MODIFIER_JW_DISTANCE:
                 matches[monster].mod.add(f"{token} - {closest}")
                 matches[monster].score += rat
                 return True
@@ -236,26 +236,12 @@ class FindMonster:
         return monster_evos
 
 
-async def findMonsterCustom(dgcog, ctx, config, query):
-    if await config.user(ctx.author).beta_id3():
-        m = await findMonster3(dgcog, query)
-        if m:
-            return m, "", ""
-        else:
-            return None, "Monster not found", ""
+async def findMonsterCustom(dgcog, query):
+    m = await findMonster3(dgcog, query)
+    if m:
+        return m, "", ""
     else:
-        return await findMonster1(dgcog, query)
-
-
-async def findMonsterCustom2(dgcog, beta_id3, query):
-    if beta_id3:
-        m = await findMonster3(dgcog, query)
-        if m:
-            return m, "", ""
-        else:
-            return None, "Monster not found", ""
-    else:
-        return await findMonster1(dgcog, query)
+        return None, "Monster not found", ""
 
 
 async def findMonster1(dgcog, query):
@@ -279,8 +265,7 @@ async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional
         prefix = (await dgcog.bot.get_valid_prefixes())[0]
         return (None,
                 f"Sorry, id1 doesn't support this query and we are no longer"
-                f" developing id1 features. Please use `{prefix}id3 {query}`! You can"
-                f" opt into using the beta all the time by running `{prefix}idset beta y`!",
+                f" developing id1 features. Please use `{prefix}id {query}`!",
                 None)
 
 
@@ -332,9 +317,9 @@ async def find_monster_search(tokenized_query, dgcog) -> \
         if t not in dgcog.index2.all_modifiers:
             settings.add_typo_mod(t)
 
-    print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
+    #print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
+    
     matches = defaultdict(MonsterMatch)
-
     if name_query_tokens or neg_name_tokens:
         monster_gen = find_monster.process_name_tokens(name_query_tokens,
                                                        neg_name_tokens,
@@ -356,8 +341,8 @@ async def find_monster_search(tokenized_query, dgcog) -> \
         # no modifiers match any monster in the evo tree
         return None, {}
 
-    print({k: v for k, v in sorted(matches.items(), key=lambda kv: kv[1].score, reverse=True)
-           if k in monster_gen})
+    #print({k: v for k, v in sorted(matches.items(), key=lambda kv: kv[1].score, reverse=True)
+    #       if k in monster_gen})
 
     # Return most likely candidate based on query.
     mon = find_monster.get_most_eligable_monster(monster_gen, dgcog, tokenized_query, matches)

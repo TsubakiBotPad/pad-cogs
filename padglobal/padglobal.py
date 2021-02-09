@@ -70,6 +70,13 @@ async def lookup_named_monster(query: str):
     nm, err, debug_info = await padinfo_cog.fm_(str(query))
     return nm, err, debug_info
 
+async def lookup_monster_model(query: str):
+    padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
+    if padinfo_cog is None:
+        raise Exception("Cog not Loaded")
+    m, err, debug_info = await padinfo_cog.fm3(str(query))
+    return m, err, debug_info
+
 
 def monster_id_to_monster(monster_id):
     dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
@@ -735,22 +742,25 @@ class PadGlobal(commands.Cog):
         if name is None or definition is None:
             return
         if not success:
-            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            await ctx.send('Which {}\n{}'.format(name, definition))
             return
-        await ctx.send(inline('Which {} - Last Updated {}'.format(name, timestamp)))
+        await ctx.send('Which {} - Last Updated {}'.format(name, timestamp))
         await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
         db_context = self.bot.get_cog('Dadguide').database
+        padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        nm, _, _ = await lookup_named_monster(term)
-        if nm is None:
+        m, _, _ = await lookup_monster_model(term)
+        if m is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
 
-        name = nm.group_computed_treename.title()
-        monster_id = nm.base_monster_no
+        m = db_context.graph.get_base_monster(m)
+
+        name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
+        monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
         timestamp = "2000-01-01"
 
@@ -785,7 +795,7 @@ class PadGlobal(commands.Cog):
             return
 
         if not success:
-            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            await ctx.send('Which {}\n{}'.format(name, definition))
             return
         await self._do_send_which(ctx, to_user, name, definition, timestamp)
 
@@ -1145,12 +1155,13 @@ class PadGlobal(commands.Cog):
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        nm, _, _ = await lookup_named_monster(term)
-        if nm is None:
+        m, _, _ = await lookup_monster_model(term)
+        if m is None:
             return None, None, 'No dungeon or monster matched that query'
+        m = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
 
-        name = nm.group_computed_treename.title()
-        definition = self.settings.leaderGuide().get(nm.base_monster_no, None)
+        name = m.name_en
+        definition = self.settings.leaderGuide().get(m.monster_id, None)
         if definition is None:
             return None, None, 'A monster matched that query but has no guide'
 
