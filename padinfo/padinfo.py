@@ -759,7 +759,7 @@ class PadInfo(commands.Cog, IdTest):
     async def beta(self, ctx, *, text=""):
         """Discontinued"""
         await ctx.send(f"`id3 `is now enabled globally, see"
-                       f" {IDGUIDE} for more information."
+                       f" <{IDGUIDE}> for more information."
                        f" `{ctx.prefix}id1` is temporarily available if you need to use it.")
 
     @commands.group()
