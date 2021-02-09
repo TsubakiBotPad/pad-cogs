@@ -17,23 +17,33 @@ from padinfo.view_state.transforminfo import TransformInfoViewState
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
+BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
 
-def base_info(m: "MonsterModel"):
+
+def _get_base_info(m: "MonsterModel"):
     return Box(
         Box(
-            '\N{DOWN-POINTING RED TRIANGLE}',
+            BASE_EMOJI,
             IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
                 else Box(Text('No Awakenings')),
             delimiter=' '
         ),
-        IdView.super_awakenings_row(m),
-        # the transform base of the base is the same
-        IdView.killers_row(m, m)
+        IdView.super_awakenings_row(m)
+    )
+
+def transform_skill_header(m: "MonsterModel"):
+    active_skill = m.active_skill
+    active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
+    return Box(
+        BoldText('Active Skill'),
+        BoldText(active_cd),
+        delimiter=' '
     )
 
 def base_skill(m: "MonsterModel"):
     active_skill = m.active_skill
-    return (" (Base: {} -> {})".format(active_skill.turn_max, active_skill.turn_min) if active_skill
+    return (" (" + BASE_EMOJI + " "
+            + "{} -> {})".format(active_skill.turn_max, active_skill.turn_min) if active_skill
         else 'None')
 
 
@@ -49,7 +59,8 @@ class TransformInfoView:
                 Box(
                     IdView.normal_awakenings_row(transformed_mon)
                         if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
-                    base_info(base_mon)
+                    _get_base_info(base_mon),
+                    IdView.killers_row(transformed_mon, base_mon)
                 ),
             ),
             EmbedField(
@@ -64,7 +75,7 @@ class TransformInfoView:
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(transformed_mon).to_markdown() + base_skill(base_mon),
+                transform_skill_header(transformed_mon).to_markdown() + base_skill(base_mon),
                 Text(transformed_mon.active_skill.desc if transformed_mon.active_skill else 'None')
             ),
             EmbedField(

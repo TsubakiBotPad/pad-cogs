@@ -15,9 +15,10 @@ from padinfo.view_state.transforminfo import TransformInfoViewState
 if TYPE_CHECKING:
     pass
 
-emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWNWARDS BLACK ARROW}', '\N{UPWARDS BLACK ARROW}',
-                      '\N{CROSS MARK}']
+emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWN-POINTING RED TRIANGLE}',
+                      '\N{BLACK RIGHT-POINTING TRIANGLE}', '\N{CROSS MARK}']
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+
 
 class TransformInfoMenu:
     INITIAL_EMOJI = emoji_button_names[0]
