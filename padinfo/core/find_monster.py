@@ -314,9 +314,9 @@ async def find_monster_search(tokenized_query, dgcog) -> \
         if t not in dgcog.index2.all_modifiers:
             settings.add_typo_mod(t)
 
-    print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
+    #print(mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens)
+    
     matches = defaultdict(MonsterMatch)
-
     if name_query_tokens:
         monster_gen = find_monster.process_name_tokens(name_query_tokens,
                                                        neg_name_tokens,
@@ -338,8 +338,8 @@ async def find_monster_search(tokenized_query, dgcog) -> \
         # no modifiers match any monster in the evo tree
         return None, {}
 
-    print({k: v for k, v in sorted(matches.items(), key=lambda kv: kv[1].score, reverse=True)
-           if k in monster_gen})
+    #print({k: v for k, v in sorted(matches.items(), key=lambda kv: kv[1].score, reverse=True)
+    #       if k in monster_gen})
 
     # Return most likely candidate based on query.
     mon = find_monster.get_most_eligable_monster(monster_gen, dgcog, tokenized_query, matches)
