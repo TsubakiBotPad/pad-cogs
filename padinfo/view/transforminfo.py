@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
 
 
-def _get_base_info(m: "MonsterModel"):
+def base_info(m: "MonsterModel"):
     return Box(
         Box(
             BASE_EMOJI,
@@ -59,7 +59,7 @@ class TransformInfoView:
                 Box(
                     IdView.normal_awakenings_row(transformed_mon)
                         if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
-                    _get_base_info(base_mon),
+                    base_info(base_mon),
                     IdView.killers_row(transformed_mon, base_mon)
                 ),
             ),
