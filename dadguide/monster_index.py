@@ -147,13 +147,14 @@ class MonsterIndex2(aobject):
             # Name Tokens
             nametokens = self._name_to_tokens(m.name_en)
             last_token = m.name_en.split(',')[-1].strip()
-            autotoken = True
+            alt_monsters = self.graph.get_alt_monsters(m)
+            autotoken = len(alt_monsters) > 1
 
             for jpt in m.name_ja.split(" "):
                 self.name_tokens[jpt].add(m)
 
             # Propagate name tokens throughout all evos
-            for me in self.graph.get_alt_monsters(m):
+            for me in alt_monsters:
                 if last_token != me.name_en.split(',')[-1].strip():
                     autotoken = False
                 for t in self.monster_id_to_nametokens[me.monster_id]:
@@ -162,10 +163,15 @@ class MonsterIndex2(aobject):
 
             # Find likely treenames
             treenames = set()
-            for me in self.graph.get_alt_monsters(m):
-                match = re.match("(?:Awoken|Reincarnated) (.*)", me.name_en)
-                if match:
-                    treenames.add(match.group(1))
+            regexes = [
+                r"(?:Awoken|Reincarnated) (.*)",
+                r".*, (.*'s Gem)",
+            ]
+            for me in alt_monsters:
+                for r in regexes:
+                    match = re.match(r, me.name_en)
+                    if match:
+                        treenames.add(match.group(1))
 
             # Add important tokens
             for t in self.monster_id_to_nametokens[m.monster_id]:
@@ -182,12 +188,12 @@ class MonsterIndex2(aobject):
                     self.add_name_token(self.name_tokens, token, m)
                     if m.is_equip:
                         possessives = re.findall(r"(\w+)'s", m.name_en.lower())
-                        for mevo in self.graph.get_alt_monsters(m):
+                        for mevo in alt_monsters:
                             for token2 in possessives:
                                 if token2 in self._name_to_tokens(mevo.name_en.lower()):
                                     self.add_name_token(self.name_tokens, token2, mevo)
                     else:
-                        for mevo in self.graph.get_alt_monsters(m):
+                        for mevo in alt_monsters:
                             if token in self._name_to_tokens(mevo.name_en):
                                 self.add_name_token(self.name_tokens, token, mevo)
 
@@ -198,7 +204,7 @@ class MonsterIndex2(aobject):
                 # significantly more complicated logic in the lookup later on.
                 # Test case: Mizutsune is a nickname for Dark Aurora, ID 4148. Issue: #614
                 if m.is_equip:
-                    for mevo in self.graph.get_alt_monsters(m):
+                    for mevo in alt_monsters:
                         if not mevo.is_equip:
                             for token2 in self._get_important_tokens(mevo.name_en, treenames):
                                 self.add_name_token(self.name_tokens, token2, m)
