@@ -37,6 +37,9 @@ class PantheonViewState(ViewState):
         monster = await get_monster_from_ims(dgcog, user_config, ims)
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 
+        if pantheon_list is None:
+            return None
+
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']

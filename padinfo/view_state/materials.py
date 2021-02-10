@@ -47,6 +47,9 @@ class MaterialsViewState(ViewState):
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable = \
             await MaterialsViewState.query(dgcog, monster)
 
+        if mats is None:
+            return None
+
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         menu_type = ims['menu_type']

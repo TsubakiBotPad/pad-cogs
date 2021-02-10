@@ -366,6 +366,11 @@ class PadInfo(commands.Cog, IdTest):
 
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
+        if alt_versions is None:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
+                                                                    monster.name_en) + 'which has no alt evos or gems.')
+            return
+
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                               monster, alt_versions, gem_versions,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
