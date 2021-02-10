@@ -1,6 +1,8 @@
 import asyncio
 import csv
+import inspect
 import io
+import logging
 import re
 from collections import defaultdict
 
@@ -19,7 +21,7 @@ NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
 MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('2089525837')
 TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
-
+logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
 class MonsterIndex2(aobject):
     async def __ainit__(self, monsters, db):
@@ -86,8 +88,8 @@ class MonsterIndex2(aobject):
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
         next(nt_alias_data)  # Skip over heading
-        for token, alias in nt_alias_data:
-            self.replacement_tokens[token].add(alias)
+        for tokens, alias in nt_alias_data:
+            self.replacement_tokens[frozenset(re.split(r'\W+', tokens))].add(alias)
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods in mod_data:
@@ -223,6 +225,20 @@ class MonsterIndex2(aobject):
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
                 self.add_name_token(self.manual_tree, nick, m)
+
+    def add_name_token(self, token_dict, token, m):
+        if len(inspect.stack(0)) > 100:
+            logger.warning(f"Infinite loop detected in name token replacement with token {token}.  Aborting.")
+            return
+
+        token_dict[token.lower()].add(m)
+        if token.lower() in self._known_mods and token.lower() not in HAZARDOUS_IN_NAME_PREFIXES:
+            self.modifiers[m].add(token.lower())
+
+        # Replacements
+        for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
+            for t in self.replacement_tokens[ts]:
+                self.add_name_token(token_dict, t, m)
 
     @staticmethod
     def _name_to_tokens(oname):
@@ -390,12 +406,6 @@ class MonsterIndex2(aobject):
             modifiers.add("idna")
 
         return modifiers
-
-    def add_name_token(self, token_dict, token, m):
-        for t in self.replacement_tokens[token.lower()].union({token.lower()}):
-            token_dict[t].add(m)
-            if t.lower() in self._known_mods and t.lower() not in HAZARDOUS_IN_NAME_PREFIXES:
-                self.modifiers[m].add(t.lower())
 
 
 # TODO: Move this to TSUtils
