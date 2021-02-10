@@ -212,6 +212,7 @@ class FindMonster:
             tokenized_query = []
         return max(monsters,
                    key=lambda m: (matches[m].score,
+                                  m.monster_id == dgcog.self_monster(),
                                   not m.is_equip,
                                   # Match na on id overlap
                                   bool(m.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),

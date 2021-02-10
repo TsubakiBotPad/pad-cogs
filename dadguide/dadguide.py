@@ -267,11 +267,23 @@ class Dadguide(commands.Cog):
         self.settings.set_data_file(data_file)
         await ctx.tick()
 
+    @dadguide.command()
+    @checks.is_owner()
+    async def setself(self, ctx, monsterid: int):
+        """Set a local path to dadguide data instead of downloading it."""
+        self.settings.bot_settings['selfmonster'] = monsterid
+        self.settings.save_settings()
+        await ctx.tick()
+
+    def self_monster(self):
+        return self.settings.bot_settings['selfmonster']
+
 
 class DadguideSettings(tsutils.CogSettings):
     def make_default_settings(self):
         config = {
             'data_file': '',
+            'selfmonster': -1,
         }
         return config
 
