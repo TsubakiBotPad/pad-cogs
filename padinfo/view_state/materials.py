@@ -42,7 +42,7 @@ class MaterialsViewState(ViewStateBaseId):
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
 
-        monster = await get_monster_from_ims(dgcog, user_config, ims)
+        monster = await get_monster_from_ims(dgcog, ims)
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable = \
             await MaterialsViewState.query(dgcog, monster)
 

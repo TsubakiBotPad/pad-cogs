@@ -32,7 +32,7 @@ class EvosViewState(ViewStateBaseId):
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
-        monster = await get_monster_from_ims(dgcog, user_config, ims)
+        monster = await get_monster_from_ims(dgcog, ims)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
         if alt_versions is None:

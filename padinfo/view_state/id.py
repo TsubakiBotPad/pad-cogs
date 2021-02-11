@@ -35,7 +35,7 @@ class IdViewState(ViewStateBaseId):
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
-        monster = await get_monster_from_ims(dgcog, user_config, ims)
+        monster = await get_monster_from_ims(dgcog, ims)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
 

@@ -31,7 +31,7 @@ class PantheonViewState(ViewStateBaseId):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        monster = await get_monster_from_ims(dgcog, user_config, ims)
+        monster = await get_monster_from_ims(dgcog, ims)
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 
         if pantheon_list is None:
