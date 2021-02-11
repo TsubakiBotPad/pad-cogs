@@ -43,7 +43,6 @@ class EvosViewState(ViewState):
 
         if alt_versions is None:
             return None
-        print('def not kittens')
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
@@ -52,9 +51,10 @@ class EvosViewState(ViewState):
         menu_type = ims['menu_type']
         reaction_list = get_reaction_list_from_ims(ims)
 
-        return EvosViewState(original_author_id, menu_type, raw_query, query, user_config.color, reaction_list,
+        return EvosViewState(original_author_id, menu_type, raw_query, query, user_config.color,
                              monster,
                              alt_versions, gem_versions,
+                             reaction_list=reaction_list,
                              use_evo_scroll=use_evo_scroll,
                              extra_state=ims)
 
