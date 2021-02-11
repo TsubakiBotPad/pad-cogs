@@ -157,9 +157,10 @@ class IdMenu:
 
     @staticmethod
     def id_control(state: IdViewState):
+        reaction_list = state.reaction_list
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
@@ -167,7 +168,6 @@ class IdMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        print(reaction_list)
         return EmbedControl(
             [EvosView.embed(state)],
             reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
