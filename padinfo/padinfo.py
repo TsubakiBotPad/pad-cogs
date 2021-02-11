@@ -28,7 +28,6 @@ from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
     calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
-from padinfo.core.id import get_id_view_state_data
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
@@ -287,7 +286,7 @@ class PadInfo(commands.Cog, IdTest):
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
-            await get_id_view_state_data(dgcog, monster)
+            await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 

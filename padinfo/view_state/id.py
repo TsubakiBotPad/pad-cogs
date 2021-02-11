@@ -1,7 +1,6 @@
 from typing import List, TYPE_CHECKING
 
 from padinfo.common.config import UserConfig
-from padinfo.core.id import get_id_view_state_data
 from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base_id import ViewStateBaseId
 from padinfo.view_state.common import get_monster_from_ims, get_reaction_list_from_ims
@@ -37,7 +36,7 @@ class IdViewState(ViewStateBaseId):
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
         monster = await get_monster_from_ims(dgcog, ims)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
-            await get_id_view_state_data(dgcog, monster)
+            await IdViewState.query(dgcog, monster)
 
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
@@ -52,3 +51,21 @@ class IdViewState(ViewStateBaseId):
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
+
+    @staticmethod
+    async def query(dgcog, monster):
+        db_context = dgcog.database
+        acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
+            await IdViewState._get_monster_misc_info(db_context, monster)
+
+        return transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters
+
+    @staticmethod
+    async def _get_monster_misc_info(db_context, monster):
+        transform_base = db_context.graph.get_transform_base(monster)
+        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
+        acquire_raw = db_context.graph.monster_acquisition(monster)
+        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_no).rarity
+        alt_monsters = sorted({*db_context.graph.get_alt_monsters_by_id(monster.monster_no)},
+                              key=lambda x: x.monster_id)
+        return acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw
