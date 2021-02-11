@@ -1,10 +1,8 @@
 from padinfo.common.config import UserConfig
-from padinfo.core.id import get_monster_misc_info
-from padinfo.core.transforminfo import perform_transforminfo_query
-from padinfo.view_state.base import ViewState
+from padinfo.view_state.base import ViewStateBase
 
 
-class TransformInfoViewState(ViewState):
+class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
                  base_rarity, acquire_raw, true_evo_type_raw):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
@@ -44,7 +42,7 @@ class TransformInfoViewState(ViewState):
     @staticmethod
     async def query(dgcog, base_mon, transformed_mon):
         db_context = dgcog.database
-        acquire_raw, _, base_rarity, _, true_evo_type_raw = \
-            await get_monster_misc_info(db_context, transformed_mon)
-
+        acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
+        base_rarity = db_context.graph.get_base_monster_by_id(transformed_mon.monster_no).rarity
+        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(transformed_mon).value
         return acquire_raw, base_rarity, true_evo_type_raw

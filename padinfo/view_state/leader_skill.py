@@ -1,9 +1,9 @@
 from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import perform_leaderskill_query
-from padinfo.view_state.base import ViewState
+from padinfo.view_state.base import ViewStateBase
 
 
-class LeaderSkillViewState(ViewState):
+class LeaderSkillViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color

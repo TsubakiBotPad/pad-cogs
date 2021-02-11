@@ -1,4 +1,4 @@
-class ViewState:
+class ViewStateBase:
     def __init__(self, original_author_id, menu_type, raw_query, extra_state=None):
         self.extra_state = extra_state or {}
         self.menu_type = menu_type

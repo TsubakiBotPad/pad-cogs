@@ -2,43 +2,37 @@ from typing import List, TYPE_CHECKING
 
 from padinfo.common.config import UserConfig
 from padinfo.pane_names import IdMenuPaneNames
-from padinfo.view_state.base import ViewState
+from padinfo.view_state.base_id import ViewStateBaseId
 from padinfo.view_state.common import get_monster_from_ims, get_reaction_list_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class EvosViewState(ViewState):
+class EvosViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color,
                  monster: "MonsterModel",
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
-        self.reaction_list = reaction_list
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         use_evo_scroll=use_evo_scroll,
+                         reaction_list=reaction_list,
+                         extra_state=extra_state)
         self.alt_versions = alt_versions
         self.gem_versions = gem_versions
-        self.query = query
-        self.monster = monster
-        self.color = color
-        self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
             'pane_type': IdMenuPaneNames.evos,
-            'query': self.query,
-            'resolved_monster_id': self.monster.monster_id,
-            'use_evo_scroll': str(self.use_evo_scroll),
-            'reaction_list': ','.join(self.reaction_list) if self.reaction_list else None,
         })
         return ret
 
-    @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        monster = await get_monster_from_ims(dgcog, user_config, ims)
+    @classmethod
+    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+        monster = await get_monster_from_ims(dgcog, ims)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
         if alt_versions is None:
@@ -51,12 +45,12 @@ class EvosViewState(ViewState):
         menu_type = ims['menu_type']
         reaction_list = get_reaction_list_from_ims(ims)
 
-        return EvosViewState(original_author_id, menu_type, raw_query, query, user_config.color,
-                             monster,
-                             alt_versions, gem_versions,
-                             reaction_list=reaction_list,
-                             use_evo_scroll=use_evo_scroll,
-                             extra_state=ims)
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color,
+                   monster,
+                   alt_versions, gem_versions,
+                   reaction_list=reaction_list,
+                   use_evo_scroll=use_evo_scroll,
+                   extra_state=ims)
 
     @staticmethod
     async def query(dgcog, monster):
