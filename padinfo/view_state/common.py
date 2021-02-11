@@ -11,3 +11,8 @@ async def get_monster_from_ims(dgcog, user_config: UserConfig, ims: dict):
         return dgcog.database.graph.get_monster(resolved_monster_id)
     monster, _, _ = await findMonsterCustom(dgcog, query)
     return monster
+
+
+def get_reaction_list_from_ims(ims):
+    reaction_list_str = ims.get('reaction_list')
+    return reaction_list_str.split(',') if reaction_list_str else None
