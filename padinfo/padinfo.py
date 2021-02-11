@@ -288,9 +288,28 @@ class PadInfo(commands.Cog, IdTest):
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
+        initial_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+
+        # hide some panes if we're in evo scroll mode
+        if settings.checkEvoID(ctx.author.id):
+            alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+            if alt_versions is None:
+                initial_reaction_list[3] = None
+            pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+            if pantheon_list is None:
+                initial_reaction_list[0] = None
+                initial_reaction_list[1] = None
+                initial_reaction_list[6] = None
+            mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
+                await MaterialsViewState.query(dgcog, monster)
+            if mats is None:
+                initial_reaction_list[4] = None
+            initial_reaction_list = list(filter(None, initial_reaction_list))
+
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                             monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
-                            use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                            use_evo_scroll=settings.checkEvoID(ctx.author.id),
+                            reaction_list=initial_reaction_list)
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
 

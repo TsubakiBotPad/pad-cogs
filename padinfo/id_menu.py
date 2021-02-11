@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
@@ -166,41 +166,47 @@ class IdMenu:
     def evos_control(state: Optional[EvosViewState]):
         if state is None:
             return None
+        reaction_list = state.reaction_list
+        print(reaction_list)
         return EmbedControl(
             [EvosView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def mats_control(state: Optional[MaterialsViewState]):
         if state is None:
             return None
+        reaction_list = state.reaction_list
         return EmbedControl(
             [MaterialsView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def pic_control(state: PicViewState):
+        reaction_list = state.reaction_list
         return EmbedControl(
             [PicView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def pantheon_control(state: Optional[PantheonViewState]):
         if state is None:
             return None
+        reaction_list = state.reaction_list
         return EmbedControl(
             [PantheonView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def otherinfo_control(state: OtherInfoViewState):
+        reaction_list = state.reaction_list
         return EmbedControl(
             [OtherInfoView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
 
