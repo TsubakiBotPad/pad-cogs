@@ -29,8 +29,8 @@ class PantheonViewState(ViewStateBaseId):
         })
         return ret
 
-    @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    @classmethod
+    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
         monster = await get_monster_from_ims(dgcog, ims)
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 
@@ -44,11 +44,11 @@ class PantheonViewState(ViewStateBaseId):
         menu_type = ims['menu_type']
         reaction_list = get_reaction_list_from_ims(ims)
 
-        return PantheonViewState(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                                 pantheon_list, series_name,
-                                 use_evo_scroll=use_evo_scroll,
-                                 reaction_list=reaction_list,
-                                 extra_state=ims)
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   pantheon_list, series_name,
+                   use_evo_scroll=use_evo_scroll,
+                   reaction_list=reaction_list,
+                   extra_state=ims)
 
     @staticmethod
     async def query(dgcog, monster):

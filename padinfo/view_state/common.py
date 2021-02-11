@@ -1,4 +1,3 @@
-from padinfo.common.config import UserConfig
 from padinfo.core.find_monster import findMonsterCustom
 
 
