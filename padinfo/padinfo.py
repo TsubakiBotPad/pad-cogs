@@ -7,7 +7,7 @@ import re
 import urllib.parse
 from collections import OrderedDict
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import discord
 import tsutils
@@ -288,11 +288,34 @@ class PadInfo(commands.Cog, IdTest):
 
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await get_id_view_state_data(dgcog, monster)
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                             monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
-                            use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                            use_evo_scroll=settings.checkEvoID(ctx.author.id),
+                            reaction_list=initial_reaction_list)
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
+
+    @staticmethod
+    async def _get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel", full_reaction_list: List[Optional[str]]):
+        # hide some panes if we're in evo scroll mode
+        if not settings.checkEvoID(ctx.author.id):
+            return full_reaction_list
+        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        if alt_versions is None:
+            full_reaction_list[0] = None
+            full_reaction_list[1] = None
+            full_reaction_list[3] = None
+        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+        if pantheon_list is None:
+            full_reaction_list[6] = None
+        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
+            await MaterialsViewState.query(dgcog, monster)
+        if mats is None:
+            full_reaction_list[4] = None
+        return list(filter(None, full_reaction_list))
 
     async def send_survey_after(self, ctx, query, result_monster):
         dgcog = await self.get_dgcog()
@@ -371,8 +394,12 @@ class PadInfo(commands.Cog, IdTest):
                                                                     monster.name_en) + 'which has no alt evos or gems.')
             return
 
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                               monster, alt_versions, gem_versions,
+                              reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.evos_control)
         await menu.create(ctx, state)
@@ -400,8 +427,12 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
             return
 
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
+                                   reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
@@ -428,8 +459,12 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send(inline('Too many monsters in this series to display'))
             return
 
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                                   monster, pantheon_list, series_name,
+                                  reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
@@ -492,8 +527,12 @@ class PadInfo(commands.Cog, IdTest):
             await self.makeFailureMsg(ctx, query, err)
             return
 
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                              monster,
+                             reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pic_control)
         await menu.create(ctx, state)
@@ -529,8 +568,12 @@ class PadInfo(commands.Cog, IdTest):
             await self.makeFailureMsg(ctx, query, err)
             return
 
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+
         state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                                    monster,
+                                   reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.otherinfo_control)
         await menu.create(ctx, state)
