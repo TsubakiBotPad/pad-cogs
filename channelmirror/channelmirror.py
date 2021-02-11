@@ -1,11 +1,11 @@
 import logging
 import re
+import time
 from datetime import datetime
 from io import BytesIO
 from typing import Optional
 
 import discord
-import time
 import tsutils
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline, pagify, box
@@ -33,8 +33,7 @@ class ChannelMirror(commands.Cog):
         self.config.register_channel(multiedit=False, mirroredit_target=None, nodeletion=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
-        if GACOG:
-            GACOG.register_perm("channelmirror")
+        if GACOG: GACOG.register_perm("channelmirror")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -108,7 +107,7 @@ class ChannelMirror(commands.Cog):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
-            multiedit = await self.config.channel(discord.Object(mc_id)).multiedit()
+            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
             msg += '\n\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 if server_id is not None and mc_id not in gchs and not channel_id not in gchs:
@@ -138,7 +137,7 @@ class ChannelMirror(commands.Cog):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
-            multiedit = await self.config.channel(discord.Object(mc_id)).multiedit()
+            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 channel = self.bot.get_channel(channel_id)
