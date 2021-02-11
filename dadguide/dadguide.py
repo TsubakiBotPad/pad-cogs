@@ -8,25 +8,24 @@ entire database could be leaked when the module is reloaded.
 """
 import asyncio
 import csv
-import difflib
 import json
-import logging
 import os
 import shutil
-import tsutils
-from io import BytesIO
 from collections import defaultdict
+from io import BytesIO
+from typing import Optional
+
+import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands
 
-from .database_manager import *
-from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .old_monster_index import MonsterIndex
-from .monster_index import MonsterIndex2
-from .database_loader import load_database
 from . import token_mappings
-
+from .database_loader import load_database
+from .database_manager import *
 from .models.monster_model import MonsterModel
+from .models.monster_stats import monster_stats, MonsterStatModifierInput
+from .monster_index import MonsterIndex2
+from .old_monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -80,8 +79,8 @@ class Dadguide(commands.Cog):
         self.translated_names = {}
 
         self.database = None
-        self.index = None  # type: MonsterIndex
-        self.index2 = None  # type: MonsterIndex2
+        self.index = None  # type: Optional[MonsterIndex]
+        self.index2 = None  # type: Optional[MonsterIndex2]
 
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
@@ -144,7 +143,8 @@ class Dadguide(commands.Cog):
         while self == self.bot.get_cog('Dadguide'):
             short_wait = False
             try:
-                await self.download_and_refresh_nicknames()
+                async with tsutils.StatusManager(self.bot):
+                    await self.download_and_refresh_nicknames()
                 logger.info('Done refreshing Dadguide, triggering ready')
                 self._is_ready.set()
             except Exception as ex:
