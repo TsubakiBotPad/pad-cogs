@@ -2,36 +2,30 @@ from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
 from padinfo.pane_names import IdMenuPaneNames
-from padinfo.view_state.base import ViewState
+from padinfo.view_state.base_id import ViewStateBaseId
 from padinfo.view_state.common import get_monster_from_ims, get_reaction_list_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class PantheonViewState(ViewState):
+class PantheonViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  pantheon_list: List["MonsterModel"], series_name: str,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, extra_state=extra_state)
-        self.reaction_list = reaction_list
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         use_evo_scroll=use_evo_scroll,
+                         reaction_list=reaction_list,
+                         extra_state=extra_state)
         self.series_name = series_name
         self.pantheon_list = pantheon_list
-        self.color = color
-        self.monster = monster
-        self.query = query
-        self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
             'pane_type': IdMenuPaneNames.pantheon,
-            'query': self.query,
-            'resolved_monster_id': self.monster.monster_id,
-            'use_evo_scroll': str(self.use_evo_scroll),
-            'reaction_list': ','.join(self.reaction_list) if self.reaction_list else None,
         })
         return ret
 

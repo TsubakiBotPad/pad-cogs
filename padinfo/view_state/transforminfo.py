@@ -1,10 +1,10 @@
 from padinfo.common.config import UserConfig
 from padinfo.core.id import get_monster_misc_info
 from padinfo.core.transforminfo import perform_transforminfo_query
-from padinfo.view_state.base import ViewState
+from padinfo.view_state.base import ViewStateBase
 
 
-class TransformInfoViewState(ViewState):
+class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
                  base_rarity, acquire_raw, true_evo_type_raw):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
