@@ -1,8 +1,7 @@
-from padinfo.common.config import UserConfig
 from padinfo.core.find_monster import findMonsterCustom
 
 
-async def get_monster_from_ims(dgcog, user_config: UserConfig, ims: dict):
+async def get_monster_from_ims(dgcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
 
     resolved_monster_id_str = ims.get('resolved_monster_id')

@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Color
 
-from padinfo.core.id import get_monster_misc_info
 from padinfo.core.padinfo_settings import settings
 from padinfo.view.id import IdView
-from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillSingleView
+from padinfo.view.leader_skill import LeaderSkillSingleView
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
 from padinfo.view_state.id import IdViewState
@@ -35,7 +34,7 @@ class IdMenu:
     async def make_id_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
         acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
-            await get_monster_misc_info(self.db_context, m)
+            await IdViewState.query(self.db_context, m)
         state = IdViewState("", "TODO", "todo", "", color, m, transform_base, true_evo_type_raw, acquire_raw,
                             base_rarity, alt_monsters,
                             use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
