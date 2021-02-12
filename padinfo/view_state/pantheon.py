@@ -31,6 +31,8 @@ class PantheonViewState(ViewStateBaseId):
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+        if ims.get('unsupported_transition'):
+            return None
         monster = await get_monster_from_ims(dgcog, ims)
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
 

@@ -34,6 +34,9 @@ class IdViewState(ViewStateBaseId):
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+        # for numberscroll getting to a gap in monster book, or 1, or last monster
+        if ims.get('unsupported_transition'):
+            return None
         monster = await get_monster_from_ims(dgcog, ims)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await IdViewState.query(dgcog, monster)
