@@ -476,7 +476,7 @@ class PadInfo(commands.Cog, IdTest):
         monsters.sort(key=lambda x: x.monster_id)
 
         emoji_to_embed = OrderedDict()
-        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, dgcog=DGCOG, allowed_emojis=self.get_emojis())
         starting_menu_emoji = None
         for idx, m in enumerate(monsters):
             chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
@@ -667,7 +667,7 @@ class PadInfo(commands.Cog, IdTest):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenuOld(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, dgcog=dgcog, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)

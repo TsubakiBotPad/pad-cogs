@@ -17,9 +17,9 @@ if TYPE_CHECKING:
 
 
 class IdMenu:
-    def __init__(self, ctx, db_context: "DbContext" = None, allowed_emojis: list = None):
+    def __init__(self, ctx, dgcog=None, allowed_emojis: list = None):
         self.ctx = ctx
-        self.db_context = db_context
+        self.dgcog = dgcog
         self.allowed_emojis = allowed_emojis
 
     async def get_user_embed_color(self, pdicog):
@@ -33,8 +33,8 @@ class IdMenu:
 
     async def make_id_embed(self, m: "MonsterModel"):
         color = await self.get_user_embed_color(self.ctx.bot.get_cog("PadInfo"))
-        acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
-            await IdViewState.query(self.db_context, m)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+            await IdViewState.query(self.dgcog, m)
         state = IdViewState("", "TODO", "todo", "", color, m, transform_base, true_evo_type_raw, acquire_raw,
                             base_rarity, alt_monsters,
                             use_evo_scroll=settings.checkEvoID(self.ctx.author.id))
