@@ -294,16 +294,16 @@ class PadInfo(commands.Cog, IdTest):
             return full_reaction_list
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
         if alt_versions is None:
-            full_reaction_list[0] = None
-            full_reaction_list[1] = None
-            full_reaction_list[3] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_left][0])] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_right][0])] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_evos][0])] = None
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
-            full_reaction_list[6] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_pantheon][0])] = None
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.query(dgcog, monster)
         if mats is None:
-            full_reaction_list[4] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_mats][0])] = None
         return list(filter(None, full_reaction_list))
 
     async def send_survey_after(self, ctx, query, result_monster):
