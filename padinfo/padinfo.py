@@ -82,19 +82,9 @@ class PadInfo(commands.Cog, IdTest):
         self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
-        self.id_emoji = '\N{HOUSE BUILDING}'
-        self.evo_emoji = char_to_emoji('e')
-        self.mats_emoji = '\N{MEAT ON BONE}'
         self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
-        self.pantheon_emoji = '\N{CLASSICAL BUILDING}'
-        self.pic_emoji = '\N{FRAME WITH PICTURE}'
-        self.other_info_emoji = '\N{SCROLL}'
-        self.first_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
-        self.previous_monster_emoji = '\N{BLACK LEFT-POINTING TRIANGLE}'
-        self.next_monster_emoji = '\N{BLACK RIGHT-POINTING TRIANGLE}'
-        self.last_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
         self.remove_emoji = self.menu.emoji['no']
 
         self.config = Config.get_conf(self, identifier=9401770)
