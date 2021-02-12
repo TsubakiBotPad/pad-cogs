@@ -32,6 +32,8 @@ class EvosViewState(ViewStateBaseId):
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+        if ims.get('unsupported_transition'):
+            return None
         monster = await get_monster_from_ims(dgcog, ims)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 

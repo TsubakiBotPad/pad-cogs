@@ -54,8 +54,10 @@ class IdMenu:
         m = db_context.graph.get_monster(int(ims['resolved_monster_id']))
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        new_monster_id = str(IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll))
-        ims['resolved_monster_id'] = new_monster_id
+        new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll)
+        if new_monster_id is None:
+            ims['unsupported_transition'] = True
+        ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
         pane_type = ims['pane_type']
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
@@ -70,7 +72,7 @@ class IdMenu:
             return new_id
         else:
             prev_monster = db_context.graph.numeric_prev_monster(monster)
-            return prev_monster.monster_id if prev_monster else monster.monster_id
+            return prev_monster.monster_id if prev_monster else None
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
@@ -80,7 +82,9 @@ class IdMenu:
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
-        ims['resolved_monster_id'] = new_monster_id
+        if new_monster_id is None:
+            ims['unsupported_transition'] = True
+        ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
         pane_type = ims.get('pane_type')
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
@@ -99,7 +103,7 @@ class IdMenu:
             return new_id
         else:
             next_monster = db_context.graph.numeric_next_monster(monster)
-            return next_monster.monster_id if next_monster else monster.monster_id
+            return next_monster.monster_id if next_monster else None
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):
@@ -157,6 +161,8 @@ class IdMenu:
 
     @staticmethod
     def id_control(state: IdViewState):
+        if state is None:
+            return None
         reaction_list = state.reaction_list
         return EmbedControl(
             [IdView.embed(state)],
@@ -185,6 +191,8 @@ class IdMenu:
 
     @staticmethod
     def pic_control(state: PicViewState):
+        if state is None:
+            return None
         reaction_list = state.reaction_list
         return EmbedControl(
             [PicView.embed(state)],
@@ -203,6 +211,8 @@ class IdMenu:
 
     @staticmethod
     def otherinfo_control(state: OtherInfoViewState):
+        if state is None:
+            return None
         reaction_list = state.reaction_list
         return EmbedControl(
             [OtherInfoView.embed(state)],
