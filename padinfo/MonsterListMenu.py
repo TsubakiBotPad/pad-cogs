@@ -19,7 +19,7 @@ from padinfo.view_state.monster_list import MonsterListViewState
 if TYPE_CHECKING:
     pass
 
-menu_emoji_config = EmbedMenuEmojiConfig()
+menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class MonsterListMenu:
@@ -37,7 +37,7 @@ class MonsterListMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config)
+        embed = EmbedMenu(reaction_filters, MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config, delete_func=MonsterListMenu.respond_with_delete)
         return embed
 
     @staticmethod
@@ -84,7 +84,7 @@ class MonsterListMenu:
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
         # this function is needed because we want different deletion behavior in the CHILD menu
-        await message.delete()
+        return await message.delete()
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
@@ -170,7 +170,6 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_delete: ('\N{CROSS MARK}', None),
         MonsterListMenu.respond_with_eyes: ('\N{EYES}', None),
         MonsterListMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
@@ -193,7 +192,7 @@ class MonsterListMenuPanes:
 
     @staticmethod
     def get_initial_reaction_list(number_of_evos: int):
-        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1] + ['\N{CROSS MARK}']
+        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1]
 
     @staticmethod
     def emoji_name_to_emoji(name: str):

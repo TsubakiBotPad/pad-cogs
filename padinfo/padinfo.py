@@ -602,7 +602,10 @@ class PadInfo(commands.Cog, IdTest):
             'user_config': user_config,
             'child_message_id': child_message.id,
         }
-        await evolist_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+        try:
+            await evolist_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+        except discord.errors.NotFound:
+            pass
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
