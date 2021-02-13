@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import os
 import random
@@ -15,7 +14,6 @@ from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
-from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
@@ -26,7 +24,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
     get_attribute_emoji_by_monster
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
-from padinfo.core.find_monster import find_monster, findMonster1, findMonster3, \
+from padinfo.core.find_monster import find_monster, findMonster3, \
     calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonsterCustom
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
@@ -49,7 +47,7 @@ from padinfo.view_state.pic import PicViewState
 from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
-    pass
+    from dadguide.models.monster_model import MonsterModel
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -94,7 +92,6 @@ class PadInfo(commands.Cog, IdTest):
         self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
 
         self.fm3 = lambda q: fm.findMonsterCustom(bot.get_cog("Dadguide"), q)
-        self.fm_ = lambda q: fm._findMonster(bot.get_cog("Dadguide"), q)
 
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
 
@@ -204,31 +201,25 @@ class PadInfo(commands.Cog, IdTest):
         """Monster info (main tab)"""
         await self._do_id(ctx, query)
 
-    @commands.command(aliases=["idold", "oldid"])
-    @checks.bot_has_permissions(embed_links=True)
-    async def id1(self, ctx, *, query):
-        """Do a search via id1"""
-        await self._do_id(ctx, query, force_id3_pref=False)
-
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id(ctx, "inna " + query, force_id3_pref=True)
+        await self._do_id(ctx, "inna " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def idjp(self, ctx, *, query: str):
         """Monster info (limited to JP monsters ONLY)"""
-        await self._do_id(ctx, "injp " + query, force_id3_pref=True)
+        await self._do_id(ctx, "injp " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def id3(self, ctx, *, query: str):
         """Monster info (main tab)"""
-        await self._do_id(ctx, query, force_id3_pref=True)
+        await self._do_id(ctx, query)
 
-    async def _do_id(self, ctx, query: str, force_id3_pref=None):
+    async def _do_id(self, ctx, query: str):
         dgcog = await self.get_dgcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
@@ -256,10 +247,7 @@ class PadInfo(commands.Cog, IdTest):
                                f" info about `id3` check out"
                                f" <{IDGUIDE}>!")
 
-        if force_id3_pref is not False:
-            monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
-        else:
-            monster, err, debug_info = await findMonster1(dgcog, raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
@@ -319,8 +307,9 @@ class PadInfo(commands.Cog, IdTest):
         sm = await self.config.user(ctx.author).survey_mode()
         sms = [1, await self.config.sometimes_perc() / 100, 0][sm]
         if random.random() < sms:
-            m1, _, _ = await findMonster1(dgcog, query)
-            id1res = f"{m1.name_en} ({m1.monster_id})" if m1 else "None"
+            mid1 = historic_lookups.get(query)
+            m1 = mid1 and dgcog.get_monster(mid1)
+            id1res = "Not Historic" if mid1 is None else f"{m1.name_en} ({m1.monster_id})" if mid1 > 0 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
             params = urllib.parse.urlencode(
                 {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
@@ -801,8 +790,7 @@ class PadInfo(commands.Cog, IdTest):
     async def beta(self, ctx, *, text=""):
         """Discontinued"""
         await ctx.send(f"`id3 `is now enabled globally, see"
-                       f" <{IDGUIDE}> for more information."
-                       f" `{ctx.prefix}id1` is temporarily available if you need to use it.")
+                       f" <{IDGUIDE}> for more information.")
 
     @commands.group()
     @checks.is_owner()
@@ -849,35 +837,6 @@ class PadInfo(commands.Cog, IdTest):
         """Set path to the voice direcory"""
         settings.setVoiceDir(path)
         await ctx.tick()
-
-    @checks.is_owner()
-    @padinfo.command()
-    async def iddiff(self, ctx):
-        """Runs the diff checker for id and id3"""
-        await ctx.send("Running diff checker...")
-        hist_aggreg = list(historic_lookups)
-        s = 0
-        f = []
-        dgcog = await self.get_dgcog()
-        async for c, query in AsyncIter(enumerate(hist_aggreg)):
-            m1, err1, debug_info1 = await findMonster1(dgcog, query)
-            m2, err2, debug_info2 = await findMonster3(dgcog, query)
-            if c % 50 == 0:
-                await ctx.send(inline("{}/{} complete.".format(c, len(hist_aggreg))))
-            if m1 == m2 or (m1 and m2 and m1.monster_id == m2.monster_id):
-                s += 1
-                continue
-
-            f.append((query,
-                      [m1.monster_id if m1 else None, m2.monster_id if m2 else None],
-                      [err1, err2],
-                      [debug_info1, debug_info2]
-                      ))
-            if m1 and m2:
-                await ctx.send("Major Discrepency: `{}` -> {}/{}".format(query, m1.name_en, m2.name_en))
-        await ctx.send("Done running diff checker.  {}/{} passed.".format(s, len(hist_aggreg)))
-        file = discord.File(BytesIO(json.dumps(f).encode()), filename="diff.json")
-        await ctx.send(file=file)
 
     def get_emojis(self):
         server_ids = [int(sid) for sid in settings.emojiServers()]
