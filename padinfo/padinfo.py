@@ -192,7 +192,8 @@ class PadInfo(commands.Cog, IdTest):
             fctx = await self.bot.get_context(message)
             child_message = await fctx.fetch_message(int(ims['child_message_id']))
             child_message_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
-            data['child_message_ims'] = child_message_ims
+            if child_message_ims:
+                data['child_message_ims'] = child_message_ims
             ims['menu_type'] = IdMenu.MENU_TYPE
             await embed_menu.transition(child_message, ims, emoji_clicked, member, **data)
             return

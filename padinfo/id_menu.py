@@ -119,6 +119,11 @@ class IdMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
 
+        print('???????????')
+        for r in ims['reaction_list'].split(','):
+            print(str(r))
+        print('???????????')
+
         view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         control = IdMenu.id_control(view_state)
         return control
@@ -173,6 +178,7 @@ class IdMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
+        print(reaction_list)
         return EmbedControl(
             [IdView.embed(state)],
             reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -235,7 +241,7 @@ class IdMenuPanes:
         IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
         IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
         IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdMenuPaneNames.id),
-        IdMenu.respond_with_evos: (char_to_emoji('e'), IdMenuPaneNames.evos),
+        IdMenu.respond_with_evos: (char_to_emoji('z'), IdMenuPaneNames.evos),
         IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', IdMenuPaneNames.materials),
         IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
         IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),

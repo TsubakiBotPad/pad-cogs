@@ -72,10 +72,14 @@ class MonsterListMenu:
         dgcog = data['dgcog']
         reaction_list = await get_id_menu_initial_reaction_list(None, dgcog, dgcog.database.graph.get_monster(
             int(ims['resolved_monster_id'])), force_evoscroll=True)
-        ims['reaction_list'] = ','.join(reaction_list)
-        if data.get('child_message_ims') is None:
+        if not data.get('child_message_ims'):
+            # default to the overview screen if we weren't already on a screen
+            ims['reaction_list'] = ','.join(reaction_list)
+
             return await IdMenu.respond_with_current_id(message, ims, **data)
-        return await IdMenu.respond_with_refresh(message, ims, **data)
+        data['child_message_ims']['reaction_list'] = ','.join(reaction_list)
+        data['child_message_ims']['resolved_monster_id'] = int(ims['resolved_monster_id'])
+        return await IdMenu.respond_with_refresh(message, data['child_message_ims'], **data)
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
