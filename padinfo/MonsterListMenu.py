@@ -137,7 +137,6 @@ class MonsterListMenu:
         reaction_list = state.reaction_list
         if '\N{EYES}' in reaction_list:
             reaction_list.pop('\N{EYES}')
-        print(reaction_list)
         return EmbedControl(
             [MonsterListView.embed(state)],
             reaction_list
