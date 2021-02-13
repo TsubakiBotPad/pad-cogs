@@ -8,7 +8,6 @@ entire database could be leaked when the module is reloaded.
 """
 import asyncio
 import csv
-import json
 import os
 import shutil
 from collections import defaultdict
@@ -25,7 +24,6 @@ from .database_manager import *
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .monster_index import MonsterIndex2
-from .old_monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -79,7 +77,6 @@ class Dadguide(commands.Cog):
         self.translated_names = {}
 
         self.database = None
-        self.index = None  # type: Optional[MonsterIndex]
         self.index2 = None  # type: Optional[MonsterIndex2]
 
         self.monster_stats = monster_stats
@@ -106,15 +103,6 @@ class Dadguide(commands.Cog):
         No personal data is stored in this cog.
         """
         return
-
-    async def create_index(self, accept_filter=None):
-        """Exported function that allows a client cog to create an id1/2 monster index"""
-        await self.wait_until_ready()
-        return await MonsterIndex(self.database,
-                                  self.nickname_overrides,
-                                  self.treename_overrides,
-                                  self.panthname_overrides,
-                                  accept_filter=accept_filter)
 
     async def create_index2(self):
         """Exported function that allows a client cog to create an id3 monster index"""
@@ -196,32 +184,9 @@ class Dadguide(commands.Cog):
         logger.info('Loading dg database')
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
-        self.index = await MonsterIndex(self.database, self.nickname_overrides,
-                                        self.treename_overrides, self.panthname_overrides)
         self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
 
-        logger.info('Writing dg monster computed names')
-        self.write_monster_computed_names()
-
         logger.info('Done refreshing dg data')
-
-    def write_monster_computed_names(self):
-        results = {}
-        for name, nm in self.index.all_entries.items():
-            results[name] = int(tsutils.get_pdx_id_dadguide(nm))
-
-        with open(NAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f)
-
-        results = {}
-        for nm in self.index.all_monsters:
-            entry = {'bn': list(nm.group_treenames)}
-            if nm.extra_nicknames:
-                entry['nn'] = list(nm.extra_nicknames)
-            results[int(tsutils.get_pdx_id_dadguide(nm))] = entry
-
-        with open(TREENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f)
 
     def _csv_to_tuples(self, file_path: str, cols: int = 2):
         # Loads a two-column CSV into an array of tuples.

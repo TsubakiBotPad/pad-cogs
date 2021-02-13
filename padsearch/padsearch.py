@@ -1,10 +1,9 @@
-import json
 import logging
 import re
-from io import BytesIO
 from fnmatch import fnmatch
+from io import BytesIO
+
 from ply import lex
-from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 from tsutils import timeout_after
@@ -759,7 +758,7 @@ class PadSearch(commands.Cog):
                 # If it still failed, raise the original exception
                 raise ex
         dg_cog = self.bot.get_cog('Dadguide')
-        if dg_cog == None:
+        if dg_cog is None:
             await ctx.send("Dadguide cog not loaded.")
             return
         monsters = dg_cog.database.get_all_monsters()
@@ -809,15 +808,3 @@ class PadSearch(commands.Cog):
         lexer.input(input)
         db_context = self.bot.get_cog("Dadguide").database
         return SearchConfig(lexer, db_context)
-
-    @commands.command()
-    @checks.is_owner()
-    async def debugsearch(self, ctx, *, query):
-        padinfo_cog = self.bot.get_cog('PadInfo')
-        m, err, debug_info = await padinfo_cog.findMonster1(query)
-
-        if m is None:
-            await ctx.send(box('No match: ' + err))
-            return
-
-        await ctx.send(box(json.dumps(m.search, indent=2, default=lambda o: o.__dict__)))
