@@ -247,10 +247,7 @@ class PadInfo(commands.Cog, IdTest):
                                f" info about `id3` check out"
                                f" <{IDGUIDE}>!")
 
-        if force_id3_pref is not False:
-            monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
-        else:
-            monster, err, debug_info = await findMonster1(dgcog, raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
