@@ -34,8 +34,7 @@ class MonsterListViewState(ViewStateBase):
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
-
-        monster_list = [dgcog.database.graph.get_monster(int(m) for m in ims['monster_list'])]
+        monster_list = [dgcog.database.graph.get_monster(int(m)) for m in ims['monster_list']]
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
