@@ -196,10 +196,10 @@ class PadInfo(commands.Cog, IdTest):
             if child_message_ims:
                 data['child_message_ims'] = child_message_ims
             ims['menu_type'] = IdMenu.MENU_TYPE
-            
+
             # The order here is really important!! The set of emojis attached to the ims is going to be changed in
             # the second transition, so it's VITAL that we reset prior to showing the child menu.
-            # It's also better from a perceived performance standard becuase the emojis are so rate-limited and
+            # It's also better from a perceived performance standpoint becuase the emojis are so rate-limited and
             # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
             # happens faster, but regardless the reset must happen first.
             await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
