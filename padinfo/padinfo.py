@@ -18,6 +18,7 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
 
+from padinfo.MonsterListMenu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
@@ -39,6 +40,7 @@ from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
 from padinfo.view_state.pic import PicViewState
@@ -145,6 +147,7 @@ class PadInfo(commands.Cog, IdTest):
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
                 emoji_clicked in IdMenuPanes.emoji_names() or
+                emoji_clicked in MonsterListMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
             return
 
@@ -158,7 +161,8 @@ class PadInfo(commands.Cog, IdTest):
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
             IdMenu.MENU_TYPE: IdMenu.menu,
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
+            MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
         }
 
         menu_func = menu_map.get(menu_type)
@@ -243,7 +247,10 @@ class PadInfo(commands.Cog, IdTest):
                                f" info about `id3` check out"
                                f" <{IDGUIDE}>!")
 
-        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+        if force_id3_pref is not False:
+            monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+        else:
+            monster, err, debug_info = await findMonster1(dgcog, raw_query)
 
         if not monster:
             await self.makeFailureMsg(ctx, query, err)
@@ -286,16 +293,16 @@ class PadInfo(commands.Cog, IdTest):
             return full_reaction_list
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
         if alt_versions is None:
-            full_reaction_list[0] = None
-            full_reaction_list[1] = None
-            full_reaction_list[3] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_left][0])] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_right][0])] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_evos][0])] = None
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
-            full_reaction_list[6] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_pantheon][0])] = None
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.query(dgcog, monster)
         if mats is None:
-            full_reaction_list[4] = None
+            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_mats][0])] = None
         return list(filter(None, full_reaction_list))
 
     async def send_survey_after(self, ctx, query, result_monster):
@@ -451,30 +458,6 @@ class PadInfo(commands.Cog, IdTest):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
 
-    async def _do_evolistmenu(self, ctx, sm):
-        DGCOG = self.bot.get_cog("Dadguide")
-        db_context = DGCOG.database
-
-        monsters = db_context.graph.get_alt_monsters_by_id(sm.monster_id)
-        monsters.sort(key=lambda x: x.monster_id)
-
-        emoji_to_embed = OrderedDict()
-        menu = IdMenuOld(ctx, db_context=db_context, allowed_emojis=self.get_emojis())
-        starting_menu_emoji = None
-        for idx, m in enumerate(monsters):
-            chars = "0123456789\N{KEYCAP TEN}ABCDEFGHI"
-            if idx > 19:
-                await ctx.send(
-                    "There are too many evos for this monster to display.  Try using `{}evolist`.".format(ctx.prefix))
-                return
-            else:
-                emoji = char_to_emoji(chars[idx])
-            emoji_to_embed[emoji] = await menu.make_id_embed(m)
-            if m.monster_id == sm.monster_id:
-                starting_menu_emoji = emoji
-
-        return await self._do_menu(ctx, starting_menu_emoji, EmojiUpdater(emoji_to_embed), timeout=60)
-
     async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=30):
         if starting_menu_emoji not in emoji_to_embed.emoji_dict:
             # Selected menu wasn't generated for this monster
@@ -591,13 +574,34 @@ class PadInfo(commands.Cog, IdTest):
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
-        """Monster info (for all monsters in the evo tree)"""
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, query)
-        if m is not None:
-            await self._do_evolistmenu(ctx, m)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        alt_versions, _ = await EvosViewState.query(dgcog, monster)
+
+        if alt_versions is None:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
+                                                                    monster.name_en) + 'which has no alt evos.')
+            return
+
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(alt_versions))
+
+        state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
+                                     alt_versions, 'Evolution List',
+                                     reaction_list=initial_reaction_list
+                                     )
+        menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -650,7 +654,7 @@ class PadInfo(commands.Cog, IdTest):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenuOld(ctx, db_context=dgcog.database, allowed_emojis=self.get_emojis())
+        menu = IdMenuOld(ctx, dgcog=dgcog, allowed_emojis=self.get_emojis())
         emoji_to_embed = OrderedDict()
         emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
         emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
