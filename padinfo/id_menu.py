@@ -241,7 +241,7 @@ class IdMenuPanes:
         IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
         IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
         IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdMenuPaneNames.id),
-        IdMenu.respond_with_evos: (char_to_emoji('z'), IdMenuPaneNames.evos),
+        IdMenu.respond_with_evos: (char_to_emoji('E'), IdMenuPaneNames.evos),
         IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', IdMenuPaneNames.materials),
         IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
         IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
