@@ -602,7 +602,7 @@ class PadInfo(commands.Cog, IdTest):
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(alt_versions))
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     alt_versions,
+                                     alt_versions, 'Evolution List',
                                      reaction_list=initial_reaction_list
                                      )
         menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)

@@ -20,14 +20,13 @@ class MonsterListView:
     @staticmethod
     def embed(state: MonsterListViewState):
         fields = [
-            EmbedField('Monster List',
+            EmbedField(state.title,
                        Box(*_monster_list(state.monster_list)))
         ]
 
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title='Monster List',
             ),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)
