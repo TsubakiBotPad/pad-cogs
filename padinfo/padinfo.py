@@ -20,6 +20,7 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
 
+from padinfo.MonsterListMenu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
@@ -41,6 +42,7 @@ from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
 from padinfo.view_state.pic import PicViewState
@@ -148,6 +150,7 @@ class PadInfo(commands.Cog, IdTest):
 
         if not (emoji_clicked in ls_menu_emoji_button_names or
                 emoji_clicked in IdMenuPanes.emoji_names() or
+                emoji_clicked in MonsterListMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
             return
 
@@ -288,7 +291,8 @@ class PadInfo(commands.Cog, IdTest):
         await menu.create(ctx, state)
 
     @staticmethod
-    async def _get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel", full_reaction_list: List[Optional[str]]):
+    async def _get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
+                                                 full_reaction_list: List[Optional[str]]):
         # hide some panes if we're in evo scroll mode
         if not settings.checkEvoID(ctx.author.id):
             return full_reaction_list
@@ -599,12 +603,40 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         """Monster info (for all monsters in the evo tree)"""
+        # dgcog = await self.get_dgcog()
+        # m, err, debug_info = await findMonsterCustom(dgcog, query)
+        # if m is not None:
+        #     await self._do_evolistmenu(ctx, m)
+        # else:
+        #     await self.makeFailureMsg(ctx, query, err)
         dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, query)
-        if m is not None:
-            await self._do_evolistmenu(ctx, m)
-        else:
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+
+        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+
+        if monster is None:
             await self.makeFailureMsg(ctx, query, err)
+            return
+
+        alt_versions, _ = await EvosViewState.query(dgcog, monster)
+
+        if alt_versions is None:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
+                                                                    monster.name_en) + 'which has no alt evos.')
+            return
+
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(2)
+
+        state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
+                                     alt_versions,
+                                     reaction_list=initial_reaction_list
+                                     )
+        menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
