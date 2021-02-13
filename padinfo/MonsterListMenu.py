@@ -8,7 +8,9 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
+from padinfo.id_menu import IdMenu
 from padinfo.pane_names import IdMenuPaneNames
+from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView
 from padinfo.view_state.id import IdViewState
@@ -39,6 +41,13 @@ class MonsterListMenu:
         return embed
 
     @staticmethod
+    async def respond_with_refresh(message: Optional[Message], ims, **data):
+        # this is only called once on message load
+        if data.get('child_message_id'):
+            ims['child_message_id'] = data['child_message_id']
+        return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
+
+    @staticmethod
     async def respond_with_monster_list(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
@@ -50,12 +59,23 @@ class MonsterListMenu:
     async def respond_with_n(message: Optional[Message], ims, n, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
-
         ims['resolved_monster_id'] = int(ims['monster_list'][n])
 
         view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         control = MonsterListMenu.id_control(view_state)
         return control
+
+    @staticmethod
+    async def respond_with_eyes(message: Optional[Message], ims, **data):
+        # the message we get here is the NEXT message, not the current one. The ims and everything else
+        # is for the current message, but they should be identical.
+        dgcog = data['dgcog']
+        reaction_list = await get_id_menu_initial_reaction_list(None, dgcog, dgcog.database.graph.get_monster(
+            int(ims['resolved_monster_id'])), force_evoscroll=True)
+        ims['reaction_list'] = ','.join(reaction_list)
+        if data.get('child_message_ims') is None:
+            return await IdMenu.respond_with_current_id(message, ims, **data)
+        return await IdMenu.respond_with_refresh(message, ims, **data)
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
@@ -106,6 +126,8 @@ class MonsterListMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
+        if '\N{EYES}' in reaction_list:
+            reaction_list.pop('\N{EYES}')
         return EmbedControl(
             [MonsterListView.embed(state)],
             reaction_list
@@ -116,6 +138,8 @@ class MonsterListMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
+        if '\N{EYES}' not in reaction_list:
+            reaction_list.append('\N{EYES}')
         return EmbedControl(
             [IdView.embed(state)],
             reaction_list
@@ -137,7 +161,13 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
+        MonsterListMenu.respond_with_eyes: ('\N{EYES}', None),
+        MonsterListMenu.respond_with_refresh: (
+            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh)
     }
+    HIDDEN_EMOJIS = [
+        '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}',
+    ]
 
     @classmethod
     def emoji_names(cls):
@@ -153,4 +183,18 @@ class MonsterListMenuPanes:
 
     @staticmethod
     def get_initial_reaction_list(number_of_evos: int):
-        return MonsterListMenuPanes.emoji_names()[:number_of_evos+1]
+        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1]
+
+    @staticmethod
+    def emoji_name_to_emoji(name: str):
+        for _, data_pair in MonsterListMenuPanes.DATA.items():
+            if data_pair[1] == name:
+                return data_pair[0]
+        return None
+
+    @staticmethod
+    def emoji_name_to_function(name: str):
+        for _, data_pair in MonsterListMenuPanes.DATA.items():
+            if data_pair[1] == name:
+                return data_pair[1]
+        return None

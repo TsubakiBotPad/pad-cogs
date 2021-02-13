@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional
 
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
@@ -104,6 +104,15 @@ class IdMenu:
         else:
             next_monster = db_context.graph.numeric_next_monster(monster)
             return next_monster.monster_id if next_monster else None
+
+    @staticmethod
+    async def respond_with_refresh(message: Optional[Message], ims, **data):
+        # This is used by disambig screen & other multi-message embeds, where we need to deserialize & then
+        # re-serialize the ims, with the same information in place
+        pane_type = ims.get('pane_type')
+        pane_type_to_func_map = IdMenuPanes.pane_types()
+        response_func = pane_type_to_func_map[pane_type]
+        return await response_func(message, ims, **data)
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):
@@ -231,11 +240,16 @@ class IdMenuPanes:
         IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
         IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
         IdMenu.respond_with_otherinfo: ('\N{SCROLL}', IdMenuPaneNames.otherinfo),
+        IdMenu.respond_with_refresh: (
+            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh)
     }
+    HIDDEN_EMOJIS = [
+        IdMenuPaneNames.refresh,
+    ]
 
     @classmethod
     def emoji_names(cls):
-        return [v[0] for k, v in cls.DATA.items()]
+        return [v[0] for k, v in cls.DATA.items() if v[1] not in cls.HIDDEN_EMOJIS]
 
     @classmethod
     def transitions(cls):
@@ -243,4 +257,18 @@ class IdMenuPanes:
 
     @classmethod
     def pane_types(cls):
-        return {v[1]: k for k, v in cls.DATA.items() if v[1]}
+        return {v[1]: k for k, v in cls.DATA.items() if v[1] and v[1] not in cls.HIDDEN_EMOJIS}
+
+    @staticmethod
+    def emoji_name_to_emoji(name: str):
+        for _, data_pair in IdMenuPanes.DATA.items():
+            if data_pair[1] == name:
+                return data_pair[0]
+        return None
+
+    @staticmethod
+    def emoji_name_to_function(name: str):
+        for _, data_pair in IdMenuPanes.DATA.items():
+            if data_pair[1] == name:
+                return data_pair[1]
+        return None

@@ -5,3 +5,4 @@ class IdMenuPaneNames:
     otherinfo = 'otherinfo'
     pantheon = 'pantheon'
     pic = 'pic'
+    refresh = 'refresh'
