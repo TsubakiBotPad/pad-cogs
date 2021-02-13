@@ -1,19 +1,18 @@
 import asyncio
-import csv
 import datetime
 import difflib
 import json
 import logging
 import os
 import re
+import time
 from collections import defaultdict
-from io import StringIO, BytesIO
+from io import BytesIO
 
 import aiohttp
 import discord
 import prettytable
 import pytz
-import time
 import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands, errors
@@ -63,13 +62,6 @@ commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 
-async def lookup_named_monster(query: str):
-    padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
-    if padinfo_cog is None:
-        raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog.fm_(str(query))
-    return nm, err, debug_info
-
 async def lookup_monster_model(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
@@ -83,13 +75,6 @@ def monster_id_to_monster(monster_id):
     if dg_cog is None:
         return None
     return dg_cog.get_monster(monster_id)
-
-
-def monster_id_to_named_monster(monster_id):
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dg_cog is None:
-        return None
-    return dg_cog.index.monster_id_to_named_monster.get(monster_id, None)
 
 
 async def check_enabled(ctx):
@@ -204,100 +189,6 @@ class PadGlobal(commands.Cog):
             self.settings.addDisabledServer(server_id)
         status = 'disabled' if self.settings.checkDisabled(ctx.message) else 'enabled'
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
-
-    @commands.command()
-    @auth_check('contentadmin')
-    async def debugid1dump(self, ctx):
-        dg_cog = self.bot.get_cog('Dadguide')
-        mi = dg_cog.index
-
-        async def write_send(nn_map, file_name):
-            data_holder = StringIO()
-            writer = csv.writer(data_holder)
-            for nn, nm in nn_map.items():
-                writer.writerow([nn, nm.monster_no_na, nm.name_en])
-            bytes_data = BytesIO(data_holder.getvalue().encode())
-            await ctx.channel.send(file=discord.File(bytes_data, file_name))
-
-        await write_send(mi.all_entries, 'all_entries.csv')
-        await write_send(mi.two_word_entries, 'two_word_entries.csv')
-
-    @commands.command(aliases=['iddebug1'])
-    @auth_check('contentadmin')
-    async def debugid1(self, ctx, *, query):
-        dg_cog = self.bot.get_cog('Dadguide')
-        # m is a named monster
-        m, err, debug_info = await lookup_named_monster(query)
-
-        if m is None:
-            await ctx.send(box('No match: ' + err))
-            return
-
-        msg = "{}. {}".format(m.monster_no_na, m.name_en)
-        msg += "\nLookup type: {}".format(debug_info)
-
-        def list_or_none(li):
-            if len(li) == 1:
-                return '\n\t{}'.format(''.join(li))
-            elif len(li):
-                return '\n\t' + '\n\t'.join(sorted(li))
-            else:
-                return 'NONE'
-
-        msg += "\n\nNickname original components:"
-        msg += "\n monster_treename: {}".format(m.monster_treename)
-        msg += "\n group_computed_treename: {}".format(m.group_computed_treename)
-        msg += "\n extra_nicknames: {}".format(list_or_none(m.extra_nicknames))
-
-        msg += "\n\nNickname final components:"
-        msg += "\n treenames: {}".format(list_or_none(m.group_treenames))
-        msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
-
-        msg += "\n\nAccepted nickname entries:"
-        accepted_nn = list(filter(lambda nn: m.monster_id == dg_cog.index.all_entries[nn].monster_id,
-                                  m.final_nicknames))
-        accepted_twnn = list(filter(lambda nn: m.monster_id == dg_cog.index.two_word_entries[nn].monster_id,
-                                    m.final_two_word_nicknames))
-
-        msg += "\n nicknames: {}".format(list_or_none(accepted_nn))
-        msg += "\n two_word_nicknames: {}".format(list_or_none(accepted_twnn))
-
-        msg += "\n\nOverwritten nickname entries:"
-        replaced_nn = list(filter(lambda nn: nn not in accepted_nn,
-                                  m.final_nicknames))
-
-        replaced_twnn = list(filter(lambda nn: nn not in accepted_twnn,
-                                    m.final_two_word_nicknames))
-
-        replaced_nn_info = map(lambda nn: (
-            nn, dg_cog.index.all_entries[nn]), replaced_nn)
-        replaced_twnn_info = map(
-            lambda nn: (nn, dg_cog.index.two_word_entries[nn]), replaced_twnn)
-
-        replaced_nn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
-                                    replaced_nn_info))
-
-        replaced_twnn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
-                                      replaced_twnn_info))
-
-        msg += "\n nicknames: {}".format(list_or_none(replaced_nn_text))
-        msg += "\n two_word_nicknames: {}".format(list_or_none(replaced_twnn_text))
-
-        msg += "\n\nNickname entry sort parts:"
-        msg += "\n (is_low_priority, group_size, monster_no_na) : ({}, {}, {})".format(
-            m.is_low_priority, m.group_size, m.monster_no_na)
-
-        msg += "\n\nMatch selection sort parts:"
-        msg += "\n (is_low_priority, rarity, monster_no_na) : ({}, {}, {})".format(
-            m.is_low_priority, m.rarity, m.monster_no_na)
-
-        sent_messages = []
-        for page in pagify(msg):
-            sent_messages.append(await ctx.send(box(page)))
-        await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
-                                       delete_msgs=sent_messages, timeout=30)
 
     @commands.command(aliases=['fir'])
     @auth_check('contentadmin')
@@ -803,10 +694,9 @@ class PadGlobal(commands.Cog):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
             m = monster_id_to_monster(monster_id)
-            nm = monster_id_to_named_monster(monster_id)
-            if m is None or nm is None:
+            if m is None:
                 continue
-            name = nm.group_computed_treename.title()
+            name = m.name_en.split(", ")[-1]
             grp = m.series.name
             monsters[grp].append(name)
 
@@ -880,8 +770,8 @@ class PadGlobal(commands.Cog):
         for w in self.settings.which():
             w %= 10000
 
-            nm = monster_id_to_named_monster(w)
-            name = nm.group_computed_treename.title()
+            m = monster_id_to_monster(w)
+            name = m.name_en.split(', ')[-1]
 
             result = self.settings.which()[w]
             if isinstance(result, list):
@@ -900,19 +790,6 @@ class PadGlobal(commands.Cog):
 
         for page in pagify(msg):
             await ctx.send(box(page))
-
-    @commands.command(aliases=['lookupdebug'])
-    @auth_check('contentadmin')
-    async def debuglookup(self, ctx, *, term: str):
-        """Shows why a query matches to a monster"""
-        term = term.lower().replace('?', '')
-        nm, err, deb = await lookup_named_monster(term)
-        base = nm.group_computed_treename.title() if nm else nm
-        name = nm.name_en if nm else nm
-        monster_id = nm.monster_id if nm else nm
-        definition = self.settings.which().get(monster_id, None)
-        await ctx.send('Which Debug:\n```Base: {}\nName: {}\nID: {}\nError: {}\nDebug: {}```'
-                       .format(base, name, monster_id, err, deb))
 
     @padglobal.command()
     @checks.is_owner()
@@ -1181,10 +1058,10 @@ class PadGlobal(commands.Cog):
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
-            nm = monster_id_to_named_monster(monster_id)
-            if nm is None:
+            m = monster_id_to_monster(monster_id)
+            if m is None:
                 continue
-            name = nm.group_computed_treename.title()
+            name = m.name_en.split(', ')[-1].title()
             msg += '\n**{}** :\n{}\n'.format(name, definition)
 
         return msg
@@ -1310,7 +1187,7 @@ class PadGlobal(commands.Cog):
         else:
             # earliest possible date of the second Sunday in March
             dstthresh = pst.replace(month=3, day=8)
-            
+
         # calculate the day DST changes
         if dstthresh < pst:
             dstthresh = dstthresh.replace(year=(dstthresh.year + 1))

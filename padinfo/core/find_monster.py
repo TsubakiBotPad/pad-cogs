@@ -6,13 +6,11 @@ from typing import Set, List, Tuple, Optional, TYPE_CHECKING, Mapping
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
 
-from padinfo.core.historic_lookups import historic_lookups, historic_lookups_file_path, historic_lookups_id3, \
-    historic_lookups_file_path_id3
+from padinfo.core.historic_lookups import historic_lookups_id3, historic_lookups_file_path_id3
 from padinfo.core.padinfo_settings import settings
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
-    from dadguide.old_monster_index import NamedMonster
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -242,31 +240,6 @@ async def findMonsterCustom(dgcog, query):
         return m, "", ""
     else:
         return None, "Monster not found", ""
-
-
-async def findMonster1(dgcog, query):
-    query = rmdiacritics(query)
-    nm, err, debug_info = await _findMonster(dgcog, query)
-
-    monster_no = nm.monster_id if nm else -1
-    historic_lookups[query] = monster_no
-    json.dump(historic_lookups, open(historic_lookups_file_path, "w+"))
-
-    m = dgcog.get_monster(nm.monster_id) if nm else None
-
-    return m, err, debug_info
-
-
-async def _findMonster(dgcog, query) -> Tuple[Optional["NamedMonster"], Optional[str], Optional[str]]:
-    await dgcog.wait_until_ready()
-    try:
-        return dgcog.index.find_monster(query)
-    except Exception:
-        prefix = (await dgcog.bot.get_valid_prefixes())[0]
-        return (None,
-                f"Sorry, id1 doesn't support this query and we are no longer"
-                f" developing id1 features. Please use `{prefix}id {query}`!",
-                None)
 
 
 async def findMonster3(dgcog, query):
