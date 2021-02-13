@@ -11,3 +11,9 @@ class IdMenuPaneNames:
 
 class MonsterListPaneNames:
     refresh = 'refresh'
+    reset = 'reset'
+
+
+global_emoji_responses = {
+    'reset': '\N{WHITE MEDIUM STAR}'
+}

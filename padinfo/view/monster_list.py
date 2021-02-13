@@ -1,6 +1,7 @@
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
+from tsutils import char_to_emoji
 
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
@@ -11,8 +12,8 @@ def _monster_list(monsters):
     if not len(monsters):
         return []
     return [
-        MonsterHeader.short_with_emoji(mon, link=True)
-        for mon in sorted(monsters, key=lambda x: int(x.monster_id))
+        MonsterHeader.short_with_emoji(mon, link=True, prefix=char_to_emoji(i))
+        for i, mon in enumerate(monsters)
     ]
 
 

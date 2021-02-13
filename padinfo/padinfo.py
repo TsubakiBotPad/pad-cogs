@@ -6,7 +6,7 @@ import re
 import urllib.parse
 from collections import OrderedDict
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
 import tsutils
@@ -34,6 +34,7 @@ from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
 from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
+from padinfo.pane_names import global_emoji_responses
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
@@ -195,6 +196,13 @@ class PadInfo(commands.Cog, IdTest):
             if child_message_ims:
                 data['child_message_ims'] = child_message_ims
             ims['menu_type'] = IdMenu.MENU_TYPE
+            
+            # The order here is really important!! The set of emojis attached to the ims is going to be changed in
+            # the second transition, so it's VITAL that we reset prior to showing the child menu.
+            # It's also better from a perceived performance standard becuase the emojis are so rate-limited and
+            # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
+            # happens faster, but regardless the reset must happen first.
+            await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
             await embed_menu.transition(child_message, ims, emoji_clicked, member, **data)
             return
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
@@ -567,33 +575,33 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        raw_query = query
-        color = await self.get_user_embed_color(ctx)
-        original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-
-        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
             return
 
         alt_versions, _ = await EvosViewState.query(dgcog, monster)
-
         if alt_versions is None:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which has no alt evos.')
             return
+        await self._do_monster_list(ctx, dgcog, query, alt_versions)
 
-        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(alt_versions))
+    async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"]):
+        raw_query = query
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        color = await self.get_user_embed_color(ctx)
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     alt_versions, 'Evolution List',
+                                     monster_list, 'Evolution List',
                                      reaction_list=initial_reaction_list
                                      )
-        evolist_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
-        message = await evolist_menu.create(ctx, state)
+        parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
+        message = await parent_menu.create(ctx, state)
         child_message = await ctx.send('Click \N{EYES} to see a full menu embedded here.')
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
@@ -603,8 +611,9 @@ class PadInfo(commands.Cog, IdTest):
             'child_message_id': child_message.id,
         }
         try:
-            await evolist_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
         except discord.errors.NotFound:
+            # The user could delete the menu before we can do this
             pass
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
@@ -1099,3 +1108,26 @@ class PadInfo(commands.Cog, IdTest):
                        f"**Matched Name Tokens**:\n{ntokenstr}\n\n"
                        f"**Matched Mod Tokens**:\n{mtokenstr}\n\n" +
                        (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
+
+    @commands.command(aliases=["ids"])
+    async def idsearch(self, ctx, query):
+        dgcog = self.bot.get_cog("Dadguide")
+        await dgcog.wait_until_ready()
+
+        query = rmdiacritics(query).strip().lower().replace(",", "")
+        tokenized_query = query.split()
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+
+        monster, matches = max(
+            await find_monster_search(tokenized_query, dgcog),
+            await find_monster_search(mw_tokenized_query, dgcog)
+            if tokenized_query != mw_tokenized_query else (None, {}),
+            key=lambda t: t[1][t[0]].score if t[0] else 0
+        )
+        if monster is None:
+            await ctx.send("No monster matched.")
+            return
+
+        lower_prio = {m for m in matches if matches[m].score == matches[monster].score}.difference({monster})
+        monster_list = [monster] + list(lower_prio)[:10]
+        await self._do_monster_list(ctx, dgcog, query, monster_list)

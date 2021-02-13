@@ -9,7 +9,7 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
 from tsutils import char_to_emoji
 
 from padinfo.id_menu import IdMenu
-from padinfo.pane_names import IdMenuPaneNames, MonsterListPaneNames
+from padinfo.pane_names import IdMenuPaneNames, MonsterListPaneNames, global_emoji_responses
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView
@@ -45,6 +45,11 @@ class MonsterListMenu:
         # this is only called once on message load
         if data.get('child_message_id'):
             ims['child_message_id'] = data['child_message_id']
+        return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
+
+    @staticmethod
+    async def respond_with_reset(message: Optional[Message], ims, **data):
+        # replace with the overview list after the child menu changes
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -84,7 +89,7 @@ class MonsterListMenu:
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
         # this function is needed because we want different deletion behavior in the CHILD menu
-        return await message.delete()
+        await message.delete()
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
@@ -172,10 +177,12 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
         MonsterListMenu.respond_with_eyes: ('\N{EYES}', None),
         MonsterListMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
+            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh),
+        MonsterListMenu.respond_with_reset: (global_emoji_responses['reset'], MonsterListPaneNames.reset)
     }
     HIDDEN_EMOJIS = [
         MonsterListPaneNames.refresh,
+        MonsterListPaneNames.reset,
     ]
 
     @classmethod
