@@ -115,14 +115,15 @@ class IdMenu:
         return await response_func(message, ims, **data)
 
     @staticmethod
+    async def respond_with_delete(message: Optional[Message], ims, **data):
+        # This function is designed to be used only when IdMenu is a child menu, otherwise we'd just use
+        # the built-in deletion function
+        return await message.edit(embed=None)
+
+    @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
-
-        print('???????????')
-        for r in ims['reaction_list'].split(','):
-            print(str(r))
-        print('???????????')
 
         view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         control = IdMenu.id_control(view_state)
@@ -178,7 +179,6 @@ class IdMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        print(reaction_list)
         return EmbedControl(
             [IdView.embed(state)],
             reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -247,10 +247,12 @@ class IdMenuPanes:
         IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
         IdMenu.respond_with_otherinfo: ('\N{SCROLL}', IdMenuPaneNames.otherinfo),
         IdMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh)
+            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
+        IdMenu.respond_with_delete: ('\N{CROSS MARK}', IdMenuPaneNames.delete),
     }
     HIDDEN_EMOJIS = [
         IdMenuPaneNames.refresh,
+        IdMenuPaneNames.delete,
     ]
 
     @classmethod

@@ -9,7 +9,7 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
 from tsutils import char_to_emoji
 
 from padinfo.id_menu import IdMenu
-from padinfo.pane_names import IdMenuPaneNames
+from padinfo.pane_names import IdMenuPaneNames, MonsterListPaneNames
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView
@@ -19,7 +19,7 @@ from padinfo.view_state.monster_list import MonsterListViewState
 if TYPE_CHECKING:
     pass
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class MonsterListMenu:
@@ -75,11 +75,16 @@ class MonsterListMenu:
         if not data.get('child_message_ims'):
             # default to the overview screen if we weren't already on a screen
             ims['reaction_list'] = ','.join(reaction_list)
-
+            ims['is_child'] = 'True'
             return await IdMenu.respond_with_current_id(message, ims, **data)
         data['child_message_ims']['reaction_list'] = ','.join(reaction_list)
         data['child_message_ims']['resolved_monster_id'] = int(ims['resolved_monster_id'])
         return await IdMenu.respond_with_refresh(message, data['child_message_ims'], **data)
+
+    @staticmethod
+    async def respond_with_delete(message: Optional[Message], ims, **data):
+        # this function is needed because we want different deletion behavior in the CHILD menu
+        await message.delete()
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
@@ -132,6 +137,7 @@ class MonsterListMenu:
         reaction_list = state.reaction_list
         if '\N{EYES}' in reaction_list:
             reaction_list.pop('\N{EYES}')
+        print(reaction_list)
         return EmbedControl(
             [MonsterListView.embed(state)],
             reaction_list
@@ -165,17 +171,18 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
+        MonsterListMenu.respond_with_delete: ('\N{CROSS MARK}', None),
         MonsterListMenu.respond_with_eyes: ('\N{EYES}', None),
         MonsterListMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh)
+            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
     }
     HIDDEN_EMOJIS = [
-        '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}',
+        MonsterListPaneNames.refresh,
     ]
 
     @classmethod
     def emoji_names(cls):
-        return [v[0] for k, v in cls.DATA.items()]
+        return [v[0] for k, v in cls.DATA.items() if v[1] not in cls.HIDDEN_EMOJIS]
 
     @classmethod
     def transitions(cls):
@@ -183,11 +190,11 @@ class MonsterListMenuPanes:
 
     @classmethod
     def pane_types(cls):
-        return {v[1]: k for k, v in cls.DATA.items() if v[1]}
+        return {v[1]: k for k, v in cls.DATA.items() if v[1] and v[1] not in cls.HIDDEN_EMOJIS}
 
     @staticmethod
     def get_initial_reaction_list(number_of_evos: int):
-        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1]
+        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1] + ['\N{CROSS MARK}']
 
     @staticmethod
     def emoji_name_to_emoji(name: str):

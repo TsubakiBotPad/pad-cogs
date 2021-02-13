@@ -17,7 +17,6 @@ async def get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
     # hide some panes if we're in evo scroll mode
     if not full_reaction_list:
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-    print(full_reaction_list)
     if not force_evoscroll and not settings.checkEvoID(ctx.author.id):
         return full_reaction_list
     alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)

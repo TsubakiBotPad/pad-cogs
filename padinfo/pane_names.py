@@ -6,3 +6,8 @@ class IdMenuPaneNames:
     pantheon = 'pantheon'
     pic = 'pic'
     refresh = 'refresh'
+    delete = 'delete'
+
+
+class MonsterListPaneNames:
+    refresh = 'refresh'

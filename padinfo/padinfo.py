@@ -594,7 +594,7 @@ class PadInfo(commands.Cog, IdTest):
                                      )
         evolist_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
         message = await evolist_menu.create(ctx, state)
-        child_message = await ctx.send('Child')
+        child_message = await ctx.send('Click \N{EYES} to see a full menu embedded here.')
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {
