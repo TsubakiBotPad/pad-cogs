@@ -60,13 +60,22 @@ class IdView:
             delimiter=' ') if len(super_awakenings_emojis) > 0 else None
 
     @staticmethod
-    def all_awakenings_row(m: "MonsterModel"):
+    def all_awakenings_row(m: "MonsterModel", transform_base):
         if len(m.awakenings) == 0:
             return Box(Text('No Awakenings'))
 
         return Box(
-            IdView.normal_awakenings_row(m),
-            IdView.super_awakenings_row(m)
+            Box(
+                '\N{UP-POINTING RED TRIANGLE}' if m!=transform_base else '',
+                IdView.normal_awakenings_row(m),
+                delimiter=' '
+            ),
+            Box(
+                '\N{DOWN-POINTING RED TRIANGLE}',
+                IdView.all_awakenings_row(transform_base, transform_base),
+                delimiter=' '
+            ) if m!=transform_base else None,
+            IdView.super_awakenings_row(m),
         )
 
     @staticmethod
@@ -146,7 +155,7 @@ class IdView:
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
-                    IdView.all_awakenings_row(m),
+                    IdView.all_awakenings_row(m, state.transform_base),
                     IdView.killers_row(m, state.transform_base)
                 )
             ),
