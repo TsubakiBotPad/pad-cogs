@@ -137,13 +137,9 @@ class PadInfo(commands.Cog, IdTest):
         dg_cog = self.bot.get_cog('Dadguide')
         return dg_cog.get_monster(monster_id)
 
-    @commands.Cog.listener('on_reaction_add')
-    async def test_reaction_add(self, reaction, member):
-        emoji_obj = reaction.emoji
-        if isinstance(emoji_obj, str):
-            emoji_clicked = emoji_obj
-        else:
-            emoji_clicked = emoji_obj.name
+    @commands.Cog.listener('on_raw_reaction_add')
+    async def on_raw_reaction_add(self, payload):
+        emoji_clicked = payload.emoji.name
 
         if not (emoji_clicked in LeaderSkillMenu.EMOJI_BUTTON_NAMES or
                 emoji_clicked in LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES or
@@ -152,7 +148,9 @@ class PadInfo(commands.Cog, IdTest):
                 emoji_clicked in tf_menu_emoji_button_names):
             return
 
-        message = reaction.message
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        reaction = discord.utils.find(lambda r: getattr(r.emoji, "name", r.emoji) == emoji_clicked, message.reactions)
+        user = self.bot.get_user(payload.user_id)
         ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
         if not ims:
             return
@@ -175,7 +173,7 @@ class PadInfo(commands.Cog, IdTest):
         friend_cog = self.bot.get_cog("Friend")
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         embed_menu = menu_func(original_author_id, friends, self.bot.user.id)
-        if not (await embed_menu.should_respond(message, reaction, member)):
+        if not (await embed_menu.should_respond(message, reaction, user)):
             return
 
         dgcog = await self.get_dgcog()
@@ -184,7 +182,7 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
-        await embed_menu.transition(message, ims, emoji_clicked, member, **data)
+        await embed_menu.transition(message, ims, emoji_clicked, user, **data)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
