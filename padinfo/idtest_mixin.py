@@ -364,9 +364,13 @@ class IdTest:
         async with ctx.typing():
             for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
-                m = await findMonster3(dgcog, q)
-                mid = m and m.monster_id
-                if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                try:
+                    m = await findMonster3(dgcog, q) or -1
+                except Exception:
+                    m = -2
+                mid = getattr(m, "monster_id", m)
+
+                if mid != r['result']:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
                     o += f"{i}. {q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
@@ -426,9 +430,13 @@ class IdTest:
         ml = len(max(qsuite, key=len)) + 2
         async with ctx.typing():
             for c, q in enumerate(sorted(qsuite)):
-                m = await findMonster3(dgcog, q)
-                mid = m and m.monster_id
-                if m is not None and m.monster_id != qsuite[q]['result'] or m is None and qsuite[q]['result'] >= 0:
+                try:
+                    m = await findMonster3(dgcog, q) or -1
+                except Exception:
+                    m = -2
+                mid = getattr(m, "monster_id", m)
+
+                if mid != qsuite[q]['result']:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
                     qq = '"' + q + '"'
                     qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "

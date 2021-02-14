@@ -201,7 +201,7 @@ class PadGlobal(commands.Cog):
             start = time.perf_counter()
             await ctx.send('Starting reload...')
             dadguide_cog = self.bot.get_cog('Dadguide')
-            await dadguide_cog.reload_config_files()
+            await dadguide_cog.download_and_refresh_nicknames()
             await dadguide_cog.wait_until_ready()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
@@ -671,7 +671,7 @@ class PadGlobal(commands.Cog):
             top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
             return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
         else:
-            await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
+            await ctx.send('No which info for {} (#{})'.format(name, monster_id))
             return None, None, None, None
 
     @commands.command()

@@ -4,7 +4,6 @@ import os
 import random
 import re
 import urllib.parse
-from collections import OrderedDict
 from io import BytesIO
 from typing import TYPE_CHECKING, List
 
@@ -16,7 +15,7 @@ from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
-from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
+from tsutils import char_to_emoji, is_donor, rmdiacritics
 
 from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
@@ -33,14 +32,16 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
-from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
 from padinfo.pane_names import global_emoji_responses
+from padinfo.ls_menu import LeaderSkillMenu
+from padinfo.lss_menu import LeaderSkillSingleMenu
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
@@ -81,13 +82,12 @@ class PadInfo(commands.Cog, IdTest):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
         self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
-        self.remove_emoji = self.menu.emoji['no']
+        self.remove_emoji = '\N{CROSS MARK}'
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
@@ -147,7 +147,8 @@ class PadInfo(commands.Cog, IdTest):
         else:
             emoji_clicked = emoji_obj.name
 
-        if not (emoji_clicked in ls_menu_emoji_button_names or
+        if not (emoji_clicked in LeaderSkillMenu.EMOJI_BUTTON_NAMES or
+                emoji_clicked in LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES or
                 emoji_clicked in IdMenuPanes.emoji_names() or
                 emoji_clicked in MonsterListMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
@@ -162,6 +163,7 @@ class PadInfo(commands.Cog, IdTest):
         menu_type = ims['menu_type']
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.menu,
             IdMenu.MENU_TYPE: IdMenu.menu,
             TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
@@ -459,23 +461,6 @@ class PadInfo(commands.Cog, IdTest):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
 
-    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=30):
-        if starting_menu_emoji not in emoji_to_embed.emoji_dict:
-            # Selected menu wasn't generated for this monster
-            return EMBED_NOT_GENERATED
-
-        emoji_to_embed.emoji_dict[self.remove_emoji] = self.menu.reaction_delete_message
-
-        try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                                                                   starting_menu_emoji, timeout=timeout)
-            if result_msg and result_embed:
-                # Message is finished but not deleted, clear the footer
-                result_embed.set_footer(text=discord.Embed.Empty)
-                await result_msg.edit(embed=result_embed)
-        except Exception as ex:
-            logger.error('Menu failure', exc_info=True)
-
     @commands.command(aliases=['img'])
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
@@ -669,12 +654,14 @@ class PadInfo(commands.Cog, IdTest):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenuOld(ctx, dgcog=dgcog, allowed_emojis=self.get_emojis())
-        emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
 
-        await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, m)
+        menu = LeaderSkillSingleMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
 
     @commands.command(aliases=['tfinfo', 'xforminfo'])
     @checks.bot_has_permissions(embed_links=True)
