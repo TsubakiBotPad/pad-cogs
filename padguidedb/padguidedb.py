@@ -34,6 +34,7 @@ class PadGuideDb(commands.Cog):
 
         self.queue_size = 0
         self.full_etl_lock = asyncio.Lock()
+        self.dungeon_lock = asyncio.Lock()
         self.extract_images_lock = asyncio.Lock()
         self.dungeon_load_lock = asyncio.Lock()
 
@@ -249,6 +250,28 @@ class PadGuideDb(commands.Cog):
 
     @pipeline.command()
     @is_padguidedb_admin()
+    async def processdungeon(self, ctx):
+        """Runs the dungeon processor script."""
+        if self.dungeon_lock.locked():
+            await ctx.send(inline('Dungeon processor already running'))
+            return
+
+        async with self.dungeon_lock:
+            await ctx.send(inline('Running dungeon processor: this could take a while'))
+            process = await asyncio.create_subprocess_exec(
+                'bash',
+                self.settings.dungeonProcessorFile(),
+
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+            for page in pagify(str(stderr)):
+                await ctx.send(box(page))
+        await ctx.send(inline('Dungeon processing finished'))
+
+    @pipeline.command()
+    @is_padguidedb_admin()
     async def extractimages(self, ctx):
         """Runs a job which downloads image updates, generates full images, and portraits."""
         if self.extract_images_lock.locked():
@@ -288,6 +311,13 @@ class PadGuideDb(commands.Cog):
 
     @padguidedb.command()
     @checks.is_owner()
+    async def setdungeonprocessorfile(self, ctx, *, full_etl_file):
+        """Set the full ETL file."""
+        self.settings.setDungeonProcessorFile(full_etl_file)
+        await ctx.tick()
+
+    @padguidedb.command()
+    @checks.is_owner()
     async def setimageupdatefile(self, ctx, *, image_update_file):
         """Set the image update file."""
         self.settings.setImageUpdateFile(image_update_file)
@@ -315,6 +345,7 @@ class PadGuideDbSettings(CogSettings):
             'config_file': '',
             'dungeon_script_file': '',
             'full_etl_file': '',
+            'dungeon_processor_file': '',
             'update_image_file': '',
             'python_executable': '/usr/bin/python3',
             'users': {},
@@ -359,6 +390,13 @@ class PadGuideDbSettings(CogSettings):
 
     def setFullETLFile(self, full_etl_file):
         self.bot_settings['full_etl_file'] = full_etl_file
+        self.save_settings()
+
+    def dungeonProcessorFile(self):
+        return self.bot_settings.get('dungeon_processor_file', '')
+
+    def setDungeonProcessorFile(self, dungeon_processor_file):
+        self.bot_settings['dungeon_processor_file'] = dungeon_processor_file
         self.save_settings()
 
     def imageUpdateFile(self):

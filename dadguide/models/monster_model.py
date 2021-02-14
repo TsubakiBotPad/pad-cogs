@@ -10,6 +10,8 @@ import re
 from collections import defaultdict
 import romkan
 
+from .monster_stats import monster_stats
+
 
 class MonsterModel(BaseModel):
     def __init__(self, **m):
@@ -62,6 +64,7 @@ class MonsterModel(BaseModel):
         self.attr2 = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable = m['is_inheritable']
+        self.is_stackable = m['is_stackable']
         self.evo_gem_id = m['evo_gem_id']
         self.orb_skin_id = m['orb_skin_id']
         self.cost = m['cost']
@@ -133,37 +136,14 @@ class MonsterModel(BaseModel):
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
 
+    def awakening_count(self, awid):
+        return len([x for x in self.awakenings if x.awoken_skill_id == awid])
+
     def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
-        s_min = float(self.stat_values[key]['min'])
-        s_max = float(self.stat_values[key]['max'])
-        if self.level > 1:
-            scale = self.stat_values[key]['scale']
-            s_val = s_min + (s_max - s_min) * ((min(lv, self.level) - 1) / (self.level - 1)) ** scale
-        else:
-            s_val = s_min
-        if lv > 99:
-            s_val *= 1 + (self.limit_mult / 11 * (lv - 99)) / 100
-        plus_dict = {'hp': 10, 'atk': 5, 'rcv': 3}
-        s_val += plus_dict[key] * max(min(plus, 99), 0)
-        if inherit:
-            inherit_dict = {'hp': 0.10, 'atk': 0.05, 'rcv': 0.15}
-            if not is_plus_297:
-                s_val -= plus_dict[key] * max(min(plus, 99), 0)
-            s_val *= inherit_dict[key]
-        return int(round(s_val))
+        return monster_stats.stat(self, key, lv, plus=plus, inherit=inherit, is_plus_297=is_plus_297)
 
     def stats(self, lv=99, plus=0, inherit=False):
-        is_plus_297 = False
-        if plus == 297:
-            plus = (99, 99, 99)
-            is_plus_297 = True
-        elif plus == 0:
-            plus = (0, 0, 0)
-        hp = self.stat('hp', lv, plus[0], inherit, is_plus_297)
-        atk = self.stat('atk', lv, plus[1], inherit, is_plus_297)
-        rcv = self.stat('rcv', lv, plus[2], inherit, is_plus_297)
-        weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
-        return hp, atk, rcv, weighted
+        return monster_stats.stats(self, lv, plus=plus, inherit=inherit)
 
     @staticmethod
     def make_roma_subname(name_ja):
@@ -182,6 +162,9 @@ class MonsterModel(BaseModel):
             'name_ja': self.name_ja,
             'name_en': self.name_en,
         }
+
+    def __repr__(self):
+        return "Monster<{} ({})>".format(self.name_en, self.monster_id)
 
 
 class MonsterSearchHelper(object):

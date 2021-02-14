@@ -1,13 +1,12 @@
-import asyncio
-import aiofiles
-import csv
-import discord
-import os
 import json
 import logging
-import pymysql
-from io import BytesIO
+import os
 from datetime import datetime
+from io import BytesIO
+
+import aiofiles
+import discord
+import pymysql
 from redbot.core import checks, commands, Config, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check, confirm_message
@@ -18,11 +17,23 @@ SERIES_KEYS = {
     "name_en": 'Untranslated',
     "name_ja": 'Untranslated',
     "name_ko": 'Untranslated',
+    "series_type": None,
 }
+
+SERIES_TYPES = [
+    "regular",
+    "event",
+    "seasonal",
+    "ghcollab",
+    "collab",
+    "lowpriority",
+]
+
 
 async def check_crud_channel(ctx):
     chan = await ctx.bot.get_cog("Crud").config.chan()
     return chan is None or chan == ctx.channel.id or ctx.author.id in ctx.bot.owner_ids
+
 
 class Crud(commands.Cog):
     """PadGuide CRUD"""
@@ -37,7 +48,8 @@ class Crud(commands.Cog):
         if GADMIN_COG:
             GADMIN_COG.register_perm("crud")
         else:
-            raise errors.CogLoadError("Global Administration cog must be loaded.")
+            raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
+                                      "installed from misc-cogs and load it via `^load globaladmin`")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -111,7 +123,7 @@ class Crud(commands.Cog):
     async def series_add(self, ctx, *elements):
         """Add a new series.
 
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `series_type`
 
         Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
@@ -119,10 +131,14 @@ class Crud(commands.Cog):
         if len(elements) % 2 != 0:
             await ctx.send_help()
             return
-        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
-        if not all(x in SERIES_KEYS for x in elements):
+        if not (elements and all(x in SERIES_KEYS for x in elements)):
             await ctx.send_help()
+            return
+
+        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
+            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
             return
 
         EXTRAS = {}
@@ -147,17 +163,17 @@ class Crud(commands.Cog):
             'name_ja': elements['name_ja'],
             'name_en': elements['name_en'],
             'name_ko': elements['name_ko'],
-            'series_id': elements['series_id']
+            'series_id': elements['series_id'],
+            'series_type': elements['series_type']
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *elements):
         """Edit an existing series series.
 
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`
+        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `series_type`
 
         Example Usage:
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
@@ -165,10 +181,14 @@ class Crud(commands.Cog):
         if len(elements) % 2 != 0:
             await ctx.send_help()
             return
-        elements = {elements[i]: elements[i+1] for i in range(0, len(elements), 2)}
+        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
-        if not all(x in SERIES_KEYS for x in elements):
+        if not (elements and all(x in SERIES_KEYS for x in elements)):
             await ctx.send_help()
+            return
+
+        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
+            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
             return
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])

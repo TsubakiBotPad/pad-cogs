@@ -7,6 +7,7 @@ class SeriesModel(BaseModel):
         self.name_ja = kwargs['name_ja']
         self.name_en = kwargs['name_en']
         self.name_ko = kwargs['name_ko']
+        self.series_type = kwargs['series_type']
 
     @property
     def name(self):
