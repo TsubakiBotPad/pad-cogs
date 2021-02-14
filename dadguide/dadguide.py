@@ -7,10 +7,8 @@ Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
 import asyncio
-import csv
 import os
 import shutil
-from collections import defaultdict
 from io import BytesIO
 from typing import Optional
 
@@ -64,17 +62,6 @@ class Dadguide(commands.Cog):
         self._is_ready = asyncio.Event()
 
         self.settings = DadguideSettings("dadguide")
-
-        # A string -> int mapping, nicknames to monster_id_na
-        self.nickname_overrides = {}
-
-        # An int -> set(string), monster_id_na to set of treename overrides
-        self.treename_overrides = defaultdict(set)
-
-        self.panthname_overrides = defaultdict(set)
-
-        # Map of google-translated JP names to EN names
-        self.translated_names = {}
 
         self.database = None
         self.index2 = None  # type: Optional[MonsterIndex2]
@@ -146,12 +133,6 @@ class Dadguide(commands.Cog):
                 logger.exception("dadguide data wait loop failed: %s", ex)
                 raise ex
 
-    async def reload_config_files(self):
-        os.remove(NICKNAME_FILE_PATTERN)
-        os.remove(TREENAME_FILE_PATTERN)
-        os.remove(PANTHNAME_FILE_PATTERN)
-        await self.download_and_refresh_nicknames()
-
     async def download_and_refresh_nicknames(self):
         if self.settings.data_file():
             logger.info('Copying dg data file')
@@ -160,27 +141,6 @@ class Dadguide(commands.Cog):
             logger.info('Downloading dg data files')
             await self._download_files()
 
-        logger.info('Downloading dg name override files')
-        await self._download_override_files()
-
-        logger.info('Loading dg name overrides')
-        nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN, 6)
-        treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 6)
-        panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN, 3)
-
-        self.nickname_overrides = defaultdict(set)
-        for id, nick, _, _, _, i in nickname_overrides:
-            if id.isdigit() and not i:
-                self.nickname_overrides[int(id)].add(nick.lower())
-
-        self.treename_overrides = defaultdict(set)
-        for id, treename, _, _, _, i in treename_overrides:
-            if id.isdigit() and not i:
-                self.treename_overrides[int(id)].add(treename.lower())
-
-        self.panthname_overrides = {x[1].lower(): x[2].lower() for x in panthname_overrides}
-        self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
-
         logger.info('Loading dg database')
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
@@ -188,37 +148,9 @@ class Dadguide(commands.Cog):
 
         logger.info('Done refreshing dg data')
 
-    def _csv_to_tuples(self, file_path: str, cols: int = 2):
-        # Loads a two-column CSV into an array of tuples.
-        results = []
-        with open(file_path, encoding='utf-8') as f:
-            file_reader = csv.reader(f, delimiter=',')
-            for row in file_reader:
-                if len(row) < 2:
-                    continue
-
-                data = [None] * cols
-                for i in range(0, min(cols, len(row))):
-                    data[i] = row[i].strip()
-
-                if not len(data[0]):
-                    continue
-
-                results.append(data)
-        return results
-
     async def _download_files(self):
         one_hour_secs = 1 * 60 * 60
         await tsutils.async_cached_dadguide_request(DB_DUMP_FILE, DB_DUMP_URL, one_hour_secs)
-
-    async def _download_override_files(self):
-        one_hour_secs = 1 * 60 * 60
-        await tsutils.async_cached_plain_request(
-            NICKNAME_FILE_PATTERN, NICKNAME_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.async_cached_plain_request(
-            TREENAME_FILE_PATTERN, GROUP_TREENAMES_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.async_cached_plain_request(
-            PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
     @commands.group()
     @checks.is_owner()
