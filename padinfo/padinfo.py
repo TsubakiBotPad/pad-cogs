@@ -169,9 +169,20 @@ class PadInfo(commands.Cog, IdTest):
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
         }
 
-        respond_with_child = [
-            (MonsterListMenu.MENU_TYPE, MonsterListMenuPanes.emoji_name_to_emoji('expand'))
-        ]
+        # If true then the top menu will also respond on reaction
+        respond_with_child = {
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(0)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(1)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(2)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(3)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(4)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(5)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(6)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(7)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(8)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(9)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(10)): False,
+        }
 
         menu_func = menu_map.get(menu_type)
 
@@ -190,7 +201,7 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
-        if ims.get('child_message_id') and (ims['menu_type'], emoji_clicked) in respond_with_child:
+        if ims.get('child_message_id') and (ims['menu_type'], emoji_clicked) in respond_with_child.keys():
             await message.remove_reaction(emoji_clicked, member)
             fctx = await self.bot.get_context(message)
             child_message = await fctx.fetch_message(int(ims['child_message_id']))
@@ -206,7 +217,8 @@ class PadInfo(commands.Cog, IdTest):
             # It's also better from a perceived performance standpoint becuase the emojis are so rate-limited and
             # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
             # happens faster, but regardless the reset must happen first.
-            await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
+            if respond_with_child[(ims['menu_type'], emoji_clicked)]:
+                await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
             await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
             return
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
@@ -590,7 +602,7 @@ class PadInfo(commands.Cog, IdTest):
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
         message = await parent_menu.create(ctx, state)
         child_message = await ctx.send(
-            'Click {} to see a full menu embedded here.'.format(MonsterListMenuPanes.emoji_name_to_emoji('expand')))
+            'Click a reaction to see monster details!')
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {

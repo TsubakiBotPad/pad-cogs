@@ -8,12 +8,9 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
-from padinfo.id_menu import IdMenu
+from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.pane_names import IdMenuPaneNames, MonsterListPaneNames, global_emoji_responses
-from padinfo.reaction_list import get_id_menu_initial_reaction_list
-from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView
-from padinfo.view_state.id import IdViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 
 if TYPE_CHECKING:
@@ -63,21 +60,8 @@ class MonsterListMenu:
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, n, **data):
-        dgcog = data['dgcog']
-        user_config = data['user_config']
         ims['resolved_monster_id'] = int(ims['monster_list'][n])
-
-        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        control = MonsterListMenu.id_control(view_state)
-        return control
-
-    @staticmethod
-    async def respond_with_eyes(message: Optional[Message], ims, **data):
-        # the message we get here is the NEXT message, not the current one. The ims and everything else
-        # is for the current message, but they should be identical.
-        dgcog = data['dgcog']
-        reaction_list = await get_id_menu_initial_reaction_list(None, dgcog, dgcog.database.graph.get_monster(
-            int(ims['resolved_monster_id'])), force_evoscroll=True)
+        reaction_list = IdMenuPanes.emoji_names()
         if not data.get('child_message_ims'):
             # default to the overview screen if we weren't already on a screen
             ims['reaction_list'] = ','.join(reaction_list)
@@ -136,22 +120,8 @@ class MonsterListMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        if MonsterListMenuPanes.emoji_name_to_emoji('expand') in reaction_list:
-            reaction_list.pop(MonsterListMenuPanes.emoji_name_to_emoji('expand'))
         return EmbedControl(
             [MonsterListView.embed(state)],
-            reaction_list
-        )
-
-    @staticmethod
-    def id_control(state: IdViewState):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        if MonsterListMenuPanes.emoji_name_to_emoji('expand') not in reaction_list:
-            reaction_list.append(MonsterListMenuPanes.emoji_name_to_emoji('expand'))
-        return EmbedControl(
-            [IdView.embed(state)],
             reaction_list
         )
 
@@ -171,7 +141,6 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_eyes: ('\N{SQUARED ID}', MonsterListPaneNames.expand),
         MonsterListMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh),
         MonsterListMenu.respond_with_reset: (global_emoji_responses['reset'], MonsterListPaneNames.reset)
