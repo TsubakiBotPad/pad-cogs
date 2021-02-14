@@ -1,6 +1,5 @@
 import asyncio
 import csv
-import inspect
 import io
 import logging
 import re
@@ -226,9 +225,9 @@ class MonsterIndex2(aobject):
             for nick in self.monster_id_to_treename[base_id]:
                 self.add_name_token(self.manual_tree, nick, m)
 
-    def add_name_token(self, token_dict, token, m):
-        if len(inspect.stack(0)) > 100:
-            logger.warning(f"Infinite loop detected in name token replacement with token {token}.  Aborting.")
+    def add_name_token(self, token_dict, token, m, depth=5):
+        if depth <= 0:
+            logger.warning(f"Depth exceeded with token {token}.  Aborting.")
             return
 
         token_dict[token.lower()].add(m)
@@ -238,7 +237,7 @@ class MonsterIndex2(aobject):
         # Replacements
         for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
             for t in self.replacement_tokens[ts]:
-                self.add_name_token(token_dict, t, m)
+                self.add_name_token(token_dict, t, m, depth-1)
 
     @staticmethod
     def _name_to_tokens(oname):
