@@ -1,6 +1,5 @@
 import asyncio
 import csv
-import inspect
 import io
 import logging
 import re
