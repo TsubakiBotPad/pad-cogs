@@ -1126,22 +1126,23 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        first_monster, matches = max(
+        best_match, matches = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
             key=lambda t: t[1][t[0]].score if t[0] else 0
         )
-        if not first_monster:
+        if not best_match:
             await ctx.send("No monster matched.")
             return
 
-        used = []
+        used = [best_match.monster_id]
         monster_list = []
         for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, dgcog, matches=matches)):
             bmid = dgcog.database.graph.get_base_monster(m).monster_id
             if bmid not in used:
                 used.append(bmid)
                 monster_list.append(m)
-        monster_list = [first_monster] + monster_list[:10]
+        monster_list.reverse()
+        monster_list = [best_match] + monster_list[:10]
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')
