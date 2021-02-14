@@ -141,8 +141,8 @@ class MonsterListMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        if '\N{EYES}' in reaction_list:
-            reaction_list.pop('\N{EYES}')
+        if MonsterListMenuPanes.emoji_name_to_emoji('expand') in reaction_list:
+            reaction_list.pop(MonsterListMenuPanes.emoji_name_to_emoji('expand'))
         return EmbedControl(
             [MonsterListView.embed(state)],
             reaction_list
@@ -153,8 +153,8 @@ class MonsterListMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        if '\N{EYES}' not in reaction_list:
-            reaction_list.append('\N{EYES}')
+        if MonsterListMenuPanes.emoji_name_to_emoji('expand') not in reaction_list:
+            reaction_list.append(MonsterListMenuPanes.emoji_name_to_emoji('expand'))
         return EmbedControl(
             [IdView.embed(state)],
             reaction_list
@@ -176,7 +176,7 @@ class MonsterListMenuPanes:
         MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
         MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_eyes: ('\N{EYES}', None),
+        MonsterListMenu.respond_with_eyes: ('\N{SQUARED ID}', MonsterListPaneNames.expand),
         MonsterListMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh),
         MonsterListMenu.respond_with_reset: (global_emoji_responses['reset'], MonsterListPaneNames.reset)

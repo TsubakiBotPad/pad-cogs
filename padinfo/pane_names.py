@@ -10,6 +10,7 @@ class IdMenuPaneNames:
 
 
 class MonsterListPaneNames:
+    expand = 'expand'
     refresh = 'refresh'
     reset = 'reset'
 

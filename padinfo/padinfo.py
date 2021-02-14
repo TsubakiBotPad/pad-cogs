@@ -18,7 +18,7 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
 
-from padinfo.MonsterListMenu import MonsterListMenu, MonsterListMenuPanes
+from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
@@ -168,7 +168,7 @@ class PadInfo(commands.Cog, IdTest):
         }
 
         respond_with_child = [
-            (MonsterListMenu.MENU_TYPE, '\N{EYES}')
+            (MonsterListMenu.MENU_TYPE, MonsterListMenuPanes.emoji_name_to_emoji('expand'))
         ]
 
         menu_func = menu_map.get(menu_type)
@@ -603,7 +603,8 @@ class PadInfo(commands.Cog, IdTest):
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
         message = await parent_menu.create(ctx, state)
-        child_message = await ctx.send('Click \N{EYES} to see a full menu embedded here.')
+        child_message = await ctx.send(
+            'Click {} to see a full menu embedded here.'.format(MonsterListMenuPanes.emoji_name_to_emoji('expand')))
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {
