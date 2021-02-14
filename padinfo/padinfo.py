@@ -192,10 +192,11 @@ class PadInfo(commands.Cog, IdTest):
             await message.remove_reaction(emoji_clicked, member)
             fctx = await self.bot.get_context(message)
             child_message = await fctx.fetch_message(int(ims['child_message_id']))
-            child_message_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
-            if child_message_ims:
-                data['child_message_ims'] = child_message_ims
-            ims['menu_type'] = IdMenu.MENU_TYPE
+            previous_child_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
+            if previous_child_ims:
+                data['child_message_ims'] = previous_child_ims
+            next_child_ims = ims.copy()
+            next_child_ims['menu_type'] = IdMenu.MENU_TYPE
 
             # The order here is really important!! The set of emojis attached to the ims is going to be changed in
             # the second transition, so it's VITAL that we reset prior to showing the child menu.
@@ -203,7 +204,7 @@ class PadInfo(commands.Cog, IdTest):
             # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
             # happens faster, but regardless the reset must happen first.
             await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
-            await embed_menu.transition(child_message, ims, emoji_clicked, member, **data)
+            await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
             return
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 

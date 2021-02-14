@@ -24,6 +24,7 @@ menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 class MonsterListMenu:
     MENU_TYPE = 'MonsterListMenu'
+    CHILD_MENU_TYPE = 'IdMenu'
 
     @staticmethod
     def menu(original_author_id, friend_ids, bot_id, initial_control=None):
