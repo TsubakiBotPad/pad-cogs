@@ -131,9 +131,19 @@ class IdView:
         return header
 
     @staticmethod
-    def active_skill_header(m: "MonsterModel"):
+    def active_skill_header(m: "MonsterModel", transform_base):
         active_skill = m.active_skill
-        active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) if active_skill else 'None'
+        if m==transform_base:
+            active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
+                if active_skill else 'None'
+        else:
+            base_skill = transform_base.active_skill
+            base_cd = ' (\N{DOWN-POINTING RED TRIANGLE} {} -> {})'.format(base_skill.turn_max,
+                                                                           base_skill.turn_min) \
+                if base_skill else 'None'
+
+            active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
+            active_cd += base_cd
         return Box(
             BoldText('Active Skill'),
             BoldText(active_cd),
@@ -170,7 +180,7 @@ class IdView:
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(m).to_markdown(),
+                IdView.active_skill_header(m, state.transform_base).to_markdown(),
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
