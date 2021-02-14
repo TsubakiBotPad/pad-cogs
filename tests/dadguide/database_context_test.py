@@ -11,13 +11,12 @@ db_context = DbContext(database, graph)
 assert db_context.graph.monster_is_farmable_by_id(4)
 assert not db_context.graph.monster_is_farmable_by_id(5156)
 assert db_context.graph.get_base_monster_by_id(1074).monster_id == 1073  # evo pandora
-assert 6352 in db_context.get_evolution_tree_ids(1074)
 assert db_context.get_monsters_by_series(1)[0].name_en == 'Tyrra'
 assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'
 
 # evo types
 # 5392 is mega dkali
-assert db_context.graph.get_prev_evolution_by_monster_id(5392) == 1588
+assert db_context.graph.get_prev_evolution_id_by_monster_id(5392) == 1588
 assert db_context.graph.cur_evo_type_by_monster_id(5392) == EvoType.UvoAwoken
 assert db_context.graph.cur_evo_type_by_monster_id(1587) == EvoType.Base  # base dkali
 assert db_context.graph.cur_evo_type_by_monster_id(6238) == EvoType.UuvoReincarnated  # b sam3
