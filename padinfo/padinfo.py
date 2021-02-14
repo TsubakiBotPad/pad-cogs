@@ -89,7 +89,8 @@ class PadInfo(commands.Cog, IdTest):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries={}, do_survey=False, test_suite={},
+                                    fluff_suite=[])
 
         self.fm3 = lambda q: fm.findMonsterCustom(bot.get_cog("Dadguide"), q)
 
@@ -248,7 +249,8 @@ class PadInfo(commands.Cog, IdTest):
                                f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                f" info about `id3` check out"
                                f" <{IDGUIDE}>!")
-                raw_query = ' '.join(goodquery)
+                async with self.config.bad_queries() as bq:
+                    bq[raw_query] = bq.get(raw_query, 0) + 1
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
