@@ -33,12 +33,12 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
-from padinfo.ls_menu import LeaderSkillMenu, emoji_button_names as ls_menu_emoji_button_names
+from padinfo.ls_menu import LeaderSkillMenu, LeaderSkillSingleMenu
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
-from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.leader_skill import LeaderSkillViewState, LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
@@ -145,7 +145,8 @@ class PadInfo(commands.Cog, IdTest):
         else:
             emoji_clicked = emoji_obj.name
 
-        if not (emoji_clicked in ls_menu_emoji_button_names or
+        if not (emoji_clicked in LeaderSkillMenu.EMOJI_BUTTON_NAMES or
+                emoji_clicked in LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES or
                 emoji_clicked in IdMenuPanes.emoji_names() or
                 emoji_clicked in MonsterListMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
@@ -160,6 +161,7 @@ class PadInfo(commands.Cog, IdTest):
         menu_type = ims['menu_type']
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.menu,
             IdMenu.MENU_TYPE: IdMenu.menu,
             TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
@@ -651,12 +653,15 @@ class PadInfo(commands.Cog, IdTest):
         if err:
             await ctx.send(err)
             return
-        menu = IdMenuOld(ctx, dgcog=dgcog, allowed_emojis=self.get_emojis())
-        emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.ls_emoji] = await menu.make_lssingle_embed(m)
-        emoji_to_embed[self.left_emoji] = await menu.make_id_embed(m)
 
-        await self._do_menu(ctx, self.ls_emoji, EmojiUpdater(emoji_to_embed))
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, m)
+        menu = LeaderSkillSingleMenu.menu(original_author_id, friends, self.bot.user.id)
+        await menu.create(ctx, state)
+
 
     @commands.command(aliases=['tfinfo', 'xforminfo'])
     @checks.bot_has_permissions(embed_links=True)
