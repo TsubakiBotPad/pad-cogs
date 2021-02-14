@@ -32,12 +32,14 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
-from padinfo.ls_menu import LeaderSkillMenu, LeaderSkillSingleMenu
+from padinfo.ls_menu import LeaderSkillMenu
+from padinfo.lss_menu import LeaderSkillSingleMenu
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
-from padinfo.view_state.leader_skill import LeaderSkillViewState, LeaderSkillSingleViewState
+from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
