@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import BoldText, Text
+from discordmenu.embed.view import EmbedView
 
 from padinfo.core.leader_skills import createMultiplierText, createSingleMultiplierText
 from padinfo.view.components.base import pad_info_footer_with_state
@@ -11,7 +11,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.leader_skill import LeaderSkillViewState, LeaderSkillSingleViewState
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    pass
 
 
 class LeaderSkillView:

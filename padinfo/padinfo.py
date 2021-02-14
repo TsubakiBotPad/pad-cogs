@@ -4,7 +4,6 @@ import os
 import random
 import re
 import urllib.parse
-from collections import OrderedDict
 from io import BytesIO
 from typing import TYPE_CHECKING, List, Optional
 
@@ -16,7 +15,7 @@ from discordmenu.intra_message_state import IntraMessageState
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
-from tsutils import EmojiUpdater, Menu, char_to_emoji, is_donor, rmdiacritics
+from tsutils import char_to_emoji, is_donor, rmdiacritics
 
 from padinfo.MonsterListMenu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
@@ -79,13 +78,12 @@ class PadInfo(commands.Cog, IdTest):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.menu = Menu(bot)
 
         # These emojis are the keys into the idmenu submenus
         self.ls_emoji = '\N{HOUSE BUILDING}'
         self.left_emoji = char_to_emoji('l')
         self.right_emoji = char_to_emoji('r')
-        self.remove_emoji = self.menu.emoji['no']
+        self.remove_emoji = '\N{CROSS MARK}'
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
@@ -457,23 +455,6 @@ class PadInfo(commands.Cog, IdTest):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
 
-    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=30):
-        if starting_menu_emoji not in emoji_to_embed.emoji_dict:
-            # Selected menu wasn't generated for this monster
-            return EMBED_NOT_GENERATED
-
-        emoji_to_embed.emoji_dict[self.remove_emoji] = self.menu.reaction_delete_message
-
-        try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                                                                   starting_menu_emoji, timeout=timeout)
-            if result_msg and result_embed:
-                # Message is finished but not deleted, clear the footer
-                result_embed.set_footer(text=discord.Embed.Empty)
-                await result_msg.edit(embed=result_embed)
-        except Exception as ex:
-            logger.error('Menu failure', exc_info=True)
-
     @commands.command(aliases=['img'])
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
@@ -661,7 +642,6 @@ class PadInfo(commands.Cog, IdTest):
         state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, m)
         menu = LeaderSkillSingleMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
-
 
     @commands.command(aliases=['tfinfo', 'xforminfo'])
     @checks.bot_has_permissions(embed_links=True)
