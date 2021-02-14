@@ -436,7 +436,7 @@ class IdTest:
                     m = -2
                 mid = getattr(m, "monster_id", m)
 
-                if mid != r['result']:
+                if mid != qsuite[q]['result']:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
                     qq = '"' + q + '"'
                     qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "
