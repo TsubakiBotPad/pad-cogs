@@ -201,7 +201,7 @@ class PadGlobal(commands.Cog):
             start = time.perf_counter()
             await ctx.send('Starting reload...')
             dadguide_cog = self.bot.get_cog('Dadguide')
-            await dadguide_cog.reload_config_files()
+            await dadguide_cog.download_and_refresh_nicknames()
             await dadguide_cog.wait_until_ready()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
