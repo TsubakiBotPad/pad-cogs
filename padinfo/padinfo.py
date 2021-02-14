@@ -1138,8 +1138,8 @@ class PadInfo(commands.Cog, IdTest):
 
         used = []
         monster_list = []
-        for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, matches=matches)):
-            bmid = dgcog.database.graph.get_base_id_by_monster(m)
+        for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, dgcog, matches=matches)):
+            bmid = dgcog.database.graph.get_base_monster(m).monster_id
             if bmid not in used:
                 used.append(bmid)
                 monster_list.append(m)
