@@ -248,6 +248,7 @@ class PadInfo(commands.Cog, IdTest):
                                f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                f" info about `id3` check out"
                                f" <{IDGUIDE}>!")
+                raw_query = ' '.join(goodquery)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
