@@ -91,7 +91,8 @@ class PadInfo(commands.Cog, IdTest):
 
         self.config = Config.get_conf(self, identifier=9401770)
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, lastaction=None)
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, do_survey=False, test_suite={}, fluff_suite=[])
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[], do_survey=False, test_suite={},
+                                    fluff_suite=[])
 
         self.fm3 = lambda q: fm.findMonsterCustom(bot.get_cog("Dadguide"), q)
 
@@ -281,10 +282,15 @@ class PadInfo(commands.Cog, IdTest):
                     if p == goodquery[0]:
                         bad = True
             if bad and query not in dgcog.index2.all_name_tokens:
-                await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
-                               f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
-                               f" info about `id3` check out"
-                               f" <{IDGUIDE}>!")
+                async def send_message():
+                    await asyncio.sleep(1)
+                    await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
+                                   f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
+                                   f" info about the new id changes, check out"
+                                   f" <{IDGUIDE}>!")
+                asyncio.create_task(send_message())
+                async with self.config.bad_queries() as bq:
+                    bq.append((raw_query, ctx.author.id))
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
