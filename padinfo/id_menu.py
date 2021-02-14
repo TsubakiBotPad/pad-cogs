@@ -44,7 +44,8 @@ class IdMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, IdMenuPanes.transitions(), initial_control, menu_emoji_config)
+        embed = EmbedMenu(reaction_filters, IdMenuPanes.transitions(), initial_control, menu_emoji_config,
+                          delete_func=IdMenu.respond_with_delete)
         return embed
 
     @staticmethod
@@ -118,7 +119,9 @@ class IdMenu:
     async def respond_with_delete(message: Optional[Message], ims, **data):
         # This function is designed to be used only when IdMenu is a child menu, otherwise we'd just use
         # the built-in deletion function
-        await message.edit(embed=None)
+        if ims.get('is_child'):
+            return await message.edit(embed=None)
+        return await message.delete()
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):

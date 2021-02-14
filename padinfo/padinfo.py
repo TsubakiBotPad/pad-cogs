@@ -199,6 +199,7 @@ class PadInfo(commands.Cog, IdTest):
                 data['child_message_ims'] = previous_child_ims
             next_child_ims = ims.copy()
             next_child_ims['menu_type'] = IdMenu.MENU_TYPE
+            next_child_ims['is_child'] = True
 
             # The order here is really important!! The set of emojis attached to the ims is going to be changed in
             # the second transition, so it's VITAL that we reset prior to showing the child menu.
@@ -572,9 +573,9 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which has no alt evos.')
             return
-        await self._do_monster_list(ctx, dgcog, query, alt_versions)
+        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List')
 
-    async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"]):
+    async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"], title):
         raw_query = query
         original_author_id = ctx.message.author.id
         friend_cog = self.bot.get_cog("Friend")
@@ -583,7 +584,7 @@ class PadInfo(commands.Cog, IdTest):
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     monster_list, 'Evolution List',
+                                     monster_list, title,
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
@@ -1119,4 +1120,4 @@ class PadInfo(commands.Cog, IdTest):
 
         lower_prio = {m for m in matches if matches[m].score == matches[monster].score}.difference({monster})
         monster_list = [monster] + list(lower_prio)[:10]
-        await self._do_monster_list(ctx, dgcog, query, monster_list)
+        await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')

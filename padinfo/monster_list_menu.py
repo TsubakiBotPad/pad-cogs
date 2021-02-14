@@ -38,7 +38,7 @@ class MonsterListMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config, delete_func=MonsterListMenu.respond_with_delete)
+        embed = EmbedMenu(reaction_filters, MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config)
         return embed
 
     @staticmethod
@@ -86,11 +86,6 @@ class MonsterListMenu:
         data['child_message_ims']['reaction_list'] = ','.join(reaction_list)
         data['child_message_ims']['resolved_monster_id'] = int(ims['resolved_monster_id'])
         return await IdMenu.respond_with_refresh(message, data['child_message_ims'], **data)
-
-    @staticmethod
-    async def respond_with_delete(message: Optional[Message], ims, **data):
-        # this function is needed because we want different deletion behavior in the CHILD menu
-        await message.delete()
 
     @staticmethod
     async def respond_with_0(message: Optional[Message], ims, **data):
