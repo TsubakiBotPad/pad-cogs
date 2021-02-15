@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
+from discordmenu.embed.view import EmbedView
 
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
@@ -71,14 +71,14 @@ class IdView:
 
     @staticmethod
     def killers_row(m: "MonsterModel", transform_base):
-        killers = m.killers if m==transform_base else transform_base.killers
+        killers = m.killers if m == transform_base else transform_base.killers
         killers_text = 'Any' if 'Any' in killers else \
             ' '.join(_killer_latent_emoji(k) for k in killers)
         return Box(
             BoldText('Available killers:'),
-            Text('\N{DOWN-POINTING RED TRIANGLE}' if m!=transform_base else ''),
-            Text('[{} slots]'.format(m.latent_slots if m==transform_base \
-                else transform_base.latent_slots)),
+            Text('\N{DOWN-POINTING RED TRIANGLE}' if m != transform_base else ''),
+            Text('[{} slots]'.format(m.latent_slots if m == transform_base \
+                                         else transform_base.latent_slots)),
             Text(killers_text),
             delimiter=' '
         )

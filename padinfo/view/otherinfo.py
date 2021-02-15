@@ -3,18 +3,18 @@ from typing import TYPE_CHECKING
 import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
-from discordmenu.embed.text import LabeledText, LinkedText, Text
 from redbot.core.utils.chat_formatting import box
 
-from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
+from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.links import LinksView
 from padinfo.view_state.otherinfo import OtherInfoViewState
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    pass
 
 
 def statsbox(m):
