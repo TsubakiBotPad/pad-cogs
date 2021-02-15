@@ -226,6 +226,7 @@ class PadInfo(commands.Cog, IdTest):
                 await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
             await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
             return
+
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
@@ -605,9 +606,10 @@ class PadInfo(commands.Cog, IdTest):
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         color = await self.get_user_embed_color(ctx)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
+        instruction_message = 'Click a reaction to see monster details!'
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     monster_list, title,
+                                     monster_list, title, instruction_message,
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
@@ -620,7 +622,7 @@ class PadInfo(commands.Cog, IdTest):
             'user_config': user_config,
         }
         child_state = MessageViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, color,
-                                       'Click a reaction to see monster details!',
+                                       instruction_message,
                                        reaction_list=[]
                                        )
         child_menu = MessageMenu.menu(original_author_id, friends, self.bot.user.id)

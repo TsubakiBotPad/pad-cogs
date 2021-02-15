@@ -8,6 +8,7 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
+from padinfo.message_menu import MessageMenu
 from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
@@ -117,12 +118,11 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
-        print('!' * 200)
-        if ims.get('is_child') == 'True':
-            print('!' * 200)
-            if ims['extra_state'].get('message'):
-                print(ims.get('message'))
-                print('!' * 200)
+        if ims.get('is_child'):
+            if ims.get('message'):
+                ims['menu_type'] = MessageMenu.MENU_TYPE
+                print(ims)
+                return await MessageMenu.respond_with_message(message, ims, **data)
             return await message.edit(embed=None)
         return await message.delete()
 

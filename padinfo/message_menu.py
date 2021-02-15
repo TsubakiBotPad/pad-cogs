@@ -8,7 +8,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 
-from padinfo.view.message_view import MessageView
+from padinfo.view.message import MessageView
 from padinfo.view_state.message import MessageViewState
 
 if TYPE_CHECKING:
@@ -35,7 +35,8 @@ class MessageMenu:
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
         embed = EmbedMenu(reaction_filters, MessageMenuPanes.transitions(), MessageMenu.message_control,
-                          menu_emoji_config)
+                          menu_emoji_config,
+                          delete_func=MessageMenu.respond_with_delete)
         return embed
 
     @staticmethod
@@ -45,6 +46,10 @@ class MessageMenu:
         view_state = await MessageViewState.deserialize(dgcog, user_config, ims)
         control = MessageMenu.message_control(view_state)
         return control
+
+    @staticmethod
+    async def respond_with_delete(message: Optional[Message], ims, **data):
+        return await message.delete()
 
     @staticmethod
     def message_control(state: MessageViewState):

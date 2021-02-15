@@ -17,5 +17,5 @@ class ViewStateBase:
         }
         ret.update(self.extra_state)
         if self.reaction_list is not None:
-            ret['reaction_list'] = ','.join(self.reaction_list)
+            ret['reaction_list'] = self.reaction_list
         return ret
