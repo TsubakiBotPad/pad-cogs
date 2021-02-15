@@ -1079,7 +1079,7 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        bestmatch, matches = max(
+        bestmatch, matches, _ = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
