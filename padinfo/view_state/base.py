@@ -1,9 +1,13 @@
+from typing import List
+
+
 class ViewStateBase:
-    def __init__(self, original_author_id, menu_type, raw_query, extra_state=None):
+    def __init__(self, original_author_id, menu_type, raw_query, extra_state=None, reaction_list: List = None):
         self.extra_state = extra_state or {}
         self.menu_type = menu_type
         self.original_author_id = original_author_id
         self.raw_query = raw_query
+        self.reaction_list = reaction_list
 
     def serialize(self):
         ret = {
@@ -12,4 +16,6 @@ class ViewStateBase:
             'original_author_id': self.original_author_id,
         }
         ret.update(self.extra_state)
+        if self.reaction_list is not None:
+            ret['reaction_list'] = ','.join(self.reaction_list)
         return ret

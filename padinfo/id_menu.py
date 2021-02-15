@@ -117,7 +117,12 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
+        print('!' * 200)
         if ims.get('is_child') == 'True':
+            print('!' * 200)
+            if ims['extra_state'].get('message'):
+                print(ims.get('message'))
+                print('!' * 200)
             return await message.edit(embed=None)
         return await message.delete()
 
