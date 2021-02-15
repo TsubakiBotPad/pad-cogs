@@ -5,7 +5,7 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 import discord
 import tsutils
@@ -17,7 +17,7 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, rmdiacritics
 
-from padinfo.MonsterListMenu import MonsterListMenu, MonsterListMenuPanes
+from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
@@ -32,10 +32,12 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
+from padinfo.pane_names import global_emoji_responses
 from padinfo.ls_menu import LeaderSkillMenu
 from padinfo.lss_menu import LeaderSkillSingleMenu
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
@@ -168,6 +170,21 @@ class PadInfo(commands.Cog, IdTest):
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
         }
 
+        # If true then the top menu will also respond on reaction
+        respond_with_child = {
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(0)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(1)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(2)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(3)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(4)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(5)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(6)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(7)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(8)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(9)): False,
+            (MonsterListMenu.MENU_TYPE, char_to_emoji(10)): False,
+        }
+
         menu_func = menu_map.get(menu_type)
 
         if not menu_func:
@@ -185,6 +202,26 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
+        if ims.get('child_message_id') and (ims['menu_type'], emoji_clicked) in respond_with_child.keys():
+            await message.remove_reaction(emoji_clicked, member)
+            fctx = await self.bot.get_context(message)
+            child_message = await fctx.fetch_message(int(ims['child_message_id']))
+            previous_child_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
+            if previous_child_ims:
+                data['child_message_ims'] = previous_child_ims
+            next_child_ims = ims.copy()
+            next_child_ims['menu_type'] = IdMenu.MENU_TYPE
+            next_child_ims['is_child'] = True
+
+            # The order here is really important!! The set of emojis attached to the ims is going to be changed in
+            # the second transition, so it's VITAL that we reset prior to showing the child menu.
+            # It's also better from a perceived performance standpoint becuase the emojis are so rate-limited and
+            # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
+            # happens faster, but regardless the reset must happen first.
+            if respond_with_child[(ims['menu_type'], emoji_clicked)]:
+                await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
+            await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
+            return
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
@@ -281,7 +318,7 @@ class PadInfo(commands.Cog, IdTest):
         transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                             monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
@@ -289,26 +326,6 @@ class PadInfo(commands.Cog, IdTest):
                             reaction_list=initial_reaction_list)
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
-
-    @staticmethod
-    async def _get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
-                                                 full_reaction_list: List[Optional[str]]):
-        # hide some panes if we're in evo scroll mode
-        if not settings.checkEvoID(ctx.author.id):
-            return full_reaction_list
-        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
-        if alt_versions is None:
-            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_left][0])] = None
-            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_right][0])] = None
-            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_evos][0])] = None
-        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
-        if pantheon_list is None:
-            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_pantheon][0])] = None
-        mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
-            await MaterialsViewState.query(dgcog, monster)
-        if mats is None:
-            full_reaction_list[full_reaction_list.index(IdMenuPanes.DATA[IdMenu.respond_with_mats][0])] = None
-        return list(filter(None, full_reaction_list))
 
     async def send_survey_after(self, ctx, query, result_monster):
         dgcog = await self.get_dgcog()
@@ -389,7 +406,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                               monster, alt_versions, gem_versions,
@@ -422,7 +439,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
@@ -454,7 +471,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                                   monster, pantheon_list, series_name,
@@ -481,7 +498,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                              monster,
@@ -522,7 +539,7 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        initial_reaction_list = await self._get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
                                    monster,
@@ -563,33 +580,48 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        raw_query = query
-        color = await self.get_user_embed_color(ctx)
-        original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-
-        monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+        monster, err, debug_info = await findMonsterCustom(dgcog, query)
 
         if monster is None:
             await self.makeFailureMsg(ctx, query, err)
             return
 
         alt_versions, _ = await EvosViewState.query(dgcog, monster)
-
         if alt_versions is None:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which has no alt evos.')
             return
+        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List')
 
-        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(alt_versions))
+    async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"], title):
+        raw_query = query
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        color = await self.get_user_embed_color(ctx)
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     alt_versions, 'Evolution List',
+                                     monster_list, title,
                                      reaction_list=initial_reaction_list
                                      )
-        menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
-        await menu.create(ctx, state)
+        parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
+        message = await ctx.send('Setting up!')
+        child_message = await ctx.send(
+            'Click a reaction to see monster details!')
+        ims = state.serialize()
+        user_config = await BotConfig.get_user(self.config, ctx.author.id)
+        data = {
+            'dgcog': dgcog,
+            'user_config': user_config,
+            'child_message_id': child_message.id,
+        }
+        try:
+            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+            await message.edit(content=None)
+        except discord.errors.NotFound:
+            # The user could delete the menu before we can do this
+            pass
 
     @commands.command(aliases=['leaders', 'leaderskills', 'ls'], usage="<card_1> [card_2]")
     @checks.bot_has_permissions(embed_links=True)
@@ -1085,3 +1117,33 @@ class PadInfo(commands.Cog, IdTest):
                        f"**Matched Name Tokens**:\n{ntokenstr}\n\n"
                        f"**Matched Mod Tokens**:\n{mtokenstr}\n\n" +
                        (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
+
+    @commands.command(aliases=["ids"])
+    async def idsearch(self, ctx, query):
+        dgcog = self.bot.get_cog("Dadguide")
+        await dgcog.wait_until_ready()
+
+        query = rmdiacritics(query).strip().lower().replace(",", "")
+        tokenized_query = query.split()
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+
+        best_match, matches = max(
+            await find_monster_search(tokenized_query, dgcog),
+            await find_monster_search(mw_tokenized_query, dgcog)
+            if tokenized_query != mw_tokenized_query else (None, {}),
+            key=lambda t: t[1][t[0]].score if t[0] else 0
+        )
+        if not best_match:
+            await ctx.send("No monster matched.")
+            return
+
+        used = [best_match.monster_id]
+        monster_list = []
+        for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, dgcog, matches=matches)):
+            bmid = dgcog.database.graph.get_base_monster(m).monster_id
+            if bmid not in used:
+                used.append(bmid)
+                monster_list.append(m)
+        monster_list.reverse()
+        monster_list = [best_match] + monster_list[:10]
+        await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')
