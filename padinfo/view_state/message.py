@@ -9,7 +9,6 @@ class MessageViewState(ViewStateBase):
                  color, message,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, reaction_list=reaction_list)
-        print('self.menu_type', menu_type)
         self.message = message
         self.color = color
 

@@ -121,7 +121,6 @@ class IdMenu:
         if ims.get('is_child'):
             if ims.get('message'):
                 ims['menu_type'] = MessageMenu.MENU_TYPE
-                print(ims)
                 return await MessageMenu.respond_with_message(message, ims, **data)
             return await message.edit(embed=None)
         return await message.delete()
