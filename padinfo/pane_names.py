@@ -10,6 +10,8 @@ class IdMenuPaneNames:
 
 
 class MonsterListPaneNames:
+    home = 'home'
+    id = 'id'
     refresh = 'refresh'
     reset = 'reset'
 

@@ -129,23 +129,24 @@ class MonsterListMenu:
 class MonsterListMenuPanes:
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'
     DATA = {
-        MonsterListMenu.respond_with_monster_list: ('\N{HOUSE BUILDING}', IdMenuPaneNames.evos),
-        MonsterListMenu.respond_with_0: (char_to_emoji('0'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_1: (char_to_emoji('1'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_2: (char_to_emoji('2'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_3: (char_to_emoji('3'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_4: (char_to_emoji('4'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_5: (char_to_emoji('5'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_6: (char_to_emoji('6'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_7: (char_to_emoji('7'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdMenuPaneNames.id),
-        MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdMenuPaneNames.id),
+        MonsterListMenu.respond_with_monster_list: ('\N{HOUSE BUILDING}', MonsterListPaneNames.home),
+        MonsterListMenu.respond_with_0: (char_to_emoji('0'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_1: (char_to_emoji('1'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_2: (char_to_emoji('2'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_3: (char_to_emoji('3'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_4: (char_to_emoji('4'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_5: (char_to_emoji('5'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_6: (char_to_emoji('6'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_7: (char_to_emoji('7'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_8: (char_to_emoji('8'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_9: (char_to_emoji('9'), MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', MonsterListPaneNames.id),
         MonsterListMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh),
         MonsterListMenu.respond_with_reset: (global_emoji_responses['reset'], MonsterListPaneNames.reset)
     }
     HIDDEN_EMOJIS = [
+        MonsterListPaneNames.home,
         MonsterListPaneNames.refresh,
         MonsterListPaneNames.reset,
     ]
