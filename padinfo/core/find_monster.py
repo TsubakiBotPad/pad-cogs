@@ -288,7 +288,7 @@ class MonsterMatch:
 
 
 async def find_monster_search(tokenized_query, dgcog) -> \
-        Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch]]:
+        Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch], Set["MonsterModel"]]:
     mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens = \
         find_monster.interpret_query(tokenized_query, dgcog.index2)
 
@@ -308,7 +308,7 @@ async def find_monster_search(tokenized_query, dgcog) -> \
                                                        matches)
         if not monster_gen:
             # No monsters match the given name tokens
-            return None, {}
+            return None, {}, set()
         monster_gen = find_monster.get_monster_evos(dgcog.database, monster_gen, matches)
     else:
         # There are no name tokens in the query
@@ -320,7 +320,7 @@ async def find_monster_search(tokenized_query, dgcog) -> \
                                                  dgcog.index2.modifiers)
     if not monster_gen:
         # no modifiers match any monster in the evo tree
-        return None, {}
+        return None, {}, set()
 
     # print({k: v for k, v in sorted(matches.items(), key=lambda kv: kv[1].score, reverse=True)
     #        if k in monster_gen})
@@ -328,7 +328,7 @@ async def find_monster_search(tokenized_query, dgcog) -> \
     # Return most likely candidate based on query.
     mon = find_monster.get_most_eligable_monster(monster_gen, dgcog, tokenized_query, matches)
 
-    return mon, matches
+    return mon, matches, monster_gen
 
 
 find_monster = FindMonster()
