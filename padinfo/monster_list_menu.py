@@ -165,7 +165,7 @@ class MonsterListMenuPanes:
 
     @staticmethod
     def get_initial_reaction_list(number_of_evos: int):
-        return MonsterListMenuPanes.emoji_names()[:number_of_evos + 1]
+        return MonsterListMenuPanes.emoji_names()[:number_of_evos]
 
     @staticmethod
     def emoji_name_to_emoji(name: str):
