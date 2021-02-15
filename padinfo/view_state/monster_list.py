@@ -13,9 +13,12 @@ class MonsterListViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, query, color,
                  monster_list: List["MonsterModel"], title,
                  reaction_list=None,
-                 extra_state=None):
+                 extra_state=None,
+                 child_message_id=None
+                 ):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
+        self.child_message_id = child_message_id
         self.title = title
         self.monster_list = monster_list
         self.reaction_list = reaction_list
@@ -29,6 +32,7 @@ class MonsterListViewState(ViewStateBase):
             'title': self.title,
             'monster_list': [str(m.monster_no) for m in self.monster_list],
             'reaction_list': ','.join(self.reaction_list) if self.reaction_list else None,
+            'child_message_id': self.child_message_id
         })
         return ret
 
@@ -44,8 +48,11 @@ class MonsterListViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = get_reaction_list_from_ims(ims)
+        child_message_id = ims.get('child_message_id')
 
         return MonsterListViewState(original_author_id, menu_type, raw_query, query, user_config.color,
                                     monster_list=monster_list, title=title,
                                     reaction_list=reaction_list,
-                                    extra_state=ims)
+                                    extra_state=ims,
+                                    child_message_id=child_message_id
+                                    )

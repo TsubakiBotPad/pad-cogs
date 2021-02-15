@@ -14,11 +14,13 @@ class IdViewState(ViewStateBaseId):
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
+                 is_child: bool = False,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
+        self.is_child = is_child
         self.acquire_raw = acquire_raw
         self.alt_monsters = alt_monsters
         self.base_rarity = base_rarity
@@ -29,6 +31,7 @@ class IdViewState(ViewStateBaseId):
         ret = super().serialize()
         ret.update({
             'pane_type': IdMenuPaneNames.id,
+            'is_child': str(self.is_child)
         })
         return ret
 
@@ -48,11 +51,13 @@ class IdViewState(ViewStateBaseId):
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = get_reaction_list_from_ims(ims)
+        is_child = bool(ims.get('is_child'))
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
+                   is_child=is_child,
                    extra_state=ims)
 
     @staticmethod

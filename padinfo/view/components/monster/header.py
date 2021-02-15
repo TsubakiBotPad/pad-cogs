@@ -45,9 +45,10 @@ class MonsterHeader:
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @staticmethod
-    def short_with_emoji(m: "MonsterModel", link=True):
+    def short_with_emoji(m: "MonsterModel", link=True, prefix=None):
         msg = f"{m.monster_no_na} - {m.name_en}"
         return Box(
+            prefix,
             Text(get_attribute_emoji_by_monster(m)),
             LinkedText(msg, puzzledragonx(m)) if link else Text(msg),
             Text(MonsterHeader.jp_suffix(m, False)),
