@@ -606,7 +606,7 @@ class PadInfo(commands.Cog, IdTest):
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
-        message = await parent_menu.create(ctx, state)
+        message = await ctx.send('Setting up!')
         child_message = await ctx.send(
             'Click a reaction to see monster details!')
         ims = state.serialize()
@@ -618,6 +618,7 @@ class PadInfo(commands.Cog, IdTest):
         }
         try:
             await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+            await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
             pass
@@ -1078,7 +1079,7 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        bestmatch, matches, _ = max(
+        bestmatch, matches = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
@@ -1118,7 +1119,7 @@ class PadInfo(commands.Cog, IdTest):
                        (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
 
     @commands.command(aliases=["ids"])
-    async def idsearch(self, ctx, *, query):
+    async def idsearch(self, ctx, query):
         dgcog = self.bot.get_cog("Dadguide")
         await dgcog.wait_until_ready()
 
@@ -1126,24 +1127,23 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        success, matches, mgen = max(
+        best_match, matches = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
             key=lambda t: t[1][t[0]].score if t[0] else 0
         )
-        if not success:
+        if not best_match:
             await ctx.send("No monster matched.")
             return
 
-        used = set()
+        used = [best_match.monster_id]
         monster_list = []
-        for m in sorted(mgen, key=lambda m: find_monster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
-            print(m)
-            bmid = dgcog.database.graph.get_base_id(m)
+        for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, dgcog, matches=matches)):
+            bmid = dgcog.database.graph.get_base_monster(m).monster_id
             if bmid not in used:
-                used.add(bmid)
+                used.append(bmid)
                 monster_list.append(m)
-        monster_list = monster_list[:10]
-
+        monster_list.reverse()
+        monster_list = [best_match] + monster_list[:10]
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')

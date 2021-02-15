@@ -31,7 +31,7 @@ class IdViewState(ViewStateBaseId):
         ret = super().serialize()
         ret.update({
             'pane_type': IdMenuPaneNames.id,
-            'is_child': str(self.is_child)
+            'is_child': 'True' if self.is_child else ''
         })
         return ret
 
