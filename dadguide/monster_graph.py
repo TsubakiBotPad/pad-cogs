@@ -352,7 +352,7 @@ class MonsterGraph(object):
         curr = monster_id
         while curr not in seen:
             seen.add(curr)
-            next_ids = self.get_prev_transform_ids_by_monster_id(monster_id)
+            next_ids = self.get_prev_transform_ids_by_monster_id(curr)
             if next_ids:
                 curr = next_ids.pop()
             else:

@@ -30,16 +30,6 @@ def base_info(m: "MonsterModel"):
     )
 
 
-def transform_skill_header(m: "MonsterModel"):
-    active_skill = m.active_skill
-    active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
-    return Box(
-        BoldText('Active Skill'),
-        BoldText(active_cd),
-        delimiter=' '
-    )
-
-
 def base_skill(m: "MonsterModel"):
     active_skill = m.active_skill
     return (" (" + BASE_EMOJI + " "
@@ -75,7 +65,7 @@ class TransformInfoView:
                 inline=True
             ),
             EmbedField(
-                transform_skill_header(transformed_mon).to_markdown() + base_skill(base_mon),
+                IdView.active_skill_header(transformed_mon, base_mon).to_markdown(),
                 Text(transformed_mon.active_skill.desc if transformed_mon.active_skill else 'None')
             ),
             EmbedField(
