@@ -1078,7 +1078,7 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        bestmatch, matches = max(
+        bestmatch, matches, _ = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
@@ -1118,7 +1118,7 @@ class PadInfo(commands.Cog, IdTest):
                        (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
 
     @commands.command(aliases=["ids"])
-    async def idsearch(self, ctx, query):
+    async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
         await dgcog.wait_until_ready()
 
@@ -1126,22 +1126,24 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        first_monster, matches = max(
+        success, matches, mgen = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
             key=lambda t: t[1][t[0]].score if t[0] else 0
         )
-        if not first_monster:
+        if not success:
             await ctx.send("No monster matched.")
             return
 
-        used = []
+        used = set()
         monster_list = []
-        for m in sorted(matches, key=lambda mon: find_monster.get_priority_tuple(mon, dgcog, matches=matches)):
-            bmid = dgcog.database.graph.get_base_monster(m).monster_id
+        for m in sorted(mgen, key=lambda m: find_monster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
+            print(m)
+            bmid = dgcog.database.graph.get_base_id(m)
             if bmid not in used:
-                used.append(bmid)
+                used.add(bmid)
                 monster_list.append(m)
-        monster_list = [first_monster] + monster_list[:10]
+        monster_list = monster_list[:10]
+
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')
