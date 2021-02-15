@@ -606,7 +606,7 @@ class PadInfo(commands.Cog, IdTest):
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
-        message = await parent_menu.create(ctx, state)
+        message = await ctx.send('Setting up!')
         child_message = await ctx.send(
             'Click a reaction to see monster details!')
         ims = state.serialize()
@@ -618,6 +618,7 @@ class PadInfo(commands.Cog, IdTest):
         }
         try:
             await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+            await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
             pass
