@@ -873,7 +873,7 @@ class PadInfo(commands.Cog, IdTest):
                        "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
                        "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
 
-    @commands.command(aliases=["iddebug"])
+    @commands.command(aliases=["iddebug", "dbid", "iddb"])
     async def debugid(self, ctx, *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
@@ -971,7 +971,7 @@ class PadInfo(commands.Cog, IdTest):
 
         await ctx.send(file=text_to_file(o, filename="table.md"))
 
-    @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod"])
+    @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod", "luid", "idlu"])
     async def idmeaning(self, ctx, *, token):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
@@ -1108,12 +1108,17 @@ class PadInfo(commands.Cog, IdTest):
         else:
             lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
 
-        mtokenstr = '\n'.join(sorted(mtokens))
-        ntokenstr = '\n'.join(sorted(ntokens))
+        mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if  t[0] != t[1] else ''}"
+                              f" ({round(calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
+                              for t in sorted(mtokens))
+        ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if  t[0] != t[1] else ''}"
+                              f" ({round(calc_ratio_name(t[0], t[1], dgcog.index2), 2) if t[0] != t[1] else 'exact'})"
+                              f" {t[2]}"
+                              for t in sorted(ntokens))
 
         await ctx.send(f"**Monster matched**: "
                        f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})\n"
-                       f"**Total Score**: {score}\n\n"
+                       f"**Total Score**: {round(score, 2)}\n\n"
                        f"**Matched Name Tokens**:\n{ntokenstr}\n\n"
                        f"**Matched Mod Tokens**:\n{mtokenstr}\n\n" +
                        (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
