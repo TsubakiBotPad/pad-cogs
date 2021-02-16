@@ -62,12 +62,12 @@ class MonsterListMenu:
     async def respond_with_n(message: Optional[Message], ims, n, **data):
         ims['resolved_monster_id'] = int(ims['monster_list'][n])
         reaction_list = IdMenuPanes.emoji_names()
-        if not data.get('child_message_ims'):
+        if not data.get('child_message_ims') or data['child_message_ims']['menu_type'] != IdMenu.MENU_TYPE:
             # default to the overview screen if we weren't already on a screen
-            ims['reaction_list'] = ','.join(reaction_list)
-            ims['is_child'] = 'True'
+            ims['reaction_list'] = reaction_list
+            ims['is_child'] = True
             return await IdMenu.respond_with_current_id(message, ims, **data)
-        data['child_message_ims']['reaction_list'] = ','.join(reaction_list)
+        data['child_message_ims']['reaction_list'] = reaction_list
         data['child_message_ims']['resolved_monster_id'] = int(ims['resolved_monster_id'])
         return await IdMenu.respond_with_refresh(message, data['child_message_ims'], **data)
 
