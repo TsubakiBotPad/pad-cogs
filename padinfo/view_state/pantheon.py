@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 from padinfo.common.config import UserConfig
 from padinfo.pane_names import IdMenuPaneNames
 from padinfo.view_state.base_id import ViewStateBaseId
-from padinfo.view_state.common import get_monster_from_ims, get_reaction_list_from_ims
+from padinfo.view_state.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -44,7 +44,7 @@ class PantheonViewState(ViewStateBaseId):
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
-        reaction_list = get_reaction_list_from_ims(ims)
+        reaction_list = ims.get('reaction_list')
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    pantheon_list, series_name,

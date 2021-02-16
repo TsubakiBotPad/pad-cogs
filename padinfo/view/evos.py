@@ -29,7 +29,8 @@ class EvosView:
         if state.gem_versions:
             fields.append(
                 EmbedField(
-                    ("{} evolve gem" if len(state.gem_versions) == 1 else "{} evolve gems").format(len(state.gem_versions)),
+                    ("{} evolve gem" if len(state.gem_versions) == 1 else "{} evolve gems").format(
+                        len(state.gem_versions)),
                     Box(*_evo_lines(state.gem_versions, state.monster))))
 
         return EmbedView(

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
-from padinfo.view_state.common import get_monster_from_ims, get_reaction_list_from_ims
+from padinfo.view_state.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -30,7 +30,7 @@ class ViewStateBaseId:
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
-            'reaction_list': ','.join(self.reaction_list) if self.reaction_list else None,
+            'reaction_list': self.reaction_list
         }
         ret.update(self.extra_state)
         return ret
@@ -46,7 +46,7 @@ class ViewStateBaseId:
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
-        reaction_list = get_reaction_list_from_ims(ims)
+        reaction_list = ims.get('reaction_list')
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    use_evo_scroll=use_evo_scroll, reaction_list=reaction_list,

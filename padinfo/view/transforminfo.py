@@ -2,16 +2,14 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import Text, BoldText
+from discordmenu.embed.view import EmbedView
 
-from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.id import IdView
-from padinfo.view_state.id import IdViewState
 from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
@@ -25,17 +23,18 @@ def base_info(m: "MonsterModel"):
         Box(
             BASE_EMOJI,
             IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
-                else Box(Text('No Awakenings')),
+            else Box(Text('No Awakenings')),
             delimiter=' '
         ),
         IdView.super_awakenings_row(m)
     )
 
+
 def base_skill(m: "MonsterModel"):
     active_skill = m.active_skill
     return (" (" + BASE_EMOJI + " "
             + "{} -> {})".format(active_skill.turn_max, active_skill.turn_min) if active_skill
-        else 'None')
+            else 'None')
 
 
 class TransformInfoView:
@@ -49,7 +48,7 @@ class TransformInfoView:
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
                     IdView.normal_awakenings_row(transformed_mon)
-                        if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
+                    if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                     base_info(base_mon),
                     IdView.killers_row(transformed_mon, base_mon)
                 ),

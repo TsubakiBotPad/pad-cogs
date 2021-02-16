@@ -17,7 +17,6 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, rmdiacritics
 
-from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
@@ -32,17 +31,20 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.id_menu import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
-from padinfo.pane_names import global_emoji_responses
 from padinfo.ls_menu import LeaderSkillMenu
 from padinfo.lss_menu import LeaderSkillSingleMenu
+from padinfo.message_menu import MessageMenu, MessageMenuPanes
+from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
+from padinfo.pane_names import global_emoji_responses
+from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
+from padinfo.view_state.message import MessageViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
@@ -152,6 +154,7 @@ class PadInfo(commands.Cog, IdTest):
                 emoji_clicked in LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES or
                 emoji_clicked in IdMenuPanes.emoji_names() or
                 emoji_clicked in MonsterListMenuPanes.emoji_names() or
+                emoji_clicked in MessageMenuPanes.emoji_names() or
                 emoji_clicked in tf_menu_emoji_button_names):
             return
 
@@ -168,6 +171,7 @@ class PadInfo(commands.Cog, IdTest):
             IdMenu.MENU_TYPE: IdMenu.menu,
             TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
+            MessageMenu.MENU_TYPE: MessageMenu.menu,
         }
 
         # If true then the top menu will also respond on reaction
@@ -222,6 +226,7 @@ class PadInfo(commands.Cog, IdTest):
                 await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
             await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
             return
+
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
 
     @commands.command()
@@ -288,6 +293,7 @@ class PadInfo(commands.Cog, IdTest):
                                    f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
                                    f" info about the new id changes, check out"
                                    f" <{IDGUIDE}>!")
+
                 asyncio.create_task(send_message())
                 async with self.config.bad_queries() as bq:
                     bq.append((raw_query, ctx.author.id))
@@ -600,24 +606,32 @@ class PadInfo(commands.Cog, IdTest):
         friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         color = await self.get_user_embed_color(ctx)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
+        instruction_message = 'Click a reaction to see monster details!'
 
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     monster_list, title,
+                                     monster_list, title, instruction_message,
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
         message = await ctx.send('Setting up!')
-        child_message = await ctx.send(
-            'Click a reaction to see monster details!')
+
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {
             'dgcog': dgcog,
             'user_config': user_config,
-            'child_message_id': child_message.id,
         }
+        child_state = MessageViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, color,
+                                       instruction_message,
+                                       reaction_list=[]
+                                       )
+        child_menu = MessageMenu.menu(original_author_id, friends, self.bot.user.id)
+        child_message = await child_menu.create(ctx, child_state)
+
+        data['child_message_id'] = child_message.id
         try:
-            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author, **data)
+            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
+                                         **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
