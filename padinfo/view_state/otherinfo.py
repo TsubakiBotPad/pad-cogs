@@ -1,4 +1,4 @@
-from padinfo.pane_names import IdMenuPaneNames
+from padinfo.menu.pane_names import IdMenuPaneNames
 from padinfo.view_state.base_id import ViewStateBaseId
 
 

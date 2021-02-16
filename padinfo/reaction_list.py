@@ -3,7 +3,7 @@ from typing import List, Optional, TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 
 from padinfo.core.padinfo_settings import settings
-from padinfo.id_menu import IdMenuPanes, IdMenu
+from padinfo.menu.id import IdMenuPanes, IdMenu
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.materials import MaterialsViewState
 from padinfo.view_state.pantheon import PantheonViewState
