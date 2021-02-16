@@ -35,7 +35,7 @@ from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
-from padinfo.pane_names import global_emoji_responses
+from padinfo.menu.pane_names import global_emoji_responses
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader

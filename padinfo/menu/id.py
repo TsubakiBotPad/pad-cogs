@@ -9,7 +9,7 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
 from tsutils import char_to_emoji
 
 from padinfo.menu.simple_text import SimpleTextMenu
-from padinfo.pane_names import IdMenuPaneNames
+from padinfo.menu.pane_names import IdMenuPaneNames
 from padinfo.view.evos import EvosView
 from padinfo.view.id import IdView
 from padinfo.view.materials import MaterialsView

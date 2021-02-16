@@ -2,7 +2,7 @@ from typing import List, TYPE_CHECKING, Optional
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
-from padinfo.pane_names import IdMenuPaneNames
+from padinfo.menu.pane_names import IdMenuPaneNames
 from padinfo.view_state.base_id import ViewStateBaseId
 from padinfo.view_state.common import get_monster_from_ims
 
