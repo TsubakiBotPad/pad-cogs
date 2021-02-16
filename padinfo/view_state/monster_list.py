@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
-from padinfo.pane_names import IdMenuPaneNames
+from padinfo.menu.pane_names import IdMenuPaneNames
 from padinfo.view_state.base import ViewStateBase
 
 if TYPE_CHECKING:

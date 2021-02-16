@@ -28,23 +28,23 @@ from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
-from padinfo.id_menu import IdMenu, IdMenuPanes
+from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
-from padinfo.ls_menu import LeaderSkillMenu
-from padinfo.lss_menu import LeaderSkillSingleMenu
-from padinfo.message_menu import MessageMenu, MessageMenuPanes
-from padinfo.monster_list_menu import MonsterListMenu, MonsterListMenuPanes
-from padinfo.pane_names import global_emoji_responses
+from padinfo.menu.leader_skill import LeaderSkillMenu
+from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
+from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
+from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
+from padinfo.menu.pane_names import global_emoji_responses
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
-from padinfo.tf_menu import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
+from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
-from padinfo.view_state.message import MessageViewState
+from padinfo.view_state.simple_text import SimpleTextViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
@@ -171,7 +171,7 @@ class PadInfo(commands.Cog, IdTest):
             IdMenu.MENU_TYPE: IdMenu.menu,
             TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
-            MessageMenu.MENU_TYPE: MessageMenu.menu,
+            SimpleTextMenu.MENU_TYPE: SimpleTextMenu.menu,
         }
 
         # If true then the top menu will also respond on reaction
@@ -621,11 +621,11 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config,
         }
-        child_state = MessageViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, color,
-                                       instruction_message,
-                                       reaction_list=[]
-                                       )
-        child_menu = MessageMenu.menu(original_author_id, friends, self.bot.user.id)
+        child_state = SimpleTextViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, color,
+                                          instruction_message,
+                                          reaction_list=[]
+                                          )
+        child_menu = SimpleTextMenu.menu(original_author_id, friends, self.bot.user.id)
         child_message = await child_menu.create(ctx, child_state)
 
         data['child_message_id'] = child_message.id

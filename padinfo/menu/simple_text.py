@@ -8,8 +8,8 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 
-from padinfo.view.message import MessageView
-from padinfo.view_state.message import MessageViewState
+from padinfo.view.simple_text import SimpleTextView
+from padinfo.view_state.simple_text import SimpleTextViewState
 
 if TYPE_CHECKING:
     pass
@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
-class MessagePaneNames:
+class SimpleTextNames:
     home = 'home'
 
 
-class MessageMenu:
-    MENU_TYPE = 'MessageMenu'
+class SimpleTextMenu:
+    MENU_TYPE = 'SimpleTextMenu'
     message = None
 
     @staticmethod
@@ -34,17 +34,17 @@ class MessageMenu:
             BotAuthoredMessageReactionFilter(bot_id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
-        embed = EmbedMenu(reaction_filters, MessageMenuPanes.transitions(), MessageMenu.message_control,
+        embed = EmbedMenu(reaction_filters, MessageMenuPanes.transitions(), SimpleTextMenu.message_control,
                           menu_emoji_config,
-                          delete_func=MessageMenu.respond_with_delete)
+                          delete_func=SimpleTextMenu.respond_with_delete)
         return embed
 
     @staticmethod
     async def respond_with_message(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
         user_config = data.get('user_config')
-        view_state = await MessageViewState.deserialize(dgcog, user_config, ims)
-        control = MessageMenu.message_control(view_state)
+        view_state = await SimpleTextViewState.deserialize(dgcog, user_config, ims)
+        control = SimpleTextMenu.message_control(view_state)
         return control
 
     @staticmethod
@@ -52,12 +52,12 @@ class MessageMenu:
         return await message.delete()
 
     @staticmethod
-    def message_control(state: MessageViewState):
+    def message_control(state: SimpleTextViewState):
         if state is None:
             return None
         reaction_list = state.reaction_list
         return EmbedControl(
-            [MessageView.embed(state)],
+            [SimpleTextView.embed(state)],
             reaction_list
         )
 
@@ -65,11 +65,11 @@ class MessageMenu:
 class MessageMenuPanes:
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'
     DATA = {
-        MessageMenu.respond_with_message: ('\N{HOUSE BUILDING}', MessagePaneNames.home),
+        SimpleTextMenu.respond_with_message: ('\N{HOUSE BUILDING}', SimpleTextNames.home),
 
     }
     HIDDEN_EMOJIS = [
-        MessagePaneNames.home,
+        SimpleTextNames.home,
     ]
 
     @classmethod

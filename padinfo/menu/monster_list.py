@@ -8,8 +8,8 @@ from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmoji
     MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
-from padinfo.id_menu import IdMenu, IdMenuPanes
-from padinfo.pane_names import IdMenuPaneNames, MonsterListPaneNames, global_emoji_responses
+from padinfo.menu.id import IdMenu, IdMenuPanes
+from padinfo.menu.pane_names import MonsterListPaneNames, global_emoji_responses
 from padinfo.view.monster_list import MonsterListView
 from padinfo.view_state.monster_list import MonsterListViewState
 
