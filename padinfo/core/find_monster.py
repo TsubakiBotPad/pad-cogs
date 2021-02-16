@@ -78,14 +78,14 @@ class FindMonster:
     def _monster_has_token(self, monster, token, matches, monster_mods):
         if len(token) < 6:
             if token in monster_mods:
-                matches[monster].mod.add(f"{token} - {token}")
+                matches[monster].mod.add((token, token))
                 matches[monster].score += 1
                 return True
         else:
             closest = max(monster_mods, key=lambda m: calc_ratio_modifier(m, token))
             rat = calc_ratio_modifier(closest, token)
             if rat > self.MODIFIER_JW_DISTANCE:
-                matches[monster].mod.add(f"{token} - {closest}")
+                matches[monster].mod.add((token, closest))
                 matches[monster].score += rat
                 return True
         return False
@@ -173,17 +173,17 @@ class FindMonster:
             score = calc_ratio_name(t, match, index2)
             for m in index2.manual[match]:
                 if m not in valid:
-                    matches[m].name.add(f"{t} - {match}")
+                    matches[m].name.add((t, match, ''))
                     matches[m].score += (score + .001) * mult
                     valid.add(m)
             for m in index2.name_tokens[match]:
                 if m not in valid:
-                    matches[m].name.add(f"{t} - {match}")
+                    matches[m].name.add((t, match, ''))
                     matches[m].score += score * mult
                     valid.add(m)
             for m in index2.fluff_tokens[match]:
                 if m not in valid:
-                    matches[m].name.add(f"{t} - {match}")
+                    matches[m].name.add((t, match, ''))
                     matches[m].score += score * mult / 2
                     valid.add(m)
 
@@ -236,7 +236,7 @@ class FindMonster:
             for evo in database.graph.get_alt_monsters(m):
                 monster_evos.add(evo)
                 if matches[evo].score < matches[m].score:
-                    matches[evo].name = {t + f" (from evo {m.monster_id})" for t in matches[m].name}
+                    matches[evo].name = {(t[0], t[1], f'(from evo {m.monster_id})') for t in matches[m].name}
                     matches[evo].score = matches[m].score - .003
 
         return monster_evos
@@ -284,7 +284,7 @@ class MonsterMatch:
             self.mod = set()
 
     def __repr__(self):
-        return str((self.score, [t.split(' - ')[0] for t in self.name], [t.split(' - ')[0] for t in self.mod]))
+        return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
 
 
 async def find_monster_search(tokenized_query, dgcog) -> \
