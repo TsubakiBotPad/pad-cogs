@@ -12,11 +12,12 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-def get_description(monster: "MonsterModel", score: int):
+def get_title(monster: "MonsterModel"):
+    return f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})"
+
+
+def get_description(score: int):
     return Box(
-        LabeledText(
-            'Monster matched',
-            f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})"),
         LabeledText(
             'Total score',
             str(round(score, 2))
@@ -38,8 +39,8 @@ class IdTracebackView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title='ID Traceback',
-                description=get_description(monster, score)
+                title=get_title(monster),
+                description=get_description(score)
             ),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)
