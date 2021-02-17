@@ -28,27 +28,28 @@ from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
-from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.id_menu_old import IdMenu as IdMenuOld
 from padinfo.idtest_mixin import IdTest
+from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
-from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.pane_names import global_emoji_responses
-from padinfo.reaction_list import get_id_menu_initial_reaction_list
+from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
+from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view.links import LinksView
+from padinfo.view.lookup import LookupView
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
 from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
 from padinfo.view_state.materials import MaterialsViewState
-from padinfo.view_state.simple_text import SimpleTextViewState
 from padinfo.view_state.monster_list import MonsterListViewState
 from padinfo.view_state.otherinfo import OtherInfoViewState
 from padinfo.view_state.pantheon import PantheonViewState
 from padinfo.view_state.pic import PicViewState
+from padinfo.view_state.simple_text import SimpleTextViewState
 from padinfo.view_state.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
@@ -513,20 +514,6 @@ class PadInfo(commands.Cog, IdTest):
         menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pic_control)
         await menu.create(ctx, state)
 
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def links(self, ctx, *, query: str):
-        """Monster links"""
-        dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, query)
-        if m is not None:
-            menu = IdMenuOld(ctx)
-            embed = await menu.make_links_embed(m)
-            await ctx.send(embed=embed)
-
-        else:
-            await self.makeFailureMsg(ctx, query, err)
-
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
@@ -556,6 +543,30 @@ class PadInfo(commands.Cog, IdTest):
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
+    async def links(self, ctx, *, query: str):
+        """Monster links"""
+        dgcog = await self.get_dgcog()
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
+        if m is None:
+            await self.makeFailureMsg(ctx, query, err)
+        color = await self.get_user_embed_color(ctx)
+        embed = LinksView.embed(m, color).to_embed()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def lookup(self, ctx, *, query: str):
+        """Short info results for a monster query"""
+        dgcog = await self.get_dgcog()
+        m, err, debug_info = await findMonsterCustom(dgcog, query)
+        if m is None:
+            await self.makeFailureMsg(ctx, query, err)
+        color = await self.get_user_embed_color(ctx)
+        embed = LookupView.embed(m, color).to_embed()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
         dgcog = await self.get_dgcog()
@@ -568,19 +579,6 @@ class PadInfo(commands.Cog, IdTest):
         info_str = button_info.to_string(monster, info)
         for page in pagify(info_str):
             await ctx.send(box(page))
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def lookup(self, ctx, *, query: str):
-        """Short info results for a monster query"""
-        dgcog = await self.get_dgcog()
-        m, err, debug_info = await findMonsterCustom(dgcog, query)
-        if m is not None:
-            menu = IdMenuOld(ctx, allowed_emojis=self.get_emojis())
-            embed = await menu.make_lookup_embed(m)
-            await ctx.send(embed=embed)
-        else:
-            await self.makeFailureMsg(ctx, query, err)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
