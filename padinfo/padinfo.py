@@ -549,6 +549,7 @@ class PadInfo(commands.Cog, IdTest):
         m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is None:
             await self.id_query_failure_message(ctx, query, err)
+            return
         color = await self.get_user_embed_color(ctx)
         embed = LinksView.embed(m, color).to_embed()
         await ctx.send(embed=embed)
@@ -561,6 +562,7 @@ class PadInfo(commands.Cog, IdTest):
         m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is None:
             await self.id_query_failure_message(ctx, query, err)
+            return
         color = await self.get_user_embed_color(ctx)
         embed = LookupView.embed(m, color).to_embed()
         await ctx.send(embed=embed)
