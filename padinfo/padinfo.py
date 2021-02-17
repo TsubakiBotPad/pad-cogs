@@ -239,7 +239,7 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send(MonsterHeader.short(m))
             await ctx.send(box(m.name_ja))
         else:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
 
     @commands.command(name="id", aliases=["iD", "Id", "ID"])
     @checks.bot_has_permissions(embed_links=True)
@@ -302,7 +302,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         async def send_error(error):
@@ -402,7 +402,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
@@ -435,7 +435,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
@@ -469,7 +469,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
@@ -501,7 +501,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -528,7 +528,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -548,7 +548,7 @@ class PadInfo(commands.Cog, IdTest):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
         color = await self.get_user_embed_color(ctx)
         embed = LinksView.embed(m, color).to_embed()
@@ -561,7 +561,7 @@ class PadInfo(commands.Cog, IdTest):
         dgcog = await self.get_dgcog()
         m, err, debug_info = await findMonsterCustom(dgcog, query)
         if m is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
         color = await self.get_user_embed_color(ctx)
         embed = LookupView.embed(m, color).to_embed()
@@ -574,7 +574,7 @@ class PadInfo(commands.Cog, IdTest):
         dgcog = await self.get_dgcog()
         monster, err, _ = await findMonsterCustom(dgcog, query)
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
         DGCOG = self.bot.get_cog("Dadguide")
         info = button_info.get_info(DGCOG, monster)
@@ -589,7 +589,7 @@ class PadInfo(commands.Cog, IdTest):
         monster, err, debug_info = await findMonsterCustom(dgcog, query)
 
         if monster is None:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         alt_versions, _ = await EvosViewState.query(dgcog, monster)
@@ -706,7 +706,7 @@ class PadInfo(commands.Cog, IdTest):
             await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
             return
 
         if not transformed_mon:
@@ -765,7 +765,7 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
         else:
-            await self.id_query_failure_message(ctx, query, err)
+            await self.send_id_failure_message(ctx, query, err)
 
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
@@ -882,7 +882,7 @@ class PadInfo(commands.Cog, IdTest):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     @staticmethod
-    async def id_query_failure_message(ctx, query: str, err):
+    async def send_id_failure_message(ctx, query: str, err):
         await ctx.send("Sorry, your query {0} didn't match any results :(\n"
                        "See <{2}> for "
                        "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
