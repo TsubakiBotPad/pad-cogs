@@ -199,8 +199,7 @@ class PadInfo(commands.Cog, IdTest):
         if not menu_func:
             return
 
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         embed_menu = menu_func(original_author_id, friends, self.bot.user.id)
         if not (await embed_menu.should_respond(message, reaction, member)):
             return
@@ -274,8 +273,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
 
         goodquery = None
         if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index2.all_name_tokens:
@@ -400,8 +398,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -434,8 +431,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
@@ -467,8 +463,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -499,8 +494,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -526,8 +520,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -606,8 +599,7 @@ class PadInfo(commands.Cog, IdTest):
     async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"], title):
         raw_query = query
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         color = await self.get_user_embed_color(ctx)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
@@ -665,8 +657,7 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = friend_cog and (await friend_cog.get_friends(original_author_id))
+        friends = await self.get_user_friends(original_author_id)
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
         menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
@@ -676,13 +667,19 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.config.user(ctx.author).color()
         return self.user_color_to_discord_color(color)
 
-    def user_color_to_discord_color(self, color):
+    @staticmethod
+    def user_color_to_discord_color(color):
         if color is None:
             return Color.default()
         elif color == "random":
             return Color(random.randint(0x000000, 0xffffff))
         else:
             return discord.Color(color)
+
+    async def get_user_friends(self, original_author_id):
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        return friends
 
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
@@ -695,8 +692,7 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, m)
         menu = LeaderSkillSingleMenu.menu(original_author_id, friends, self.bot.user.id)
         await menu.create(ctx, state)
@@ -724,8 +720,7 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         acquire_raw, base_rarity, true_evo_type_raw = \
             await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
@@ -1137,8 +1132,7 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        friends = await self.get_user_friends(original_author_id)
         menu = ClosableEmbedMenu.menu(original_author_id, friends, self.bot.user.id)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
                                        IdTracebackView.VIEW_TYPE,
