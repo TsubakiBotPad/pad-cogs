@@ -29,6 +29,7 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.idtest_mixin import IdTest
+from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
@@ -38,8 +39,10 @@ from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
+from padinfo.view.id_traceback import IdTracebackView
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
+from padinfo.view_state.closable_embed import ClosableEmbedViewState
 from padinfo.view_state.evos import EvosViewState
 from padinfo.view_state.id import IdViewState
 from padinfo.view_state.leader_skill import LeaderSkillViewState
@@ -173,6 +176,7 @@ class PadInfo(commands.Cog, IdTest):
             TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
             SimpleTextMenu.MENU_TYPE: SimpleTextMenu.menu,
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu.menu,
         }
 
         # If true then the top menu will also respond on reaction
@@ -1131,12 +1135,16 @@ class PadInfo(commands.Cog, IdTest):
                               f" {t[2]}"
                               for t in sorted(ntokens))
 
-        await ctx.send(f"**Monster matched**: "
-                       f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})\n"
-                       f"**Total Score**: {round(score, 2)}\n\n"
-                       f"**Matched Name Tokens**:\n{ntokenstr}\n\n"
-                       f"**Matched Mod Tokens**:\n{mtokenstr}\n\n" +
-                       (f"**Equally Scoring Matches**:\n{lpstr}" if lower_prio else ""))
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        friend_cog = self.bot.get_cog("Friend")
+        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        menu = ClosableEmbedMenu.menu(original_author_id, friends, self.bot.user.id)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
+                                       IdTracebackView.VIEW_TYPE,
+                                       monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
+                                       lower_priority_monsters=lpstr if lower_prio else "None")
+        await menu.create(ctx, state)
 
     @commands.command(aliases=["ids"])
     async def idsearch(self, ctx, *, query):
