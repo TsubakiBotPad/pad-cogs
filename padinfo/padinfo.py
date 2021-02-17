@@ -208,7 +208,10 @@ class PadInfo(commands.Cog, IdTest):
             'user_config': user_config
         }
         if ims.get('child_message_id') and (ims['menu_type'], emoji_clicked) in respond_with_child.keys():
-            await message.remove_reaction(emoji_clicked, member)
+            try:
+                await message.remove_reaction(emoji_clicked, member)
+            except discord.Forbidden:
+                pass
             fctx = await self.bot.get_context(message)
             child_message = await fctx.fetch_message(int(ims['child_message_id']))
             previous_child_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
