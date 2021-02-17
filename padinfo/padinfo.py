@@ -1117,7 +1117,7 @@ class PadInfo(commands.Cog, IdTest):
         ntokens = matches[monster].name
         mtokens = matches[monster].mod
         lower_prio = {m for m in matches if matches[m].score == matches[monster].score}.difference({monster})
-        if len(lower_prio) > 10:
+        if len(lower_prio) > 20:
             lpstr = f"{len(lower_prio)} other monsters."
         else:
             lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
