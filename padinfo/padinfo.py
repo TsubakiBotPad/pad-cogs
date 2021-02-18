@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List
 import discord
 import tsutils
 from discord import Color
+from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from discordmenu.reaction_filter import FriendReactionFilter, MessageOwnerReactionFilter, \
@@ -165,11 +166,11 @@ class PadInfo(commands.Cog, IdTest):
             TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),
         }
 
-        emoji_found = False
+        emoji_recognized = emoji_clicked in EmbedMenuEmojiConfig().to_list()
         for menu_type, emoji_list in menu_to_emoji_list_map.items():
             if emoji_clicked in emoji_list:
-                emoji_found = True
-        if not emoji_found:
+                emoji_recognized = True
+        if not emoji_recognized:
             return
 
         message = reaction.message
