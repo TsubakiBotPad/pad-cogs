@@ -39,7 +39,7 @@ from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.id_traceback import IdTracebackView
+from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
 from padinfo.view_state.closable_embed import ClosableEmbedViewState
@@ -1137,10 +1137,10 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         friends = await self.get_user_friends(original_author_id)
         menu = ClosableEmbedMenu.menu(original_author_id, friends, self.bot.user.id)
+        props = IdTracebackViewProps(monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
+                                     lower_priority_monsters=lpstr if lower_prio else "None")
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
-                                       IdTracebackView.VIEW_TYPE,
-                                       monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
-                                       lower_priority_monsters=lpstr if lower_prio else "None")
+                                       IdTracebackView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command(aliases=["ids"])
