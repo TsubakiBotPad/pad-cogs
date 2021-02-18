@@ -255,7 +255,7 @@ def lstripalpha(s):
     return s
 
 
-class PaDTeamLexer(object):
+class PaDTeamLexer:
     tokens = [
         'ID',
         'ASSIST',
@@ -288,11 +288,11 @@ class PaDTeamLexer(object):
     def t_LATENT(self, t):
         r'\[.+?\]'
         # words in []
-        t.value = [l.strip().lower() for l in t.value.strip('[]').split(',')]
+        t.value = [lat.strip().lower() for lat in t.value.strip('[]').split(',')]
         for v in t.value.copy():
             if '*' not in v:
                 continue
-            tmp = [l.strip() for l in v.split('*')]
+            tmp = [lat.strip() for lat in v.split('*')]
             if len(tmp[0]) == 1 and tmp[0].isdigit():
                 count = int(tmp[0])
                 latent = tmp[1]
@@ -306,7 +306,7 @@ class PaDTeamLexer(object):
             for i in range(count):
                 t.value.insert(idx, latent)
         t.value = t.value[0:MAX_LATENTS]
-        t.value = [REVERSE_LATENTS_MAP[l] for l in t.value if l in REVERSE_LATENTS_MAP]
+        t.value = [REVERSE_LATENTS_MAP[lat] for lat in t.value if lat in REVERSE_LATENTS_MAP]
         return t
 
     def t_STATS(self, t):
@@ -382,6 +382,9 @@ class PaDTeamLexer(object):
         raise commands.UserFeedbackCheckFailure(
             "Parse Error: Unknown text '{}' at position {}".format(t.value, t.lexpos))
 
+    def __init__(self):
+        self.lexer = None
+
     def build(self, **kwargs):
         # pass debug=1 to enable verbose output
         self.lexer = lex.lex(module=self)
@@ -404,7 +407,7 @@ def validate_latents(card_dict, card, ass_card):
                 latents[idx] = None
         if l in AWO_RES_LATENT_TO_AWO_MAP and AWO_RES_LATENT_TO_AWO_MAP[l] not in awos:
             latents[idx] = -latents[idx]
-    latents = [l for l in latents if l is not None]
+    latents = [lat for lat in latents if lat is not None]
     return latents if len(latents) > 0 else None
 
 
@@ -508,9 +511,9 @@ class PadBuildImageGenerator(object):
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
-                ass_card, err, debug_info = await self.padinfo_cog.fm3(tok.value)
+                ass_card = await self.padinfo_cog.fm3(tok.value)
                 if ass_card is None:
-                    raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
+                    raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
             elif tok.type == 'REPEAT':
                 repeat = min(tok.value, MAX_LATENTS)
             elif tok.type == 'ID':
@@ -518,9 +521,9 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card, err, debug_info = await self.padinfo_cog.fm3(tok.value)
+                    card = await self.padinfo_cog.fm3(tok.value)
                     if card is None:
-                        raise commands.UserFeedbackCheckFailure('Lookup Error: {}'.format(err))
+                        raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
                     if not card.is_inheritable:
                         if is_assist:
                             return None, None
@@ -596,16 +599,16 @@ class PadBuildImageGenerator(object):
         y_offset = 0
         row_count = 0
         one_slot, two_slot, six_slot = [], [], []
-        for l in latents:
-            if 100 <= l < 200:
-                one_slot.append(l)
-            elif 200 <= l < 300:
-                two_slot.append(l)
-            elif 600 <= l < 700:
-                six_slot.append(l)
+        for lat in latents:
+            if 100 <= lat < 200:
+                one_slot.append(lat)
+            elif 200 <= lat < 300:
+                two_slot.append(lat)
+            elif 600 <= lat < 700:
+                six_slot.append(lat)
                 six_slot.append(1)
-            elif -700 < l <= -600:
-                six_slot.append(l)
+            elif -700 < lat <= -600:
+                six_slot.append(lat)
                 six_slot.append(2)
         sorted_latents = []
         if len(one_slot) > len(two_slot):
@@ -617,8 +620,8 @@ class PadBuildImageGenerator(object):
             sorted_latents.extend(two_slot)
             sorted_latents.extend(one_slot)
         last_height = 0
-        for l in sorted_latents:
-            latent_icon = Image.open(self.params.ASSETS_DIR + 'lat/' + LATENTS_MAP[l] + '.png')
+        for lat in sorted_latents:
+            latent_icon = Image.open(self.params.ASSETS_DIR + 'lat/' + LATENTS_MAP[lat] + '.png')
             if x_offset + latent_icon.size[0] > self.params.PORTRAIT_WIDTH:
                 row_count += 1
                 x_offset = 0

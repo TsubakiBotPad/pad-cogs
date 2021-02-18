@@ -53,9 +53,9 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m, err, debug_info = await padinfo_cog.fm3(query)
+        m = await padinfo_cog.fm3(query)
         if not m:
-            await ctx.send(err)
+            await ctx.send("Monster not found.")
             return
         base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
@@ -95,9 +95,9 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m, err, debug_info = await padinfo_cog.fm3(query)
+        m = await padinfo_cog.fm3(query)
         if not m:
-            await ctx.send(err)
+            await ctx.send("Monster not found.")
             return
         base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
@@ -117,9 +117,9 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m, err, debug_info = await padinfo_cog.fm3(query)
+        m = await padinfo_cog.fm3(query)
         if not m:
-            await ctx.send(err)
+            await ctx.send("Monster not found.")
             return
         base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
@@ -139,9 +139,9 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m, err, debug_info = await padinfo_cog.fm3(query)
+        m = await padinfo_cog.fm3(query)
         if not m:
-            await ctx.send(err)
+            await ctx.send("Monster not found.")
             return
         async with self.config.pcs() as pcs:
             if str(dgcog.database.graph.get_base_id(m)) not in pcs:

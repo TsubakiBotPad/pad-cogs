@@ -39,7 +39,7 @@ class LeaderSkillViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
 
-        _, l_mon, l_query, _, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query)
+        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query)
         return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
                                     r_query)
 
