@@ -250,7 +250,7 @@ class ChannelMirror(commands.Cog):
             last_spoke_timestamp) if last_spoke_timestamp else now_time
         attribution_required = last_spoke != author.id
         attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
-        attribution_required |= await self.config.channel(message.channel).multiedit()
+        attribution_required &= not await self.config.channel(message.channel).multiedit()
 
         self.settings.set_last_spoke(channel.id, author.id)
 
