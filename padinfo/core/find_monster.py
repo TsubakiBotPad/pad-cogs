@@ -75,7 +75,7 @@ class FindMonster:
                 result.append(token1)
         return result
 
-    def _monster_has_token(self, monster, token, matches, monster_mods):
+    def _monster_has_modifier(self, monster, token, matches, monster_mods):
         if len(token) < 6:
             if token in monster_mods:
                 matches[monster].mod.add((token, token))
@@ -166,10 +166,10 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, token, index2, matches, mult=1):
         valid_monsters = set()
-        matched_tokens = sorted([nt for nt in index2.all_name_tokens
-                                 if calc_ratio_name(token, nt, index2) > self.TOKEN_JW_DISTANCE],
+        matched_tokens = sorted((nt for nt in index2.all_name_tokens
+                                 if calc_ratio_name(token, nt, index2) > self.TOKEN_JW_DISTANCE),
                                 key=lambda nt: calc_ratio_name(token, nt, index2), reverse=True)
-        matched_tokens += [token for token in index2.all_name_tokens if token.startswith(token)]
+        matched_tokens += [t for t in index2.all_name_tokens if t.startswith(token)]
         for match in matched_tokens:
             score = calc_ratio_name(token, match, index2)
             for matched_monster in index2.manual[match]:
@@ -193,12 +193,12 @@ class FindMonster:
     def process_modifiers(self, mod_tokens, neg_mod_tokens, potential_evos, matches, monster_mods):
         for pos_mod_token in mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              self._monster_has_token(m, pos_mod_token, matches, monster_mods[m])}
+                              self._monster_has_modifier(m, pos_mod_token, matches, monster_mods[m])}
             if not potential_evos:
                 return None
         for neg_mod_token in neg_mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              not self._monster_has_token(m, neg_mod_token, matches, monster_mods[m])}
+                              not self._monster_has_modifier(m, neg_mod_token, matches, monster_mods[m])}
             if not potential_evos:
                 return None
 
