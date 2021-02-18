@@ -117,6 +117,10 @@ class MonsterListMenu:
             reaction_list
         )
 
+    @staticmethod
+    def get_child_data(ims, emoji_clicked):
+        pass
+
 
 class MonsterListMenuPanes(MenuPanes):
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'

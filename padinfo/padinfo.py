@@ -181,13 +181,13 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         menu_map = {
-            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.menu,
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.menu,
-            IdMenu.MENU_TYPE: IdMenu.menu,
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.menu,
-            MonsterListMenu.MENU_TYPE: MonsterListMenu.menu,
-            SimpleTextMenu.MENU_TYPE: SimpleTextMenu.menu,
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu.menu,
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu,
+            IdMenu.MENU_TYPE: IdMenu,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu,
+            MonsterListMenu.MENU_TYPE: MonsterListMenu,
+            SimpleTextMenu.MENU_TYPE: SimpleTextMenu,
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
         }
 
         # If true then the top menu will also respond on reaction
@@ -205,7 +205,8 @@ class PadInfo(commands.Cog, IdTest):
             (MonsterListMenu.MENU_TYPE, char_to_emoji(10)): False,
         }
 
-        menu_func = menu_map.get(menu_type)
+        menu_class = menu_map.get(menu_type)
+        menu_func = menu_class.menu
 
         if not menu_func:
             return

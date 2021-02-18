@@ -5,7 +5,6 @@ from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from padinfo.menu.closable_embed import emoji_button_names
 from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.transforminfo import TransformInfoView, TransformInfoViewState
