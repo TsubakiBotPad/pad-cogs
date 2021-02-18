@@ -31,10 +31,10 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.idtest_mixin import IdTest
-from padinfo.menu.closable_embed import ClosableEmbedMenu
+from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
-from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
+from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -156,10 +156,10 @@ class PadInfo(commands.Cog, IdTest):
             emoji_clicked = emoji_obj.name
 
         menu_to_emoji_list_map = {
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu.EMOJI_BUTTON_NAMES,
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes.emoji_names(),
             IdMenu.MENU_TYPE: IdMenuPanes.emoji_names(),
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes.emoji_names(),
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes.emoji_names(),
             MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
             SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
             TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),

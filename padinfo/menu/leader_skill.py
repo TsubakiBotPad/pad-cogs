@@ -71,6 +71,6 @@ class LeaderSkillMenuPanes(MenuPanes):
     INITIAL_EMOJI = emoji_buttons['home']
     DATA = {
         LeaderSkillMenu.respond_to_house: (emoji_buttons['home'], None),
-        LeaderSkillMenu.respond_to_l: (char_to_emoji('l'), None),
-        LeaderSkillMenu.respond_to_r: (char_to_emoji('r'), None),
+        LeaderSkillMenu.respond_to_l: (char_to_emoji('l'), IdView.VIEW_TYPE),
+        LeaderSkillMenu.respond_to_r: (char_to_emoji('r'), IdView.VIEW_TYPE),
     }
