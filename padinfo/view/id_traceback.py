@@ -12,6 +12,16 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
+class IdTracebackViewProps:
+    def __init__(self, monster: "MonsterModel", score: int, name_tokens: str,
+                 modifier_tokens: str, lower_priority_monsters: str):
+        self.lower_priority_monsters = lower_priority_monsters
+        self.modifier_tokens = modifier_tokens
+        self.name_tokens = name_tokens
+        self.score = score
+        self.monster = monster
+
+
 def get_title(monster: "MonsterModel"):
     return f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})"
 
@@ -29,18 +39,17 @@ class IdTracebackView:
     VIEW_TYPE = 'IdTraceback'
 
     @staticmethod
-    def embed(state, monster: "MonsterModel" = None, score: int = None, name_tokens: str = None,
-              modifier_tokens: str = None, lower_priority_monsters: str = None):
+    def embed(state, props: IdTracebackViewProps):
         fields = [
-            EmbedField('Matched Name Tokens', Box(name_tokens)),
-            EmbedField('Matched Modifier Tokens', Box(modifier_tokens)),
-            EmbedField('Equally-scoring matches', Box(lower_priority_monsters)),
+            EmbedField('Matched Name Tokens', Box(props.name_tokens)),
+            EmbedField('Matched Modifier Tokens', Box(props.modifier_tokens)),
+            EmbedField('Equally-scoring matches', Box(props.lower_priority_monsters)),
         ]
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=get_title(monster),
-                description=get_description(score)
+                title=get_title(props.monster),
+                description=get_description(props.score)
             ),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields)
