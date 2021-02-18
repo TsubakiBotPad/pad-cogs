@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from typing import Set, List, Tuple, Optional, TYPE_CHECKING, Mapping
 
-from Levenshtein import jaro_winkler
+from Levenshtein import jaro
 from tsutils import rmdiacritics
 
 from padinfo.core.historic_lookups import historic_lookups_id3, historic_lookups_file_path_id3
@@ -24,12 +24,12 @@ SERIES_TYPE_PRIORITY = {
 
 
 def calc_ratio_modifier(s1, s2, dist=.05):
-    return jaro_winkler(s1, s2, .05)
+    return jaro(s1, s2)
 
 
-def calc_ratio_name(token, full_word, index2, factor=.05):
+def calc_ratio_name(token, full_word, index2):
     mw = index2.mwt_to_len[full_word] != 1
-    jw = jaro_winkler(token, full_word, factor)
+    jw = jaro(token, full_word)
 
     if full_word == token:
         score = 1
