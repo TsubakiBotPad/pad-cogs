@@ -166,9 +166,10 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, token, index2, matches, mult=1):
         valid_monsters = set()
-        matched_tokens = sorted((nt for nt in index2.all_name_tokens
-                                 if calc_ratio_name(token, nt, index2) > self.TOKEN_JW_DISTANCE),
-                                key=lambda nt: calc_ratio_name(token, nt, index2), reverse=True)
+        ratios = {nt: calc_ratio_name(token, nt, index2) for nt in index2.all_name_tokens}
+        matched_tokens = sorted((nt for nt in ratios
+                                 if ratios[nt] > self.TOKEN_JW_DISTANCE),
+                                key=lambda nt: ratios[nt], reverse=True)
         matched_tokens += [t for t in index2.all_name_tokens if t.startswith(token)]
         for match in matched_tokens:
             score = calc_ratio_name(token, match, index2)
