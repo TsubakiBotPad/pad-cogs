@@ -4,8 +4,6 @@ from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
-from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
-    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 
 from padinfo.view.id import IdView
 from padinfo.view.transforminfo import TransformInfoView
@@ -23,25 +21,17 @@ menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 class TransformInfoMenu:
     INITIAL_EMOJI = emoji_button_names[0]
     MENU_TYPE = 'TransformInfo'
+    EMOJI_BUTTON_NAMES = emoji_button_names
 
     @staticmethod
-    def menu(original_author_id, friend_ids, bot_id):
+    def menu():
         transitions = {
             TransformInfoMenu.INITIAL_EMOJI: TransformInfoMenu.respond_with_overview,
             emoji_button_names[1]: TransformInfoMenu.respond_with_base,
             emoji_button_names[2]: TransformInfoMenu.respond_with_transform,
         }
 
-        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(transitions.keys())
-        reaction_filters = [
-            ValidEmojiReactionFilter(valid_emoji_names),
-            NotPosterEmojiReactionFilter(),
-            BotAuthoredMessageReactionFilter(bot_id),
-            MessageOwnerReactionFilter(original_author_id,
-                                       FriendReactionFilter(original_author_id, friend_ids))
-        ]
-
-        return EmbedMenu(reaction_filters, transitions, TransformInfoMenu.tf_control,
+        return EmbedMenu(transitions, TransformInfoMenu.tf_control,
                          menu_emoji_config)
 
     @staticmethod

@@ -4,8 +4,6 @@ from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
-from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
-    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
 from padinfo.view.id import IdView
@@ -23,23 +21,15 @@ class LeaderSkillMenu:
     MENU_TYPE = 'LeaderSkill'
     EMOJI_BUTTON_NAMES = ('\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), '\N{CROSS MARK}')
 
-    @classmethod
-    def menu(cls, original_author_id, friend_ids, bot_id):
+    @staticmethod
+    def menu():
         transitions = {
-            cls.EMOJI_BUTTON_NAMES[0]: LeaderSkillMenu.respond_to_house,
-            cls.EMOJI_BUTTON_NAMES[1]: LeaderSkillMenu.respond_to_l,
-            cls.EMOJI_BUTTON_NAMES[2]: LeaderSkillMenu.respond_to_r,
+            LeaderSkillMenu.EMOJI_BUTTON_NAMES[0]: LeaderSkillMenu.respond_to_house,
+            LeaderSkillMenu.EMOJI_BUTTON_NAMES[1]: LeaderSkillMenu.respond_to_l,
+            LeaderSkillMenu.EMOJI_BUTTON_NAMES[2]: LeaderSkillMenu.respond_to_r,
         }
 
-        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(transitions.keys())
-        reaction_filters = [
-            ValidEmojiReactionFilter(valid_emoji_names),
-            NotPosterEmojiReactionFilter(),
-            BotAuthoredMessageReactionFilter(bot_id),
-            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
-        ]
-
-        return EmbedMenu(reaction_filters, transitions, LeaderSkillMenu.ls_control, menu_emoji_config)
+        return EmbedMenu(transitions, LeaderSkillMenu.ls_control, menu_emoji_config)
 
     @staticmethod
     async def respond_to_r(message: Optional[Message], ims, **data):

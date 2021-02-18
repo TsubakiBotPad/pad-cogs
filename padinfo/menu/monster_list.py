@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING, Optional
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from discordmenu.emoji.emoji_cache import emoji_cache
-from discordmenu.reaction_filter import ValidEmojiReactionFilter, NotPosterEmojiReactionFilter, \
-    MessageOwnerReactionFilter, FriendReactionFilter, BotAuthoredMessageReactionFilter
 from tsutils import char_to_emoji
 
 from padinfo.menu.id import IdMenu, IdMenuPanes
@@ -24,18 +21,10 @@ class MonsterListMenu:
     CHILD_MENU_TYPE = 'IdMenu'
 
     @staticmethod
-    def menu(original_author_id, friend_ids, bot_id, initial_control=None):
+    def menu(initial_control=None):
         if initial_control is None:
             initial_control = MonsterListMenu.monster_list_control
-
-        valid_emoji_names = [e.name for e in emoji_cache.custom_emojis] + list(MonsterListMenuPanes.emoji_names())
-        reaction_filters = [
-            ValidEmojiReactionFilter(valid_emoji_names),
-            NotPosterEmojiReactionFilter(),
-            BotAuthoredMessageReactionFilter(bot_id),
-            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
-        ]
-        embed = EmbedMenu(reaction_filters, MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config)
+        embed = EmbedMenu(MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config)
         return embed
 
     @staticmethod
