@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
@@ -19,8 +18,6 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.database_context import DbContext
 
-menu_emoji_config = EmbedMenuEmojiConfig()
-
 
 class IdMenu:
     MENU_TYPE = 'IdMenu'
@@ -30,7 +27,7 @@ class IdMenu:
         if initial_control is None:
             initial_control = IdMenu.id_control
 
-        embed = EmbedMenu(IdMenuPanes.transitions(), initial_control, menu_emoji_config,
+        embed = EmbedMenu(IdMenuPanes.transitions(), initial_control,
                           delete_func=IdMenu.respond_with_delete)
         return embed
 

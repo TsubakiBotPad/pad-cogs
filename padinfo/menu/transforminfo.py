@@ -1,7 +1,6 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 
@@ -9,16 +8,13 @@ from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.transforminfo import TransformInfoView, TransformInfoViewState
 
-menu_emoji_config = EmbedMenuEmojiConfig()
-
 
 class TransformInfoMenu:
     MENU_TYPE = 'TransformInfo'
 
     @staticmethod
     def menu():
-        return EmbedMenu(TransformInfoMenuPanes.transitions(), TransformInfoMenu.tf_control,
-                         menu_emoji_config)
+        return EmbedMenu(TransformInfoMenuPanes.transitions(), TransformInfoMenu.tf_control)
 
     @staticmethod
     async def respond_with_base(message: Optional[Message], ims, **data):

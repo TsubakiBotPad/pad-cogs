@@ -1,18 +1,12 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 
 from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.leader_skill_single import LeaderSkillSingleView, LeaderSkillSingleViewState
-
-if TYPE_CHECKING:
-    pass
-
-menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class LeaderSkillSingleMenu:
@@ -21,7 +15,7 @@ class LeaderSkillSingleMenu:
     @staticmethod
     def menu():
         return EmbedMenu(LeaderSkillSingleMenuPanes.transitions(),
-                         LeaderSkillSingleMenu.ls_control, menu_emoji_config)
+                         LeaderSkillSingleMenu.ls_control)
 
     @staticmethod
     async def respond_with_ls(message: Optional[Message], ims, *, dgcog, user_config, **data):

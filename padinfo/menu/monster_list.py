@@ -1,7 +1,6 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
 
@@ -9,8 +8,6 @@ from padinfo.menu.common import emoji_buttons, MenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuPaneNames
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView, MonsterListViewState
-
-menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class MonsterListPaneNames:
@@ -27,7 +24,7 @@ class MonsterListMenu:
     def menu(initial_control=None):
         if initial_control is None:
             initial_control = MonsterListMenu.monster_list_control
-        embed = EmbedMenu(MonsterListMenuPanes.transitions(), initial_control, menu_emoji_config)
+        embed = EmbedMenu(MonsterListMenuPanes.transitions(), initial_control)
         return embed
 
     @staticmethod
@@ -128,7 +125,8 @@ class MonsterListMenuPanes(MenuPanes):
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'
     DATA = {
         # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
-        MonsterListMenu.respond_with_monster_list: (emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home, True, False),
+        MonsterListMenu.respond_with_monster_list: (
+        emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home, True, False),
         MonsterListMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE, False, True),
         MonsterListMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE, False, True),
         MonsterListMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE, False, True),
