@@ -1,6 +1,7 @@
 aiofiles
 aiohttp
 aioodbc
+discord
 discord-menu
 git+git://github.com/TsubakiBotPad/python-romkan
 networkx
