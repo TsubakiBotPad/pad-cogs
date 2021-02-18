@@ -93,7 +93,6 @@ class Dadguide(commands.Cog):
 
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        await self.wait_until_ready()
         self.index = await MonsterIndex(self.database.get_all_monsters(False), self.database)
 
     def get_monster(self, monster_id: int) -> MonsterModel:
