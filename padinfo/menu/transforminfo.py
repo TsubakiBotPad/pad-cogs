@@ -21,6 +21,7 @@ menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 class TransformInfoMenu:
     INITIAL_EMOJI = emoji_button_names[0]
     MENU_TYPE = 'TransformInfo'
+    EMOJI_BUTTON_NAMES = emoji_button_names
 
     @staticmethod
     def menu():

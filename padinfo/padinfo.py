@@ -38,7 +38,7 @@ from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.pane_names import global_emoji_responses
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
-from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
+from padinfo.menu.transforminfo import TransformInfoMenu
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
@@ -163,7 +163,7 @@ class PadInfo(commands.Cog, IdTest):
             LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES,
             MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
             SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
-            TransformInfoMenu.MENU_TYPE: tf_menu_emoji_button_names,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.EMOJI_BUTTON_NAMES
         }
 
         emoji_found = False
