@@ -40,3 +40,19 @@ class MenuPanes:
             if data_pair[1] == name:
                 return data_pair[1]
         return None
+
+    @classmethod
+    def respond_to_emoji_with_parent(cls, emoji: str):
+        """Only defined for menus that support having children"""
+        for _, data_pair in cls.DATA.items():
+            if data_pair[0] == emoji:
+                return data_pair[2]
+        return None
+
+    @classmethod
+    def respond_to_emoji_with_child(cls, emoji: str):
+        """Only defined for menus that support having children"""
+        for _, data_pair in cls.DATA.items():
+            if data_pair[0] == emoji:
+                return data_pair[3]
+        return None

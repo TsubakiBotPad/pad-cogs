@@ -175,12 +175,12 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         message = reaction.message
-        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
-        if not ims:
+        menu_1_ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
+        if not menu_1_ims:
             return
 
-        original_author_id = ims['original_author_id']
-        menu_type = ims['menu_type']
+        original_author_id = menu_1_ims['original_author_id']
+        menu_type = menu_1_ims['menu_type']
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu,
             LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu,
@@ -191,29 +191,14 @@ class PadInfo(commands.Cog, IdTest):
             ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
         }
 
-        # If true then the top menu will also respond on reaction
-        respond_with_child = {
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(0)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(1)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(2)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(3)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(4)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(5)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(6)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(7)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(8)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(9)): False,
-            (MonsterListMenu.MENU_TYPE, char_to_emoji(10)): False,
-        }
-
-        menu_class = menu_map.get(menu_type)
-        menu_func = menu_class.menu
+        menu_1_class = menu_map.get(menu_type)
+        menu_func = menu_1_class.menu
 
         if not menu_func:
             return
 
-        embed_menu = menu_func()
-        if not (await embed_menu.should_respond(
+        menu_1 = menu_func()
+        if not (await menu_1.should_respond(
                 message, reaction, await self.get_reaction_filters(
                     original_author_id, menu_to_emoji_list_map[menu_type]), member)):
             return
@@ -224,31 +209,18 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
-        if ims.get('child_message_id') and (ims['menu_type'], emoji_clicked) in respond_with_child.keys():
-            try:
-                await message.remove_reaction(emoji_clicked, member)
-            except discord.Forbidden:
-                pass
+        if menu_1_ims.get('child_message_id'):
             fctx = await self.bot.get_context(message)
-            child_message = await fctx.fetch_message(int(ims['child_message_id']))
-            previous_child_ims = child_message.embeds and IntraMessageState.extract_data(child_message.embeds[0])
-            if previous_child_ims:
-                data['child_message_ims'] = previous_child_ims
-            next_child_ims = ims.copy()
-            next_child_ims['menu_type'] = IdMenu.MENU_TYPE
-            next_child_ims['is_child'] = True
-
-            # The order here is really important!! The set of emojis attached to the ims is going to be changed in
-            # the second transition, so it's VITAL that we reset prior to showing the child menu.
-            # It's also better from a perceived performance standpoint becuase the emojis are so rate-limited and
-            # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
-            # happens faster, but regardless the reset must happen first.
-            if respond_with_child[(ims['menu_type'], emoji_clicked)]:
-                await embed_menu.transition(message, ims, emoji_clicked, member, **data)
-            await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
-            return
-
-        await embed_menu.transition(message, ims, emoji_clicked, member, **data)
+            try:
+                message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
+                menu_2_ims = message_2.embeds and IntraMessageState.extract_data(message_2.embeds[0])
+                emoji_to_tell_menu2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked, menu_2_ims)
+            except discord.errors.NotFound:
+                emoji_to_tell_menu2, menu_2_ims, extra_ims, message_2 = None, None, None, None
+            if emoji_to_tell_menu2 and menu_2_ims:
+                menu_2_ims.update(extra_ims)
+                await IdMenu.menu().transition(message_2, menu_2_ims, emoji_to_tell_menu2, member, **data)
+        await menu_1.transition(message, menu_1_ims, emoji_clicked, member, **data)
 
     async def get_reaction_filters(self, original_author_id, valid_emoji_names):
         friend_cog = self.bot.get_cog("Friend")

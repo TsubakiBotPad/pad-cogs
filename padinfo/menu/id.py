@@ -103,6 +103,7 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
+        print(ims)
         if ims.get('is_child'):
             if ims.get('message'):
                 ims['menu_type'] = SimpleTextMenu.MENU_TYPE
