@@ -1,17 +1,11 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.control import EmbedControl
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu
 
 from padinfo.menu.common import MenuPanes
 from padinfo.view.simple_text import SimpleTextView, SimpleTextViewState
-
-if TYPE_CHECKING:
-    pass
-
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class SimpleTextNames:
@@ -25,7 +19,6 @@ class SimpleTextMenu:
     @staticmethod
     def menu():
         embed = EmbedMenu(SimpleTextMenuPanes.transitions(), SimpleTextMenu.message_control,
-                          menu_emoji_config,
                           delete_func=SimpleTextMenu.respond_with_delete)
         return embed
 
