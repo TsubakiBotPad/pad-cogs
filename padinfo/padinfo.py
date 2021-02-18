@@ -105,6 +105,7 @@ class PadInfo(commands.Cog, IdTest):
         self.fm3 = lambda q: fm.findMonster3(bot.get_cog("Dadguide"), q)
 
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
+        self.settings = settings
 
     def cog_unload(self):
         """Manually nulling out database because the GC for cogs seems to be pretty shitty"""
