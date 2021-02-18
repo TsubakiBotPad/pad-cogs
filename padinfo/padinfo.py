@@ -12,6 +12,8 @@ import tsutils
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
+from discordmenu.reaction_filter import FriendReactionFilter, MessageOwnerReactionFilter, \
+    BotAuthoredMessageReactionFilter, NotPosterEmojiReactionFilter, ValidEmojiReactionFilter
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
@@ -35,7 +37,7 @@ from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.pane_names import global_emoji_responses
-from padinfo.menu.simple_text import SimpleTextMenu, MessageMenuPanes
+from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, emoji_button_names as tf_menu_emoji_button_names
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
@@ -154,12 +156,21 @@ class PadInfo(commands.Cog, IdTest):
         else:
             emoji_clicked = emoji_obj.name
 
-        if not (emoji_clicked in LeaderSkillMenu.EMOJI_BUTTON_NAMES or
-                emoji_clicked in LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES or
-                emoji_clicked in IdMenuPanes.emoji_names() or
-                emoji_clicked in MonsterListMenuPanes.emoji_names() or
-                emoji_clicked in MessageMenuPanes.emoji_names() or
-                emoji_clicked in tf_menu_emoji_button_names):
+        menu_to_emoji_list_map = {
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu.EMOJI_BUTTON_NAMES,
+            IdMenu.MENU_TYPE: IdMenuPanes.emoji_names(),
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.EMOJI_BUTTON_NAMES,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES,
+            MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
+            SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
+            TransformInfoMenu.MENU_TYPE: tf_menu_emoji_button_names,
+        }
+
+        emoji_found = False
+        for menu_type, emoji_list in menu_to_emoji_list_map.items():
+            if emoji_clicked in emoji_list:
+                emoji_found = True
+        if not emoji_found:
             return
 
         message = reaction.message
@@ -199,9 +210,10 @@ class PadInfo(commands.Cog, IdTest):
         if not menu_func:
             return
 
-        friends = await self.get_user_friends(original_author_id)
-        embed_menu = menu_func(original_author_id, friends, self.bot.user.id)
-        if not (await embed_menu.should_respond(message, reaction, member)):
+        embed_menu = menu_func()
+        if not (await embed_menu.should_respond(
+                        message, reaction, await self.get_reaction_filters(
+                            original_author_id, menu_to_emoji_list_map[menu_type]), member)):
             return
 
         dgcog = await self.get_dgcog()
@@ -235,6 +247,17 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         await embed_menu.transition(message, ims, emoji_clicked, member, **data)
+
+    async def get_reaction_filters(self, original_author_id, valid_emoji_names):
+        friend_cog = self.bot.get_cog("Friend")
+        friend_ids = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
+        reaction_filters = [
+            ValidEmojiReactionFilter(valid_emoji_names),
+            NotPosterEmojiReactionFilter(),
+            BotAuthoredMessageReactionFilter(self.bot.user.id),
+            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
+        ]
+        return reaction_filters
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -276,7 +299,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
 
         goodquery = None
         if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index2.all_name_tokens:
@@ -336,7 +358,7 @@ class PadInfo(commands.Cog, IdTest):
                             monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
                             use_evo_scroll=settings.checkEvoID(ctx.author.id),
                             reaction_list=initial_reaction_list)
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     async def send_survey_after(self, ctx, query, result_monster):
@@ -389,7 +411,7 @@ class PadInfo(commands.Cog, IdTest):
 
     @commands.command()
     @checks.bot_has_permissions()
-    async def id2(self, ctx, *, query: str):
+    async def id2(self, ctx):
         """Monster info (main tab)"""
         await ctx.send("id2 has been discontinued!".format(ctx.prefix))
 
@@ -401,7 +423,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -423,7 +444,7 @@ class PadInfo(commands.Cog, IdTest):
                               monster, alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.evos_control)
+        menu = IdMenu.menu(initial_control=IdMenu.evos_control)
         await menu.create(ctx, state)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
@@ -434,7 +455,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
         if not monster:
@@ -455,7 +475,7 @@ class PadInfo(commands.Cog, IdTest):
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.mats_control)
+        menu = IdMenu.menu(initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
 
     @commands.command(aliases=["series"])
@@ -466,7 +486,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -486,7 +505,7 @@ class PadInfo(commands.Cog, IdTest):
                                   monster, pantheon_list, series_name,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pantheon_control)
+        menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
 
     @commands.command(aliases=['img'])
@@ -497,7 +516,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -512,7 +530,7 @@ class PadInfo(commands.Cog, IdTest):
                              monster,
                              reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.pic_control)
+        menu = IdMenu.menu(initial_control=IdMenu.pic_control)
         await menu.create(ctx, state)
 
     @commands.command(aliases=['stats'])
@@ -523,7 +541,6 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
 
         monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
 
@@ -538,7 +555,7 @@ class PadInfo(commands.Cog, IdTest):
                                    monster,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(original_author_id, friends, self.bot.user.id, initial_control=IdMenu.otherinfo_control)
+        menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
         await menu.create(ctx, state)
 
     @commands.command()
@@ -602,7 +619,6 @@ class PadInfo(commands.Cog, IdTest):
     async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"], title):
         raw_query = query
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
         color = await self.get_user_embed_color(ctx)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
@@ -611,7 +627,7 @@ class PadInfo(commands.Cog, IdTest):
                                      monster_list, title, instruction_message,
                                      reaction_list=initial_reaction_list
                                      )
-        parent_menu = MonsterListMenu.menu(original_author_id, friends, self.bot.user.id)
+        parent_menu = MonsterListMenu.menu()
         message = await ctx.send('Setting up!')
 
         ims = state.serialize()
@@ -624,7 +640,7 @@ class PadInfo(commands.Cog, IdTest):
                                           instruction_message,
                                           reaction_list=[]
                                           )
-        child_menu = SimpleTextMenu.menu(original_author_id, friends, self.bot.user.id)
+        child_menu = SimpleTextMenu.menu()
         child_message = await child_menu.create(ctx, child_state)
 
         data['child_message_id'] = child_message.id
@@ -660,10 +676,9 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
                                      l_query, r_query)
-        menu = LeaderSkillMenu.menu(original_author_id, friends, self.bot.user.id)
+        menu = LeaderSkillMenu.menu()
         await menu.create(ctx, state)
 
     async def get_user_embed_color(self, ctx):
@@ -695,9 +710,8 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
         state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, m)
-        menu = LeaderSkillSingleMenu.menu(original_author_id, friends, self.bot.user.id)
+        menu = LeaderSkillSingleMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command(aliases=['tfinfo', 'xforminfo'])
@@ -723,13 +737,12 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
         acquire_raw, base_rarity, true_evo_type_raw = \
             await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
                                        color, base_mon, transformed_mon, base_rarity, acquire_raw,
                                        true_evo_type_raw)
-        menu = TransformInfoMenu.menu(original_author_id, friends, self.bot.user.id)
+        menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command()
@@ -828,7 +841,7 @@ class PadInfo(commands.Cog, IdTest):
         await ctx.tick()
 
     @idset.command()
-    async def beta(self, ctx, *, text=""):
+    async def beta(self, ctx):
         """Discontinued"""
         await ctx.send(f"`id3 `is now enabled globally, see"
                        f" <{IDGUIDE}> for more information.")
@@ -1125,18 +1138,17 @@ class PadInfo(commands.Cog, IdTest):
         else:
             lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
 
-        mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if  t[0] != t[1] else ''}"
+        mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
                               f" ({round(calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
                               for t in sorted(mtokens))
-        ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if  t[0] != t[1] else ''}"
+        ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
                               f" ({round(calc_ratio_name(t[0], t[1], dgcog.index2), 2) if t[0] != t[1] else 'exact'})"
                               f" {t[2]}"
                               for t in sorted(ntokens))
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        friends = await self.get_user_friends(original_author_id)
-        menu = ClosableEmbedMenu.menu(original_author_id, friends, self.bot.user.id)
+        menu = ClosableEmbedMenu.menu()
         props = IdTracebackViewProps(monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
                                      lower_priority_monsters=lpstr if lower_prio else "None")
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
