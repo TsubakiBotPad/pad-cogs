@@ -302,20 +302,20 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index2.all_name_tokens:
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index.all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index2.all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index.all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
-            for monster in dgcog.index2.all_name_tokens[goodquery[1]]:
-                for modifier in dgcog.index2.modifiers[monster]:
+            for monster in dgcog.index.all_name_tokens[goodquery[1]]:
+                for modifier in dgcog.index.modifiers[monster]:
                     if modifier == 'xm' and goodquery[0] == 'x':
                         goodquery[0] = 'xm'
                     if modifier == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.index2.all_name_tokens:
+            if bad and query not in dgcog.index.all_name_tokens:
                 async def send_message():
                     await asyncio.sleep(1)
                     await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
@@ -903,17 +903,17 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send(box("Your query didn't match any monsters."))
             return
         base_monster = dgcog.database.graph.get_base_monster(mon)
-        mods = dgcog.index2.modifiers[mon]
-        manual_modifiers = dgcog.index2.manual_prefixes[mon.monster_id]
+        mods = dgcog.index.modifiers[mon]
+        manual_modifiers = dgcog.index.manual_prefixes[mon.monster_id]
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
                f"Series: {mon.series.name_en} ({mon.series_id}, {mon.series.series_type})\n\n"
-               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.name_tokens.items() if mon in ms))}\n"
-               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index2.fluff_tokens.items() if mon in ms))}\n\n"
+               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index.name_tokens.items() if mon in ms))}\n"
+               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index.fluff_tokens.items() if mon in ms))}\n\n"
                f"[Manual Tokens]\n"
-               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.index2.manual_tree.items() if mon in ms))}\n"
-               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.index2.manual_nick.items() if mon in ms))}\n\n"
+               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.index.manual_tree.items() if mon in ms))}\n"
+               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.index.manual_nick.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
                f"     Attribute: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.COLOR_TOKENS))}\n"
                f"     Awakening: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.AWAKENING_TOKENS))}\n"
@@ -933,7 +933,7 @@ class PadInfo(commands.Cog, IdTest):
         dgcog = self.bot.get_cog("Dadguide")
 
         dist = calc_ratio_modifier(s1, s2)
-        dist2 = calc_ratio_name(s1, s2, dgcog.index2)
+        dist2 = calc_ratio_name(s1, s2, dgcog.index)
         yes = '\N{WHITE HEAVY CHECK MARK}'
         no = '\N{CROSS MARK}'
         await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
@@ -979,7 +979,7 @@ class PadInfo(commands.Cog, IdTest):
         atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
-                  for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items()]
+                  for k, v in DGCOG.index.series_id_to_pantheon_nickname.items()]
         ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
@@ -1014,7 +1014,7 @@ class PadInfo(commands.Cog, IdTest):
             token_ret = ""
             so = []
             for mon in sorted(token_dict[token], key=lambda m: m.monster_id):
-                if (mon in DGCOG.index2.mwtoken_creators[token]) == is_multiword:
+                if (mon in DGCOG.index.mwtoken_creators[token]) == is_multiword:
                     so.append(mon)
             if len(so) > 5:
                 token_ret += f"\n\n{token_type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
@@ -1024,22 +1024,22 @@ class PadInfo(commands.Cog, IdTest):
                     f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
             return token_ret
 
-        ret += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
-        ret += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
-        ret += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
-        ret += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
+        ret += write_name_token(DGCOG.index.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
+        ret += write_name_token(DGCOG.index.manual, "[Manual Tokens]")
+        ret += write_name_token(DGCOG.index.name_tokens, "[Name Tokens]")
+        ret += write_name_token(DGCOG.index.fluff_tokens, "[Fluff Tokens]")
 
-        submwtokens = [t for t in DGCOG.index2.multi_word_tokens if token in t]
+        submwtokens = [t for t in DGCOG.index.multi_word_tokens if token in t]
         if submwtokens:
             ret += "\n\n[Multi-word Super-tokens]\n"
             for t in submwtokens:
-                if not DGCOG.index2.all_name_tokens[''.join(t)]:
+                if not DGCOG.index.all_name_tokens[''.join(t)]:
                     continue
-                creators = sorted(DGCOG.index2.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
+                creators = sorted(DGCOG.index.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
                 ret += f"{' '.join(t).title()}"
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
-                        str(find_monster.get_most_eligable_monster(DGCOG.index2.all_name_tokens[''.join(t)],
+                        str(find_monster.get_most_eligable_monster(DGCOG.index.all_name_tokens[''.join(t)],
                                                                    DGCOG).monster_id)
                         + ")\n")
 
@@ -1067,7 +1067,7 @@ class PadInfo(commands.Cog, IdTest):
               '/' + k[1].name.replace("Nil", "None") + additmods(v, token)
               for k, v in tms.DUAL_COLOR_MAP.items() if token in v],
             *["Series: " + series[k].name_en + additmods(v, token)
-              for k, v in DGCOG.index2.series_id_to_pantheon_nickname.items() if token in v],
+              for k, v in DGCOG.index.series_id_to_pantheon_nickname.items() if token in v],
 
             *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", token)],
             *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", token)],
@@ -1099,7 +1099,7 @@ class PadInfo(commands.Cog, IdTest):
 
         query = rmdiacritics(query).strip().lower().replace(",", "")
         tokenized_query = query.split()
-        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
 
         bestmatch, matches, _ = max(
             await find_monster_search(tokenized_query, dgcog),
@@ -1134,7 +1134,7 @@ class PadInfo(commands.Cog, IdTest):
                               f" ({round(calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
                               for t in sorted(mtokens))
         ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
-                              f" ({round(calc_ratio_name(t[0], t[1], dgcog.index2), 2) if t[0] != t[1] else 'exact'})"
+                              f" ({round(calc_ratio_name(t[0], t[1], dgcog.index), 2) if t[0] != t[1] else 'exact'})"
                               f" {t[2]}"
                               for t in sorted(ntokens))
 
@@ -1154,7 +1154,7 @@ class PadInfo(commands.Cog, IdTest):
 
         query = rmdiacritics(query).strip().lower().replace(",", "")
         tokenized_query = query.split()
-        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
+        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
 
         best_match, matches, mgen = max(
             await find_monster_search(tokenized_query, dgcog),

@@ -83,7 +83,7 @@ async def perform_leaderskill_query(dgcog, raw_query):
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
                 m = await findMonster3(dgcog, query)
-                if m and left_query in dgcog.index2.modifiers[m]:
+                if m and left_query in dgcog.index.modifiers[m]:
                     left_query = query
                     right_query = None
 
