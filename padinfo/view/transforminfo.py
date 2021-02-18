@@ -19,25 +19,6 @@ if TYPE_CHECKING:
 BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
 
 
-def base_info(m: "MonsterModel"):
-    return Box(
-        Box(
-            BASE_EMOJI,
-            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
-            else Box(Text('No Awakenings')),
-            delimiter=' '
-        ),
-        IdView.super_awakenings_row(m)
-    )
-
-
-def base_skill(m: "MonsterModel"):
-    active_skill = m.active_skill
-    return (" (" + BASE_EMOJI + " "
-            + "{} -> {})".format(active_skill.turn_max, active_skill.turn_min) if active_skill
-            else 'None')
-
-
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
                  base_rarity, acquire_raw, true_evo_type_raw):
@@ -82,6 +63,18 @@ class TransformInfoViewState(ViewStateBase):
         base_rarity = db_context.graph.get_base_monster_by_id(transformed_mon.monster_no).rarity
         true_evo_type_raw = db_context.graph.true_evo_type_by_monster(transformed_mon).value
         return acquire_raw, base_rarity, true_evo_type_raw
+
+
+def base_info(m: "MonsterModel"):
+    return Box(
+        Box(
+            BASE_EMOJI,
+            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
+            else Box(Text('No Awakenings')),
+            delimiter=' '
+        ),
+        IdView.super_awakenings_row(m)
+    )
 
 
 class TransformInfoView:
