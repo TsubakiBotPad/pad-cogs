@@ -166,13 +166,13 @@ class FindMonster:
 
     def get_valid_monsters_from_name_token(self, token, index2, matches, mult=1):
         valid_monsters = set()
-        name_ratios = {nt: calc_ratio_name(token, nt, index2) for nt in index2.all_name_tokens}
-        matched_tokens = sorted((nt for nt in name_ratios
-                                 if name_ratios[nt] > self.TOKEN_JW_DISTANCE),
-                                key=lambda nt: name_ratios[nt], reverse=True)
+        all_monsters_name_tokens_scores = {nt: calc_ratio_name(token, nt, index2) for nt in index2.all_name_tokens}
+        matched_tokens = sorted((nt for nt in all_monsters_name_tokens_scores
+                                 if all_monsters_name_tokens_scores[nt] > self.TOKEN_JW_DISTANCE),
+                                key=lambda nt: all_monsters_name_tokens_scores[nt], reverse=True)
         matched_tokens += [t for t in index2.all_name_tokens if t.startswith(token)]
         for match in matched_tokens:
-            score = name_ratios[match]
+            score = all_monsters_name_tokens_scores[match]
             for matched_monster in index2.manual[match]:
                 if matched_monster not in valid_monsters:
                     matches[matched_monster].name.add((token, match, '(manual)'))
