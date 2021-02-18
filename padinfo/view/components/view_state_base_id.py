@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 
 from padinfo.common.config import UserConfig
-from padinfo.view_state.common import get_monster_from_ims
+from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel

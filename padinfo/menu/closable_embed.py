@@ -2,8 +2,9 @@ from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu
 
+from padinfo.menu.common import MenuPanes
 from padinfo.view.id_traceback import IdTracebackView
-from padinfo.view_state.closable_embed import ClosableEmbedViewState
+from padinfo.view.closable_embed import ClosableEmbedViewState
 
 emoji_button_names = ['\N{CROSS MARK}']
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
@@ -30,3 +31,7 @@ class ClosableEmbedMenu:
             [view.embed(state, state.props)],
             ClosableEmbedMenu.EMOJI_BUTTON_NAMES
         )
+
+
+class ClosableEmbedMenuPanes(MenuPanes):
+    pass

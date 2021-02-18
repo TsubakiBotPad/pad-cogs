@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class LookupView:
+    VIEW_TYPE = 'Lookup'
+
     @staticmethod
     def embed(m: "MonsterModel", color):
         return EmbedView(
