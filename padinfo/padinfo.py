@@ -897,7 +897,7 @@ class PadInfo(commands.Cog, IdTest):
         return [e for g in self.bot.guilds if g.id in server_ids for e in g.emojis]
 
     @staticmethod
-    async def send_id_failure_message(ctx, query: str, err):
+    async def send_id_failure_message(ctx, query: str, _err):
         await ctx.send("Sorry, your query {0} didn't match any results :(\n"
                        "See <{2}> for "
                        "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
