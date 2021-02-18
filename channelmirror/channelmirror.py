@@ -33,7 +33,8 @@ class ChannelMirror(commands.Cog):
         self.config.register_channel(multiedit=False, mirroredit_target=None, nodeletion=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
-        if GACOG: GACOG.register_perm("channelmirror")
+        if GACOG:
+            GACOG.register_perm("channelmirror")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -249,6 +250,8 @@ class ChannelMirror(commands.Cog):
             last_spoke_timestamp) if last_spoke_timestamp else now_time
         attribution_required = last_spoke != author.id
         attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
+        attribution_required |= await self.config.channel(message.channel).multiedit()
+
         self.settings.set_last_spoke(channel.id, author.id)
 
         attachment_bytes = None
