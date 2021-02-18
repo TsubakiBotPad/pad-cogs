@@ -22,7 +22,7 @@ TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
 logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
-class MonsterIndex2(aobject):
+class MonsterIndex(aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
 

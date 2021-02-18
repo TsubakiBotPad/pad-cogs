@@ -215,7 +215,7 @@ class PadGlobal(commands.Cog):
         async with ctx.typing(), self.fir3_lock:
             start = time.perf_counter()
             dadguide_cog = self.bot.get_cog('Dadguide')
-            dadguide_cog.index2 = await dadguide_cog.create_index2()
+            dadguide_cog.index = await dadguide_cog.create_index()
             await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
