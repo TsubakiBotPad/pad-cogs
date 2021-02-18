@@ -36,6 +36,6 @@ class ClosableEmbedMenu:
     def message_control(state: ClosableEmbedViewState):
         view = view_types[state.view_type]
         return EmbedControl(
-            [view.embed(state, **state.kwargs)],
+            [view.embed(state, state.props)],
             ['\N{CROSS MARK}']
         )
