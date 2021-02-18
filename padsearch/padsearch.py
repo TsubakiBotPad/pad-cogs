@@ -757,11 +757,11 @@ class PadSearch(commands.Cog):
             except:
                 # If it still failed, raise the original exception
                 raise ex
-        dg_cog = self.bot.get_cog('Dadguide')
-        if dg_cog is None:
+        dgcog = self.bot.get_cog('Dadguide')
+        if dgcog is None:
             await ctx.send("Dadguide cog not loaded.")
             return
-        monsters = dg_cog.database.get_all_monsters()
+        monsters = dgcog.database.get_all_monsters()
 
         rmvGemFilter = self._make_search_config('remove( gem)')
         monsters = list(filter(rmvGemFilter.check_filters, monsters))

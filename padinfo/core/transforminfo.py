@@ -1,14 +1,16 @@
-from padinfo.core.find_monster import findMonsterCustom
+from padinfo.core.find_monster import findMonster3
 
 
 async def perform_transforminfo_query(dgcog, raw_query):
     db_context = dgcog.database
     mgraph = dgcog.database.graph
-    found_monster, err, debug_info = await findMonsterCustom(dgcog, raw_query)
+    found_monster = await findMonster3(dgcog, raw_query)
 
     if not found_monster:
-        return found_monster, err, debug_info, None
+        return None, None
 
+    transformed_mon = None
+    base_mon = None
     altversions = mgraph.process_alt_versions(found_monster.monster_id)
     for mon_id in sorted(altversions):
         if mgraph.monster_is_transform_base_by_id(mon_id):
@@ -18,6 +20,6 @@ async def perform_transforminfo_query(dgcog, raw_query):
                 break
 
     if not transformed_mon:
-        return found_monster, err, debug_info, transformed_mon
+        return found_monster, transformed_mon
 
-    return base_mon, err, debug_info, transformed_mon
+    return base_mon, transformed_mon

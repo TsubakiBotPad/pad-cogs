@@ -66,15 +66,15 @@ async def lookup_monster_model(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    m, err, debug_info = await padinfo_cog.fm3(str(query))
-    return m, err, debug_info
+    m = await padinfo_cog.fm3(str(query))
+    return m
 
 
 def monster_id_to_monster(monster_id):
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dg_cog is None:
+    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dgcog is None:
         return None
-    return dg_cog.get_monster(monster_id)
+    return dgcog.get_monster(monster_id)
 
 
 async def check_enabled(ctx):
@@ -643,7 +643,7 @@ class PadGlobal(commands.Cog):
         padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        m, _, _ = await lookup_monster_model(term)
+        m = await lookup_monster_model(term)
         if m is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
@@ -1032,7 +1032,7 @@ class PadGlobal(commands.Cog):
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        m, _, _ = await lookup_monster_model(term)
+        m = await lookup_monster_model(term)
         if m is None:
             return None, None, 'No dungeon or monster matched that query'
         m = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
