@@ -109,7 +109,7 @@ class MonsterListMenu:
         )
 
     @staticmethod
-    def get_child_data(ims, emoji_clicked, menu_2_ims):
+    def get_child_data(ims, emoji_clicked):
         emoji_response = IdMenuPanes.emoji_name_to_emoji(IdMenuPaneNames.refresh) \
             if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:
@@ -121,8 +121,6 @@ class MonsterListMenu:
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
         }
-        if not menu_2_ims.get('pane_type'):
-            extra_ims['pane_type'] = IdView.VIEW_TYPE
         return emoji_response, extra_ims
 
 

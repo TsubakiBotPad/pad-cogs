@@ -210,16 +210,16 @@ class PadInfo(commands.Cog, IdTest):
             'user_config': user_config
         }
         if menu_1_ims.get('child_message_id'):
-            fctx = await self.bot.get_context(message)
-            try:
-                message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
-                menu_2_ims = message_2.embeds and IntraMessageState.extract_data(message_2.embeds[0])
-                emoji_to_tell_menu2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked, menu_2_ims)
-            except discord.errors.NotFound:
-                emoji_to_tell_menu2, menu_2_ims, extra_ims, message_2 = None, None, None, None
-            if emoji_to_tell_menu2 and menu_2_ims:
-                menu_2_ims.update(extra_ims)
-                await IdMenu.menu().transition(message_2, menu_2_ims, emoji_to_tell_menu2, member, **data)
+            emoji_to_tell_menu2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
+            if emoji_to_tell_menu2:
+                fctx = await self.bot.get_context(message)
+                try:
+                    message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
+                    menu_2_ims = message_2.embeds and IntraMessageState.extract_data(message_2.embeds[0])
+                    menu_2_ims.update(extra_ims)
+                    await IdMenu.menu().transition(message_2, menu_2_ims, emoji_to_tell_menu2, member, **data)
+                except discord.errors.NotFound:
+                    pass
         await menu_1.transition(message, menu_1_ims, emoji_clicked, member, **data)
 
     async def get_reaction_filters(self, original_author_id, valid_emoji_names):

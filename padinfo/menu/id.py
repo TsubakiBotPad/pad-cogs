@@ -96,7 +96,7 @@ class IdMenu:
     async def respond_with_refresh(message: Optional[Message], ims, **data):
         # This is used by disambig screen & other multi-message embeds, where we need to deserialize & then
         # re-serialize the ims, with the same information in place
-        pane_type = ims.get('pane_type')
+        pane_type = ims.get('pane_type') or IdView.VIEW_TYPE
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
