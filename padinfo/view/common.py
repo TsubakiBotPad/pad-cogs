@@ -1,4 +1,4 @@
-from padinfo.core.find_monster import findMonsterCustom
+from padinfo.core.find_monster import findMonster3
 
 
 async def get_monster_from_ims(dgcog, ims: dict):
@@ -8,5 +8,5 @@ async def get_monster_from_ims(dgcog, ims: dict):
     resolved_monster_id = int(resolved_monster_id_str) if resolved_monster_id_str else None
     if resolved_monster_id:
         return dgcog.database.graph.get_monster(resolved_monster_id)
-    monster, _, _ = await findMonsterCustom(dgcog, query)
+    monster = await findMonster3(dgcog, query)
     return monster
