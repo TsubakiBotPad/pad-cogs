@@ -6,20 +6,14 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 
-from padinfo.menu.pane_names import IdMenuPaneNames
+from padinfo.menu.common import MenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu
-from padinfo.view.evos import EvosView
-from padinfo.view.id import IdView
-from padinfo.view.materials import MaterialsView
-from padinfo.view.otherinfo import OtherInfoView
-from padinfo.view.pantheon import PantheonView
-from padinfo.view.pic import PicView
-from padinfo.view_state.evos import EvosViewState
-from padinfo.view_state.id import IdViewState
-from padinfo.view_state.materials import MaterialsViewState
-from padinfo.view_state.otherinfo import OtherInfoViewState
-from padinfo.view_state.pantheon import PantheonViewState
-from padinfo.view_state.pic import PicViewState
+from padinfo.view.evos import EvosView, EvosViewState
+from padinfo.view.id import IdView, IdViewState
+from padinfo.view.materials import MaterialsView, MaterialsViewState
+from padinfo.view.otherinfo import OtherInfoView, OtherInfoViewState
+from padinfo.view.pantheon import PantheonView, PantheonViewState
+from padinfo.view.pic import PicView, PicViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -231,17 +225,21 @@ class IdMenu:
         )
 
 
-class IdMenuPanes:
-    INITIAL_EMOJI = '\N{HOUSE BUILDING}'
+class IdMenuPaneNames:
+    refresh = 'refresh'
+    delete = 'delete'
+
+
+class IdMenuPanes(MenuPanes):
     DATA = {
         IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
         IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
-        IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdMenuPaneNames.id),
-        IdMenu.respond_with_evos: (char_to_emoji('E'), IdMenuPaneNames.evos),
-        IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', IdMenuPaneNames.materials),
-        IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', IdMenuPaneNames.pic),
-        IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', IdMenuPaneNames.pantheon),
-        IdMenu.respond_with_otherinfo: ('\N{SCROLL}', IdMenuPaneNames.otherinfo),
+        IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdView.VIEW_TYPE),
+        IdMenu.respond_with_evos: (char_to_emoji('E'), EvosView.VIEW_TYPE),
+        IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', MaterialsView.VIEW_TYPE),
+        IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', PicView.VIEW_TYPE),
+        IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', PantheonView.VIEW_TYPE),
+        IdMenu.respond_with_otherinfo: ('\N{SCROLL}', OtherInfoView.VIEW_TYPE),
         IdMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
         IdMenu.respond_with_delete: ('\N{CROSS MARK}', IdMenuPaneNames.delete),
@@ -250,29 +248,3 @@ class IdMenuPanes:
         IdMenuPaneNames.refresh,
         IdMenuPaneNames.delete,
     ]
-
-    @classmethod
-    def emoji_names(cls):
-        return [v[0] for k, v in cls.DATA.items() if v[1] not in cls.HIDDEN_EMOJIS]
-
-    @classmethod
-    def transitions(cls):
-        return {v[0]: k for k, v in cls.DATA.items()}
-
-    @classmethod
-    def pane_types(cls):
-        return {v[1]: k for k, v in cls.DATA.items() if v[1] and v[1] not in cls.HIDDEN_EMOJIS}
-
-    @staticmethod
-    def emoji_name_to_emoji(name: str):
-        for _, data_pair in IdMenuPanes.DATA.items():
-            if data_pair[1] == name:
-                return data_pair[0]
-        return None
-
-    @staticmethod
-    def emoji_name_to_function(name: str):
-        for _, data_pair in IdMenuPanes.DATA.items():
-            if data_pair[1] == name:
-                return data_pair[1]
-        return None

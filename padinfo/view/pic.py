@@ -7,10 +7,22 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view_state.pic import PicViewState
+from padinfo.view_state.base_id import ViewStateBaseId
+
+
+class PicViewState(ViewStateBaseId):
+
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'pane_type': PicView.VIEW_TYPE,
+        })
+        return ret
 
 
 class PicView:
+    VIEW_TYPE = 'Pic'
+
     @staticmethod
     def embed(state: PicViewState):
         url = MonsterImage.picture(state.monster)

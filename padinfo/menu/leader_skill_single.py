@@ -5,10 +5,8 @@ from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from padinfo.view.id import IdView
-from padinfo.view.leader_skill_single import LeaderSkillSingleView
-from padinfo.view_state.id import IdViewState
-from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
+from padinfo.view.id import IdView, IdViewState
+from padinfo.view.leader_skill_single import LeaderSkillSingleView, LeaderSkillSingleViewState
 
 if TYPE_CHECKING:
     pass

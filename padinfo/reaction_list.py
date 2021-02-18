@@ -4,9 +4,9 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 
 from padinfo.core.padinfo_settings import settings
 from padinfo.menu.id import IdMenuPanes, IdMenu
-from padinfo.view_state.evos import EvosViewState
-from padinfo.view_state.materials import MaterialsViewState
-from padinfo.view_state.pantheon import PantheonViewState
+from padinfo.view.evos import EvosViewState
+from padinfo.view.materials import MaterialsViewState
+from padinfo.view.pantheon import PantheonViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel

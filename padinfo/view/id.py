@@ -1,21 +1,98 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
 
+from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view_state.id import IdViewState
+from padinfo.view_state.base_id import ViewStateBaseId
+from padinfo.view_state.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
+
+
+class IdViewState(ViewStateBaseId):
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
+                 fallback_message: str = None,
+                 use_evo_scroll: bool = True,
+                 reaction_list: List[str] = None,
+                 is_child: bool = False,
+                 extra_state=None):
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         use_evo_scroll=use_evo_scroll,
+                         reaction_list=reaction_list,
+                         extra_state=extra_state)
+        self.fallback_message = fallback_message
+        self.is_child = is_child
+        self.acquire_raw = acquire_raw
+        self.alt_monsters = alt_monsters
+        self.base_rarity = base_rarity
+        self.transform_base = transform_base
+        self.true_evo_type_raw = true_evo_type_raw
+
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'pane_type': IdView.VIEW_TYPE,
+            'is_child': self.is_child,
+            'message': self.fallback_message,
+        })
+        return ret
+
+    @classmethod
+    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+        # for numberscroll getting to a gap in monster book, or 1, or last monster
+        if ims.get('unsupported_transition'):
+            return None
+        monster = await get_monster_from_ims(dgcog, ims)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+            await IdViewState.query(dgcog, monster)
+
+        raw_query = ims['raw_query']
+        # This is to support the 2 vs 1 monster query difference between ^ls and ^id
+        query = ims.get('query') or raw_query
+        menu_type = ims['menu_type']
+        original_author_id = ims['original_author_id']
+        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
+        reaction_list = ims.get('reaction_list')
+        fallback_message = ims.get('message')
+        is_child = ims.get('is_child')
+
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
+                   fallback_message=fallback_message,
+                   use_evo_scroll=use_evo_scroll,
+                   reaction_list=reaction_list,
+                   is_child=is_child,
+                   extra_state=ims)
+
+    @staticmethod
+    async def query(dgcog, monster):
+        db_context = dgcog.database
+        acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
+            await IdViewState._get_monster_misc_info(db_context, monster)
+
+        return transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters
+
+    @staticmethod
+    async def _get_monster_misc_info(db_context, monster):
+        transform_base = db_context.graph.get_transform_base(monster)
+        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
+        acquire_raw = db_context.graph.monster_acquisition(monster)
+        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_no).rarity
+        alt_monsters = sorted({*db_context.graph.get_alt_monsters_by_id(monster.monster_no)},
+                              key=lambda x: x.monster_id)
+        return acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
@@ -44,6 +121,8 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 class IdView:
+    VIEW_TYPE = 'Id'
+
     @staticmethod
     def normal_awakenings_row(m: "MonsterModel"):
         normal_awakenings = len(m.awakenings) - m.superawakening_count
@@ -66,7 +145,7 @@ class IdView:
 
         return Box(
             Box(
-                '\N{UP-POINTING RED TRIANGLE}' if m!=transform_base else '',
+                '\N{UP-POINTING RED TRIANGLE}' if m != transform_base else '',
                 IdView.normal_awakenings_row(m),
                 delimiter=' '
             ),
@@ -74,7 +153,7 @@ class IdView:
                 '\N{DOWN-POINTING RED TRIANGLE}',
                 IdView.all_awakenings_row(transform_base, transform_base),
                 delimiter=' '
-            ) if m!=transform_base else None,
+            ) if m != transform_base else None,
             IdView.super_awakenings_row(m),
         )
 
@@ -133,13 +212,13 @@ class IdView:
     @staticmethod
     def active_skill_header(m: "MonsterModel", transform_base):
         active_skill = m.active_skill
-        if m==transform_base:
+        if m == transform_base:
             active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
                 if active_skill else 'None'
         else:
             base_skill = transform_base.active_skill
             base_cd = ' (\N{DOWN-POINTING RED TRIANGLE} {} -> {})'.format(base_skill.turn_max,
-                                                                           base_skill.turn_min) \
+                                                                          base_skill.turn_min) \
                 if base_skill else 'None'
 
             active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'

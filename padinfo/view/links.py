@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class LinksView:
+    VIEW_TYPE = 'Links'
+
     @staticmethod
     def linksbox(m):
         return Box(
