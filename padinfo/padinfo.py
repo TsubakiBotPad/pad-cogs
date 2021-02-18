@@ -44,7 +44,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
-from padinfo.view_state.closable_embed import ClosableEmbedViewState
+from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.evos import EvosViewState
 from padinfo.view.id import IdViewState
 from padinfo.view.leader_skill import LeaderSkillViewState

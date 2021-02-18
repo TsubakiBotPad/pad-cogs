@@ -9,8 +9,8 @@ from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import createSingleMultiplierText
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view_state.base import ViewStateBase
-from padinfo.view_state.common import get_monster_from_ims
+from padinfo.view.components.view_state_base import ViewStateBase
+from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     pass

@@ -1,4 +1,4 @@
-from padinfo.view_state.base import ViewStateBase
+from padinfo.view.components.view_state_base import ViewStateBase
 
 
 class ClosableEmbedViewState(ViewStateBase):

@@ -3,8 +3,8 @@ from typing import Union
 from discordmenu.embed.components import EmbedFooter
 from discordmenu.intra_message_state import IntraMessageState
 
-from padinfo.view_state.base import ViewStateBase
-from padinfo.view_state.base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base import ViewStateBase
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 TSUBAKI_FLOWER_ICON_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/tsubaki/tsubakiflower.png'
 
