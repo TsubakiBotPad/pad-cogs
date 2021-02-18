@@ -402,8 +402,8 @@ class IdTest:
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
             for i, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -449,8 +449,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])

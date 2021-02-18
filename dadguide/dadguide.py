@@ -21,7 +21,7 @@ from .database_loader import load_database
 from .database_manager import *
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .monster_index import MonsterIndex2
+from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -64,7 +64,7 @@ class Dadguide(commands.Cog):
         self.settings = DadguideSettings("dadguide")
 
         self.database = None
-        self.index2 = None  # type: Optional[MonsterIndex2]
+        self.index = None  # type: Optional[MonsterIndex]
 
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
@@ -91,7 +91,7 @@ class Dadguide(commands.Cog):
         """
         return
 
-    async def create_index2(self):
+    async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         self.index = await MonsterIndex(self.database.get_all_monsters(False), self.database)
 
@@ -143,7 +143,7 @@ class Dadguide(commands.Cog):
         logger.info('Loading dg database')
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
-        self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
+        await self.create_index()
 
         logger.info('Done refreshing dg data')
 
