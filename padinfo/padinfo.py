@@ -40,15 +40,15 @@ from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
-from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
-from padinfo.view.links import LinksView
-from padinfo.view.lookup import LookupView
 from padinfo.view.closable_embed import ClosableEmbedViewState
+from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
 from padinfo.view.id import IdViewState
+from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.leader_skill import LeaderSkillViewState
 from padinfo.view.leader_skill_single import LeaderSkillSingleViewState
+from padinfo.view.links import LinksView
+from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list import MonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
@@ -1014,42 +1014,43 @@ class PadInfo(commands.Cog, IdTest):
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
-        o = ""
+        ret = ""
 
-        def write_name_token(dict, type, mwtoken=False):
+        def write_name_token(token_dict, token_type, is_multiword=False):
             def f(m, s):
                 return bold(s) if DGCOG.database.graph.monster_is_base(m) else s
 
-            o = ""
+            token_ret = ""
             so = []
-            for m in sorted(dict[token], key=lambda m: m.monster_id):
-                if (m in DGCOG.index2.mwtoken_creators[token]) == mwtoken:
-                    so.append(m)
+            for mon in sorted(token_dict[token], key=lambda m: m.monster_id):
+                if (mon in DGCOG.index2.mwtoken_creators[token]) == is_multiword:
+                    so.append(mon)
             if len(so) > 5:
-                o += f"\n\n{type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
-                o += f"... ({len(so)} total)" if len(so) > 10 else ""
+                token_ret += f"\n\n{token_type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
+                token_ret += f"... ({len(so)} total)" if len(so) > 10 else ""
             elif so:
-                o += f"\n\n{type}\n" + "\n".join(f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
-            return o
+                token_ret += f"\n\n{token_type}\n" + "\n".join(
+                    f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
+            return token_ret
 
-        o += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
-        o += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
-        o += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
-        o += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
+        ret += write_name_token(DGCOG.index2.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
+        ret += write_name_token(DGCOG.index2.manual, "[Manual Tokens]")
+        ret += write_name_token(DGCOG.index2.name_tokens, "[Name Tokens]")
+        ret += write_name_token(DGCOG.index2.fluff_tokens, "[Fluff Tokens]")
 
         submwtokens = [t for t in DGCOG.index2.multi_word_tokens if token in t]
         if submwtokens:
-            o += "\n\n[Multi-word Super-tokens]\n"
+            ret += "\n\n[Multi-word Super-tokens]\n"
             for t in submwtokens:
                 if not DGCOG.index2.all_name_tokens[''.join(t)]:
                     continue
                 creators = sorted(DGCOG.index2.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
-                o += f"{' '.join(t).title()}"
-                o += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
-                o += (" ( \u2014> " +
-                      str(find_monster.get_most_eligable_monster(DGCOG.index2.all_name_tokens[''.join(t)],
-                                                                 DGCOG).monster_id)
-                      + ")\n")
+                ret += f"{' '.join(t).title()}"
+                ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
+                ret += (" ( \u2014> " +
+                        str(find_monster.get_most_eligable_monster(DGCOG.index2.all_name_tokens[''.join(t)],
+                                                                   DGCOG).monster_id)
+                        + ")\n")
 
         def additmods(ms, om):
             if len(ms) == 1:
@@ -1085,8 +1086,8 @@ class PadInfo(commands.Cog, IdTest):
               for a, v in tms.AWOKEN_MAP.items() if ag in v]
         ])
 
-        if meanings or o:
-            for page in pagify(meanings + "\n\n" + o.strip()):
+        if meanings or ret:
+            for page in pagify(meanings + "\n\n" + ret.strip()):
                 await ctx.send(page)
         else:
             await ctx.send(f"There are no modifiers that match `{token}`.")
@@ -1164,23 +1165,23 @@ class PadInfo(commands.Cog, IdTest):
         tokenized_query = query.split()
         mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index2.multi_word_tokens)
 
-        success, matches, mgen = max(
+        best_match, matches, mgen = max(
             await find_monster_search(tokenized_query, dgcog),
             await find_monster_search(mw_tokenized_query, dgcog)
             if tokenized_query != mw_tokenized_query else (None, {}),
             key=lambda t: t[1][t[0]].score if t[0] else 0
         )
-        if not success:
+        if not best_match:
             await ctx.send("No monster matched.")
             return
 
         used = set()
         monster_list = []
-        for m in sorted(mgen, key=lambda m: find_monster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
-            bmid = dgcog.database.graph.get_base_id(m)
-            if bmid not in used:
-                used.add(bmid)
-                monster_list.append(m)
+        for mon in sorted(mgen, key=lambda m: find_monster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
+            base_id = dgcog.database.graph.get_base_id(mon)
+            if base_id not in used:
+                used.add(base_id)
+                monster_list.append(mon)
         monster_list = monster_list[:11]
 
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')
