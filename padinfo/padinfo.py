@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List
 import discord
 import tsutils
 from discord import Color
+from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.intra_message_state import IntraMessageState
 from discordmenu.reaction_filter import FriendReactionFilter, MessageOwnerReactionFilter, \
@@ -31,31 +32,30 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.idtest_mixin import IdTest
-from padinfo.menu.closable_embed import ClosableEmbedMenu
+from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.menu.leader_skill import LeaderSkillMenu
-from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
+from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
+from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
-from padinfo.menu.pane_names import global_emoji_responses
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
-from padinfo.menu.transforminfo import TransformInfoMenu
+from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
-from padinfo.view_state.closable_embed import ClosableEmbedViewState
-from padinfo.view_state.evos import EvosViewState
-from padinfo.view_state.id import IdViewState
-from padinfo.view_state.leader_skill import LeaderSkillViewState
-from padinfo.view_state.leader_skill_single import LeaderSkillSingleViewState
-from padinfo.view_state.materials import MaterialsViewState
-from padinfo.view_state.monster_list import MonsterListViewState
-from padinfo.view_state.otherinfo import OtherInfoViewState
-from padinfo.view_state.pantheon import PantheonViewState
-from padinfo.view_state.pic import PicViewState
-from padinfo.view_state.simple_text import SimpleTextViewState
-from padinfo.view_state.transforminfo import TransformInfoViewState
+from padinfo.view.closable_embed import ClosableEmbedViewState
+from padinfo.view.evos import EvosViewState
+from padinfo.view.id import IdViewState
+from padinfo.view.leader_skill import LeaderSkillViewState
+from padinfo.view.leader_skill_single import LeaderSkillSingleViewState
+from padinfo.view.materials import MaterialsViewState
+from padinfo.view.monster_list import MonsterListViewState
+from padinfo.view.otherinfo import OtherInfoViewState
+from padinfo.view.pantheon import PantheonViewState
+from padinfo.view.pic import PicViewState
+from padinfo.view.simple_text import SimpleTextViewState
+from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -157,20 +157,20 @@ class PadInfo(commands.Cog, IdTest):
             emoji_clicked = emoji_obj.name
 
         menu_to_emoji_list_map = {
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu.EMOJI_BUTTON_NAMES,
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes.emoji_names(),
             IdMenu.MENU_TYPE: IdMenuPanes.emoji_names(),
-            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu.EMOJI_BUTTON_NAMES,
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu.EMOJI_BUTTON_NAMES,
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes.emoji_names(),
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes.emoji_names(),
             MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
             SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenu.EMOJI_BUTTON_NAMES
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),
         }
 
-        emoji_found = False
+        emoji_recognized = emoji_clicked in EmbedMenuEmojiConfig().to_list()
         for menu_type, emoji_list in menu_to_emoji_list_map.items():
             if emoji_clicked in emoji_list:
-                emoji_found = True
-        if not emoji_found:
+                emoji_recognized = True
+        if not emoji_recognized:
             return
 
         message = reaction.message
@@ -242,7 +242,7 @@ class PadInfo(commands.Cog, IdTest):
             # the reset wouldn't happen until all emojis showed up in the child, so this way it feels like everything
             # happens faster, but regardless the reset must happen first.
             if respond_with_child[(ims['menu_type'], emoji_clicked)]:
-                await embed_menu.transition(message, ims, global_emoji_responses['reset'], member, **data)
+                await embed_menu.transition(message, ims, emoji_clicked, member, **data)
             await embed_menu.transition(child_message, next_child_ims, emoji_clicked, member, **data)
             return
 

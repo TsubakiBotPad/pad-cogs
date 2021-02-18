@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
@@ -6,30 +6,19 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 
-from padinfo.view.id import IdView
-from padinfo.view.leader_skill import LeaderSkillView
-from padinfo.view_state.id import IdViewState
-from padinfo.view_state.leader_skill import LeaderSkillViewState
-
-if TYPE_CHECKING:
-    pass
+from padinfo.menu.common import emoji_buttons, MenuPanes
+from padinfo.view.id import IdView, IdViewState
+from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillViewState
 
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class LeaderSkillMenu:
     MENU_TYPE = 'LeaderSkill'
-    EMOJI_BUTTON_NAMES = ('\N{HOUSE BUILDING}', char_to_emoji('l'), char_to_emoji('r'), '\N{CROSS MARK}')
 
     @staticmethod
     def menu():
-        transitions = {
-            LeaderSkillMenu.EMOJI_BUTTON_NAMES[0]: LeaderSkillMenu.respond_to_house,
-            LeaderSkillMenu.EMOJI_BUTTON_NAMES[1]: LeaderSkillMenu.respond_to_l,
-            LeaderSkillMenu.EMOJI_BUTTON_NAMES[2]: LeaderSkillMenu.respond_to_r,
-        }
-
-        return EmbedMenu(transitions, LeaderSkillMenu.ls_control, menu_emoji_config)
+        return EmbedMenu(LeaderSkillMenuPanes.transitions(), LeaderSkillMenu.ls_control, menu_emoji_config)
 
     @staticmethod
     async def respond_to_r(message: Optional[Message], ims, **data):
@@ -67,12 +56,21 @@ class LeaderSkillMenu:
     def ls_control(state: LeaderSkillViewState):
         return EmbedControl(
             [LeaderSkillView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in LeaderSkillMenu.EMOJI_BUTTON_NAMES]
+            [emoji_cache.get_by_name(e) for e in LeaderSkillMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def id_control(state: IdViewState):
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in LeaderSkillMenu.EMOJI_BUTTON_NAMES]
+            [emoji_cache.get_by_name(e) for e in LeaderSkillMenuPanes.emoji_names()]
         )
+
+
+class LeaderSkillMenuPanes(MenuPanes):
+    INITIAL_EMOJI = emoji_buttons['home']
+    DATA = {
+        LeaderSkillMenu.respond_to_house: (emoji_buttons['home'], None),
+        LeaderSkillMenu.respond_to_l: (char_to_emoji('l'), IdView.VIEW_TYPE),
+        LeaderSkillMenu.respond_to_r: (char_to_emoji('r'), IdView.VIEW_TYPE),
+    }

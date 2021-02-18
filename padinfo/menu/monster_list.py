@@ -1,19 +1,22 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
 
+from padinfo.menu.common import emoji_buttons, MenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.menu.pane_names import MonsterListPaneNames, global_emoji_responses
-from padinfo.view.monster_list import MonsterListView
-from padinfo.view_state.monster_list import MonsterListViewState
-
-if TYPE_CHECKING:
-    pass
+from padinfo.view.id import IdView
+from padinfo.view.monster_list import MonsterListView, MonsterListViewState
 
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+
+
+class MonsterListPaneNames:
+    home = 'home'
+    refresh = 'refresh'
+    reset = 'reset'
 
 
 class MonsterListMenu:
@@ -115,57 +118,27 @@ class MonsterListMenu:
         )
 
 
-class MonsterListMenuPanes:
+class MonsterListMenuPanes(MenuPanes):
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'
     DATA = {
-        MonsterListMenu.respond_with_monster_list: ('\N{HOUSE BUILDING}', MonsterListPaneNames.home),
-        MonsterListMenu.respond_with_0: (char_to_emoji('0'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_1: (char_to_emoji('1'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_2: (char_to_emoji('2'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_3: (char_to_emoji('3'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_4: (char_to_emoji('4'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_5: (char_to_emoji('5'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_6: (char_to_emoji('6'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_7: (char_to_emoji('7'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_8: (char_to_emoji('8'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_9: (char_to_emoji('9'), MonsterListPaneNames.id),
-        MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', MonsterListPaneNames.id),
+        MonsterListMenu.respond_with_monster_list: (emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home),
+        MonsterListMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_3: (char_to_emoji('3'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_4: (char_to_emoji('4'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_5: (char_to_emoji('5'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_6: (char_to_emoji('6'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_7: (char_to_emoji('7'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdView.VIEW_TYPE),
+        MonsterListMenu.respond_with_10: ('\N{KEYCAP TEN}', IdView.VIEW_TYPE),
         MonsterListMenu.respond_with_refresh: (
             '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh),
-        MonsterListMenu.respond_with_reset: (global_emoji_responses['reset'], MonsterListPaneNames.reset)
+        MonsterListMenu.respond_with_reset: (emoji_buttons['reset'], MonsterListPaneNames.reset)
     }
     HIDDEN_EMOJIS = [
         MonsterListPaneNames.home,
         MonsterListPaneNames.refresh,
         MonsterListPaneNames.reset,
     ]
-
-    @classmethod
-    def emoji_names(cls):
-        return [v[0] for k, v in cls.DATA.items() if v[1] not in cls.HIDDEN_EMOJIS]
-
-    @classmethod
-    def transitions(cls):
-        return {v[0]: k for k, v in cls.DATA.items()}
-
-    @classmethod
-    def pane_types(cls):
-        return {v[1]: k for k, v in cls.DATA.items() if v[1] and v[1] not in cls.HIDDEN_EMOJIS}
-
-    @staticmethod
-    def get_initial_reaction_list(number_of_evos: int):
-        return MonsterListMenuPanes.emoji_names()[:number_of_evos]
-
-    @staticmethod
-    def emoji_name_to_emoji(name: str):
-        for _, data_pair in MonsterListMenuPanes.DATA.items():
-            if data_pair[1] == name:
-                return data_pair[0]
-        return None
-
-    @staticmethod
-    def emoji_name_to_function(name: str):
-        for _, data_pair in MonsterListMenuPanes.DATA.items():
-            if data_pair[1] == name:
-                return data_pair[1]
-        return None

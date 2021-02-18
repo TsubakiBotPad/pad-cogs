@@ -11,10 +11,19 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.links import LinksView
-from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
-    pass
+    from dadguide.models.monster_model import MonsterModel
+
+
+class OtherInfoViewState(ViewStateBaseId):
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'pane_type': OtherInfoView.VIEW_TYPE,
+        })
+        return ret
 
 
 def statsbox(m):
@@ -33,9 +42,11 @@ def statsbox(m):
 
 
 class OtherInfoView:
+    VIEW_TYPE = 'OtherInfo'
+
     @staticmethod
     def embed(state: OtherInfoViewState):
-        m = state.monster
+        m: "MonsterModel" = state.monster
         return EmbedView(
             EmbedMain(
                 color=state.color,

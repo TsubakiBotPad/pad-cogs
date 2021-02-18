@@ -1,37 +1,24 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from padinfo.view.id import IdView
-from padinfo.view.transforminfo import TransformInfoView
-from padinfo.view_state.id import IdViewState
-from padinfo.view_state.transforminfo import TransformInfoViewState
+from padinfo.menu.closable_embed import emoji_button_names
+from padinfo.menu.common import MenuPanes, emoji_buttons
+from padinfo.view.id import IdView, IdViewState
+from padinfo.view.transforminfo import TransformInfoView, TransformInfoViewState
 
-if TYPE_CHECKING:
-    pass
-
-emoji_button_names = ['\N{HOUSE BUILDING}', '\N{DOWN-POINTING RED TRIANGLE}',
-                      '\N{BLACK RIGHT-POINTING TRIANGLE}', '\N{CROSS MARK}']
 menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
 
 
 class TransformInfoMenu:
-    INITIAL_EMOJI = emoji_button_names[0]
     MENU_TYPE = 'TransformInfo'
-    EMOJI_BUTTON_NAMES = emoji_button_names
 
     @staticmethod
     def menu():
-        transitions = {
-            TransformInfoMenu.INITIAL_EMOJI: TransformInfoMenu.respond_with_overview,
-            emoji_button_names[1]: TransformInfoMenu.respond_with_base,
-            emoji_button_names[2]: TransformInfoMenu.respond_with_transform,
-        }
-
-        return EmbedMenu(transitions, TransformInfoMenu.tf_control,
+        return EmbedMenu(TransformInfoMenuPanes.transitions(), TransformInfoMenu.tf_control,
                          menu_emoji_config)
 
     @staticmethod
@@ -68,12 +55,20 @@ class TransformInfoMenu:
     def tf_control(state: TransformInfoViewState):
         return EmbedControl(
             [TransformInfoView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in TransformInfoMenuPanes.emoji_names()]
         )
 
     @staticmethod
     def id_control(state: IdViewState):
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in emoji_button_names]
+            [emoji_cache.get_by_name(e) for e in TransformInfoMenuPanes.emoji_names()]
         )
+
+
+class TransformInfoMenuPanes(MenuPanes):
+    DATA = {
+        TransformInfoMenu.respond_with_overview: (emoji_buttons['home'], TransformInfoView.VIEW_TYPE),
+        TransformInfoMenu.respond_with_base: ('\N{DOWN-POINTING RED TRIANGLE}', IdView.VIEW_TYPE),
+        TransformInfoMenu.respond_with_transform: ('\N{BLACK RIGHT-POINTING TRIANGLE}', IdView.VIEW_TYPE),
+    }
