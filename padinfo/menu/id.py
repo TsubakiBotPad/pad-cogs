@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.database_context import DbContext
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class IdMenu:
@@ -103,7 +103,6 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
-        print(ims)
         if ims.get('is_child'):
             if ims.get('message'):
                 ims['menu_type'] = SimpleTextMenu.MENU_TYPE

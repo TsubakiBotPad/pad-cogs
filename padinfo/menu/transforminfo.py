@@ -9,7 +9,7 @@ from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.transforminfo import TransformInfoView, TransformInfoViewState
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class TransformInfoMenu:

@@ -10,7 +10,7 @@ from padinfo.menu.common import emoji_buttons, MenuPanes
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillViewState
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class LeaderSkillMenu:

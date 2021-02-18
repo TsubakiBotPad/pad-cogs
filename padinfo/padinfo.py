@@ -175,12 +175,12 @@ class PadInfo(commands.Cog, IdTest):
             return
 
         message = reaction.message
-        menu_1_ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
-        if not menu_1_ims:
+        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
+        if not ims:
             return
 
-        original_author_id = menu_1_ims['original_author_id']
-        menu_type = menu_1_ims['menu_type']
+        original_author_id = ims['original_author_id']
+        menu_type = ims['menu_type']
         menu_map = {
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu,
             LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu,
@@ -197,8 +197,8 @@ class PadInfo(commands.Cog, IdTest):
         if not menu_func:
             return
 
-        menu_1 = menu_func()
-        if not (await menu_1.should_respond(
+        menu = menu_func()
+        if not (await menu.should_respond(
                 message, reaction, await self.get_reaction_filters(
                     original_author_id, menu_to_emoji_list_map[menu_type]), member)):
             return
@@ -209,18 +209,30 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
-        if menu_1_ims.get('child_message_id'):
-            emoji_to_tell_menu2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
-            if emoji_to_tell_menu2:
-                fctx = await self.bot.get_context(message)
+        menu_1_ims = ims
+        message_1 = message
+        failsafe = 0
+        while menu_1_ims.get('child_message_id'):
+            if failsafe == 10:
+                break
+            failsafe += 1
+            menu_2 = IdMenu.menu()
+            menu_2_ims = None
+            message_2 = None
+            emoji_simulated_clicked_2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
+            if emoji_simulated_clicked_2:
+                fctx = await self.bot.get_context(message_1)
                 try:
                     message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
                     menu_2_ims = message_2.embeds and IntraMessageState.extract_data(message_2.embeds[0])
                     menu_2_ims.update(extra_ims)
-                    await IdMenu.menu().transition(message_2, menu_2_ims, emoji_to_tell_menu2, member, **data)
+                    await menu_2.transition(message_2, menu_2_ims, emoji_simulated_clicked_2, member, **data)
                 except discord.errors.NotFound:
-                    pass
-        await menu_1.transition(message, menu_1_ims, emoji_clicked, member, **data)
+                    break
+                menu_1_ims = menu_2_ims
+                message_1 = message_2
+
+        await menu.transition(message, ims, emoji_clicked, member, **data)
 
     async def get_reaction_filters(self, original_author_id, valid_emoji_names):
         friend_cog = self.bot.get_cog("Friend")

@@ -11,7 +11,7 @@ from padinfo.view.simple_text import SimpleTextView, SimpleTextViewState
 if TYPE_CHECKING:
     pass
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class SimpleTextNames:

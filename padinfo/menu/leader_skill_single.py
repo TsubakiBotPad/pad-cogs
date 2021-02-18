@@ -12,7 +12,7 @@ from padinfo.view.leader_skill_single import LeaderSkillSingleView, LeaderSkillS
 if TYPE_CHECKING:
     pass
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 
 class LeaderSkillSingleMenu:

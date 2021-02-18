@@ -7,7 +7,7 @@ from padinfo.view.id_traceback import IdTracebackView
 from padinfo.view.closable_embed import ClosableEmbedViewState
 
 emoji_button_names = ['\N{CROSS MARK}']
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
+menu_emoji_config = EmbedMenuEmojiConfig()
 
 view_types = {
     IdTracebackView.VIEW_TYPE: IdTracebackView
