@@ -22,6 +22,7 @@ class SimpleTextViewState(ViewStateBase):
             'message': self.message,
         })
         return ret
+
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
         original_author_id = ims['original_author_id']
