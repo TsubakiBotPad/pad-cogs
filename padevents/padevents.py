@@ -84,9 +84,9 @@ class PadEvents(commands.Cog):
             await asyncio.sleep(60 * 60 * 1)
 
     async def refresh_data(self):
-        dg_cog = self.bot.get_cog('Dadguide')
-        await dg_cog.wait_until_ready()
-        scheduled_events = dg_cog.database.get_all_events()
+        dgcog = self.bot.get_cog('Dadguide')
+        await dgcog.wait_until_ready()
+        scheduled_events = dgcog.database.get_all_events()
 
         new_events = []
         for se in scheduled_events:
@@ -218,10 +218,10 @@ class PadEvents(commands.Cog):
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        dg_cog = self.bot.get_cog('Dadguide')
-        await dg_cog.wait_until_ready()
+        dgcog = self.bot.get_cog('Dadguide')
+        await dgcog.wait_until_ready()
         # TODO: Don't use this awful importing hack
-        dg_module = __import__('.'.join(dg_cog.__module__.split('.')[:-1]) + ".models.scheduled_event_model")
+        dg_module = __import__('.'.join(dgcog.__module__.split('.')[:-1]) + ".models.scheduled_event_model")
         timestamp = int((datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)).timestamp())
         self.fake_uid -= 1
 
