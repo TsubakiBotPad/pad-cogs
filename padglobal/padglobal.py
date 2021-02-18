@@ -71,10 +71,10 @@ async def lookup_monster_model(query: str):
 
 
 def monster_id_to_monster(monster_id):
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dg_cog is None:
+    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dgcog is None:
         return None
-    return dg_cog.get_monster(monster_id)
+    return dgcog.get_monster(monster_id)
 
 
 async def check_enabled(ctx):
