@@ -1,7 +1,6 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
@@ -10,15 +9,13 @@ from padinfo.menu.common import emoji_buttons, MenuPanes
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillViewState
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
-
 
 class LeaderSkillMenu:
     MENU_TYPE = 'LeaderSkill'
 
     @staticmethod
     def menu():
-        return EmbedMenu(LeaderSkillMenuPanes.transitions(), LeaderSkillMenu.ls_control, menu_emoji_config)
+        return EmbedMenu(LeaderSkillMenuPanes.transitions(), LeaderSkillMenu.ls_control)
 
     @staticmethod
     async def respond_to_r(message: Optional[Message], ims, **data):

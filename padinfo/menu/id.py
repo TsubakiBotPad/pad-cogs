@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 from discord import Message
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
@@ -19,8 +18,6 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.database_context import DbContext
 
-menu_emoji_config = EmbedMenuEmojiConfig(delete_message='\N{CROSS MARK}')
-
 
 class IdMenu:
     MENU_TYPE = 'IdMenu'
@@ -30,7 +27,7 @@ class IdMenu:
         if initial_control is None:
             initial_control = IdMenu.id_control
 
-        embed = EmbedMenu(IdMenuPanes.transitions(), initial_control, menu_emoji_config,
+        embed = EmbedMenu(IdMenuPanes.transitions(), initial_control,
                           delete_func=IdMenu.respond_with_delete)
         return embed
 
@@ -96,7 +93,7 @@ class IdMenu:
     async def respond_with_refresh(message: Optional[Message], ims, **data):
         # This is used by disambig screen & other multi-message embeds, where we need to deserialize & then
         # re-serialize the ims, with the same information in place
-        pane_type = ims.get('pane_type')
+        pane_type = ims.get('pane_type') or IdView.VIEW_TYPE
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
