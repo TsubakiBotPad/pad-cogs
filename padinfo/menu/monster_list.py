@@ -147,3 +147,7 @@ class MonsterListMenuPanes(MenuPanes):
         MonsterListPaneNames.refresh,
         MonsterListPaneNames.reset,
     ]
+
+    @classmethod
+    def get_initial_reaction_list(cls, number_of_evos: int):
+        return cls.emoji_names()[:number_of_evos]
