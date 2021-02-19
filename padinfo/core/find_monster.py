@@ -49,11 +49,24 @@ def calc_ratio_name(token, full_word, index2, factor=.05):
     return score
 
 
+class MonsterMatch:
+    def __init__(self, score=0, name=None, mod=None):
+        self.score = score
+        if name is None:
+            self.name = set()
+        if mod is None:
+            self.mod = set()
+
+    def __repr__(self):
+        return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
+
+
 class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def merge_multi_word_tokens(self, tokens, valid_multi_word_tokens):
+    @staticmethod
+    def merge_multi_word_tokens(tokens, valid_multi_word_tokens):
         result = []
         skip = 0
         multi_word_tokens_sorted = sorted(valid_multi_word_tokens,
@@ -68,7 +81,7 @@ class FindMonster:
                     continue
                 for c2, token2 in enumerate(mwt):
                     if (tokens[c1 + c2] != token2 and len(token2) < 5) \
-                            or calc_ratio_modifier(tokens[c1 + c2], token2) < self.TOKEN_JW_DISTANCE:
+                            or calc_ratio_modifier(tokens[c1 + c2], token2) < FindMonster.TOKEN_JW_DISTANCE:
                         break
                 else:
                     skip = len(mwt) - 1
@@ -78,7 +91,8 @@ class FindMonster:
                 result.append(token1)
         return result
 
-    def _monster_has_modifier(self, monster, token, matches, monster_mods):
+    @staticmethod
+    def _monster_has_modifier(monster, token, matches, monster_mods):
         if len(token) < 6:
             if token in monster_mods:
                 matches[monster].mod.add((token, token))
@@ -87,13 +101,14 @@ class FindMonster:
         else:
             closest = max(monster_mods, key=lambda m: calc_ratio_modifier(m, token))
             ratio = calc_ratio_modifier(closest, token)
-            if ratio > self.MODIFIER_JW_DISTANCE:
+            if ratio > FindMonster.MODIFIER_JW_DISTANCE:
                 matches[monster].mod.add((token, closest))
                 matches[monster].score += ratio
                 return True
         return False
 
-    def interpret_query(self, tokenized_query: List[str], index2) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
+    @staticmethod
+    def interpret_query(tokenized_query: List[str], index2) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
         modifiers = []
         negative_modifiers = set()
         name = set()
@@ -104,7 +119,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if any(calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in index2.suffixes):
+            if any(calc_ratio_modifier(m, token, .1) > FindMonster.MODIFIER_JW_DISTANCE for m in index2.suffixes):
                 if negated:
                     negative_modifiers.add(token)
                 else:
@@ -118,7 +133,7 @@ class FindMonster:
             negated = token.startswith("-")
             token = token.lstrip('-')
             if token in index2.all_modifiers or (
-                    any(calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in longmods)
+                    any(calc_ratio_modifier(m, token, .1) > FindMonster.MODIFIER_JW_DISTANCE for m in longmods)
                     and token not in index2.all_name_tokens
                     and len(token) >= 8):
                 if negated:
@@ -148,18 +163,19 @@ class FindMonster:
 
         return set(modifiers), negative_modifiers, name, negative_name
 
-    def process_name_tokens(self, name_query_tokens, neg_name_tokens, dgcog, matches):
+    @staticmethod
+    def process_name_tokens(name_query_tokens, neg_name_tokens, dgcog, matches):
         matched_mons = None
 
         for pos_name in name_query_tokens:
-            valid = self.get_valid_monsters_from_name_token(pos_name, dgcog.index, matches)
+            valid = FindMonster.get_valid_monsters_from_name_token(pos_name, dgcog.index, matches)
             if matched_mons is not None:
                 matched_mons.intersection_update(valid)
             else:
                 matched_mons = valid
 
         for neg_name in neg_name_tokens:
-            invalid = self.get_valid_monsters_from_name_token(neg_name, dgcog.index, matches, mult=-10)
+            invalid = FindMonster.get_valid_monsters_from_name_token(neg_name, dgcog.index, matches, mult=-10)
             if matched_mons is not None:
                 matched_mons.difference_update(invalid)
             else:
@@ -167,11 +183,12 @@ class FindMonster:
 
         return matched_mons
 
-    def get_valid_monsters_from_name_token(self, token, index2, matches, mult=1):
+    @staticmethod
+    def get_valid_monsters_from_name_token(token, index2, matches, mult=1):
         valid_monsters = set()
         all_monsters_name_tokens_scores = {nt: calc_ratio_name(token, nt, index2) for nt in index2.all_name_tokens}
         matched_tokens = sorted((nt for nt in all_monsters_name_tokens_scores
-                                 if all_monsters_name_tokens_scores[nt] > self.TOKEN_JW_DISTANCE),
+                                 if all_monsters_name_tokens_scores[nt] > FindMonster.TOKEN_JW_DISTANCE),
                                 key=lambda nt: all_monsters_name_tokens_scores[nt], reverse=True)
         matched_tokens += [t for t in index2.all_name_tokens if t.startswith(token)]
         for match in matched_tokens:
@@ -194,26 +211,28 @@ class FindMonster:
 
         return valid_monsters
 
-    def process_modifiers(self, mod_tokens, neg_mod_tokens, potential_evos, matches, monster_mods):
+    @staticmethod
+    def process_modifiers(mod_tokens, neg_mod_tokens, potential_evos, matches, monster_mods):
         for pos_mod_token in mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              self._monster_has_modifier(m, pos_mod_token, matches, monster_mods[m])}
+                              FindMonster._monster_has_modifier(m, pos_mod_token, matches, monster_mods[m])}
             if not potential_evos:
                 return None
         for neg_mod_token in neg_mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              not self._monster_has_modifier(m, neg_mod_token, matches, monster_mods[m])}
+                              not FindMonster._monster_has_modifier(m, neg_mod_token, matches, monster_mods[m])}
             if not potential_evos:
                 return None
 
         return potential_evos
 
-    def get_priority_tuple(self, monster, dgcog, tokenized_query=None, matches=None):
+    @staticmethod
+    def get_priority_tuple(monster, dgcog, tokenized_query=None, matches=None):
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
             tokenized_query = []
-            
+             
         return (matches[monster].score,
                 not monster.is_equip,
                 # Match na on id overlap
@@ -227,15 +246,17 @@ class FindMonster:
                 monster.rarity,
                 monster.monster_no_na)
 
-    def get_most_eligable_monster(self, monsters, dgcog, tokenized_query=None, matches=None):
+    @staticmethod
+    def get_most_eligable_monster(monsters, dgcog, tokenized_query=None, matches=None):
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
             tokenized_query = []
 
-        return max(monsters, key=lambda m: self.get_priority_tuple(m, dgcog, tokenized_query, matches))
+        return max(monsters, key=lambda m: FindMonster.get_priority_tuple(m, dgcog, tokenized_query, matches))
 
-    def get_monster_evos(self, database, matched_mons, matches):
+    @staticmethod
+    def get_monster_evos(database, matched_mons, matches):
         monster_evos = set()
         for monster in sorted(matched_mons, key=lambda m: matches[m].score, reverse=True):
             for evo in database.graph.get_alt_monsters(monster):
@@ -248,47 +269,10 @@ class FindMonster:
         return monster_evos
 
 
-async def findMonster3(dgcog, query) -> Optional["MonsterModel"]:
-    matched_monster = await _findMonster3(dgcog, query)
-
-    monster_no = matched_monster.monster_id if matched_monster else -1
-    historic_lookups_id3[query] = monster_no
-    json.dump(historic_lookups_id3, open(historic_lookups_file_path_id3, "w+"))
-
-    return matched_monster
-
-
-async def _findMonster3(dgcog, query) -> Optional["MonsterModel"]:
-    await dgcog.wait_until_ready()
-
-    query = rmdiacritics(query).lower().replace(",", "")
-    tokenized_query = query.split()
-    mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
-
-    return max(
-        await find_monster_search(tokenized_query, dgcog),
-        await find_monster_search(mw_tokenized_query, dgcog)
-        if tokenized_query != mw_tokenized_query else (None, {}),
-        key=lambda t: t[1].get(t[0], MonsterMatch()).score
-    )[0]
-
-
-class MonsterMatch:
-    def __init__(self, score=0, name=None, mod=None):
-        self.score = score
-        if name is None:
-            self.name = set()
-        if mod is None:
-            self.mod = set()
-
-    def __repr__(self):
-        return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
-
-
 async def find_monster_search(tokenized_query, dgcog) -> \
         Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch], Set["MonsterModel"]]:
     mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens = \
-        find_monster.interpret_query(tokenized_query, dgcog.index)
+        FindMonster.interpret_query(tokenized_query, dgcog.index)
 
     name_query_tokens.difference_update({'|'})
 
@@ -300,22 +284,22 @@ async def find_monster_search(tokenized_query, dgcog) -> \
 
     matches = defaultdict(MonsterMatch)
     if name_query_tokens or neg_name_tokens:
-        matched_mons = find_monster.process_name_tokens(name_query_tokens,
+        matched_mons = FindMonster.process_name_tokens(name_query_tokens,
                                                        neg_name_tokens,
                                                        dgcog,
                                                        matches)
         if not matched_mons:
             # No monsters match the given name tokens
             return None, {}, set()
-        matched_mons = find_monster.get_monster_evos(dgcog.database, matched_mons, matches)
+        matched_mons = FindMonster.get_monster_evos(dgcog.database, matched_mons, matches)
     else:
         # There are no name tokens in the query
         matched_mons = {*dgcog.database.get_all_monsters()}
         monster_score = defaultdict(int)
 
     # Expand search to the evo tree
-    matched_mons = find_monster.process_modifiers(mod_tokens, neg_mod_tokens, matched_mons, matches,
-                                                  dgcog.index.modifiers)
+    matched_mons = FindMonster.process_modifiers(mod_tokens, neg_mod_tokens, matched_mons, matches,
+                                                 dgcog.index.modifiers)
     if not matched_mons:
         # no modifiers match any monster in the evo tree
         return None, {}, set()
@@ -324,9 +308,38 @@ async def find_monster_search(tokenized_query, dgcog) -> \
     #        if k in matched_mons})
 
     # Return most likely candidate based on query.
-    mon = find_monster.get_most_eligable_monster(matched_mons, dgcog, tokenized_query, matches)
+    mon = FindMonster.get_most_eligable_monster(matched_mons, dgcog, tokenized_query, matches)
 
     return mon, matches, matched_mons
 
 
-find_monster = FindMonster()
+async def find_monster_debug(dgcog, query) -> \
+        Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch], Set["MonsterModel"], int]:
+    await dgcog.wait_until_ready()
+
+    query = rmdiacritics(query).lower().replace(",", "")
+    tokenized_query = query.split()
+    mw_tokenized_query = FindMonster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
+
+    best_monster, matches_dict, valid_monsters = max(
+        await find_monster_search(tokenized_query, dgcog),
+        await find_monster_search(mw_tokenized_query, dgcog)
+        if tokenized_query != mw_tokenized_query else (None, {}, set()),
+
+        key=lambda t: t[1].get(t[0], MonsterMatch()).score
+    )
+
+    historic_lookups_id3[query] = best_monster.monster_id if best_monster else -1
+    json.dump(historic_lookups_id3, open(historic_lookups_file_path_id3, "w+"))
+
+    return best_monster, matches_dict, valid_monsters, 0
+
+
+async def find_monster(dgcog, query) -> Optional["MonsterModel"]:
+    matched_monster, _, _, _ = await find_monster_debug(dgcog, query)
+    return matched_monster
+
+
+async def find_monsters(dgcog, query) -> List["MonsterModel"]:
+    _, matches, monsters, _ = await find_monster_debug(dgcog, query)
+    return sorted(monsters, key=lambda m: FindMonster.get_priority_tuple(m))

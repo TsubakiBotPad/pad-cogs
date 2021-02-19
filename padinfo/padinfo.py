@@ -18,15 +18,14 @@ from discordmenu.reaction_filter import FriendReactionFilter, MessageOwnerReacti
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
-from tsutils import char_to_emoji, is_donor, rmdiacritics
+from tsutils import char_to_emoji, is_donor
 
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
-from padinfo.core.find_monster import find_monster, findMonster3, \
-    calc_ratio_name, calc_ratio_modifier, find_monster_search, findMonster3
+from padinfo.core.find_monster import FindMonster, calc_ratio_name, calc_ratio_modifier, find_monster, find_monster_debug
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -102,7 +101,7 @@ class PadInfo(commands.Cog, IdTest):
         self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[], do_survey=False, test_suite={},
                                     fluff_suite=[])
 
-        self.fm3 = lambda q: fm.findMonster3(bot.get_cog("Dadguide"), q)
+        self.fm3 = lambda q: fm.find_monster(bot.get_cog("Dadguide"), q)
 
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
         self.settings = settings
@@ -250,7 +249,7 @@ class PadInfo(commands.Cog, IdTest):
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if monster is not None:
             await ctx.send(MonsterHeader.short(monster))
             await ctx.send(box(monster.name_ja))
@@ -313,7 +312,7 @@ class PadInfo(commands.Cog, IdTest):
                 async with self.config.bad_queries() as bad_queries:
                     bad_queries.append((raw_query, ctx.author.id))
 
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -404,7 +403,7 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -435,7 +434,7 @@ class PadInfo(commands.Cog, IdTest):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -467,7 +466,7 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -497,7 +496,7 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -522,7 +521,7 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await findMonster3(dgcog, raw_query)
+        monster = await find_monster(dgcog, raw_query)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -543,7 +542,7 @@ class PadInfo(commands.Cog, IdTest):
     async def links(self, ctx, *, query: str):
         """Monster links"""
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -556,7 +555,7 @@ class PadInfo(commands.Cog, IdTest):
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -569,7 +568,7 @@ class PadInfo(commands.Cog, IdTest):
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -583,7 +582,7 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -684,7 +683,7 @@ class PadInfo(commands.Cog, IdTest):
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
@@ -742,7 +741,7 @@ class PadInfo(commands.Cog, IdTest):
         query = query.strip().lower()
 
         dgcog = await self.get_dgcog()
-        monster = await findMonster3(dgcog, query)
+        monster = await find_monster(dgcog, query)
         if monster is not None:
             voice_id = monster.voice_id_jp if server == 'jp' else monster.voice_id_na
             if voice_id is None:
@@ -884,7 +883,7 @@ class PadInfo(commands.Cog, IdTest):
     async def debugid(self, ctx, *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
-        mon = await findMonster3(dgcog, query)
+        mon = await find_monster(dgcog, query)
         if mon is None:
             await ctx.send(box("Your query didn't match any monsters."))
             return
@@ -925,10 +924,10 @@ class PadInfo(commands.Cog, IdTest):
         await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
                        box(f"Jaro-Winkler Distance:    {round(dist, 4)}\n"
                            f"Name Matching Distance:   {round(dist2, 4)}\n"
-                           f"Modifier token threshold: {find_monster.MODIFIER_JW_DISTANCE}  "
-                           f"{yes if dist >= find_monster.MODIFIER_JW_DISTANCE else no}\n"
-                           f"Name token threshold:     {find_monster.TOKEN_JW_DISTANCE}   "
-                           f"{yes if dist2 >= find_monster.TOKEN_JW_DISTANCE else no}"))
+                           f"Modifier token threshold: {FindMonster.MODIFIER_JW_DISTANCE}  "
+                           f"{yes if dist >= FindMonster.MODIFIER_JW_DISTANCE else no}\n"
+                           f"Name token threshold:     {FindMonster.TOKEN_JW_DISTANCE}   "
+                           f"{yes if dist2 >= FindMonster.TOKEN_JW_DISTANCE else no}"))
 
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):
@@ -1025,8 +1024,8 @@ class PadInfo(commands.Cog, IdTest):
                 ret += f"{' '.join(t).title()}"
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
-                        str(find_monster.get_most_eligable_monster(DGCOG.index.all_name_tokens[''.join(t)],
-                                                                   DGCOG).monster_id)
+                        str(FindMonster.get_most_eligable_monster(DGCOG.index.all_name_tokens[''.join(t)],
+                                                                  DGCOG).monster_id)
                         + ")\n")
 
         def additmods(ms, om):
@@ -1081,18 +1080,8 @@ class PadInfo(commands.Cog, IdTest):
             selected_monster_id = int(selected_monster_id.strip())
 
         dgcog = self.bot.get_cog("Dadguide")
-        await dgcog.wait_until_ready()
 
-        query = rmdiacritics(query).strip().lower().replace(",", "")
-        tokenized_query = query.split()
-        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
-
-        bestmatch, matches, _ = max(
-            await find_monster_search(tokenized_query, dgcog),
-            await find_monster_search(mw_tokenized_query, dgcog)
-            if tokenized_query != mw_tokenized_query else (None, {}),
-            key=lambda t: t[1][t[0]].score if t[0] else 0
-        )
+        bestmatch, matches, _ = find_monster_debug(dgcog, query)
 
         if bestmatch is None:
             await ctx.send("No monster matched.")
@@ -1136,25 +1125,16 @@ class PadInfo(commands.Cog, IdTest):
     @commands.command(aliases=["ids"])
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
-        await dgcog.wait_until_ready()
 
-        query = rmdiacritics(query).strip().lower().replace(",", "")
-        tokenized_query = query.split()
-        mw_tokenized_query = find_monster.merge_multi_word_tokens(tokenized_query, dgcog.index.multi_word_tokens)
+        best_match, matches, mgen = find_monster_debug(dgcog, query)
 
-        best_match, matches, mgen = max(
-            await find_monster_search(tokenized_query, dgcog),
-            await find_monster_search(mw_tokenized_query, dgcog)
-            if tokenized_query != mw_tokenized_query else (None, {}),
-            key=lambda t: t[1][t[0]].score if t[0] else 0
-        )
         if not best_match:
             await ctx.send("No monster matched.")
             return
 
         used = set()
         monster_list = []
-        for mon in sorted(mgen, key=lambda m: find_monster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
+        for mon in sorted(mgen, key=lambda m: FindMonster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
             base_id = dgcog.database.graph.get_base_id(mon)
             if base_id not in used:
                 used.add(base_id)
