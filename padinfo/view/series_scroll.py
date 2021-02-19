@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
-from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji
 
@@ -103,7 +102,8 @@ class SeriesScrollViewState(ViewStateBase):
     @staticmethod
     def query_all_rarities(dgcog, series_id):
         db_context: "DbContext" = dgcog.database
-        return sorted({m.rarity for m in db_context.get_all_monsters() if m.series_id == series_id and db_context.graph.monster_is_base(m)})
+        return sorted({m.rarity for m in db_context.get_all_monsters() if
+                       m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
 
 class SeriesScrollView:

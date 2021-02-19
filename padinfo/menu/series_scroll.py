@@ -149,7 +149,8 @@ class SeriesScrollMenu:
         n = SeriesScrollMenuPanes.emoji_names().index(emoji_clicked)
         extra_ims = {
             'is_child': True,
-            'resolved_monster_id': int(ims['full_monster_list'][n + _get_min_index(ims) - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT]),
+            'resolved_monster_id': int(
+                ims['full_monster_list'][n + _get_min_index(ims) - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT]),
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
         }

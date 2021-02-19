@@ -665,7 +665,8 @@ class PadInfo(commands.Cog, IdTest):
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
-                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity), all_rarities,
+                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity),
+                                      all_rarities,
                                       title, instruction_message,
                                       reaction_list=initial_reaction_list)
         parent_menu = SeriesScrollMenu.menu()
