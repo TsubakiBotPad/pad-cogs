@@ -213,12 +213,13 @@ class PadInfo(commands.Cog, IdTest):
         message_1 = message
         failsafe = 0
         while menu_1_ims.get('child_message_id'):
+            # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
+            # and we have to update menu_1_class to be menu_2_class during the loop.
+            # TODO: Add support for triply-linked menus or children other than IdMenus
             if failsafe == 10:
                 break
             failsafe += 1
             menu_2 = IdMenu.menu()
-            menu_2_ims = None
-            message_2 = None
             emoji_simulated_clicked_2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
             if emoji_simulated_clicked_2:
                 fctx = await self.bot.get_context(message_1)
