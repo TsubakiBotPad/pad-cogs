@@ -126,7 +126,7 @@ class MonsterListMenuPanes(MenuPanes):
     DATA = {
         # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
         MonsterListMenu.respond_with_monster_list: (
-        emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home, True, False),
+            emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home, True, False),
         MonsterListMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE, False, True),
         MonsterListMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE, False, True),
         MonsterListMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE, False, True),
