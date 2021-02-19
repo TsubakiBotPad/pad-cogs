@@ -1,6 +1,6 @@
 import re
 
-from padinfo.core.find_monster import findMonster3
+from padinfo.core.find_monster import find_monster
 
 
 def humanize_number(number, sigfigs=2):
@@ -82,7 +82,7 @@ async def perform_leaderskill_query(dgcog, raw_query):
             right_query = ' '.join(q for q in right_query)
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
-                m = await findMonster3(dgcog, query)
+                m = await find_monster(dgcog, query)
                 if m and left_query in dgcog.index.modifiers[m]:
                     left_query = query
                     right_query = None
@@ -91,9 +91,9 @@ async def perform_leaderskill_query(dgcog, raw_query):
 
     else:  # no separators
         left_query, right_query = query, None
-    left_m = await findMonster3(dgcog, left_query)
+    left_m = await find_monster(dgcog, left_query)
     if right_query:
-        right_m = await findMonster3(dgcog, right_query)
+        right_m = await find_monster(dgcog, right_query)
     else:
         right_m = left_m
     return left_m, left_query, right_m, right_query

@@ -1,10 +1,10 @@
-from padinfo.core.find_monster import findMonster3
+from padinfo.core.find_monster import find_monster
 
 
 async def perform_transforminfo_query(dgcog, raw_query):
     db_context = dgcog.database
     mgraph = dgcog.database.graph
-    found_monster = await findMonster3(dgcog, raw_query)
+    found_monster = await find_monster(dgcog, raw_query)
 
     if not found_monster:
         return None, None

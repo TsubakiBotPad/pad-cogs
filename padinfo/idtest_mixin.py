@@ -5,7 +5,7 @@ import tsutils
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
-from padinfo.core.find_monster import findMonster3
+from padinfo.core.find_monster import find_monster
 
 
 class IdTest:
@@ -365,7 +365,7 @@ class IdTest:
             for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
                 try:
-                    m = await findMonster3(dgcog, q) or -1
+                    m = await find_monster(dgcog, q) or -1
                 except Exception:
                     m = -2
                 mid = getattr(m, "monster_id", m)
@@ -431,7 +431,7 @@ class IdTest:
         async with ctx.typing():
             for c, q in enumerate(sorted(qsuite)):
                 try:
-                    m = await findMonster3(dgcog, q) or -1
+                    m = await find_monster(dgcog, q) or -1
                 except Exception:
                     m = -2
                 mid = getattr(m, "monster_id", m)
