@@ -1081,7 +1081,7 @@ class PadInfo(commands.Cog, IdTest):
 
         dgcog = self.bot.get_cog("Dadguide")
 
-        bestmatch, matches, _ = find_monster_debug(dgcog, query)
+        bestmatch, matches, _, _ = await find_monster_debug(dgcog, query)
 
         if bestmatch is None:
             await ctx.send("No monster matched.")
@@ -1126,7 +1126,7 @@ class PadInfo(commands.Cog, IdTest):
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
 
-        best_match, matches, mgen = find_monster_debug(dgcog, query)
+        best_match, matches, mgen, _ = await find_monster_debug(dgcog, query)
 
         if not best_match:
             await ctx.send("No monster matched.")
