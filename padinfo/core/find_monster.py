@@ -342,4 +342,4 @@ async def find_monster(dgcog, query) -> Optional["MonsterModel"]:
 
 async def find_monsters(dgcog, query) -> List["MonsterModel"]:
     _, matches, monsters, _ = await find_monster_debug(dgcog, query)
-    return sorted(monsters, key=lambda m: FindMonster.get_priority_tuple(m))
+    return sorted(monsters, key=lambda m: FindMonster.get_priority_tuple(m, dgcog, matches=matches), reverse=True)
