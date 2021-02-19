@@ -25,7 +25,8 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_
     get_attribute_emoji_by_monster
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
-from padinfo.core.find_monster import FindMonster, calc_ratio_name, calc_ratio_modifier, find_monster, find_monster_debug
+from padinfo.core.find_monster import FindMonster, calc_ratio_name, calc_ratio_modifier, find_monster, \
+    find_monster_debug, find_monsters
 from padinfo.core.historic_lookups import historic_lookups
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -1189,15 +1190,15 @@ class PadInfo(commands.Cog, IdTest):
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
 
-        best_match, matches, mgen, _ = await find_monster_debug(dgcog, query)
+        matched_monsters = await find_monsters(dgcog, query)
 
-        if not best_match:
+        if not matched_monsters:
             await ctx.send("No monster matched.")
             return
 
         used = set()
         monster_list = []
-        for mon in sorted(mgen, key=lambda m: FindMonster.get_priority_tuple(m, dgcog, matches=matches), reverse=True):
+        for mon in matched_monsters:
             base_id = dgcog.database.graph.get_base_id(mon)
             if base_id not in used:
                 used.add(base_id)
