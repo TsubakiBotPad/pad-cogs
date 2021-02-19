@@ -31,8 +31,11 @@ def calc_ratio_name(token, full_word, index2, factor=.05):
     mw = index2.mwt_to_len[full_word] != 1
     jw = jaro_winkler(token, full_word, factor)
 
+    if token.isdigit() and full_word.isdigit() and token != full_word:
+        return 0.0
+
     if full_word == token:
-        score = 1
+        score = 1.0
     elif len(token) >= 3 and full_word.startswith(token):
         score = .995
         if mw and jw < score:
