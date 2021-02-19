@@ -12,7 +12,7 @@ logger = logging.getLogger('red.padbot-cogs.profile')
 SUPPORTED_SERVERS = ["NA", "KR", "JP", "EU"]
 
 
-def validateAndCleanId(id):
+def validate_and_clean_id(id):
     id = id.replace('-', '').replace(' ', '').replace(',', '').replace('.', '').strip()
     if re.match(r'^\d{9}$', id):
         return id
@@ -20,16 +20,16 @@ def validateAndCleanId(id):
         return None
 
 
-def formatNameLine(server, pad_name, pad_id):
-    group = computeOldGroup(pad_id)
-    return "[{}]: '{}' : {} (Group {})".format(server, pad_name, formatId(pad_id), group)
+def format_name_line(server, pad_name, pad_id):
+    group = compute_old_group(pad_id)
+    return "[{}]: '{}' : {} (Group {})".format(server, pad_name, format_id(pad_id), group)
 
 
-def formatId(id):
+def format_id(id):
     return id[0:3] + "," + id[3:6] + "," + id[6:9]
 
 
-def computeOldGroup(str_id):
+def compute_old_group(str_id):
     old_id_digit = str(str_id)[2]
     return chr(ord('A') + (int(old_id_digit) % 5))
 
@@ -64,25 +64,25 @@ class Profile(commands.Cog):
         else:
             self.settings.clearUserDataFull(user_id)
 
-    @commands.command(name="idme")
-    async def idMe(self, ctx, server=None):
+    @commands.command()
+    async def idme(self, ctx, server=None):
         """Displays your profile to the current channel
 
         If you do not provide a server, your default is used
         """
-        profile_msg = await self.getIdMsg(ctx, ctx.author, server, False)
+        profile_msg = await self.get_id_msg(ctx, ctx.author, server, False)
         if profile_msg is None:
             return
 
         await ctx.send(profile_msg)
 
-    @commands.command(name="idto")
-    async def idTo(self, ctx, user: discord.Member, server=None):
+    @commands.command()
+    async def idto(self, ctx, user: discord.Member, server=None):
         """Whispers your profile to specified user
 
         If you do not provide a server, your default is used
         """
-        profile_msg = await self.getIdMsg(ctx, ctx.author, server)
+        profile_msg = await self.get_id_msg(ctx, ctx.author, server)
         if profile_msg is None:
             return
 
@@ -92,19 +92,19 @@ class Profile(commands.Cog):
         await ctx.send(user, msg)
         await ctx.author.send(inline("Sent your profile to " + user.name))
 
-    @commands.command(name="idfor")
-    async def idFor(self, ctx, user: discord.Member, server=None):
+    @commands.command()
+    async def idfor(self, ctx, user: discord.Member, server=None):
         """Displays the profile of the specified user
 
         If you do not provide a server, your default is used.
         """
-        profile_msg = await self.getIdMsg(ctx, user, server)
+        profile_msg = await self.get_id_msg(ctx, user, server)
         if profile_msg is None:
             return
 
         await ctx.author.send(profile_msg)
 
-    async def getServer(self, ctx, user_id, server=None):
+    async def get_server(self, ctx, user_id, server=None):
         if server is None:
             server = self.settings.getDefaultServer(user_id)
         server = normalize_server_name(server)
@@ -113,8 +113,8 @@ class Profile(commands.Cog):
             return
         return server
 
-    async def getIdMsg(self, ctx, user, server=None, for_other=True):
-        server = await self.getServer(ctx, user.id, server)
+    async def get_id_msg(self, ctx, user, server=None, for_other=True):
+        server = await self.get_server(ctx, user.id, server)
         if server is None:
             return
 
@@ -123,7 +123,7 @@ class Profile(commands.Cog):
         profile_text = self.settings.getProfileText(user.id, server)
 
         line1 = "Info for " + user.name
-        line2 = formatNameLine(server, pad_name, pad_id)
+        line2 = format_name_line(server, pad_name, pad_id)
         line3 = profile_text
 
         msg = inline(line1) + "\n" + box(line2 + "\n" + line3)
@@ -133,8 +133,8 @@ class Profile(commands.Cog):
     async def profile(self, ctx):
         """Manage profile storage"""
 
-    @profile.command(name="server")
-    async def setServer(self, ctx, server):
+    @profile.command()
+    async def server(self, ctx, server):
         """Set your default server to one of [NA, EU, JP, KR]
 
         This server is used to default the idme command if you don't provide a server.
@@ -148,28 +148,28 @@ class Profile(commands.Cog):
         await ctx.send(inline('Set your default server to: ' + server))
 
     @profile.command(name="id")
-    async def setId(self, ctx, server, *id):
+    async def _id(self, ctx, server, *id):
         """Sets your ID for a server
 
         ID must be 9 digits, can be space/comma/dash delimited.
         """
-        server = await self.getServer(ctx, ctx.author.id, server)
+        server = await self.get_server(ctx, ctx.author.id, server)
         if server is None:
             return None
 
         id = " ".join(id)
-        clean_id = validateAndCleanId(id)
+        clean_id = validate_and_clean_id(id)
         if clean_id is None:
             await ctx.send(inline('Your ID looks invalid, expected a 9 digit code, got: {}'.format(id)))
             return
 
         self.settings.setId(ctx.author.id, server, clean_id)
-        await ctx.send(inline('Set your id for {} to: {}'.format(server, formatId(clean_id))))
+        await ctx.send(inline('Set your id for {} to: {}'.format(server, format_id(clean_id))))
 
-    @profile.command(name="name")
-    async def setName(self, ctx, server, *name):
+    @profile.command()
+    async def name(self, ctx, server, *name):
         """Sets your in game name for a server"""
-        server = await self.getServer(ctx, ctx, server)
+        server = await self.get_server(ctx, ctx, server)
         if server is None:
             return None
 
@@ -177,13 +177,13 @@ class Profile(commands.Cog):
         self.settings.setName(ctx.author.id, server, name)
         await ctx.send(inline('Set your name for {} to: {}'.format(server, name)))
 
-    @profile.command(name="text")
-    async def setText(self, ctx, server, *text):
+    @profile.command()
+    async def text(self, ctx, server, *text):
         """Sets your profile text for the server.
 
         This info is used by the idme command and search.
         """
-        server = await self.getServer(ctx, ctx.author.id, server)
+        server = await self.get_server(ctx, ctx.author.id, server)
         if server is None:
             return None
 
@@ -196,7 +196,7 @@ class Profile(commands.Cog):
         self.settings.setProfileText(ctx.author.id, server, text)
         await ctx.send(inline('Set your profile for ' + server + ' to:\n' + text))
 
-    @profile.command(name="clear")
+    @profile.command()
     async def clear(self, ctx, server=None):
         """Deletes your saved profile for a server
 
@@ -211,13 +211,13 @@ class Profile(commands.Cog):
             self.settings.clearProfile(user_id, server)
             await ctx.send(inline('Cleared your profile for ' + server))
 
-    @profile.command(name="search")
+    @profile.command()
     async def search(self, ctx, server, *search_text):
         """profile search <server> <search text>
 
         Scans all profiles for the search text and PMs the results.
         """
-        server = await self.getServer(ctx, ctx.author.id, server)
+        server = await self.get_server(ctx, ctx.author.id, server)
         if server is None:
             return None
 
@@ -245,7 +245,7 @@ class Profile(commands.Cog):
 
         msg = 'Displaying {} matches for server {}:\n'.format(len(matching_profiles), server)
         for p in matching_profiles:
-            pad_id = formatId(p['id'])
+            pad_id = format_id(p['id'])
             pad_name = p.get('name', 'unknown')
             profile_text = p['text'].replace('`', '')
 
@@ -253,9 +253,9 @@ class Profile(commands.Cog):
             line2 = profile_text
             msg = msg + line1 + "\n" + line2 + "\n\n"
 
-        await self.pageOutput(ctx, msg)
+        await self.page_output(ctx, msg)
 
-    async def pageOutput(self, ctx, msg):
+    async def page_output(self, ctx, msg):
         msg = msg.strip()
         msg = pagify(msg, ["\n"], shorten_by=20)
         for page in msg:
