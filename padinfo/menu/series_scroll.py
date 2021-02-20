@@ -52,12 +52,17 @@ class SeriesScrollMenu:
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
-        ims['rarity'] = ims['rarity'] - 1
+        current_rarity_index = ims['all_rarities'].index(ims['rarity'])
+        ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        ims['rarity'] = ims['rarity'] + 1
+        current_rarity_index = ims['all_rarities'].index(ims['rarity'])
+        if current_rarity_index == len(ims['all_rarities']) - 1:
+            ims['rarity'] = ims['all_rarities'][0]
+        else:
+            ims['rarity'] = ims['all_rarities'][current_rarity_index + 1]
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
