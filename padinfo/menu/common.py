@@ -24,10 +24,6 @@ class MenuPanes:
         return {v[1]: k for k, v in cls.DATA.items() if v[1] and v[1] not in cls.HIDDEN_EMOJIS}
 
     @classmethod
-    def get_initial_reaction_list(cls, number_of_evos: int):
-        return cls.emoji_names()[:number_of_evos]
-
-    @classmethod
     def emoji_name_to_emoji(cls, name: str):
         for _, data_pair in cls.DATA.items():
             if data_pair[1] == name:

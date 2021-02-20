@@ -37,6 +37,7 @@ from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
+from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
@@ -54,11 +55,13 @@ from padinfo.view.monster_list import MonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
 from padinfo.view.pantheon import PantheonViewState
 from padinfo.view.pic import PicViewState
+from padinfo.view.series_scroll import SeriesScrollViewState
 from padinfo.view.simple_text import SimpleTextViewState
 from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.series_model import SeriesModel
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -163,6 +166,7 @@ class PadInfo(commands.Cog, IdTest):
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes.emoji_names(),
             LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes.emoji_names(),
             MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
+            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenuPanes.emoji_names(),
             SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
             TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),
         }
@@ -182,25 +186,26 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         menu_map = {
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
+            IdMenu.MENU_TYPE: IdMenu,
             LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu,
             LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu,
-            IdMenu.MENU_TYPE: IdMenu,
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenu,
             MonsterListMenu.MENU_TYPE: MonsterListMenu,
+            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenu,
             SimpleTextMenu.MENU_TYPE: SimpleTextMenu,
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenu,
         }
 
         menu_1_class = menu_map.get(menu_type)
-        menu_func = menu_1_class.menu
-
-        if not menu_func:
+        if not menu_1_class:
             return
+
+        menu_func = menu_1_class.menu
 
         menu = menu_func()
         if not (await menu.should_respond(
-                message, reaction, await self.get_reaction_filters(
-                    original_author_id, menu_to_emoji_list_map[menu_type]), member)):
+                        message, reaction, await self.get_reaction_filters(
+                            original_author_id, menu_to_emoji_list_map[menu_type]), member)):
             return
 
         dgcog = await self.get_dgcog()
@@ -626,6 +631,63 @@ class PadInfo(commands.Cog, IdTest):
         data['child_message_id'] = child_message.id
         try:
             await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
+                                         **data)
+            await message.edit(content=None)
+        except discord.errors.NotFound:
+            # The user could delete the menu before we can do this
+            pass
+
+    @commands.command(aliases=['seriesscroll', 'ss'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def collabscroll(self, ctx, *, query):
+        dgcog = await self.get_dgcog()
+        monster: "MonsterModel" = await find_monster(dgcog, query)
+
+        if monster is None:
+            await self.send_id_failure_message(ctx, query)
+            return
+        series_id = monster.series_id
+        series_object: "SeriesModel" = monster.series
+        title = series_object.name_en
+        monster_list = None
+        rarity = None
+        for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
+            monster_list = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            if monster_list:
+                break
+        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
+
+        raw_query = query
+        original_author_id = ctx.message.author.id
+        color = await self.get_user_embed_color(ctx)
+        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_min_indices = {rarity: SeriesScrollMenu.SCROLL_INITIAL_POSITION}
+        instruction_message = 'Click a reaction to see monster details!'
+
+        state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
+                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity),
+                                      all_rarities,
+                                      title, instruction_message,
+                                      reaction_list=initial_reaction_list)
+        parent_menu = SeriesScrollMenu.menu()
+        message = await ctx.send('Setting up!')
+
+        ims = state.serialize()
+        user_config = await BotConfig.get_user(self.config, ctx.author.id)
+        data = {
+            'dgcog': dgcog,
+            'user_config': user_config,
+        }
+        child_state = SimpleTextViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, color,
+                                          instruction_message,
+                                          reaction_list=[]
+                                          )
+        child_menu = SimpleTextMenu.menu()
+        child_message = await child_menu.create(ctx, child_state)
+
+        data['child_message_id'] = child_message.id
+        try:
+            await parent_menu.transition(message, ims, SeriesScrollMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
                                          **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
@@ -1124,6 +1186,7 @@ class PadInfo(commands.Cog, IdTest):
         await menu.create(ctx, state)
 
     @commands.command(aliases=["ids"])
+    @checks.bot_has_permissions(embed_links=True)
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
 
