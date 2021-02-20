@@ -112,10 +112,13 @@ class SeriesScrollView:
     @staticmethod
     def embed(state: SeriesScrollViewState):
         fields = [
-            EmbedField(SeriesScrollView._rarity_text(state.rarity, state.all_rarities),
+            EmbedField(SeriesScrollView._rarity_text(state.rarity),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list)) if state.monster_list else Box(
-                           'No monsters of this rarity to display'))
+                           'No monsters of this rarity to display')),
+            EmbedField('**All rarities**',
+                       Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity))
+                       ),
         ]
 
         return EmbedView(
@@ -127,11 +130,14 @@ class SeriesScrollView:
             embed_fields=fields)
 
     @staticmethod
-    def _rarity_text(this_rarity, all_rarities):
-        return 'Current rarity: {} ({})'.format(
-            str(this_rarity),
-            'All rarities: ' + ', '.join([str(_) for _ in all_rarities])
+    def _rarity_text(this_rarity):
+        return 'Current rarity: {}'.format(
+            str(this_rarity)
         )
+
+    @staticmethod
+    def _all_rarity_text(all_rarities, this_rarity):
+        return ', '.join([str(r) if r != this_rarity else '**{}**'.format(str(r)) for r in all_rarities])
 
     @staticmethod
     def _monster_list(monsters):
