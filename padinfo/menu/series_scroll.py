@@ -27,7 +27,7 @@ def _set_min_index(ims, val):
 class SeriesScrollMenu:
     MENU_TYPE = 'SeriesScrollMenu'
     CHILD_MENU_TYPE = 'IdMenu'
-    SCROLL_INTERVAL = 5
+    SCROLL_INTERVAL = SeriesScrollViewState.MAX_ITEMS_PER_PANE
     RARITY_INITIAL_TRY_ORDER = [6, 7, 8, 9, 10, 5, 4, 3, 11, 12, 2, 1, 13, 14]
     SCROLL_INITIAL_POSITION = 0
 
@@ -67,10 +67,9 @@ class SeriesScrollMenu:
 
     @staticmethod
     async def respond_with_down(message: Optional[Message], ims, **data):
-        _set_min_index(ims, max(min(
-            _get_min_index(ims) + SeriesScrollMenu.SCROLL_INTERVAL,
-            len(ims['full_monster_list']) - SeriesScrollViewState.MAX_ITEMS_PER_PANE
-        ), 0))
+        attempted_new_index = _get_min_index(ims) + SeriesScrollMenu.SCROLL_INTERVAL
+        if attempted_new_index < len(ims['full_monster_list']):
+            _set_min_index(ims, attempted_new_index)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
