@@ -169,8 +169,8 @@ class SeriesScrollMenuPanes(MenuPanes):
         SeriesScrollMenu.respond_with_delete: ('\N{CROSS MARK}', None, True, False),
         SeriesScrollMenu.respond_with_monster_list: (
             emoji_buttons[SeriesScrollPaneNames.home], SeriesScrollPaneNames.home, True, False),
-        SeriesScrollMenu.respond_with_left: ('\N{LEFTWARDS BLACK ARROW}', SeriesScrollView.VIEW_TYPE, True, False),
-        SeriesScrollMenu.respond_with_right: ('\N{BLACK RIGHTWARDS ARROW}', SeriesScrollView.VIEW_TYPE, True, False),
+        SeriesScrollMenu.respond_with_left: ('\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
+        SeriesScrollMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
         SeriesScrollMenu.respond_with_up: (
             '\N{BLACK UP-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
         SeriesScrollMenu.respond_with_down: (
