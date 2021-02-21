@@ -65,5 +65,5 @@ class TransformInfoMenuPanes(MenuPanes):
     DATA = {
         TransformInfoMenu.respond_with_overview: (emoji_buttons['home'], TransformInfoView.VIEW_TYPE),
         TransformInfoMenu.respond_with_base: ('\N{DOWN-POINTING RED TRIANGLE}', IdView.VIEW_TYPE),
-        TransformInfoMenu.respond_with_transform: ('\N{BLACK RIGHT-POINTING TRIANGLE}', IdView.VIEW_TYPE),
+        TransformInfoMenu.respond_with_transform: ('\N{UP-POINTING RED TRIANGLE}', IdView.VIEW_TYPE),
     }
