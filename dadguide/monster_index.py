@@ -33,7 +33,7 @@ class MonsterIndex(tsutils.aobject):
         self.series_id_to_pantheon_nickname = \
             defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
                               for m in db.get_all_monsters()
-                              if m.series.name_en.lower() not in HAZARDOUS_IN_NAME_PREFIXES})
+                              if m.series.name_en.lower() not in HAZARDOUS_IN_NAME_MODS})
 
         self.mwtoken_creators = defaultdict(set)
 
@@ -211,7 +211,7 @@ class MonsterIndex(tsutils.aobject):
                     for mevo in alt_monsters:
                         if not mevo.is_equip:
                             for token2 in self._get_important_tokens(mevo.name_en, treenames):
-                                if token2 not in HAZARDOUS_IN_NAME_PREFIXES:
+                                if token2 not in HAZARDOUS_IN_NAME_MODS:
                                     self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
@@ -235,7 +235,7 @@ class MonsterIndex(tsutils.aobject):
             return
 
         token_dict[token.lower()].add(m)
-        if token.lower() in self._known_mods and token.lower() not in HAZARDOUS_IN_NAME_PREFIXES:
+        if token.lower() in self._known_mods and token.lower() not in HAZARDOUS_IN_NAME_MODS:
             self.modifiers[m].add(token.lower())
 
         # Replacements

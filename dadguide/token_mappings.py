@@ -308,7 +308,8 @@ LEGAL_END_TOKENS = {
     "eq",
 }
 
-HAZARDOUS_IN_NAME_PREFIXES = {
+# These tokens have been found to be harmful and will only be added to monsters explicitly.
+HAZARDOUS_IN_NAME_MODS = {
     "reincarnated",
     "awoken",
 
