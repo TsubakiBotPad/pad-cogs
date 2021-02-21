@@ -56,19 +56,21 @@ class MonsterIndex(tsutils.aobject):
 
         for m_id, name, lp, ov, i in nickname_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     self.treename_overrides.add(mid)
                 if lp:
                     self.monster_id_to_nametokens[mid].update(self._name_to_tokens(name))
                 else:
-                    if " " in name.strip():
+                    if " " in name:
                         self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
         for m_id, name, mp, ov, i in treenames_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     for emid in self.graph.get_alt_ids_by_id(mid):
@@ -77,14 +79,15 @@ class MonsterIndex(tsutils.aobject):
                     for emid in self.graph.get_alt_ids_by_id(mid):
                         self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
                 else:
-                    if " " in name.strip():
+                    if " " in name:
                         self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
 
         for sid, name in pantheon_data:
             if sid.isdigit():
-                if " " in name.strip():
+                name = name.strip().lower()
+                if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
@@ -97,8 +100,8 @@ class MonsterIndex(tsutils.aobject):
             if mid.isdigit():
                 mid = int(mid)
                 for mod in mods.split(","):
-                    mod = mod.strip()
-                    if " " in mod.strip():
+                    mod = mod.strip().lower()
+                    if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
                     self.manual_prefixes[mid].update(get_modifier_aliases(mod))
@@ -108,7 +111,7 @@ class MonsterIndex(tsutils.aobject):
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
-                    if " " in mod.strip():
+                    if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
