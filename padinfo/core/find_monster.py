@@ -239,11 +239,12 @@ class FindMonster:
                 # Match na on id overlap
                 bool(monster.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                 SERIES_TYPE_PRIORITY.get(monster.series.series_type),
-                monster.on_na if monster.series.series_type == "collab" else 0,
+                monster.on_na if monster.series.series_type == "collab" else True,
                 dgcog.database.graph.monster_is_rem_evo(monster),
                 not all(t.value in [0, 12, 14, 15] for t in monster.types),
                 not any(t.value in [0, 12, 14, 15] for t in monster.types),
                 -dgcog.database.graph.get_base_id(monster),
+                monster.on_na,
                 monster.rarity,
                 monster.monster_no_na)
 
