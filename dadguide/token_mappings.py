@@ -311,6 +311,13 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_PREFIXES = {
     "reincarnated",
     "awoken",
+
+    "sonia",
+    "odin",
+    "metatron",
+    "kali",
+    "fenrir",
+    "sherias",
 }
 
 ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',

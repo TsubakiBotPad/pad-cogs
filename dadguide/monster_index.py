@@ -6,8 +6,8 @@ import re
 from collections import defaultdict
 
 import aiohttp
-from redbot.core.utils import AsyncIter
 import tsutils
+from redbot.core.utils import AsyncIter
 
 from .token_mappings import *
 
@@ -22,6 +22,7 @@ TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
 logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
+
 class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
@@ -29,9 +30,10 @@ class MonsterIndex(tsutils.aobject):
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_nametokens = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
-                                                                for m
-                                                                in db.get_all_monsters()})
+        self.series_id_to_pantheon_nickname = \
+            defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
+                              for m in db.get_all_monsters()
+                              if m.series.name_en.lower() not in HAZARDOUS_IN_NAME_PREFIXES})
 
         self.mwtoken_creators = defaultdict(set)
 
@@ -112,7 +114,6 @@ class MonsterIndex(tsutils.aobject):
                     aliases = get_modifier_aliases(mod)
                     for emid in self.graph.get_alt_ids_by_id(mid):
                         self.manual_prefixes[emid].update(aliases)
-
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
@@ -240,7 +241,7 @@ class MonsterIndex(tsutils.aobject):
         # Replacements
         for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
             for t in self.replacement_tokens[ts]:
-                self.add_name_token(token_dict, t, m, depth-1)
+                self.add_name_token(token_dict, t, m, depth - 1)
 
     @staticmethod
     def _name_to_tokens(oname):
@@ -434,6 +435,7 @@ def copydict(token_dict):
         copy[k] = v.copy()
     return copy
 
+
 def combine_tokens_dicts(d1, *ds):
     combined = defaultdict(set, d1.copy())
     for d2 in ds:
@@ -445,6 +447,7 @@ def combine_tokens_dicts(d1, *ds):
 def token_count(tstr):
     tstr = re.sub(r"\(.+\)", "", tstr)
     return len(re.split(r'\W+', tstr))
+
 
 def get_modifier_aliases(mod):
     output = {mod}
