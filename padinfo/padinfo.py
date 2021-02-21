@@ -762,16 +762,16 @@ class PadInfo(commands.Cog, IdTest):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
-        base_mon, transformed_mon = await perform_transforminfo_query(dgcog, query)
+        base_mon, transformed_mon, reaction_ids = await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
             return
 
         if not transformed_mon:
-            await ctx.send(
-                'Your query `{}` found [{}] {}, '.format(query, base_mon.monster_id,
-                                                         base_mon.name_en) + 'which has no evos that transform.')
+            await ctx.send('Your query `{}` '.format(query)
+                           + 'found [{}] {}, '.format(base_mon.monster_id, base_mon.name_en)
+                           + 'which has no evos that transform.')
             return
 
         color = await self.get_user_embed_color(ctx)

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.text import Text
+from discordmenu.embed.text import Text, BoldText, LabeledText
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
@@ -10,13 +10,15 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.id import IdView
 from padinfo.view.components.view_state_base import ViewStateBase
+from padinfo.view.leader_skill import createMultiplierText
+from padinfo.view.id import IdView
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
+TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 
 class TransformInfoViewState(ViewStateBase):
@@ -65,6 +67,18 @@ class TransformInfoViewState(ViewStateBase):
         return acquire_raw, base_rarity, true_evo_type_raw
 
 
+def _get_tf_stat_diff_text(stat, tf_stat):
+    return Box(
+        Text(str(stat)),
+        Text('-> {}'.format(tf_stat)),
+        delimiter=' '
+    )
+
+
+def transformat(text: str):
+    return '__{}__'.format(text)
+
+
 def base_info(m: "MonsterModel"):
     return Box(
         Box(
@@ -74,6 +88,52 @@ def base_info(m: "MonsterModel"):
             delimiter=' '
         ),
         IdView.super_awakenings_row(m)
+    )
+
+
+def stats(base_mon: "MonsterModel", transformed_mon: "MonsterModel"):
+    base_hp, base_atk, base_rcv, base_weighted = base_mon.stats()
+    tf_hp, tf_atk, tf_rcv, tf_weighed = transformed_mon.stats()
+    return Box(
+        LabeledText('HP', _get_tf_stat_diff_text(base_hp, tf_hp)),
+        LabeledText('ATK', _get_tf_stat_diff_text(base_atk, tf_atk)),
+        LabeledText('RCV', _get_tf_stat_diff_text(base_rcv, tf_rcv))
+    )
+
+
+def transform_active_header(m: "MonsterModel"):
+    active_skill = m.active_skill
+    active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
+    return Box(
+        TRANSFORM_EMOJI,
+        BoldText('Transform Active Skill {}'.format(active_cd)),
+        delimiter=' '
+    )
+
+
+def base_active_header(m: "MonsterModel"):
+    return Box(
+        BASE_EMOJI,
+        BoldText('Base'),
+        IdView.active_skill_header(m, m),
+        delimiter=' '
+    )
+
+
+def leader_header(m: "MonsterModel", is_base: bool):
+    if is_base:
+        emoji = BASE_EMOJI
+        label = 'Base'
+    else:
+        emoji = TRANSFORM_EMOJI
+        label = 'Transform'
+    leader_skill = m.leader_skill
+
+    return Box(
+        emoji,
+        BoldText(label),
+        IdView.leader_skill_header(m).to_markdown(),
+        delimiter=' '
     )
 
 
@@ -89,30 +149,44 @@ class TransformInfoView:
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
-                    IdView.normal_awakenings_row(transformed_mon)
-                    if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
+                    Box(
+                        TRANSFORM_EMOJI,
+                        IdView.normal_awakenings_row(transformed_mon)
+                            if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
+                        delimiter=' '
+                    ),
                     base_info(base_mon),
-                    IdView.killers_row(transformed_mon, base_mon)
+                    IdView.killers_row(base_mon, base_mon)
                 ),
             ),
             EmbedField(
-                'Card info',
+                BoldText(transformat('Card info')),
                 IdView.misc_info(transformed_mon, state.true_evo_type_raw, state.acquire_raw,
                                  state.base_rarity),
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(transformed_mon).to_markdown(),
-                IdView.stats(transformed_mon),
+                BoldText('Stats -> ' + transformat('Transform')),
+                stats(base_mon, transformed_mon),
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(transformed_mon, base_mon).to_markdown(),
-                Text(transformed_mon.active_skill.desc if transformed_mon.active_skill else 'None')
+                transformat(transform_active_header(transformed_mon).to_markdown()),
+                Box(
+                    Text(transformed_mon.active_skill.desc if transformed_mon.active_skill
+                        else 'None'),
+                    base_active_header(base_mon).to_markdown(),
+                    Text(base_mon.active_skill.desc if base_mon.active_skill else 'None')
+                )
             ),
             EmbedField(
-                IdView.leader_skill_header(transformed_mon).to_markdown(),
-                Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill else 'None')
+                transformat(leader_header(transformed_mon, False).to_markdown()),
+                Box(
+                    Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill
+                        else 'None'),
+                    leader_header(base_mon, True).to_markdown(),
+                    Text(base_mon.leader_skill.desc if base_mon.leader_skill else 'None')
+                )
             )
         ]
 
