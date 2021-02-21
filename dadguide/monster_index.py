@@ -40,7 +40,7 @@ class MonsterIndex(tsutils.aobject):
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
                                   in db.get_all_monsters()
-                                  if " " in m.series.name_en}.union(MULTI_WORD_TOKENS)
+                                  if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
         self.treename_overrides = set()
@@ -56,6 +56,7 @@ class MonsterIndex(tsutils.aobject):
 
         for m_id, name, lp, ov, i in nickname_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     self.treename_overrides.add(mid)
@@ -69,6 +70,7 @@ class MonsterIndex(tsutils.aobject):
 
         for m_id, name, mp, ov, i in treenames_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     for emid in self.graph.get_alt_ids_by_id(mid):
@@ -84,6 +86,7 @@ class MonsterIndex(tsutils.aobject):
 
         for sid, name in pantheon_data:
             if sid.isdigit():
+                name = name.strip().lower()
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
@@ -97,7 +100,7 @@ class MonsterIndex(tsutils.aobject):
             if mid.isdigit():
                 mid = int(mid)
                 for mod in mods.split(","):
-                    mod = mod.strip()
+                    mod = mod.strip().lower()
                     if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
