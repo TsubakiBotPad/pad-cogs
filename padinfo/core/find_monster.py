@@ -235,7 +235,7 @@ class FindMonster:
              
         return (matches[monster].score,
                 # Don't deprio evos with new modifier
-                not monster.is_equip if 'new' not in {m[0] for m in matches[monster].mod} else True,
+                not monster.is_equip if not {m[0] for m in matches[monster].mod}.intersection({'new', 'base'}) else True,
                 # Match na on id overlap
                 bool(monster.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                 SERIES_TYPE_PRIORITY.get(monster.series.series_type),
@@ -245,6 +245,7 @@ class FindMonster:
                 not any(t.value in [0, 12, 14, 15] for t in monster.types),
                 -dgcog.database.graph.get_base_id(monster),
                 monster.on_na,
+                not monster.is_equip,
                 monster.rarity,
                 monster.monster_no_na)
 
