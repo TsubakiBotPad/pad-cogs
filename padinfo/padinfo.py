@@ -762,7 +762,7 @@ class PadInfo(commands.Cog, IdTest):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
-        base_mon, transformed_mon = await perform_transforminfo_query(dgcog, query)
+        base_mon, transformed_mon, reaction_ids = await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
