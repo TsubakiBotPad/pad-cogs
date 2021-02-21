@@ -563,6 +563,10 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+
+    def monster_is_new(self, monster: MonsterModel):
+        latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
+        return monster.reg_date == latest_time
     
     def monster_acquisition(self, monster: MonsterModel):
         acquire_text = None
