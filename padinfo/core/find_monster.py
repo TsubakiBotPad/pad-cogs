@@ -234,7 +234,8 @@ class FindMonster:
             tokenized_query = []
              
         return (matches[monster].score,
-                not monster.is_equip,
+                # Don't deprio evos with new modifier
+                not monster.is_equip if 'new' not in {m[0] for m in matches[monster].mod} else True,
                 # Match na on id overlap
                 bool(monster.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                 SERIES_TYPE_PRIORITY.get(monster.series.series_type),
