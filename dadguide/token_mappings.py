@@ -312,7 +312,9 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_MODS = {
     "reincarnated",
     "awoken",
+}
 
+PROBLEMATIC_SERIES_TOKENS = {
     "sonia",
     "odin",
     "metatron",

@@ -33,7 +33,7 @@ class MonsterIndex(tsutils.aobject):
         self.series_id_to_pantheon_nickname = \
             defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
                               for m in db.get_all_monsters()
-                              if m.series.name_en.lower() not in HAZARDOUS_IN_NAME_MODS})
+                              if m.series.name_en.lower() not in PROBLEMATIC_SERIES_TOKENS})
 
         self.mwtoken_creators = defaultdict(set)
 
