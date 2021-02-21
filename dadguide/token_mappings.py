@@ -308,9 +308,19 @@ LEGAL_END_TOKENS = {
     "eq",
 }
 
-HAZARDOUS_IN_NAME_PREFIXES = {
+# These tokens have been found to be harmful and will only be added to monsters explicitly.
+HAZARDOUS_IN_NAME_MODS = {
     "reincarnated",
     "awoken",
+}
+
+PROBLEMATIC_SERIES_TOKENS = {
+    "sonia",
+    "odin",
+    "metatron",
+    "kali",
+    "fenrir",
+    "sherias",
 }
 
 ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
