@@ -380,6 +380,10 @@ class MonsterIndex(aobject):
         if is_story(m):
             modifiers.update(MISC_MAP[MiscModifiers.STORY])
 
+        # New
+        if self.graph.monster_is_new(m):
+            modifiers.update(MISC_MAP[MiscModifiers.NEW])
+
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
             modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
