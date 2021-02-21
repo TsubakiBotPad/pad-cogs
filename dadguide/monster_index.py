@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import aiohttp
 from redbot.core.utils import AsyncIter
-from tsutils import aobject
+import tsutils
 
 from .token_mappings import *
 
@@ -22,7 +22,7 @@ TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
 logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
-class MonsterIndex(aobject):
+class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
 
@@ -156,6 +156,8 @@ class MonsterIndex(aobject):
 
             # Propagate name tokens throughout all evos
             for me in alt_monsters:
+                if tsutils.contains_ja(me.name_en):
+                    continue
                 if last_token != me.name_en.split(',')[-1].strip():
                     autotoken = False
                 for t in self.monster_id_to_nametokens[me.monster_id]:
@@ -175,8 +177,8 @@ class MonsterIndex(aobject):
                         treenames.add(match.group(1))
 
             # Add important tokens
-            for t in self.monster_id_to_nametokens[m.monster_id]:
-                self.add_name_token(self.name_tokens, t, m)
+            for token in self.monster_id_to_nametokens[m.monster_id]:
+                self.add_name_token(self.name_tokens, token, m)
             if m.monster_id in self.treename_overrides:
                 pass
             elif autotoken:
@@ -208,7 +210,8 @@ class MonsterIndex(aobject):
                     for mevo in alt_monsters:
                         if not mevo.is_equip:
                             for token2 in self._get_important_tokens(mevo.name_en, treenames):
-                                self.add_name_token(self.name_tokens, token2, m)
+                                if token2 not in HAZARDOUS_IN_NAME_PREFIXES:
+                                    self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
             for token in nametokens:
@@ -252,6 +255,9 @@ class MonsterIndex(aobject):
     def _get_important_tokens(cls, oname, treenames=None):
         if treenames is None:
             treenames = set()
+
+        if tsutils.contains_ja(oname):
+            return list(treenames)
 
         name = oname.split(", ")
         if len(name) == 1:
