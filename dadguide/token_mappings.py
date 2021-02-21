@@ -249,6 +249,7 @@ class MiscModifiers(Enum):
     EVENT = 'Metaseries: Event'
     SEASONAL = 'Metaseries: Seasonal'
     COLLAB = 'Metaseries: Collab'
+    NEW = 'Newest monster in series'
 
 
 MISC_MAP = {
@@ -264,7 +265,8 @@ MISC_MAP = {
     MiscModifiers.REGULAR: ('regular',),
     MiscModifiers.EVENT: ('event',),
     MiscModifiers.SEASONAL: ('seasonal',),
-    MiscModifiers.COLLAB: ('collab',)
+    MiscModifiers.COLLAB: ('collab',),
+    MiscModifiers.NEW: ('new',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
