@@ -81,6 +81,7 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     75: 'cc_wood',
     76: 'cc_light',
     77: 'cc_dark',
+    78: 'cross_attack',
 }
 
 AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
