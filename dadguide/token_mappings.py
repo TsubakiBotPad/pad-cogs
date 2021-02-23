@@ -233,6 +233,7 @@ AWOKEN_MAP = {
     Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
     Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
     Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
+    Awakenings.CROSSATTACK: ('crossattack', 'crossblind'),
 }
 
 
