@@ -776,11 +776,9 @@ class PadInfo(commands.Cog, IdTest):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        acquire_raw, base_rarity, true_evo_type_raw = \
-            await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, base_rarity, acquire_raw,
-                                       true_evo_type_raw)
+                                       color, base_mon, transformed_mon, acquire_raw)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 
