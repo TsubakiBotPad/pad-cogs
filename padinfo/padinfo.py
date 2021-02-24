@@ -183,7 +183,6 @@ class PadInfo(commands.Cog, IdTest):
         if not ims:
             return
 
-        original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         menu_map = {
             ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
@@ -203,13 +202,14 @@ class PadInfo(commands.Cog, IdTest):
         menu_func = menu_1_class.menu
 
         menu = menu_func()
+
         if not (await menu.should_respond(
                         message, reaction, await self.get_reaction_filters(
-                            original_author_id, menu_to_emoji_list_map[menu_type]), member)):
+                            ims['original_author_id'], menu_to_emoji_list_map[menu_type]), member)):
             return
 
         dgcog = await self.get_dgcog()
-        user_config = await BotConfig.get_user(self.config, original_author_id)
+        user_config = await BotConfig.get_user(self.config, ims['original_author_id'])
         data = {
             'dgcog': dgcog,
             'user_config': user_config
