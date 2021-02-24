@@ -9,12 +9,13 @@ entire database could be leaked when the module is reloaded.
 import asyncio
 import os
 import shutil
+import time
 from io import BytesIO
 from typing import Optional
 
 import tsutils
-from redbot.core import checks, data_manager
-from redbot.core import commands
+from redbot.core import checks, data_manager, commands
+from tsutils import auth_check
 
 from . import token_mappings
 from .database_loader import load_database
@@ -66,10 +67,17 @@ class Dadguide(commands.Cog):
         self.database = None
         self.index = None  # type: Optional[MonsterIndex]
 
+        self.fir_lock = asyncio.Lock()
+        self.fir3_lock = asyncio.Lock()
+
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
+
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("contentadmin")
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.
@@ -91,9 +99,36 @@ class Dadguide(commands.Cog):
         """
         return
 
+    @commands.command(aliases=['fir'])
+    @auth_check('contentadmin')
+    async def forceindexreload(self, ctx):
+        if self.fir_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir_lock:
+            start = time.perf_counter()
+            await ctx.send('Starting reload...')
+            await self.wait_until_ready()
+            await self.download_and_refresh_nicknames()
+            await ctx.send('Reload finished in {} seconds.'.format(round(time.perf_counter() - start, 2)))
+
+    @commands.command(aliases=['fir3'])
+    @auth_check('contentadmin')
+    async def forceindexreload3(self, ctx):
+        if self.fir3_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir3_lock:
+            start = time.perf_counter()
+            await self.wait_until_ready()
+            await self.create_index()
+            await ctx.send('Reload finished in {} seconds.'.format(round(time.perf_counter() - start, 2)))
+
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        self.index = await MonsterIndex(self.database.get_all_monsters(False), self.database)
+        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database)
 
     def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
