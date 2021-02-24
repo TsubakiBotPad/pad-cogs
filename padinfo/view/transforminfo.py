@@ -23,14 +23,12 @@ TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 base_rarity, acquire_raw, true_evo_type_raw):
+                 acquire_raw):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
-        self.base_rarity = base_rarity
         self.acquire_raw = acquire_raw
-        self.true_evo_type_raw = true_evo_type_raw
 
     def serialize(self):
         ret = super().serialize()
@@ -51,20 +49,16 @@ class TransformInfoViewState(ViewStateBase):
         base_mon = dgcog.get_monster(base_mon_id)
         transformed_mon = dgcog.get_monster(transformed_mon_id)
 
-        acquire_raw, base_rarity, true_evo_type_raw = \
-            await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-                                      base_mon, transformed_mon, base_rarity, acquire_raw,
-                                      true_evo_type_raw)
+                                      base_mon, transformed_mon, acquire_raw)
 
     @staticmethod
     async def query(dgcog, base_mon, transformed_mon):
         db_context = dgcog.database
         acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
-        base_rarity = db_context.graph.get_base_monster_by_id(transformed_mon.monster_no).rarity
-        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(transformed_mon).value
-        return acquire_raw, base_rarity, true_evo_type_raw
+        return acquire_raw
 
 
 def _get_tf_stat_diff_text(stat, tf_stat):
@@ -89,6 +83,18 @@ def base_info(m: "MonsterModel"):
         ),
         IdView.super_awakenings_row(m)
     )
+
+
+def card_info(base_mon: "MonsterModel", transformed_mon: "MonsterModel", acquire_raw):
+    rarity = Box(
+        LabeledText('Rarity', '{} -> {}'.format(base_mon.rarity, transformed_mon.rarity)),
+        Text("" if base_mon.orb_skin_id is None else "(Orb Skin)"),
+        delimiter=' '
+    )
+    cost = LabeledText('Cost', '{} -> {}'.format(base_mon.cost, transformed_mon.cost))
+    acquire = BoldText(acquire_raw) if acquire_raw else None
+
+    return Box(rarity, cost, acquire)
 
 
 def stats(base_mon: "MonsterModel", transformed_mon: "MonsterModel"):
@@ -161,8 +167,7 @@ class TransformInfoView:
             ),
             EmbedField(
                 BoldText(transformat('Card info')),
-                IdView.misc_info(transformed_mon, state.true_evo_type_raw, state.acquire_raw,
-                                 state.base_rarity),
+                card_info(base_mon, transformed_mon, state.acquire_raw),
                 inline=True
             ),
             EmbedField(
