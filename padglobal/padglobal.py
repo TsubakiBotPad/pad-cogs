@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import re
-import time
 from collections import defaultdict
 from io import BytesIO
 
@@ -107,9 +106,6 @@ class PadGlobal(commands.Cog):
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
 
-        self.fir_lock = asyncio.Lock()
-        self.fir3_lock = asyncio.Lock()
-
         self._export_data()
 
     async def red_get_data_for_user(self, *, user_id):
@@ -189,35 +185,6 @@ class PadGlobal(commands.Cog):
             self.settings.addDisabledServer(server_id)
         status = 'disabled' if self.settings.checkDisabled(ctx.message) else 'enabled'
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
-
-    @commands.command(aliases=['fir'])
-    @auth_check('contentadmin')
-    async def forceindexreload(self, ctx):
-        if self.fir_lock.locked():
-            await ctx.send("Index is already being reloaded.")
-            return
-
-        async with ctx.typing(), self.fir_lock:
-            start = time.perf_counter()
-            await ctx.send('Starting reload...')
-            dadguide_cog = self.bot.get_cog('Dadguide')
-            await dadguide_cog.download_and_refresh_nicknames()
-            await dadguide_cog.wait_until_ready()
-            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
-
-    @commands.command(aliases=['fir3'])
-    @auth_check('contentadmin')
-    async def forceindexreload3(self, ctx):
-        if self.fir3_lock.locked():
-            await ctx.send("Index2 is already being reloaded.")
-            return
-
-        async with ctx.typing(), self.fir3_lock:
-            start = time.perf_counter()
-            dgcog = self.bot.get_cog('Dadguide')
-            await dgcog.wait_until_ready()
-            await dgcog.create_index()
-            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
     @auth_check('contentadmin')

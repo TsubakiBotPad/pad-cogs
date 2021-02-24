@@ -357,7 +357,10 @@ class MonsterIndex(tsutils.aobject):
 
         # Awakenings
         for aw in m.awakenings:
-            modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
+            try:
+                modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
+            except ValueError:
+                logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
