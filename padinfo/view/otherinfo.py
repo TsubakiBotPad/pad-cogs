@@ -32,7 +32,7 @@ def statsbox(m):
     tbl.hrules = prettytable.NONE
     tbl.vrules = prettytable.NONE
     tbl.align = "l"
-    levels = (m.level, 110) if m.limit_mult > 0 else (m.level,)
+    levels = (m.level, 110, 120) if m.limit_mult > 0 else (m.level,)
     for lv in levels:
         for inh in (False, True):
             hp, atk, rcv, _ = m.stats(lv, plus=297, inherit=inh)
