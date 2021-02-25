@@ -153,20 +153,20 @@ class MonsterIndex(tsutils.aobject):
             nametokens = self._name_to_tokens(m.name_en)
             last_token = m.name_en.split(',')[-1].strip()
             alt_monsters = self.graph.get_alt_monsters(m)
-            autotoken = len(alt_monsters) > 1
+            autotoken = len(me for me in alt_monsters if not me.is_equip) > 1
 
             for jpt in m.name_ja.split(" "):
                 self.name_tokens[jpt].add(m)
 
             # Propagate name tokens throughout all evos
             for me in alt_monsters:
-                if tsutils.contains_ja(me.name_en):
-                    continue
-                if last_token != me.name_en.split(',')[-1].strip():
-                    autotoken = False
                 for t in self.monster_id_to_nametokens[me.monster_id]:
                     if t in nametokens:
                         self.add_name_token(self.name_tokens, t, m)
+                if me.is_equip or tsutils.contains_ja(me.name_en):
+                    continue
+                if last_token != me.name_en.split(',')[-1].strip():
+                    autotoken = False
 
             # Find likely treenames
             treenames = set()
