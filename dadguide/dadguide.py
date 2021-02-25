@@ -7,26 +7,22 @@ Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
 import asyncio
-import csv
-import difflib
-import json
-import logging
 import os
 import shutil
-import tsutils
+import time
 from io import BytesIO
-from collections import defaultdict
-from redbot.core import checks, data_manager
-from redbot.core import commands
+from typing import Optional
 
-from .database_manager import *
-from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .old_monster_index import MonsterIndex
-from .monster_index import MonsterIndex2
-from .database_loader import load_database
+import tsutils
+from redbot.core import checks, data_manager, commands
+from tsutils import auth_check
+
 from . import token_mappings
-
+from .database_loader import load_database
+from .database_manager import *
 from .models.monster_model import MonsterModel
+from .models.monster_stats import monster_stats, MonsterStatModifierInput
+from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
 
@@ -68,25 +64,20 @@ class Dadguide(commands.Cog):
 
         self.settings = DadguideSettings("dadguide")
 
-        # A string -> int mapping, nicknames to monster_id_na
-        self.nickname_overrides = {}
-
-        # An int -> set(string), monster_id_na to set of treename overrides
-        self.treename_overrides = defaultdict(set)
-
-        self.panthname_overrides = defaultdict(set)
-
-        # Map of google-translated JP names to EN names
-        self.translated_names = {}
-
         self.database = None
-        self.index = None  # type: MonsterIndex
-        self.index2 = None  # type: MonsterIndex2
+        self.index = None  # type: Optional[MonsterIndex]
+
+        self.fir_lock = asyncio.Lock()
+        self.fir3_lock = asyncio.Lock()
 
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
+
+        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        if GADMIN_COG:
+            GADMIN_COG.register_perm("contentadmin")
 
     async def wait_until_ready(self):
         """Wait until the Dadguide cog is ready.
@@ -108,19 +99,36 @@ class Dadguide(commands.Cog):
         """
         return
 
-    async def create_index(self, accept_filter=None):
-        """Exported function that allows a client cog to create an id1/2 monster index"""
-        await self.wait_until_ready()
-        return await MonsterIndex(self.database,
-                                  self.nickname_overrides,
-                                  self.treename_overrides,
-                                  self.panthname_overrides,
-                                  accept_filter=accept_filter)
+    @commands.command(aliases=['fir'])
+    @auth_check('contentadmin')
+    async def forceindexreload(self, ctx):
+        if self.fir_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
 
-    async def create_index2(self):
+        async with ctx.typing(), self.fir_lock:
+            start = time.perf_counter()
+            await ctx.send('Starting reload...')
+            await self.wait_until_ready()
+            await self.download_and_refresh_nicknames()
+            await ctx.send('Reload finished in {} seconds.'.format(round(time.perf_counter() - start, 2)))
+
+    @commands.command(aliases=['fir3'])
+    @auth_check('contentadmin')
+    async def forceindexreload3(self, ctx):
+        if self.fir3_lock.locked():
+            await ctx.send("Index is already being reloaded.")
+            return
+
+        async with ctx.typing(), self.fir3_lock:
+            start = time.perf_counter()
+            await self.wait_until_ready()
+            await self.create_index()
+            await ctx.send('Reload finished in {} seconds.'.format(round(time.perf_counter() - start, 2)))
+
+    async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        await self.wait_until_ready()
-        return await MonsterIndex2(self.database.get_all_monsters(False), self.database)
+        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database)
 
     def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
@@ -144,7 +152,8 @@ class Dadguide(commands.Cog):
         while self == self.bot.get_cog('Dadguide'):
             short_wait = False
             try:
-                await self.download_and_refresh_nicknames()
+                async with tsutils.StatusManager(self.bot):
+                    await self.download_and_refresh_nicknames()
                 logger.info('Done refreshing Dadguide, triggering ready')
                 self._is_ready.set()
             except Exception as ex:
@@ -158,12 +167,6 @@ class Dadguide(commands.Cog):
                 logger.exception("dadguide data wait loop failed: %s", ex)
                 raise ex
 
-    async def reload_config_files(self):
-        os.remove(NICKNAME_FILE_PATTERN)
-        os.remove(TREENAME_FILE_PATTERN)
-        os.remove(PANTHNAME_FILE_PATTERN)
-        await self.download_and_refresh_nicknames()
-
     async def download_and_refresh_nicknames(self):
         if self.settings.data_file():
             logger.info('Copying dg data file')
@@ -172,88 +175,16 @@ class Dadguide(commands.Cog):
             logger.info('Downloading dg data files')
             await self._download_files()
 
-        logger.info('Downloading dg name override files')
-        await self._download_override_files()
-
-        logger.info('Loading dg name overrides')
-        nickname_overrides = self._csv_to_tuples(NICKNAME_FILE_PATTERN, 6)
-        treename_overrides = self._csv_to_tuples(TREENAME_FILE_PATTERN, 6)
-        panthname_overrides = self._csv_to_tuples(PANTHNAME_FILE_PATTERN, 3)
-
-        self.nickname_overrides = defaultdict(set)
-        for id, nick, _, _, _, i in nickname_overrides:
-            if id.isdigit() and not i:
-                self.nickname_overrides[int(id)].add(nick.lower())
-
-        self.treename_overrides = defaultdict(set)
-        for id, treename, _, _, _, i in treename_overrides:
-            if id.isdigit() and not i:
-                self.treename_overrides[int(id)].add(treename.lower())
-
-        self.panthname_overrides = {x[1].lower(): x[2].lower() for x in panthname_overrides}
-        self.panthname_overrides.update({v: v for _, v in self.panthname_overrides.items()})
-
         logger.info('Loading dg database')
         self.database = load_database(self.database)
         logger.info('Building dg monster index')
-        self.index = await MonsterIndex(self.database, self.nickname_overrides,
-                                        self.treename_overrides, self.panthname_overrides)
-        self.index2 = await MonsterIndex2(self.database.get_all_monsters(False), self.database)
-
-        logger.info('Writing dg monster computed names')
-        self.write_monster_computed_names()
+        await self.create_index()
 
         logger.info('Done refreshing dg data')
-
-    def write_monster_computed_names(self):
-        results = {}
-        for name, nm in self.index.all_entries.items():
-            results[name] = int(tsutils.get_pdx_id_dadguide(nm))
-
-        with open(NAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f)
-
-        results = {}
-        for nm in self.index.all_monsters:
-            entry = {'bn': list(nm.group_treenames)}
-            if nm.extra_nicknames:
-                entry['nn'] = list(nm.extra_nicknames)
-            results[int(tsutils.get_pdx_id_dadguide(nm))] = entry
-
-        with open(TREENAMES_EXPORT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(results, f)
-
-    def _csv_to_tuples(self, file_path: str, cols: int = 2):
-        # Loads a two-column CSV into an array of tuples.
-        results = []
-        with open(file_path, encoding='utf-8') as f:
-            file_reader = csv.reader(f, delimiter=',')
-            for row in file_reader:
-                if len(row) < 2:
-                    continue
-
-                data = [None] * cols
-                for i in range(0, min(cols, len(row))):
-                    data[i] = row[i].strip()
-
-                if not len(data[0]):
-                    continue
-
-                results.append(data)
-        return results
 
     async def _download_files(self):
         one_hour_secs = 1 * 60 * 60
         await tsutils.async_cached_dadguide_request(DB_DUMP_FILE, DB_DUMP_URL, one_hour_secs)
-
-    async def _download_override_files(self):
-        one_hour_secs = 1 * 60 * 60
-        await tsutils.async_cached_plain_request(
-            NICKNAME_FILE_PATTERN, NICKNAME_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.async_cached_plain_request(
-            TREENAME_FILE_PATTERN, GROUP_TREENAMES_OVERRIDES_SHEET, one_hour_secs)
-        await tsutils.async_cached_plain_request(
-            PANTHNAME_FILE_PATTERN, PANTHNAME_OVERRIDES_SHEET, one_hour_secs)
 
     @commands.group()
     @checks.is_owner()

@@ -1,14 +1,16 @@
-from padinfo.core.find_monster import findMonsterCustom2
+from padinfo.core.find_monster import find_monster
 
 
-async def perform_transforminfo_query(dgcog, raw_query, beta_id3):
+async def perform_transforminfo_query(dgcog, raw_query):
     db_context = dgcog.database
     mgraph = dgcog.database.graph
-    found_monster, err, debug_info = await findMonsterCustom2(dgcog, beta_id3, raw_query)
+    found_monster = await find_monster(dgcog, raw_query)
 
     if not found_monster:
-        return found_monster, err, debug_info, None
+        return None, None, None
 
+    transformed_mon = None
+    base_mon = None
     altversions = mgraph.process_alt_versions(found_monster.monster_id)
     for mon_id in sorted(altversions):
         if mgraph.monster_is_transform_base_by_id(mon_id):
@@ -18,6 +20,16 @@ async def perform_transforminfo_query(dgcog, raw_query, beta_id3):
                 break
 
     if not transformed_mon:
-        return found_monster, err, debug_info, transformed_mon
+        return found_monster, None, None
 
-    return base_mon, err, debug_info, transformed_mon
+    reaction_ids = [base_mon.monster_id, transformed_mon.monster_id]
+    current_id = transformed_mon.monster_id
+    while True:
+        next_transform_id = mgraph.get_next_transform_id_by_monster_id(current_id)
+        if next_transform_id is not None and next_transform_id not in reaction_ids:
+            reaction_ids.append(next_transform_id)
+            current_id = next_transform_id
+        else:
+            break
+
+    return base_mon, transformed_mon, reaction_ids

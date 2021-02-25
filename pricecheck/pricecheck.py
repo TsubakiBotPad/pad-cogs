@@ -1,7 +1,6 @@
-import discord
-import re
 from io import BytesIO
-from redbot.core import Config, checks, commands
+
+from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check
 
@@ -14,11 +13,14 @@ PC_TEXT = """{name}
 {foot}
 """
 
+
 def rint(x, p):
     return str(round(x, p)).rstrip('0').rstrip('.')
 
+
 class PriceCheck(commands.Cog):
     """A pricechecking cog for Lumon"""
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -45,24 +47,26 @@ class PriceCheck(commands.Cog):
     async def pricecheck(self, ctx, *, query):
         """Displays pricing data for a tradable non-collab gem."""
         padinfo_cog = self.bot.get_cog('PadInfo')
-        if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+        dgcog = self.bot.get_cog("Dadguide")
+        if padinfo_cog is None or dgcog is None:
+            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog.fm_(query)
-        if not nm:
-            await ctx.send(err)
+        m = await padinfo_cog.fm3(query)
+        if not m:
+            await ctx.send("Monster not found.")
             return
+        base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
-            if str(nm.base_monster_no) not in pcs:
-                if nm.sell_mp < 100:
-                    await ctx.send("{} does not have PC data.".format(nm.name_en))
+            if base_id not in pcs:
+                if m.sell_mp < 100:
+                    await ctx.send("{} does not have PC data.".format(m.name_en))
                 else:
-                    await ctx.send("{} is not tradable.".format(nm.name_en))
+                    await ctx.send("{} is not tradable.".format(m.name_en))
                 return
-            sc, foot = pcs[str(nm.base_monster_no)]
-        pct = PC_TEXT.format(name=nm.name_en,
+            sc, foot = pcs[base_id]
+        pct = PC_TEXT.format(name=m.name_en,
                              stam_cost=rint(sc, 2),
                              pp_val=rint(sc * 83 / 50, 2),
                              points=rint(sc * 83 / 50 / 297, 2),
@@ -70,11 +74,11 @@ class PriceCheck(commands.Cog):
         if await self.config.channel(ctx.channel).dm():
             await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.author.send(box(page.replace("'","ʼ"), lang='q'))
+                await ctx.author.send(box(page.replace("'", "ʼ"), lang='q'))
         else:
             await ctx.send(DISCLAIMER)
             for page in pagify(pct):
-                await ctx.send(box(page.replace("'","ʼ"), lang='q'))
+                await ctx.send(box(page.replace("'", "ʼ"), lang='q'))
 
     @commands.group()
     @auth_check('pcadmin')
@@ -85,61 +89,66 @@ class PriceCheck(commands.Cog):
     async def set(self, ctx, stam_cost: float, *, query):
         """Adds stamina cost data to a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
+        dgcog = self.bot.get_cog("Dadguide")
         if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog.fm_(query)
-        if not nm:
-            await ctx.send(err)
+        m = await padinfo_cog.fm3(query)
+        if not m:
+            await ctx.send("Monster not found.")
             return
+        base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             foot = ""
-            if str(nm.base_monster_no) in pcs:
-                foot = pcs[str(nm.base_monster_no)][1]
-            pcs[str(nm.base_monster_no)] = (stam_cost, foot)
-        await ctx.send(box("Set {} ({}) to {}".format(nm.name_en, nm.base_monster_no, stam_cost)))
+            if base_id in pcs:
+                foot = pcs[base_id][1]
+            pcs[base_id] = (stam_cost, foot)
+        await ctx.send(box("Set {} ({}) to {}".format(m.name_en, base_id, stam_cost)))
 
     @pcadmin.command(aliases=['addfooter', 'addfoot', 'setfoot'])
     async def setfooter(self, ctx, query, *, footer=""):
         """Adds notes regarding the stamina cost of a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
-        if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+        dgcog = self.bot.get_cog('Dadguide')
+        if padinfo_cog is None or dgcog is None:
+            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog.fm_(query)
-        if not nm:
-            await ctx.send(err)
+        m = await padinfo_cog.fm3(query)
+        if not m:
+            await ctx.send("Monster not found.")
             return
+        base_id = str(dgcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             sc = -1
-            if str(nm.base_monster_no) in pcs:
-                sc = pcs[str(nm.base_monster_no)][0]
-            pcs[str(nm.base_monster_no)] = (sc, footer.strip('`'))
-        await ctx.send(box("Set {} ({}) footer to '{}'".format(nm.name_en, nm.base_monster_no, footer)))
+            if base_id in pcs:
+                sc = pcs[base_id][0]
+            pcs[base_id] = (sc, footer.strip('`'))
+        await ctx.send(box("Set {} ({}) footer to '{}'".format(m.name_en, base_id, footer)))
 
     @pcadmin.command(aliases=['delete', 'del', 'rm'])
     async def remove(self, ctx, *, query):
         """Removes stamina cost data from a card."""
         padinfo_cog = self.bot.get_cog('PadInfo')
-        if padinfo_cog is None:
-            await ctx.send(inline("Error: PadInfo Cog not loaded.  Please alert a bot owner."))
+        dgcog = self.bot.get_cog('Dadguide')
+        if padinfo_cog is None or dgcog is None:
+            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        nm, err, debug_info = await padinfo_cog.fm_(query)
-        if not nm:
-            await ctx.send(err)
+        m = await padinfo_cog.fm3(query)
+        if not m:
+            await ctx.send("Monster not found.")
             return
         async with self.config.pcs() as pcs:
-            if str(nm.base_monster_no) not in pcs:
-                await ctx.send("{} does not have PC data.".format(nm.name_en))
+            if str(dgcog.database.graph.get_base_id(m)) not in pcs:
+                await ctx.send("{} does not have PC data.".format(m.name_en))
                 return
-            del pcs[str(nm.base_monster_no)]
-        await ctx.send(inline("Removed PC data from {}.".format(nm.name_en)))
+            del pcs[str(dgcog.database.graph.get_base_id(m))]
+        await ctx.send(inline("Removed PC data from {}.".format(m.name_en)))
 
     @pcadmin.command()
     async def setdmonly(self, ctx, value: bool = True):

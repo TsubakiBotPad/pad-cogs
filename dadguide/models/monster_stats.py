@@ -39,6 +39,7 @@ class MonsterStatModifierInput:
 
 class MonsterStats:
     PLUS_DICT = {'hp': 10, 'atk': 5, 'rcv': 3}
+    LV_120_MULT_DICT = {'hp': 10, 'atk': 5, 'rcv': 5}
 
     def stat(self, monster_model, key: StatType, lv, plus=99, inherit=False, is_plus_297=True,
              stat_latents: MonsterStatModifierInput = None):
@@ -67,8 +68,10 @@ class MonsterStats:
             s_val = s_min + (s_max - s_min) * ((min(lv, monster_model.level) - 1) / (monster_model.level - 1)) ** scale
         else:
             s_val = s_min
-        if lv > 99:
-            s_val *= 1 + (monster_model.limit_mult / 11 * (lv - 99)) / 100
+        if 99 < lv:
+            s_val *= 1 + (monster_model.limit_mult / 11 * (min(lv, 110) - 99)) / 100
+        if 110 < lv:
+            s_val *= 1 + (self.LV_120_MULT_DICT[key] / 10 * (lv - 110)) / 100
         return s_val
 
     def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatModifierInput = None):

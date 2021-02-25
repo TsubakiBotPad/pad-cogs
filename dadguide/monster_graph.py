@@ -352,7 +352,7 @@ class MonsterGraph(object):
         curr = monster_id
         while curr not in seen:
             seen.add(curr)
-            next_ids = self.get_prev_transform_ids_by_monster_id(monster_id)
+            next_ids = self.get_prev_transform_ids_by_monster_id(curr)
             if next_ids:
                 curr = next_ids.pop()
             else:
@@ -563,27 +563,20 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+
+    def monster_is_new(self, monster: MonsterModel):
+        latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
+        return monster.reg_date == latest_time
     
     def monster_acquisition(self, monster: MonsterModel):
-        acquire_text = None
-        if self.monster_is_farmable(monster) and not self.monster_is_mp_evo(monster):
-            # Some MP shop monsters 'drop' in PADR
-            acquire_text = 'Farmable'
-        elif self.monster_is_farmable_evo(monster) and not self.monster_is_mp_evo(monster):
-            acquire_text = 'Farmable Evo'
-        elif monster.in_pem:
-            acquire_text = 'In PEM'
+        if self.monster_is_mp_evo(monster):
+            return 'MP Shop Card'
+        elif self.monster_is_farmable_evo(monster):
+            return 'Farmable Card'
         elif self.monster_is_pem_evo(monster):
-            acquire_text = 'PEM Evo'
-        elif monster.in_rem:
-            acquire_text = 'In REM'
+            return 'PEM Card'
         elif self.monster_is_rem_evo(monster):
-            acquire_text = 'REM Evo'
-        elif monster.in_mpshop:
-            acquire_text = 'MP Shop'
-        elif self.monster_is_mp_evo(monster):
-            acquire_text = 'MP Shop Evo'
-        return acquire_text
+            return 'REM Card'
 
     def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
         next_monster = None

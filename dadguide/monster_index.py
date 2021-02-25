@@ -1,12 +1,13 @@
 import asyncio
 import csv
 import io
+import logging
 import re
 from collections import defaultdict
 
 import aiohttp
+import tsutils
 from redbot.core.utils import AsyncIter
-from tsutils import aobject
 
 from .token_mappings import *
 
@@ -19,25 +20,27 @@ NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
 MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('2089525837')
 TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
+logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
 
-class MonsterIndex2(aobject):
+class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_nametokens = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
-                                                                for m
-                                                                in db.get_all_monsters()})
+        self.series_id_to_pantheon_nickname = \
+            defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
+                              for m in db.get_all_monsters()
+                              if m.series.name_en.lower() not in PROBLEMATIC_SERIES_TOKENS})
 
         self.mwtoken_creators = defaultdict(set)
 
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
                                   in db.get_all_monsters()
-                                  if " " in m.series.name_en}.union(MULTI_WORD_TOKENS)
+                                  if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
         self.treename_overrides = set()
@@ -53,6 +56,7 @@ class MonsterIndex2(aobject):
 
         for m_id, name, lp, ov, i in nickname_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     self.treename_overrides.add(mid)
@@ -66,6 +70,7 @@ class MonsterIndex2(aobject):
 
         for m_id, name, mp, ov, i in treenames_data:
             if m_id.isdigit() and not i:
+                name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
                     for emid in self.graph.get_alt_ids_by_id(mid):
@@ -81,20 +86,21 @@ class MonsterIndex2(aobject):
 
         for sid, name in pantheon_data:
             if sid.isdigit():
+                name = name.strip().lower()
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                 self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
 
         next(nt_alias_data)  # Skip over heading
-        for token, alias in nt_alias_data:
-            self.replacement_tokens[token].add(alias)
+        for tokens, alias in nt_alias_data:
+            self.replacement_tokens[frozenset(re.split(r'\W+', tokens))].add(alias)
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods in mod_data:
             if mid.isdigit():
                 mid = int(mid)
                 for mod in mods.split(","):
-                    mod = mod.strip()
+                    mod = mod.strip().lower()
                     if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
@@ -111,7 +117,6 @@ class MonsterIndex2(aobject):
                     aliases = get_modifier_aliases(mod)
                     for emid in self.graph.get_alt_ids_by_id(mid):
                         self.manual_prefixes[emid].update(aliases)
-
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
@@ -147,13 +152,16 @@ class MonsterIndex2(aobject):
             # Name Tokens
             nametokens = self._name_to_tokens(m.name_en)
             last_token = m.name_en.split(',')[-1].strip()
-            autotoken = True
+            alt_monsters = self.graph.get_alt_monsters(m)
+            autotoken = len(alt_monsters) > 1
 
             for jpt in m.name_ja.split(" "):
                 self.name_tokens[jpt].add(m)
 
             # Propagate name tokens throughout all evos
-            for me in self.graph.get_alt_monsters(m):
+            for me in alt_monsters:
+                if tsutils.contains_ja(me.name_en):
+                    continue
                 if last_token != me.name_en.split(',')[-1].strip():
                     autotoken = False
                 for t in self.monster_id_to_nametokens[me.monster_id]:
@@ -162,14 +170,19 @@ class MonsterIndex2(aobject):
 
             # Find likely treenames
             treenames = set()
-            for me in self.graph.get_alt_monsters(m):
-                match = re.match("(?:Awoken|Reincarnated) (.*)", me.name_en)
-                if match:
-                    treenames.add(match.group(1))
+            regexes = [
+                r"(?:Awoken|Reincarnated) (.*)",
+                r".*, (.*'s Gem)",
+            ]
+            for me in alt_monsters:
+                for r in regexes:
+                    match = re.match(r, me.name_en)
+                    if match:
+                        treenames.add(match.group(1))
 
             # Add important tokens
-            for t in self.monster_id_to_nametokens[m.monster_id]:
-                self.add_name_token(self.name_tokens, t, m)
+            for token in self.monster_id_to_nametokens[m.monster_id]:
+                self.add_name_token(self.name_tokens, token, m)
             if m.monster_id in self.treename_overrides:
                 pass
             elif autotoken:
@@ -182,12 +195,12 @@ class MonsterIndex2(aobject):
                     self.add_name_token(self.name_tokens, token, m)
                     if m.is_equip:
                         possessives = re.findall(r"(\w+)'s", m.name_en.lower())
-                        for mevo in self.graph.get_alt_monsters(m):
+                        for mevo in alt_monsters:
                             for token2 in possessives:
                                 if token2 in self._name_to_tokens(mevo.name_en.lower()):
                                     self.add_name_token(self.name_tokens, token2, mevo)
                     else:
-                        for mevo in self.graph.get_alt_monsters(m):
+                        for mevo in alt_monsters:
                             if token in self._name_to_tokens(mevo.name_en):
                                 self.add_name_token(self.name_tokens, token, mevo)
 
@@ -198,10 +211,11 @@ class MonsterIndex2(aobject):
                 # significantly more complicated logic in the lookup later on.
                 # Test case: Mizutsune is a nickname for Dark Aurora, ID 4148. Issue: #614
                 if m.is_equip:
-                    for mevo in self.graph.get_alt_monsters(m):
+                    for mevo in alt_monsters:
                         if not mevo.is_equip:
                             for token2 in self._get_important_tokens(mevo.name_en, treenames):
-                                self.add_name_token(self.name_tokens, token2, m)
+                                if token2 not in HAZARDOUS_IN_NAME_MODS:
+                                    self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
             for token in nametokens:
@@ -218,6 +232,20 @@ class MonsterIndex2(aobject):
             for nick in self.monster_id_to_treename[base_id]:
                 self.add_name_token(self.manual_tree, nick, m)
 
+    def add_name_token(self, token_dict, token, m, depth=5):
+        if depth <= 0:
+            logger.warning(f"Depth exceeded with token {token}.  Aborting.")
+            return
+
+        token_dict[token.lower()].add(m)
+        if token.lower() in self._known_mods and token.lower() not in HAZARDOUS_IN_NAME_MODS:
+            self.modifiers[m].add(token.lower())
+
+        # Replacements
+        for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
+            for t in self.replacement_tokens[ts]:
+                self.add_name_token(token_dict, t, m, depth - 1)
+
     @staticmethod
     def _name_to_tokens(oname):
         if not oname:
@@ -231,6 +259,9 @@ class MonsterIndex2(aobject):
     def _get_important_tokens(cls, oname, treenames=None):
         if treenames is None:
             treenames = set()
+
+        if tsutils.contains_ja(oname):
+            return list(treenames)
 
         name = oname.split(", ")
         if len(name) == 1:
@@ -326,7 +357,10 @@ class MonsterIndex2(aobject):
 
         # Awakenings
         for aw in m.awakenings:
-            modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
+            try:
+                modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
+            except ValueError:
+                logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
@@ -359,6 +393,10 @@ class MonsterIndex2(aobject):
         if is_story(m):
             modifiers.update(MISC_MAP[MiscModifiers.STORY])
 
+        # New
+        if self.graph.monster_is_new(m):
+            modifiers.update(MISC_MAP[MiscModifiers.NEW])
+
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
             modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
@@ -385,12 +423,6 @@ class MonsterIndex2(aobject):
 
         return modifiers
 
-    def add_name_token(self, token_dict, token, m):
-        for t in self.replacement_tokens[token.lower()].union({token.lower()}):
-            token_dict[t].add(m)
-            if t.lower() in self._known_mods and t.lower() not in HAZARDOUS_IN_NAME_PREFIXES:
-                self.modifiers[m].add(t.lower())
-
 
 # TODO: Move this to TSUtils
 async def sheet_to_reader(url, length=None):
@@ -409,6 +441,7 @@ def copydict(token_dict):
         copy[k] = v.copy()
     return copy
 
+
 def combine_tokens_dicts(d1, *ds):
     combined = defaultdict(set, d1.copy())
     for d2 in ds:
@@ -420,6 +453,7 @@ def combine_tokens_dicts(d1, *ds):
 def token_count(tstr):
     tstr = re.sub(r"\(.+\)", "", tstr)
     return len(re.split(r'\W+', tstr))
+
 
 def get_modifier_aliases(mod):
     output = {mod}

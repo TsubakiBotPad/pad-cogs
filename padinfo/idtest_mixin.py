@@ -5,7 +5,7 @@ import tsutils
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
-from padinfo.core.find_monster import findMonster3
+from padinfo.core.find_monster import find_monster
 
 
 class IdTest:
@@ -364,9 +364,13 @@ class IdTest:
         async with ctx.typing():
             for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
-                m = await findMonster3(dgcog, q)
-                mid = m and m.monster_id
-                if m is not None and m.monster_id != r['result'] or m is None and r['result'] >= 0:
+                try:
+                    m = await find_monster(dgcog, q) or -1
+                except Exception:
+                    m = -2
+                mid = getattr(m, "monster_id", m)
+
+                if mid != r['result']:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
                     o += f"{i}. {q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
@@ -398,8 +402,8 @@ class IdTest:
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
             for i, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -426,9 +430,13 @@ class IdTest:
         ml = len(max(qsuite, key=len)) + 2
         async with ctx.typing():
             for c, q in enumerate(sorted(qsuite)):
-                m = await findMonster3(dgcog, q)
-                mid = m and m.monster_id
-                if m is not None and m.monster_id != qsuite[q]['result'] or m is None and qsuite[q]['result'] >= 0:
+                try:
+                    m = await find_monster(dgcog, q) or -1
+                except Exception:
+                    m = -2
+                mid = getattr(m, "monster_id", m)
+
+                if mid != qsuite[q]['result']:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
                     qq = '"' + q + '"'
                     qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "
@@ -441,8 +449,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index2.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])

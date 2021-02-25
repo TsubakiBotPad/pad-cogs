@@ -152,6 +152,7 @@ class Awakenings(Enum):
     GREENCOMBOCOUNT = 75
     LIGHTCOMBOCOUNT = 76
     DARKCOMBOCOUNT = 77
+    CROSSATTACK = 78
 
 
 AWOKEN_MAP = {
@@ -232,6 +233,7 @@ AWOKEN_MAP = {
     Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
     Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
     Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
+    Awakenings.CROSSATTACK: ('crossattack', 'crossblind'),
 }
 
 
@@ -249,6 +251,7 @@ class MiscModifiers(Enum):
     EVENT = 'Metaseries: Event'
     SEASONAL = 'Metaseries: Seasonal'
     COLLAB = 'Metaseries: Collab'
+    NEW = 'Newest monster in series'
 
 
 MISC_MAP = {
@@ -264,7 +267,8 @@ MISC_MAP = {
     MiscModifiers.REGULAR: ('regular',),
     MiscModifiers.EVENT: ('event',),
     MiscModifiers.SEASONAL: ('seasonal',),
-    MiscModifiers.COLLAB: ('collab',)
+    MiscModifiers.COLLAB: ('collab',),
+    MiscModifiers.NEW: ('new',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
@@ -306,8 +310,19 @@ LEGAL_END_TOKENS = {
     "eq",
 }
 
-HAZARDOUS_IN_NAME_PREFIXES = {
-    "reincarnated"
+# These tokens have been found to be harmful and will only be added to monsters explicitly.
+HAZARDOUS_IN_NAME_MODS = {
+    "reincarnated",
+    "awoken",
+}
+
+PROBLEMATIC_SERIES_TOKENS = {
+    "sonia",
+    "odin",
+    "metatron",
+    "kali",
+    "fenrir",
+    "sherias",
 }
 
 ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',

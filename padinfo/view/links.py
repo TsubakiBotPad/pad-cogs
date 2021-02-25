@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import LinkedText
+from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
 from padinfo.view.components.monster.header import MonsterHeader
@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class LinksView:
+    VIEW_TYPE = 'Links'
+
     @staticmethod
     def linksbox(m):
         return Box(

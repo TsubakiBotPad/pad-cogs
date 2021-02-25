@@ -1,5 +1,4 @@
 import asyncio
-import csv
 import datetime
 import difflib
 import json
@@ -7,13 +6,12 @@ import logging
 import os
 import re
 from collections import defaultdict
-from io import StringIO, BytesIO
+from io import BytesIO
 
 import aiohttp
 import discord
 import prettytable
 import pytz
-import time
 import tsutils
 from redbot.core import checks, data_manager
 from redbot.core import commands, errors
@@ -63,26 +61,19 @@ commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 
-async def lookup_named_monster(query: str):
+async def lookup_monster_model(query: str):
     padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
     if padinfo_cog is None:
         raise Exception("Cog not Loaded")
-    nm, err, debug_info = await padinfo_cog.fm_(str(query))
-    return nm, err, debug_info
+    m = await padinfo_cog.fm3(str(query))
+    return m
 
 
 def monster_id_to_monster(monster_id):
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dg_cog is None:
+    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dgcog is None:
         return None
-    return dg_cog.get_monster(monster_id)
-
-
-def monster_id_to_named_monster(monster_id):
-    dg_cog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dg_cog is None:
-        return None
-    return dg_cog.index.monster_id_to_named_monster.get(monster_id, None)
+    return dgcog.get_monster(monster_id)
 
 
 async def check_enabled(ctx):
@@ -114,9 +105,6 @@ class PadGlobal(commands.Cog):
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
         self.settings = PadGlobalSettings("padglobal")
-
-        self.fir_lock = asyncio.Lock()
-        self.fir3_lock = asyncio.Lock()
 
         self._export_data()
 
@@ -197,128 +185,6 @@ class PadGlobal(commands.Cog):
             self.settings.addDisabledServer(server_id)
         status = 'disabled' if self.settings.checkDisabled(ctx.message) else 'enabled'
         await ctx.send(inline('PAD Global commands {} on this server').format(status))
-
-    @commands.command()
-    @auth_check('contentadmin')
-    async def debugid1dump(self, ctx):
-        dg_cog = self.bot.get_cog('Dadguide')
-        mi = dg_cog.index
-
-        async def write_send(nn_map, file_name):
-            data_holder = StringIO()
-            writer = csv.writer(data_holder)
-            for nn, nm in nn_map.items():
-                writer.writerow([nn, nm.monster_no_na, nm.name_en])
-            bytes_data = BytesIO(data_holder.getvalue().encode())
-            await ctx.channel.send(file=discord.File(bytes_data, file_name))
-
-        await write_send(mi.all_entries, 'all_entries.csv')
-        await write_send(mi.two_word_entries, 'two_word_entries.csv')
-
-    @commands.command(aliases=['iddebug1'])
-    @auth_check('contentadmin')
-    async def debugid1(self, ctx, *, query):
-        dg_cog = self.bot.get_cog('Dadguide')
-        # m is a named monster
-        m, err, debug_info = await lookup_named_monster(query)
-
-        if m is None:
-            await ctx.send(box('No match: ' + err))
-            return
-
-        msg = "{}. {}".format(m.monster_no_na, m.name_en)
-        msg += "\nLookup type: {}".format(debug_info)
-
-        def list_or_none(li):
-            if len(li) == 1:
-                return '\n\t{}'.format(''.join(li))
-            elif len(li):
-                return '\n\t' + '\n\t'.join(sorted(li))
-            else:
-                return 'NONE'
-
-        msg += "\n\nNickname original components:"
-        msg += "\n monster_treename: {}".format(m.monster_treename)
-        msg += "\n group_computed_treename: {}".format(m.group_computed_treename)
-        msg += "\n extra_nicknames: {}".format(list_or_none(m.extra_nicknames))
-
-        msg += "\n\nNickname final components:"
-        msg += "\n treenames: {}".format(list_or_none(m.group_treenames))
-        msg += "\n prefixes: {}".format(list_or_none(m.prefixes))
-
-        msg += "\n\nAccepted nickname entries:"
-        accepted_nn = list(filter(lambda nn: m.monster_id == dg_cog.index.all_entries[nn].monster_id,
-                                  m.final_nicknames))
-        accepted_twnn = list(filter(lambda nn: m.monster_id == dg_cog.index.two_word_entries[nn].monster_id,
-                                    m.final_two_word_nicknames))
-
-        msg += "\n nicknames: {}".format(list_or_none(accepted_nn))
-        msg += "\n two_word_nicknames: {}".format(list_or_none(accepted_twnn))
-
-        msg += "\n\nOverwritten nickname entries:"
-        replaced_nn = list(filter(lambda nn: nn not in accepted_nn,
-                                  m.final_nicknames))
-
-        replaced_twnn = list(filter(lambda nn: nn not in accepted_twnn,
-                                    m.final_two_word_nicknames))
-
-        replaced_nn_info = map(lambda nn: (
-            nn, dg_cog.index.all_entries[nn]), replaced_nn)
-        replaced_twnn_info = map(
-            lambda nn: (nn, dg_cog.index.two_word_entries[nn]), replaced_twnn)
-
-        replaced_nn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
-                                    replaced_nn_info))
-
-        replaced_twnn_text = list(map(lambda nn_info: '{} : {}. {}'.format(
-            nn_info[0], nn_info[1].monster_no_na, nn_info[1].name_en),
-                                      replaced_twnn_info))
-
-        msg += "\n nicknames: {}".format(list_or_none(replaced_nn_text))
-        msg += "\n two_word_nicknames: {}".format(list_or_none(replaced_twnn_text))
-
-        msg += "\n\nNickname entry sort parts:"
-        msg += "\n (is_low_priority, group_size, monster_no_na) : ({}, {}, {})".format(
-            m.is_low_priority, m.group_size, m.monster_no_na)
-
-        msg += "\n\nMatch selection sort parts:"
-        msg += "\n (is_low_priority, rarity, monster_no_na) : ({}, {}, {})".format(
-            m.is_low_priority, m.rarity, m.monster_no_na)
-
-        sent_messages = []
-        for page in pagify(msg):
-            sent_messages.append(await ctx.send(box(page)))
-        await tsutils.await_and_remove(self.bot, sent_messages[-1], ctx.author,
-                                       delete_msgs=sent_messages, timeout=30)
-
-    @commands.command(aliases=['fir'])
-    @auth_check('contentadmin')
-    async def forceindexreload(self, ctx):
-        if self.fir_lock.locked():
-            await ctx.send("Index is already being reloaded.")
-            return
-
-        async with ctx.typing(), self.fir_lock:
-            start = time.perf_counter()
-            await ctx.send('Starting reload...')
-            dadguide_cog = self.bot.get_cog('Dadguide')
-            await dadguide_cog.reload_config_files()
-            await dadguide_cog.wait_until_ready()
-            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
-
-    @commands.command(aliases=['fir3'])
-    @auth_check('contentadmin')
-    async def forceindexreload3(self, ctx):
-        if self.fir3_lock.locked():
-            await ctx.send("Index2 is already being reloaded.")
-            return
-
-        async with ctx.typing(), self.fir3_lock:
-            start = time.perf_counter()
-            dadguide_cog = self.bot.get_cog('Dadguide')
-            dadguide_cog.index2 = await dadguide_cog.create_index2()
-            await ctx.send('Reload finished in {} seconds.'.format(time.perf_counter() - start))
 
     @commands.group(aliases=['pdg'])
     @auth_check('contentadmin')
@@ -735,22 +601,25 @@ class PadGlobal(commands.Cog):
         if name is None or definition is None:
             return
         if not success:
-            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            await ctx.send('Which {}\n{}'.format(name, definition))
             return
-        await ctx.send(inline('Which {} - Last Updated {}'.format(name, timestamp)))
+        await ctx.send('Which {} - Last Updated {}'.format(name, timestamp))
         await ctx.send(self.emojify(definition))
 
     async def _resolve_which(self, ctx, term):
         db_context = self.bot.get_cog('Dadguide').database
+        padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        nm, _, _ = await lookup_named_monster(term)
-        if nm is None:
+        m = await lookup_monster_model(term)
+        if m is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
 
-        name = nm.group_computed_treename.title()
-        monster_id = nm.base_monster_no
+        m = db_context.graph.get_base_monster(m)
+
+        name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
+        monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
         timestamp = "2000-01-01"
 
@@ -770,7 +639,7 @@ class PadGlobal(commands.Cog):
             top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
             return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
         else:
-            await ctx.send(inline('No which info for {} (#{})'.format(name, monster_id)))
+            await ctx.send('No which info for {} (#{})'.format(name, monster_id))
             return None, None, None, None
 
     @commands.command()
@@ -785,7 +654,7 @@ class PadGlobal(commands.Cog):
             return
 
         if not success:
-            await ctx.send('`Which {}`\n{}'.format(name, definition))
+            await ctx.send('Which {}\n{}'.format(name, definition))
             return
         await self._do_send_which(ctx, to_user, name, definition, timestamp)
 
@@ -793,10 +662,9 @@ class PadGlobal(commands.Cog):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
             m = monster_id_to_monster(monster_id)
-            nm = monster_id_to_named_monster(monster_id)
-            if m is None or nm is None:
+            if m is None:
                 continue
-            name = nm.group_computed_treename.title()
+            name = m.name_en.split(", ")[-1]
             grp = m.series.name
             monsters[grp].append(name)
 
@@ -870,8 +738,8 @@ class PadGlobal(commands.Cog):
         for w in self.settings.which():
             w %= 10000
 
-            nm = monster_id_to_named_monster(w)
-            name = nm.group_computed_treename.title()
+            m = monster_id_to_monster(w)
+            name = m.name_en.split(', ')[-1]
 
             result = self.settings.which()[w]
             if isinstance(result, list):
@@ -890,19 +758,6 @@ class PadGlobal(commands.Cog):
 
         for page in pagify(msg):
             await ctx.send(box(page))
-
-    @commands.command(aliases=['lookupdebug'])
-    @auth_check('contentadmin')
-    async def debuglookup(self, ctx, *, term: str):
-        """Shows why a query matches to a monster"""
-        term = term.lower().replace('?', '')
-        nm, err, deb = await lookup_named_monster(term)
-        base = nm.group_computed_treename.title() if nm else nm
-        name = nm.name_en if nm else nm
-        monster_id = nm.monster_id if nm else nm
-        definition = self.settings.which().get(monster_id, None)
-        await ctx.send('Which Debug:\n```Base: {}\nName: {}\nID: {}\nError: {}\nDebug: {}```'
-                       .format(base, name, monster_id, err, deb))
 
     @padglobal.command()
     @checks.is_owner()
@@ -1145,12 +1000,13 @@ class PadGlobal(commands.Cog):
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        nm, _, _ = await lookup_named_monster(term)
-        if nm is None:
+        m = await lookup_monster_model(term)
+        if m is None:
             return None, None, 'No dungeon or monster matched that query'
+        m = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
 
-        name = nm.group_computed_treename.title()
-        definition = self.settings.leaderGuide().get(nm.base_monster_no, None)
+        name = m.name_en
+        definition = self.settings.leaderGuide().get(m.monster_id, None)
         if definition is None:
             return None, None, 'A monster matched that query but has no guide'
 
@@ -1170,10 +1026,10 @@ class PadGlobal(commands.Cog):
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
-            nm = monster_id_to_named_monster(monster_id)
-            if nm is None:
+            m = monster_id_to_monster(monster_id)
+            if m is None:
                 continue
-            name = nm.group_computed_treename.title()
+            name = m.name_en.split(', ')[-1].title()
             msg += '\n**{}** :\n{}\n'.format(name, definition)
 
         return msg
@@ -1299,7 +1155,7 @@ class PadGlobal(commands.Cog):
         else:
             # earliest possible date of the second Sunday in March
             dstthresh = pst.replace(month=3, day=8)
-            
+
         # calculate the day DST changes
         if dstthresh < pst:
             dstthresh = dstthresh.replace(year=(dstthresh.year + 1))

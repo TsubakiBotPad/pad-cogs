@@ -2,19 +2,51 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
-from discordmenu.embed.view import EmbedView
 from discordmenu.embed.text import BoldText, Text
+from discordmenu.embed.view import EmbedView
 
-from padinfo.core.leader_skills import createMultiplierText, createSingleMultiplierText
+from padinfo.common.config import UserConfig
+from padinfo.core.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view_state.leader_skill import LeaderSkillViewState
+from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    pass
+
+
+class LeaderSkillViewState(ViewStateBase):
+    def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query):
+        super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
+        self.color = color
+        self.l_mon = l_mon
+        self.l_query = l_query
+        self.r_mon = r_mon
+        self.r_query = r_query
+
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'l_query': self.l_query,
+            'r_query': self.r_query,
+        })
+        return ret
+
+    @staticmethod
+    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+        raw_query = ims['raw_query']
+        original_author_id = ims['original_author_id']
+        menu_type = ims['menu_type']
+
+        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query)
+        return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
+                                    r_query)
 
 
 class LeaderSkillView:
+    VIEW_TYPE = 'LeaderSkill'
+
     @staticmethod
     def embed(state: LeaderSkillViewState):
         lls = state.l_mon.leader_skill
@@ -29,16 +61,3 @@ class LeaderSkillView:
                     Text(rls.desc if rls else 'None')),
                 color=state.color),
             embed_footer=pad_info_footer_with_state(state))
-
-
-class LeaderSkillSingleView:
-    @staticmethod
-    def embed(m: "MonsterModel", color):
-        ls = m.leader_skill
-        return EmbedView(
-            EmbedMain(
-                title=createSingleMultiplierText(ls),
-                description=Box(
-                    BoldText(MonsterHeader.name(m, link=True, show_jp=True)),
-                    Text(ls.desc if ls else 'None')),
-                color=color))

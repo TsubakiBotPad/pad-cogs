@@ -1,7 +1,8 @@
 aiofiles
 aiohttp
 aioodbc
-discord-menu>=0.12.0
+discord
+discord-menu
 git+git://github.com/TsubakiBotPad/python-romkan
 networkx
 opencv-python

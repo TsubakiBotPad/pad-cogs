@@ -3,18 +3,27 @@ from typing import TYPE_CHECKING
 import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
-from discordmenu.embed.text import LabeledText, LinkedText, Text
 from redbot.core.utils.chat_formatting import box
 
-from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
+from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.links import LinksView
-from padinfo.view_state.otherinfo import OtherInfoViewState
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
+
+
+class OtherInfoViewState(ViewStateBaseId):
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'pane_type': OtherInfoView.VIEW_TYPE,
+        })
+        return ret
 
 
 def statsbox(m):
@@ -23,7 +32,7 @@ def statsbox(m):
     tbl.hrules = prettytable.NONE
     tbl.vrules = prettytable.NONE
     tbl.align = "l"
-    levels = (m.level, 110) if m.limit_mult > 0 else (m.level,)
+    levels = (m.level, 110, 120) if m.limit_mult > 0 else (m.level,)
     for lv in levels:
         for inh in (False, True):
             hp, atk, rcv, _ = m.stats(lv, plus=297, inherit=inh)
@@ -33,9 +42,11 @@ def statsbox(m):
 
 
 class OtherInfoView:
+    VIEW_TYPE = 'OtherInfo'
+
     @staticmethod
     def embed(state: OtherInfoViewState):
-        m = state.monster
+        m: "MonsterModel" = state.monster
         return EmbedView(
             EmbedMain(
                 color=state.color,
