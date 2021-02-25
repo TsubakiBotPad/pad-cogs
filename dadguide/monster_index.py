@@ -153,7 +153,7 @@ class MonsterIndex(tsutils.aobject):
             nametokens = self._name_to_tokens(m.name_en)
             last_token = m.name_en.split(',')[-1].strip()
             alt_monsters = self.graph.get_alt_monsters(m)
-            autotoken = len(alt_monsters) > 1
+            autotoken = len([me for me in alt_monsters if not me.is_equip]) > 1
 
             for jpt in m.name_ja.split(" "):
                 self.name_tokens[jpt].add(m)
