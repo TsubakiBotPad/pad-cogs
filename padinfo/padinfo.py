@@ -217,8 +217,11 @@ class PadInfo(commands.Cog, IdTest):
         }
         menu_1_ims = deepcopy(ims)
         message_1 = message
-        failsafe = 0
         await menu.transition(message, ims, emoji_clicked, member, **data)
+        await self.respond_with_child(menu_1_ims, message_1, emoji_clicked, member, menu_to_panes_map[menu_type], data)
+
+    async def respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member, panes_class, data):
+        failsafe = 0
         while menu_1_ims.get('child_message_id'):
             # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
             # and we have to update menu_1_class to be menu_2_class during the loop.
@@ -226,7 +229,7 @@ class PadInfo(commands.Cog, IdTest):
                 break
             failsafe += 1
             menu_2 = IdMenu.menu()
-            child_data_func = menu_to_panes_map[menu_type].get_child_data_func(emoji_clicked)
+            child_data_func = panes_class.get_child_data_func(emoji_clicked)
             emoji_simulated_clicked_2, extra_ims = None, {}
             if child_data_func is not None:
                 emoji_simulated_clicked_2, extra_ims = child_data_func(menu_1_ims, emoji_clicked, **data)
