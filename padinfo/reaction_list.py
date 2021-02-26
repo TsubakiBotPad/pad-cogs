@@ -20,15 +20,14 @@ async def get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
     if not force_evoscroll and not settings.checkEvoID(ctx.author.id):
         return full_reaction_list
     alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
-    if alt_versions is None:
-        full_reaction_list[full_reaction_list.index(IdMenuEmoji.left)] = None
-        full_reaction_list[full_reaction_list.index(IdMenuEmoji.right)] = None
-        full_reaction_list[full_reaction_list.index(IdMenuEmoji.evos)] = None
-    pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+    if alt_versions is None and gem_versions is None:
+        full_reaction_list.remove(IdMenuEmoji.left)
+        full_reaction_list.remove(IdMenuEmoji.right)
+        full_reaction_list.remove(IdMenuEmoji.evos)
+    pantheon_list, _ = await PantheonViewState.query(dgcog, monster)
     if pantheon_list is None:
-        full_reaction_list[full_reaction_list.index(IdMenuEmoji.pantheon)] = None
-    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
-        await MaterialsViewState.query(dgcog, monster)
-    if mats is None:
-        full_reaction_list[full_reaction_list.index(IdMenuEmoji.mats)] = None
-    return list(filter(None, full_reaction_list))
+        full_reaction_list.remove(IdMenuEmoji.pantheon)
+    mats, usedin, gemid, _, skillups, _, _, _ = await MaterialsViewState.query(dgcog, monster)
+    if mats is None and usedin is None and gemid is None and skillups is None:
+        full_reaction_list.remove(IdMenuEmoji.mats)
+    return full_reaction_list
