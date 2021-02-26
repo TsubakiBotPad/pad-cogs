@@ -44,9 +44,14 @@ class LeaderSkillSingleMenu:
         )
 
 
+class LeaderSkillSingleEmoji:
+    home = emoji_buttons["home"]
+    id = '\N{SQUARED ID}'
+
+
 class LeaderSkillSingleMenuPanes(MenuPanes):
-    INITIAL_EMOJI = emoji_buttons['home']
+    INITIAL_EMOJI = LeaderSkillSingleEmoji.home
     DATA = {
-        LeaderSkillSingleMenu.respond_with_ls: (emoji_buttons['home'], None),
-        LeaderSkillSingleMenu.respond_with_id: ('\N{SQUARED ID}', IdView.VIEW_TYPE),
+        LeaderSkillSingleEmoji.home: (LeaderSkillSingleMenu.respond_with_ls, None),
+        LeaderSkillSingleEmoji.id: (LeaderSkillSingleMenu.respond_with_id, IdView.VIEW_TYPE),
     }

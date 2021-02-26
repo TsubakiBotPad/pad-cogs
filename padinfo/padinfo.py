@@ -4,6 +4,7 @@ import os
 import random
 import re
 import urllib.parse
+from copy import deepcopy
 from io import BytesIO
 from typing import TYPE_CHECKING, List
 
@@ -36,8 +37,8 @@ from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPane
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
-from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
-from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu
+from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
+from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
@@ -160,20 +161,20 @@ class PadInfo(commands.Cog, IdTest):
         else:
             emoji_clicked = emoji_obj.name
 
-        menu_to_emoji_list_map = {
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes.emoji_names(),
-            IdMenu.MENU_TYPE: IdMenuPanes.emoji_names(),
-            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes.emoji_names(),
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes.emoji_names(),
-            MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
-            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenuPanes.emoji_names(),
-            SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),
+        menu_to_panes_map = {
+            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes,
+            IdMenu.MENU_TYPE: IdMenuPanes,
+            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes,
+            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes,
+            MonsterListMenu.MENU_TYPE: MonsterListMenuPanes,
+            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenuPanes,
+            SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes,
+            TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes,
         }
 
         emoji_recognized = emoji_clicked in EmbedMenuEmojiConfig().to_list()
-        for menu_type, emoji_list in menu_to_emoji_list_map.items():
-            if emoji_clicked in emoji_list:
+        for menu_type, panes_type in menu_to_panes_map.items():
+            if emoji_clicked in panes_type.emoji_names():
                 emoji_recognized = True
         if not emoji_recognized:
             return
@@ -183,7 +184,6 @@ class PadInfo(commands.Cog, IdTest):
         if not ims:
             return
 
-        original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         menu_map = {
             ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
@@ -203,30 +203,34 @@ class PadInfo(commands.Cog, IdTest):
         menu_func = menu_1_class.menu
 
         menu = menu_func()
+
         if not (await menu.should_respond(
                         message, reaction, await self.get_reaction_filters(
-                            original_author_id, menu_to_emoji_list_map[menu_type]), member)):
+                            ims['original_author_id'], menu_to_panes_map[menu_type].emoji_names()), member)):
             return
 
         dgcog = await self.get_dgcog()
-        user_config = await BotConfig.get_user(self.config, original_author_id)
+        user_config = await BotConfig.get_user(self.config, ims['original_author_id'])
         data = {
             'dgcog': dgcog,
             'user_config': user_config
         }
-        menu_1_ims = ims
+        menu_1_ims = deepcopy(ims)
         message_1 = message
         failsafe = 0
+        await menu.transition(message, ims, emoji_clicked, member, **data)
         while menu_1_ims.get('child_message_id'):
             # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
             # and we have to update menu_1_class to be menu_2_class during the loop.
-            # TODO: Add support for triply-linked menus or children other than IdMenus
             if failsafe == 10:
                 break
             failsafe += 1
             menu_2 = IdMenu.menu()
-            emoji_simulated_clicked_2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
-            if emoji_simulated_clicked_2:
+            child_data_func = menu_to_panes_map[menu_type].get_child_data_func(emoji_clicked)
+            emoji_simulated_clicked_2, extra_ims = None, {}
+            if child_data_func is not None:
+                emoji_simulated_clicked_2, extra_ims = child_data_func(menu_1_ims, emoji_clicked, **data)
+            if emoji_simulated_clicked_2 is not None:
                 fctx = await self.bot.get_context(message_1)
                 try:
                     message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
@@ -237,8 +241,6 @@ class PadInfo(commands.Cog, IdTest):
                     break
                 menu_1_ims = menu_2_ims
                 message_1 = message_2
-
-        await menu.transition(message, ims, emoji_clicked, member, **data)
 
     async def get_reaction_filters(self, original_author_id, valid_emoji_names):
         friend_cog = self.bot.get_cog("Friend")
@@ -630,8 +632,7 @@ class PadInfo(commands.Cog, IdTest):
 
         data['child_message_id'] = child_message.id
         try:
-            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
-                                         **data)
+            await parent_menu.transition(message, ims, MonsterListEmoji.refresh, ctx.author, **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
@@ -649,23 +650,22 @@ class PadInfo(commands.Cog, IdTest):
         series_id = monster.series_id
         series_object: "SeriesModel" = monster.series
         title = series_object.name_en
-        monster_list = None
+        paginated_monsters = None
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            monster_list = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
-            if monster_list:
+            paginated_monsters = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            if paginated_monsters:
                 break
         all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
 
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
-        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(monster_list))
-        initial_min_indices = {rarity: SeriesScrollMenu.SCROLL_INITIAL_POSITION}
+        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(paginated_monsters))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
-                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity),
+                                      series_id, 0, paginated_monsters[0], int(rarity), len(paginated_monsters),
                                       all_rarities,
                                       title, instruction_message,
                                       reaction_list=initial_reaction_list)
@@ -687,8 +687,7 @@ class PadInfo(commands.Cog, IdTest):
 
         data['child_message_id'] = child_message.id
         try:
-            await parent_menu.transition(message, ims, SeriesScrollMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
-                                         **data)
+            await parent_menu.transition(message, ims, SeriesScrollEmoji.refresh, ctx.author, **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this

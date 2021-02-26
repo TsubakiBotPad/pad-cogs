@@ -5,7 +5,7 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
 
 from padinfo.menu.common import emoji_buttons, MenuPanes
-from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuPaneNames
+from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuPaneNames, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView, MonsterListViewState
 
@@ -14,6 +14,23 @@ class MonsterListPaneNames:
     home = 'home'
     refresh = 'refresh'
     reset = 'reset'
+
+
+class MonsterListEmoji:
+    home = emoji_buttons['home']
+    zero = char_to_emoji('0')
+    one = char_to_emoji('1')
+    two = char_to_emoji('2')
+    three = char_to_emoji('3')
+    four = char_to_emoji('4')
+    five = char_to_emoji('5')
+    six = char_to_emoji('6')
+    seven = char_to_emoji('7')
+    eight = char_to_emoji('8')
+    nine = char_to_emoji('9')
+    ten = char_to_emoji('10')
+    refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
+    reset = emoji_buttons['reset']
 
 
 class MonsterListMenu:
@@ -106,8 +123,8 @@ class MonsterListMenu:
         )
 
     @staticmethod
-    def get_child_data(ims, emoji_clicked):
-        emoji_response = IdMenuPanes.emoji_name_to_emoji(IdMenuPaneNames.refresh) \
+    def click_child_number(ims, emoji_clicked, **data):
+        emoji_response = IdMenuEmoji.refresh \
             if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:
             return None, {}
@@ -122,25 +139,36 @@ class MonsterListMenu:
 
 
 class MonsterListMenuPanes(MenuPanes):
-    INITIAL_EMOJI = '\N{HOUSE BUILDING}'
+    INITIAL_EMOJI = MonsterListEmoji.home
     DATA = {
-        # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
-        MonsterListMenu.respond_with_monster_list: (
-            emoji_buttons[MonsterListPaneNames.home], MonsterListPaneNames.home, True, False),
-        MonsterListMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_3: (char_to_emoji('3'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_4: (char_to_emoji('4'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_5: (char_to_emoji('5'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_6: (char_to_emoji('6'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_7: (char_to_emoji('7'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_8: (char_to_emoji('8'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_9: (char_to_emoji('9'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_10: (char_to_emoji('10'), IdView.VIEW_TYPE, False, True),
-        MonsterListMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', MonsterListPaneNames.refresh, True, False),
-        MonsterListMenu.respond_with_reset: (emoji_buttons['reset'], MonsterListPaneNames.reset, True, False)
+        # tuple parts: parent_response, pane_type, respond_with_child
+        MonsterListEmoji.home: (MonsterListMenu.respond_with_monster_list, MonsterListPaneNames.home, None),
+        MonsterListEmoji.zero: (
+            MonsterListMenu.respond_with_0, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.one: (
+            MonsterListMenu.respond_with_1, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.two: (
+            MonsterListMenu.respond_with_2, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.three: (
+            MonsterListMenu.respond_with_3, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.four: (
+            MonsterListMenu.respond_with_4, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.five: (
+            MonsterListMenu.respond_with_5, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.six: (
+            MonsterListMenu.respond_with_6, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.seven: (
+            MonsterListMenu.respond_with_7, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.eight: (
+            MonsterListMenu.respond_with_8, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.nine: (
+            MonsterListMenu.respond_with_9, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.ten: (
+            MonsterListMenu.respond_with_10, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
+        MonsterListEmoji.refresh: (
+            MonsterListMenu.respond_with_refresh, MonsterListPaneNames.refresh, None),
+        MonsterListEmoji.reset: (
+            MonsterListMenu.respond_with_reset, MonsterListPaneNames.reset, None)
     }
     HIDDEN_EMOJIS = [
         MonsterListPaneNames.home,
