@@ -5,7 +5,7 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 
-from padinfo.menu.common import emoji_buttons, MenuPanes
+from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.leader_skill import LeaderSkillView, LeaderSkillViewState
 
@@ -18,7 +18,7 @@ class LeaderSkillMenu:
         return EmbedMenu(LeaderSkillMenuPanes.transitions(), LeaderSkillMenu.ls_control)
 
     @staticmethod
-    async def respond_to_r(message: Optional[Message], ims, **data):
+    async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
@@ -30,7 +30,7 @@ class LeaderSkillMenu:
         return id_control
 
     @staticmethod
-    async def respond_to_l(message: Optional[Message], ims, **data):
+    async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
 
@@ -42,7 +42,7 @@ class LeaderSkillMenu:
         return id_control
 
     @staticmethod
-    async def respond_to_house(message: Optional[Message], ims, **data):
+    async def respond_with_house(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
         ls_view_state = await LeaderSkillViewState.deserialize(dgcog, user_config, ims)
@@ -64,10 +64,16 @@ class LeaderSkillMenu:
         )
 
 
+class LeaderSkillEmoji:
+    home = emoji_buttons['home']
+    left = char_to_emoji('l')
+    right = char_to_emoji('r')
+
+
 class LeaderSkillMenuPanes(MenuPanes):
-    INITIAL_EMOJI = emoji_buttons['home']
+    INITIAL_EMOJI = LeaderSkillEmoji.home
     DATA = {
-        LeaderSkillMenu.respond_to_house: (emoji_buttons['home'], None),
-        LeaderSkillMenu.respond_to_l: (char_to_emoji('l'), IdView.VIEW_TYPE),
-        LeaderSkillMenu.respond_to_r: (char_to_emoji('r'), IdView.VIEW_TYPE),
+        LeaderSkillEmoji.home: (LeaderSkillMenu.respond_with_house, None),
+        LeaderSkillEmoji.left: (LeaderSkillMenu.respond_with_left, IdView.VIEW_TYPE),
+        LeaderSkillEmoji.right: (LeaderSkillMenu.respond_with_right, IdView.VIEW_TYPE),
     }

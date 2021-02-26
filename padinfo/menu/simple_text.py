@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 
-from padinfo.menu.common import MenuPanes
+from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.simple_text import SimpleTextView, SimpleTextViewState
 
 
@@ -45,10 +45,14 @@ class SimpleTextMenu:
         )
 
 
+class SimpleTextEmoji:
+    home = emoji_buttons['home']
+
+
 class SimpleTextMenuPanes(MenuPanes):
-    INITIAL_EMOJI = '\N{HOUSE BUILDING}'
+    INITIAL_EMOJI = SimpleTextEmoji.home
     DATA = {
-        SimpleTextMenu.respond_with_message: ('\N{HOUSE BUILDING}', SimpleTextNames.home),
+        SimpleTextEmoji.home: (SimpleTextMenu.respond_with_message, SimpleTextNames.home),
 
     }
     HIDDEN_EMOJIS = [

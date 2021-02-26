@@ -24,6 +24,18 @@ def _set_min_index(ims, val):
     ims['current_min_index'][str(ims['rarity'])] = val
 
 
+def _get_cur_index(ims):
+    if ims.get('current_index') is None:
+        return None
+    return ims['current_index'].get(str(ims['rarity'])) or 0
+
+
+def _set_cur_index(ims, val):
+    if ims['current_index'] is None:
+        ims['current_index'] = {}
+    ims['current_index'][str(ims['rarity'])] = val
+
+
 class SeriesScrollMenu:
     MENU_TYPE = 'SeriesScrollMenu'
     CHILD_MENU_TYPE = 'IdMenu'
@@ -63,6 +75,8 @@ class SeriesScrollMenu:
             ims['rarity'] = ims['all_rarities'][0]
         else:
             ims['rarity'] = ims['all_rarities'][current_rarity_index + 1]
+        if data.get('current_index_update') is not None:
+            _set_cur_index(ims, data.get('current_index_update'))
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -87,22 +101,64 @@ class SeriesScrollMenu:
 
     @staticmethod
     async def respond_with_lazy_previous(message: Optional[Message], ims, **data):
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        dgcog = data['dgcog']
+        current_index = _get_cur_index(ims)
+        min_index, max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        print('min_index', min_index)
+        print('max_index', max_index)
+        if current_index is None:
+            _set_cur_index(ims, max_index)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        if current_index < min_index or current_index > max_index:
+            _set_cur_index(ims, max_index)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        if current_index > min_index:
+            _set_cur_index(ims, current_index - 1)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        if current_index == min_index and min_index > 0:
+            _set_cur_index(ims, current_index - 1)
+            return await SeriesScrollMenu.respond_with_up(message, ims, **data)
+        if current_index == 0:
+            # respond with left but then set the current index to the max thing possible
+            current_rarity_index = ims['all_rarities'].index(ims['rarity'])
+            ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
+            _set_cur_index(ims, len(SeriesScrollViewState.query_from_ims(dgcog, ims)) - 1)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        return None
 
     @staticmethod
     async def respond_with_lazy_next(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        user_config = data['user_config']
-        current_min_index, current_max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        current_index = _get_cur_index(ims)
+        min_index, max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        print('min_index', min_index)
+        print('max_index', max_index)
+        if current_index is None:
+            _set_cur_index(ims, min_index)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        if current_index < min_index or current_index > max_index:
+            _set_cur_index(ims, min_index)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        if current_index < max_index:
+            _set_cur_index(ims, current_index + 1)
+            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        full_monster_list = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        if current_index == max_index and max_index < len(full_monster_list) - 1:
+            _set_cur_index(ims, current_index + 1)
+            return await SeriesScrollMenu.respond_with_down(message, ims, **data)
+        if current_index == len(full_monster_list) - 1:
+            data['current_index_update'] = 0
+            return await SeriesScrollMenu.respond_with_right(message, ims, **data)
 
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        return None
 
     @staticmethod
     async def respond_with_delete(message: Message, ims, **data):
         return await message.delete()
 
     @staticmethod
-    async def respond_with_n(message: Optional[Message], ims, _n, **data):
+    async def respond_with_n(message: Optional[Message], ims, n, **data):
+        _set_cur_index(ims, _get_min_index(ims) + n)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -173,36 +229,58 @@ class SeriesScrollMenu:
         return emoji_response, extra_ims
 
 
+class SeriesScrollEmoji:
+    delete = '\N{CROSS MARK}'
+    home = emoji_buttons['home']
+    rarity_left = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+    rarity_right = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
+    up = '\N{BLACK UP-POINTING DOUBLE TRIANGLE}'
+    down = '\N{BLACK DOWN-POINTING DOUBLE TRIANGLE}'
+    lazy_left = '\N{NORTH WEST ARROW}\N{VARIATION SELECTOR-16}'
+    lazy_right = '\N{SOUTH EAST ARROW}\N{VARIATION SELECTOR-16}'
+    zero = char_to_emoji('0')
+    one = char_to_emoji('1')
+    two = char_to_emoji('2')
+    three = char_to_emoji('3')
+    four = char_to_emoji('4')
+    five = char_to_emoji('5')
+    six = char_to_emoji('6')
+    seven = char_to_emoji('7')
+    eight = char_to_emoji('8')
+    nine = char_to_emoji('9')
+    ten = char_to_emoji('10')
+    refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
+    reset = emoji_buttons['reset']
+
+
 class SeriesScrollMenuPanes(MenuPanes):
     INITIAL_EMOJI = '\N{HOUSE BUILDING}'
-    NON_MONSTER_EMOJI_COUNT = 5
+    NON_MONSTER_EMOJI_COUNT = 7
     DATA = {
         # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
-        SeriesScrollMenu.respond_with_delete: ('\N{CROSS MARK}', None, True, False),
-        SeriesScrollMenu.respond_with_monster_list: (
-            emoji_buttons[SeriesScrollPaneNames.home], SeriesScrollPaneNames.home, True, False),
-        SeriesScrollMenu.respond_with_left: ('\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
-        SeriesScrollMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
-        SeriesScrollMenu.respond_with_up: (
-            '\N{BLACK UP-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
-        SeriesScrollMenu.respond_with_down: (
-            '\N{BLACK DOWN-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
-        SeriesScrollMenu.respond_with_lazy_previous: ('\N{NORTH WEST ARROW}\N{VARIATION SELECTOR-16}', None, True, True),
-        SeriesScrollMenu.respond_with_lazy_next: ('\N{SOUTH EAST ARROW}\N{VARIATION SELECTOR-16}', None, True, True),
-        SeriesScrollMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_3: (char_to_emoji('3'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_4: (char_to_emoji('4'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_5: (char_to_emoji('5'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_6: (char_to_emoji('6'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_7: (char_to_emoji('7'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_8: (char_to_emoji('8'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_9: (char_to_emoji('9'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_10: (char_to_emoji('10'), IdView.VIEW_TYPE, False, True),
-        SeriesScrollMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', SeriesScrollPaneNames.refresh, True, False),
-        SeriesScrollMenu.respond_with_reset: (emoji_buttons['reset'], SeriesScrollPaneNames.reset, True, False)
+        SeriesScrollEmoji.delete: (SeriesScrollMenu.respond_with_delete, None, False),
+        SeriesScrollEmoji.home: (SeriesScrollMenu.respond_with_monster_list, SeriesScrollPaneNames.home, False),
+        SeriesScrollEmoji.rarity_left: (SeriesScrollMenu.respond_with_left, SeriesScrollView.VIEW_TYPE, False),
+        SeriesScrollEmoji.rarity_right: (SeriesScrollMenu.respond_with_right, SeriesScrollView.VIEW_TYPE, False),
+        SeriesScrollEmoji.up: (SeriesScrollMenu.respond_with_up, SeriesScrollView.VIEW_TYPE, False),
+        SeriesScrollEmoji.down: (SeriesScrollMenu.respond_with_down, SeriesScrollView.VIEW_TYPE, False),
+        SeriesScrollEmoji.lazy_left: (SeriesScrollMenu.respond_with_lazy_previous, None, True),
+        SeriesScrollEmoji.lazy_right: (SeriesScrollMenu.respond_with_lazy_next, None, True),
+        SeriesScrollEmoji.zero: (SeriesScrollMenu.respond_with_0, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.one: (SeriesScrollMenu.respond_with_1, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.two: (SeriesScrollMenu.respond_with_2, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.three: (SeriesScrollMenu.respond_with_3, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.four: (SeriesScrollMenu.respond_with_4, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.five: (SeriesScrollMenu.respond_with_5, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.six: (SeriesScrollMenu.respond_with_6, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.seven: (SeriesScrollMenu.respond_with_7, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.eight: (SeriesScrollMenu.respond_with_8, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.nine: (SeriesScrollMenu.respond_with_9, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.ten: (SeriesScrollMenu.respond_with_10, IdView.VIEW_TYPE, True),
+        SeriesScrollEmoji.refresh: (
+            SeriesScrollMenu.respond_with_refresh, SeriesScrollPaneNames.refresh, False),
+        SeriesScrollEmoji.reset: (
+            SeriesScrollMenu.respond_with_reset, SeriesScrollPaneNames.reset, False)
     }
     HIDDEN_EMOJIS = [
         SeriesScrollPaneNames.home,

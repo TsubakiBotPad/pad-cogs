@@ -227,19 +227,31 @@ class IdMenuPaneNames:
     delete = 'delete'
 
 
+class IdMenuEmoji:
+    left = '\N{BLACK LEFT-POINTING TRIANGLE}'
+    right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+    home = '\N{HOUSE BUILDING}'
+    evos = char_to_emoji('E')
+    mats = '\N{MEAT ON BONE}'
+    pic = '\N{FRAME WITH PICTURE}'
+    pantheon = '\N{CLASSICAL BUILDING}'
+    otherinfo = '\N{SCROLL}'
+    refresh = "\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}"
+    delete = '\N{CROSS MARK}'
+
+
 class IdMenuPanes(MenuPanes):
     DATA = {
-        IdMenu.respond_with_left: ('\N{BLACK LEFT-POINTING TRIANGLE}', None),
-        IdMenu.respond_with_right: ('\N{BLACK RIGHT-POINTING TRIANGLE}', None),
-        IdMenu.respond_with_current_id: ('\N{HOUSE BUILDING}', IdView.VIEW_TYPE),
-        IdMenu.respond_with_evos: (char_to_emoji('E'), EvosView.VIEW_TYPE),
-        IdMenu.respond_with_mats: ('\N{MEAT ON BONE}', MaterialsView.VIEW_TYPE),
-        IdMenu.respond_with_picture: ('\N{FRAME WITH PICTURE}', PicView.VIEW_TYPE),
-        IdMenu.respond_with_pantheon: ('\N{CLASSICAL BUILDING}', PantheonView.VIEW_TYPE),
-        IdMenu.respond_with_otherinfo: ('\N{SCROLL}', OtherInfoView.VIEW_TYPE),
-        IdMenu.respond_with_refresh: (
-            '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}', IdMenuPaneNames.refresh),
-        IdMenu.respond_with_delete: ('\N{CROSS MARK}', IdMenuPaneNames.delete),
+        IdMenuEmoji.left: (IdMenu.respond_with_left, None),
+        IdMenuEmoji.right: (IdMenu.respond_with_right, None),
+        IdMenuEmoji.home: (IdMenu.respond_with_current_id, IdView.VIEW_TYPE),
+        IdMenuEmoji.evos: (IdMenu.respond_with_evos, EvosView.VIEW_TYPE),
+        IdMenuEmoji.mats: (IdMenu.respond_with_mats, MaterialsView.VIEW_TYPE),
+        IdMenuEmoji.pic: (IdMenu.respond_with_picture, PicView.VIEW_TYPE),
+        IdMenuEmoji.pantheon: (IdMenu.respond_with_pantheon, PantheonView.VIEW_TYPE),
+        IdMenuEmoji.otherinfo: (IdMenu.respond_with_otherinfo, OtherInfoView.VIEW_TYPE),
+        IdMenuEmoji.refresh: (IdMenu.respond_with_refresh, IdMenuPaneNames.refresh),
+        IdMenuEmoji.delete: (IdMenu.respond_with_delete, IdMenuPaneNames.delete),
     }
     HIDDEN_EMOJIS = [
         IdMenuPaneNames.refresh,

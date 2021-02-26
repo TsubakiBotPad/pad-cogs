@@ -61,9 +61,15 @@ class TransformInfoMenu:
         )
 
 
+class TransformInfoEmoji:
+    home = emoji_buttons['home']
+    down = '\N{DOWN-POINTING RED TRIANGLE}'
+    up = '\N{UP-POINTING RED TRIANGLE}'
+
+
 class TransformInfoMenuPanes(MenuPanes):
     DATA = {
-        TransformInfoMenu.respond_with_overview: (emoji_buttons['home'], TransformInfoView.VIEW_TYPE),
-        TransformInfoMenu.respond_with_base: ('\N{DOWN-POINTING RED TRIANGLE}', IdView.VIEW_TYPE),
-        TransformInfoMenu.respond_with_transform: ('\N{UP-POINTING RED TRIANGLE}', IdView.VIEW_TYPE),
+        TransformInfoEmoji.home: (TransformInfoMenu.respond_with_overview, TransformInfoView.VIEW_TYPE),
+        TransformInfoEmoji.down: (TransformInfoMenu.respond_with_base, IdView.VIEW_TYPE),
+        TransformInfoEmoji.up: (TransformInfoMenu.respond_with_transform, IdView.VIEW_TYPE),
     }
