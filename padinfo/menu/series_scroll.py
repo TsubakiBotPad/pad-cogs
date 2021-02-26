@@ -5,7 +5,7 @@ from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
 
-from padinfo.menu.common import emoji_buttons, MenuPanes
+from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.series_scroll import SeriesScrollView, SeriesScrollViewState
@@ -17,24 +17,26 @@ class SeriesScrollPaneNames:
     reset = 'reset'
 
 
-def _get_min_index(ims):
-    return ims['current_min_index'].get(str(ims['rarity'])) or 0
-
-
-def _set_min_index(ims, val):
-    ims['current_min_index'][str(ims['rarity'])] = val
-
-
-def _get_cur_index(ims):
-    if ims.get('current_index') is None:
-        return None
-    return ims['current_index'].get(str(ims['rarity']))
-
-
-def _set_cur_index(ims, val):
-    if ims['current_index'] is None:
-        ims['current_index'] = {}
-    ims['current_index'][str(ims['rarity'])] = val
+class SeriesScrollEmoji:
+    delete = '\N{CROSS MARK}'
+    home = emoji_buttons['home']
+    rarity_left = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+    rarity_right = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
+    lazy_left = '\N{BLACK LEFT-POINTING TRIANGLE}'
+    lazy_right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+    zero = char_to_emoji('0')
+    one = char_to_emoji('1')
+    two = char_to_emoji('2')
+    three = char_to_emoji('3')
+    four = char_to_emoji('4')
+    five = char_to_emoji('5')
+    six = char_to_emoji('6')
+    seven = char_to_emoji('7')
+    eight = char_to_emoji('8')
+    nine = char_to_emoji('9')
+    ten = char_to_emoji('10')
+    refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
+    reset = emoji_buttons['reset']
 
 
 class SeriesScrollMenu:
@@ -268,28 +270,6 @@ class SeriesScrollMenu:
             'resolved_monster_id': monster_list[copy_ims['current_index']].monster_id,
         }
         return IdMenuEmoji.refresh, extra_ims
-
-
-class SeriesScrollEmoji:
-    delete = '\N{CROSS MARK}'
-    home = emoji_buttons['home']
-    rarity_left = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
-    rarity_right = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    lazy_left = '\N{BLACK LEFT-POINTING TRIANGLE}'
-    lazy_right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
-    zero = char_to_emoji('0')
-    one = char_to_emoji('1')
-    two = char_to_emoji('2')
-    three = char_to_emoji('3')
-    four = char_to_emoji('4')
-    five = char_to_emoji('5')
-    six = char_to_emoji('6')
-    seven = char_to_emoji('7')
-    eight = char_to_emoji('8')
-    nine = char_to_emoji('9')
-    ten = char_to_emoji('10')
-    refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
-    reset = emoji_buttons['reset']
 
 
 class SeriesScrollMenuPanes(MenuPanes):

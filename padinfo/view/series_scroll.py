@@ -126,16 +126,15 @@ class SeriesScrollView:
     @staticmethod
     def embed(state: SeriesScrollViewState):
         fields = [
-            EmbedField(SeriesScrollView._rarity_text(state),
+            EmbedField('**Current rarity: {}**'.format(state.rarity),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
                            state.current_index))),
-            EmbedField('**All rarities**',
-                       Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity)),
-                       inline=True),
-            EmbedField('**Rarity {}**'.format(state.rarity),
-                       Box('Page {} of {}'.format(state.current_page + 1, state.pages_in_rarity)),
-                       inline=True)
+            EmbedField(SeriesScrollView._rarity_text(state),
+                       Box(
+                           SeriesScrollView._all_rarity_text(state),
+                       )
+                       )
         ]
 
         return EmbedView(
@@ -148,15 +147,21 @@ class SeriesScrollView:
 
     @staticmethod
     def _rarity_text(state):
-        return 'Current rarity: {} (page {} of {})'.format(
+        return '**Current: {} (page {} of {})**'.format(
             state.rarity,
             state.current_page + 1,
             state.pages_in_rarity
         )
 
     @staticmethod
-    def _all_rarity_text(all_rarities, this_rarity):
-        return ', '.join([str(r) if r != this_rarity else '**{}**'.format(str(r)) for r in all_rarities])
+    def _all_rarity_text(state):
+        lines = []
+        for r in state.all_rarities:
+            if r != state.rarity:
+                lines.append(str(r))
+            else:
+                lines.append('**{}**'.format(state.rarity))
+        return 'Series rarities: ' + ', '.join(lines)
 
     @staticmethod
     def _monster_list(monsters, current_index):
