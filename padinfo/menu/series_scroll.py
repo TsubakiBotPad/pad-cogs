@@ -68,11 +68,13 @@ class SeriesScrollMenu:
         current_page = ims['current_page']
         if current_page > 0:
             ims['current_page'] = current_page - 1
+            ims['current_index'] = None
             return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
         current_rarity_index = ims['all_rarities'].index(ims['rarity'])
         ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
         paginated_monsters = SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
         ims['current_page'] = len(paginated_monsters) - 1
+        ims['current_index'] = None
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -81,6 +83,7 @@ class SeriesScrollMenu:
         current_page = ims['current_page']
         if current_page < len(paginated_monsters) - 1:
             ims['current_page'] = current_page + 1
+            ims['current_index'] = None
             return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
         current_rarity_index = ims['all_rarities'].index(ims['rarity'])
         if current_rarity_index == len(ims['all_rarities']) - 1:
@@ -88,6 +91,7 @@ class SeriesScrollMenu:
         else:
             ims['rarity'] = ims['all_rarities'][current_rarity_index + 1]
         ims['current_page'] = 0
+        ims['current_index'] = None
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -106,34 +110,27 @@ class SeriesScrollMenu:
 
     @staticmethod
     def _update_ims_prev(dgcog, ims):
-        current_index = _get_cur_index(ims)
-        min_index, max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        current_index = ims['current_index']
+        page = ims['current_page']
+        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
-            print('breakpoint 1')
-            _set_cur_index(ims, max_index)
+            ims['current_index'] = max_index
             return
-        if current_index < min_index or current_index > max_index:
-            print('breakpoint 2')
-            _set_cur_index(ims, max_index)
+        if current_index > 0:
+            ims['current_index'] = current_index - 1
             return
-        if current_index > min_index:
-            print('breakpoint 3')
-            _set_cur_index(ims, current_index - 1)
-            return
-        if current_index == min_index and min_index > 0:
-            print('breakpoint 4')
-            _set_cur_index(ims, current_index - 1)
-            _set_min_index(ims, min_index - SeriesScrollMenu.SCROLL_INTERVAL)
+        if current_index == 0 and page > 0:
+            ims['current_page'] = page - 1
+            ims['current_index'] = SeriesScrollViewState.MAX_ITEMS_PER_PANE
             return
         if current_index == 0:
-            print('breakpoint 5')
             # respond with left but then set the current index to the max thing possible
             current_rarity_index = ims['all_rarities'].index(ims['rarity'])
             ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
-            full_monster_list = SeriesScrollViewState.query_from_ims(dgcog, ims)
-            ims['full_monster_list'] = [m.monster_no for m in full_monster_list]
-            _set_cur_index(ims, len(full_monster_list) - 1)
-            return
+            paginated_monsters_new = SeriesScrollViewState.query_from_ims(dgcog, ims)
+            ims['current_page'] = len(paginated_monsters_new) - 1
+            ims['current_index'] = len(paginated_monsters_new[-1]) - 1
 
     @staticmethod
     async def respond_with_lazy_next(message: Optional[Message], ims, **data):
@@ -143,37 +140,29 @@ class SeriesScrollMenu:
 
     @staticmethod
     def _update_ims_next(dgcog, ims):
-        current_index = _get_cur_index(ims)
-        min_index, max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        current_index = ims['current_index']
+        page = ims['current_page']
+        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
-            print('breakpoint 1')
-            _set_cur_index(ims, min_index)
-            return
-        if current_index < min_index or current_index > max_index:
-            print('breakpoint 2')
-            _set_cur_index(ims, min_index)
+            ims['current_index'] = 0
             return
         if current_index < max_index:
-            print('breakpoint 3')
-            _set_cur_index(ims, current_index + 1)
+            ims['current_index'] = current_index + 1
             return
-        full_monster_list = SeriesScrollViewState.query_from_ims(dgcog, ims)
-        ims['full_monster_list'] = [m.monster_no for m in full_monster_list]
-        if current_index == max_index and max_index < len(full_monster_list) - 1:
-            print('breakpoint 4')
-            _set_cur_index(ims, current_index + 1)
-            _set_min_index(ims, min_index + SeriesScrollMenu.SCROLL_INTERVAL)
+        if current_index == max_index and page < len(paginated_monsters) - 1:
+            ims['current_page'] = page + 1
+            ims['current_index'] = 0
             return
-        if current_index == len(full_monster_list) - 1:
+        if current_index == max_index:
             # copied from respond with right
-            print('breakpoint 5')
             current_rarity_index = ims['all_rarities'].index(ims['rarity'])
             if current_rarity_index == len(ims['all_rarities']) - 1:
                 ims['rarity'] = ims['all_rarities'][0]
             else:
                 ims['rarity'] = ims['all_rarities'][current_rarity_index + 1]
-                _set_cur_index(ims, 0)
-            return
+            ims['current_page'] = 0
+            ims['current_index'] = 0
 
     @staticmethod
     async def respond_with_delete(message: Message, ims, **data):
@@ -181,7 +170,7 @@ class SeriesScrollMenu:
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, n, **data):
-        _set_cur_index(ims, _get_min_index(ims) + n)
+        ims['current_index'] = n
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -244,15 +233,14 @@ class SeriesScrollMenu:
             return None, {}
         n = SeriesScrollMenuPanes.emoji_names().index(emoji_clicked)
         paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
-        current_min_index = ims.get('current_min_index')
-        page = current_min_index.get(str(ims['rarity'])) or 0
+        page = ims.get('page') or 0
         monster_list = paginated_monsters[page]
         extra_ims = {
             'is_child': True,
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id':
-                monster_list[n + _get_min_index(ims) - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
+                monster_list[n - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
         }
         return emoji_response, extra_ims
 
@@ -270,15 +258,14 @@ class SeriesScrollMenu:
         copy_ims = deepcopy(ims)
         update_fn(dgcog, copy_ims)
         paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, copy_ims)
-        current_min_index = copy_ims.get('current_min_index')
-        page = current_min_index.get(str(copy_ims['rarity'])) or 0
+        page = copy_ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         # after we figure out new rarity
         extra_ims = {
             'is_child': True,
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
-            'resolved_monster_id': monster_list[_get_cur_index(copy_ims)].monster_id,
+            'resolved_monster_id': monster_list[copy_ims['current_index']].monster_id,
         }
         return IdMenuEmoji.refresh, extra_ims
 
@@ -288,10 +275,8 @@ class SeriesScrollEmoji:
     home = emoji_buttons['home']
     rarity_left = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
     rarity_right = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    up = '\N{BLACK UP-POINTING DOUBLE TRIANGLE}'
-    down = '\N{BLACK DOWN-POINTING DOUBLE TRIANGLE}'
-    lazy_left = '\N{NORTH WEST ARROW}\N{VARIATION SELECTOR-16}'
-    lazy_right = '\N{SOUTH EAST ARROW}\N{VARIATION SELECTOR-16}'
+    lazy_left = '\N{BLACK LEFT-POINTING TRIANGLE}'
+    lazy_right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
     zero = char_to_emoji('0')
     one = char_to_emoji('1')
     two = char_to_emoji('2')

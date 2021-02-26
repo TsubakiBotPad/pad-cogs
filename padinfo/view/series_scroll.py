@@ -22,16 +22,16 @@ class SeriesScrollViewState(ViewStateBase):
                  monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int,
                  all_rarities: List[int],
                  title, message,
-                 current_index: Dict[str, int] = None,
+                 current_index: int = None,
                  max_len_so_far: int = None,
                  reaction_list=None, extra_state=None,
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
         self.pages_in_rarity = pages_in_rarity
-        self.current_index = current_index or {}
+        self.current_index = current_index
         self.all_rarities = all_rarities
-        self.current_page = current_page
+        self.current_page = current_page or 0
         self.series_id = series_id
         self.rarity = rarity
         self.message = message
@@ -129,7 +129,7 @@ class SeriesScrollView:
             EmbedField(SeriesScrollView._rarity_text(state.rarity),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
-                           state.current_index.get(str(state.rarity)))) if state.monster_list else Box(
+                           state.current_index)) if state.monster_list else Box(
                            'No monsters of this rarity to display')),
             EmbedField('**All rarities**',
                        Box(
@@ -173,4 +173,4 @@ class SeriesScrollView:
     def _is_linked(i, current_index):
         if current_index is None:
             return True
-        return i % SeriesScrollViewState.MAX_ITEMS_PER_PANE != current_index
+        return i != current_index
