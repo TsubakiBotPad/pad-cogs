@@ -126,7 +126,7 @@ class SeriesScrollView:
     @staticmethod
     def embed(state: SeriesScrollViewState):
         fields = [
-            EmbedField(SeriesScrollView._rarity_text(state.rarity),
+            EmbedField(SeriesScrollView._rarity_text(state),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
                            state.current_index))),
@@ -147,9 +147,11 @@ class SeriesScrollView:
             embed_fields=fields)
 
     @staticmethod
-    def _rarity_text(this_rarity):
-        return 'Current rarity: {}'.format(
-            str(this_rarity)
+    def _rarity_text(state):
+        return 'Current rarity: {} (page {} of {})'.format(
+            state.rarity,
+            state.current_page + 1,
+            state.pages_in_rarity
         )
 
     @staticmethod
