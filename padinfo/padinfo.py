@@ -650,23 +650,22 @@ class PadInfo(commands.Cog, IdTest):
         series_id = monster.series_id
         series_object: "SeriesModel" = monster.series
         title = series_object.name_en
-        monster_list = None
+        paginated_monsters = None
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            monster_list = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
-            if monster_list:
+            paginated_monsters = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            if paginated_monsters:
                 break
         all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
 
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
-        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(monster_list))
-        initial_min_indices = {rarity: SeriesScrollMenu.SCROLL_INITIAL_POSITION}
+        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(paginated_monsters))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
-                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity),
+                                      series_id, 0, paginated_monsters[0], int(rarity), len(paginated_monsters),
                                       all_rarities,
                                       title, instruction_message,
                                       reaction_list=initial_reaction_list)

@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_min_index,
-                 monster_list: List["MonsterModel"], full_monster_list: List["MonsterModel"], rarity: int,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_page,
+                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int,
                  all_rarities: List[int],
                  title, message,
                  current_index: Dict[str, int] = None,
@@ -28,16 +28,16 @@ class SeriesScrollViewState(ViewStateBase):
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
+        self.pages_in_rarity = pages_in_rarity
         self.current_index = current_index or {}
         self.all_rarities = all_rarities
-        self.current_min_index = current_min_index
+        self.current_page = current_page
         self.series_id = series_id
         self.rarity = rarity
         self.message = message
         self.child_message_id = child_message_id
         self.title = title
         self.monster_list = monster_list
-        self.full_monster_list = full_monster_list
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
@@ -48,9 +48,9 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
-            'current_min_index': self.current_min_index,
+            'current_page': self.current_page,
+            'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
-            'full_monster_list': [str(m.monster_no) for m in self.full_monster_list],
             'rarity': self.rarity,
             'all_rarities': self.all_rarities,
             'reaction_list': self.reaction_list,
@@ -69,12 +69,12 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        full_monster_list = SeriesScrollViewState.query(dgcog, series_id, rarity)
-        current_min_index = ims.get('current_min_index') or {str(rarity): 0}
-        current_min_index_num, current_max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
-        monster_list = full_monster_list[current_min_index_num:current_max_index+1]
+        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        current_page = ims['current_page']
+        monster_list = paginated_monsters[current_page]
         title = ims['title']
 
+        pages_in_rarity = len(paginated_monsters)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -86,7 +86,7 @@ class SeriesScrollViewState(ViewStateBase):
         current_index = ims.get('current_index')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     current_min_index, monster_list, full_monster_list, rarity,
+                                     current_page, monster_list, rarity, pages_in_rarity,
                                      all_rarities,
                                      title, message,
                                      current_index=current_index,
@@ -101,7 +101,10 @@ class SeriesScrollViewState(ViewStateBase):
         all_series_monsters = db_context.get_monsters_by_series(series_id)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
-        return base_monsters_of_rarity
+        paginated_monsters = [base_monsters_of_rarity[i:i + SeriesScrollViewState.MAX_ITEMS_PER_PANE]
+                              for i in range(
+                0, len(base_monsters_of_rarity), SeriesScrollViewState.MAX_ITEMS_PER_PANE)]
+        return paginated_monsters
 
     @staticmethod
     def query_all_rarities(dgcog, series_id):
@@ -110,24 +113,11 @@ class SeriesScrollViewState(ViewStateBase):
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod
-    def query_from_ims(dgcog, ims) -> List["MonsterModel"]:
+    def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        full_monster_list = SeriesScrollViewState.query(dgcog, series_id, rarity)
-        return full_monster_list
-
-    @staticmethod
-    def get_current_indices(dgcog, ims):
-        # even though some of these definitions are redundant, we need to reuse this code
-        # in the menu itself to define the prev & next lazy-scroll buttons
-        # so it makes sense to separate out this method
-        rarity = ims['rarity']
-        full_monster_list = SeriesScrollViewState.query_from_ims(dgcog, ims)
-        current_min_index = ims.get('current_min_index') or {str(rarity): 0}
-        current_min_index_num: int = current_min_index.get(str(rarity)) or 0
-        current_max_index_num: int = current_min_index_num + SeriesScrollViewState.MAX_ITEMS_PER_PANE - 1
-        current_max_index = min(len(full_monster_list) - 1, current_max_index_num)
-        return current_min_index_num, current_max_index
+        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        return paginated_monsters
 
 
 class SeriesScrollView:
@@ -138,11 +128,14 @@ class SeriesScrollView:
         fields = [
             EmbedField(SeriesScrollView._rarity_text(state.rarity),
                        Box(*SeriesScrollView._monster_list(
-                           state.monster_list, state.current_index.get(str(state.rarity)))) if state.monster_list else Box(
+                           state.monster_list,
+                           state.current_index.get(str(state.rarity)))) if state.monster_list else Box(
                            'No monsters of this rarity to display')),
             EmbedField('**All rarities**',
-                       Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity))
-                       ),
+                       Box(
+                           Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity)),
+                           Box('Showing page {} of {}'.format(state.current_page + 1, state.pages_in_rarity))
+                       )),
         ]
 
         return EmbedView(
@@ -180,4 +173,4 @@ class SeriesScrollView:
     def _is_linked(i, current_index):
         if current_index is None:
             return True
-        return i != current_index
+        return i % SeriesScrollViewState.MAX_ITEMS_PER_PANE != current_index
