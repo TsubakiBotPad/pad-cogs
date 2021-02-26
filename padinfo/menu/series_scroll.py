@@ -300,11 +300,11 @@ class SeriesScrollMenuPanes(MenuPanes):
         SeriesScrollEmoji.delete: (SeriesScrollMenu.respond_with_delete, None, None),
         SeriesScrollEmoji.home: (SeriesScrollMenu.respond_with_monster_list, SeriesScrollPaneNames.home, None),
         SeriesScrollEmoji.rarity_left: (SeriesScrollMenu.respond_with_left, SeriesScrollView.VIEW_TYPE, None),
-        SeriesScrollEmoji.rarity_right: (SeriesScrollMenu.respond_with_right, SeriesScrollView.VIEW_TYPE, None),
         SeriesScrollEmoji.lazy_left: (
             SeriesScrollMenu.respond_with_lazy_previous, None, SeriesScrollMenu.auto_scroll_child_left),
         SeriesScrollEmoji.lazy_right: (
             SeriesScrollMenu.respond_with_lazy_next, None, SeriesScrollMenu.auto_scroll_child_right),
+        SeriesScrollEmoji.rarity_right: (SeriesScrollMenu.respond_with_right, SeriesScrollView.VIEW_TYPE, None),
         SeriesScrollEmoji.zero: (
             SeriesScrollMenu.respond_with_0, IdView.VIEW_TYPE, SeriesScrollMenu.click_child_number),
         SeriesScrollEmoji.one: (

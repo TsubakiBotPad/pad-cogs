@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
@@ -129,13 +129,13 @@ class SeriesScrollView:
             EmbedField(SeriesScrollView._rarity_text(state.rarity),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
-                           state.current_index)) if state.monster_list else Box(
-                           'No monsters of this rarity to display')),
+                           state.current_index))),
             EmbedField('**All rarities**',
-                       Box(
-                           Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity)),
-                           Box('Showing page {} of {}'.format(state.current_page + 1, state.pages_in_rarity))
-                       )),
+                       Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity)),
+                       inline=True),
+            EmbedField('**Rarity {}**'.format(state.rarity),
+                       Box('Page {} of {}'.format(state.current_page + 1, state.pages_in_rarity)),
+                       inline=True)
         ]
 
         return EmbedView(
