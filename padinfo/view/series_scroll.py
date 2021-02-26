@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji
 
@@ -126,16 +127,16 @@ class SeriesScrollView:
     @staticmethod
     def embed(state: SeriesScrollViewState):
         fields = [
-            EmbedField('**Current rarity: {}**'.format(state.rarity),
+            EmbedField(BoldText('Current rarity: {}'.format(state.rarity)),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
                            state.current_index))),
-            EmbedField('**Rarities**',
+            EmbedField(BoldText('Rarities'),
                        Box(
                            SeriesScrollView._all_rarity_text(state),
                        ), inline=True
                        ),
-            EmbedField('**Page**',
+            EmbedField(BoldText('Page'),
                        Box('{} of {}'.format(state.current_page + 1, state.pages_in_rarity)),
                        inline=True
                        )
