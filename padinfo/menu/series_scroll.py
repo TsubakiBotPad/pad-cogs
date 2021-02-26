@@ -20,10 +20,10 @@ class SeriesScrollPaneNames:
 class SeriesScrollEmoji:
     delete = '\N{CROSS MARK}'
     home = emoji_buttons['home']
-    rarity_left = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
-    rarity_right = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    lazy_left = '\N{BLACK LEFT-POINTING TRIANGLE}'
-    lazy_right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+    prev_page = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+    prev_mon = '\N{BLACK LEFT-POINTING TRIANGLE}'
+    next_mon = '\N{BLACK RIGHT-POINTING TRIANGLE}'
+    next_page = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
     zero = char_to_emoji('0')
     one = char_to_emoji('1')
     two = char_to_emoji('2')
@@ -105,7 +105,7 @@ class SeriesScrollMenu:
         return control
 
     @staticmethod
-    async def respond_with_lazy_previous(message: Optional[Message], ims, **data):
+    async def respond_with_previous_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         SeriesScrollMenu._update_ims_prev(dgcog, ims)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
@@ -135,7 +135,7 @@ class SeriesScrollMenu:
             ims['current_index'] = len(paginated_monsters_new[-1]) - 1
 
     @staticmethod
-    async def respond_with_lazy_next(message: Optional[Message], ims, **data):
+    async def respond_with_next_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         SeriesScrollMenu._update_ims_next(dgcog, ims)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
@@ -279,12 +279,12 @@ class SeriesScrollMenuPanes(MenuPanes):
         # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
         SeriesScrollEmoji.delete: (SeriesScrollMenu.respond_with_delete, None, None),
         SeriesScrollEmoji.home: (SeriesScrollMenu.respond_with_monster_list, SeriesScrollPaneNames.home, None),
-        SeriesScrollEmoji.rarity_left: (SeriesScrollMenu.respond_with_left, SeriesScrollView.VIEW_TYPE, None),
-        SeriesScrollEmoji.lazy_left: (
-            SeriesScrollMenu.respond_with_lazy_previous, None, SeriesScrollMenu.auto_scroll_child_left),
-        SeriesScrollEmoji.lazy_right: (
-            SeriesScrollMenu.respond_with_lazy_next, None, SeriesScrollMenu.auto_scroll_child_right),
-        SeriesScrollEmoji.rarity_right: (SeriesScrollMenu.respond_with_right, SeriesScrollView.VIEW_TYPE, None),
+        SeriesScrollEmoji.prev_page: (SeriesScrollMenu.respond_with_left, SeriesScrollView.VIEW_TYPE, None),
+        SeriesScrollEmoji.prev_mon: (
+            SeriesScrollMenu.respond_with_previous_monster, None, SeriesScrollMenu.auto_scroll_child_left),
+        SeriesScrollEmoji.next_mon: (
+            SeriesScrollMenu.respond_with_next_monster, None, SeriesScrollMenu.auto_scroll_child_right),
+        SeriesScrollEmoji.next_page: (SeriesScrollMenu.respond_with_right, SeriesScrollView.VIEW_TYPE, None),
         SeriesScrollEmoji.zero: (
             SeriesScrollMenu.respond_with_0, IdView.VIEW_TYPE, SeriesScrollMenu.click_child_number),
         SeriesScrollEmoji.one: (
