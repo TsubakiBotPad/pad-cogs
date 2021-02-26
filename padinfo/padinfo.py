@@ -4,6 +4,7 @@ import os
 import random
 import re
 import urllib.parse
+from copy import deepcopy
 from io import BytesIO
 from typing import TYPE_CHECKING, List
 
@@ -214,13 +215,13 @@ class PadInfo(commands.Cog, IdTest):
             'dgcog': dgcog,
             'user_config': user_config
         }
-        menu_1_ims = ims
+        menu_1_ims = deepcopy(ims)
         message_1 = message
         failsafe = 0
+        await menu.transition(message, ims, emoji_clicked, member, **data)
         while menu_1_ims.get('child_message_id'):
             # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
             # and we have to update menu_1_class to be menu_2_class during the loop.
-            # TODO: Add support for triply-linked menus or children other than IdMenus
             if failsafe == 10:
                 break
             failsafe += 1
@@ -240,7 +241,6 @@ class PadInfo(commands.Cog, IdTest):
                     break
                 menu_1_ims = menu_2_ims
                 message_1 = message_2
-        await menu.transition(message, ims, emoji_clicked, member, **data)
 
     async def get_reaction_filters(self, original_author_id, valid_emoji_names):
         friend_cog = self.bot.get_cog("Friend")

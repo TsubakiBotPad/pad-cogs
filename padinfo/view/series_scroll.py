@@ -130,10 +130,14 @@ class SeriesScrollView:
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
                            state.current_index))),
-            EmbedField(SeriesScrollView._rarity_text(state),
+            EmbedField('**Rarities**',
                        Box(
                            SeriesScrollView._all_rarity_text(state),
-                       )
+                       ), inline=True
+                       ),
+            EmbedField('**Page**',
+                       Box('{} of {}'.format(state.current_page + 1, state.pages_in_rarity)),
+                       inline=True
                        )
         ]
 
@@ -146,14 +150,6 @@ class SeriesScrollView:
             embed_fields=fields)
 
     @staticmethod
-    def _rarity_text(state):
-        return '**Current: {} (page {} of {})**'.format(
-            state.rarity,
-            state.current_page + 1,
-            state.pages_in_rarity
-        )
-
-    @staticmethod
     def _all_rarity_text(state):
         lines = []
         for r in state.all_rarities:
@@ -161,7 +157,7 @@ class SeriesScrollView:
                 lines.append(str(r))
             else:
                 lines.append('**{}**'.format(state.rarity))
-        return 'Series rarities: ' + ', '.join(lines)
+        return ', '.join(lines)
 
     @staticmethod
     def _monster_list(monsters, current_index):
