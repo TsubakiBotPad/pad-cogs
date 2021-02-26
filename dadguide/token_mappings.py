@@ -152,6 +152,7 @@ class Awakenings(Enum):
     GREENCOMBOCOUNT = 75
     LIGHTCOMBOCOUNT = 76
     DARKCOMBOCOUNT = 77
+    CROSSATTACK = 78
 
 
 AWOKEN_MAP = {
@@ -232,6 +233,7 @@ AWOKEN_MAP = {
     Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
     Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
     Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
+    Awakenings.CROSSATTACK: ('crossattack', 'crossblind'),
 }
 
 
