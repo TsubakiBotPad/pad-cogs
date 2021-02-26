@@ -86,6 +86,18 @@ class SeriesScrollMenu:
         return control
 
     @staticmethod
+    async def respond_with_lazy_previous(message: Optional[Message], ims, **data):
+        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+
+    @staticmethod
+    async def respond_with_lazy_next(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        current_min_index, current_max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+
+        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+
+    @staticmethod
     async def respond_with_delete(message: Message, ims, **data):
         return await message.delete()
 
@@ -175,6 +187,8 @@ class SeriesScrollMenuPanes(MenuPanes):
             '\N{BLACK UP-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
         SeriesScrollMenu.respond_with_down: (
             '\N{BLACK DOWN-POINTING DOUBLE TRIANGLE}', SeriesScrollView.VIEW_TYPE, True, False),
+        SeriesScrollMenu.respond_with_lazy_previous: ('\N{NORTH WEST ARROW}\N{VARIATION SELECTOR-16}', None, True, True),
+        SeriesScrollMenu.respond_with_lazy_next: ('\N{SOUTH EAST ARROW}\N{VARIATION SELECTOR-16}', None, True, True),
         SeriesScrollMenu.respond_with_0: (char_to_emoji('0'), IdView.VIEW_TYPE, False, True),
         SeriesScrollMenu.respond_with_1: (char_to_emoji('1'), IdView.VIEW_TYPE, False, True),
         SeriesScrollMenu.respond_with_2: (char_to_emoji('2'), IdView.VIEW_TYPE, False, True),

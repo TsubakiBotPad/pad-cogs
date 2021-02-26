@@ -60,7 +60,7 @@ class SeriesScrollViewState(ViewStateBase):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        # print(ims)
+        print(ims)
         if ims.get('unsupported_transition'):
             return None
         series_id = ims['series_id']
@@ -68,9 +68,8 @@ class SeriesScrollViewState(ViewStateBase):
         all_rarities = ims['all_rarities']
         full_monster_list = SeriesScrollViewState.query(dgcog, series_id, rarity)
         current_min_index = ims.get('current_min_index') or {str(rarity): 0}
-        current_min_index_num: int = current_min_index.get(str(rarity)) or 0
-        current_max_index_num: int = current_min_index_num + SeriesScrollViewState.MAX_ITEMS_PER_PANE
-        monster_list = full_monster_list[current_min_index_num:current_max_index_num]
+        current_min_index_num, current_max_index = SeriesScrollViewState.get_current_indices(dgcog, ims)
+        monster_list = full_monster_list[current_min_index_num:current_max_index]
         title = ims['title']
 
         raw_query = ims['raw_query']
@@ -104,6 +103,20 @@ class SeriesScrollViewState(ViewStateBase):
         db_context: "DbContext" = dgcog.database
         return sorted({m.rarity for m in db_context.get_all_monsters() if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
+
+    @staticmethod
+    def get_current_indices(dgcog, ims):
+        # even though some of these definitions are redundant, we need to reuse this code
+        # in the menu itself to define the prev & next lazy-scroll buttons
+        # so it makes sense to separate out this method
+        series_id = ims['series_id']
+        rarity = ims['rarity']
+        full_monster_list = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        current_min_index = ims.get('current_min_index') or {str(rarity): 0}
+        current_min_index_num: int = current_min_index.get(str(rarity)) or 0
+        current_max_index_num: int = current_min_index_num + SeriesScrollViewState.MAX_ITEMS_PER_PANE
+        current_max_index = min(len(full_monster_list), current_max_index_num)
+        return current_min_index_num, current_max_index
 
 
 class SeriesScrollView:
