@@ -157,7 +157,7 @@ class PadInfo(commands.Cog, IdTest):
     @commands.Cog.listener('on_reaction_add')
     async def test_reaction_add(self, reaction, member):
         emoji_clicked = self.get_emoji_clicked(reaction)
-        if not emoji_clicked:
+        if emoji_clicked is None:
             return
 
         message = reaction.message
@@ -186,7 +186,7 @@ class PadInfo(commands.Cog, IdTest):
         for menu_type, panes_type in type_to_panes.items():
             if emoji_clicked in panes_type.emoji_names():
                 return emoji_clicked
-        return False
+        return None
 
     async def listener_respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member):
         failsafe = 0
