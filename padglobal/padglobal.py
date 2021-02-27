@@ -500,10 +500,8 @@ class PadGlobal(commands.Cog):
     async def boss(self, ctx, *, term: str = None):
         """Shows boss skill entries"""
         if term:
-            term_new, definition = self.lookup_boss(term)
+            name, definition = await self.lookup_boss(term)
             if definition:
-                if term_new != term.lower():
-                    await ctx.send('No entry for {} found, corrected to {}'.format(term, term_new))
                 await ctx.send(self.emojify(definition))
             else:
                 await ctx.send(inline('No mechanics found'))
@@ -520,22 +518,24 @@ class PadGlobal(commands.Cog):
         for page in pagify(msg):
             await ctx.author.send(page)
 
-    def lookup_boss(self, term):
-        bosses = self.settings.boss()
-        term = term.lower()
-        definition = bosses.get(term, None)
-        if definition:
-            return term, definition
-        matches = self._get_corrected_cmds(term, bosses.keys())
+    async def lookup_boss(self, term):
+        dgcog = self.bot.get_cog('Dadguide')
+        pdicog = self.bot.get_cog("PadInfo")
 
-        if not matches:
-            matches = difflib.get_close_matches(term, bosses.keys(), n=1, cutoff=.8)
+        term = term.lower().replace('?', '')
+        m = await lookup_monster_model(term)
+        if m is None:
+            return None, None
 
-        if not matches:
-            return term, None
-        else:
-            term = matches[0]
-            return term, bosses[term]
+        m = dgcog.database.graph.get_base_monster(m)
+        name = pdicog.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
+        monster_id = m.monster_id
+        definition = self.settings.boss().get(monster_id, None)
+
+        return name, definition
+
+
+
 
     def boss_to_text(self, ctx):
         bosses = self.settings.boss()
@@ -557,30 +557,52 @@ class PadGlobal(commands.Cog):
     async def addboss(self, ctx, term, *, definition):
         """Adds a set of boss mechanics.
         If you want to use a multiple word boss name, enclose it in quotes."""
+        dgcog = self.bot.get_cog('Dadguide')
+        pdicog = self.bot.get_cog("PadInfo")
+
         term = term.lower()
-        op = 'EDITED' if term in self.settings.boss() else 'ADDED'
+        m = await lookup_monster_model(term)
+        if m is None:
+            await ctx.send(f"No monster found for `{term}`")
+            return
+
+        base = dgcog.database.graph.get_base_monster(m)
+
+
+        op = 'EDITED' if base.monster_id in self.settings.boss() else 'ADDED'
         if op == 'EDITED' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the boss info for {}?".format(
-                                                            term)):
+                                                            base.name_en)):
             return
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
-        self.settings.addBoss(term, definition)
+        self.settings.addBoss(base.monster_id, definition)
         await ctx.send("PAD boss mechanics successfully {}.".format(op))
 
     @padglobal.command()
     async def rmboss(self, ctx, *, term):
         """Adds a set of boss mechanics."""
+        dgcog = self.bot.get_cog('Dadguide')
+        pdicog = self.bot.get_cog("PadInfo")
+
         term = term.lower()
-        if term not in self.settings.boss():
+        m = await lookup_monster_model(term)
+        if m is None:
+            await ctx.send(f"No monster found for `{term}`.  Make sure you didn't use quotes.")
+            return
+
+        base = dgcog.database.graph.get_base_monster(m)
+
+        if base.monster_id not in self.settings.boss():
             await ctx.send("Boss mechanics item doesn't exist.")
             return
         if not await confirm_message(ctx,
-                                     "Are you sure you want to globally remove the boss data for {}?".format(term)):
+                                     "Are you sure you want to globally remove the boss data for {}?".format(
+                                         base.name_en)):
             return
 
-        self.settings.rmBoss(term)
+        self.settings.rmBoss(base.monster_id)
         await ctx.tick()
 
     @commands.command()
@@ -686,8 +708,7 @@ class PadGlobal(commands.Cog):
             ctx.author.name, result_output)
         for page in pagify(result):
             await to_user.send(page)
-        msg = "Sent info on {} to {}".format(name, to_user.name)
-        await ctx.send(inline(msg))
+        await ctx.send("Sent info on {} to {}".format(name, to_user.name))
 
     @padglobal.command()
     async def addwhich(self, ctx, monster_id: int, *, definition):
