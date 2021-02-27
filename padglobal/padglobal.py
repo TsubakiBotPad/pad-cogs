@@ -707,8 +707,7 @@ class PadGlobal(commands.Cog):
         result = "{} asked me to send you this:\n{}".format(
             ctx.author.name, result_output)
         await to_user.send(result)
-        msg = "Sent info on {} to {}".format(name, to_user.name)
-        await ctx.send(inline(msg))
+        await ctx.send("Sent info on {} to {}".format(name, to_user.name))
 
     @padglobal.command()
     async def addwhich(self, ctx, monster_id: int, *, definition):
