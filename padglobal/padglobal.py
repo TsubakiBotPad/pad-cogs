@@ -563,7 +563,7 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await lookup_monster_model(term)
         if m is None:
-            return None, None
+            await ctx.send(f"No monster found for `{term}`")
 
         base = dgcog.database.graph.get_base_monster(m)
 
@@ -588,7 +588,7 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await lookup_monster_model(term)
         if m is None:
-            return None, None
+            await ctx.send(f"No monster found for `{term}`")
 
         base = dgcog.database.graph.get_base_monster(m)
 
