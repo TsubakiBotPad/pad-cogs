@@ -33,15 +33,15 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.idtest_mixin import IdTest
-from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
+from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
-from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
+from padinfo.menu.leader_skill import LeaderSkillMenu
+from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_maps import menu_map, menu_to_panes_map
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
-from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
-from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
+from padinfo.menu.simple_text import SimpleTextMenu
+from padinfo.menu.transforminfo import TransformInfoMenu
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
@@ -172,7 +172,8 @@ class PadInfo(commands.Cog, IdTest):
         menu = menu_class.menu()
 
         if not (await menu.should_respond(message, reaction,
-                                          await self.get_reaction_filters(ims['original_author_id'], menu_type), member)):
+                                          await self.get_reaction_filters(ims['original_author_id'], menu_type),
+                                          member)):
             return
 
         data = {
