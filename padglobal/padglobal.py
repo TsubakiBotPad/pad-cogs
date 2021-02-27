@@ -603,8 +603,8 @@ class PadGlobal(commands.Cog):
         if not success:
             await ctx.send('Which {}\n{}'.format(name, definition))
             return
-        await ctx.send('Which {} - Last Updated {}'.format(name, timestamp))
-        await ctx.send(self.emojify(definition))
+        for page in pagify('Which {} - Last Updated {}\n{}'.format(name, timestamp, self.emojify(definition))):
+            await ctx.send(page)
 
     async def _resolve_which(self, ctx, term):
         db_context = self.bot.get_cog('Dadguide').database
@@ -684,7 +684,8 @@ class PadGlobal(commands.Cog):
 
         result = "{} asked me to send you this:\n{}".format(
             ctx.author.name, result_output)
-        await to_user.send(result)
+        for page in pagify(result):
+            await to_user.send(page)
         msg = "Sent info on {} to {}".format(name, to_user.name)
         await ctx.send(inline(msg))
 
