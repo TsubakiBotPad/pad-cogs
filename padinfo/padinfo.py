@@ -37,7 +37,7 @@ from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
-from padinfo.menu.menu_maps import menu_map, menu_to_panes_map
+from padinfo.menu.menu_maps import type_to_panes, get_panes_class, get_menu
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu
@@ -157,31 +157,19 @@ class PadInfo(commands.Cog, IdTest):
     @commands.Cog.listener('on_reaction_add')
     async def test_reaction_add(self, reaction, member):
         emoji_clicked = self.get_emoji_clicked(reaction)
-        if not emoji_clicked:
+        if emoji_clicked is None:
             return
 
         message = reaction.message
         ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
         if not ims:
             return
-
-        menu_type = ims['menu_type']
-        menu_class = menu_map.get(menu_type)
-        if not menu_class:
-            return
-        menu = menu_class.menu()
-
-        if not (await menu.should_respond(message, reaction,
-                                          await self.get_reaction_filters(ims['original_author_id'], menu_type),
-                                          member)):
+        menu = get_menu(ims)
+        if not (await menu.should_respond(message, reaction, await self.get_reaction_filters(ims), member)):
             return
 
-        data = {
-            'dgcog': await self.get_dgcog(),
-            'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
-        }
-        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **data)
-        await self.listener_respond_with_child(deepcopy(ims), message, emoji_clicked, member, data)
+        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **(await self.get_menu_default_data(ims)))
+        await self.listener_respond_with_child(deepcopy(ims), message, emoji_clicked, member)
 
     @staticmethod
     def get_emoji_clicked(reaction):
@@ -191,14 +179,16 @@ class PadInfo(commands.Cog, IdTest):
         else:
             emoji_clicked = emoji_obj.name
 
-        emoji_recognized = emoji_clicked in EmbedMenuEmojiConfig().to_list()
-        for menu_type, panes_type in menu_to_panes_map.items():
+        # determine if this is potentially a valid reaction prior to doing any network call:
+        # this is true if it's a default emoji or in any of our global panes emoji lists
+        if emoji_clicked in EmbedMenuEmojiConfig().to_list():
+            return emoji_clicked
+        for menu_type, panes_type in type_to_panes.items():
             if emoji_clicked in panes_type.emoji_names():
                 return emoji_clicked
-        if not emoji_recognized:
-            return False
+        return None
 
-    async def listener_respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member, data):
+    async def listener_respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member):
         failsafe = 0
         while menu_1_ims.get('child_message_id'):
             # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
@@ -207,8 +197,9 @@ class PadInfo(commands.Cog, IdTest):
                 break
             failsafe += 1
             menu_2 = IdMenu.menu()
-            panes_class = menu_to_panes_map[menu_1_ims['menu_type']]
+            panes_class = type_to_panes[menu_1_ims['menu_type']]
             child_data_func = panes_class.get_child_data_func(emoji_clicked)
+            data = await self.get_menu_default_data(menu_1_ims)
             emoji_simulated_clicked_2, extra_ims = None, {}
             if child_data_func is not None:
                 emoji_simulated_clicked_2, extra_ims = child_data_func(menu_1_ims, emoji_clicked, **data)
@@ -224,16 +215,24 @@ class PadInfo(commands.Cog, IdTest):
                 menu_1_ims = menu_2_ims
                 message_1 = message_2
 
-    async def get_reaction_filters(self, original_author_id, menu_type):
+    async def get_reaction_filters(self, ims):
+        original_author_id = ims['original_author_id']
         friend_cog = self.bot.get_cog("Friend")
         friend_ids = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         reaction_filters = [
-            ValidEmojiReactionFilter(menu_to_panes_map[menu_type].emoji_names()),
+            ValidEmojiReactionFilter(get_panes_class(ims).emoji_names()),
             NotPosterEmojiReactionFilter(),
             BotAuthoredMessageReactionFilter(self.bot.user.id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
         return reaction_filters
+
+    async def get_menu_default_data(self, ims):
+        data = {
+            'dgcog': await self.get_dgcog(),
+            'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
+        }
+        return data
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
