@@ -9,11 +9,11 @@ from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
+from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -22,20 +22,17 @@ if TYPE_CHECKING:
 
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters: List["MonsterModel"],
-                 fallback_message: str = None,
-                 use_evo_scroll: bool = True,
-                 reaction_list: List[str] = None,
-                 is_child: bool = False,
-                 extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                 alt_monsters: List["MonsterModel"],
+                 transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                 fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
+                 is_child: bool = False, extra_state=None):
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.fallback_message = fallback_message
         self.is_child = is_child
         self.acquire_raw = acquire_raw
-        self.alt_monsters = alt_monsters
         self.base_rarity = base_rarity
         self.transform_base = transform_base
         self.true_evo_type_raw = true_evo_type_raw
@@ -55,7 +52,8 @@ class IdViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.query(dgcog, monster)
 
         raw_query = ims['raw_query']
@@ -68,31 +66,29 @@ class IdViewState(ViewStateBaseId):
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+                   transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    is_child=is_child,
                    extra_state=ims)
 
-    @staticmethod
-    async def query(dgcog, monster):
+    @classmethod
+    async def query(cls, dgcog, monster):
         db_context = dgcog.database
-        acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw = \
+        acquire_raw, base_rarity, transform_base, true_evo_type_raw = \
             await IdViewState._get_monster_misc_info(db_context, monster)
 
-        return transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters
+        return transform_base, true_evo_type_raw, acquire_raw, base_rarity
 
-    @staticmethod
-    async def _get_monster_misc_info(db_context, monster):
+    @classmethod
+    async def _get_monster_misc_info(cls, db_context, monster):
         transform_base = db_context.graph.get_transform_base(monster)
         true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
         base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_no).rarity
-        alt_monsters = sorted({*db_context.graph.get_alt_monsters_by_id(monster.monster_no)},
-                              key=lambda x: x.monster_id)
-        return acquire_raw, alt_monsters, base_rarity, transform_base, true_evo_type_raw
+        return acquire_raw, base_rarity, transform_base, true_evo_type_raw
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
@@ -118,6 +114,17 @@ def _get_stat_text(stat, lb_stat, icon):
 
 def _monster_is_enhance(m: "MonsterModel"):
     return any(x if x.name == 'Enhance' else None for x in m.types)
+
+
+def evos_embed_field(state: ViewStateBaseId):
+    m = state.monster
+    return EmbedField(
+        "Alternate Evos",
+        HighlightableLinks(
+            links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
+            highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
+        )
+    )
 
 
 class IdView:
@@ -266,13 +273,7 @@ class IdView:
                 IdView.leader_skill_header(m).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
-            EmbedField(
-                "Alternate Evos",
-                HighlightableLinks(
-                    links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
-                    highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
-                )
-            )
+            evos_embed_field(state)
         ]
 
         return EmbedView(
