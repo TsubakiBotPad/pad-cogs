@@ -9,9 +9,11 @@ if TYPE_CHECKING:
 
 class ViewStateBaseId:
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 alt_monsters: List["MonsterModel"],
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
+        self.alt_monsters = alt_monsters
         self.extra_state = extra_state or {}
         self.menu_type = menu_type
         self.original_author_id = original_author_id
@@ -30,7 +32,7 @@ class ViewStateBaseId:
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
-            'reaction_list': self.reaction_list
+            'reaction_list': self.reaction_list,
         }
         ret.update(self.extra_state)
         return ret
@@ -41,6 +43,8 @@ class ViewStateBaseId:
             return None
         monster = await get_monster_from_ims(dgcog, ims)
 
+        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -48,6 +52,13 @@ class ViewStateBaseId:
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
                    use_evo_scroll=use_evo_scroll, reaction_list=reaction_list,
                    extra_state=ims)
+
+    @classmethod
+    def get_alt_monsters(cls, dgcog, monster):
+        db_context = dgcog.database
+        alt_monsters = sorted({*db_context.graph.get_alt_monsters_by_id(monster.monster_no)},
+                              key=lambda x: x.monster_id)
+        return alt_monsters

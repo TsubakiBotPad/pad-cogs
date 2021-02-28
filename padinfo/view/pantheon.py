@@ -6,23 +6,24 @@ from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.common import get_monster_from_ims
+from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
 class PantheonViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel", alt_monsters,
                  pantheon_list: List["MonsterModel"], series_name: str,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -46,6 +47,7 @@ class PantheonViewState(ViewStateBaseId):
         if pantheon_list is None:
             return None
 
+        alt_monsters = cls.get_alt_monsters(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -53,14 +55,14 @@ class PantheonViewState(ViewStateBaseId):
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
                    pantheon_list, series_name,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
 
-    @staticmethod
-    async def query(dgcog, monster):
+    @classmethod
+    async def query(cls, dgcog, monster):
         db_context = dgcog.database
         full_pantheon = db_context.get_monsters_by_series(monster.series_id)
         if not full_pantheon:
@@ -85,7 +87,8 @@ class PantheonView:
                 *[MonsterHeader.short_with_emoji(m)
                   for m in sorted(state.pantheon_list, key=lambda x: x.monster_no_na)]
             )
-        )]
+        ),
+            evos_embed_field(state)]
 
         return EmbedView(
             EmbedMain(

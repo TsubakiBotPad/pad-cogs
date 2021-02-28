@@ -6,11 +6,11 @@ from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -19,11 +19,14 @@ if TYPE_CHECKING:
 class EvosViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color,
                  monster: "MonsterModel",
+
+                 # this param is needed to placate the superclass but we won't duplicate evos in this view
+                 _alt_monsters,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_versions,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -46,7 +49,7 @@ class EvosViewState(ViewStateBaseId):
 
         if alt_versions is None:
             return None
-
+        alt_monsters = alt_versions
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -56,6 +59,7 @@ class EvosViewState(ViewStateBaseId):
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color,
                    monster,
+                   alt_monsters,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
                    use_evo_scroll=use_evo_scroll,

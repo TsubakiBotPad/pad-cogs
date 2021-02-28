@@ -13,6 +13,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.common import get_monster_from_ims
+from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -22,13 +23,14 @@ MAX_MONS_TO_SHOW = 5
 
 class MaterialsViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 alt_monsters: List["MonsterModel"],
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
                          reaction_list=reaction_list,
                          use_evo_scroll=use_evo_scroll,
                          extra_state=extra_state)
@@ -60,6 +62,7 @@ class MaterialsViewState(ViewStateBaseId):
         if mats is None:
             return None
 
+        alt_monsters = cls.get_alt_monsters(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         menu_type = ims['menu_type']
@@ -67,7 +70,7 @@ class MaterialsViewState(ViewStateBaseId):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -165,5 +168,5 @@ class MaterialsView:
                 if state.gemusedin else None,
                 skillup_field(state.skillups, state.skillup_evo_count, state.link)
                 if not (state.monster.is_stackable or state.gem_override) else None
-            ] if f is not None]
+            ] if f is not None] + [evos_embed_field(state)]
         )
