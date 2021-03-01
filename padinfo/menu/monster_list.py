@@ -53,6 +53,8 @@ class MonsterListMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
         view_state = await MonsterListViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod

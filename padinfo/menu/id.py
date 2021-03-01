@@ -111,6 +111,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
@@ -119,6 +121,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
@@ -127,6 +131,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await MaterialsViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
@@ -135,6 +141,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await PicViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
@@ -143,6 +151,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await PantheonViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
@@ -151,6 +161,8 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await OtherInfoViewState.deserialize(dgcog, user_config, ims)
+        if view_state is None:
+            return None
         return view_state.control()
 
     @staticmethod
