@@ -133,15 +133,18 @@ class Dadguide(commands.Cog):
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         self.index = await MonsterIndex(self.database.get_all_monsters(), self.database) # noqa
-        await self.check_index()
+        asyncio.create_task(self.check_index())
 
     async def check_index(self):
         if not await self.config.indexlog():
             return
 
+        if self.bot.get_cog("PadInfo") and not await self.bot.get_cog("PadInfo").run_tests():
+            self.index.issues.insert(0, "Test cases failed.")
+
         channel = self.bot.get_channel(await self.config.indexlog())
         if self.index.issues:
-            for page in pagify("\n".join(self.index.issues[:100])):
+            for page in pagify("Index Load Warnings:\n" + "\n".join(self.index.issues[:100])):
                 await channel.send(box(page))
 
     def get_monster(self, monster_id: int) -> MonsterModel:

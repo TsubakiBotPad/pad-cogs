@@ -21,7 +21,7 @@ class IdTest:
 
     @idtest.command(name="add")
     @checks.is_owner()
-    async def idt_add(self, ctx, id: int, *, query):
+    async def idt_add(self, ctx, mid: int, *, query):
         """Add a test for the id3 test suite (Append `| reason` to add a reason)"""
         query, *reason = query.split("|")
         query = query.strip()
@@ -32,16 +32,16 @@ class IdTest:
 
         async with self.config.test_suite() as suite:
             oldd = suite.get(query, {})
-            if oldd.get('result') == id:
+            if oldd.get('result') == mid:
                 await ctx.send(f"This test case already exists with id `{sorted(suite).index(query)}`.")
                 return
             suite[query] = {
-                'result': id,
+                'result': mid,
                 'ts': datetime.now().timestamp(),
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_reaction(ctx, f"Added test case `{id} - {query}`"
+            if await tsutils.get_reaction(ctx, f"Added test case `{mid} - {query}`"
                                                f" with ref `{sorted(suite).index(query)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
@@ -50,7 +50,7 @@ class IdTest:
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.send(f"Successfully added test case `{id} - {query}` with ref `{sorted(suite).index(query)}`")
+                await ctx.send(f"Successfully added test case `{mid} - {query}` with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -63,17 +63,17 @@ class IdTest:
 
     @idt_name.command(name="add")
     @checks.is_owner()
-    async def idtn_add(self, ctx, id: int, token, *, reason=""):
+    async def idtn_add(self, ctx, mid: int, token, *, reason=""):
         """Add a name token test to the id3 test suite"""
-        await self.norf_add(ctx, id, token, reason, False)
+        await self.norf_add(ctx, mid, token, reason, False)
 
     @idt_fluff.command(name="add")
     @checks.is_owner()
-    async def idtf_add(self, ctx, id: int, token, *, reason=""):
+    async def idtf_add(self, ctx, mid: int, token, *, reason=""):
         """Add a fluff token test to the id3 test suite"""
-        await self.norf_add(ctx, id, token, reason, True)
+        await self.norf_add(ctx, mid, token, reason, True)
 
-    async def norf_add(self, ctx, id: int, token, reason, fluffy):
+    async def norf_add(self, ctx, mid: int, token, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx,
@@ -82,16 +82,16 @@ class IdTest:
         await self.config.user(ctx.author).lastaction.set('name')
 
         async with self.config.fluff_suite() as suite:
-            if any(t['id'] == id and t['token'] == token and t['fluff'] == fluffy for t in suite):
+            if any(t['id'] == mid and t['token'] == token and t['fluff'] == fluffy for t in suite):
                 await ctx.send("This test already exists.")
                 return
 
             old = None
-            if any(t['id'] == id and t['token'] == token for t in suite):
-                old = [t for t in suite if t['id'] == id and t['token'] == token][0]
+            if any(t['id'] == mid and t['token'] == token for t in suite):
+                old = [t for t in suite if t['id'] == mid and t['token'] == token][0]
                 if not await tsutils.confirm_message(ctx, f"Are you sure you want to change"
                                                           f" the type of test case #{suite.index(old)}"
-                                                          f" `{id} - {token}` from "
+                                                          f" `{mid} - {token}` from "
                                                           f" **{'fluff' if fluffy else 'name'}** to"
                                                           f" **{'name' if fluffy else 'fluff'}**?"):
                     await ctx.react_quietly("\N{CROSS MARK}")
@@ -99,7 +99,7 @@ class IdTest:
                 suite.remove(old)
 
             case = {
-                'id': id,
+                'id': mid,
                 'token': token,
                 'fluff': fluffy,
                 'reason': reason,
@@ -110,7 +110,7 @@ class IdTest:
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
             if await tsutils.get_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
-                                               f"case `{id} - {token}` with ref `{suite.index(case)}`",
+                                               f"case `{mid} - {token}` with ref `{suite.index(case)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 suite.pop()
                 if old:
@@ -118,7 +118,7 @@ class IdTest:
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
                 m = await ctx.send(f"Successfully added {'fluff' if fluffy else 'name'} "
-                                   f"case `{id} - {token}` with ref `{suite.index(case)}`")
+                                   f"case `{mid} - {token}` with ref `{suite.index(case)}`")
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
@@ -287,10 +287,10 @@ class IdTest:
 
         suite = await self.config.fluff_suite()
         o = ""
-        for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-            if inclusive or v['fluff'] == fluff:
-                o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
-                     f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
+        for c, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            if inclusive or case['fluff'] == fluff:
+                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)} - {str(case['id']).ljust(4)}" \
+                     f"\t{'fluff' if case['fluff'] else 'name '}\t{case.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -327,10 +327,10 @@ class IdTest:
 
         suite = await self.config.fluff_suite()
         o = ""
-        for c, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-            if inclusive or v['fluff'] == fluff and not v['reason']:
-                o += f"{str(c).rjust(3)}. {v['token'].ljust(10)} - {str(v['id']).ljust(4)}" \
-                     f"\t{'fluff' if v['fluff'] else 'name '}\t{v.get('reason', '')}\n"
+        for c, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            if inclusive or case['fluff'] == fluff and not case['reason']:
+                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)} - {str(case['id']).ljust(4)}" \
+                     f"\t{'fluff' if case['fluff'] else 'name '}\t{case.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -344,8 +344,9 @@ class IdTest:
             count = len(suite)
         o = ""
         ml = len(max(suite, key=len))
-        for c, kv in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
-            o += f"{kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+        for c, kv_tuple in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
+            key, val = kv_tuple
+            o += f"{key.ljust(ml)} - {str(val['result']).ljust(4)}\t{val.get('reason') or ''}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -401,13 +402,13 @@ class IdTest:
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
-            for i, v in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
+            for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+                fluff = case['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[case['token']]]
+                name = case['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[case['token']]]
 
-                if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
-                    q = '"{}"'.format(v['token'])
-                    o += f"{i}. {str(v['id']).ljust(4)} {q.ljust(10)} - " \
+                if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
+                    q = '"{}"'.format(case['token'])
+                    o += f"{i}. {str(case['id']).ljust(4)} {q.ljust(10)} - " \
                          f"{ycircle if name or fluff else rcircle} " \
                          f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
                 else:
@@ -449,8 +450,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in dgcog.index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in dgcog.index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -472,3 +473,27 @@ class IdTest:
             o += "\n\n\N{LARGE GREEN CIRCLE} \N{LARGE GREEN CIRCLE} All tests succeeded!!"
         for page in pagify(o):
             await ctx.send(box(page))
+
+    async def run_tests(self):
+        dgcog = await self.get_dgcog()
+
+        qsuite = await self.config.test_suite()
+        for q in qsuite:
+            try:
+                m = await find_monster(dgcog, q) or -1
+            except Exception:
+                m = -2
+            mid = getattr(m, "monster_id", m)
+
+            if mid != qsuite[q]['result']:
+                return False
+
+        fsuite = await self.config.fluff_suite()
+        for v in fsuite:
+            fluff = v['id'] in [m.monster_id for m in dgcog.index.fluff_tokens[v['token']]]
+            name = v['id'] in [m.monster_id for m in dgcog.index.name_tokens[v['token']]]
+
+            if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
+                return False
+
+        return True
