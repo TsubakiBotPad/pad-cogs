@@ -11,12 +11,6 @@ from padinfo.view.id import IdView
 from padinfo.view.series_scroll import SeriesScrollView, SeriesScrollViewState
 
 
-class SeriesScrollPaneNames:
-    home = 'home'
-    refresh = 'refresh'
-    reset = 'reset'
-
-
 class SeriesScrollEmoji:
     delete = '\N{CROSS MARK}'
     home = emoji_buttons['home']
@@ -278,7 +272,7 @@ class SeriesScrollMenuPanes(MenuPanes):
     DATA = {
         # tuple parts: emoji, pane_type, respond_with_parent, respond_with_child
         SeriesScrollEmoji.delete: (SeriesScrollMenu.respond_with_delete, None, None),
-        SeriesScrollEmoji.home: (SeriesScrollMenu.respond_with_monster_list, SeriesScrollPaneNames.home, None),
+        SeriesScrollEmoji.home: (SeriesScrollMenu.respond_with_monster_list, None, None),
         SeriesScrollEmoji.prev_page: (SeriesScrollMenu.respond_with_left, SeriesScrollView.VIEW_TYPE, None),
         SeriesScrollEmoji.prev_mon: (
             SeriesScrollMenu.respond_with_previous_monster, None, SeriesScrollMenu.auto_scroll_child_left),
@@ -307,13 +301,13 @@ class SeriesScrollMenuPanes(MenuPanes):
             SeriesScrollMenu.respond_with_9, IdView.VIEW_TYPE, SeriesScrollMenu.click_child_number),
         SeriesScrollEmoji.ten: (
             SeriesScrollMenu.respond_with_10, IdView.VIEW_TYPE, SeriesScrollMenu.click_child_number),
-        SeriesScrollEmoji.refresh: (SeriesScrollMenu.respond_with_refresh, SeriesScrollPaneNames.refresh, None),
-        SeriesScrollEmoji.reset: (SeriesScrollMenu.respond_with_reset, SeriesScrollPaneNames.reset, None)
+        SeriesScrollEmoji.refresh: (SeriesScrollMenu.respond_with_refresh, None, None),
+        SeriesScrollEmoji.reset: (SeriesScrollMenu.respond_with_reset, None, None)
     }
     HIDDEN_EMOJIS = [
-        SeriesScrollPaneNames.home,
-        SeriesScrollPaneNames.refresh,
-        SeriesScrollPaneNames.reset,
+        SeriesScrollEmoji.home,
+        SeriesScrollEmoji.refresh,
+        SeriesScrollEmoji.reset,
     ]
 
     @classmethod

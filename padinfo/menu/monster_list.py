@@ -5,15 +5,9 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
 
 from padinfo.menu.common import emoji_buttons, MenuPanes
-from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuPaneNames, IdMenuEmoji
+from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.monster_list import MonsterListView, MonsterListViewState
-
-
-class MonsterListPaneNames:
-    home = 'home'
-    refresh = 'refresh'
-    reset = 'reset'
 
 
 class MonsterListEmoji:
@@ -142,7 +136,7 @@ class MonsterListMenuPanes(MenuPanes):
     INITIAL_EMOJI = MonsterListEmoji.home
     DATA = {
         # tuple parts: parent_response, pane_type, respond_with_child
-        MonsterListEmoji.home: (MonsterListMenu.respond_with_monster_list, MonsterListPaneNames.home, None),
+        MonsterListEmoji.home: (MonsterListMenu.respond_with_monster_list, MonsterListEmoji.home, None),
         MonsterListEmoji.zero: (
             MonsterListMenu.respond_with_0, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
         MonsterListEmoji.one: (
@@ -166,14 +160,14 @@ class MonsterListMenuPanes(MenuPanes):
         MonsterListEmoji.ten: (
             MonsterListMenu.respond_with_10, IdView.VIEW_TYPE, MonsterListMenu.click_child_number),
         MonsterListEmoji.refresh: (
-            MonsterListMenu.respond_with_refresh, MonsterListPaneNames.refresh, None),
+            MonsterListMenu.respond_with_refresh, None, None),
         MonsterListEmoji.reset: (
-            MonsterListMenu.respond_with_reset, MonsterListPaneNames.reset, None)
+            MonsterListMenu.respond_with_reset, None, None)
     }
     HIDDEN_EMOJIS = [
-        MonsterListPaneNames.home,
-        MonsterListPaneNames.refresh,
-        MonsterListPaneNames.reset,
+        MonsterListEmoji.home,
+        MonsterListEmoji.refresh,
+        MonsterListEmoji.reset,
     ]
 
     @classmethod
