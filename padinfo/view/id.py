@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
 
@@ -73,6 +74,12 @@ class IdViewState(ViewStateBaseId):
                    reaction_list=reaction_list,
                    is_child=is_child,
                    extra_state=ims)
+
+    def control(self):
+        return EmbedControl(
+            [IdView.embed(self)],
+            self.reaction_list
+        )
 
     @classmethod
     async def query(cls, dgcog, monster):

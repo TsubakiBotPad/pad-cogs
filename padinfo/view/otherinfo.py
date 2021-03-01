@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
@@ -25,6 +26,12 @@ class OtherInfoViewState(ViewStateBaseId):
             'pane_type': OtherInfoView.VIEW_TYPE,
         })
         return ret
+
+    def control(self):
+        return EmbedControl(
+            [OtherInfoView.embed(self)],
+            self.reaction_list
+        )
 
 
 def statsbox(m):

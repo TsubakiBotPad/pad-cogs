@@ -1,13 +1,13 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedMenu, EmbedControl
+from discordmenu.embed.menu import EmbedMenu
 from tsutils import char_to_emoji
 
 from padinfo.menu.common import emoji_buttons, MenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
-from padinfo.view.monster_list import MonsterListView, MonsterListViewState
+from padinfo.view.monster_list import MonsterListViewState
 
 
 class MonsterListEmoji:
@@ -32,10 +32,8 @@ class MonsterListMenu:
     CHILD_MENU_TYPE = 'IdMenu'
 
     @staticmethod
-    def menu(initial_control=None):
-        if initial_control is None:
-            initial_control = MonsterListMenu.monster_list_control
-        embed = EmbedMenu(MonsterListMenuPanes.transitions(), initial_control)
+    def menu():
+        embed = EmbedMenu(MonsterListMenuPanes.transitions())
         return embed
 
     @staticmethod
@@ -55,8 +53,7 @@ class MonsterListMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
         view_state = await MonsterListViewState.deserialize(dgcog, user_config, ims)
-        control = MonsterListMenu.monster_list_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, _n, **data):
@@ -107,17 +104,7 @@ class MonsterListMenu:
         return await MonsterListMenu.respond_with_n(message, ims, 10, **data)
 
     @staticmethod
-    def monster_list_control(state: MonsterListViewState):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [MonsterListView.embed(state)],
-            reaction_list
-        )
-
-    @staticmethod
-    def click_child_number(ims, emoji_clicked, **data):
+    def click_child_number(ims, emoji_clicked, **_data):
         emoji_response = IdMenuEmoji.refresh \
             if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:

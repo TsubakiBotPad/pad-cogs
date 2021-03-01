@@ -1,5 +1,6 @@
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
 
@@ -19,6 +20,12 @@ class PicViewState(ViewStateBaseId):
             'pane_type': PicView.VIEW_TYPE,
         })
         return ret
+
+    def control(self):
+        return EmbedControl(
+            [PicView.embed(self)],
+            self.reaction_list
+        )
 
 
 class PicView:

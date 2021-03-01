@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
@@ -60,6 +61,12 @@ class PantheonViewState(ViewStateBaseId):
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
+
+    def control(self):
+        return EmbedControl(
+            [PantheonView.embed(self)],
+            self.reaction_list
+        )
 
     @classmethod
     async def query(cls, dgcog, monster):

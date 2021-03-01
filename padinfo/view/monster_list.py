@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji
 
@@ -64,6 +65,12 @@ class MonsterListViewState(ViewStateBase):
                                     extra_state=ims,
                                     child_message_id=child_message_id
                                     )
+
+    def control(self):
+        return EmbedControl(
+            [MonsterListView.embed(self)],
+            self.reaction_list
+        )
 
 
 def _monster_list(monsters):

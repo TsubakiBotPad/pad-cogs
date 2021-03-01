@@ -1,6 +1,7 @@
 from typing import List
 
 from discordmenu.embed.components import EmbedMain
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
@@ -30,6 +31,12 @@ class SimpleTextViewState(ViewStateBase):
         raw_query = ims.get('raw_query')
         return cls(original_author_id, menu_type, raw_query, user_config.color, ims.get('message'),
                    reaction_list=ims.get('reaction_list'))
+
+    def control(self):
+        return EmbedControl(
+            [SimpleTextView.embed(self)],
+            self.reaction_list
+        )
 
 
 class SimpleTextView:

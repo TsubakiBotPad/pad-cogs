@@ -412,7 +412,7 @@ class PadInfo(commands.Cog, IdTest):
                               monster, alt_versions, alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(initial_control=IdMenu.evos_control)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
@@ -444,7 +444,7 @@ class PadInfo(commands.Cog, IdTest):
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(initial_control=IdMenu.mats_control)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command(aliases=["series"])
@@ -474,7 +474,7 @@ class PadInfo(commands.Cog, IdTest):
                                   monster, alt_monsters, pantheon_list, series_name,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command(aliases=['img'])
@@ -500,7 +500,7 @@ class PadInfo(commands.Cog, IdTest):
                              monster, alt_monsters,
                              reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(initial_control=IdMenu.pic_control)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command(aliases=['stats'])
@@ -526,7 +526,7 @@ class PadInfo(commands.Cog, IdTest):
                                    monster, alt_monsters,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
-        menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
+        menu = IdMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command()

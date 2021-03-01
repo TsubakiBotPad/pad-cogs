@@ -18,7 +18,7 @@ class SimpleTextMenu:
 
     @staticmethod
     def menu():
-        embed = EmbedMenu(SimpleTextMenuPanes.transitions(), SimpleTextMenu.message_control,
+        embed = EmbedMenu(SimpleTextMenuPanes.transitions(),
                           delete_func=SimpleTextMenu.respond_with_delete)
         return embed
 
@@ -27,22 +27,11 @@ class SimpleTextMenu:
         dgcog = data.get('dgcog')
         user_config = data.get('user_config')
         view_state = await SimpleTextViewState.deserialize(dgcog, user_config, ims)
-        control = SimpleTextMenu.message_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
         return await message.delete()
-
-    @staticmethod
-    def message_control(state: SimpleTextViewState):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [SimpleTextView.embed(state)],
-            reaction_list
-        )
 
 
 class SimpleTextEmoji:

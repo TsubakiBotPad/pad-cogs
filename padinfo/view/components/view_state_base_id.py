@@ -1,4 +1,7 @@
+import abc
 from typing import TYPE_CHECKING, List
+
+from discordmenu.embed.control import EmbedControl
 
 from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
@@ -55,6 +58,10 @@ class ViewStateBaseId:
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
                    use_evo_scroll=use_evo_scroll, reaction_list=reaction_list,
                    extra_state=ims)
+
+    @abc.abstractmethod
+    def control(self):
+        pass
 
     @classmethod
     def get_alt_monsters(cls, dgcog, monster):

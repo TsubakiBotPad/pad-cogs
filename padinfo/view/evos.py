@@ -2,6 +2,7 @@ from typing import List, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
+from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
@@ -64,6 +65,12 @@ class EvosViewState(ViewStateBaseId):
                    reaction_list=reaction_list,
                    use_evo_scroll=use_evo_scroll,
                    extra_state=ims)
+
+    def control(self):
+        return EmbedControl(
+            [EvosView.embed(self)],
+            self.reaction_list
+        )
 
     @staticmethod
     async def query(dgcog, monster):

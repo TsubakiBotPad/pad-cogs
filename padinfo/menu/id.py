@@ -23,11 +23,9 @@ class IdMenu:
     MENU_TYPE = 'IdMenu'
 
     @staticmethod
-    def menu(initial_control=None):
-        if initial_control is None:
-            initial_control = IdMenu.id_control
+    def menu():
 
-        embed = EmbedMenu(IdMenuPanes.transitions(), initial_control,
+        embed = EmbedMenu(IdMenuPanes.transitions(),
                           delete_func=IdMenu.respond_with_delete)
         return embed
 
@@ -113,8 +111,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.id_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_evos(message: Optional[Message], ims, **data):
@@ -122,8 +119,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.evos_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_mats(message: Optional[Message], ims, **data):
@@ -131,8 +127,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await MaterialsViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.mats_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_picture(message: Optional[Message], ims, **data):
@@ -140,8 +135,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await PicViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.pic_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_pantheon(message: Optional[Message], ims, **data):
@@ -149,8 +143,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await PantheonViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.pantheon_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     async def respond_with_otherinfo(message: Optional[Message], ims, **data):
@@ -158,8 +151,7 @@ class IdMenu:
         user_config = data['user_config']
 
         view_state = await OtherInfoViewState.deserialize(dgcog, user_config, ims)
-        control = IdMenu.otherinfo_control(view_state)
-        return control
+        return view_state.control()
 
     @staticmethod
     def id_control(state: IdViewState):
@@ -168,56 +160,6 @@ class IdMenu:
         reaction_list = state.reaction_list
         return EmbedControl(
             [IdView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        )
-
-    @staticmethod
-    def evos_control(state: Optional[EvosViewState]):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [EvosView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        )
-
-    @staticmethod
-    def mats_control(state: Optional[MaterialsViewState]):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [MaterialsView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        )
-
-    @staticmethod
-    def pic_control(state: PicViewState):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [PicView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        )
-
-    @staticmethod
-    def pantheon_control(state: Optional[PantheonViewState]):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [PantheonView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
-        )
-
-    @staticmethod
-    def otherinfo_control(state: OtherInfoViewState):
-        if state is None:
-            return None
-        reaction_list = state.reaction_list
-        return EmbedControl(
-            [OtherInfoView.embed(state)],
             reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         )
 
