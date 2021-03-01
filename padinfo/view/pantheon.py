@@ -62,12 +62,6 @@ class PantheonViewState(ViewStateBaseId):
                    reaction_list=reaction_list,
                    extra_state=ims)
 
-    def control(self):
-        return EmbedControl(
-            [PantheonView.embed(self)],
-            self.reaction_list
-        )
-
     @classmethod
     async def query(cls, dgcog, monster):
         db_context = dgcog.database
@@ -81,6 +75,13 @@ class PantheonViewState(ViewStateBaseId):
         series_name = monster.series.name_en
 
         return pantheon_list, series_name
+
+
+def pantheon_control(state: PantheonViewState):
+    return EmbedControl(
+        [PantheonView.embed(state)],
+        state.reaction_list
+    )
 
 
 class PantheonView:
