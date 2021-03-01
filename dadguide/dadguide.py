@@ -9,12 +9,15 @@ entire database could be leaked when the module is reloaded.
 import asyncio
 import os
 import shutil
+
+import discord
 import time
 from io import BytesIO
 from typing import Optional
 
 import tsutils
-from redbot.core import checks, data_manager, commands
+from redbot.core import checks, data_manager, commands, Config
+from redbot.core.utils.chat_formatting import pagify, box
 from tsutils import auth_check
 
 from . import token_mappings
@@ -62,13 +65,14 @@ class Dadguide(commands.Cog):
         self.bot = bot
         self._is_ready = asyncio.Event()
 
-        self.settings = DadguideSettings("dadguide")
-
         self.database = None
         self.index = None  # type: Optional[MonsterIndex]
 
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
+
+        self.config = Config.get_conf(self, identifier=64667103)
+        self.config.register_global(datafile='', indexlog=0)
 
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
@@ -128,7 +132,17 @@ class Dadguide(commands.Cog):
 
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database)
+        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database) # noqa
+        await self.check_index()
+
+    async def check_index(self):
+        if not await self.config.indexlog():
+            return
+
+        channel = self.bot.get_channel(await self.config.indexlog())
+        if self.index.issues:
+            for page in pagify("\n".join(self.index.issues[:100])):
+                await channel.send(box(page))
 
     def get_monster(self, monster_id: int) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
@@ -168,9 +182,9 @@ class Dadguide(commands.Cog):
                 raise ex
 
     async def download_and_refresh_nicknames(self):
-        if self.settings.data_file():
+        if await self.config.datafile():
             logger.info('Copying dg data file')
-            shutil.copy2(self.settings.data_file(), DB_DUMP_FILE)
+            shutil.copy2(await self.config.datafile(), DB_DUMP_FILE)
         else:
             logger.info('Downloading dg data files')
             await self._download_files()
@@ -193,22 +207,13 @@ class Dadguide(commands.Cog):
 
     @dadguide.command()
     @checks.is_owner()
-    async def setdatafile(self, ctx, *, data_file):
+    async def setdatafile(self, ctx, data_file):
         """Set a local path to dadguide data instead of downloading it."""
-        self.settings.set_data_file(data_file)
+        await self.config.datafile.set(data_file)
         await ctx.tick()
 
-
-class DadguideSettings(tsutils.CogSettings):
-    def make_default_settings(self):
-        config = {
-            'data_file': '',
-        }
-        return config
-
-    def data_file(self):
-        return self.bot_settings['data_file']
-
-    def set_data_file(self, data_file):
-        self.bot_settings['data_file'] = data_file
-        self.save_settings()
+    @dadguide.command()
+    @checks.is_owner()
+    async def setindexlog(self, ctx, channel: discord.TextChannel):
+        await self.config.indexlog.set(channel.id)
+        await ctx.tick()

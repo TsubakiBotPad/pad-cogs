@@ -27,6 +27,8 @@ class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, monsters, db):
         self.graph = db.graph
 
+        self.issues = []
+
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_nametokens = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
@@ -361,6 +363,7 @@ class MonsterIndex(tsutils.aobject):
                 modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
             except ValueError:
                 logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
+                self.issues.append(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
         # Chibi
         if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
