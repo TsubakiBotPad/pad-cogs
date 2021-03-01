@@ -222,11 +222,6 @@ class IdMenu:
         )
 
 
-class IdMenuPaneNames:
-    refresh = 'refresh'
-    delete = 'delete'
-
-
 class IdMenuEmoji:
     left = '\N{BLACK LEFT-POINTING TRIANGLE}'
     right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
@@ -250,10 +245,10 @@ class IdMenuPanes(MenuPanes):
         IdMenuEmoji.pic: (IdMenu.respond_with_picture, PicView.VIEW_TYPE),
         IdMenuEmoji.pantheon: (IdMenu.respond_with_pantheon, PantheonView.VIEW_TYPE),
         IdMenuEmoji.otherinfo: (IdMenu.respond_with_otherinfo, OtherInfoView.VIEW_TYPE),
-        IdMenuEmoji.refresh: (IdMenu.respond_with_refresh, IdMenuPaneNames.refresh),
-        IdMenuEmoji.delete: (IdMenu.respond_with_delete, IdMenuPaneNames.delete),
+        IdMenuEmoji.refresh: (IdMenu.respond_with_refresh, None),
+        IdMenuEmoji.delete: (IdMenu.respond_with_delete, None),
     }
     HIDDEN_EMOJIS = [
-        IdMenuPaneNames.refresh,
-        IdMenuPaneNames.delete,
+        IdMenuEmoji.refresh,
+        IdMenuEmoji.delete,
     ]

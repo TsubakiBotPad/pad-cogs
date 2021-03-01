@@ -13,7 +13,7 @@ class MenuPanes:
 
     @classmethod
     def emoji_names(cls):
-        return [k for k, v in cls.DATA.items() if v[1] not in cls.HIDDEN_EMOJIS]
+        return [k for k, v in cls.DATA.items() if k not in cls.HIDDEN_EMOJIS]
 
     @classmethod
     def transitions(cls):
