@@ -21,7 +21,8 @@ class TransformInfoMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        ims['query'] = str(ims['b_resolved_monster_id'])
+        # base is always first
+        ims['query'] = str(ims['resolved_monster_ids'][0])
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
@@ -32,7 +33,8 @@ class TransformInfoMenu:
         dgcog = data['dgcog']
         user_config = data['user_config']
 
-        ims['query'] = str(ims['t_resolved_monster_id'])
+        # transform is always second
+        ims['query'] = str(ims['resolved_monster_ids'][1])
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = TransformInfoMenu.id_control(id_view_state)
@@ -69,7 +71,8 @@ class TransformInfoEmoji:
 
 class TransformInfoMenuPanes(MenuPanes):
     DATA = {
-        TransformInfoEmoji.home: (TransformInfoMenu.respond_with_overview, TransformInfoView.VIEW_TYPE),
+        TransformInfoEmoji.home: (TransformInfoMenu.respond_with_overview,
+                                  TransformInfoView.VIEW_TYPE),
         TransformInfoEmoji.down: (TransformInfoMenu.respond_with_base, IdView.VIEW_TYPE),
         TransformInfoEmoji.up: (TransformInfoMenu.respond_with_transform, IdView.VIEW_TYPE),
     }

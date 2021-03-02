@@ -745,7 +745,7 @@ class PadInfo(commands.Cog, IdTest):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
-        base_mon, transformed_mon, reaction_ids = await perform_transforminfo_query(dgcog, query)
+        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
@@ -761,7 +761,7 @@ class PadInfo(commands.Cog, IdTest):
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw)
+                                       color, base_mon, transformed_mon, acquire_raw, monster_ids)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 
