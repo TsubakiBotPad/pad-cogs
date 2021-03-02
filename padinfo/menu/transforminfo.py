@@ -2,7 +2,6 @@ from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 
 from padinfo.menu.common import MenuPanes, emoji_buttons
@@ -26,7 +25,8 @@ class TransformInfoMenu:
         ims['query'] = str(ims['resolved_monster_ids'][0])
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        id_control = TransformInfoMenu.id_control(id_view_state)
+        reaction_list = ims['reaction_list']
+        id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
         return id_control
 
     @staticmethod
@@ -38,14 +38,25 @@ class TransformInfoMenu:
         ims['query'] = str(ims['resolved_monster_ids'][1])
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        id_control = TransformInfoMenu.id_control(id_view_state)
+        reaction_list = ims['reaction_list']
+        id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
         return id_control
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
-        # dummy for now
+        n = TransformInfoMenuPanes.get_n_from_reaction(data['reaction'])
+        # does this work? is this check necessary? is reaction guaranteed to resolve?
+        if n is None:
+            return None
+
+        ims['query'] = str(ims['resolved_monster_ids'][n])
+        ims['resolved_monster_id'] = None
+        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        reaction_list = ims['reaction_list']
+        id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
+        return id_control
 
     @staticmethod
     async def respond_with_overview(message: Optional[Message], ims, **data):
@@ -57,16 +68,17 @@ class TransformInfoMenu:
 
     @staticmethod
     def tf_control(state: TransformInfoViewState):
+        reaction_list = state.reaction_list
         return EmbedControl(
             [TransformInfoView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in TransformInfoMenuPanes.emoji_names()]
+            reaction_list
         )
 
     @staticmethod
-    def id_control(state: IdViewState):
+    def id_control(state: IdViewState, reaction_list):
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in TransformInfoMenuPanes.emoji_names()]
+            reaction_list
         )
 
 
@@ -105,3 +117,8 @@ class TransformInfoMenuPanes(MenuPanes):
     @classmethod
     def get_reaction_list(cls, number_of_further_transforms: int):
         return cls.emoji_names()[:number_of_further_transforms]
+
+    @classmethod
+    def get_n_from_reaction(cls, reaction):
+        # offset by 1 because of the home emoji
+        return cls.emoji_names().index(reaction) - 1 if reaction in cls.emoji_names() else None

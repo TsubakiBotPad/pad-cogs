@@ -41,7 +41,7 @@ from padinfo.menu.menu_maps import type_to_panes, get_panes_class, get_menu
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu
-from padinfo.menu.transforminfo import TransformInfoMenu
+from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
@@ -168,7 +168,12 @@ class PadInfo(commands.Cog, IdTest):
         if not (await menu.should_respond(message, reaction, await self.get_reaction_filters(ims), member)):
             return
 
-        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **(await self.get_menu_default_data(ims)))
+        data = await self.get_menu_default_data(ims)
+        data.update({
+            'reaction': emoji_clicked
+        })
+        
+        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **data)
         await self.listener_respond_with_child(deepcopy(ims), message, emoji_clicked, member)
 
     @staticmethod
@@ -760,8 +765,11 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        # add 1 because the home emoji should be included
+        reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids) + 1)
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw, monster_ids)
+                                       color, base_mon, transformed_mon, acquire_raw, monster_ids,
+                                       reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 

@@ -23,18 +23,20 @@ TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 acquire_raw, monster_ids):
+                 acquire_raw, monster_ids, reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
         self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
+        self.reaction_list = reaction_list
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'resolved_monster_ids': self.monster_ids
+            'resolved_monster_ids': self.monster_ids,
+            'reaction_list': self.reaction_list
         })
         return ret
 
@@ -51,9 +53,11 @@ class TransformInfoViewState(ViewStateBase):
         transformed_mon = dgcog.get_monster(transformed_mon_id)
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        reaction_list = ims['reaction_list']
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-                                      base_mon, transformed_mon, acquire_raw, monster_ids)
+                                      base_mon, transformed_mon, acquire_raw, monster_ids,
+                                      reaction_list=reaction_list)
 
     @staticmethod
     async def query(dgcog, base_mon, transformed_mon):
