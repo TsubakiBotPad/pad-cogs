@@ -3,6 +3,7 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
+from tsutils import char_to_emoji
 
 from padinfo.menu.common import MenuPanes, emoji_buttons
 from padinfo.view.id import IdView, IdViewState
@@ -41,6 +42,12 @@ class TransformInfoMenu:
         return id_control
 
     @staticmethod
+    async def respond_with_n(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        # dummy for now
+
+    @staticmethod
     async def respond_with_overview(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
@@ -67,6 +74,15 @@ class TransformInfoEmoji:
     home = emoji_buttons['home']
     down = '\N{DOWN-POINTING RED TRIANGLE}'
     up = '\N{UP-POINTING RED TRIANGLE}'
+    two = char_to_emoji('2')
+    three = char_to_emoji('3')
+    four = char_to_emoji('4')
+    five = char_to_emoji('5')
+    six = char_to_emoji('6')
+    seven = char_to_emoji('7')
+    eight = char_to_emoji('8')
+    nine = char_to_emoji('9')
+    ten = char_to_emoji('10')
 
 
 class TransformInfoMenuPanes(MenuPanes):
@@ -75,4 +91,17 @@ class TransformInfoMenuPanes(MenuPanes):
                                   TransformInfoView.VIEW_TYPE),
         TransformInfoEmoji.down: (TransformInfoMenu.respond_with_base, IdView.VIEW_TYPE),
         TransformInfoEmoji.up: (TransformInfoMenu.respond_with_transform, IdView.VIEW_TYPE),
+        TransformInfoEmoji.two: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.three: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.four: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.five: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.six: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.seven: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.eight: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.nine: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
+        TransformInfoEmoji.ten: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
     }
+
+    @classmethod
+    def get_reaction_list(cls, number_of_further_transforms: int):
+        return cls.emoji_names()[:number_of_further_transforms]
