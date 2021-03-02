@@ -28,7 +28,7 @@ class TransformInfoViewState(ViewStateBase):
         self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
-        self.acquire_raw = acquire_raw,
+        self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
 
     def serialize(self):
