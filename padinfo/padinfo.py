@@ -765,8 +765,8 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
-        # add 1 because the home emoji should be included
-        reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids) + 1)
+        reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
+
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
                                        color, base_mon, transformed_mon, acquire_raw, monster_ids,
                                        reaction_list=reaction_list)

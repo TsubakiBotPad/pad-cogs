@@ -86,6 +86,7 @@ class TransformInfoEmoji:
     home = emoji_buttons['home']
     down = '\N{DOWN-POINTING RED TRIANGLE}'
     up = '\N{UP-POINTING RED TRIANGLE}'
+    one = char_to_emoji('1')
     two = char_to_emoji('2')
     three = char_to_emoji('3')
     four = char_to_emoji('4')
@@ -103,6 +104,7 @@ class TransformInfoMenuPanes(MenuPanes):
                                   TransformInfoView.VIEW_TYPE),
         TransformInfoEmoji.down: (TransformInfoMenu.respond_with_base, IdView.VIEW_TYPE),
         TransformInfoEmoji.up: (TransformInfoMenu.respond_with_transform, IdView.VIEW_TYPE),
+        TransformInfoEmoji.one: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
         TransformInfoEmoji.two: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
         TransformInfoEmoji.three: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
         TransformInfoEmoji.four: (TransformInfoMenu.respond_with_n, IdView.VIEW_TYPE),
@@ -115,8 +117,14 @@ class TransformInfoMenuPanes(MenuPanes):
     }
 
     @classmethod
-    def get_reaction_list(cls, number_of_further_transforms: int):
-        return cls.emoji_names()[:number_of_further_transforms]
+    def get_reaction_list(cls, number_of_monsters: int):
+        if number_of_monsters > 2:
+            cls.HIDDEN_EMOJIS = TransformInfoEmoji.up
+        else:
+            cls.HIDDEN_EMOJIS = TransformInfoEmoji.one
+
+        # add 1 for the home emoji
+        return cls.emoji_names()[:number_of_monsters + 1]
 
     @classmethod
     def get_n_from_reaction(cls, reaction):
