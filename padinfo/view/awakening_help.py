@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedThumbnail, EmbedField
+from discordmenu.embed.components import EmbedMain, EmbedField, EmbedAuthor
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 
@@ -57,12 +57,12 @@ class AwakeningHelpView:
         ]
 
         return EmbedView(
-            EmbedMain(
-                color=state.color,
-                title=MonsterHeader.long_v2(monster).to_markdown(),
-                url=puzzledragonx(monster)
+            EmbedMain(color=state.color),
+            embed_author=EmbedAuthor(
+                MonsterHeader.long_v2(monster).to_markdown(),
+                puzzledragonx(monster),
+                MonsterImage.icon(monster)
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(monster)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields
         )
