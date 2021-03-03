@@ -57,12 +57,15 @@ class AwakeningHelpView:
         ]
 
         return EmbedView(
-            EmbedMain(color=state.color),
+            EmbedMain(
+                color=state.color,
+                description='This monster has no awakenings.' if not monster.awakenings else ''
+            ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
                 puzzledragonx(monster),
                 MonsterImage.icon(monster)
             ),
             embed_footer=pad_info_footer_with_state(state),
-            embed_fields=fields
+            embed_fields=fields if monster.awakenings else None
         )
