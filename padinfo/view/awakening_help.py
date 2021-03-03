@@ -41,7 +41,7 @@ def normal_awakenings(monster: "MonsterModel"):
 def super_awakenings(monster: "MonsterModel"):
     normal_awakening_count = len(monster.awakenings) - monster.superawakening_count
     awakening_descs = [_get_awakening_desc(a) for a in monster.awakenings[normal_awakening_count:]]
-    return Box(*awakening_descs) if len(awakening_descs) > 0 else None
+    return Box(*awakening_descs) if len(awakening_descs) > 0 else Box()
 
 
 class AwakeningHelpView:
