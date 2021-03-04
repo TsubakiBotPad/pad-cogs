@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
 
+ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth']
+
 
 class AwakeningHelpViewProps:
     def __init__(self, monster: "MonsterModel"):
@@ -31,18 +33,38 @@ def _get_awakening_desc(index: int, awakening: "AwakeningModel"):
     )
 
 
+def _get_short_desc(prev_index: int, awakening: "AwakeningModel"):
+    emoji_text = get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
+    return Box(
+        Text(emoji_text),
+        Text('[Same as {} awakening]'.format(ORDINAL_WORDS[prev_index])),
+        delimiter=' '
+    )
+
+
+def _get_all_awakening_descs(awakening_list):
+    appearances = {}
+    awakening_descs = []
+    for index, awakening in enumerate(awakening_list):
+        if awakening.name not in appearances:
+            appearances[awakening.name] = index
+            awakening_descs.append(_get_awakening_desc(index, awakening))
+        else:
+            awakening_descs.append(_get_short_desc(appearances[awakening.name], awakening))
+
+    return Box(*awakening_descs)
+
+
 def normal_awakenings(monster: "MonsterModel"):
     normal_awakening_count = len(monster.awakenings) - monster.superawakening_count
     normal_awakenings = monster.awakenings[:normal_awakening_count]
-    awakening_descs = [_get_awakening_desc(i, awake) for i, awake in enumerate(normal_awakenings)]
-    return Box(*awakening_descs)
+    return _get_all_awakening_descs(normal_awakenings)
 
 
 def super_awakenings(monster: "MonsterModel"):
     normal_awakening_count = len(monster.awakenings) - monster.superawakening_count
     super_awakenings = monster.awakenings[normal_awakening_count:]
-    awakening_descs = [_get_awakening_desc(i, awake) for i, awake in enumerate(super_awakenings)]
-    return Box(*awakening_descs) if len(awakening_descs) > 0 else Box()
+    return _get_all_awakening_descs(super_awakenings)
 
 
 class AwakeningHelpView:
