@@ -4,6 +4,7 @@ import os
 import random
 import re
 import urllib.parse
+from copy import deepcopy
 from io import BytesIO
 from typing import TYPE_CHECKING, List
 
@@ -32,15 +33,17 @@ from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.idtest_mixin import IdTest
-from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
+from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
-from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
-from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
-from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu
-from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
+from padinfo.menu.leader_skill import LeaderSkillMenu
+from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
+from padinfo.menu.menu_maps import type_to_panes, get_panes_class, get_menu
+from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
+from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
+from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
+from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
@@ -154,79 +157,59 @@ class PadInfo(commands.Cog, IdTest):
 
     @commands.Cog.listener('on_reaction_add')
     async def test_reaction_add(self, reaction, member):
-        emoji_obj = reaction.emoji
-        if isinstance(emoji_obj, str):
-            emoji_clicked = emoji_obj
-        else:
-            emoji_clicked = emoji_obj.name
-
-        menu_to_emoji_list_map = {
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes.emoji_names(),
-            IdMenu.MENU_TYPE: IdMenuPanes.emoji_names(),
-            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenuPanes.emoji_names(),
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenuPanes.emoji_names(),
-            MonsterListMenu.MENU_TYPE: MonsterListMenuPanes.emoji_names(),
-            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenuPanes.emoji_names(),
-            SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes.emoji_names(),
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes.emoji_names(),
-        }
-
-        emoji_recognized = emoji_clicked in EmbedMenuEmojiConfig().to_list()
-        for menu_type, emoji_list in menu_to_emoji_list_map.items():
-            if emoji_clicked in emoji_list:
-                emoji_recognized = True
-        if not emoji_recognized:
+        emoji_clicked = self.get_emoji_clicked(reaction)
+        if emoji_clicked is None:
             return
 
         message = reaction.message
         ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
         if not ims:
             return
-
-        original_author_id = ims['original_author_id']
-        menu_type = ims['menu_type']
-        menu_map = {
-            ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenu,
-            IdMenu.MENU_TYPE: IdMenu,
-            LeaderSkillMenu.MENU_TYPE: LeaderSkillMenu,
-            LeaderSkillSingleMenu.MENU_TYPE: LeaderSkillSingleMenu,
-            MonsterListMenu.MENU_TYPE: MonsterListMenu,
-            SeriesScrollMenu.MENU_TYPE: SeriesScrollMenu,
-            SimpleTextMenu.MENU_TYPE: SimpleTextMenu,
-            TransformInfoMenu.MENU_TYPE: TransformInfoMenu,
-        }
-
-        menu_1_class = menu_map.get(menu_type)
-        if not menu_1_class:
+        menu = get_menu(ims)
+        if not (await menu.should_respond(message, reaction, await self.get_reaction_filters(ims), member)):
             return
 
-        menu_func = menu_1_class.menu
+        data = await self.get_menu_default_data(ims)
+        data.update({
+            'reaction': emoji_clicked
+        })
+        
+        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **data)
+        await self.listener_respond_with_child(deepcopy(ims), message, emoji_clicked, member)
 
-        menu = menu_func()
-        if not (await menu.should_respond(
-                        message, reaction, await self.get_reaction_filters(
-                            original_author_id, menu_to_emoji_list_map[menu_type]), member)):
-            return
+    @staticmethod
+    def get_emoji_clicked(reaction):
+        emoji_obj = reaction.emoji
+        if isinstance(emoji_obj, str):
+            emoji_clicked = emoji_obj
+        else:
+            emoji_clicked = emoji_obj.name
 
-        dgcog = await self.get_dgcog()
-        user_config = await BotConfig.get_user(self.config, original_author_id)
-        data = {
-            'dgcog': dgcog,
-            'user_config': user_config
-        }
-        menu_1_ims = ims
-        message_1 = message
+        # determine if this is potentially a valid reaction prior to doing any network call:
+        # this is true if it's a default emoji or in any of our global panes emoji lists
+        if emoji_clicked in EmbedMenuEmojiConfig().to_list():
+            return emoji_clicked
+        for menu_type, panes_type in type_to_panes.items():
+            if emoji_clicked in panes_type.emoji_names():
+                return emoji_clicked
+        return None
+
+    async def listener_respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member):
         failsafe = 0
         while menu_1_ims.get('child_message_id'):
             # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
             # and we have to update menu_1_class to be menu_2_class during the loop.
-            # TODO: Add support for triply-linked menus or children other than IdMenus
             if failsafe == 10:
                 break
             failsafe += 1
             menu_2 = IdMenu.menu()
-            emoji_simulated_clicked_2, extra_ims = menu_1_class.get_child_data(menu_1_ims, emoji_clicked)
-            if emoji_simulated_clicked_2:
+            panes_class = type_to_panes[menu_1_ims['menu_type']]
+            child_data_func = panes_class.get_child_data_func(emoji_clicked)
+            data = await self.get_menu_default_data(menu_1_ims)
+            emoji_simulated_clicked_2, extra_ims = None, {}
+            if child_data_func is not None:
+                emoji_simulated_clicked_2, extra_ims = child_data_func(menu_1_ims, emoji_clicked, **data)
+            if emoji_simulated_clicked_2 is not None:
                 fctx = await self.bot.get_context(message_1)
                 try:
                     message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
@@ -238,18 +221,24 @@ class PadInfo(commands.Cog, IdTest):
                 menu_1_ims = menu_2_ims
                 message_1 = message_2
 
-        await menu.transition(message, ims, emoji_clicked, member, **data)
-
-    async def get_reaction_filters(self, original_author_id, valid_emoji_names):
+    async def get_reaction_filters(self, ims):
+        original_author_id = ims['original_author_id']
         friend_cog = self.bot.get_cog("Friend")
         friend_ids = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
         reaction_filters = [
-            ValidEmojiReactionFilter(valid_emoji_names),
+            ValidEmojiReactionFilter(get_panes_class(ims).emoji_names()),
             NotPosterEmojiReactionFilter(),
             BotAuthoredMessageReactionFilter(self.bot.user.id),
             MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
         ]
         return reaction_filters
+
+    async def get_menu_default_data(self, ims):
+        data = {
+            'dgcog': await self.get_dgcog(),
+            'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
+        }
+        return data
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -334,15 +323,15 @@ class PadInfo(commands.Cog, IdTest):
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters = \
+        alt_monsters = IdViewState.get_alt_monsters(dgcog, monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                            monster, transform_base, true_evo_type_raw, acquire_raw, base_rarity, alt_monsters,
-                            use_evo_scroll=settings.checkEvoID(ctx.author.id),
-                            reaction_list=initial_reaction_list)
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
+                            transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                            use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
         await menu.create(ctx, state)
 
@@ -426,7 +415,7 @@ class PadInfo(commands.Cog, IdTest):
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                              monster, alt_versions, gem_versions,
+                              monster, alt_versions, alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
@@ -453,10 +442,11 @@ class PadInfo(commands.Cog, IdTest):
             await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
             return
 
+        alt_monsters = MaterialsViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
@@ -482,12 +472,12 @@ class PadInfo(commands.Cog, IdTest):
         if pantheon_list is None:
             await ctx.send(inline('Too many monsters in this series to display'))
             return
-
+        alt_monsters = PantheonViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                  monster, pantheon_list, series_name,
+                                  monster, alt_monsters, pantheon_list, series_name,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
@@ -508,11 +498,12 @@ class PadInfo(commands.Cog, IdTest):
             await self.send_id_failure_message(ctx, query)
             return
 
+        alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                             monster,
+                             monster, alt_monsters,
                              reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)
@@ -533,11 +524,12 @@ class PadInfo(commands.Cog, IdTest):
             await self.send_id_failure_message(ctx, query)
             return
 
+        alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                   monster,
+                                   monster, alt_monsters,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
@@ -630,8 +622,7 @@ class PadInfo(commands.Cog, IdTest):
 
         data['child_message_id'] = child_message.id
         try:
-            await parent_menu.transition(message, ims, MonsterListMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
-                                         **data)
+            await parent_menu.transition(message, ims, MonsterListEmoji.refresh, ctx.author, **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
@@ -649,23 +640,22 @@ class PadInfo(commands.Cog, IdTest):
         series_id = monster.series_id
         series_object: "SeriesModel" = monster.series
         title = series_object.name_en
-        monster_list = None
+        paginated_monsters = None
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            monster_list = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
-            if monster_list:
+            paginated_monsters = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            if paginated_monsters:
                 break
         all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
 
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
-        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(monster_list))
-        initial_min_indices = {rarity: SeriesScrollMenu.SCROLL_INITIAL_POSITION}
+        initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(paginated_monsters))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
-                                      series_id, initial_min_indices, monster_list, monster_list, int(rarity),
+                                      series_id, 0, paginated_monsters[0], int(rarity), len(paginated_monsters),
                                       all_rarities,
                                       title, instruction_message,
                                       reaction_list=initial_reaction_list)
@@ -687,8 +677,7 @@ class PadInfo(commands.Cog, IdTest):
 
         data['child_message_id'] = child_message.id
         try:
-            await parent_menu.transition(message, ims, SeriesScrollMenuPanes.emoji_name_to_emoji('refresh'), ctx.author,
-                                         **data)
+            await parent_menu.transition(message, ims, SeriesScrollEmoji.refresh, ctx.author, **data)
             await message.edit(content=None)
         except discord.errors.NotFound:
             # The user could delete the menu before we can do this
@@ -762,7 +751,7 @@ class PadInfo(commands.Cog, IdTest):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
-        base_mon, transformed_mon, reaction_ids = await perform_transforminfo_query(dgcog, query)
+        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dgcog, query)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
@@ -777,9 +766,30 @@ class PadInfo(commands.Cog, IdTest):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
+
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw)
+                                       color, base_mon, transformed_mon, acquire_raw, monster_ids,
+                                       reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
+        await menu.create(ctx, state)
+
+    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp'])
+    async def awakeninghelp(self, ctx, *, query):
+        """Describe a monster's regular and super awakenings in detail."""
+        dgcog = await self.get_dgcog()
+        monster = await find_monster(dgcog, query)
+
+        if not monster:
+            await self.send_id_failure_message(ctx, query)
+            return
+
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = AwakeningHelpViewProps(monster=monster)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
+                                       color, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command()

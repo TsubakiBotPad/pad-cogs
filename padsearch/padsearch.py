@@ -222,9 +222,7 @@ class PadSearchLexer(object):
         'RCV',
         'WEIGHTED',
         'REACTIVE',
-        'GACTIVE',
         'RELEADER',
-        'GLEADER',
     ]
 
     def t_ACTIVE(self, t):
@@ -236,12 +234,6 @@ class PadSearchLexer(object):
     def t_REACTIVE(self, t):
         r"reactive\(r'.+?'\)"
         t.value = re_clean_name(t.value, 'reactive')
-        t.value = replace_colors_in_text(t.value)
-        return t
-
-    def t_GACTIVE(self, t):
-        r"gactive\(.+?\)"
-        t.value = clean_name(t.value, 'gactive')
         t.value = replace_colors_in_text(t.value)
         return t
 
@@ -302,12 +294,6 @@ class PadSearchLexer(object):
     def t_RELEADER(self, t):
         r"releader\(r'.+?'\)"
         t.value = re_clean_name(t.value, 'releader')
-        t.value = replace_colors_in_text(t.value)
-        return t
-
-    def t_GLEADER(self, t):
-        r"gleader\(.+?\)"
-        t.value = clean_name(t.value, 'gleader')
         t.value = replace_colors_in_text(t.value)
         return t
 
@@ -438,14 +424,12 @@ class SearchConfig(object):
 
         self.active = []
         self.reactive = []
-        self.gactive = []
         self.board = []
         self.column = []
         self.color = []
         self.hascolor = []
         self.leader = []
         self.releader = []
-        self.gleader = []
         self.name = []
         self.row = []
         self.types = []
@@ -476,8 +460,6 @@ class SearchConfig(object):
                 self.active.append(value)
             if type == 'REACTIVE':
                 self.reactive.append(value)
-            if type == 'GACTIVE':
-                self.gactive.append(value)
             if type == 'BOARD':
                 self.board.append(split_csv_orbcolors(value))
             if type == 'COLOR':
@@ -490,8 +472,6 @@ class SearchConfig(object):
                 self.leader.append(value)
             if type == 'RELEADER':
                 self.releader.append(value)
-            if type == 'GLEADER':
-                self.gleader.append(value)
             if type == 'NAME':
                 self.name.append(value)
             if type == 'ROW':

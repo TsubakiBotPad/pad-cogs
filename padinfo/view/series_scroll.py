@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji
 
@@ -18,24 +19,26 @@ if TYPE_CHECKING:
 class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_min_index,
-                 monster_list: List["MonsterModel"], full_monster_list: List["MonsterModel"], rarity: int,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_page,
+                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int,
                  all_rarities: List[int],
                  title, message,
+                 current_index: int = None,
                  max_len_so_far: int = None,
                  reaction_list=None, extra_state=None,
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
+        self.pages_in_rarity = pages_in_rarity
+        self.current_index = current_index
         self.all_rarities = all_rarities
-        self.current_min_index = current_min_index
+        self.current_page = current_page or 0
         self.series_id = series_id
         self.rarity = rarity
         self.message = message
         self.child_message_id = child_message_id
         self.title = title
         self.monster_list = monster_list
-        self.full_monster_list = full_monster_list
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
@@ -46,15 +49,16 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
-            'current_min_index': self.current_min_index,
+            'current_page': self.current_page,
+            'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
-            'full_monster_list': [str(m.monster_no) for m in self.full_monster_list],
             'rarity': self.rarity,
             'all_rarities': self.all_rarities,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
             'message': self.message,
-            'max_len_so_far': self.max_len_so_far
+            'max_len_so_far': self.max_len_so_far,
+            'current_index': self.current_index,
         })
         return ret
 
@@ -66,13 +70,12 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        full_monster_list = SeriesScrollViewState.query(dgcog, series_id, rarity)
-        current_min_index = ims.get('current_min_index') or {str(rarity): 0}
-        current_min_index_num: int = current_min_index.get(str(rarity)) or 0
-        current_max_index_num: int = current_min_index_num + SeriesScrollViewState.MAX_ITEMS_PER_PANE
-        monster_list = full_monster_list[current_min_index_num:current_max_index_num]
+        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        current_page = ims['current_page']
+        monster_list = paginated_monsters[current_page]
         title = ims['title']
 
+        pages_in_rarity = len(paginated_monsters)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -81,11 +84,13 @@ class SeriesScrollViewState(ViewStateBase):
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
         max_len_so_far = max(ims['max_len_so_far'] or len(monster_list), len(monster_list))
+        current_index = ims.get('current_index')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     current_min_index, monster_list, full_monster_list, rarity,
+                                     current_page, monster_list, rarity, pages_in_rarity,
                                      all_rarities,
                                      title, message,
+                                     current_index=current_index,
                                      max_len_so_far=max_len_so_far,
                                      reaction_list=reaction_list,
                                      extra_state=ims,
@@ -97,13 +102,23 @@ class SeriesScrollViewState(ViewStateBase):
         all_series_monsters = db_context.get_monsters_by_series(series_id)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
-        return base_monsters_of_rarity
+        paginated_monsters = [base_monsters_of_rarity[i:i + SeriesScrollViewState.MAX_ITEMS_PER_PANE]
+                              for i in range(
+                0, len(base_monsters_of_rarity), SeriesScrollViewState.MAX_ITEMS_PER_PANE)]
+        return paginated_monsters
 
     @staticmethod
     def query_all_rarities(dgcog, series_id):
         db_context: "DbContext" = dgcog.database
         return sorted({m.rarity for m in db_context.get_all_monsters() if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
+
+    @staticmethod
+    def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
+        series_id = ims['series_id']
+        rarity = ims['rarity']
+        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        return paginated_monsters
 
 
 class SeriesScrollView:
@@ -112,13 +127,19 @@ class SeriesScrollView:
     @staticmethod
     def embed(state: SeriesScrollViewState):
         fields = [
-            EmbedField(SeriesScrollView._rarity_text(state.rarity),
+            EmbedField(BoldText('Current rarity: {}'.format(state.rarity)),
                        Box(*SeriesScrollView._monster_list(
-                           state.monster_list)) if state.monster_list else Box(
-                           'No monsters of this rarity to display')),
-            EmbedField('**All rarities**',
-                       Box(SeriesScrollView._all_rarity_text(state.all_rarities, state.rarity))
+                           state.monster_list,
+                           state.current_index))),
+            EmbedField(BoldText('Rarities'),
+                       Box(
+                           SeriesScrollView._all_rarity_text(state),
+                       ), inline=True
                        ),
+            EmbedField(BoldText('Page'),
+                       Box('{} of {}'.format(state.current_page + 1, state.pages_in_rarity)),
+                       inline=True
+                       )
         ]
 
         return EmbedView(
@@ -130,20 +151,30 @@ class SeriesScrollView:
             embed_fields=fields)
 
     @staticmethod
-    def _rarity_text(this_rarity):
-        return 'Current rarity: {}'.format(
-            str(this_rarity)
-        )
+    def _all_rarity_text(state):
+        lines = []
+        for r in state.all_rarities:
+            if r != state.rarity:
+                lines.append(str(r))
+            else:
+                lines.append('**{}**'.format(state.rarity))
+        return ', '.join(lines)
 
     @staticmethod
-    def _all_rarity_text(all_rarities, this_rarity):
-        return ', '.join([str(r) if r != this_rarity else '**{}**'.format(str(r)) for r in all_rarities])
-
-    @staticmethod
-    def _monster_list(monsters):
+    def _monster_list(monsters, current_index):
         if not len(monsters):
             return []
         return [
-            MonsterHeader.short_with_emoji(mon, link=True, prefix=char_to_emoji(i))
+            MonsterHeader.short_with_emoji(
+                mon,
+                link=SeriesScrollView._is_linked(i, current_index),
+                prefix=char_to_emoji(i)
+            )
             for i, mon in enumerate(monsters)
         ]
+
+    @staticmethod
+    def _is_linked(i, current_index):
+        if current_index is None:
+            return True
+        return i != current_index
