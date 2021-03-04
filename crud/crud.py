@@ -357,16 +357,24 @@ class Crud(commands.Cog):
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
 
     @awokenskill.command(name="edit")
-    async def awokenskill_edit(self, ctx, awoken_skill_id, *elements):
+    async def awokenskill_edit(self, ctx, awoken_skill, *elements):
         """Edit an existing awoken skill.
 
         Valid element keys are: `name_en`, `name_ko`, `name_ja`, `desc_en`, `desc_ko`, `desc_ja`
 
         Example Usage:
         [p]crud awokenskill edit 100 key1 "Value1" key2 "Value2"
+        [p]crud awokenskill edit misc_comboboost key1 "Value1" key2 "Value2"
         """
-        if not awoken_skill_id.isdigit():
-            await ctx.send("String awoken skill lookup is not supported yet.")
+        pdicog = self.bot.get_cog("PadInfo")
+        emoji_to_awid = getattr(pdicog, 'awoken_emoji_names', {})
+
+        if awoken_skill in emoji_to_awid:
+            awoken_skill_id = emoji_to_awid[awoken_skill]
+        elif awoken_skill.isdigit():
+            awoken_skill_id = int(awoken_skill)
+        else:
+            await ctx.send("Invalid awoken skill.")
             return
 
         awoken_skill_id = int(awoken_skill_id)
