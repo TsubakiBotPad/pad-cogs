@@ -23,7 +23,7 @@ from tsutils import char_to_emoji, is_donor
 
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
-    get_attribute_emoji_by_monster
+    get_attribute_emoji_by_monster, AWAKENING_ID_TO_EMOJI_NAME_MAP
 from padinfo.core import find_monster as fm
 from padinfo.core.button_info import button_info
 from padinfo.core.find_monster import FindMonster, calc_ratio_name, calc_ratio_modifier, find_monster, \
@@ -110,6 +110,7 @@ class PadInfo(commands.Cog, IdTest):
 
         self.fm3 = lambda q: fm.find_monster(bot.get_cog("Dadguide"), q)
 
+        self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
         self.settings = settings
 
