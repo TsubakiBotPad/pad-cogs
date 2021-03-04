@@ -23,7 +23,7 @@ class AwakeningHelpViewProps:
         self.monster = monster
 
 
-def _get_awakening_desc(index: int, awakening: "AwakeningModel"):
+def _get_long_desc(awakening: "AwakeningModel"):
     emoji_text = get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
     desc = awakening.awoken_skill.desc_en
     return Box(
@@ -48,7 +48,7 @@ def _get_all_awakening_descs(awakening_list):
     for index, awakening in enumerate(awakening_list):
         if awakening.name not in appearances:
             appearances[awakening.name] = index
-            awakening_descs.append(_get_awakening_desc(index, awakening))
+            awakening_descs.append(_get_long_desc(awakening))
         else:
             awakening_descs.append(_get_short_desc(appearances[awakening.name], awakening))
 
