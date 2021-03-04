@@ -43,6 +43,7 @@ from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, 
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
+from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
@@ -771,6 +772,24 @@ class PadInfo(commands.Cog, IdTest):
                                        color, base_mon, transformed_mon, acquire_raw, monster_ids,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
+        await menu.create(ctx, state)
+
+    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp'])
+    async def awakeninghelp(self, ctx, *, query):
+        """Describe a monster's regular and super awakenings in detail."""
+        dgcog = await self.get_dgcog()
+        monster = await find_monster(dgcog, query)
+
+        if not monster:
+            await self.send_id_failure_message(ctx, query)
+            return
+
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = AwakeningHelpViewProps(monster=monster)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
+                                       color, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command()
