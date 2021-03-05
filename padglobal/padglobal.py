@@ -62,10 +62,10 @@ commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "shor
 
 
 async def lookup_monster_model(query: str):
-    padinfo_cog = PADGLOBAL_COG.bot.get_cog('PadInfo')
-    if padinfo_cog is None:
+    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
+    if dgcog is None:
         raise Exception("Cog not Loaded")
-    m = await padinfo_cog.fm3(str(query))
+    m = await dgcog.find_monster(str(query))
     return m
 
 
