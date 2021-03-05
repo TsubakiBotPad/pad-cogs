@@ -19,6 +19,12 @@ if TYPE_CHECKING:
 MAX_MONS_TO_SHOW = 20
 MAT_TYPES = [0, 12, 14, 15]
 NO_ATT = 6
+CRITERIA = {
+    'typed': 'by mat/non-mat type',
+    'rarity': 'by mat/non-mat and rarity',
+    'main_att': 'by mat/non-mat, rarity, and main att',
+    'both_atts': 'by mat/non-mat, rarity, and attributes'
+}
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -86,13 +92,13 @@ class PantheonViewState(ViewStateBaseId):
             typed_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
                                      base_list))
         if len(typed_list) > 0 and len(typed_list) < MAX_MONS_TO_SHOW:
-            return typed_list, series_name
+            return typed_list, '{} ({})'.format(series_name, CRITERIA['typed'])
 
         base_mon = db_context.graph.get_base_monster(monster)
 
         rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, typed_list))
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
-            return rarity_list, series_name
+            return rarity_list, '{} ({})'.format(series_name, CRITERIA['rarity'])
 
         main_att = base_mon.attr1.value
         sub_att = base_mon.attr2.value
@@ -106,16 +112,16 @@ class PantheonViewState(ViewStateBaseId):
         else:
             main_att_list = list(filter(lambda x: x.attr1.value == main_att, rarity_list))
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
-            return main_att_list, series_name
+            return main_att_list, '{} ({})'.format(series_name, CRITERIA['main_att'])
 
         sub_att_list = list(filter(lambda x: x.attr2.value == sub_att, main_att_list))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
-            return sub_att_list, series_name
+            return sub_att_list, '{} ({})'.format(series_name, CRITERIA['both_atts'])
 
         # if we've managed to get here, just cut it off
         pantheon_list = sub_att_list[:MAX_MONS_TO_SHOW]
 
-        return pantheon_list, series_name
+        return pantheon_list, '{} ({})'.format(series_name, 'too many, truncated')
 
 
 class PantheonView:
