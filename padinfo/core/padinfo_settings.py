@@ -8,7 +8,6 @@ class PadInfoSettings(CogSettings):
             'alt_id_optout': [],
             'voice_dir_path': '',
             'emoji_use': {},
-            'typo_mods': [],
         }
         return config
 
@@ -51,10 +50,5 @@ class PadInfoSettings(CogSettings):
     def log_emoji(self, emote):
         self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
         self.save_settings()
-
-    def add_typo_mod(self, typo):
-        self.bot_settings['typo_mods'].append(typo)
-        self.save_settings()
-
 
 settings = PadInfoSettings("padinfo")

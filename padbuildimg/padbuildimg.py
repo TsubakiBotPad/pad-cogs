@@ -438,9 +438,9 @@ def idx_to_xy(idx):
 
 
 class PadBuildImageGenerator(object):
-    def __init__(self, params, padinfo_cog, build_name='pad_build'):
+    def __init__(self, params, dgcog, build_name='pad_build'):
         self.params = params
-        self.padinfo_cog = padinfo_cog
+        self.dgcog = dgcog
         self.lexer = PaDTeamLexer().build()
         self.build = {
             'NAME': build_name,
@@ -511,7 +511,7 @@ class PadBuildImageGenerator(object):
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
-                ass_card = await self.padinfo_cog.fm3(tok.value)
+                ass_card = await self.dgcog.find_monster(tok.value)
                 if ass_card is None:
                     raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
             elif tok.type == 'REPEAT':
@@ -521,7 +521,7 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card = await self.padinfo_cog.fm3(tok.value)
+                    card = await self.dgcog.find_monster(tok.value)
                     if card is None:
                         raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
                     if not card.is_inheritable:
@@ -797,7 +797,7 @@ class PadBuildImage(commands.Cog):
         async with ctx.typing():
             params = self.settings.buildImgParams()
             try:
-                pbg = PadBuildImageGenerator(params, self.bot.get_cog('PadInfo'), self.bot.get_cog('Dadguide'))
+                pbg = PadBuildImageGenerator(params, self.bot.get_cog('Dadguide'))
                 await pbg.process_build(build_str)
                 pbg.generate_build_image()
             except commands.UserFeedbackCheckFailure as ex:
