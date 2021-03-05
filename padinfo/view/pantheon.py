@@ -88,16 +88,17 @@ class PantheonViewState(ViewStateBaseId):
         if len(typed_list) > 0 and len(typed_list) < MAX_MONS_TO_SHOW:
             return typed_list, series_name
 
-        monster_base_rarity = db_context.graph.get_base_monster(monster).rarity
-        rarity_list = list(filter(lambda x: x.rarity == monster_base_rarity, typed_list))
+        base_mon = db_context.graph.get_base_monster(monster)
+
+        rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, typed_list))
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
             return rarity_list, series_name
 
-        main_att_list = list(filter(lambda x: x.attr1.value == monster.attr1.value, rarity_list))
+        main_att_list = list(filter(lambda x: x.attr1.value == base_mon.attr1.value, rarity_list))
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
             return main_att_list, series_name
 
-        sub_att_list = list(filter(lambda x: x.attr2.value == monster.attr2.value, main_att_list))
+        sub_att_list = list(filter(lambda x: x.attr2.value == base_mon.attr2.value, main_att_list))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
             return sub_att_list, series_name
 
