@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 MAX_MONS_TO_SHOW = 20
+MATS_TYPES = [0, 12, 14, 15]
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -66,14 +67,42 @@ class PantheonViewState(ViewStateBaseId):
     @classmethod
     async def query(cls, dgcog, monster):
         db_context = dgcog.database
+        series_name = monster.series.name_en
         full_pantheon = db_context.get_monsters_by_series(monster.series_id)
         if not full_pantheon:
             return None, None
-        pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
-        if len(pantheon_list) == 0 or len(pantheon_list) > MAX_MONS_TO_SHOW:
-            return None, None
 
-        series_name = monster.series.name_en
+        base_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
+        if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
+            return base_list, series_name
+
+        # exclude mats if monster is a mat, otherwise show only mats
+        # TODO: filter mats by type
+        typed_list = []
+        if any(t.value in MATS_TYPES for t in monster.types):
+            typed_list = list(filter(lambda x: any(t.value in MATS_TYPES for t in x.types), 
+                                     base_list))
+        else:
+            typed_list = list(filter(lambda x: all(t.value not in MATS_TYPES for t in x.types),
+                                     base_list))
+        if len(typed_list) > 0 and len(typed_list) < MAX_MONS_TO_SHOW:
+            return typed_list, series_name
+
+        monster_base_rarity = db_context.graph.get_base_monster(monster).rarity
+        rarity_list = list(filter(lambda x: x.rarity == monster_base_rarity, typed_list))
+        if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
+            return rarity_list, series_name
+
+        main_att_list = list(filter(lambda x: x.attr1.value == monster.attr1.value, rarity_list))
+        if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
+            return main_att_list, series_name
+
+        sub_att_list = list(filter(lambda x: x.attr2.value == monster.attr2.value, main_att_list))
+        if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
+            return sub_att_list, series_name
+
+        # if we've managed to get here, just cut it off
+        pantheon_list = sub_att_list[:MAX_MONS_TO_SHOW]
 
         return pantheon_list, series_name
 
