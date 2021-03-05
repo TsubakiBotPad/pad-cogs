@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 MAX_MONS_TO_SHOW = 20
 MATS_TYPES = [0, 12, 14, 15]
+NO_ATT = 6
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -94,11 +95,21 @@ class PantheonViewState(ViewStateBaseId):
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
             return rarity_list, series_name
 
-        main_att_list = list(filter(lambda x: x.attr1.value == base_mon.attr1.value, rarity_list))
+        main_att = base_mon.attr1.value
+        sub_att = base_mon.attr2.value
+
+        main_att_list = []
+        if main_att == NO_ATT:
+            main_att_list = list(filter(lambda x: x.attr1.value == sub_att
+                                                  or (x.attr1.value == NO_ATT
+                                                      and x.attr2.value == sub_att),
+                                        rarity_list))
+        else:
+            main_att_list = list(filter(lambda x: x.attr1.value == main_att, rarity_list))
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
             return main_att_list, series_name
 
-        sub_att_list = list(filter(lambda x: x.attr2.value == base_mon.attr2.value, main_att_list))
+        sub_att_list = list(filter(lambda x: x.attr2.value == sub_att, main_att_list))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
             return sub_att_list, series_name
 
