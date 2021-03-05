@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 MAX_MONS_TO_SHOW = 20
-MATS_TYPES = [0, 12, 14, 15]
+MAT_TYPES = [0, 12, 14, 15]
 NO_ATT = 6
 
 
@@ -77,14 +77,13 @@ class PantheonViewState(ViewStateBaseId):
         if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
             return base_list, series_name
 
-        # exclude mats if monster is a mat, otherwise show only mats
-        # TODO: filter mats by type
+        # exclude mats if monster has no mat types, otherwise show only mats
         typed_list = []
-        if any(t.value in MATS_TYPES for t in monster.types):
-            typed_list = list(filter(lambda x: any(t.value in MATS_TYPES for t in x.types), 
+        if all(t.value in MAT_TYPES for t in monster.types):
+            typed_list = list(filter(lambda x: all(t.value in MAT_TYPES for t in x.types), 
                                      base_list))
         else:
-            typed_list = list(filter(lambda x: all(t.value not in MATS_TYPES for t in x.types),
+            typed_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
                                      base_list))
         if len(typed_list) > 0 and len(typed_list) < MAX_MONS_TO_SHOW:
             return typed_list, series_name
