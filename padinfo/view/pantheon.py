@@ -20,7 +20,7 @@ MAX_MONS_TO_SHOW = 20
 MAT_TYPES = [0, 12, 14, 15]
 NO_ATT = 6
 CRITERIA = {
-    'typed': 'by mat/non-mat type',
+    'type': 'by mat/non-mat type',
     'rarity': 'by mat/non-mat and rarity',
     'main_att': 'by mat/non-mat, rarity, and main att',
     'both_atts': 'by mat/non-mat, rarity, and attributes'
@@ -83,20 +83,20 @@ class PantheonViewState(ViewStateBaseId):
         if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
             return base_list, series_name
 
-        # exclude mats if monster has no mat types, otherwise show only mats
-        typed_list = []
+        # if monster has only mat types, show only mats, otherwise show everything non-mat
+        type_list = []
         if all(t.value in MAT_TYPES for t in monster.types):
-            typed_list = list(filter(lambda x: all(t.value in MAT_TYPES for t in x.types), 
-                                     base_list))
+            type_list = list(filter(lambda x: all(t.value in MAT_TYPES for t in x.types), 
+                                    base_list))
         else:
-            typed_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
-                                     base_list))
-        if len(typed_list) > 0 and len(typed_list) < MAX_MONS_TO_SHOW:
-            return typed_list, '{} ({})'.format(series_name, CRITERIA['typed'])
+            type_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
+                                    base_list))
+        if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
+            return type_list, '{} ({})'.format(series_name, CRITERIA['type'])
 
         base_mon = db_context.graph.get_base_monster(monster)
 
-        rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, typed_list))
+        rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, type_list))
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
             return rarity_list, '{} ({})'.format(series_name, CRITERIA['rarity'])
 
