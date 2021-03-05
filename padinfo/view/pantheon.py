@@ -16,6 +16,8 @@ from padinfo.view.id import evos_embed_field
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
+MAX_MONS_TO_SHOW = 20
+
 
 class PantheonViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel", alt_monsters,
@@ -68,7 +70,7 @@ class PantheonViewState(ViewStateBaseId):
         if not full_pantheon:
             return None, None
         pantheon_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
-        if len(pantheon_list) == 0 or len(pantheon_list) > 20:
+        if len(pantheon_list) == 0 or len(pantheon_list) > MAX_MONS_TO_SHOW:
             return None, None
 
         series_name = monster.series.name_en
