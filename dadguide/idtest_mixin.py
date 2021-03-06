@@ -130,7 +130,7 @@ class IdTest:
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
-        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (-?\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
                 suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
@@ -154,7 +154,7 @@ class IdTest:
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
-        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
                 # print(query, result, fluff, reason)
