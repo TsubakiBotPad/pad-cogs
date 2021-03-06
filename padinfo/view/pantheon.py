@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
+from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
@@ -19,12 +20,6 @@ if TYPE_CHECKING:
 MAX_MONS_TO_SHOW = 20
 MAT_TYPES = [0, 12, 14, 15]
 NO_ATT = 6
-CRITERIA = {
-    'type': 'by mat/non-mat type',
-    'rarity': 'by mat/non-mat and rarity',
-    'main_att': 'by mat/non-mat, rarity, and main att',
-    'both_atts': 'by mat/non-mat, rarity, and attributes'
-}
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -86,43 +81,52 @@ class PantheonViewState(ViewStateBaseId):
         if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
             return base_list, series_name, base_mon
 
-        # if monster has only mat types, show only mats, otherwise show everything non-mat
+        # if monster has only mat types, show only mats, otherwise show everything else
         type_list = []
         if all(t.value in MAT_TYPES for t in monster.types):
+            series_name += ' (Mat)'
             type_list = list(filter(lambda x: all(t.value in MAT_TYPES for t in x.types), 
                                     base_list))
         else:
             type_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
                                     base_list))
         if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
-            return type_list, '{} ({})'.format(series_name, CRITERIA['type']), base_mon
+            return type_list, series_name, base_mon
+
+        filters = ' [Filters: '
 
         rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, type_list))
+        filters += '{}*'.format(base_mon.rarity)
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
-            return rarity_list, '{} ({})'.format(series_name, CRITERIA['rarity']), base_mon
+            return rarity_list, series_name + filters + ']', base_mon
 
-        main_att = base_mon.attr1.value
-        sub_att = base_mon.attr2.value
+        main_att = base_mon.attr1
+        sub_att = base_mon.attr2
 
         main_att_list = []
-        if main_att == NO_ATT:
-            main_att_list = list(filter(lambda x: x.attr1.value == sub_att
+        att_emoji = None
+        if main_att.value == NO_ATT:
+            att_emoji = get_attribute_emoji_by_enum(sub_att)
+            main_att_list = list(filter(lambda x: x.attr1.value == sub_att.value
                                                   or (x.attr1.value == NO_ATT
-                                                      and x.attr2.value == sub_att),
+                                                      and x.attr2.value == sub_att.value),
                                         rarity_list))
         else:
-            main_att_list = list(filter(lambda x: x.attr1.value == main_att, rarity_list))
+            att_emoji = get_attribute_emoji_by_enum(main_att)
+            main_att_list = list(filter(lambda x: x.attr1.value == main_att.value, rarity_list))
+        # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
-            return main_att_list, '{} ({})'.format(series_name, CRITERIA['main_att']), base_mon
+            return main_att_list, series_name + filters + ' {}]'.format(att_emoji), base_mon
 
-        sub_att_list = list(filter(lambda x: x.attr2.value == sub_att, main_att_list))
+        sub_att_list = list(filter(lambda x: x.attr2.value == sub_att.value, main_att_list))
+        filters += ' {}'.format(get_attribute_emoji_by_monster(base_mon))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
-            return sub_att_list, '{} ({})'.format(series_name, CRITERIA['both_atts']), base_mon
+            return sub_att_list, series_name + filters + ']', base_mon
 
         # if we've managed to get here, just cut it off
         pantheon_list = sub_att_list[:MAX_MONS_TO_SHOW]
 
-        return pantheon_list, '{} ({})'.format(series_name, 'too many, truncated'), base_mon
+        return pantheon_list, series_name + filters + '] (still too many, truncated)', base_mon
 
 
 class PantheonView:
