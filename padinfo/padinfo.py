@@ -471,7 +471,8 @@ class PadInfo(commands.Cog, IdTest):
 
         pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
-            await ctx.send(inline('Too many monsters in this series to display'))
+            await ctx.send('Unable to find a pantheon for the result of your query,'
+                           + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
         alt_monsters = PantheonViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
