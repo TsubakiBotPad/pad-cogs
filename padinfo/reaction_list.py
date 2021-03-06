@@ -24,7 +24,7 @@ async def get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
         full_reaction_list.remove(IdMenuEmoji.left)
         full_reaction_list.remove(IdMenuEmoji.right)
         full_reaction_list.remove(IdMenuEmoji.evos)
-    pantheon_list, _ = await PantheonViewState.query(dgcog, monster)
+    pantheon_list, _, _ = await PantheonViewState.query(dgcog, monster)
     if pantheon_list is None:
         full_reaction_list.remove(IdMenuEmoji.pantheon)
     mats, usedin, gemid, _, skillups, _, _, _ = await MaterialsViewState.query(dgcog, monster)

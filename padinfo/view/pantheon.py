@@ -29,7 +29,7 @@ CRITERIA = {
 
 class PantheonViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel", alt_monsters,
-                 pantheon_list: List["MonsterModel"], series_name: str,
+                 pantheon_list: List["MonsterModel"], series_name: str, base_monster,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
@@ -39,6 +39,7 @@ class PantheonViewState(ViewStateBaseId):
                          extra_state=extra_state)
         self.series_name = series_name
         self.pantheon_list = pantheon_list
+        self.base_monster = base_monster
 
     def serialize(self):
         ret = super().serialize()
@@ -52,7 +53,7 @@ class PantheonViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
 
         if pantheon_list is None:
             return None
@@ -66,7 +67,7 @@ class PantheonViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
-                   pantheon_list, series_name,
+                   pantheon_list, series_name, base_monster,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
@@ -77,11 +78,13 @@ class PantheonViewState(ViewStateBaseId):
         series_name = monster.series.name_en
         full_pantheon = db_context.get_monsters_by_series(monster.series_id)
         if not full_pantheon:
-            return None, None
+            return None, None, None
+
+        base_mon = db_context.graph.get_base_monster(monster)
 
         base_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
         if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
-            return base_list, series_name
+            return base_list, series_name, base_mon
 
         # if monster has only mat types, show only mats, otherwise show everything non-mat
         type_list = []
@@ -92,13 +95,11 @@ class PantheonViewState(ViewStateBaseId):
             type_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
                                     base_list))
         if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
-            return type_list, '{} ({})'.format(series_name, CRITERIA['type'])
-
-        base_mon = db_context.graph.get_base_monster(monster)
+            return type_list, '{} ({})'.format(series_name, CRITERIA['type']), base_mon
 
         rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, type_list))
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
-            return rarity_list, '{} ({})'.format(series_name, CRITERIA['rarity'])
+            return rarity_list, '{} ({})'.format(series_name, CRITERIA['rarity']), base_mon
 
         main_att = base_mon.attr1.value
         sub_att = base_mon.attr2.value
@@ -112,29 +113,35 @@ class PantheonViewState(ViewStateBaseId):
         else:
             main_att_list = list(filter(lambda x: x.attr1.value == main_att, rarity_list))
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
-            return main_att_list, '{} ({})'.format(series_name, CRITERIA['main_att'])
+            return main_att_list, '{} ({})'.format(series_name, CRITERIA['main_att']), base_mon
 
         sub_att_list = list(filter(lambda x: x.attr2.value == sub_att, main_att_list))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
-            return sub_att_list, '{} ({})'.format(series_name, CRITERIA['both_atts'])
+            return sub_att_list, '{} ({})'.format(series_name, CRITERIA['both_atts']), base_mon
 
         # if we've managed to get here, just cut it off
         pantheon_list = sub_att_list[:MAX_MONS_TO_SHOW]
 
-        return pantheon_list, '{} ({})'.format(series_name, 'too many, truncated')
+        return pantheon_list, '{} ({})'.format(series_name, 'too many, truncated'), base_mon
 
 
 class PantheonView:
     VIEW_TYPE = 'Pantheon'
 
     @staticmethod
+    def _pantheon_lines(monsters, base_monster):
+        if not len(monsters):
+            return []
+        return [
+            MonsterHeader.short_with_emoji(mon, link=mon.monster_id != base_monster.monster_id)
+            for mon in sorted(monsters, key=lambda x: int(x.monster_id))
+        ]
+
+    @staticmethod
     def embed(state: PantheonViewState):
         fields = [EmbedField(
             'Pantheon: {}'.format(state.series_name),
-            Box(
-                *[MonsterHeader.short_with_emoji(m)
-                  for m in sorted(state.pantheon_list, key=lambda x: x.monster_no_na)]
-            )
+            Box(*PantheonView._pantheon_lines(state.pantheon_list, state.base_monster))
         ),
             evos_embed_field(state)]
 
