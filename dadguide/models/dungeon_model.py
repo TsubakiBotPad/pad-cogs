@@ -1,8 +1,11 @@
+from typing import List
+
 from .base_model import BaseModel
+from .sub_dungeon_model import SubDungeonModel
 
 
 class DungeonModel(BaseModel):
-    def __init__(self, **kwargs):
+    def __init__(self, sub_dungeon_models: List[SubDungeonModel] = None, **kwargs):
         self.dungeon_id = kwargs['dungeon_id']
         self.name_ja = kwargs['name_ja']
         self.name_en = kwargs['name_en']
@@ -10,6 +13,7 @@ class DungeonModel(BaseModel):
         self.name_ko = kwargs['name_ko']
 
         self.dungeon_type = kwargs['dungeon_type']
+        self.sub_dungeons = sub_dungeon_models
 
     @staticmethod
     def _make_clean_name_en(name):

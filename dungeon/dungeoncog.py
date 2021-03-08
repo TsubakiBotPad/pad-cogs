@@ -13,7 +13,8 @@ from redbot.core import commands, data_manager
 
 from google.protobuf import text_format
 
-from dadguide import DadguideDatabase, database_manager
+from dadguide import database_manager
+from dadguide.database_manager import DadguideDatabase
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
@@ -26,9 +27,6 @@ from dungeon.processed_monster import ProcessedMonster
 from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
-"""import numpy as np
-import pandas as pd
-from pyppeteer import launch"""
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
