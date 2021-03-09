@@ -77,7 +77,7 @@ class PantheonViewState(ViewStateBaseId):
 
         base_mon = db_context.graph.get_base_monster(monster)
 
-        base_list = list(filter(lambda x: db_context.graph.monster_is_base(x), full_pantheon))
+        base_list = [m for m in full_pantheon if db_context.graph.monster_is_base(m)]
         if len(base_list) > 0 and len(base_list) < MAX_MONS_TO_SHOW:
             return base_list, series_name, base_mon
 
@@ -85,17 +85,15 @@ class PantheonViewState(ViewStateBaseId):
         type_list = []
         if all(t.value in MAT_TYPES for t in monster.types):
             series_name += ' (Mat)'
-            type_list = list(filter(lambda x: all(t.value in MAT_TYPES for t in x.types), 
-                                    base_list))
+            type_list = [m for m in base_list if all(t.value in MAT_TYPES for t in m.types)]
         else:
-            type_list = list(filter(lambda x: any(t.value not in MAT_TYPES for t in x.types),
-                                    base_list))
+            type_list = [m for m in base_list if any(t.value not in MAT_TYPES for t in m.types)]
         if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
             return type_list, series_name, base_mon
 
         filters = ' [Filters: '
 
-        rarity_list = list(filter(lambda x: x.rarity == base_mon.rarity, type_list))
+        rarity_list = [m for m in type_list if m.rarity == base_mon.rarity]
         filters += '{}*'.format(base_mon.rarity)
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
             return rarity_list, series_name + filters + ']', base_mon
@@ -107,18 +105,17 @@ class PantheonViewState(ViewStateBaseId):
         att_emoji = None
         if main_att.value == NO_ATT:
             att_emoji = get_attribute_emoji_by_enum(sub_att)
-            main_att_list = list(filter(lambda x: x.attr1.value == sub_att.value
-                                                  or (x.attr1.value == NO_ATT
-                                                      and x.attr2.value == sub_att.value),
-                                        rarity_list))
+            main_att_list = [m for m in rarity_list if m.attr1.value == sub_att.value
+                                                       or (m.attr1.value == NO_ATT
+                                                           and m.attr2.value == sub_att.value)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
-            main_att_list = list(filter(lambda x: x.attr1.value == main_att.value, rarity_list))
+            main_att_list = [m for m in rarity_list if m.attr1.value == main_att.value]
         # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
             return main_att_list, series_name + filters + ' {}]'.format(att_emoji), base_mon
 
-        sub_att_list = list(filter(lambda x: x.attr2.value == sub_att.value, main_att_list))
+        sub_att_list = [m for m in main_att_list if m.attr2.value == sub_att.value]
         filters += ' {}'.format(get_attribute_emoji_by_monster(base_mon))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
             return sub_att_list, series_name + filters + ']', base_mon
