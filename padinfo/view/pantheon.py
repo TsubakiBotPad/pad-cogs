@@ -110,12 +110,15 @@ class PantheonViewState(ViewStateBaseId):
                                                            and m.attr2.value == sub_att.value)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
-            main_att_list = [m for m in rarity_list if m.attr1.value == main_att.value]
+            main_att_list = [m for m in rarity_list if m.attr1.value == main_att.value
+                                                       or (m.attr1.value == NO_ATT
+                                                           and m.attr2.value == main_att.value)]
         # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
             return main_att_list, series_name + filters + ' {}]'.format(att_emoji), base_mon
 
-        sub_att_list = [m for m in main_att_list if m.attr2.value == sub_att.value]
+        sub_att_list = [m for m in main_att_list if m.attr1.value == main_att.value
+                                                    and m.attr2.value == sub_att.value]
         filters += ' {}'.format(get_attribute_emoji_by_monster(base_mon))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
             return sub_att_list, series_name + filters + ']', base_mon
