@@ -1,11 +1,13 @@
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
+from dadguide.dungeon_context import DungeonContext
 from dadguide.monster_graph import MonsterGraph
 from dadguide.models.enum_types import EvoType, InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
-db_context = DbContext(database, graph)
+dungeon = DungeonContext(database)
+db_context = DbContext(database, graph, dungeon)
 
 # print(ctx.get_awoken_skill_ids())
 assert db_context.graph.monster_is_farmable_by_id(4)

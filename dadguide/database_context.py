@@ -1,6 +1,7 @@
 from typing import Generator, List
 
 from .database_manager import DadguideDatabase
+from .dungeon_context import DungeonContext
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
 from .models.scheduled_event_model import ScheduledEventModel
@@ -18,9 +19,10 @@ FROM
 
 
 class DbContext(object):
-    def __init__(self, database: DadguideDatabase, graph: MonsterGraph):
+    def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext):
         self.database = database
         self.graph = graph
+        self.dungeon = dungeon
 
     def get_awoken_skill_ids(self):
         SELECT_AWOKEN_SKILL_IDS = 'SELECT awoken_skill_id from awoken_skills'

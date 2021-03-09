@@ -5,6 +5,7 @@ from redbot.core import data_manager
 
 from .database_manager import DadguideDatabase
 from .database_context import DbContext
+from .dungeon_context import DungeonContext
 from .monster_graph import MonsterGraph
 
 
@@ -24,5 +25,6 @@ def load_database(existing_db):
     # Open the new working copy.
     database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
     graph = MonsterGraph(database)
-    db_context = DbContext(database, graph)
+    dungeon = DungeonContext(database)
+    db_context = DbContext(database, graph, dungeon)
     return db_context

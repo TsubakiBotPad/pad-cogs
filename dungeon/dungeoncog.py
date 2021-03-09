@@ -15,6 +15,7 @@ from google.protobuf import text_format
 
 from dadguide import database_manager
 from dadguide.database_manager import DadguideDatabase
+from dadguide.dungeon_context import DungeonContext
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
@@ -29,22 +30,6 @@ from redbot.core.utils.chat_formatting import pagify
 # If these are unused remember to remove
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
-
-test_query = '''
-SELECT
-dungeons.dungeon_id,
-dungeons.name_en,
-encounters.*,
-enemy_data.behavior
-FROM
-encounters
-LEFT OUTER JOIN dungeons ON encounters.dungeon_id = dungeons.dungeon_id
-LEFT OUTER JOIN enemy_data ON encounters.enemy_id = enemy_data.enemy_id
-WHERE
-encounters.sub_dungeon_id = 4301003
-ORDER BY
-encounters.sub_dungeon_id
-'''
 
 dungeon_query = '''
 SELECT
