@@ -69,6 +69,14 @@ class PantheonViewState(ViewStateBaseId):
 
     @classmethod
     async def query(cls, dgcog, monster):
+        # filtering rules:
+        # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
+        # 2. if still too many, show only monsters with the same base rarity
+        # 3. if still too many, show only monsters with the same base main attribute (any monster
+        #        without a main attribute is compared using its subattribute)
+        # 4. if still too many, show only monsters that match both base attributes
+        # 5. if still too many, truncate (and probably redefine pantheon)
+
         db_context = dgcog.database
         series_name = monster.series.name_en
         full_pantheon = db_context.get_monsters_by_series(monster.series_id)
