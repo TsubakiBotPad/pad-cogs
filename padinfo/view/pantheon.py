@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 MAX_MONS_TO_SHOW = 20
-MAT_TYPES = [0, 12, 14, 15]
-NO_ATT = 6
+MAT_TYPES = ['Evolve', 'Awoken', 'Enhance', 'Vendor']
+NO_ATT = 'Nil'
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -91,11 +91,11 @@ class PantheonViewState(ViewStateBaseId):
 
         # if monster has only mat types, show only mats, otherwise show everything else
         type_list = []
-        if all(t.value in MAT_TYPES for t in monster.types):
+        if all(t.name in MAT_TYPES for t in monster.types):
             series_name += ' (Mat)'
-            type_list = [m for m in base_list if all(t.value in MAT_TYPES for t in m.types)]
+            type_list = [m for m in base_list if all(t.name in MAT_TYPES for t in m.types)]
         else:
-            type_list = [m for m in base_list if any(t.value not in MAT_TYPES for t in m.types)]
+            type_list = [m for m in base_list if any(t.name not in MAT_TYPES for t in m.types)]
         if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
             return type_list, series_name, base_mon
 
@@ -111,22 +111,22 @@ class PantheonViewState(ViewStateBaseId):
 
         main_att_list = []
         att_emoji = None
-        if main_att.value == NO_ATT:
+        if main_att.name == NO_ATT:
             att_emoji = get_attribute_emoji_by_enum(sub_att)
-            main_att_list = [m for m in rarity_list if m.attr1.value == sub_att.value
-                                                       or (m.attr1.value == NO_ATT
-                                                           and m.attr2.value == sub_att.value)]
+            main_att_list = [m for m in rarity_list if m.attr1.name == sub_att.name
+                                                       or (m.attr1.name == NO_ATT
+                                                           and m.attr2.name == sub_att.name)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
-            main_att_list = [m for m in rarity_list if m.attr1.value == main_att.value
-                                                       or (m.attr1.value == NO_ATT
-                                                           and m.attr2.value == main_att.value)]
+            main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
+                                                       or (m.attr1.name == NO_ATT
+                                                           and m.attr2.name == main_att.name)]
         # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
             return main_att_list, series_name + filters + ' {}]'.format(att_emoji), base_mon
 
-        sub_att_list = [m for m in main_att_list if m.attr1.value == main_att.value
-                                                    and m.attr2.value == sub_att.value]
+        sub_att_list = [m for m in main_att_list if m.attr1.name == main_att.name
+                                                    and m.attr2.name == sub_att.name]
         filters += ' {}'.format(get_attribute_emoji_by_monster(base_mon))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
             return sub_att_list, series_name + filters + ']', base_mon
