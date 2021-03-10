@@ -145,23 +145,23 @@ class PantheonViewState(ViewStateBaseId):
         return pantheon_list, cls.make_series_name(series_name, filters), base_mon
 
 
+def _pantheon_lines(monsters, base_monster):
+    if not len(monsters):
+        return []
+    return [
+        MonsterHeader.short_with_emoji(mon, link=mon.monster_id != base_monster.monster_id)
+        for mon in sorted(monsters, key=lambda x: int(x.monster_id))
+    ]
+
+
 class PantheonView:
     VIEW_TYPE = 'Pantheon'
-
-    @staticmethod
-    def _pantheon_lines(monsters, base_monster):
-        if not len(monsters):
-            return []
-        return [
-            MonsterHeader.short_with_emoji(mon, link=mon.monster_id != base_monster.monster_id)
-            for mon in sorted(monsters, key=lambda x: int(x.monster_id))
-        ]
 
     @staticmethod
     def embed(state: PantheonViewState):
         fields = [EmbedField(
             'Pantheon: {}'.format(state.series_name),
-            Box(*PantheonView._pantheon_lines(state.pantheon_list, state.base_monster))
+            Box(*_pantheon_lines(state.pantheon_list, state.base_monster))
         ),
             evos_embed_field(state)]
 
