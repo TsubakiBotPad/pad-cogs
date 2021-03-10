@@ -90,7 +90,7 @@ class PantheonViewState(ViewStateBaseId):
         base_mon = db_context.graph.get_base_monster(monster)
 
         base_list = [m for m in full_pantheon if db_context.graph.monster_is_base(m)]
-        if len(base_list) > 0 and len(base_list) <= MAX_MONS_TO_SHOW:
+        if 0 < len(base_list) <= MAX_MONS_TO_SHOW:
             return base_list, series_name, base_mon
 
         # if monster has only mat types, show only mats, otherwise show everything else
@@ -100,14 +100,14 @@ class PantheonViewState(ViewStateBaseId):
             type_list = [m for m in base_list if all(t.name in MAT_TYPES for t in m.types)]
         else:
             type_list = [m for m in base_list if any(t.name not in MAT_TYPES for t in m.types)]
-        if len(type_list) > 0 and len(type_list) <= MAX_MONS_TO_SHOW:
+        if 0 < len(type_list) <= MAX_MONS_TO_SHOW:
             return type_list, series_name, base_mon
 
         filters = []
 
         rarity_list = [m for m in type_list if m.rarity == base_mon.rarity]
         filters.append('{}*'.format(base_mon.rarity))
-        if len(rarity_list) > 0 and len(rarity_list) <= MAX_MONS_TO_SHOW:
+        if 0 < len(rarity_list) <= MAX_MONS_TO_SHOW:
             return rarity_list, cls.make_series_name(series_name, filters), base_mon
 
         main_att = base_mon.attr1
@@ -127,7 +127,7 @@ class PantheonViewState(ViewStateBaseId):
             main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
                                                        or (m.attr1.name == NIL_ATT
                                                            and m.attr2.name == main_att.name)]
-        if len(main_att_list) > 0 and len(main_att_list) <= MAX_MONS_TO_SHOW:
+        if 0 < len(main_att_list) <= MAX_MONS_TO_SHOW:
             # append after check this time, because if we go to subatt we only want one emoji
             filters.append(att_emoji)
             return main_att_list, cls.make_series_name(series_name, filters), base_mon
@@ -135,7 +135,7 @@ class PantheonViewState(ViewStateBaseId):
         sub_att_list = [m for m in main_att_list if m.attr1.name == main_att.name
                                                     and m.attr2.name == sub_att.name]
         filters.append(get_attribute_emoji_by_monster(base_mon))
-        if len(sub_att_list) > 0 and len(sub_att_list) <= MAX_MONS_TO_SHOW:
+        if 0 < len(sub_att_list) <= MAX_MONS_TO_SHOW:
             return sub_att_list, cls.make_series_name(series_name, filters), base_mon
 
         # if we've managed to get here, just cut it off
