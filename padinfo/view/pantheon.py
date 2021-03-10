@@ -68,6 +68,10 @@ class PantheonViewState(ViewStateBaseId):
                    extra_state=ims)
 
     @classmethod
+    def make_series_name(cls, series_name, filter_strings):
+        return '{} [Filters: {}]'.format(series_name, ' '.join(filter_strings))
+
+    @classmethod
     async def query(cls, dgcog, monster):
         # filtering rules:
         # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
@@ -99,12 +103,12 @@ class PantheonViewState(ViewStateBaseId):
         if len(type_list) > 0 and len(type_list) < MAX_MONS_TO_SHOW:
             return type_list, series_name, base_mon
 
-        filters = ' [Filters: '
+        filters = []
 
         rarity_list = [m for m in type_list if m.rarity == base_mon.rarity]
-        filters += '{}*'.format(base_mon.rarity)
+        filters.append('{}*'.format(base_mon.rarity))
         if len(rarity_list) > 0 and len(rarity_list) < MAX_MONS_TO_SHOW:
-            return rarity_list, series_name + filters + ']', base_mon
+            return rarity_list, cls.make_series_name(series_name, filters), base_mon
 
         main_att = base_mon.attr1
         sub_att = base_mon.attr2
@@ -123,20 +127,22 @@ class PantheonViewState(ViewStateBaseId):
             main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
                                                        or (m.attr1.name == NIL_ATT
                                                            and m.attr2.name == main_att.name)]
-        # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
-            return main_att_list, series_name + filters + ' {}]'.format(att_emoji), base_mon
+            # append after check this time, because if we go to subatt we only want one emoji
+            filters.append(att_emoji)
+            return main_att_list, cls.make_series_name(series_name, filters), base_mon
 
         sub_att_list = [m for m in main_att_list if m.attr1.name == main_att.name
                                                     and m.attr2.name == sub_att.name]
-        filters += ' {}'.format(get_attribute_emoji_by_monster(base_mon))
+        filters.append(get_attribute_emoji_by_monster(base_mon))
         if len(sub_att_list) > 0 and len(sub_att_list) < MAX_MONS_TO_SHOW:
-            return sub_att_list, series_name + filters + ']', base_mon
+            return sub_att_list, cls.make_series_name(series_name, filters), base_mon
 
         # if we've managed to get here, just cut it off
         pantheon_list = sub_att_list[:MAX_MONS_TO_SHOW]
+        filters.append('(still too many, truncated)')
 
-        return pantheon_list, series_name + filters + '] (still too many, truncated)', base_mon
+        return pantheon_list, cls.make_series_name(series_name, filters), base_mon
 
 
 class PantheonView:
