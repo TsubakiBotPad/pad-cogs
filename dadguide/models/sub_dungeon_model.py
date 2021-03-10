@@ -5,12 +5,13 @@ from .encounter_model import EncounterModel
 
 
 class SubDungeonModel(BaseModel):
-    def __init__(self, **kwargs):
+    def __init__(self, encounter_models: List[EncounterModel] = None, **kwargs):
         self.sub_dungeon_id = kwargs['sub_dungeon_id']
         self.dungeon_id = kwargs['dungeon_id']
         self.name_ja = kwargs['name_ja']
         self.name_en = kwargs['name_en']
         self.name_ko = kwargs['name_ko']
+        self.encounter_models = encounter_models
 
     def to_dict(self):
         return {

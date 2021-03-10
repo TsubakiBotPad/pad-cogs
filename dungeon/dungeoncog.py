@@ -16,6 +16,8 @@ from google.protobuf import text_format
 from dadguide import database_manager
 from dadguide.database_manager import DadguideDatabase
 from dadguide.dungeon_context import DungeonContext
+from dadguide.models.dungeon_model import DungeonModel
+from dadguide.models.encounter_model import EncounterModel
 from dungeon.EnemySkillDatabase import EnemySkillDatabase
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
@@ -24,7 +26,7 @@ from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGro
 from collections import OrderedDict
 
 from dungeon.grouped_skillls import GroupedSkills
-from dungeon.processed_monster import ProcessedMonster
+from dungeon.dungeon_monster import DungeonMonster
 from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
@@ -191,8 +193,8 @@ class DungeonEmojiUpdater(EmojiUpdater):
     up and down arrows are go up one floor and go down one floor
     """
 
-    def __init__(self, ctx, emoji_to_embed, dungeon_cog=None, selected_emoji=None, pm: ProcessedMonster = None,
-                 pm_dungeon: "list[list[ProcessedMonster]]" = None, pm_floor: "list[ProcessedMonster]" = None,
+    def __init__(self, ctx, emoji_to_embed, dungeon_cog=None, selected_emoji=None, pm: DungeonMonster = None,
+                 pm_dungeon: "list[list[DungeonMonster]]" = None, pm_floor: "list[DungeonMonster]" = None,
                  technical: int = None):
         self.emoji_dict = emoji_to_embed
         self.selected_emoji = selected_emoji
@@ -420,72 +422,56 @@ class DungeonCog(commands.Cog):
         urllib.request.urlretrieve(RAW_ENEMY_SKILLS_URL, RAW_ENEMY_SKILLS_DUMP)
         return EnemySkillDatabase(RAW_ENEMY_SKILLS_DUMP)
 
-    def nicknames(self, dungeon_name: str):
-        if dungeon_name.lower() in DungeonNickNames:
-            return DungeonNickNames[dungeon_name.lower()]
-        return None
-
-    def find_difficulty_from_name(self, dungeon_id, sub_name: str, database):
-        sub_dungeons = database.database.query_many(sub_dungeons_query.format(dungeon_id, sub_name), ())
-        if len(sub_dungeons) == 0:
-            return 0
-        elif len(sub_dungeons) > 1:
-            if 'plus' in sub_name.lower():
-                for sd in sub_dungeons:
-                    if 'plus' in sd['name_en'].lower():
-                        return sd['sub_dungeon_id']
-            else:
-                for sd in sub_dungeons:
-                    if 'plus' not in sd['name_en'].lower():
-                        return sd['sub_dungeon_id']
-        elif len(sub_dungeons) > 2:
-            return 1
-        return sub_dungeons[0]['sub_dungeon_id']
-
-    async def find_dungeon_from_name(self, ctx, name: str, database, difficulty: str = None):
-        nickname = self.nicknames(name)
-        if nickname is not None:
-            return nickname
-        dungeons = database.database.query_many(dungeon_search_query.format(name), ())
-        if len(dungeons) == 0:
-            await ctx.send("Sorry, I couldn't find any dungeons by that name! (Or maybe there is no data on it?)")
-            return None
-        elif len(dungeons) > 1:
-            same = True
-            first = dungeons[0]["name_en"]
-            for d in dungeons:
-                if d["name_en"] != first:
-                    same = False
-                    break
-            if not same:
-                output = "Can you be more specific? Did you mean:"
+    async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
+        dungeon = database.get_dungeons_from_nickname(name)
+        if dungeon is None:
+            dungeons = database.get_dungeons_from_name(name)
+            if len(dungeons) == 0:
+                await ctx.send("No dungeons found!")
+                return None
+            if len(dungeons) > 1:
+                message = "Multiple Dungeons Found, please be more specific:"
                 for d in dungeons:
-                    output += "\n{}".format(d["name_en"])
-                await ctx.send(output)
+                    message += "\n{}".format(d.name_en)
+                await ctx.send(message)
                 return None
-        # Now that we have the dungeon we need to get the sub_dungeon_id (difficulty)
-        sub_id = dungeons[0]["dungeon_id"] * 1000 + 1
-        if difficulty is None:
-            sub_id = database.database.query_one(dungeon_sub_id_query.format(dungeons[0]["dungeon_id"]), ())[
-                "sub_dungeon_id"]
-        elif difficulty.isdigit():
-            difficulty = int(difficulty)
-            sub_id = dungeons[0]["dungeon_id"] * 1000 + difficulty
-            if database.database.query_one(sub_dungeon_exists_query.format(sub_id), ()) is None:
-                await ctx.send("That difficulty doesn't exist, following data is for the highest difficulty:")
-                sub_id = database.database.query_one(dungeon_sub_id_query.format(dungeons[0]["dungeon_id"]), ())[
-                    "sub_dungeon_id"]
-        else:
-            sub_id = self.find_difficulty_from_name(dungeons[0]['dungeon_id'], difficulty, database)
-            if sub_id == 0:
-                await ctx.send("Difficulty not found, defaulting to highest difficulty")
-                sub_id = database.database.query_one(dungeon_sub_id_query.format(dungeons[0]["dungeon_id"]), ())[
-                    "sub_dungeon_id"]
-            elif sub_id == 1:
-                await ctx.send("Can you be more specific?")
-                return None
-        return sub_id
+            dungeon = dungeons[0]
+            sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
+            sub_dungeon_model = None
+            if sub_id is None:
+                sub_id = 0
+                for sd in dungeon.sub_dungeons:
+                    if sd.sub_dungeon_id > sub_id:
+                        sub_id = sd.sub_dungeon_id
+                        sub_dungeon_model = sd
+            else:
+                for sd in dungeon.sub_dungeons:
+                    if sd.sub_dungeon_id == sub_id:
+                        sub_dungeon_model = sd
+                        break
+            dungeon.sub_dungeons = [sub_dungeon_model]
+        return dungeon
 
+    @commands.command()
+    async def test(self, ctx):
+        dg_cog = self.bot.get_cog('Dadguide')
+        # Your code will go here
+        if not dg_cog:
+            logger.warning("Cog 'Dadguide' not loaded")
+            return
+        logger.info('Waiting until DG is ready')
+        await dg_cog.wait_until_ready()
+        context: DungeonContext = dg_cog.database.dungeon
+        dung = context.get_dungeons_from_name("Raziel")[0]
+        dung2 = await self.find_dungeon_from_name2(ctx, "Raziel", context, "Mythical")
+
+        message = "Dung1:"
+        for sd in dung.sub_dungeons:
+            message += "\n" + sd.name_en
+        message += "\nDung2:"
+        for sd in dung2.sub_dungeons:
+            message += "\n" + sd.name_en
+        await ctx.send(message)
     """
     Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
     (for me) objects
@@ -528,12 +514,13 @@ class DungeonCog(commands.Cog):
     # Skill Name    Type:Preemptive/Passive/Etc
     # Skill Effect
     # Condition
-    async def process_monster(self, mb: MonsterBehavior, q: dict, database: DadguideDatabase):
+    async def process_monster(self, mb: MonsterBehavior, q: EncounterModel, database: DadguideDatabase):
         # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
         """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
                               description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
-        monster: ProcessedMonster = ProcessedMonster(q["name_en"], q['hp'], q['atk'], q['defence'], q['turns'],
-                                                     q['level'])
+        monster: DungeonMonster = DungeonMonster(
+
+        )
         if mb is None:
             return monster
         levelBehavior = behaviorForLevel(mb, q["level"])
@@ -544,7 +531,7 @@ class DungeonCog(commands.Cog):
 
         return monster
 
-    async def make_emoji_dictionary(self, ctx, pm: ProcessedMonster = None, scroll_monsters=None, scroll_floors=None,
+    async def make_emoji_dictionary(self, ctx, pm: DungeonMonster = None, scroll_monsters=None, scroll_floors=None,
                                     floor_info: "list[int]" = None, dungeon_info: "list[int]" = None,
                                     technical: int = None):
         if scroll_monsters is None:
@@ -648,33 +635,28 @@ class DungeonCog(commands.Cog):
             return
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
-        sub_id = await self.find_dungeon_from_name(ctx=ctx, name=name, database=dg_cog.database, difficulty=difficulty)
-        if sub_id is None:
-            return
-        test_result = dg_cog.database.database.query_many(dungeon_query.format(sub_id), ())
-        if test_result is None:
-            await ctx.send("Dungeon not Found")
-        else:
+        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.dungeon, difficulty=difficulty)
+
+        if dungeon is not None:
             # await ctx.send(formatOverview(test_result))
             current_stage = 0
             pm_dungeon = []
             # check for invades:
             invades = []
-            for r in test_result:
-                enc = dg_cog.database.database.query_one(encounter_query.format(r["encounter_id"]), ())
+            for enc_model in dungeon.sub_dungeons[0].encounter_models:
                 behavior_test = MonsterBehavior()
-                if enc["behavior"] is not None:
-                    behavior_test.ParseFromString(enc["behavior"])
+                if enc_model.enemy_data.behavior is not None:
+                    behavior_test.ParseFromString(enc_model.enemy_data.behavior)
                 else:
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                pm = await self.process_monster(behavior_test, enc, dg_cog.database)
-                if r['stage'] < 0:
+                pm = await self.process_monster(behavior_test, enc_model, dg_cog.database)
+                if enc_model['stage'] < 0:
                     pm.am_invade = True
                     invades.append(pm)
-                elif r['stage'] > current_stage:
-                    current_stage = r['stage']
+                elif enc_model['stage'] > current_stage:
+                    current_stage = enc_model['stage']
                     floor = [pm]
                     pm_dungeon.append(floor)
                 else:

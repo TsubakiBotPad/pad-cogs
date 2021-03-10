@@ -41,7 +41,7 @@ def field_value_split(data: str, limit):
     return names, content
 
 
-class ProcessedMonster(object):
+class DungeonMonster(object):
 
     def __init__(self, name: str, hp, atk, defense, turns, level, error=None):
         self.name = name

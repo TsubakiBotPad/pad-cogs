@@ -5,7 +5,6 @@ from .enemy_data_model import EnemyDataModel
 class EncounterModel(BaseModel):
     def __init__(self, enemy_data_model: EnemyDataModel = None, **kwargs):
         self.encounter_id = kwargs['encounter_id']
-        self.dungeon_id = kwargs['dungeon_id']
         self.sub_dungeon_id = kwargs['sub_dungeon_id']
         self.enemy_id = kwargs['enemy_id']
         self.monster_id = kwargs['monster_id']
@@ -21,7 +20,6 @@ class EncounterModel(BaseModel):
     def to_dict(self):
         return {
             'encounter_id': self.encounter_id,
-            'dungeon_id': self.dungeon_id,
             'sub_dungeon_id': self.sub_dungeon_id,
             'enemy_id': self.enemy_id,
             'monster_id': self.monster_id,
