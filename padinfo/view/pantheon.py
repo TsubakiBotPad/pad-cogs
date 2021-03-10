@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 MAX_MONS_TO_SHOW = 20
 MAT_TYPES = ['Evolve', 'Awoken', 'Enhance', 'Vendor']
-NO_ATT = 'Nil'
+NIL_ATT = 'Nil'
 
 
 class PantheonViewState(ViewStateBaseId):
@@ -73,7 +73,7 @@ class PantheonViewState(ViewStateBaseId):
         # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
         # 2. if still too many, show only monsters with the same base rarity
         # 3. if still too many, show only monsters with the same base main attribute (any monster
-        #        without a main attribute is compared using its subattribute)
+        #        with nil main attribute is compared using its subattribute)
         # 4. if still too many, show only monsters that match both base attributes
         # 5. if still too many, truncate (and probably redefine pantheon)
 
@@ -109,17 +109,19 @@ class PantheonViewState(ViewStateBaseId):
         main_att = base_mon.attr1
         sub_att = base_mon.attr2
 
+        # if the monster has nil main attribute, do comparisons using its subattribute
+        # if any monster in the list has nil main attribute, also compare using its subattribute
         main_att_list = []
         att_emoji = None
-        if main_att.name == NO_ATT:
+        if main_att.name == NIL_ATT:
             att_emoji = get_attribute_emoji_by_enum(sub_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == sub_att.name
-                                                       or (m.attr1.name == NO_ATT
+                                                       or (m.attr1.name == NIL_ATT
                                                            and m.attr2.name == sub_att.name)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
-                                                       or (m.attr1.name == NO_ATT
+                                                       or (m.attr1.name == NIL_ATT
                                                            and m.attr2.name == main_att.name)]
         # don't concatenate filter this time, because if we go to subatt we only want one emoji
         if len(main_att_list) > 0 and len(main_att_list) < MAX_MONS_TO_SHOW:
