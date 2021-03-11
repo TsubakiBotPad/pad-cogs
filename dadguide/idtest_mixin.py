@@ -178,13 +178,16 @@ class IdTest:
 
         async with self.config.test_suite() as suite:
             if item in suite:
-                del suite[item]
+                case = item
             elif item.isdigit() and int(item) < len(suite):
-                del suite[sorted(suite)[int(item)]]
+                case = sorted(suite)[int(item)]
             else:
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
-        await ctx.tick()
+            res = suite[case]['result']
+            del suite[case]
+        await ctx.send(
+            f"Removed test case `{case} - {res}` with ref")
 
     @idt_name.command(name="remove")
     @checks.is_owner()
@@ -208,8 +211,11 @@ class IdTest:
             if item >= len(suite):
                 await ctx.send("There are not that many items.")
                 return
-            suite.remove(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item])
-        await ctx.tick()
+            case = sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item]
+            suite.remove(case)
+        # noinspection PyTypeChecker
+        await ctx.send(f"Successfully removed {'fluff' if case['fluff'] else 'name'} case"
+                       f" `{case['id']} - {case['token']}`")
 
     @idtest.command(name="setreason", aliases=["addreason"])
     @checks.is_owner()
