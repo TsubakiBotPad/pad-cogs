@@ -11,7 +11,7 @@ import logging
 import os
 import shutil
 from io import BytesIO
-from typing import Optional
+from typing import Optional, List
 
 import discord
 import time
@@ -72,9 +72,10 @@ class Dadguide(commands.Cog, IdTest):
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
 
+        self.fm_flags_default = {'na_prio': True}
         self.config = Config.get_conf(self, identifier=64667103)
         self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
-        self.config.register_user(lastaction=None)
+        self.config.register_user(lastaction=None, fm_flags={})
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
         self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
@@ -82,9 +83,7 @@ class Dadguide(commands.Cog, IdTest):
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
-        self.mon_finder = FindMonster(self)
-        self.find_monster = self.mon_finder.find_monster
-        self.find_monsters = self.mon_finder.find_monsters
+        self.mon_finder = FindMonster(self, self.fm_flags_default)
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -227,3 +226,13 @@ class Dadguide(commands.Cog, IdTest):
     async def setindexlog(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
+
+    async def get_fm_flags(self, author_id):
+        # noinspection PyTypeChecker
+        return {**self.fm_flags_default, **(await self.config.user(discord.Object(author_id)).fm_flags())}
+
+    async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
+        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
+
+    async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
+        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)

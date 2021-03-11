@@ -61,21 +61,6 @@ commands.Command.format_help_for_context = lambda s, c: mod_help(s, c, "help")
 commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "short_doc")
 
 
-async def lookup_monster_model(query: str):
-    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dgcog is None:
-        raise Exception("Cog not Loaded")
-    m = await dgcog.find_monster(str(query))
-    return m
-
-
-def monster_id_to_monster(monster_id):
-    dgcog = PADGLOBAL_COG.bot.get_cog('Dadguide')
-    if dgcog is None:
-        return None
-    return dgcog.get_monster(monster_id)
-
-
 async def check_enabled(ctx):
     """If the server is disabled, raise a warning and return False"""
     if PADGLOBAL_COG.settings.checkDisabled(ctx.message):
@@ -500,7 +485,7 @@ class PadGlobal(commands.Cog):
     async def boss(self, ctx, *, term: str = None):
         """Shows boss skill entries"""
         if term:
-            name, definition = await self.lookup_boss(term)
+            name, definition = await self.lookup_boss(term, ctx)
             if definition:
                 await ctx.send(self.emojify(definition))
             else:
@@ -518,12 +503,12 @@ class PadGlobal(commands.Cog):
         for page in pagify(msg):
             await ctx.author.send(page)
 
-    async def lookup_boss(self, term):
+    async def lookup_boss(self, term, ctx):
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        m = await lookup_monster_model(term)
+        m = await dgcog.find_monster(term, ctx.author.id)
         if m is None:
             return None, None
 
@@ -533,9 +518,6 @@ class PadGlobal(commands.Cog):
         definition = self.settings.boss().get(monster_id, None)
 
         return name, definition
-
-
-
 
     def boss_to_text(self, ctx):
         bosses = self.settings.boss()
@@ -561,7 +543,7 @@ class PadGlobal(commands.Cog):
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await lookup_monster_model(term)
+        m = await dgcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`")
             return
@@ -587,7 +569,7 @@ class PadGlobal(commands.Cog):
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await lookup_monster_model(term)
+        m = await dgcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`.  Make sure you didn't use quotes.")
             return
@@ -629,11 +611,12 @@ class PadGlobal(commands.Cog):
             await ctx.send(page)
 
     async def _resolve_which(self, ctx, term):
-        db_context = self.bot.get_cog('Dadguide').database
+        dgcog = self.bot.get_cog('Dadguide')
+        db_context = dgcog.database
         padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        m = await lookup_monster_model(term)
+        m = await dgcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
@@ -651,7 +634,7 @@ class PadGlobal(commands.Cog):
         if definition is not None:
             return name, definition, timestamp, True
 
-        monster = monster_id_to_monster(monster_id)
+        monster = dgcog.get_monster(monster_id)
 
         if db_context.graph.monster_is_mp_evo(monster):
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
@@ -683,7 +666,7 @@ class PadGlobal(commands.Cog):
     def which_to_text(self):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
-            m = monster_id_to_monster(monster_id)
+            m = self.bot.get_cog("Dadguide").get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(", ")[-1]
@@ -717,7 +700,7 @@ class PadGlobal(commands.Cog):
         If you provide a monster ID, the term will be entered for that monster tree.
         e.x. [p]padglobal addwhich 3818 take the pixel one
         """
-        m = monster_id_to_monster(monster_id)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
@@ -735,7 +718,7 @@ class PadGlobal(commands.Cog):
     @padglobal.command()
     async def rmwhich(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
-        m = monster_id_to_monster(monster_id)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
@@ -760,7 +743,7 @@ class PadGlobal(commands.Cog):
         for w in self.settings.which():
             w %= 10000
 
-            m = monster_id_to_monster(w)
+            m = self.bot.get_cog("Dadguide").get_monster(w)
             name = m.name_en.split(', ')[-1]
 
             result = self.settings.which()[w]
@@ -1010,22 +993,24 @@ class PadGlobal(commands.Cog):
             await self.send_guide(ctx)
             return
 
-        term, text, err = await self.get_guide_text(term)
+        term, text, err = await self.get_guide_text(term, ctx)
         if text is None:
             await ctx.send(inline(err))
             return
 
         await ctx.send(self.emojify(text))
 
-    async def get_guide_text(self, term: str):
+    async def get_guide_text(self, term: str, ctx):
+        dgcog = self.bot.get_cog("Dadguide")
+
         term = term.lower()
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        m = await lookup_monster_model(term)
+        m = await dgcog.find_monster(term, ctx.author.id)
         if m is None:
             return None, None, 'No dungeon or monster matched that query'
-        m = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        m = dgcog.database.graph.get_base_monster(m)
 
         name = m.name_en
         definition = self.settings.leaderGuide().get(m.monster_id, None)
@@ -1048,7 +1033,7 @@ class PadGlobal(commands.Cog):
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
-            m = monster_id_to_monster(monster_id)
+            m = self.bot.get_cog("Dadguide").get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(', ')[-1].title()
@@ -1063,7 +1048,7 @@ class PadGlobal(commands.Cog):
 
         [p]guideto @{0.author.name} osc10
         """
-        term, text, err = await self.get_guide_text(term)
+        term, text, err = await self.get_guide_text(term, ctx)
         if text is None:
             await ctx.send(inline(err))
             return
@@ -1104,7 +1089,7 @@ class PadGlobal(commands.Cog):
     @padglobal.command()
     async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
-        m = monster_id_to_monster(monster_id)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
@@ -1122,7 +1107,7 @@ class PadGlobal(commands.Cog):
     @padglobal.command()
     async def rmleaderguide(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
-        m = monster_id_to_monster(monster_id)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
