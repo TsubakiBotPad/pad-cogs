@@ -214,7 +214,6 @@ class FindMonster:
                 not all(t.value in [0, 12, 14, 15] for t in monster.types),
                 not any(t.value in [0, 12, 14, 15] for t in monster.types),
                 -self.dgcog.database.graph.get_base_id(monster),
-                monster.on_na,
                 not monster.is_equip,
                 monster.rarity,
                 monster.monster_no_na)
