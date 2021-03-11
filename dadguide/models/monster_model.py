@@ -33,7 +33,7 @@ class MonsterModel(BaseModel):
         self.series_id = m['series_id']
         self.name_ja = m['name_ja']
         self.name_ko = m['name_ko']
-        self.name_en = m['name_en']
+        self.name_en = self.unoverridden_name_en = m['name_en']
         self.roma_subname = None
         if self.name_en == self.name_ja:
             self.roma_subname = self.make_roma_subname(self.name_ja)
