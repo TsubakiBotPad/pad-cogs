@@ -462,16 +462,17 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        pantheon_list, series_name = await PantheonViewState.query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
-            await ctx.send(inline('Too many monsters in this series to display'))
+            await ctx.send('Unable to find a pantheon for the result of your query,'
+                           + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
         alt_monsters = PantheonViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                  monster, alt_monsters, pantheon_list, series_name,
+                                  monster, alt_monsters, pantheon_list, series_name, base_monster,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
