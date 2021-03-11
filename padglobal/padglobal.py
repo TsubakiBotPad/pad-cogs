@@ -248,7 +248,7 @@ class PadGlobal(commands.Cog):
         json.dump(self.c_commands, open(self.file_path, 'w+'))
         await ctx.send("PAD command successfully {}.".format(op))
 
-    @padglobal.command(aliases=['rmalias', 'delalias'])
+    @padglobal.command(aliases=['rmalias', 'delalias', 'remove', 'rm', 'del'])
     async def delete(self, ctx, command: str):
         """Deletes a PAD global command or alias
 
@@ -567,7 +567,6 @@ class PadGlobal(commands.Cog):
             return
 
         base = dgcog.database.graph.get_base_monster(m)
-
 
         op = 'EDITED' if base.monster_id in self.settings.boss() else 'ADDED'
         if op == 'EDITED' and not await confirm_message(ctx,
