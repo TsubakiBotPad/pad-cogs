@@ -1,7 +1,11 @@
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
 import discord
-
+def indent(level):
+    ret = ""
+    for l in range(level):
+        ret += "\u200b \u200b \u200b \u200b \u200b "
+    return ret
 
 # Called to check if a field/value/description hits character limit
 def field_value_split(data: str, limit):
@@ -61,10 +65,11 @@ class DungeonMonster(object):
 
     async def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
                          technical: int = None, has_invade=False):
-        top_level = []
-        field_value_dict = OrderedDict()
+        # top_level = []
+        # field_value_dict = OrderedDict()
+
         desc = ""
-        for g in self.groups:
+        '''for g in self.groups:
             await g.give_string(top_level, field_value_dict, verbose=verbose)
         for s in top_level:
             desc += s
@@ -78,7 +83,7 @@ class DungeonMonster(object):
                 fields.append({names[index - 1], val})
             index += 1
         if technical == 0:
-            desc = ""
+            desc = ""'''
         if spawn is not None:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
@@ -90,7 +95,18 @@ class DungeonMonster(object):
                 title="Enemy:{} at Level: {}".format(self.name, self.level),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc))
-        if technical == 0:
+        lines = []
+        for group in self.groups:
+            await group.give_string2(lines, 0, verbose)
+        first = None
+        for l in lines:
+            actual = "{}{}".format(indent(l[0]), l[1])
+            if first is None:
+                first = actual
+            else:
+                embed.add_field(name=first, value=actual, inline=False)
+                first = None
+        """if technical == 0:
             return embed
         for n, v in fields:
             embed.add_field(name=n, value=v, inline=False)
@@ -103,7 +119,7 @@ class DungeonMonster(object):
                     embed.add_field(name=k, value=val, inline=False)
                 else:
                     embed.add_field(name=names[index - 1], value=val, inline=False)
-                index += 1
+                index += 1"""
 
             # embed.add_field(name=k, value=content, inline=False)
         return embed

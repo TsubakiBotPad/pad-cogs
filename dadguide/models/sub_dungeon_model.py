@@ -11,6 +11,7 @@ class SubDungeonModel(BaseModel):
         self.name_ja = kwargs['name_ja']
         self.name_en = kwargs['name_en']
         self.name_ko = kwargs['name_ko']
+        self.technical = kwargs['technical']
         self.encounter_models = encounter_models
 
     def to_dict(self):

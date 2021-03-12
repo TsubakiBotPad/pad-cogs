@@ -7,6 +7,7 @@ from typing import List
 
 import discord
 import tsutils
+from discordmenu.emoji.emoji_cache import emoji_cache
 
 from tsutils import Menu, EmojiUpdater
 from redbot.core import commands, data_manager
@@ -14,14 +15,15 @@ from redbot.core import commands, data_manager
 from google.protobuf import text_format
 
 from dadguide import database_manager
+from dadguide.database_context import DbContext
 from dadguide.database_manager import DadguideDatabase
 from dadguide.dungeon_context import DungeonContext
 from dadguide.models.dungeon_model import DungeonModel
 from dadguide.models.encounter_model import EncounterModel
-from dungeon.EnemySkillDatabase import EnemySkillDatabase
+from dadguide.models.enemy_skill_model import EnemySkillModel
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
-from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
+# from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
 
@@ -183,6 +185,28 @@ def _data_file(file_name: str) -> str:
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
+class SafeDict(dict):
+    def __missing__(self, key):
+        return '{' + key + '}'
+
+emoji_map = SafeDict(resolve_status=emoji_cache.get_by_name('resolve'),
+                     fire_orb=emoji_cache.get_by_name('orb_fire'),
+                     roulette=emoji_cache.get_by_name('spinner'),
+                     unknown_type='Unknown',
+                     defense_status=emoji_cache.get_by_name('defense'),
+                     combo_absorb_status=emoji_cache.get_by_name('combo'),
+                     absorb_status=emoji_cache.get_by_name('attribute_absorb'),
+                     damage_absorb_status=emoji_cache.get_by_name('damage_absorb'),
+                     damage_void_status=emoji_cache.get_by_name('vdp'),
+                     status_shield_status=emoji_cache.get_by_name('status'),
+                     movetime_buff_status=emoji_cache.get_by_name('time_buff'),
+                     movetime_debuff_status=emoji_cache.get_by_name('time_buff'),
+                     dispel_status='Dispel',
+                     leader_swap_status=emoji_cache.get_by_name('swap'),
+                     skill_delay=emoji_cache.get_by_name('misc_sb'),
+                     lock_orbs=emoji_cache.get_by_name('lock'),
+
+                     )
 
 class DungeonEmojiUpdater(EmojiUpdater):
     # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
@@ -416,11 +440,31 @@ class DungeonCog(commands.Cog):
         self.current_monster = '👹'
         self.verbose_monster = '📜'
         self.preempt_monster = '⚡'
-        self.esd: EnemySkillDatabase = self.load_raw()
 
-    def load_raw(self):
-        urllib.request.urlretrieve(RAW_ENEMY_SKILLS_URL, RAW_ENEMY_SKILLS_DUMP)
-        return EnemySkillDatabase(RAW_ENEMY_SKILLS_DUMP)
+    def process_enemy_skill2(self, encounter: EncounterModel, skill: EnemySkillModel):
+        effect = skill.desc_en_emoji
+        split_effects = effect.split("), ")
+        non_attack_effects = []
+        for e in split_effects:
+            e += ")"
+            if "Attack:" not in e:
+                non_attack_effects.append(e.format_map(emoji_map))
+
+        # Damage
+        atk = encounter.atk
+        if skill.min_hits != 0:
+            emoji = "Attack"
+            if skill.min_hits > 1:
+                emoji = "Multi"
+            damage_per_hit = (int)(atk * (skill.atk_mult / 100.0))
+            min_damage = skill.min_hits * damage_per_hit
+            max_damage = skill.max_hits * damage_per_hit
+            if min_damage != max_damage:
+                non_attack_effects.append("({}:{}~{})".format(emoji, f'{min_damage:,}', f'{max_damage:,}'))
+            else:
+                non_attack_effects.append("({}:{})".format(emoji, f'{min_damage:,}'))
+
+        return "".join(non_attack_effects)
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name)
@@ -450,6 +494,8 @@ class DungeonCog(commands.Cog):
                         sub_dungeon_model = sd
                         break
             dungeon.sub_dungeons = [sub_dungeon_model]
+        else:
+            dungeon = dungeon[0]
         return dungeon
 
     @commands.command()
@@ -477,27 +523,22 @@ class DungeonCog(commands.Cog):
     (for me) objects
     """
 
-    async def process_behavior(self, behavior: Behavior, database, q: dict, parent: GroupedSkills = None):
-        skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
+    async def process_behavior(self, behavior: Behavior, database, q: EncounterModel, parent: GroupedSkills = None):
+        skill = database.dungeon.get_enemy_skill(behavior.enemy_skill_id)
         if skill is None:
             return "Unknown"
-        skill_name = skill["name_en"]
-        skill_effect = skill["desc_en"]
+        skill_name = skill.name_en
+        skill_effect = skill.desc_en
         # skill_processed_text = process_enemy_skill(skill_effect, q, skill)
-        es = self.esd.get_es_from_id(skill['enemy_skill_id'])
-        skill_processed_text = process_enemy_skill2(q, skill, es, self.esd)
-        es_raw = [es]
-        if es.type in (83, 95):
-            for s in list(filter(None, es.params[1:11])):
-                es_raw.append(self.esd.get_es_from_id(s))
+        skill_processed_text = self.process_enemy_skill2(q, skill)
 
         condition = format_condition(behavior.condition)
         processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition,
-                                                         parent, es_raw)
+                                                         parent)
         # embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
         return processed_skill
 
-    async def process_behavior_group(self, group: BehaviorGroup, database, q: dict,
+    async def process_behavior_group(self, group: BehaviorGroup, database, q: EncounterModel,
                                      parent: GroupedSkills = None):
         condition = format_condition(group.condition)
         processed_group: GroupedSkills = GroupedSkills(condition, GroupType[group.group_type], parent)
@@ -514,16 +555,22 @@ class DungeonCog(commands.Cog):
     # Skill Name    Type:Preemptive/Passive/Etc
     # Skill Effect
     # Condition
-    async def process_monster(self, mb: MonsterBehavior, q: EncounterModel, database: DadguideDatabase):
+    async def process_monster(self, mb: MonsterBehavior, q: EncounterModel, database: DbContext):
         # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
         """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
                               description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
+        monster_model = database.graph.get_monster(q.monster_id)
         monster: DungeonMonster = DungeonMonster(
-
+            name=monster_model.name_en,
+            hp=q.hp,
+            atk=q.atk,
+            defense=q.defence,
+            turns=q.turns,
+            level=q.level
         )
         if mb is None:
             return monster
-        levelBehavior = behaviorForLevel(mb, q["level"])
+        levelBehavior = behaviorForLevel(mb, q.level)
         if levelBehavior is None:
             return monster
         for group in levelBehavior.groups:
@@ -635,7 +682,7 @@ class DungeonCog(commands.Cog):
             return
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
-        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.dungeon, difficulty=difficulty)
+        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.database.dungeon, difficulty=difficulty)
 
         if dungeon is not None:
             # await ctx.send(formatOverview(test_result))
@@ -645,18 +692,18 @@ class DungeonCog(commands.Cog):
             invades = []
             for enc_model in dungeon.sub_dungeons[0].encounter_models:
                 behavior_test = MonsterBehavior()
-                if enc_model.enemy_data.behavior is not None:
+                if (enc_model.enemy_data is not None) and (enc_model.enemy_data.behavior is not None):
                     behavior_test.ParseFromString(enc_model.enemy_data.behavior)
                 else:
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
                 pm = await self.process_monster(behavior_test, enc_model, dg_cog.database)
-                if enc_model['stage'] < 0:
+                if enc_model.stage < 0:
                     pm.am_invade = True
                     invades.append(pm)
-                elif enc_model['stage'] > current_stage:
-                    current_stage = enc_model['stage']
+                elif enc_model.stage > current_stage:
+                    current_stage = enc_model.stage
                     floor = [pm]
                     pm_dungeon.append(floor)
                 else:
@@ -666,9 +713,9 @@ class DungeonCog(commands.Cog):
                     f.extend(invades)
             emoji_to_embed = await self.make_emoji_dictionary(ctx, pm_dungeon[0][0], floor_info=[1, len(pm_dungeon[0])],
                                                               dungeon_info=[1, len(pm_dungeon)],
-                                                              technical=int(test_result[0]['technical']))
+                                                              technical=int(dungeon.sub_dungeons[0].technical))
             dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, start_selection[starting], pm_dungeon[0][0],
-                                      pm_dungeon, pm_dungeon[0], technical=test_result[0]['technical'])
+                                      pm_dungeon, pm_dungeon[0], technical=int(dungeon.sub_dungeons[0].technical))
             await self._do_menu(ctx, start_selection[starting], dmu, 60)
 
     @commands.command()
@@ -759,7 +806,7 @@ class DungeonCog(commands.Cog):
         for page in pagify("\n".join(idk)):
             await ctx.send(page)
 
-    async def danger_skill_checker(self, skills: List[ProcessedSkill]):
+    """async def danger_skill_checker(self, skills: List[ProcessedSkill]):
         resolves = set()
         debuffs = set()
         absurd_preempt = 'Maybe Later'
@@ -788,7 +835,7 @@ class DungeonCog(commands.Cog):
                     elif es_raw.type == 88:
                         awoken_bind.add(emoji_dict['awoken_bind'])
         ret = [''.join(resolves), ''.join(debuffs), absurd_preempt, ''.join(awoken_bind)]
-        return ret
+        return ret"""
 
     async def danger_skill_checker_simple(self, skills: List[ProcessedSkill]):
         ret = []

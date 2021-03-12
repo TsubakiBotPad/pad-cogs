@@ -1063,8 +1063,7 @@ def multiple_cull(m: str, key: str = 'and'):
 
 
 class ProcessedSkill(object):
-    def __init__(self, name: str, effect: str, processed: str, condition: str = None, parent: GroupedSkills = None,
-                 es_raw: List[EnemySkill] = None):
+    def __init__(self, name: str, effect: str, processed: str, condition: str = None, parent: GroupedSkills = None):
         self.name = name
         self.effect = effect
         self.processed = processed
@@ -1072,7 +1071,6 @@ class ProcessedSkill(object):
         self.parent = parent
         self.type = self.find_type()
         self.is_passive_preempt = len(self.process_type()) != 0
-        self.es_raw = es_raw
 
     def find_type(self):
         up = self.parent
@@ -1109,31 +1107,3 @@ class ProcessedSkill(object):
             else:
                 ret = '''**{}{}S: {}**'''.format(indent, self.process_type(), self.processed)
                 return ret
-    # check if
-
-
-"""
-ENEMY_SKILLS = [
-    ESEndBattle,
-    ESDeathCry,
-    ESNone,
-    ESSkillSetOnDeath,
-    ESAttributeBlock
-
-
-    ESGachaFever,
-
-
-
-
-    ESCountdown,
-    ESSetCounterIf,
-
-
-
-    ESTurnChangeRemainingEnemies,
-
-
-   
-]
-"""

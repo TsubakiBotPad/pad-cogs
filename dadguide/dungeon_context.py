@@ -23,6 +23,7 @@ encounters.defence,
 sub_dungeons.name_ja AS sub_name_ja,
 sub_dungeons.name_en AS sub_name_en,
 sub_dungeons.name_ko AS sub_name_ko,
+sub_dungeons.technical,
 dungeons.name_ja,
 dungeons.name_en,
 dungeons.name_ko,
@@ -46,7 +47,8 @@ sub_dungeons.sub_dungeon_id,
 sub_dungeons.dungeon_id,
 sub_dungeons.name_ja,
 sub_dungeons.name_en,
-sub_dungeons.name_ko
+sub_dungeons.name_ko,
+sub_dungeons.technical
 FROM
 sub_dungeons
 WHERE
@@ -170,7 +172,10 @@ class DungeonContext(object):
                 ems = []
                 for e in encounters:
                     data = self.database.query_one(enemy_data_query.format(e["enemy_id"]), ())
-                    edm = EnemyDataModel(**data)
+                    if data is not None:
+                        edm = EnemyDataModel(**data)
+                    else:
+                        edm = None
                     ems.append(EncounterModel(edm, **e))
                 dm.sub_dungeons.append(SubDungeonModel(ems, **s))
         return dungeons
@@ -181,22 +186,27 @@ class DungeonContext(object):
         sub_id = DungeonNickNames.get(name)
         mega = self.database.query_many(nickname_query.format(sub_id), ())
         ems = []
+        print(mega[0])
         for enc in mega:
             data = self.database.query_one(enemy_data_query.format(enc["enemy_id"]), ())
-            edm = EnemyDataModel(data)
-            ems.append(EncounterModel(edm, enc))
+            if data is not None:
+                edm = EnemyDataModel(**data)
+            else:
+                edm = None
+            ems.append(EncounterModel(edm, **enc))
         sm = SubDungeonModel(ems,
-                             sub_dungeon_id=mega['sub_dungeon_id'],
-                             dungeon_id=mega['dungeon_id'],
-                             name_ja=mega['sub_name_ja'],
-                             name_en=mega['sub_name_en'],
-                             name_ko=mega['sub_name_ko'])
-        return DungeonModel([sm], mega)
+                             sub_dungeon_id=mega[0]['sub_dungeon_id'],
+                             dungeon_id=mega[0]['dungeon_id'],
+                             name_ja=mega[0]['sub_name_ja'],
+                             name_en=mega[0]['sub_name_en'],
+                             name_ko=mega[0]['sub_name_ko'],
+                             technical=mega[0]['technical'])
+        return [DungeonModel([sm], **mega[0])]
 
 
     def get_enemy_skill(self, enemy_skill_id):
         enemy_skill_query = self.database.query_one(skill_query.format(enemy_skill_id), ())
-        return EnemySkillModel(enemy_skill_query)
+        return EnemySkillModel(**enemy_skill_query)
 
     def get_sub_dungeon_id_from_name(self, dungeon_id, sub_name: str):
         sub_dungeons = self.database.query_many(sub_dungeons_query.format(dungeon_id, sub_name), ())

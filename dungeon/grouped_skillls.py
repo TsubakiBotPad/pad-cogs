@@ -24,7 +24,7 @@ class GroupedSkills(object):
     def add_skill(self, skill):
         self.skills.append(skill)
 
-    async def give_string(self, top, dict: OrderedDict, nest_level=0, verbose: bool = False):
+    async def give_string(self, top, dict, nest_level=0, verbose: bool = False):
         # blocked = False
         condition = self.condition
         set = False
@@ -51,6 +51,17 @@ class GroupedSkills(object):
             top += output
         else:
             return output
+    async def give_string2(self, lines, level=0, verbose: bool = False):
+        condition = self.condition
+        if condition is not None:
+            lines.append([level, "**Condition: {}**".format(condition)])
+            level += 1
+        for g in self.nested_groups:
+            await g.give_string2(lines, level, verbose)
+        for s in self.skills:
+            lines.append([level, s.give_string(verbose=verbose)])
+
+
     async def collect_skills(self):
         skill_copy = self.skills.copy()
         for g in self.nested_groups:
