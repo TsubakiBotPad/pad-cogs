@@ -882,12 +882,12 @@ class PadInfo(commands.Cog):
             return
         await ctx.tick()
 
-    @idset.command()
+    @idset.command(usage="<on/off>")
     async def naprio(self, ctx, value: bool):
         """Change whether [p]id will default away from new evos of monsters that aren't in NA yet"""
         async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
             fm_flags['na_prio'] = value
-        await ctx.tick()
+        await ctx.send(f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
 
     @commands.group()
     @checks.is_owner()
