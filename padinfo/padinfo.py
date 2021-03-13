@@ -238,7 +238,7 @@ class PadInfo(commands.Cog):
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if monster is not None:
             await ctx.send(MonsterHeader.short(monster))
             await ctx.send(box(monster.name_ja))
@@ -301,7 +301,7 @@ class PadInfo(commands.Cog):
                 async with self.config.bad_queries() as bad_queries:
                     bad_queries.append((raw_query, ctx.author.id))
 
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -392,7 +392,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -423,7 +423,7 @@ class PadInfo(commands.Cog):
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -456,7 +456,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -487,7 +487,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -513,7 +513,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -535,7 +535,7 @@ class PadInfo(commands.Cog):
     async def links(self, ctx, *, query: str):
         """Monster links"""
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -548,7 +548,7 @@ class PadInfo(commands.Cog):
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -561,7 +561,7 @@ class PadInfo(commands.Cog):
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -575,7 +575,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -627,7 +627,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def collabscroll(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        monster: "MonsterModel" = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -690,7 +690,7 @@ class PadInfo(commands.Cog):
         [p]ls sonia lubu
         """
         dgcog = await self.get_dgcog()
-        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query)
+        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, ctx.author.id)
 
         err_msg = ('{} query failed to match a monster: [ {} ]. If your query is multiple words,'
                    ' try separating the queries with / or wrap with quotes.')
@@ -730,7 +730,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
@@ -746,7 +746,7 @@ class PadInfo(commands.Cog):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dgcog = await self.get_dgcog()
-        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dgcog, query)
+        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dgcog, query, ctx.author.id)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
@@ -773,7 +773,7 @@ class PadInfo(commands.Cog):
     async def awakeninghelp(self, ctx, *, query):
         """Describe a monster's regular and super awakenings in detail."""
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -807,7 +807,7 @@ class PadInfo(commands.Cog):
         query = query.strip().lower()
 
         dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query)
+        monster = await dgcog.find_monster(query, ctx.author.id)
         if monster is not None:
             voice_id = monster.voice_id_jp if server == 'jp' else monster.voice_id_na
             if voice_id is None:
@@ -883,10 +883,11 @@ class PadInfo(commands.Cog):
         await ctx.tick()
 
     @idset.command()
-    async def beta(self, ctx):
-        """Discontinued"""
-        await ctx.send(f"`id3 `is now enabled globally, see"
-                       f" <{IDGUIDE}> for more information.")
+    async def naprio(self, ctx, value: bool):
+        """Change whether [p]id will default away from new evos of monsters that aren't in NA yet"""
+        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+            fm_flags['na_prio'] = value
+        await ctx.tick()
 
     @commands.group()
     @checks.is_owner()
@@ -949,7 +950,7 @@ class PadInfo(commands.Cog):
     async def debugid(self, ctx, *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
-        mon = await dgcog.find_monster(query)
+        mon = await dgcog.find_monster(query, ctx.author.id)
         if mon is None:
             await ctx.send(box("Your query didn't match any monsters."))
             return
@@ -1193,7 +1194,7 @@ class PadInfo(commands.Cog):
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
 
-        matched_monsters = await dgcog.find_monsters(query)
+        matched_monsters = await dgcog.find_monsters(query, ctx.author.id)
 
         if not matched_monsters:
             await ctx.send("No monster matched.")

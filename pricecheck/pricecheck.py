@@ -52,7 +52,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -93,7 +93,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -114,7 +114,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -135,7 +135,7 @@ class PriceCheck(commands.Cog):
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
