@@ -551,6 +551,7 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
+        settings.log_id_result(monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         embed = LinksView.embed(monster, color).to_embed()
         await ctx.send(embed=embed)
@@ -564,6 +565,7 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
+        settings.log_id_result(monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         embed = LookupView.embed(monster, color).to_embed()
         await ctx.send(embed=embed)
