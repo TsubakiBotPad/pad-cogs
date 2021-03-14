@@ -67,6 +67,8 @@ EMBED_NOT_GENERATED = -1
 
 IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/id-user-guide"
 
+HISTORY_DURATION = 11
+
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padinfo')), file_name)
@@ -99,7 +101,7 @@ class PadInfo(commands.Cog):
         self.remove_emoji = '\N{CROSS MARK}'
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0, color=None, beta_id3=False)
+        self.config.register_user(survey_mode=0, color=None, beta_id3=False, id_history=[])
         self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[], do_survey=False)
 
         self.historic_lookups = safe_read_json(_data_file('historic_lookups_id3.json'))
@@ -307,7 +309,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         # id3 messaging stuff
         if monster and monster.monster_no_na != monster.monster_no_jp:
@@ -400,7 +402,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
@@ -433,7 +435,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.query(dgcog, monster)
@@ -468,7 +470,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
@@ -501,7 +503,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -529,7 +531,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -551,7 +553,7 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         embed = LinksView.embed(monster, color).to_embed()
         await ctx.send(embed=embed)
@@ -565,10 +567,19 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
-        settings.log_id_result(monster.monster_id)
+        await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         embed = LookupView.embed(monster, color).to_embed()
         await ctx.send(embed=embed)
+
+    async def log_id_result(self, ctx, monster_id: int):
+        history = await self.config.user(ctx.author).id_history()
+        if monster_id in history:
+            history.remove(monster_id)
+        history.insert(0, monster_id)
+        if len(history) > HISTORY_DURATION:
+            history.pop()
+        await self.config.user(ctx.author).id_history.set(history)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -807,7 +818,7 @@ class PadInfo(commands.Cog):
     async def idhistory(self, ctx):
         """Show a list of the most recent monsters that the user looked up."""
         dgcog = await self.get_dgcog()
-        history = settings.get_id_history()
+        history = await self.config.user(ctx.author).id_history()
 
         monsters = [dgcog.database.graph.get_monster(m) for m in history]
 
