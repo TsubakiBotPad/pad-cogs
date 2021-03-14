@@ -782,6 +782,7 @@ class PadInfo(commands.Cog):
         await menu.create(ctx, state)
 
     @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp'])
+    @checks.bot_has_permissions(embed_links=True)
     async def awakeninghelp(self, ctx, *, query):
         """Describe a monster's regular and super awakenings in detail."""
         dgcog = await self.get_dgcog()
