@@ -808,6 +808,10 @@ class PadInfo(commands.Cog):
 
         monsters = [dgcog.database.graph.get_monster(m) for m in history]
 
+        if not monsters:
+            await ctx.send('Did not find any recent queries in history.')
+            return
+
         await self._do_monster_list(ctx, dgcog, '', monsters, 'Recent Queries')
 
     @commands.command()
