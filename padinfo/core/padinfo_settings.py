@@ -1,5 +1,7 @@
 from tsutils import CogSettings
 
+HISTORY_DURATION = 11
+
 
 class PadInfoSettings(CogSettings):
     def make_default_settings(self):
@@ -8,6 +10,7 @@ class PadInfoSettings(CogSettings):
             'alt_id_optout': [],
             'voice_dir_path': '',
             'emoji_use': {},
+            'id_history': [],
         }
         return config
 
@@ -50,5 +53,17 @@ class PadInfoSettings(CogSettings):
     def log_emoji(self, emote):
         self.bot_settings['emoji_use'][emote] = self.bot_settings['emoji_use'].get(emote, 0) + 1
         self.save_settings()
+
+    def log_id_result(self, monster_id: int):
+        history = self.bot_settings['id_history']
+        if monster_id in history:
+            history.remove(monster_id)
+        history.insert(0, monster_id)
+        if len(history) > HISTORY_DURATION:
+            history.pop()
+        self.save_settings()
+
+    def get_id_history(self):
+        return self.bot_settings['id_history']
 
 settings = PadInfoSettings("padinfo")

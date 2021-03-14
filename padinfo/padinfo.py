@@ -307,6 +307,8 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
+        settings.log_id_result(monster.monster_id)
+
         # id3 messaging stuff
         if monster and monster.monster_no_na != monster.monster_no_jp:
             await ctx.send("The NA ID and JP ID of this card differ! "
@@ -398,6 +400,8 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
+        settings.log_id_result(monster.monster_id)
+
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
         if alt_versions is None:
@@ -428,6 +432,8 @@ class PadInfo(commands.Cog):
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
+
+        settings.log_id_result(monster.monster_id)
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.query(dgcog, monster)
@@ -462,6 +468,8 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
+        settings.log_id_result(monster.monster_id)
+
         pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
         if pantheon_list is None:
             await ctx.send('Unable to find a pantheon for the result of your query,'
@@ -493,6 +501,8 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
+        settings.log_id_result(monster.monster_id)
+
         alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
@@ -518,6 +528,8 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
+
+        settings.log_id_result(monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -786,6 +798,17 @@ class PadInfo(commands.Cog):
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        color, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
+
+    @commands.command(aliases=['idhist'])
+    @checks.bot_has_permissions(embed_links=True)
+    async def idhistory(self, ctx):
+        """Show a list of the last 11 monsters the user looked up."""
+        dgcog = await self.get_dgcog()
+        history = settings.get_id_history()
+
+        monsters = [dgcog.database.graph.get_monster(m) for m in history]
+
+        await self._do_monster_list(ctx, dgcog, '', monsters, 'Recent Queries')
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
