@@ -5,7 +5,8 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.config import UserConfig
-from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum
+from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
+    get_rarity_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
@@ -106,7 +107,7 @@ class PantheonViewState(ViewStateBaseId):
         filters = []
 
         rarity_list = [m for m in type_list if m.rarity == base_mon.rarity]
-        filters.append('{}*'.format(base_mon.rarity))
+        filters.append(get_rarity_emoji(base_mon.rarity))
         if 0 < len(rarity_list) <= MAX_MONS_TO_SHOW:
             return rarity_list, cls.make_series_name(series_name, filters), base_mon
 

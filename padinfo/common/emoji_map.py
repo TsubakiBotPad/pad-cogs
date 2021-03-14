@@ -112,6 +112,11 @@ def get_attribute_emoji_by_enum(type1: Union[Enum, Literal[False]], type2: Optio
     return get_emoji(emoji)
 
 
+def get_rarity_emoji(rarity: int):
+    emoji = 'star_0{}'.format(rarity) if rarity < 10 else 'star_{}'.format(rarity)
+    return get_emoji(emoji)
+
+
 def get_awakening_emoji(awid: Union[Enum, int], default: str = None):
     return get_emoji(AWAKENING_ID_TO_EMOJI_NAME_MAP.get(awid if isinstance(awid, int) else awid.value, default))
 
