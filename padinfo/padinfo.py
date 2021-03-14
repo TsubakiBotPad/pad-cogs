@@ -805,7 +805,7 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['idhist'])
     @checks.bot_has_permissions(embed_links=True)
     async def idhistory(self, ctx):
-        """Show a list of the last 11 monsters the user looked up."""
+        """Show a list of the most recent monsters that the user looked up."""
         dgcog = await self.get_dgcog()
         history = settings.get_id_history()
 
