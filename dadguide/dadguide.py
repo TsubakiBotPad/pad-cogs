@@ -7,22 +7,23 @@ Don't hold on to any of the dastructures exported from here, or the
 entire database could be leaked when the module is reloaded.
 """
 import asyncio
+import logging
 import os
 import shutil
+from io import BytesIO
+from typing import Optional, List
 
 import discord
 import time
-from io import BytesIO
-from typing import Optional
-
 import tsutils
 from redbot.core import checks, data_manager, commands, Config
 from redbot.core.utils.chat_formatting import pagify, box
-from tsutils import auth_check
+from tsutils import auth_check, safe_read_json
 
 from . import token_mappings
+from .find_monster import FindMonster
 from .database_loader import load_database
-from .database_manager import *
+from .idtest_mixin import IdTest
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .monster_index import MonsterIndex
@@ -57,7 +58,7 @@ except RuntimeError:
     pass
 
 
-class Dadguide(commands.Cog):
+class Dadguide(commands.Cog, IdTest):
     """Dadguide database manager"""
 
     def __init__(self, bot, *args, **kwargs):
@@ -71,13 +72,18 @@ class Dadguide(commands.Cog):
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
 
+        self.fm_flags_default = {'na_prio': True}
         self.config = Config.get_conf(self, identifier=64667103)
-        self.config.register_global(datafile='', indexlog=0)
+        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
+        self.config.register_user(lastaction=None, fm_flags={})
 
+        self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
+        self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
+        self.mon_finder = FindMonster(self, self.fm_flags_default)
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -132,14 +138,14 @@ class Dadguide(commands.Cog):
 
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database) # noqa
+        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database)  # noqa
         asyncio.create_task(self.check_index())
 
     async def check_index(self):
         if not await self.config.indexlog():
             return
 
-        if self.bot.get_cog("PadInfo") and not await self.bot.get_cog("PadInfo").run_tests():
+        if not await self.run_tests():
             self.index.issues.insert(0, "Test cases failed.")
 
         channel = self.bot.get_channel(await self.config.indexlog())
@@ -220,3 +226,13 @@ class Dadguide(commands.Cog):
     async def setindexlog(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
+
+    async def get_fm_flags(self, author_id):
+        # noinspection PyTypeChecker
+        return {**self.fm_flags_default, **(await self.config.user(discord.Object(author_id)).fm_flags())}
+
+    async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
+        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
+
+    async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
+        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)

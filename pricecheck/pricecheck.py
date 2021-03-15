@@ -46,14 +46,13 @@ class PriceCheck(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def pricecheck(self, ctx, *, query):
         """Displays pricing data for a tradable non-collab gem."""
-        padinfo_cog = self.bot.get_cog('PadInfo')
         dgcog = self.bot.get_cog("Dadguide")
-        if padinfo_cog is None or dgcog is None:
+        if dgcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await padinfo_cog.fm3(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -88,14 +87,13 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['add'])
     async def set(self, ctx, stam_cost: float, *, query):
         """Adds stamina cost data to a card."""
-        padinfo_cog = self.bot.get_cog('PadInfo')
         dgcog = self.bot.get_cog("Dadguide")
-        if padinfo_cog is None:
+        if dgcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await padinfo_cog.fm3(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -110,14 +108,13 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['addfooter', 'addfoot', 'setfoot'])
     async def setfooter(self, ctx, query, *, footer=""):
         """Adds notes regarding the stamina cost of a card."""
-        padinfo_cog = self.bot.get_cog('PadInfo')
         dgcog = self.bot.get_cog('Dadguide')
-        if padinfo_cog is None or dgcog is None:
+        if dgcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await padinfo_cog.fm3(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
@@ -132,14 +129,13 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['delete', 'del', 'rm'])
     async def remove(self, ctx, *, query):
         """Removes stamina cost data from a card."""
-        padinfo_cog = self.bot.get_cog('PadInfo')
         dgcog = self.bot.get_cog('Dadguide')
-        if padinfo_cog is None or dgcog is None:
+        if dgcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await padinfo_cog.fm3(query)
+        m = await dgcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return

@@ -5,12 +5,11 @@ import tsutils
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
-from padinfo.core.find_monster import find_monster
-
 
 class IdTest:
     bot = None
-    get_dgcog = None
+    index = None
+    find_monster = None
 
     def __init__(self):
         self.config = Config.get_conf(self, identifier=-1)
@@ -50,7 +49,8 @@ class IdTest:
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.send(f"Successfully added test case `{mid} - {query}` with ref `{sorted(suite).index(query)}`")
+                await ctx.send(
+                    f"Successfully added test case `{mid} - {query}` with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -130,7 +130,7 @@ class IdTest:
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
-        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+) *(.*)', queries)
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (-?\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
                 suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
@@ -154,7 +154,7 @@ class IdTest:
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
-        cases = re.findall(r'\s*(?:\d+. )?(.+?) + - (\d+)\s+(\w*) *(.*)', queries)
+        cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
                 # print(query, result, fluff, reason)
@@ -178,13 +178,16 @@ class IdTest:
 
         async with self.config.test_suite() as suite:
             if item in suite:
-                del suite[item]
+                case = item
             elif item.isdigit() and int(item) < len(suite):
-                del suite[sorted(suite)[int(item)]]
+                case = sorted(suite)[int(item)]
             else:
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
-        await ctx.tick()
+            res = suite[case]['result']
+            del suite[case]
+        await ctx.send(
+            f"Removed test case `{case} - {res}` with ref")
 
     @idt_name.command(name="remove")
     @checks.is_owner()
@@ -208,8 +211,11 @@ class IdTest:
             if item >= len(suite):
                 await ctx.send("There are not that many items.")
                 return
-            suite.remove(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item])
-        await ctx.tick()
+            case = sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))[item]
+            suite.remove(case)
+        # noinspection PyTypeChecker
+        await ctx.send(f"Successfully removed {'fluff' if case['fluff'] else 'name'} case"
+                       f" `{case['id']} - {case['token']}`")
 
     @idtest.command(name="setreason", aliases=["addreason"])
     @checks.is_owner()
@@ -356,7 +362,9 @@ class IdTest:
     async def idt_run(self, ctx):
         """Run all id3 tests"""
         suite = await self.config.test_suite()
-        dgcog = await self.get_dgcog()
+        if not suite:
+            await ctx.send("No tests found.")
+            return
         await self.config.user(ctx.author).lastaction.set('id3')
         c = 0
         o = ""
@@ -366,7 +374,7 @@ class IdTest:
             for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
                 try:
-                    m = await find_monster(dgcog, q) or -1
+                    m = await self.find_monster(q) or -1
                 except Exception:
                     m = -2
                 mid = getattr(m, "monster_id", m)
@@ -397,14 +405,19 @@ class IdTest:
     async def norf_run(self, ctx):
         """Run all name/fluff tests"""
         suite = await self.config.fluff_suite()
+        if not suite:
+            await ctx.send("No tests found.")
+            return
         await self.config.user(ctx.author).lastaction.set('name')
         c = 0
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
             for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
-                fluff = case['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.fluff_tokens[case['token']]]
-                name = case['id'] in [m.monster_id for m in self.bot.get_cog("Dadguide").index.name_tokens[case['token']]]
+                fluff = case['id'] in [m.monster_id for m in
+                                       self.bot.get_cog("Dadguide").index.fluff_tokens[case['token']]]
+                name = case['id'] in [m.monster_id for m in
+                                      self.bot.get_cog("Dadguide").index.name_tokens[case['token']]]
 
                 if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
                     q = '"{}"'.format(case['token'])
@@ -424,15 +437,14 @@ class IdTest:
     async def idt_runall(self, ctx):
         """Run all tests"""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
-        dgcog = await self.get_dgcog()
         qsuite = await self.config.test_suite()
         qo = ""
         qc = 0
-        ml = len(max(qsuite, key=len)) + 2
+        ml = len(max(qsuite or [''], key=len)) + 2
         async with ctx.typing():
             for c, q in enumerate(sorted(qsuite)):
                 try:
-                    m = await find_monster(dgcog, q) or -1
+                    m = await self.find_monster(q) or -1
                 except Exception:
                     m = -2
                 mid = getattr(m, "monster_id", m)
@@ -450,8 +462,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in dgcog.index.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in dgcog.index.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -475,12 +487,10 @@ class IdTest:
             await ctx.send(box(page))
 
     async def run_tests(self):
-        dgcog = await self.get_dgcog()
-
         qsuite = await self.config.test_suite()
         for q in qsuite:
             try:
-                m = await find_monster(dgcog, q) or -1
+                m = await self.find_monster(q) or -1
             except Exception:
                 m = -2
             mid = getattr(m, "monster_id", m)
@@ -490,8 +500,8 @@ class IdTest:
 
         fsuite = await self.config.fluff_suite()
         for v in fsuite:
-            fluff = v['id'] in [m.monster_id for m in dgcog.index.fluff_tokens[v['token']]]
-            name = v['id'] in [m.monster_id for m in dgcog.index.name_tokens[v['token']]]
+            fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
+            name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                 return False
