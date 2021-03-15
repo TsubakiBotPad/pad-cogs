@@ -339,7 +339,11 @@ class PadInfo(commands.Cog):
             id1res = "Not Historic" if mid1 is None else f"{m1.name_en} ({m1.monster_id})" if mid1 > 0 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
             params = urllib.parse.urlencode(
-                {'usp': 'pp_url', 'entry.154088017': query, 'entry.173096863': id3res, 'entry.1016180044': id1res})
+                {'usp': 'pp_url',
+                 'entry.154088017': query,
+                 'entry.173096863': id3res,
+                 'entry.1016180044': id1res,
+                 'entry.1787446565': str(ctx.author)})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
