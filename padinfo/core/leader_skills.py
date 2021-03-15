@@ -65,7 +65,7 @@ def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     return f"[{format_number(hp)}/{format_number(atk)}/{format_number(rcv)}{resist}] {extras}"
 
 
-async def perform_leaderskill_query(dgcog, raw_query):
+async def perform_leaderskill_query(dgcog, raw_query, author_id):
     # Remove unicode quotation marks
     query = re.sub("[\u201c\u201d]", '"', raw_query)
 
@@ -80,7 +80,7 @@ async def perform_leaderskill_query(dgcog, raw_query):
             right_query = ' '.join(q for q in right_query)
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
-                m = await dgcog.find_monster(query)
+                m = await dgcog.find_monster(query, author_id)
                 if m and left_query in dgcog.index.modifiers[m]:
                     left_query = query
                     right_query = None
@@ -89,9 +89,9 @@ async def perform_leaderskill_query(dgcog, raw_query):
 
     else:  # no separators
         left_query, right_query = query, None
-    left_m = await dgcog.find_monster(left_query)
+    left_m = await dgcog.find_monster(left_query, author_id)
     if right_query:
-        right_m = await dgcog.find_monster(right_query)
+        right_m = await dgcog.find_monster(right_query, author_id)
     else:
         right_m = left_m
     return left_m, left_query, right_m, right_query
