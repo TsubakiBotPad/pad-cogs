@@ -1,3 +1,5 @@
+import logging
+
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
 import discord
@@ -7,6 +9,17 @@ def indent(level):
         ret += "\u200b \u200b \u200b \u200b \u200b "
     return ret
 
+def embed_helper(level, names, values, line):
+    current_index = len(names) - 1
+    indents = indent(level)
+    if len(names[current_index]) + len(line) + len(indents) <= 255 and len(names[current_index]) == 0:
+        names[current_index] += "\n{}{}".format(indents, line)
+    elif len(values[current_index]) + len(line) + len(indents) <= 1023:
+        values[current_index] += "\n{}{}".format(indents, line)
+    else:
+        names.append("")
+        values.append("")
+        embed_helper(level, names, values, line)
 # Called to check if a field/value/description hits character limit
 def field_value_split(data: str, limit):
     names = []
@@ -69,21 +82,6 @@ class DungeonMonster(object):
         # field_value_dict = OrderedDict()
 
         desc = ""
-        '''for g in self.groups:
-            await g.give_string(top_level, field_value_dict, verbose=verbose)
-        for s in top_level:
-            desc += s
-        names, values = field_value_split(desc, 2048)
-        index = 0
-        fields = []
-        for val in values:
-            if index == 0:
-                desc = val
-            else:
-                fields.append({names[index - 1], val})
-            index += 1
-        if technical == 0:
-            desc = ""'''
         if spawn is not None:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
@@ -98,14 +96,31 @@ class DungeonMonster(object):
         lines = []
         for group in self.groups:
             await group.give_string2(lines, 0, verbose)
+        names = [""]
+        values = [""]
         first = None
         for l in lines:
+            for comp in l[1]:
+                embed_helper(l[0], names, values, comp)
+        if len(values[len(values) - 1]) == 0:
+            values[len(values) - 1] = '\u200b'
+        for index in range(len(names)):
+            name = names[index]
+            value = values[index]
+            if len(name) > 0:
+                embed.add_field(name=name, value=value, inline=False)
+            """level = l[0]
+            skills = l[1][0]
+            condition = l[1][2]
+            skill_line = "".join(skills)"""
+            """if len(l[1]) > 256:
+                logging.warning('above 256: {}'.format(l[1]))
             actual = "{}{}".format(indent(l[0]), l[1])
             if first is None:
                 first = actual
             else:
                 embed.add_field(name=first, value=actual, inline=False)
-                first = None
+                first = None"""
         """if technical == 0:
             return embed
         for n, v in fields:

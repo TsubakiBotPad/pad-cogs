@@ -22,7 +22,7 @@ from dadguide.models.dungeon_model import DungeonModel
 from dadguide.models.encounter_model import EncounterModel
 from dadguide.models.enemy_skill_model import EnemySkillModel
 from dungeon.encounter import Encounter
-from dungeon.enemy_skill import process_enemy_skill, ProcessedSkill
+from dungeon.enemy_skill import ProcessedSkill
 # from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
@@ -185,28 +185,11 @@ def _data_file(file_name: str) -> str:
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
+
 class SafeDict(dict):
     def __missing__(self, key):
         return '{' + key + '}'
 
-emoji_map = SafeDict(resolve_status=emoji_cache.get_by_name('resolve'),
-                     fire_orb=emoji_cache.get_by_name('orb_fire'),
-                     roulette=emoji_cache.get_by_name('spinner'),
-                     unknown_type='Unknown',
-                     defense_status=emoji_cache.get_by_name('defense'),
-                     combo_absorb_status=emoji_cache.get_by_name('combo'),
-                     absorb_status=emoji_cache.get_by_name('attribute_absorb'),
-                     damage_absorb_status=emoji_cache.get_by_name('damage_absorb'),
-                     damage_void_status=emoji_cache.get_by_name('vdp'),
-                     status_shield_status=emoji_cache.get_by_name('status'),
-                     movetime_buff_status=emoji_cache.get_by_name('time_buff'),
-                     movetime_debuff_status=emoji_cache.get_by_name('time_buff'),
-                     dispel_status='Dispel',
-                     leader_swap_status=emoji_cache.get_by_name('swap'),
-                     skill_delay=emoji_cache.get_by_name('misc_sb'),
-                     lock_orbs=emoji_cache.get_by_name('lock'),
-
-                     )
 
 class DungeonEmojiUpdater(EmojiUpdater):
     # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
@@ -340,70 +323,6 @@ def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
         text = '{} while HP > {}'.format(turn_text, always_trigger_above)
     return text
 
-
-def format_behavior_embed(behavior: Behavior, database, embed, group_type: str, q: dict, indent=""):
-    skill = database.database.query_one(skill_query.format(behavior.enemy_skill_id), ())
-    if skill is None:
-        return "Unknown"
-    skill_name = skill["name_en"]
-    skill_effect = skill["desc_en"]
-    condition = format_condition(behavior.condition)
-    if condition is not None:
-        condition = "**Condition: {}**".format(condition)
-    else:
-        condition = ""
-    # output += indent + 'Skill Name: ' + skill_name
-    embed.add_field(
-        name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)),
-        value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
-    # embed.add_field(name="{}Skill{}".format(group_type, skill_name, process_enemy_skill(skill_effect)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
-
-    # output += '\n{}Effect: '.format(indent) + skill_effect
-
-
-def format_behavior_group_embed(group: BehaviorGroup, database: DadguideDatabase, embed, q: dict, indent="",
-                                preempt_only: bool = False):
-    condition = format_condition(group.condition)
-    if condition is not None:
-        # output += "\n{}Condition: {}".format(indent, condition)
-        embed.add_field(name="{}Condition: {}".format(indent, condition), value="Following skills are part of a group",
-                        inline=False)
-        # indent += "\u200b \u200b \u200b \u200b \u200b "
-        indent += ">>> "
-    for child in group.children:
-        group_type = indent
-        if child.HasField('group'):
-            format_behavior_group_embed(child.group, database, embed, q, indent)
-        elif child.HasField('behavior'):
-            if group.group_type == 1 or group.group_type == 2 or group.group_type == 9:
-                # output += indent + "({})\t".format(GroupType[group.group_type])
-                group_type = indent + "({})\t".format(GroupType[group.group_type])
-            format_behavior_embed(child.behavior, database, embed, group_type, q, indent)
-
-
-# return output
-
-# Format:
-# Skill Name    Type:Preemptive/Passive/Etc
-# Skill Effect
-# Condition
-def format_monster_embed(mb: MonsterBehavior, q: dict, database: DadguideDatabase, preempt_only: bool = False):
-    # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
-    embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
-                          description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))
-    if mb is None:
-        embed.add_field(name="There is no behavior", value="\u200b")
-        return embed
-    levelBehavior = behaviorForLevel(mb, q["level"])
-    if levelBehavior is None:
-        embed.add_field(name="There is no behavior", value="\u200b")
-        return embed
-    for group in levelBehavior.groups:
-        format_behavior_group_embed(group, database, embed, q, "", preempt_only)
-
-    return embed
-
-
 def formatOverview(query):
     output = "Dungeon Name: {}".format(query[0]["dungeon_name_en"])
     for q in query:
@@ -440,6 +359,145 @@ class DungeonCog(commands.Cog):
         self.current_monster = '👹'
         self.verbose_monster = '📜'
         self.preempt_monster = '⚡'
+        self.emoji_map = SafeDict(resolve_status=emoji_cache.get_by_name('resolve'),
+                                  fire_orb=emoji_cache.get_by_name('orb_fire'),
+                                  recover_health=emoji_cache.get_by_name('misc_autoheal'),
+                                  roulette=emoji_cache.get_by_name('spinner'),
+                                  unknown_type='Unknown',
+                                  defense_status=emoji_cache.get_by_name('defense'),
+                                  combo_absorb_status=emoji_cache.get_by_name('combo'),
+                                  absorb_status=emoji_cache.get_by_name('attribute_absorb'),
+                                  damage_absorb_status=emoji_cache.get_by_name('damage_absorb'),
+                                  damage_void_status=emoji_cache.get_by_name('vdp'),
+                                  status_shield_status=emoji_cache.get_by_name('status'),
+                                  movetime_buff_status=emoji_cache.get_by_name('time_buff'),
+                                  movetime_debuff_status=emoji_cache.get_by_name('time_debuff'),
+                                  dispel_status='Dispel',
+                                  leader_swap_status=emoji_cache.get_by_name('swap'),
+                                  skill_delay=emoji_cache.get_by_name('misc_sb'),
+                                  lock_orbs=emoji_cache.get_by_name('lock'),
+                                  tape_status=emoji_cache.get_by_name('res_seal'),
+                                  fixed_start=emoji_cache.get_by_name('orb_start'),
+                                  cloud_status=emoji_cache.get_by_name('res_cloud'),
+                                  gravity=emoji_cache.get_by_name('gravity'),
+                                  invincible_status=emoji_cache.get_by_name('invincible'),
+                                  invincible_off_status=emoji_cache.get_by_name('invincible'),  # TODO
+                                  force_target_status=emoji_cache.get_by_name('force_target'),
+                                  leader_alter_status=emoji_cache.get_by_name('transform'),
+                                  board_size_status=emoji_cache.get_by_name('board_size'),
+                                  super_resolve_status=emoji_cache.get_by_name('super_resolve'),
+                                  turn_change=emoji_cache.get_by_name('turn_change'),
+                                  enrage_status=emoji_cache.get_by_name('enrage'),
+                                  active_skill_bind=emoji_cache.get_by_name('skill_bound'),
+                                  do_nothing="💤",
+                                  awoken_bind=emoji_cache.get_by_name('awoken_bound'),
+                                  no_skyfall_status=emoji_cache.get_by_name('no_skyfall'),
+                                  bind=emoji_cache.get_by_name('res_bind'),
+                                  skyfall_status='🌧',
+                                  blind='⚫',
+                                  super_blind=emoji_cache.get_by_name('blind_orb'),
+                                  to='➡️',
+                                  attack=emoji_cache.get_by_name('single_hit'),
+                                  multi_attack=emoji_cache.get_by_name('multi_hit'),
+                                  target_self='Self',
+                                  health=emoji_cache.get_by_name('health'),
+                                  combo_orb=emoji_cache.get_by_name('orb_combo'),
+                                  locked_bomb_orb=emoji_cache.get_by_name('locked_bomb_orb'),
+                                  random_attribute='Random Att',
+                                  water_orb=emoji_cache.get_by_name('orb_water'),
+                                  wood_orb=emoji_cache.get_by_name('orb_wood'),
+                                  light_orb=emoji_cache.get_by_name('orb_light'),
+                                  dark_orb=emoji_cache.get_by_name('orb_dark'),
+                                  healer_orb=emoji_cache.get_by_name('heal_orb'),
+                                  jammer_orb=emoji_cache.get_by_name('jammer_orb'),
+                                  poison_orb=emoji_cache.get_by_name('poison_orb'),
+                                  bomb_orb=emoji_cache.get_by_name('bomb_orb'),
+                                  mortal_poison_orb=emoji_cache.get_by_name('mortal_poison_orb'),
+                                  evo_material_type=emoji_cache.get_by_name('killer_evomat'),
+                                  balanced_type=emoji_cache.get_by_name('killer_balance'),
+                                  physical_type=emoji_cache.get_by_name('killer_physical'),
+                                  healer_type=emoji_cache.get_by_name('killer_healer'),
+                                  dragon_type=emoji_cache.get_by_name('killer_dragon'),
+                                  god_type=emoji_cache.get_by_name('killer_god'),
+                                  attacker_type=emoji_cache.get_by_name('killer_attacker'),
+                                  devil_type=emoji_cache.get_by_name('killer_devil'),
+                                  machine_type=emoji_cache.get_by_name('killer_machine'),
+                                  awakening_material_type=emoji_cache.get_by_name('killer_awoken'),
+                                  enhance_material_type=emoji_cache.get_by_name('killer_enhancemat'),
+                                  redeemable_material_type='🪙'
+                                  )
+
+    async def load_emojis(self):
+        await self.bot.wait_until_ready()
+        logging.debug('load_emojis, dungeon')
+        emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
+        emoji_cache.refresh_from_discord_bot(self.bot)
+        self.emoji_map = SafeDict(resolve_status=emoji_cache.get_by_name('resolve'),
+                                  fire_orb=emoji_cache.get_by_name('orb_fire'),
+                                  recover_health=emoji_cache.get_by_name('misc_autoheal'),
+                                  roulette=emoji_cache.get_by_name('spinner'),
+                                  unknown_type='Unknown',
+                                  defense_status=emoji_cache.get_by_name('defense'),
+                                  combo_absorb_status=emoji_cache.get_by_name('combo'),
+                                  absorb_status=emoji_cache.get_by_name('attribute_absorb'),
+                                  damage_absorb_status=emoji_cache.get_by_name('damage_absorb'),
+                                  damage_void_status=emoji_cache.get_by_name('vdp'),
+                                  status_shield_status=emoji_cache.get_by_name('status'),
+                                  movetime_buff_status=emoji_cache.get_by_name('time_buff'),
+                                  movetime_debuff_status=emoji_cache.get_by_name('time_debuff'),
+                                  dispel_status='Dispel',
+                                  leader_swap_status=emoji_cache.get_by_name('swap'),
+                                  skill_delay=emoji_cache.get_by_name('misc_sb'),
+                                  lock_orbs=emoji_cache.get_by_name('lock'),
+                                  tape_status=emoji_cache.get_by_name('res_seal'),
+                                  fixed_start=emoji_cache.get_by_name('orb_start'),
+                                  cloud_status=emoji_cache.get_by_name('res_cloud'),
+                                  gravity=emoji_cache.get_by_name('gravity'),
+                                  invincible_status=emoji_cache.get_by_name('invincible'),
+                                  invincible_off_status=emoji_cache.get_by_name('invincible'),  # TODO
+                                  force_target_status=emoji_cache.get_by_name('force_target'),
+                                  leader_alter_status=emoji_cache.get_by_name('transform'),
+                                  board_size_status=emoji_cache.get_by_name('board_size'),
+                                  super_resolve_status=emoji_cache.get_by_name('super_resolve'),
+                                  turn_change=emoji_cache.get_by_name('turn_change'),
+                                  enrage_status=emoji_cache.get_by_name('enrage'),
+                                  active_skill_bind=emoji_cache.get_by_name('skill_bound'),
+                                  do_nothing="💤",
+                                  awoken_bind=emoji_cache.get_by_name('awoken_bound'),
+                                  no_skyfall_status=emoji_cache.get_by_name('no_skyfall'),
+                                  bind=emoji_cache.get_by_name('res_bind'),
+                                  skyfall_status='🌧',
+                                  blind='⚫',
+                                  super_blind=emoji_cache.get_by_name('blind_orb'),
+                                  to='➡️',
+                                  attack=emoji_cache.get_by_name('single_hit'),
+                                  multi_attack=emoji_cache.get_by_name('multi_hit'),
+                                  target_self='Self',
+                                  health=emoji_cache.get_by_name('health'),
+                                  combo_orb=emoji_cache.get_by_name('orb_combo'),                                  locked_bomb_orb=emoji_cache.get_by_name('locked_bomb_orb'),
+                                  random_attribute='Random Att',
+                                  water_orb=emoji_cache.get_by_name('orb_water'),
+                                  wood_orb=emoji_cache.get_by_name('orb_wood'),
+                                  light_orb=emoji_cache.get_by_name('orb_light'),
+                                  dark_orb=emoji_cache.get_by_name('orb_dark'),
+                                  healer_orb=emoji_cache.get_by_name('orb_heal'),
+                                  jammer_orb=emoji_cache.get_by_name('jammer_orb'),
+                                  poison_orb=emoji_cache.get_by_name('poison_orb'),
+                                  bomb_orb=emoji_cache.get_by_name('bomb_orb'),
+                                  mortal_poison_orb=emoji_cache.get_by_name('mortal_poison_orb'),
+                                  evo_material_type=emoji_cache.get_by_name('killer_evomat'),
+                                  balanced_type=emoji_cache.get_by_name('killer_balance'),
+                                  physical_type=emoji_cache.get_by_name('killer_physical'),
+                                  healer_type=emoji_cache.get_by_name('killer_healer'),
+                                  dragon_type=emoji_cache.get_by_name('killer_dragon'),
+                                  god_type=emoji_cache.get_by_name('killer_god'),
+                                  attacker_type=emoji_cache.get_by_name('killer_attacker'),
+                                  devil_type=emoji_cache.get_by_name('killer_devil'),
+                                  machine_type=emoji_cache.get_by_name('killer_machine'),
+                                  awakening_material_type=emoji_cache.get_by_name('killer_awoken'),
+                                  enhance_material_type=emoji_cache.get_by_name('killer_enhancemat'),
+                                  redeemable_material_type='🪙'
+                                  )
 
     def process_enemy_skill2(self, encounter: EncounterModel, skill: EnemySkillModel):
         effect = skill.desc_en_emoji
@@ -448,14 +506,14 @@ class DungeonCog(commands.Cog):
         for e in split_effects:
             e += ")"
             if "Attack:" not in e:
-                non_attack_effects.append(e.format_map(emoji_map))
+                non_attack_effects.append(e.format_map(self.emoji_map))
 
         # Damage
         atk = encounter.atk
         if skill.min_hits != 0:
-            emoji = "Attack"
+            emoji = self.emoji_map['attack']
             if skill.min_hits > 1:
-                emoji = "Multi"
+                emoji = self.emoji_map['multi_attack']
             damage_per_hit = (int)(atk * (skill.atk_mult / 100.0))
             min_damage = skill.min_hits * damage_per_hit
             max_damage = skill.max_hits * damage_per_hit
@@ -464,7 +522,7 @@ class DungeonCog(commands.Cog):
             else:
                 non_attack_effects.append("({}:{})".format(emoji, f'{min_damage:,}'))
 
-        return "".join(non_attack_effects)
+        return non_attack_effects
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name)
@@ -518,6 +576,7 @@ class DungeonCog(commands.Cog):
         for sd in dung2.sub_dungeons:
             message += "\n" + sd.name_en
         await ctx.send(message)
+
     """
     Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
     (for me) objects
@@ -530,10 +589,10 @@ class DungeonCog(commands.Cog):
         skill_name = skill.name_en
         skill_effect = skill.desc_en
         # skill_processed_text = process_enemy_skill(skill_effect, q, skill)
-        skill_processed_text = self.process_enemy_skill2(q, skill)
+        skill_processed_texts = self.process_enemy_skill2(q, skill)
 
         condition = format_condition(behavior.condition)
-        processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_text, condition,
+        processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_texts, condition,
                                                          parent)
         # embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
         return processed_skill
@@ -619,28 +678,6 @@ class DungeonCog(commands.Cog):
             logger.error('Menu failure', exc_info=True)
 
     @commands.command()
-    async def encounter_info(self, ctx, query: str, new: bool = False):
-        """Spits out encounter information for a monster"""
-        dg_cog = self.bot.get_cog('Dadguide')
-        # Your code will go here
-        if not dg_cog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
-        # sub_id = 4301003
-        test_result = dg_cog.database.database.query_one(encounter_query.format(query), ())
-        behavior_test = MonsterBehavior()
-        behavior_test.ParseFromString(test_result["behavior"])
-
-        # await ctx.send(formatOverview(test_result))
-        if new:
-            monster = await self.process_monster(behavior_test, test_result, dg_cog.database)
-            await ctx.send(embed=await monster.make_embed(verbose=True))
-        else:
-            await ctx.send(embed=format_monster_embed(behavior_test, test_result, dg_cog.database))
-
-    @commands.command()
     async def dungeon_encounters(self, ctx, name: str, difficulty: str = None):
         """
         List encounters you will find in a dungeon. Mostly for debug.
@@ -682,7 +719,8 @@ class DungeonCog(commands.Cog):
             return
         logger.info('Waiting until DG is ready')
         await dg_cog.wait_until_ready()
-        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.database.dungeon, difficulty=difficulty)
+        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.database.dungeon,
+                                                     difficulty=difficulty)
 
         if dungeon is not None:
             # await ctx.send(formatOverview(test_result))
