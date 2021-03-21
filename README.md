@@ -49,25 +49,25 @@ source name-of-bot/bin/activate
 pip install -r requirements.txt
 deactivate
 ```
-The rest of the guide takes place from inside Discord.
+The rest of the guide takes place from inside Discord.  Replace `^` with your prefix.
 
 ## Configuring development version
 Once the bot is launched, set it to use your repo directory as a cog path. Type this in Discord where the bot is:
 
 ```
-[p]addpath path/to/repo/root
+^addpath path/to/repo/root
 ```
 ## Loading cogs
 
-* Some cogs will have cross dependencies on each other.  Use `[p]traceback 1` if you encounter any errors to see your traceback.
+* Some cogs will have cross dependencies on each other.  Use `^traceback 1` if you encounter any errors to see your traceback.
 * Common dependencies include:
     * dadguide
     * padinfo
 
 ### Emoji
 * You probably don't actually need emoji to be working in order to do development for Tsubaki.
-* There are over seven emoji servers. River has access to these, talk to her if you think you need access to them.  In-depth development of the `[p]id` command may be reason to get access to them.
-* You will use `[p]padinfo emojiserver add` with the IDs she gives you.
+* There are over seven emoji servers. River has access to these, talk to her if you think you need access to them.  In-depth development of the `^id` command may be reason to get access to them.
+* You will use `^padinfo emojiserver add` with the IDs she gives you.
 
 # Puzzle and Dragons
 
