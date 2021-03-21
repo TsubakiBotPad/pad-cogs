@@ -67,7 +67,7 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 ### Emoji
 * You probably don't actually need emoji to be working in order to do development for Tsubaki.
 * There are over seven emoji servers. River has access to these, talk to her if you think you need access to them.  In-depth development of the `[p]id` command may be reason to get access to them.
-* You will use use `[p]padinfo emojiserver add` with the IDs she gives you.
+* You will use `[p]padinfo emojiserver add` with the IDs she gives you.
 
 # Puzzle and Dragons
 
