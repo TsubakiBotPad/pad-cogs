@@ -410,6 +410,12 @@ class MonsterIndex(tsutils.aobject):
         if self.graph.monster_is_rem_evo(m):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
 
+        # Art
+        if monster.orb_skin_id:
+            modifiers.update(MISC_MAP[MiscModifiers.ORBSKIN])
+        if monster.has_animation:
+            modifiers.update(MISC_MAP[MiscModifiers.ANIMATED])
+
         # Server
         if m.on_jp:
             modifiers.update(MISC_MAP[MiscModifiers.INJP])

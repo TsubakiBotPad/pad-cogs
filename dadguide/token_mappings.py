@@ -252,6 +252,8 @@ class MiscModifiers(Enum):
     SEASONAL = 'Metaseries: Seasonal'
     COLLAB = 'Metaseries: Collab'
     NEW = 'Newest monster in series'
+    ORBSKIN = 'Grants an orb skin'
+    ANIMATED = 'Animated monster'
 
 
 MISC_MAP = {
@@ -268,12 +270,15 @@ MISC_MAP = {
     MiscModifiers.EVENT: ('event',),
     MiscModifiers.SEASONAL: ('seasonal',),
     MiscModifiers.COLLAB: ('collab',),
-    MiscModifiers.NEW: ('new',)
+    MiscModifiers.NEW: ('new',),
+    MiscModifiers.ORBSKIN: ('orbskin',),
+    MiscModifiers.ANIMATED: ('animated',)
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
     'super reincarnated',
-    'mega awoken'
+    'mega awoken',
+    'orb skin',
 }}
 
 ALL_TOKEN_DICTS = {
