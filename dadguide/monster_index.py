@@ -440,7 +440,7 @@ class MonsterIndex(tsutils.aobject):
     def add_numbered_modifier(self, monster, curr_mods, added_mods, condition, *, else_mods=None):
         if condition(monster):
             curr_mods.update(added_mods)
-            ms = [m for m in self.graph.get_alt_monsters(monster) if condition(m)]
+            ms = sorted((m for m in self.graph.get_alt_monsters(monster) if condition(m)), key=lambda m: m.monster_id)
             if len(ms) > 1:
                 curr_mods.update(f'{mod}-{ms.index(monster) + 1}' for mod in added_mods)
         elif else_mods:
