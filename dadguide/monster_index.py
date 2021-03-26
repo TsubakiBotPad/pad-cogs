@@ -277,107 +277,112 @@ class MonsterIndex(tsutils.aobject):
         else:
             return cls._name_to_tokens(min(n1, n2, key=token_count))
 
-    async def get_modifiers(self, m):
-        modifiers = self.manual_prefixes[m.monster_id].copy()
+    async def get_modifiers(self, monster):
+        modifiers = self.manual_prefixes[monster.monster_id].copy()
 
-        basemon = self.graph.get_base_monster(m)
+        basemon = self.graph.get_base_monster(monster)
 
         # Main Color
-        modifiers.update(COLOR_MAP[m.attr1])
+        modifiers.update(COLOR_MAP[monster.attr1])
 
         # Sub Color
-        modifiers.update(SUB_COLOR_MAP[m.attr2])
-        if m.attr1.value == 6:
-            modifiers.update(COLOR_MAP[m.attr2])
+        modifiers.update(SUB_COLOR_MAP[monster.attr2])
+        if monster.attr1.value == 6:
+            modifiers.update(COLOR_MAP[monster.attr2])
 
         # Both Colors
-        modifiers.update(DUAL_COLOR_MAP[(m.attr1, m.attr2)])
+        modifiers.update(DUAL_COLOR_MAP[(monster.attr1, monster.attr2)])
 
         # Type
-        for mt in m.types:
+        for mt in monster.types:
             modifiers.update(TYPE_MAP[mt])
 
         # Series
-        if m.series_id in self.series_id_to_pantheon_nickname:
-            modifiers.update(self.series_id_to_pantheon_nickname[m.series_id])
+        if monster.series_id in self.series_id_to_pantheon_nickname:
+            modifiers.update(self.series_id_to_pantheon_nickname[monster.series_id])
 
         # Rarity
-        modifiers.add(str(m.rarity) + "*")
+        modifiers.add(str(monster.rarity) + "*")
         modifiers.add(str(basemon.rarity) + "*b")
 
         # Base
-        if self.graph.monster_is_base(m):
+        if self.graph.monster_is_base(monster):
             modifiers.update(EVO_MAP[EvoTypes.BASE])
 
-        special_evo = ('覚醒' in m.name_ja or 'awoken' in m.name_en or '転生' in m.name_ja or
-                       self.graph.true_evo_type_by_monster(m).value == "Reincarnated" or
-                       'reincarnated' in m.name_en or
-                       self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated" or
-                       m.is_equip or '極醒' in m.name_ja)
+        special_evo = ('覚醒' in monster.name_ja or 'awoken' in monster.name_en or '転生' in monster.name_ja or
+                       self.graph.true_evo_type_by_monster(monster).value == "Reincarnated" or
+                       'reincarnated' in monster.name_en or
+                       self.graph.true_evo_type_by_monster(monster).value == "Super Reincarnated" or
+                       monster.is_equip or '極醒' in monster.name_ja)
 
         # Evo
-        if self.graph.monster_is_normal_evo(m) or self.graph.monster_is_first_evo(m):
-            modifiers.update(EVO_MAP[EvoTypes.EVO])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.EVO],
+                                   lambda m: self.graph.monster_is_normal_evo(m)
+                                             or self.graph.monster_is_first_evo(m))
 
         # Uvo
-        if self.graph.monster_is_reversible_evo(m) and not special_evo:
-            modifiers.update(EVO_MAP[EvoTypes.UVO])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.UVO],
+                                   lambda m: self.graph.monster_is_reversible_evo(m)
+                                             and not special_evo)
 
         # UUvo
-        if self.graph.monster_is_second_ultimate(m):
-            modifiers.update(EVO_MAP[EvoTypes.UUVO])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.UUVO],
+                                   self.graph.monster_is_second_ultimate)
 
         # Transform
-        if not self.graph.monster_is_transform_base(m):
-            modifiers.update(EVO_MAP[EvoTypes.TRANS])
-        elif self.graph.get_next_transform_by_monster(m):
-            modifiers.update(EVO_MAP[EvoTypes.BASETRANS])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.TRANS],
+                                   lambda m: not self.graph.monster_is_transform_base(m))
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.BASETRANS],
+                                   lambda m: self.graph.monster_is_transform_base(m)
+                                             and self.graph.get_next_transform_by_monster(m))
 
         # Awoken
-        if '覚醒' in m.name_ja or 'awoken' in m.name_en.lower():
-            modifiers.update(EVO_MAP[EvoTypes.AWOKEN])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.AWOKEN],
+                                   lambda m: '覚醒' in m.name_ja or 'awoken' in m.name_en.lower())
 
         # Mega Awoken
-        if '極醒' in m.name_ja or 'mega awoken' in m.name_en.lower():
-            modifiers.update(EVO_MAP[EvoTypes.MEGA])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.MEGA],
+                                   lambda m: '極醒' in m.name_ja or 'mega awoken' in m.name_en.lower())
 
         # Reincarnated
-        if self.graph.true_evo_type_by_monster(m).value == "Reincarnated":
-            modifiers.update(EVO_MAP[EvoTypes.REVO])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.REVO],
+                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Reincarnated")
 
         # Super Reincarnated
-        if '超転生' in m.name_ja or self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated":
-            modifiers.update(EVO_MAP[EvoTypes.SREVO])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.SREVO],
+                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated")
 
         # Pixel
-        if (m.name_ja.startswith('ドット') or
-                m.name_en.startswith('pixel') or
-                self.graph.true_evo_type_by_monster(m).value == "Pixel"):
-            modifiers.update(EVO_MAP[EvoTypes.PIXEL])
-        else:
-            modifiers.update(EVO_MAP[EvoTypes.NONPIXEL])
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.PIXEL],
+                                   lambda m: m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
+                                             or self.graph.true_evo_type_by_monster(m).value == "Pixel",
+                                   else_mods=EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
-        for aw in m.awakenings:
+        for aw in monster.awakenings:
             try:
                 modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
             except ValueError:
                 logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
                 self.issues.append(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
+        # Numbered Equips
+        self.add_numbered_modifier(monster, modifiers, AWOKEN_MAP[Awakenings.EQUIP],
+                                   lambda m: m.is_equip)
+
         # Chibi
-        if (m.name_en == m.name_en.lower() and m.name_en != m.name_ja) or \
-                'ミニ' in m.name_ja or '(chibi)' in m.name_en:
-            modifiers.update(MISC_MAP[MiscModifiers.CHIBI])
+        self.add_numbered_modifier(monster, modifiers, MISC_MAP[MiscModifiers.CHIBI],
+                                   lambda m: m.name_en == m.name_en.lower() and m.name_en != m.name_ja
+                                             or 'ミニ' in m.name_ja or '(chibi)' in m.name_en)
 
         # Series Type
-        if m.series.series_type == 'regular':
+        if monster.series.series_type == 'regular':
             modifiers.update(MISC_MAP[MiscModifiers.REGULAR])
-        if m.series.series_type == 'event':
+        if monster.series.series_type == 'event':
             modifiers.update(MISC_MAP[MiscModifiers.EVENT])
-        if m.series.series_type == 'seasonal':
+        if monster.series.series_type == 'seasonal':
             modifiers.update(MISC_MAP[MiscModifiers.SEASONAL])
-        if m.series.series_type == 'collab':
+        if monster.series.series_type == 'collab':
             modifiers.update(MISC_MAP[MiscModifiers.COLLAB])
 
         # Story
@@ -393,38 +398,47 @@ class MonsterIndex(tsutils.aobject):
                 return True
             return False
 
-        if is_story(m):
+        if is_story(monster):
             modifiers.update(MISC_MAP[MiscModifiers.STORY])
 
         # New
-        if self.graph.monster_is_new(m):
+        if self.graph.monster_is_new(monster):
             modifiers.update(MISC_MAP[MiscModifiers.NEW])
 
         # Method of Obtaining
-        if self.graph.monster_is_farmable_evo(m) or self.graph.monster_is_mp_evo(m):
+        if self.graph.monster_is_farmable_evo(monster) or self.graph.monster_is_mp_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
 
-        if self.graph.monster_is_mp_evo(m):
+        if self.graph.monster_is_mp_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.MP])
 
-        if self.graph.monster_is_rem_evo(m):
+        if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
 
         # Server
-        if m.on_jp:
+        if monster.on_jp:
             modifiers.update(MISC_MAP[MiscModifiers.INJP])
-            if not m.on_na:
+            if not monster.on_na:
                 modifiers.update(MISC_MAP[MiscModifiers.ONLYJP])
-        if m.on_na:
+        if monster.on_na:
             modifiers.update(MISC_MAP[MiscModifiers.INNA])
-            if not m.on_jp:
+            if not monster.on_jp:
                 modifiers.update(MISC_MAP[MiscModifiers.ONLYNA])
-        if m.monster_id + 10000 in self.graph.nodes:
+        if monster.monster_id + 10000 in self.graph.nodes:
             modifiers.add("idjp")
-        if m.monster_id > 10000:
+        if monster.monster_id > 10000:
             modifiers.add("idna")
 
         return modifiers
+
+    def add_numbered_modifier(self, monster, curr_mods, added_mods, condition, *, else_mods=None):
+        if condition(monster):
+            curr_mods.update(added_mods)
+            ms = [m for m in self.graph.get_alt_monsters(monster) if condition(m)]
+            if len(ms) > 1:
+                curr_mods.update(f'{mod}-{ms.index(monster) + 1}' for mod in added_mods)
+        elif else_mods:
+            curr_mods.update(else_mods)
 
 
 # TODO: Move this to TSUtils
