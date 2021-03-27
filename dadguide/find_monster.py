@@ -91,7 +91,7 @@ class FindMonster:
         for i, token in enumerate(tokenized_query[::-1]):
             negated = token.startswith("-")
             token = token.lstrip('-')
-            if any(self.calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in
+            if any(self.calc_ratio_modifier(m, token.split('-')[0], .1) > self.MODIFIER_JW_DISTANCE for m in
                    self.dgcog.index.suffixes):
                 if negated:
                     negative_modifiers.add(token)
