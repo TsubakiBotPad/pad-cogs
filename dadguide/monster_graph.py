@@ -317,7 +317,7 @@ class MonsterGraph(object):
 
     def get_alt_monsters_by_id(self, monster_id):
         ids = self.get_alt_ids_by_id(monster_id)
-        return [self.get_monster(m_id) for m_id in ids]
+        return {self.get_monster(m_id) for m_id in ids}
 
     def get_alt_monsters(self, monster: MonsterModel):
         return self.get_alt_monsters_by_id(monster.monster_id)
