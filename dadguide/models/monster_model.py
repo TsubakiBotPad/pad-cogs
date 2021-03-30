@@ -174,8 +174,8 @@ class MonsterSearchHelper(object):
         leader_skill = m.leader_skill
         self.leader = leader_skill.desc.lower() if leader_skill else ''
         active_skill = m.active_skill
-        self.active_name = active_skill.name.lower() if active_skill else ''
-        self.active_desc = active_skill.desc.lower() if active_skill else ''
+        self.active_name = active_skill.name.lower() if active_skill and active_skill.name else ''
+        self.active_desc = active_skill.desc.lower() if active_skill and active_skill.desc else ''
         self.active = '{} {}'.format(self.active_name, self.active_desc)
         self.active_min = active_skill.turn_min if active_skill else None
         self.active_max = active_skill.turn_max if active_skill else None
