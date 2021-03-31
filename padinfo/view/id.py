@@ -1,3 +1,5 @@
+import random
+
 from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
@@ -19,6 +21,14 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
 
+
+def randappear(text, chance):
+    if random.random() < chance:
+        return text
+    return ''
+
+def randtimes(text, max):
+    return text * random.randint(1, max)
 
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
@@ -174,23 +184,23 @@ class IdView:
             Text('\N{DOWN-POINTING RED TRIANGLE}' if m != transform_base else ''),
             Text('[{} slots]'.format(m.latent_slots if m == transform_base \
                                          else transform_base.latent_slots)),
-            Text(killers_text),
+            Text(killers_text+'!!!'),
             delimiter=' '
         )
 
     @staticmethod
     def misc_info(m: "MonsterModel", true_evo_type_raw: str, acquire_raw: str, base_rarity: str):
         rarity = Box(
-            LabeledText('Rarity', str(m.rarity)),
-            Text('({})'.format(LabeledText('Base', str(base_rarity)).to_markdown())),
-            Text("" if m.orb_skin_id is None else "(Orb Skin)"),
+            LabeledText('Rarity', str(m.rarity)+'!'),
+            Text('({})'.format(LabeledText('Base', str(base_rarity)+'!!').to_markdown())),
+            Text("" if m.orb_skin_id is None else "(Orb Skin!!!!)"),
             delimiter=' '
         )
 
-        cost = LabeledText('Cost', str(m.cost))
-        acquire = BoldText(acquire_raw) if acquire_raw else None
+        cost = LabeledText('Cost', str(m.cost)+'!!!')
+        acquire = BoldText(acquire_raw+'!!!') if acquire_raw else None
         valid_true_evo_types = ("Reincarnated", "Assist", "Pixel", "Super Reincarnated")
-        true_evo_type = BoldText(true_evo_type_raw) if true_evo_type_raw in valid_true_evo_types else None
+        true_evo_type = BoldText(true_evo_type_raw+'!!!') if true_evo_type_raw in valid_true_evo_types else None
 
         return Box(rarity, cost, acquire, true_evo_type)
 
@@ -202,7 +212,7 @@ class IdView:
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
             LabeledText('ATK', _get_stat_text(atk, lb_atk, _get_awakening_emoji_for_stats(m, 2))),
             LabeledText('RCV', _get_stat_text(rcv, lb_rcv, _get_awakening_emoji_for_stats(m, 3))),
-            LabeledText('Fodder EXP', "{:,}".format(m.fodder_exp)) if _monster_is_enhance(m) else None
+            LabeledText('Fodder EXP', "{:,}!!".format(m.fodder_exp)) if _monster_is_enhance(m) else None
         )
 
     @staticmethod
@@ -211,7 +221,7 @@ class IdView:
         header = Box(
             Text(voice),
             Text('Stats'),
-            Text('(LB, +{}%)'.format(m.limit_mult)) if m.limit_mult else None,
+            Text('(LB, +{}%!!!!!)'.format(m.limit_mult)) if m.limit_mult else None,
             delimiter=' '
         )
         return header
@@ -226,12 +236,12 @@ class IdView:
             base_skill = transform_base.active_skill
             base_cd = ' (\N{DOWN-POINTING RED TRIANGLE} {} -> {})'.format(base_skill.turn_max,
                                                                           base_skill.turn_min) \
-                if base_skill else 'None'
+                if base_skill else 'None!!!!'
 
             active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
             active_cd += base_cd
         return Box(
-            BoldText('Active Skill'),
+            BoldText('Active Skill' + randtimes('!', 5) + randappear(' :D', .3)),
             BoldText(active_cd),
             delimiter=' '
         )
@@ -239,7 +249,7 @@ class IdView:
     @staticmethod
     def leader_skill_header(m: "MonsterModel"):
         return Box(
-            BoldText('Leader Skill'),
+            BoldText('Leader Skill'  + randtimes('?!', 3) + randappear(' :D', .3)),
             BoldText(createMultiplierText(m.leader_skill)),
             delimiter=' '
         )
@@ -256,7 +266,7 @@ class IdView:
                 )
             ),
             EmbedField(
-                'Inheritable' if m.is_inheritable else 'Not inheritable',
+                'Inheritable!!!' if m.is_inheritable else 'Not inheritable! :(',
                 IdView.misc_info(m, state.true_evo_type_raw, state.acquire_raw, state.base_rarity),
                 inline=True
             ),
@@ -267,11 +277,11 @@ class IdView:
             ),
             EmbedField(
                 IdView.active_skill_header(m, state.transform_base).to_markdown(),
-                Text(m.active_skill.desc if m.active_skill else 'None')
+                Text(m.active_skill.desc if m.active_skill else 'None' + randtimes('!', 10))
             ),
             EmbedField(
                 IdView.leader_skill_header(m).to_markdown(),
-                Text(m.leader_skill.desc if m.leader_skill else 'None')
+                Text(m.leader_skill.desc if m.leader_skill else 'None' + randtimes('!', 10))
             ),
             evos_embed_field(state)
         ]
@@ -279,7 +289,7 @@ class IdView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
+                title=MonsterHeader.long_v2(m).to_markdown()[:-1]+'!!!)',
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=pad_info_footer_with_state(state),
