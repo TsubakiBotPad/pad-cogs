@@ -1,5 +1,4 @@
 from .base_model import BaseModel
-import random
 
 
 class LeaderSkillModel(BaseModel):
@@ -16,9 +15,7 @@ class LeaderSkillModel(BaseModel):
         self.bonus_damage = kwargs['bonus_damage']
         self.mult_bonus_damage = kwargs['mult_bonus_damage']
         self.extra_time = kwargs['extra_time']
-        self.desc_en = kwargs['desc_en'] + '!' * random.randint(1, 10)
-        while ';' in self.desc_en:
-            self.desc_en = self.desc_en.replace(';', '!' * random.randint(1, 10), 1)
+        self.desc_en = kwargs['desc_en']
         self.desc_ja = kwargs['desc_ja']
         self.desc_ko = kwargs['desc_ko']
 

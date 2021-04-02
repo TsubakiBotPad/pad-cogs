@@ -1,5 +1,3 @@
-import random
-
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType

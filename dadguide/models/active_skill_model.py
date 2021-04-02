@@ -1,5 +1,4 @@
 from .base_model import BaseModel
-import random
 
 
 class ActiveSkillModel(BaseModel):
@@ -10,9 +9,7 @@ class ActiveSkillModel(BaseModel):
         self.name_ko = kwargs['name_ko']
 
         self.desc_ja = kwargs['desc_ja']
-        self.desc_en = kwargs['desc_en'] + '!' * random.randint(1, 10)
-        while ';' in self.desc_en:
-            self.desc_en = self.desc_en.replace(';', '!' * random.randint(1, 10), 1)
+        self.desc_en = kwargs['desc_en']
         self.desc_ko = kwargs['desc_ko']
 
         self.turn_max = kwargs['turn_max']
