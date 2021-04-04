@@ -1,23 +1,12 @@
 import asyncio
-import logging
 import os
-import random
 import re
 import urllib.parse
 
-from copy import deepcopy
-from io import BytesIO
-from typing import TYPE_CHECKING, List
-
 from redbot.core import checks, commands, data_manager, Config
-from redbot.core.utils.chat_formatting import box, escape, pagify
 
 import discord
 import tsutils
-
-from padinfo.menu.id import IdMenu, IdMenuPanes
-from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
-from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
 
 try:
     import re2 as re
@@ -40,7 +29,7 @@ class Idlookup(commands.Cog):
         if await self.config.channel(channel).enabled():
             if message.guild is None: #dms
                 return
-            if author == self.bot.user: #dont reply to self
+            if message.author == self.bot.user: #dont reply to self
                 return
             if await self.is_command(message): #skip commands
                 return
@@ -54,7 +43,7 @@ class Idlookup(commands.Cog):
                 matches = re.findall(r'\d{3,4}',content)
                 ret = ""
                 for i in matches:
-                    m = await dgcog.find_monster(i, author.id)
+                    m = await dgcog.find_monster(i, message.author.id)
                     if not m: #monster not found
                         continue
                     ret+="[{}] {}\n".format(i, m.name_en)
