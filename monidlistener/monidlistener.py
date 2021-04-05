@@ -15,6 +15,7 @@ class MonIdListener(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=10100779)
+        self.config.register_channel(enabled=False)
 
     @commands.Cog.listener('on_message')
     async def on_message(self, message):
@@ -29,7 +30,7 @@ class MonIdListener(commands.Cog):
                 return
             dgcog = self.bot.get_cog("Dadguide")
             if dgcog is None:
-                await channel.send(inline("Error: Dadguide Cog not loaded.  Please alert a bot owner."))
+                await channel.send("Error: Dadguide Cog not loaded.  Please alert a bot owner.")
                 return
             if re.search(r'\b\d\d\d[ -]?\d\d\d[ -]?\d\d\d\b', content):  # friend code
                 return
@@ -45,9 +46,6 @@ class MonIdListener(commands.Cog):
                     ret += "[{}] {}\n".format(i, m.name_en)
                 if ret != "":
                     await channel.send(ret)
-                return
-        else:
-            return
 
     @commands.group(aliases=['monidlistener'])
     async def midlistener(self, ctx):
@@ -57,20 +55,18 @@ class MonIdListener(commands.Cog):
     @checks.admin_or_permissions(manage_messages=True)
     async def enable(self, ctx):
         """Enable monster ID listener in this channel"""
-        self.config.register_channel(enabled=True)
+        await self.config.channel(ctx.channel).enabled.set(True)
         await ctx.send("Enabled monster ID listener in this channel.")
 
     @midlistener.command()
     @checks.admin_or_permissions(manage_messages=True)
     async def disable(self, ctx):
         """Disable monster ID listener in this channel"""
-        self.config.register_channel(enabled=False)
+        await self.config.channel(ctx.channel).enabled.set(False)
         await ctx.send("Disabled monster ID listener in this channel.")
 
     async def is_command(self, msg):
         prefixes = await self.bot.get_valid_prefixes()
-        if not isinstance(prefixes, list):
-            prefixes = [prefixes]
         for p in prefixes:
             if msg.content.startswith(p):
                 return True
