@@ -14,7 +14,7 @@
     "hidden": false,
     "disabled": false,
     "required_cogs": {},
-    "requirements": ["re","tsutils"],
+    "requirements": ["tsutils"],
     "tags": [
       "pad"
     ]
