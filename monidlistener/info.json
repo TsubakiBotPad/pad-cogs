@@ -1,0 +1,21 @@
+{
+    "author": "fluff#2368",
+    "description": "Gets monster names when monster ids are sent.",
+    "end_user_data_statement": "No personal data is stored.",
+    "install_msg": "",
+    "short": "Monster Id Lookup",
+    "min_bot_version": "3.4.0",
+    "max_bot_version": "0.0.0",
+    "min_python_version": [
+      3,
+      8,
+      1
+    ],
+    "hidden": false,
+    "disabled": false,
+    "required_cogs": {},
+    "requirements": ["re","tsutils"],
+    "tags": [
+      "pad"
+    ]
+  }
