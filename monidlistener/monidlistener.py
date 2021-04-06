@@ -49,8 +49,8 @@ class MonIdListener(commands.Cog):
                 return
             if "+" in content or "plus" in content:
                 return
-            if re.search(r'\d{3,4}', content):
-                matches = re.findall(r'\d{3,4}', content)
+            if re.search(r'\b\d{3,4}\b', content):
+                matches = re.findall(r'\b\d{3,4}\b', content)
                 ret = ""
                 for i in matches:
                     m = await dgcog.find_monster(i, message.author.id)
