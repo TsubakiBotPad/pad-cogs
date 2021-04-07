@@ -34,6 +34,7 @@ class MonIdListener(commands.Cog):
     async def on_message(self, message):
         channel = message.channel
         content = message.content
+        content = re.sub(r'297','',content)
         if await self.config.channel(channel).enabled():
             if message.guild is None:  # dms
                 return
@@ -45,7 +46,7 @@ class MonIdListener(commands.Cog):
             if dgcog is None:
                 await channel.send("Error: Dadguide Cog not loaded.  Please alert a bot owner.")
                 return
-            if re.search(r'\b\d\d\d[ -]?\d\d\d[ -]?\d\d\d\b', content):  # friend code
+            if re.search(r'\b\d\d\d[ -,]?\d\d\d[ -,]?\d\d\d\b', content):  # friend code
                 return
             if "+" in content or "plus" in content:
                 return
