@@ -1,5 +1,5 @@
 {
-    "author": "fluff#2368",
+    "author": ["fluff#2368"],
     "description": "Gets monster names when monster ids are sent.",
     "end_user_data_statement": "No personal data is stored.",
     "install_msg": "",
