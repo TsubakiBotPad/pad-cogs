@@ -45,7 +45,7 @@ class MonIdListener(commands.Cog):
             if dgcog is None:
                 await channel.send("Error: Dadguide Cog not loaded.  Please alert a bot owner.")
                 return
-            if re.search(r'\b\d\d\d[ -]?\d\d\d[ -]?\d\d\d\b', content):  # friend code
+            if re.search(r'\b\d\d\d[ -,]?\d\d\d[ -,]?\d\d\d\b', content):  # friend code
                 return
             if "+" in content or "plus" in content:
                 return
