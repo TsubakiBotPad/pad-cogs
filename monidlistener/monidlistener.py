@@ -34,6 +34,7 @@ class MonIdListener(commands.Cog):
     async def on_message(self, message):
         channel = message.channel
         content = message.content
+        content = re.sub(r'297','',content)
         if await self.config.channel(channel).enabled():
             if message.guild is None:  # dms
                 return
@@ -47,7 +48,7 @@ class MonIdListener(commands.Cog):
                 return
             if re.search(r'\b\d\d\d[ -,]?\d\d\d[ -,]?\d\d\d\b', content):  # friend code
                 return
-            if "+" in content or "plus" in content or "297" in content:
+            if "+" in content or "plus" in content:
                 return
             if re.search(r'\b\d{3,4}\b', content):
                 matches = re.findall(r'\b\d{3,4}\b', content)
