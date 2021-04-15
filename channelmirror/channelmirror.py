@@ -252,7 +252,6 @@ class ChannelMirror(commands.Cog):
         attribution_required = last_spoke != author.id
         attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
         attribution_required &= not await self.config.channel(message.channel).multiedit()
-        attribution_required = True
 
         self.settings.set_last_spoke(channel.id, author.id)
 
