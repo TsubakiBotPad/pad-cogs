@@ -9,6 +9,7 @@ import aiohttp
 import tsutils
 from redbot.core.utils import AsyncIter
 
+from .models.monster_model import MonsterModel
 from .token_mappings import *
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
@@ -45,14 +46,16 @@ class MonsterIndex(tsutils.aobject):
                                   if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
+        self.remove_mods = defaultdict(set)
         self.treename_overrides = set()
+
 
         nickname_data, treenames_data, pantheon_data, nt_alias_data, mod_data, treemod_data = await asyncio.gather(
             sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 5),
             sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 5),
             sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2),
             sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2),
-            sheet_to_reader(MODIFIER_OVERRIDE_SHEET, 2),
+            sheet_to_reader(MODIFIER_OVERRIDE_SHEET, 3),
             sheet_to_reader(TREE_MODIFIER_OVERRIDE_SHEET, 2),
         )
 
@@ -98,7 +101,7 @@ class MonsterIndex(tsutils.aobject):
             self.replacement_tokens[frozenset(re.split(r'\W+', tokens))].add(alias)
 
         self.manual_prefixes = defaultdict(set)
-        for mid, mods in mod_data:
+        for mid, mods, rmv in mod_data:
             if mid.isdigit():
                 mid = int(mid)
                 for mod in mods.split(","):
@@ -106,7 +109,10 @@ class MonsterIndex(tsutils.aobject):
                     if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
-                    self.manual_prefixes[mid].update(get_modifier_aliases(mod))
+                    if rmv:
+                        self.remove_mods[mid].update(mod)
+                    else:
+                        self.manual_prefixes[mid].update(get_modifier_aliases(mod))
 
         for mid, mods in treemod_data:
             if mid.isdigit():
@@ -277,7 +283,7 @@ class MonsterIndex(tsutils.aobject):
         else:
             return cls._name_to_tokens(min(n1, n2, key=token_count))
 
-    async def get_modifiers(self, monster):
+    async def get_modifiers(self, monster: MonsterModel):
         modifiers = self.manual_prefixes[monster.monster_id].copy()
 
         basemon = self.graph.get_base_monster(monster)
@@ -409,13 +415,13 @@ class MonsterIndex(tsutils.aobject):
         if self.graph.monster_is_farmable_evo(monster) or self.graph.monster_is_mp_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
 
-        if self.graph.monster_is_mp_evo(monster):
-            modifiers.update(MISC_MAP[MiscModifiers.MP])
-
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
         elif self.graph.monster_is_vendor_exchange(monster):
             modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
+        elif self.graph.monster_is_mp_evo(monster):
+            modifiers.update(MISC_MAP[MiscModifiers.MP])
+
 
         # Art
         if monster.orb_skin_id:
@@ -436,6 +442,8 @@ class MonsterIndex(tsutils.aobject):
             modifiers.add("idjp")
         if monster.monster_id > 10000:
             modifiers.add("idna")
+
+        modifiers.difference_update(self.remove_mods[monster.monster_id])
 
         return modifiers
 
