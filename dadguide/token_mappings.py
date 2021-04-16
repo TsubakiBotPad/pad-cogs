@@ -254,6 +254,7 @@ class MiscModifiers(Enum):
     NEW = 'Newest monster in series'
     ORBSKIN = 'Grants an orb skin'
     ANIMATED = 'Animated monster'
+    MEDAL_EXC = 'Exchangable for vendor mats'
 
 
 MISC_MAP = {
@@ -272,7 +273,8 @@ MISC_MAP = {
     MiscModifiers.COLLAB: ('collab',),
     MiscModifiers.NEW: ('new',),
     MiscModifiers.ORBSKIN: ('orbskin',),
-    MiscModifiers.ANIMATED: ('animated',)
+    MiscModifiers.ANIMATED: ('animated',),
+    MiscModifiers.MEDAL_EXC: ('medal', 'shop')
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {

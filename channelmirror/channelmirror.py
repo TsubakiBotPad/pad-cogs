@@ -27,10 +27,11 @@ class ChannelMirror(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.settings = ChannelMirrorSettings("channelmirror")
-        self.channel_last_spoke = {}
 
         self.config = Config.get_conf(self, identifier=3747737700)
         self.config.register_channel(multiedit=False, mirroredit_target=None, nodeletion=False)
+        self.config.init_custom("dest_message", 1)
+        self.config.register_custom("dest_message", small=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG:
@@ -195,8 +196,8 @@ class ChannelMirror(commands.Cog):
                 reacts[str(react)] += dest_reaction.count - 1
         o = ""
         maxlen = len(str(max(reacts.values(), key=lambda x: len(str(x)))))
-        for r, c in reacts.items():
-            o += "{{}}: {{:{}}}\n".format(maxlen).format(r, c)
+        for reaction, count in reacts.items():
+            o += "{{}}: {{:{}}}\n".format(maxlen).format(reaction, count)
         await ctx.send(o)
 
     @channelmirror.command()
@@ -289,11 +290,16 @@ class ChannelMirror(commands.Cog):
             if not dest_channel:
                 continue
             try:
+                fmessage = await self.mformat(message.content, message.channel, dest_channel)
+
+                small = False
                 if attribution_required:
                     msg = self.makeheader(message, author)
-                    await dest_channel.send(msg)
-
-                fmessage = await self.mformat(message.content, message.channel, dest_channel)
+                    if len(fmessage) > 500:
+                        await dest_channel.send(msg)
+                    else:
+                        fmessage = msg + '\n' + fmessage
+                        small = True
 
                 if attachment_bytes:
                     try:
@@ -317,8 +323,8 @@ class ChannelMirror(commands.Cog):
                     logger.warning('Failed to mirror message from {} no action to take'.format(channel.id))
                     continue
 
-                self.settings.add_mirrored_message(
-                    channel.id, message.id, dest_channel.id, dest_message.id)
+                self.settings.add_mirrored_message(channel.id, message.id, dest_channel.id, dest_message.id)
+                await self.config.custom("dest_message", dest_message.id).small.set(small)
             except discord.Forbidden:
                 if dest_channel.guild.owner:
                     try:
@@ -401,6 +407,10 @@ class ChannelMirror(commands.Cog):
 
                 if new_message_content:
                     fcontent = await self.mformat(new_message_content, channel, dest_message.channel)
+                    if await self.config.custom("dest_message", dest_message.id).small():
+                        fcontent = self.makeheader(message) + '\n' + fcontent
+                    if len(fcontent) > 2000:
+                        fcontent = fcontent[:1971] + "... *(Continued in original)*"
                     await dest_message.edit(content=fcontent)
                 elif new_message_reaction:
                     try:
