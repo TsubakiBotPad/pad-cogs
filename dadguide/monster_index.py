@@ -417,11 +417,11 @@ class MonsterIndex(tsutils.aobject):
 
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
-        elif self.graph.monster_is_vendor_exchange(monster):
-            modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
-        elif self.graph.monster_is_mp_evo(monster):
-            modifiers.update(MISC_MAP[MiscModifiers.MP])
-
+        else: 
+            if self.graph.monster_is_vendor_exchange(monster):
+                modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
+            if self.graph.monster_is_mp_evo(monster):
+                modifiers.update(MISC_MAP[MiscModifiers.MP])
 
         # Art
         if monster.orb_skin_id:
