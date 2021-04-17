@@ -1,7 +1,7 @@
 import json
 import re
 from collections import defaultdict
-from typing import Set, List, Tuple, Optional, Mapping, Union
+from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any
 
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
@@ -57,11 +57,11 @@ class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def __init__(self, dgcog, flags):
+    def __init__(self, dgcog, flags: Mapping[str, Any]):
         self.dgcog = dgcog
         self.flags = flags
 
-    def merge_multi_word_tokens(self, tokens):
+    def merge_multi_word_tokens(self, tokens: List[str]) -> List[str]:
         result = []
         skip = 0
         multi_word_tokens_sorted = sorted(self.dgcog.index.multi_word_tokens,
@@ -173,7 +173,8 @@ class FindMonster:
 
         return matched_mons
 
-    def get_valid_monsters_from_name_token(self, token: Token, matches, mult=1):
+    def get_valid_monsters_from_name_token(self, token: Token, matches: MatchMap,
+                                           mult: Union[int, float] = 1) -> Set[MonsterModel]:
         valid_monsters = set()
         all_monsters_name_tokens_scores = {nt: self.calc_ratio_name(token, nt) for nt in
                                            self.dgcog.index.all_name_tokens}
@@ -200,15 +201,17 @@ class FindMonster:
 
         return valid_monsters
 
-    def process_modifiers(self, mod_tokens: Set[Token], potential_evos: Set[MonsterModel], matches: MatchMap):
+    def process_modifiers(self, mod_tokens: Set[Token], potential_evos: Set[MonsterModel],
+                          matches: MatchMap) -> Set[MonsterModel]:
         for mod_token in mod_tokens:
             potential_evos = {m for m in potential_evos if
                               self._monster_has_modifier(m, mod_token, matches) ^ mod_token.negated}
             if not potential_evos:
-                return None
+                return set()
         return potential_evos
 
-    def get_priority_tuple(self, monster, tokenized_query=None, matches=None):
+    def get_priority_tuple(self, monster: MonsterModel, tokenized_query: List[str] = None,
+                           matches: MatchMap = None) -> Tuple[Any, ...]:
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
@@ -231,7 +234,8 @@ class FindMonster:
                 monster.rarity,
                 monster.monster_no_na)
 
-    def get_most_eligable_monster(self, monsters, tokenized_query=None, matches=None):
+    def get_most_eligable_monster(self, monsters: Iterable[MonsterModel], tokenized_query: List[str] = None,
+                                  matches: MatchMap = None) -> MonsterModel:
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
