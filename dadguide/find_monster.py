@@ -1,13 +1,12 @@
 import json
 import re
 from collections import defaultdict
-from typing import Set, List, Tuple, Optional, TYPE_CHECKING, Mapping
+from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any
 
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
 
-if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+from dadguide.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -18,6 +17,25 @@ SERIES_TYPE_PRIORITY = {
     "lowpriority": 0,
     None: 0
 }
+
+
+class Token:
+    def __init__(self, value, *, negated=False, exact=False):
+        self.value = value
+        self.negated = negated
+        self.exact = exact
+
+    def __eq__(self, other):
+        if isinstance(other, Token):
+            return self.value == other.value
+        elif isinstance(other, str):
+            return self.value == other
+
+    def __hash__(self):
+        return hash(self.value) ^ (self.negated << 5) ^ (self.exact << 6)
+
+    def __repr__(self):
+        return ("-" if self.negated else "") + (repr(self.value) if self.exact else self.value)
 
 
 class MonsterMatch:
@@ -32,15 +50,18 @@ class MonsterMatch:
         return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
 
 
+MatchMap = Mapping[MonsterModel, MonsterMatch]
+
+
 class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def __init__(self, dgcog, flags):
+    def __init__(self, dgcog, flags: Mapping[str, Any]):
         self.dgcog = dgcog
         self.flags = flags
 
-    def merge_multi_word_tokens(self, tokens):
+    def merge_multi_word_tokens(self, tokens: List[str]) -> List[str]:
         result = []
         skip = 0
         multi_word_tokens_sorted = sorted(self.dgcog.index.multi_word_tokens,
@@ -65,139 +86,132 @@ class FindMonster:
                 result.append(token1)
         return result
 
-    def _monster_has_modifier(self, monster, token, matches):
-        if len(token) < 6:
-            if token in self.dgcog.index.modifiers[monster]:
-                matches[monster].mod.add((token, token))
+    def _monster_has_modifier(self, monster: MonsterModel, token: Token, matches: MatchMap) -> bool:
+        if len(token.value) < 6:
+            if token.value in self.dgcog.index.modifiers[monster]:
+                matches[monster].mod.add((token.value, token.value))
                 matches[monster].score += 1
                 return True
         else:
-            closest = max(self.dgcog.index.modifiers[monster], key=lambda m: self.calc_ratio_modifier(m, token))
-            ratio = self.calc_ratio_modifier(closest, token)
+            closest = max(self.dgcog.index.modifiers[monster], key=lambda m: self.calc_ratio_modifier(token, m))
+            ratio = self.calc_ratio_modifier(closest, token.value)
             if ratio > self.MODIFIER_JW_DISTANCE:
-                matches[monster].mod.add((token, closest))
+                matches[monster].mod.add((token.value, closest))
                 matches[monster].score += ratio
                 return True
         return False
 
-    def interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
+    def _string_to_token(self, value: str) -> Token:
+        if (negated := value.startswith('-')):
+            value = value.lstrip('-')
+        if (exact := bool(re.fullmatch(r'".+"', value))):
+            value = value[1:-1]
+        return Token(value, negated=negated, exact=exact)
+
+    def interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[Token], Set[Token]]:
         modifiers = []
-        negative_modifiers = set()
         name = set()
-        negative_name = set()
         longmods = [p for p in self.dgcog.index.all_modifiers if len(p) > 8]
         lastmodpos = False
 
-        for i, token in enumerate(tokenized_query[::-1]):
-            negated = token.startswith("-")
-            token = token.lstrip('-')
-            if any(self.calc_ratio_modifier(m, token.split('-')[0], .1) > self.MODIFIER_JW_DISTANCE for m in
-                   self.dgcog.index.suffixes):
-                if negated:
-                    negative_modifiers.add(token)
-                else:
-                    modifiers.append(token)
+        # Suffixes
+        for i, value in enumerate(tokenized_query[::-1]):
+            token = self._string_to_token(value)
+
+            if any(self.calc_ratio_modifier(m, token.value.split('-')[0], .1) > self.MODIFIER_JW_DISTANCE
+                   for m in self.dgcog.index.suffixes):
+                modifiers.append(token)
             else:
                 if i != 0:
                     tokenized_query = tokenized_query[:-i]
                 break
 
-        for i, token in enumerate(tokenized_query):
-            negated = token.startswith("-")
-            token = token.lstrip('-')
-            if token in self.dgcog.index.all_modifiers or (
-                    any(self.calc_ratio_modifier(m, token, .1) > self.MODIFIER_JW_DISTANCE for m in longmods)
-                    and token not in self.dgcog.index.all_name_tokens
-                    and len(token) >= 8):
-                if negated:
-                    lastmodpos = False
-                    negative_modifiers.add(token)
-                else:
-                    lastmodpos = True
-                    modifiers.append(token)
+        # Prefixes
+        for i, value in enumerate(tokenized_query):
+            token = self._string_to_token(value)
+
+            if token.value in self.dgcog.index.all_modifiers or (
+                    any(self.calc_ratio_modifier(token, m, .1) > self.MODIFIER_JW_DISTANCE for m in longmods)
+                    and token.value not in self.dgcog.index.all_name_tokens
+                    and len(token.value) >= 8):
+                lastmodpos = not token.negated
+                modifiers.append(token)
             else:
                 tokenized_query = tokenized_query[i:]
                 break
         else:
             tokenized_query = []
 
-        for token in tokenized_query:
-            negated = token.startswith("-")
-            token = token.lstrip('-')
-            if negated:
-                negative_name.add(token)
-            else:
-                name.add(token)
+        # Name Tokens
+        for value in tokenized_query:
+            name.add(self._string_to_token(value))
 
-        if not (name or negative_name) and modifiers and lastmodpos:
+        # Allow modifiers to match as name tokens if they're alone (Fix for hel and cloud)
+        if not name and modifiers and lastmodpos:
             if self.dgcog.index.manual[modifiers[-1]]:
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
-        return set(modifiers), negative_modifiers, name, negative_name
+        return set(modifiers), name
 
-    def process_name_tokens(self, name_query_tokens, neg_name_tokens, matches):
+    def process_name_tokens(self, name_query_tokens: Set[Token], matches: MatchMap) -> Optional[Set[MonsterModel]]:
         matched_mons = None
 
-        for pos_name in name_query_tokens:
-            valid = self.get_valid_monsters_from_name_token(pos_name, matches)
-            if matched_mons is not None:
-                matched_mons.intersection_update(valid)
+        for name_token in name_query_tokens:
+            if name_token.negated:
+                invalid = self.get_valid_monsters_from_name_token(name_token, matches, mult=-10)
+                if matched_mons is not None:
+                    matched_mons.difference_update(invalid)
+                else:
+                    matched_mons = set(self.dgcog.database.get_all_monsters()).difference(invalid)
             else:
-                matched_mons = valid
-
-        for neg_name in neg_name_tokens:
-            invalid = self.get_valid_monsters_from_name_token(neg_name, matches, mult=-10)
-            if matched_mons is not None:
-                matched_mons.difference_update(invalid)
-            else:
-                matched_mons = set(self.dgcog.database.get_all_monsters()).difference(invalid)
+                valid = self.get_valid_monsters_from_name_token(name_token, matches)
+                if matched_mons is not None:
+                    matched_mons.intersection_update(valid)
+                else:
+                    matched_mons = valid
 
         return matched_mons
 
-    def get_valid_monsters_from_name_token(self, token, matches, mult=1):
+    def get_valid_monsters_from_name_token(self, token: Token, matches: MatchMap,
+                                           mult: Union[int, float] = 1) -> Set[MonsterModel]:
         valid_monsters = set()
         all_monsters_name_tokens_scores = {nt: self.calc_ratio_name(token, nt) for nt in
                                            self.dgcog.index.all_name_tokens}
-        matched_tokens = sorted((nt for nt in all_monsters_name_tokens_scores
-                                 if all_monsters_name_tokens_scores[nt] > self.TOKEN_JW_DISTANCE),
+        matched_tokens = sorted((nt for nt, s in all_monsters_name_tokens_scores.items() if s > self.TOKEN_JW_DISTANCE),
                                 key=lambda nt: all_monsters_name_tokens_scores[nt], reverse=True)
-        matched_tokens += [t for t in self.dgcog.index.all_name_tokens if t.startswith(token)]
+        matched_tokens += [t for t in self.dgcog.index.all_name_tokens if t.startswith(token.value)]
         for match in matched_tokens:
             score = all_monsters_name_tokens_scores[match]
             for matched_monster in self.dgcog.index.manual[match]:
                 if matched_monster not in valid_monsters:
-                    matches[matched_monster].name.add((token, match, '(manual)'))
+                    matches[matched_monster].name.add((token.value, match, '(manual)'))
                     matches[matched_monster].score += (score + .001) * mult
                     valid_monsters.add(matched_monster)
             for matched_monster in self.dgcog.index.name_tokens[match]:
                 if matched_monster not in valid_monsters:
-                    matches[matched_monster].name.add((token, match, '(name)'))
+                    matches[matched_monster].name.add((token.value, match, '(name)'))
                     matches[matched_monster].score += score * mult
                     valid_monsters.add(matched_monster)
             for matched_monster in self.dgcog.index.fluff_tokens[match]:
                 if matched_monster not in valid_monsters:
-                    matches[matched_monster].name.add((token, match, '(fluff)'))
+                    matches[matched_monster].name.add((token.value, match, '(fluff)'))
                     matches[matched_monster].score += score * mult / 2
                     valid_monsters.add(matched_monster)
 
         return valid_monsters
 
-    def process_modifiers(self, mod_tokens, neg_mod_tokens, potential_evos, matches):
-        for pos_mod_token in mod_tokens:
+    def process_modifiers(self, mod_tokens: Set[Token], potential_evos: Set[MonsterModel],
+                          matches: MatchMap) -> Set[MonsterModel]:
+        for mod_token in mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              self._monster_has_modifier(m, pos_mod_token, matches)}
+                              self._monster_has_modifier(m, mod_token, matches) ^ mod_token.negated}
             if not potential_evos:
-                return None
-        for neg_mod_token in neg_mod_tokens:
-            potential_evos = {m for m in potential_evos if
-                              not self._monster_has_modifier(m, neg_mod_token, matches)}
-            if not potential_evos:
-                return None
-
+                return set()
         return potential_evos
 
-    def get_priority_tuple(self, monster, tokenized_query=None, matches=None):
+    def get_priority_tuple(self, monster: MonsterModel, tokenized_query: List[str] = None,
+                           matches: MatchMap = None) -> Tuple[Any, ...]:
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
@@ -220,7 +234,8 @@ class FindMonster:
                 monster.rarity,
                 monster.monster_no_na)
 
-    def get_most_eligable_monster(self, monsters, tokenized_query=None, matches=None):
+    def get_most_eligable_monster(self, monsters: Iterable[MonsterModel], tokenized_query: List[str] = None,
+                                  matches: MatchMap = None) -> MonsterModel:
         if matches is None:
             matches = defaultdict(MonsterMatch)
         if tokenized_query is None:
@@ -228,7 +243,7 @@ class FindMonster:
 
         return max(monsters, key=lambda m: self.get_priority_tuple(m, tokenized_query, matches))
 
-    def get_monster_evos(self, matched_mons, matches):
+    def get_monster_evos(self, matched_mons: Set[MonsterModel], matches: MatchMap) -> Set[MonsterModel]:
         monster_evos = set()
         for monster in sorted(matched_mons, key=lambda m: matches[m].score, reverse=True):
             for evo in self.dgcog.database.graph.get_alt_monsters(monster):
@@ -240,23 +255,20 @@ class FindMonster:
 
         return monster_evos
 
-    async def find_monster_search(self, tokenized_query) -> \
-            Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch], Set["MonsterModel"]]:
-        mod_tokens, neg_mod_tokens, name_query_tokens, neg_name_tokens = \
-            self.interpret_query(tokenized_query)
+    async def find_monster_search(self, tokenized_query: List[str]) -> \
+            Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel]]:
+        mod_tokens, name_query_tokens = self.interpret_query(tokenized_query)
 
         name_query_tokens.difference_update({'|'})
 
-        for mod_token in mod_tokens.union(neg_mod_tokens):
-            if mod_token not in self.dgcog.index.all_modifiers:
+        for mod_token in mod_tokens:
+            if mod_token.value not in self.dgcog.index.all_modifiers:
                 async with self.dgcog.config.typo_mods() as typo_mods:
-                    typo_mods.append(mod_token)
+                    typo_mods.append(mod_token.value)
 
         matches = defaultdict(MonsterMatch)
-        if name_query_tokens or neg_name_tokens:
-            matched_mons = self.process_name_tokens(name_query_tokens,
-                                                    neg_name_tokens,
-                                                    matches)
+        if name_query_tokens:
+            matched_mons = self.process_name_tokens(name_query_tokens, matches)
             if not matched_mons:
                 # No monsters match the given name tokens
                 return None, {}, set()
@@ -267,7 +279,7 @@ class FindMonster:
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
-        matched_mons = self.process_modifiers(mod_tokens, neg_mod_tokens, matched_mons, matches)
+        matched_mons = self.process_modifiers(mod_tokens, matched_mons, matches)
         if not matched_mons:
             # no modifiers match any monster in the evo tree
             return None, {}, set()
@@ -277,8 +289,8 @@ class FindMonster:
 
         return mon, matches, matched_mons
 
-    async def find_monster_debug(self, query) -> \
-            Tuple[Optional["MonsterModel"], Mapping["MonsterModel", MonsterMatch], Set["MonsterModel"], int]:
+    async def find_monster_debug(self, query: str) -> \
+            Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel], int]:
         await self.dgcog.wait_until_ready()
 
         query = rmdiacritics(query).lower().replace(",", "")
@@ -298,27 +310,37 @@ class FindMonster:
 
         return best_monster, matches_dict, valid_monsters, 0
 
-    async def find_monster(self, query) -> Optional["MonsterModel"]:
+    async def find_monster(self, query: str) -> Optional[MonsterModel]:
         matched_monster, _, _, _ = await self.find_monster_debug(query)
         return matched_monster
 
-    async def find_monsters(self, query) -> List["MonsterModel"]:
+    async def find_monsters(self, query: str) -> List[MonsterModel]:
         _, matches, monsters, _ = await self.find_monster_debug(query)
         return sorted(monsters, key=lambda m: self.get_priority_tuple(m, matches=matches), reverse=True)
 
-    def calc_ratio_modifier(self, s1, s2, dist=.05):
-        return jaro_winkler(s1, s2, .05)
+    def calc_ratio_modifier(self, s1: Union[Token, str], s2: str, dist: float = .05) -> float:
+        if isinstance(s1, Token):
+            if s1.exact:
+                return 1.0 if s1.value == s2 else 0.0
+            s1 = s1.value
 
-    def calc_ratio_name(self, token, full_word, factor=.05):
+        return jaro_winkler(s1, s2, dist)
+
+    def calc_ratio_name(self, token: Union[Token, str], full_word: str, factor: int = .05) -> float:
+        string = token.value if isinstance(token, Token) else token
+
         mw = self.dgcog.index.mwt_to_len[full_word] != 1
-        jw = jaro_winkler(token, full_word, factor)
+        jw = jaro_winkler(string, full_word, factor)
 
-        if token.isdigit() and full_word.isdigit() and token != full_word:
+        if isinstance(token, Token) and token.exact and string != full_word:
             return 0.0
 
-        if full_word == token:
+        if string.isdigit() and full_word.isdigit() and string != full_word:
+            return 0.0
+
+        if full_word == string:
             score = 1.0
-        elif len(token) >= 3 and full_word.startswith(token):
+        elif len(string) >= 3 and full_word.startswith(string):
             score = .995
             if mw and jw < score:
                 return score
