@@ -138,3 +138,5 @@ bot_data/
 .orig
 
 .DS_Store
+.vscode
+__pycache__

@@ -229,7 +229,7 @@ class PadBuildImgSettings(CogSettings):
         await self.downloadAssets(REMOTE_ASSET_URL + AWK_CIRCLE + '.png', params.ASSETS_DIR + AWK_CIRCLE + '.png')
         await self.downloadAssets(REMOTE_ASSET_URL + AWK_STAR + '.png', params.ASSETS_DIR + AWK_STAR + '.png')
         await self.downloadAssets(REMOTE_ASSET_URL + DELAY_BUFFER + '.png', params.ASSETS_DIR + DELAY_BUFFER + '.png')
-        font_name = os.path.treename(params.FONT_NAME)
+        font_name = os.path.basename(params.FONT_NAME)
         await self.downloadAssets(REMOTE_ASSET_URL + font_name, params.ASSETS_DIR + font_name)
 
     def dmOnly(self, server_id):

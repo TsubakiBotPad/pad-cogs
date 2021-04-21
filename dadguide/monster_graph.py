@@ -1,4 +1,5 @@
 import json
+import re
 from collections import defaultdict
 from typing import Optional, List
 
@@ -93,6 +94,12 @@ FROM
   JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
 """
 
+EXCHANGE_QUERY = """SELECT
+   *
+FROM
+  exchanges
+"""
+
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
@@ -111,6 +118,7 @@ class MonsterGraph(object):
         es = self.database.query_many(EVOS_QUERY, ())
         aws = self.database.query_many(AWAKENINGS_QUERY, ())
         ems = self.database.query_many(EGG_QUERY, ())
+        exs = self.database.query_many(EXCHANGE_QUERY, ())
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -241,6 +249,13 @@ class MonsterGraph(object):
                     mat, evo_model.to_id, type="material_of", model=evo_model)
                 already_used_in_this_evo.append(mat)
 
+        for ex in exs:
+            for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
+                self.graph.add_edge(
+                    ex.target_monster_id, int(vendor_id), type='exchange_from')
+                self.graph.add_edge(
+                    int(vendor_id), ex.target_monster_id, type='exchange_for')
+
         # Caching
         for mid in self.graph.nodes:
             self.graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
@@ -317,7 +332,7 @@ class MonsterGraph(object):
 
     def get_alt_monsters_by_id(self, monster_id):
         ids = self.get_alt_ids_by_id(monster_id)
-        return [self.get_monster(m_id) for m_id in ids]
+        return {self.get_monster(m_id) for m_id in ids}
 
     def get_alt_monsters(self, monster: MonsterModel):
         return self.get_alt_monsters_by_id(monster.monster_id)
@@ -563,6 +578,39 @@ class MonsterGraph(object):
 
     def monster_is_rem_evo(self, monster: MonsterModel):
         return self.monster_is_rem_evo_by_id(monster.monster_no)
+
+    # redeemable
+    def monster_is_exchange_by_id(self, monster_id):
+        return bool(self._get_edges(self.graph[monster_id], 'exchange_from'))
+
+    def monster_is_exchange(self, monster: MonsterModel):
+        return self.monster_is_exchange_by_id(monster.monster_no)
+
+    def monster_is_exchange_evo_by_id(self, monster_id):
+        return any(
+            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_exchange_by_id(m))
+
+    def monster_is_exchange_evo(self, monster: MonsterModel):
+        return self.monster_is_exchange_evo_by_id(monster.monster_no)
+
+    def get_monster_exchange_mat_ids_by_id(self, monster_id):
+        return self._get_edges(self.graph[monster_id], 'exchange_from')
+
+    def get_monster_exchange_mat_ids(self, monster: MonsterModel):
+        return self.get_monster_exchange_mat_ids_by_id(monster.monster_no)
+
+    def get_monster_exchange_mats_by_id(self, monster_id):
+        return {self.get_monster(mid) for mid in self.get_monster_exchange_mat_ids_by_id(monster_id)}
+
+    def get_monster_exchange_mats(self, monster: MonsterModel):
+        return self.get_monster_exchange_mats_by_id(monster.monster_no)
+
+    def monster_is_vendor_exchange_by_id(self, monster_id):
+        ids = self.get_monster_exchange_mats_by_id(monster_id)
+        return bool(ids) and all(15 in [t.value for t in m.types] for m in ids)
+
+    def monster_is_vendor_exchange(self, monster: MonsterModel):
+        return self.monster_is_vendor_exchange_by_id(monster.monster_no)
 
     def monster_is_new(self, monster: MonsterModel):
         latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))

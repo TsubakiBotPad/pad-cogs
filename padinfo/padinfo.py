@@ -459,7 +459,7 @@ class PadInfo(commands.Cog):
         menu = IdMenu.menu(initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
 
-    @commands.command(aliases=["series"])
+    @commands.command(aliases=["series", "panth"])
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
@@ -798,7 +798,7 @@ class PadInfo(commands.Cog):
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 
-    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp'])
+    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp', 'awakenings'])
     @checks.bot_has_permissions(embed_links=True)
     async def awakeninghelp(self, ctx, *, query):
         """Describe a monster's regular and super awakenings in detail."""
