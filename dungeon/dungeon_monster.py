@@ -81,6 +81,8 @@ class DungeonMonster(object):
         # top_level = []
         # field_value_dict = OrderedDict()
 
+        embeds = []
+
         desc = ""
         if spawn is not None:
             embed = discord.Embed(
@@ -93,11 +95,14 @@ class DungeonMonster(object):
                 title="Enemy:{} at Level: {}".format(self.name, self.level),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc))
+        embeds.append(embed)
+        embeds.append(discord.Embed(title="test", desc="test"))
         lines = []
         for group in self.groups:
             await group.give_string2(lines, 0, verbose)
         names = [""]
         values = [""]
+        fields = 0
         first = None
         for l in lines:
             for comp in l[1]:
@@ -109,35 +114,9 @@ class DungeonMonster(object):
             value = values[index]
             if len(name) > 0:
                 embed.add_field(name=name, value=value, inline=False)
-            """level = l[0]
-            skills = l[1][0]
-            condition = l[1][2]
-            skill_line = "".join(skills)"""
-            """if len(l[1]) > 256:
-                logging.warning('above 256: {}'.format(l[1]))
-            actual = "{}{}".format(indent(l[0]), l[1])
-            if first is None:
-                first = actual
-            else:
-                embed.add_field(name=first, value=actual, inline=False)
-                first = None"""
-        """if technical == 0:
-            return embed
-        for n, v in fields:
-            embed.add_field(name=n, value=v, inline=False)
-
-        for k, v in field_value_dict.items():
-            names, values = field_value_split(v, 1024)
-            index = 0
-            for val in values:
-                if index == 0:
-                    embed.add_field(name=k, value=val, inline=False)
-                else:
-                    embed.add_field(name=names[index - 1], value=val, inline=False)
-                index += 1"""
-
+                fields += 1
             # embed.add_field(name=k, value=content, inline=False)
-        return embed
+        return embeds
 
     async def make_preempt_embed(self, spawn: "list[int]" = None, floor: "list[int]" = None, technical: int = None):
         skills = await self.collect_skills()
@@ -158,7 +137,7 @@ class DungeonMonster(object):
                 title="Enemy:{} at Level: {}".format(self.name, self.level),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc))
-        return embed
+        return [embed, discord.Embed(title="test", desc="test")]
 
     async def collect_skills(self):
         skills = []
