@@ -33,7 +33,7 @@ class SimpleViewState(ViewStateBase):
                    reaction_list=ims.get('reaction_list'))
 
 
-class SimpleTextView:
+class SimpleView:
     VIEW_TYPE = 'SimpleText'
 
     @staticmethod

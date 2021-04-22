@@ -7,6 +7,7 @@ from typing import List
 
 import discord
 import tsutils
+from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 
 from tsutils import Menu, EmojiUpdater
@@ -32,6 +33,9 @@ from dungeon.dungeon_monster import DungeonMonster
 from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
+from dungeon.menu.simple import SimpleMenu
+from dungeon.view.simple import SimpleViewState
+
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
@@ -583,8 +587,13 @@ class DungeonCog(commands.Cog):
         return dungeon
 
     @commands.command()
-    async def test_menu2(self, ctx):
+    async def test_menu2(self, ctx, message):
+        menu = SimpleMenu.menu()
+        original_author_id = ctx.message.author.id
+        view_state = SimpleViewState(original_author_id, 'SimpleMenu', message, Color.default(), message, 'Message2', reaction_list=[])
+        message = await menu.create(ctx, view_state)
         await ctx.send("This is a test of menu2")
+
 
     @commands.command()
     async def test(self, ctx):
