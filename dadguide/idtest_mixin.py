@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import List
 
 import tsutils
 from redbot.core import commands, Config, checks
@@ -486,9 +487,14 @@ class IdTest:
         for page in pagify(o):
             await ctx.send(box(page))
 
-    async def run_tests(self):
+    async def run_tests(self) -> List[str]:
+        """Run all tests"""
+        rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
+        failures = []
+
         qsuite = await self.config.test_suite()
-        for q in qsuite:
+        ml = len(max(qsuite or [''], key=len)) + 2
+        for c, q in enumerate(sorted(qsuite)):
             try:
                 m = await self.find_monster(q) or -1
             except Exception:
@@ -496,14 +502,19 @@ class IdTest:
             mid = getattr(m, "monster_id", m)
 
             if mid != qsuite[q]['result']:
-                return False
+                reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
+                qq = '"' + q + '"'
+                failures.append(f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "
+                                f"Ex: {qsuite[q]['result']}, Ac: {mid}{reason}")
 
         fsuite = await self.config.fluff_suite()
-        for v in fsuite:
+        for c, v in enumerate(fsuite):
             fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
             name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
-                return False
-
-        return True
+                q = '"{}"'.format(v['token'])
+                failures.append(f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml - 5)} - "
+                                f"{ycircle if name or fluff else rcircle} "
+                                f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token")
+        return failures

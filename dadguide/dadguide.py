@@ -145,8 +145,7 @@ class Dadguide(commands.Cog, IdTest):
         if not await self.config.indexlog():
             return
 
-        if not await self.run_tests():
-            self.index.issues.insert(0, "Test cases failed.")
+        self.index.issues.extend((await self.run_tests())[:25])
 
         channel = self.bot.get_channel(await self.config.indexlog())
         if self.index.issues:
