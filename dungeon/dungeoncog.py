@@ -33,7 +33,7 @@ from dungeon.dungeon_monster import DungeonMonster
 from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
-from dungeon.menu.simple import SimpleMenu
+from dungeon.menu.simple import SimpleMenu, SimpleEmoji, SimpleMenuPanes
 from dungeon.view.simple import SimpleViewState
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
@@ -206,7 +206,7 @@ class DungeonEmojiUpdater(EmojiUpdater):
 
     def __init__(self, ctx, emoji_to_embed, dungeon_cog=None, selected_emoji=None, pm: DungeonMonster = None,
                  pm_dungeon: "list[list[DungeonMonster]]" = None, pm_floor: "list[DungeonMonster]" = None,
-                 technical: int = None, compacts = None, verboses = None, preempts = None):
+                 technical: int = None, compacts=None, verboses=None, preempts=None):
         self.emoji_dict = emoji_to_embed
         self.selected_emoji = selected_emoji
         self.pm = pm
@@ -277,13 +277,23 @@ class DungeonEmojiUpdater(EmojiUpdater):
             return True
 
         if update:
-            self.compacts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)], floor=[index_floor + 1, len(self.pm_dungeon)], technical=self.technical)
-            self.verboses = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)], floor=[index_floor + 1, len(self.pm_dungeon)], technical=self.technical)
-            self.preempts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)], floor=[index_floor + 1, len(self.pm_dungeon)], technical=self.technical)
+            self.compacts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
+                                                     technical=self.technical)
+            self.verboses = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
+                                                     technical=self.technical)
+            self.preempts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
+                                                     technical=self.technical)
         if selected_emoji != self.dungeon_cog.next_page:
             self.current_page = 0
 
-        self.emoji_dict = await self.dungeon_cog.make_emoji_dictionary(self.ctx, compact_page=self.compacts[self.current_page], verbose_page=self.verboses[self.current_page], preempt_page=self.preempts[self.current_page], show=len(self.current_pages) > 1)
+        self.emoji_dict = await self.dungeon_cog.make_emoji_dictionary(self.ctx,
+                                                                       compact_page=self.compacts[self.current_page],
+                                                                       verbose_page=self.verboses[self.current_page],
+                                                                       preempt_page=self.preempts[self.current_page],
+                                                                       show=len(self.current_pages) > 1)
         return True
 
 
@@ -351,6 +361,7 @@ def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
     elif always_trigger_above:
         text = '{} while HP > {}'.format(turn_text, always_trigger_above)
     return text
+
 
 def formatOverview(query):
     output = "Dungeon Name: {}".format(query[0]["dungeon_name_en"])
@@ -504,7 +515,8 @@ class DungeonCog(commands.Cog):
                                   multi_attack=emoji_cache.get_by_name('multi_hit'),
                                   target_self='Self',
                                   health=emoji_cache.get_by_name('health'),
-                                  combo_orb=emoji_cache.get_by_name('orb_combo'),                                  locked_bomb_orb=emoji_cache.get_by_name('locked_bomb_orb'),
+                                  combo_orb=emoji_cache.get_by_name('orb_combo'),
+                                  locked_bomb_orb=emoji_cache.get_by_name('locked_bomb_orb'),
                                   random_attribute='Random Att',
                                   water_orb=emoji_cache.get_by_name('orb_water'),
                                   wood_orb=emoji_cache.get_by_name('orb_wood'),
@@ -590,10 +602,12 @@ class DungeonCog(commands.Cog):
     async def test_menu2(self, ctx, message):
         menu = SimpleMenu.menu()
         original_author_id = ctx.message.author.id
-        view_state = SimpleViewState(original_author_id, 'SimpleMenu', message, Color.default(), message, 'Message2', reaction_list=[])
+        full_reaction_list = [emoji_cache.get_by_name(e) for e in SimpleMenuPanes.emoji_names()]
+        test_list = ['1', '2', '3', '4']
+        view_state = SimpleViewState(original_author_id, 'SimpleMenu', message, Color.default(), test_list, 0,
+                                     reaction_list=full_reaction_list)
         message = await menu.create(ctx, view_state)
         await ctx.send("This is a test of menu2")
-
 
     @commands.command()
     async def test(self, ctx):
@@ -676,7 +690,8 @@ class DungeonCog(commands.Cog):
 
         return monster
 
-    async def make_emoji_dictionary(self, ctx, scroll_monsters=None, scroll_floors=None, compact_page = None, verbose_page = None, preempt_page = None, show = False):
+    async def make_emoji_dictionary(self, ctx, scroll_monsters=None, scroll_floors=None, compact_page=None,
+                                    verbose_page=None, preempt_page=None, show=False):
         if scroll_monsters is None:
             scroll_monsters = []
         if scroll_floors is None:
@@ -788,14 +803,16 @@ class DungeonCog(commands.Cog):
 
             pm = pm_dungeon[0][0]
             compacts = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                               floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
             verboses = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                               floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
             preempts = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                               floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
-            emoji_to_embed = await self.make_emoji_dictionary(ctx, compact_page = compacts[0], verbose_page=verboses[0], preempt_page=preempts[0], show=len(compacts) > 1)
+                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+            emoji_to_embed = await self.make_emoji_dictionary(ctx, compact_page=compacts[0], verbose_page=verboses[0],
+                                                              preempt_page=preempts[0], show=len(compacts) > 1)
             dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, start_selection[starting], pm_dungeon[0][0],
-                                      pm_dungeon, pm_dungeon[0], technical=int(dungeon.sub_dungeons[0].technical), compacts=compacts, verboses=verboses, preempts=preempts)
+                                      pm_dungeon, pm_dungeon[0], technical=int(dungeon.sub_dungeons[0].technical),
+                                      compacts=compacts, verboses=verboses, preempts=preempts)
             await self._do_menu(ctx, start_selection[starting], dmu, 60)
 
     @commands.command()

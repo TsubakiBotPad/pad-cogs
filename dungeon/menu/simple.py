@@ -35,6 +35,15 @@ class SimpleMenu:
         return await message.delete()
 
     @staticmethod
+    async def respond_with_right(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        print("test")
+        view_state = await SimpleViewState.deserialize(dgcog, user_config, ims, 1)
+        control = SimpleMenu.message_control(view_state)
+        return control
+
+    @staticmethod
     def message_control(state: SimpleViewState):
         if state is None:
             return None
@@ -47,12 +56,14 @@ class SimpleMenu:
 
 class SimpleEmoji:
     home = emoji_buttons['home']
+    right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
 
 
 class SimpleMenuPanes(MenuPanes):
     INITIAL_EMOJI = SimpleEmoji.home
     DATA = {
         SimpleEmoji.home: (SimpleMenu.respond_with_message, SimpleNames.home),
+        SimpleEmoji.right: (SimpleMenu.respond_with_right, SimpleView.VIEW_TYPE)
 
     }
     HIDDEN_EMOJIS = [

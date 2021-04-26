@@ -8,38 +8,46 @@ from padinfo.common.config import UserConfig
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.view_state_base import ViewStateBase
 
-class SimpleViewState(ViewStateBase):
+class DungeonViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query,
-                 color, message_list, index,
+                pm_dungeon, floor, floor_index, type,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, reaction_list=reaction_list)
-        self.message_list = message_list
-        self.index = index
-        self.color = color
+        self.pm_dungeon = pm_dungeon
+        self.floor = floor
+        self.floor_index = floor_index
+        self.type = type
+
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'message_list': self.message_list,
-            'index': self.index
+            'pm_dungeon': self.pm_dungeon,
+            'floor': self.floor,
+            'floor_index': self.floor_index,
+            'type': self.type
         })
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict, inc):
+    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict, inc_floor, inc_index):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
-        print("hi")
-        return cls(original_author_id, menu_type, raw_query, user_config.color, ims.get('message_list'), ims.get('index') + inc,
-                   reaction_list=ims.get('reaction_list'))
+        pm_dungeon = ims.get('pm_dungeon')
+        floor = ims.get('floor')
+        floor_index = ims.get('floor_index')
+        type = ims.get('type')
+
+        return cls(original_author_id, menu_type, raw_query, pm_dungeon, floor, floor_index, type, ims.get('reaction_list'))
 
 
-class SimpleView:
-    VIEW_TYPE = 'SimpleText'
+
+class DungeonView:
+    VIEW_TYPE = 'DungeonText'
 
     @staticmethod
-    def embed(state: SimpleViewState):
+    def embed(state: DungeonViewState):
         fields=[
             EmbedField("Title", Box(*["1", '2']))
         ]
