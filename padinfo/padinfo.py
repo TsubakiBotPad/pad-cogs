@@ -125,6 +125,14 @@ class PadInfo(commands.Cog):
         """
         return
 
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
+
     async def reload_nicknames(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadInfo'):
