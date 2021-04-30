@@ -65,7 +65,14 @@ class MultipleAwakeningToken(SpecialToken):
                 if maw == aw:
                     c += 1
                 elif (eq := AWAKENING_EQUIVALENCES.get(maw.awoken_skill_id)) and eq[1] == aw.awoken_skill_id:
-                    c += eq[0] - 1  # Remove one for the plus version that was matched.
+                    # Hack - if we are matching a plus version of an awakening here, then we're adding
+                    # the correct number of awakenings FOR THE PLUS VERSION here. However, we will
+                    # have also, on another pass, matched the token against the base version of
+                    # the awakening, adding 1 too many to the total. So subtract one from the total
+                    # here to compensate.
+                    # A better approach would be to identify the case when we match the base awakening
+                    # and not add that in the first place, but doing so is difficult and this works.
+                    c += eq[0] - 1
             if c >= self.count:
                 return True
         return False
