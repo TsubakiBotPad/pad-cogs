@@ -65,7 +65,7 @@ class MultipleAwakeningToken(SpecialToken):
                 if maw == aw:
                     c += 1
                 elif (eq := AWAKENING_EQUIVALENCES.get(maw.awoken_skill_id)) and eq[1] == aw.awoken_skill_id:
-                    c += eq[0] - 1
+                    c += eq[0] - 1  # Remove one for the plus version that was matched.
             if c >= self.count:
                 return True
         return False
