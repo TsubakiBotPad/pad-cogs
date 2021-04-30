@@ -21,3 +21,11 @@ class AwokenSkillModel(BaseModel):
             'awoken_skill_id': self.awoken_skill_id,
             'name_en': self.name_en,
         }
+
+    def __eq__(self, other):
+        if hasattr(other, "awoken_skill"):
+            return self == other.awoken_skill
+        elif hasattr(other, "awoken_skill_id"):
+            return self.awoken_skill_id == other.awoken_skill_id
+        else:
+            return False
