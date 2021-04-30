@@ -7,12 +7,14 @@ from .models.enum_types import Attribute, MonsterType
 K = TypeVar('K')
 V = TypeVar('V')
 
+
 def inverse_map(token_map: Mapping[K, Tuple[V]]) -> Mapping[V, Tuple[K]]:
     ret = defaultdict(tuple)
     for k, vs in token_map.items():
         for v in vs:
             ret[v] += (k,)
     return ret
+
 
 COLOR_MAP = {
     Attribute.Fire: ('r', 'red', 'fire'),
@@ -351,7 +353,7 @@ ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'r
 
 # This probably doesn't belong in here
 AWAKENING_EQUIVALENCES = {
-    52: (2, 10), # 1 unbindable = 2 bind resistance
-    53: (2, 19), # 1 te+ = 2 te
-    56: (2, 21), # 1 sb+ = 2 sb
+    52: (2, 10),  # 1 unbindable = 2 bind resistance
+    53: (2, 19),  # 1 te+ = 2 te
+    56: (2, 21),  # 1 sb+ = 2 sb
 }
