@@ -16,23 +16,25 @@ Subattr: {}
 Total:   {}
 
 --------------
-{}
+{}{}
 """
 
 TEAM_BUTTON_FORMAT = "As {} base ({}x {}): Contributes {}"
 CARD_BUTTON_FORMAT = "As {} base ({}x): Deals {}"
 
-team_buttons = []
-card_buttons = []
-
 MonsterStat = namedtuple('MonsterStat', 'name id mult att')
-team_buttons.append(MonsterStat("Nergi Hunter", 4172, 40, [2, 4]))
-team_buttons.append(MonsterStat("Oversoul", 5273, 50, [0, 1, 2, 3, 4]))
-team_buttons.append(MonsterStat("Ryuno Ume", 5252, 80, [2, 4]))
-card_buttons.append(MonsterStat("Satan", 4286, 300, []))
-card_buttons.append(MonsterStat("Brachydios", 4134, 350, []))
-card_buttons.append(MonsterStat("Rajang", 5527, 550, []))
-card_buttons.append(MonsterStat("Balrog", 5108, 450, []))
+
+team_buttons = [
+    MonsterStat("Nergi Hunter", 4172, 40, [2, 4]),
+    MonsterStat("Oversoul", 5273, 50, [0, 1, 2, 3, 4]),
+    MonsterStat("Ryuno Ume", 5252, 80, [2, 4])
+]
+card_buttons = [
+    MonsterStat("Satan", 4286, 300, []),
+    MonsterStat("Brachydios", 4134, 350, []),
+    MonsterStat("Rajang", 5527, 550, []),
+    MonsterStat("Balrog", 5108, 450, [])
+]
 
 COLORS = ["R", "B", "G", "L", "D"]
 
@@ -90,29 +92,35 @@ class ButtonInfo:
         return 1 / 3
 
     def to_string(self, monster, info):
-        damage_str = self._get_btn_damage(Fteam_buttons, card_buttons, info, monster)
-        return INFO_STRING.format(monster.monster_id, monster.name_en, info.main_damage, info.sub_damage, 
-                                  info.total_damage, 
-                                  info.main_damage_with_atk_latent, info.sub_damage_with_atk_latent, 
-                                  info.total_damage_with_atk_latent, damage_str)
+        card_btn_str = self._get_card_btn_damage(card_buttons, info, monster)
+        team_btn_str = self._get_team_btn_damage(team_buttons, info, monster)
+        return INFO_STRING.format(monster.monster_id, monster.name_en, info.main_damage, info.sub_damage,
+                                  info.total_damage,
+                                  info.main_damage_with_atk_latent, info.sub_damage_with_atk_latent,
+                                  info.total_damage_with_atk_latent, card_btn_str, team_btn_str)
 
-    def _get_btn_damage(self, tb, cb, info, monster):
+    def _get_card_btn_damage(self, card_buttons, info, monster):
+        ret_str = ""
+        card_buttons.sort(key=lambda x: x.mult)
+        for card in card_buttons:
+            ret_str += "\n" + CARD_BUTTON_FORMAT.format(card.name, card.mult,
+                                                        (info.main_damage_with_atk_latent * card.mult))
+        return ret_str
+
+    def _get_team_btn_damage(self, team_buttons, info, monster):
         # TODO: calculate with oncolor assist damage and ATK+ eq (Oversoul)
         ret_str = ""
-        cb.sort(key=lambda x: x.mult)
-        tb.sort(key=lambda x: x.mult)
-        for x in cb:
-            ret_str += "\n" + CARD_BUTTON_FORMAT.format(x.name, x.mult, (info.main_damage_with_atk_latent * x.mult))
-        for x in tb:
+        team_buttons.sort(key=lambda x: x.mult)
+        for card in team_buttons:
             total_dmg = 0
-            if(monster.attr1.value in x.att):
+            if(monster.attr1.value in card.att):
                 total_dmg += info.main_damage_with_atk_latent
-            if(monster.attr2.value in x.att):
+            if(monster.attr2.value in card.att):
                 total_dmg += info.sub_damage_with_atk_latent
             colors_str = ""
-            for i in x.att:
+            for i in card.att:
                 colors_str += COLORS[i]
-            ret_str += "\n" + TEAM_BUTTON_FORMAT.format(x.name, x.mult, colors_str, (total_dmg * x.mult))
+            ret_str += "\n" + TEAM_BUTTON_FORMAT.format(card.name, card.mult, colors_str, (total_dmg * card.mult))
         return ret_str
 
 
