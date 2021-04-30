@@ -1,6 +1,18 @@
+from collections import defaultdict
 from enum import Enum
+from typing import Mapping, Tuple, TypeVar
 
 from .models.enum_types import Attribute, MonsterType
+
+K = TypeVar('K')
+V = TypeVar('V')
+
+def inverse_map(token_map: Mapping[K, Tuple[V]]) -> Mapping[V, Tuple[K]]:
+    ret = defaultdict(tuple)
+    for k, vs in token_map.items():
+        for v in vs:
+            ret[v] += (k,)
+    return ret
 
 COLOR_MAP = {
     Attribute.Fire: ('r', 'red', 'fire'),
@@ -165,7 +177,7 @@ AWOKEN_MAP = {
     Awakenings.REDUCELIGHT: ('elresl', 'elres'),
     Awakenings.REDUCEDARK: ('elresd', 'elres'),
     Awakenings.AUTOHEAL: ('autoheal',),
-    Awakenings.BINDRES: ('unbindable',),
+    Awakenings.BINDRES: ('unbindable', 'bindres'),
     Awakenings.BLINDRES: ('resb',),
     Awakenings.JAMMERRES: ('resj',),
     Awakenings.POISONRES: ('resp',),
@@ -207,11 +219,12 @@ AWOKEN_MAP = {
     Awakenings.EQUIP: ('equip', 'assist', 'eq'),
     Awakenings.SUPERFUA: ('sfua',),
     Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
-    Awakenings.UNBINDABLE: ('unbindable',),
-    Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
+    Awakenings.UNBINDABLE: ('unbindable', ''
+                                          ''),
+    Awakenings.EXTMOVEPLUS: ('te+', 'te', 'finger+', 'finger'),
     Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),
     Awakenings.TAPERESIST: ('taperes', 'tape'),
-    Awakenings.SKILLBOOSTPLUS: ('sb+',),
+    Awakenings.SKILLBOOSTPLUS: ('sb+', 'sb'),
     Awakenings.HP80ORMORE: ('>80', 'highhp'),
     Awakenings.HP50ORLESS: ('<50', 'lowhp'),
     Awakenings.ELSHIELD: ('elshield', 'elh', 'hel'),
@@ -335,3 +348,10 @@ PROBLEMATIC_SERIES_TOKENS = {
 ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
                  'bg', 'bb', 'bl', 'bd', 'bx', 'g', 'gr', 'gg', 'gb', 'gl', 'gd', 'gx', 'l', 'lr', 'lg', 'lb', 'll',
                  'ld', 'lx', 'd', 'dr', 'dg', 'db', 'dl', 'dd', 'dx', 'x', 'xr', 'xg', 'xb', 'xl', 'xd', 'xx'}
+
+# This probably doesn't belong in here
+AWAKENING_EQUIVALENCES = {
+    52: (2, 10), # 1 unbindable = 2 bind resistance
+    53: (2, 19), # 1 te+ = 2 te
+    56: (2, 21), # 1 sb+ = 2 sb
+}
