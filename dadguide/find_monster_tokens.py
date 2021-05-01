@@ -10,7 +10,7 @@ def regexlist(tokens):
 
 class Token:
     def __init__(self, value, *, negated=False, exact=False):
-        self.value = value
+        self.value = self.full_value = value
         self.negated = negated
         self.exact = exact
 
@@ -47,11 +47,12 @@ class SpecialToken(Token):
 class MultipleAwakeningToken(SpecialToken):
     RE_MATCH = rf"(\d+)-(sa-)?-?({regexlist(AWAKENING_TOKENS)})"
 
-    def __init__(self, value, *, negated=False, exact=False, database):
-        count, sa, value = re.fullmatch(self.RE_MATCH, value).groups()
+    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+        count, sa, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
         self.count = int(count)
         self.sa = bool(sa)
         super().__init__(value, negated=negated, exact=exact, database=database)
+        self.full_value = fullvalue
 
     def matches(self, other):
         c = 0
@@ -69,7 +70,6 @@ class MultipleAwakeningToken(SpecialToken):
                 matched = False
 
             if c >= self.count:
-                print(other.awakenings, other.superawakening_count, idx, c, self, other)
                 return True
             if maw.is_super and (matched or not self.sa):
                 return False
