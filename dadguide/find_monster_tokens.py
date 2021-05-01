@@ -69,8 +69,9 @@ class MultipleAwakeningToken(SpecialToken):
                 matched = False
 
             if c >= self.count:
+                print(other.awakenings, other.superawakening_count, idx, c, self, other)
                 return True
-            if idx > (len(other.awakenings) - other.superawakening_count) and (matched or not self.sa):
+            if idx >= (len(other.awakenings) - other.superawakening_count) and (matched or not self.sa):
                 return False
         return False
 

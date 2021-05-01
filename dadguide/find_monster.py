@@ -6,7 +6,7 @@ from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
 
-from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
+from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES, SpecialToken
 from dadguide.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
@@ -138,7 +138,7 @@ class FindMonster:
 
         # Allow modifiers to match as name tokens if they're alone (Fix for hel and cloud)
         if not name and modifiers and lastmodpos:
-            if self.dgcog.index.manual[modifiers[-1].value]:
+            if self.dgcog.index.manual[modifiers[-1].value] and not isinstance(modifiers[-1], SpecialToken):
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
