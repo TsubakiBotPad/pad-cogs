@@ -4,6 +4,7 @@ from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.base import BaseIdView
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
@@ -21,11 +22,11 @@ class PicViewState(ViewStateBaseId):
         return ret
 
 
-class PicView:
+class PicView(BaseIdView):
     VIEW_TYPE = 'Pic'
 
-    @staticmethod
-    def embed(state: PicViewState):
+    @classmethod
+    def embed(cls, state: PicViewState):
         url = MonsterImage.picture(state.monster)
         animated = state.monster.has_animation
         fields = [EmbedField(
@@ -53,8 +54,9 @@ class PicView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(state.monster).to_markdown() +
-                      ("!" if state.alt_monsters[0].monster_id == 2141 else ""),
+                title=MonsterHeader.long_maybe_tsubaki(state.monster,
+                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields,

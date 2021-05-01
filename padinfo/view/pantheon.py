@@ -8,6 +8,7 @@ from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
     get_rarity_emoji
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
@@ -155,11 +156,11 @@ def _pantheon_lines(monsters, base_monster):
     ]
 
 
-class PantheonView:
+class PantheonView(BaseIdView):
     VIEW_TYPE = 'Pantheon'
 
-    @staticmethod
-    def embed(state: PantheonViewState):
+    @classmethod
+    def embed(cls, state: PantheonViewState):
         fields = [EmbedField(
             'Pantheon: {}'.format(state.series_name),
             Box(*_pantheon_lines(state.pantheon_list, state.base_monster))
@@ -169,8 +170,9 @@ class PantheonView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(state.monster).to_markdown() +
-                      ("!" if state.alt_monsters[0].monster_id == 2141 else ""),
+                title=MonsterHeader.long_maybe_tsubaki(state.monster,
+                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=fields,
