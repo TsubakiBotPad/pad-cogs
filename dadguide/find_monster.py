@@ -138,7 +138,7 @@ class FindMonster:
 
         # Allow modifiers to match as name tokens if they're alone (Fix for hel and cloud)
         if not name and modifiers and lastmodpos:
-            if self.dgcog.index.manual[modifiers[-1].value]:
+            if self.dgcog.index.manual[modifiers[-1].full_value]:
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
