@@ -27,8 +27,8 @@ class Token:
         return hash(self.value)
 
     def __repr__(self):
-        return ("-" if self.negated else "") + (repr(self.value) if self.exact else self.value)
-
+        token = ("-" if self.negated else "") + (repr(self.full_value) if self.exact else self.full_value)
+        return f"{self.__class__.__name__}<{token}>"
 
 class SpecialToken(Token):
     RE_MATCH = r""
@@ -39,9 +39,6 @@ class SpecialToken(Token):
 
     def matches(self, other: MonsterModel) -> bool:
         return False
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}(token={super().__repr__()})"
 
 
 class MultipleAwakeningToken(SpecialToken):
@@ -74,9 +71,6 @@ class MultipleAwakeningToken(SpecialToken):
             if maw.is_super and (matched or not self.sa):
                 return False
         return False
-
-    def __repr__(self):
-        return super().__repr__() + f"<sa:{self.sa}, count:{self.count}>"
 
 
 
