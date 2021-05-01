@@ -70,7 +70,7 @@ class MultipleAwakeningToken(SpecialToken):
 
             if c >= self.count:
                 return True
-            if idx > other.superawakening_count and (matched or not self.sa):
+            if idx > (len(other.awakenings) - other.superawakening_count) and (matched or not self.sa):
                 return False
         return False
 
