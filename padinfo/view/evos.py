@@ -105,7 +105,8 @@ class EvosView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(state.monster).to_markdown(),
+                title=MonsterHeader.long_v2(state.monster).to_markdown() +
+                      ("!" if state.alt_monsters[0].monster_id == 2141 else ""),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
             embed_footer=pad_info_footer_with_state(state),

@@ -51,7 +51,8 @@ class OtherInfoView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
+                title=MonsterHeader.long_v2(m).to_markdown() +
+                      ("!" if state.alt_monsters[0].monster_id == 2141 else ""),
                 url=puzzledragonx(m)),
             embed_footer=pad_info_footer_with_state(state),
             embed_fields=[
