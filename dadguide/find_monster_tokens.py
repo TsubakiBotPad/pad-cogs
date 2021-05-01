@@ -10,7 +10,7 @@ def regexlist(tokens):
 
 class Token:
     def __init__(self, value, *, negated=False, exact=False):
-        self.value = value
+        self.value = self.full_value = value
         self.negated = negated
         self.exact = exact
 
@@ -27,8 +27,8 @@ class Token:
         return hash(self.value)
 
     def __repr__(self):
-        return ("-" if self.negated else "") + (repr(self.value) if self.exact else self.value)
-
+        token = ("-" if self.negated else "") + (repr(self.full_value) if self.exact else self.full_value)
+        return f"{self.__class__.__name__}<{token}>"
 
 class SpecialToken(Token):
     RE_MATCH = r""
@@ -40,18 +40,16 @@ class SpecialToken(Token):
     def matches(self, other: MonsterModel) -> bool:
         return False
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}(token={super().__repr__()})"
-
 
 class MultipleAwakeningToken(SpecialToken):
     RE_MATCH = rf"(\d+)-(sa-)?-?({regexlist(AWAKENING_TOKENS)})"
 
-    def __init__(self, value, *, negated=False, exact=False, database):
-        count, sa, value = re.fullmatch(self.RE_MATCH, value).groups()
+    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+        count, sa, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
         self.count = int(count)
         self.sa = bool(sa)
         super().__init__(value, negated=negated, exact=exact, database=database)
+        self.full_value = fullvalue
 
     def matches(self, other):
         c = 0
@@ -70,12 +68,9 @@ class MultipleAwakeningToken(SpecialToken):
 
             if c >= self.count:
                 return True
-            if idx > other.superawakening_count and (matched or not self.sa):
+            if maw.is_super and (matched or not self.sa):
                 return False
         return False
-
-    def __repr__(self):
-        return super().__repr__() + f"<sa:{self.sa}, count:{self.count}>"
 
 
 
