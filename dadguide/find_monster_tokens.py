@@ -55,26 +55,25 @@ class MultipleAwakeningToken(SpecialToken):
 
     def matches(self, other):
         awlist = other.awakenings
-        if not self.sa:
-            awlist = awlist[:-other.superawakening_count]
 
         c = 0
-        for aw in inverse_map(AWOKEN_MAP)[self.value]:
-            aw = self.database.awoken_skill_map[aw.value]
-            for maw in awlist:
-                if maw == aw:
+        for idx, maw in enumerate(awlist):
+            matched = True
+            for aw in inverse_map(AWOKEN_MAP)[self.value]:
+                aw = self.database.awoken_skill_map[aw.value]
+                if (eq := AWAKENING_EQUIVALENCES.get(maw.awoken_skill_id)) and eq[1] == aw.awoken_skill_id:
+                    c += eq[0]
+                    break
+                elif maw == aw:
                     c += 1
-                elif (eq := AWAKENING_EQUIVALENCES.get(maw.awoken_skill_id)) and eq[1] == aw.awoken_skill_id:
-                    # Hack - if we are matching a plus version of an awakening here, then we're adding
-                    # the correct number of awakenings FOR THE PLUS VERSION here. However, we will
-                    # have also, on another pass, matched the token against the base version of
-                    # the awakening, adding 1 too many to the total. So subtract one from the total
-                    # here to compensate.
-                    # A better approach would be to identify the case when we match the base awakening
-                    # and not add that in the first place, but doing so is difficult and this works.
-                    c += eq[0] - 1
+                    break
+            else:
+                matched = False
+
             if c >= self.count:
                 return True
+            if idx > other.superawakening_count and (matched or not self.sa):
+                return False
         return False
 
     def __repr__(self):
