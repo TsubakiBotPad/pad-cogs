@@ -54,10 +54,8 @@ class MultipleAwakeningToken(SpecialToken):
         super().__init__(value, negated=negated, exact=exact, database=database)
 
     def matches(self, other):
-        awlist = other.awakenings
-
         c = 0
-        for idx, maw in enumerate(awlist):
+        for idx, maw in enumerate(other.awakenings):
             matched = True
             for aw in inverse_map(AWOKEN_MAP)[self.value]:
                 aw = self.database.awoken_skill_map[aw.value]
