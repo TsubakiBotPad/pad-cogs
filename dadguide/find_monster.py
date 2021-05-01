@@ -6,7 +6,7 @@ from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
 
-from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES, SpecialToken
+from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
 from dadguide.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
