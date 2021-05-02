@@ -367,13 +367,13 @@ class MonsterIndex(tsutils.aobject):
         # Awakenings
         for aw in monster.awakenings:
             try:
-                modifiers.update(AWOKEN_MAP[Awakenings(aw.awoken_skill_id)])
+                modifiers.update(AWOKEN_SKILL_MAP[AwokenSkills(aw.awoken_skill_id)])
             except ValueError:
                 logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
                 self.issues.append(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
         # Numbered Equips
-        self.add_numbered_modifier(monster, modifiers, AWOKEN_MAP[Awakenings.EQUIP],
+        self.add_numbered_modifier(monster, modifiers, AWOKEN_SKILL_MAP[AwokenSkills.EQUIP],
                                    lambda m: m.is_equip)
 
         # Chibi

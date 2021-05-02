@@ -1,7 +1,7 @@
 import re
 
 from dadguide.models.monster_model import MonsterModel
-from dadguide.token_mappings import AWAKENING_TOKENS, inverse_map, AWOKEN_MAP, AWAKENING_EQUIVALENCES
+from dadguide.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP, AwokenSkills
 
 
 def regexlist(tokens):
@@ -14,7 +14,7 @@ class Token:
         self.negated = negated
         self.exact = exact
 
-    def matches(self, other: MonsterModel) -> bool:
+    def matches(self, monster: MonsterModel) -> bool:
         return True
 
     def __eq__(self, other):
@@ -37,7 +37,7 @@ class SpecialToken(Token):
         self.database = database
         super().__init__(value, negated=negated, exact=exact)
 
-    def matches(self, other: MonsterModel) -> bool:
+    def matches(self, monster: MonsterModel) -> bool:
         return False
 
 
@@ -46,32 +46,37 @@ class MultipleAwakeningToken(SpecialToken):
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         count, sa, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
-        self.count = int(count)
-        self.sa = bool(sa)
+        self.minimum_count = int(count)
+        self.allows_super_awakenings = bool(sa)
         super().__init__(value, negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
 
-    def matches(self, other):
-        c = 0
-        for idx, maw in enumerate(other.awakenings):
-            if maw.is_super and not self.sa:
+    def matches(self, monster):
+        monster_total_awakenings_matching_token = 0
+        for awakening in monster.awakenings:
+            if awakening.is_super and not self.allows_super_awakenings:
                 return False
-            
+
             matched = True
-            for aw in inverse_map(AWOKEN_MAP)[self.value]:
-                aw = self.database.awoken_skill_map[aw.value]
-                if (eq := AWAKENING_EQUIVALENCES.get(maw.awoken_skill_id)) and eq[1] == aw.awoken_skill_id:
-                    c += eq[0]
+            for awoken_skill in (self.database.awoken_skill_map[aws.value]
+                                 for aws, tokens in AWOKEN_SKILL_MAP.items()
+                                 if self.value in tokens):
+                if (equivalence := PLUS_AWOKENSKILL_MAP.get(AwokenSkills(awakening.awoken_skill_id))) \
+                        and equivalence.awoken_skill.value == awoken_skill.awoken_skill_id:
+                    monster_total_awakenings_matching_token += equivalence.value
                     break
-                elif maw == aw:
-                    c += 1
+                elif awoken_skill == awakening:
+                    monster_total_awakenings_matching_token += 1
                     break
             else:
                 matched = False
 
-            if c >= self.count:
+            if monster_total_awakenings_matching_token >= self.minimum_count:
                 return True
-            if maw.is_super and matched:
+
+            # If we already matched an SA and didn't return True, fail immediately.
+            # We only allow one match from SAs per MultipleAwakeningToken.
+            if awakening.is_super and matched:
                 return False
         return False
 
