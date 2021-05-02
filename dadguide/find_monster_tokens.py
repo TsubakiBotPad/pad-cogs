@@ -54,6 +54,9 @@ class MultipleAwakeningToken(SpecialToken):
     def matches(self, other):
         c = 0
         for idx, maw in enumerate(other.awakenings):
+            if maw.is_super and self.sa:
+                return False
+            
             matched = True
             for aw in inverse_map(AWOKEN_MAP)[self.value]:
                 aw = self.database.awoken_skill_map[aw.value]
@@ -68,7 +71,7 @@ class MultipleAwakeningToken(SpecialToken):
 
             if c >= self.count:
                 return True
-            if maw.is_super and (matched or not self.sa):
+            if maw.is_super and matched:
                 return False
         return False
 
