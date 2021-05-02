@@ -54,7 +54,7 @@ class MultipleAwakeningToken(SpecialToken):
     def matches(self, other):
         c = 0
         for idx, maw in enumerate(other.awakenings):
-            if maw.is_super and self.sa:
+            if maw.is_super and not self.sa:
                 return False
             
             matched = True
