@@ -107,7 +107,7 @@ class Crud(commands.Cog):
     async def crud(self, ctx):
         """PadGuide database CRUD."""
 
-    @crud.command(aliases="credit")
+    @crud.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
         """Change a monster's name_en_override
 
