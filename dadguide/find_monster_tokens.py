@@ -56,8 +56,10 @@ class MultipleAwakeningToken(SpecialToken):
         for awakening in monster.awakenings:
             if awakening.is_super and not self.allows_super_awakenings:
                 return False
-
+            
+            # Keep track of whether we matched this cycle for SA check at the end
             matched = True
+            
             for awoken_skill in (self.database.awoken_skill_map[aws.value]
                                  for aws, tokens in AWOKEN_SKILL_MAP.items()
                                  if self.value in tokens):
@@ -74,8 +76,7 @@ class MultipleAwakeningToken(SpecialToken):
             if monster_total_awakenings_matching_token >= self.minimum_count:
                 return True
 
-            # If we already matched an SA and didn't return True, fail immediately.
-            # We only allow one match from SAs per MultipleAwakeningToken.
+            # We only allow one SA to count towards the total for each MultipleAwakeningToken
             if awakening.is_super and matched:
                 return False
         return False
