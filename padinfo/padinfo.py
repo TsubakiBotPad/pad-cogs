@@ -1001,7 +1001,7 @@ class PadInfo(commands.Cog):
         ret += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
         mtable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.MISC_MAP.items()]
         ret += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_MAP.items()]
+        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
                   for k, v in DGCOG.index.series_id_to_pantheon_nickname.items()]
@@ -1026,7 +1026,7 @@ class PadInfo(commands.Cog):
         await DGCOG.wait_until_ready()
 
         tms = DGCOG.token_maps
-        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
+        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_SKILL_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
@@ -1081,7 +1081,7 @@ class PadInfo(commands.Cog):
             *["Misc: " + k.value + additmods(v, token)
               for k, v in tms.MISC_MAP.items() if token in v],
             *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, token)
-              for k, v in tms.AWOKEN_MAP.items() if token in v],
+              for k, v in tms.AWOKEN_SKILL_MAP.items() if token in v],
             *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") +
               additmods(v, token)
               for k, v in tms.COLOR_MAP.items() if token in v],
@@ -1099,7 +1099,7 @@ class PadInfo(commands.Cog):
             *[f"[UNSUPPORTED] Multiple awakenings: {m}x {awakenings[a.value].name_en}"
               f"{additmods([f'{m}*{d}' for d in v], token)}"
               for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), token)
-              for a, v in tms.AWOKEN_MAP.items() if ag in v]
+              for a, v in tms.AWOKEN_SKILL_MAP.items() if ag in v]
         ])
 
         if meanings or ret:
