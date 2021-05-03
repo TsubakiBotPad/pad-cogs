@@ -4,14 +4,13 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText
 from discordmenu.embed.view import EmbedView
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
-from padinfo.view.leader_skill import createMultiplierText
 from padinfo.view.id import IdView
 
 if TYPE_CHECKING:
@@ -163,7 +162,7 @@ class TransformInfoView:
                     Box(
                         TRANSFORM_EMOJI,
                         IdView.normal_awakenings_row(transformed_mon)
-                            if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
+                        if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                         delimiter=' '
                     ),
                     base_info(base_mon),
@@ -184,7 +183,7 @@ class TransformInfoView:
                 transformat(transform_active_header(transformed_mon).to_markdown()),
                 Box(
                     Text(transformed_mon.active_skill.desc if transformed_mon.active_skill
-                        else 'None'),
+                         else 'None'),
                     base_active_header(base_mon).to_markdown(),
                     Text(base_mon.active_skill.desc if base_mon.active_skill else 'None')
                 )
@@ -193,7 +192,7 @@ class TransformInfoView:
                 transformat(leader_header(transformed_mon, False).to_markdown()),
                 Box(
                     Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill
-                        else 'None'),
+                         else 'None'),
                     leader_header(base_mon, True).to_markdown(),
                     Text(base_mon.leader_skill.desc if base_mon.leader_skill else 'None')
                 )
@@ -207,6 +206,6 @@ class TransformInfoView:
                 url=puzzledragonx(transformed_mon)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields
         )

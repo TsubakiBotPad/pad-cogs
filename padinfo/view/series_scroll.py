@@ -4,10 +4,9 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
-from tsutils import char_to_emoji
+from tsutils import char_to_emoji, embed_footer_with_state
 
 from padinfo.common.config import UserConfig
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 
@@ -147,7 +146,7 @@ class SeriesScrollView:
                 title=state.title,
                 color=state.color,
             ),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields)
 
     @staticmethod
