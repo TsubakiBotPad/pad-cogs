@@ -51,13 +51,13 @@ class GroupedSkills(object):
             top += output
         else:
             return output"""
-    async def give_string2(self, lines, level=0, verbose: bool = False):
+    def give_string2(self, lines, level=0, verbose: bool = False):
         condition = self.condition
         if condition is not None:
             lines.append([level, ["**Condition: {}**".format(condition)]])
             level += 1
         for g in self.nested_groups:
-            await g.give_string2(lines, level, verbose)
+            g.give_string2(lines, level, verbose)
         for s in self.skills:
             skill_string_components = s.give_string(verbose=verbose)
             skill_string_components[0] = "".join(skill_string_components[0])

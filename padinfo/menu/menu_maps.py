@@ -1,3 +1,4 @@
+from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.simple import SimpleMenu, SimpleMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
 from padinfo.menu.errors import InvalidImsMenuType, MissingImsMenuType
@@ -19,6 +20,7 @@ type_to_menu = {
     SimpleTextMenu.MENU_TYPE: SimpleTextMenu,
     TransformInfoMenu.MENU_TYPE: TransformInfoMenu,
     SimpleMenu.MENU_TYPE: SimpleMenu,
+    DungeonMenu.MENU_TYPE: DungeonMenu
 }
 type_to_panes = {
     ClosableEmbedMenu.MENU_TYPE: ClosableEmbedMenuPanes,
@@ -30,6 +32,7 @@ type_to_panes = {
     SimpleTextMenu.MENU_TYPE: SimpleTextMenuPanes,
     TransformInfoMenu.MENU_TYPE: TransformInfoMenuPanes,
     SimpleMenu.MENU_TYPE: SimpleMenuPanes,
+    DungeonMenu.MENU_TYPE: DungeonMenuPanes
 }
 
 

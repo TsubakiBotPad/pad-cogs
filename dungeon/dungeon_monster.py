@@ -1,4 +1,6 @@
 import logging
+import json
+from typing import List
 
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
@@ -68,7 +70,7 @@ class DungeonMonster(object):
         self.defense = hp
         self.turns = turns
         self.level = level
-        self.groups = []
+        self.groups: List[GroupedSkills] = []
         self.am_invade = False
 
         self.error = error
@@ -76,7 +78,7 @@ class DungeonMonster(object):
     def add_group(self, group: GroupedSkills):
         self.groups.append(group)
 
-    async def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
+    def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
                          technical: int = None, has_invade=False):
         # top_level = []
         # field_value_dict = OrderedDict()
@@ -89,17 +91,19 @@ class DungeonMonster(object):
                 title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
                                                                              floor[0], floor[1]),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
-                                                                   f'{self.turns:,}', desc))
+                                                                   f'{self.turns:,}', desc)
+            )
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(self.name, self.level),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
-                                                                   f'{self.turns:,}', desc))
+                                                                   f'{self.turns:,}', desc)
+            )
         embeds.append(embed)
         embeds.append(discord.Embed(title="test", desc="test"))
         lines = []
         for group in self.groups:
-            await group.give_string2(lines, 0, verbose)
+            group.give_string2(lines, 0, verbose)
         names = [""]
         values = [""]
         fields = 0
@@ -139,8 +143,55 @@ class DungeonMonster(object):
                                                                    f'{self.turns:,}', desc))
         return [embed, discord.Embed(title="test", desc="test")]
 
+    """def make_menu2_stuff(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
+                   technical: int = None, has_invade=False, color=None):
+        # top_level = []
+        # field_value_dict = OrderedDict()
+
+        embeds = []
+
+        desc = ""
+        if spawn is not None:
+            embed = discord.Embed(
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
+                                                                             floor[0], floor[1]),
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
+                                                                   f'{self.turns:,}', desc),
+                color=color
+            )
+        else:
+            embed = discord.Embed(
+                title="Enemy:{} at Level: {}".format(self.name, self.level),
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
+                                                                   f'{self.turns:,}', desc),
+                color=color
+            )
+        embeds.append(embed)
+        embeds.append(discord.Embed(title="test", desc="test"))
+        lines = []
+        for group in self.groups:
+            group.give_string2(lines, 0, verbose)
+        names = [""]
+        values = [""]
+        fields = 0
+        first = None
+        for l in lines:
+            for comp in l[1]:
+                embed_helper(l[0], names, values, comp)
+        if len(values[len(values) - 1]) == 0:
+            values[len(values) - 1] = '\u200b'
+        for index in range(len(names)):
+            name = names[index]
+            value = values[index]
+            if len(name) > 0:
+                embed.add_field(name=name, value=value, inline=False)
+                fields += 1
+            # embed.add_field(name=k, value=content, inline=False)
+        return embeds"""
+
     async def collect_skills(self):
         skills = []
         for g in self.groups:
             skills.extend(await g.collect_skills())
         return skills
+

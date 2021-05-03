@@ -114,6 +114,27 @@ WHERE
 encounters.sub_dungeon_id = {}
 '''
 
+specific_floor_query = '''
+SELECT
+encounters.encounter_id,
+encounters.sub_dungeon_id,
+encounters.enemy_id,
+encounters.monster_id,
+encounters.stage,
+encounters.amount,
+encounters.turns,
+encounters.level,
+encounters.hp,
+encounters.atk,
+encounters.defence
+FROM
+encounters
+WHERE
+encounters.sub_dungeon_id = {}
+AND
+encounters.stage = {}
+'''
+
 enemy_data_query = '''
 SELECT
 enemy_data.enemy_id,
@@ -202,6 +223,21 @@ class DungeonContext(object):
                              name_ko=mega[0]['sub_name_ko'],
                              technical=mega[0]['technical'])
         return [DungeonModel([sm], **mega[0])]
+
+    def get_floor_from_sub_dungeon(self, sub_id, floor):
+        floor_query = self.database.query_many(specific_floor_query.format(sub_id, floor), ())
+        invade_query = self.database.query_many(specific_floor_query.format(sub_id, -1), ())
+        encounter_models = []
+        floor_query.extend(invade_query)
+        for f in floor_query:
+            data = self.database.query_one(enemy_data_query.format(f['enemy_id']), ())
+            if data is not None:
+                edm = EnemyDataModel(**data)
+            else:
+                edm = None
+            encounter_models.append(EncounterModel(edm, **f))
+        return encounter_models
+
 
 
     def get_enemy_skill(self, enemy_skill_id):

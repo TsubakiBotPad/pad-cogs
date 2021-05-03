@@ -22,6 +22,7 @@ from dadguide.dungeon_context import DungeonContext
 from dadguide.models.dungeon_model import DungeonModel
 from dadguide.models.encounter_model import EncounterModel
 from dadguide.models.enemy_skill_model import EnemySkillModel
+from dungeon.SafeDict import SafeDict
 from dungeon.encounter import Encounter
 from dungeon.enemy_skill import ProcessedSkill
 # from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
@@ -33,7 +34,10 @@ from dungeon.dungeon_monster import DungeonMonster
 from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
+from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.simple import SimpleMenu, SimpleEmoji, SimpleMenuPanes
+from dungeon.processors import process_monster, formatOverview
+from dungeon.view.dungeon import DungeonViewState
 from dungeon.view.simple import SimpleViewState
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
@@ -137,19 +141,6 @@ WHERE
 enemy_skill_id = {}
 '''
 
-GroupType = {
-    0: "Unspecified",
-    1: "Passive",
-    2: "Preemptive",
-    3: "Dispel Player",
-    4: "Monster Status",
-    5: "Remaining",
-    6: "Standard",
-    7: "Death",
-    8: "Unknown",
-    9: "Highest Priority"
-}
-
 DungeonNickNames = {
     'a1': 1022001,
     'arena1': 102201,
@@ -188,11 +179,6 @@ def _data_file(file_name: str) -> str:
 
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
-
-
-class SafeDict(dict):
-    def __missing__(self, key):
-        return '{' + key + '}'
 
 
 class DungeonEmojiUpdater(EmojiUpdater):
@@ -277,13 +263,13 @@ class DungeonEmojiUpdater(EmojiUpdater):
             return True
 
         if update:
-            self.compacts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+            self.compacts = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
                                                      floor=[index_floor + 1, len(self.pm_dungeon)],
                                                      technical=self.technical)
-            self.verboses = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+            self.verboses = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
                                                      floor=[index_floor + 1, len(self.pm_dungeon)],
                                                      technical=self.technical)
-            self.preempts = await self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
+            self.preempts = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
                                                      floor=[index_floor + 1, len(self.pm_dungeon)],
                                                      technical=self.technical)
         if selected_emoji != self.dungeon_cog.next_page:
@@ -301,86 +287,6 @@ class DungeonEmojiUpdater(EmojiUpdater):
 """
 Give a condition type, output a player readable string that actually explains what it does
 """
-
-
-def format_condition(cond: Condition):
-    parts = []
-    if cond.skill_set:
-        parts.append('SkillSet {}'.format(cond.skill_set))
-    if cond.use_chance not in [0, 100]:
-        parts.append('{}% chance'.format(cond.use_chance))
-    if cond.global_one_time:
-        parts.append('one time only')
-    if cond.limited_execution:
-        parts.append('at most {} times'.format(cond.limited_execution))
-    if cond.trigger_enemies_remaining:
-        parts.append('when {} enemies remain'.format(cond.trigger_enemies_remaining))
-    if cond.if_defeated:
-        parts.append('when defeated')
-    if cond.if_attributes_available:
-        parts.append('when required attributes on board')
-    if cond.trigger_monsters:
-        parts.append('when {} on team'.format(', '.join(map(str, cond.trigger_monsters))))
-    if cond.trigger_combos:
-        parts.append('when {} combos last turn'.format(cond.trigger_combos))
-    if cond.if_nothing_matched:
-        parts.append('if no other skills matched')
-    if cond.repeats_every:
-        if cond.trigger_turn:
-            if cond.trigger_turn_end:
-                parts.append('execute repeatedly, turn {}-{} of {}'.format(cond.trigger_turn,
-                                                                           cond.trigger_turn_end,
-                                                                           cond.repeats_every))
-            else:
-                parts.append('execute repeatedly, turn {} of {}'.format(cond.trigger_turn, cond.repeats_every))
-        else:
-            parts.append('repeats every {} turns'.format(cond.repeats_every))
-    elif cond.trigger_turn_end:
-        turn_text = 'turns {}-{}'.format(cond.trigger_turn, cond.trigger_turn_end)
-        parts.append(_cond_hp_timed_text(cond.always_trigger_above, turn_text))
-    elif cond.trigger_turn:
-        turn_text = 'turn {}'.format(cond.trigger_turn)
-        parts.append(_cond_hp_timed_text(cond.always_trigger_above, turn_text))
-
-    if not parts and cond.hp_threshold in [100, 0]:
-        return None
-
-    if cond.hp_threshold == 101:
-        parts.append('when hp is full')
-    elif cond.hp_threshold:
-        parts.append('hp <= {}'.format(cond.hp_threshold))
-
-    return ', '.join(parts)
-
-
-# From pad-data-pipeline
-def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
-    text = turn_text
-    if always_trigger_above == 1:
-        text = 'always {}'.format(turn_text)
-    elif always_trigger_above:
-        text = '{} while HP > {}'.format(turn_text, always_trigger_above)
-    return text
-
-
-def formatOverview(query):
-    output = "Dungeon Name: {}".format(query[0]["dungeon_name_en"])
-    for q in query:
-        output += "\nEncounter ID: {}   Stage: {}   Monster Name: {}    Level: {}".format(q["encounter_id"], q["stage"],
-                                                                                          q["name_en"], q["level"])
-
-    return output
-
-
-def behaviorForLevel(mb: MonsterBehavior, num: int):
-    lev = None
-    for level in mb.levels:
-        if level.level == num: lev = level
-    if lev is None:
-        return mb.levels[len(mb.levels) - 1]
-    else:
-        return lev
-
 
 class DungeonCog(commands.Cog):
     """My custom cog"""
@@ -541,31 +447,6 @@ class DungeonCog(commands.Cog):
                                   redeemable_material_type='🪙'
                                   )
 
-    def process_enemy_skill2(self, encounter: EncounterModel, skill: EnemySkillModel):
-        effect = skill.desc_en_emoji
-        split_effects = effect.split("), ")
-        non_attack_effects = []
-        for e in split_effects:
-            e += ")"
-            if "Attack:" not in e:
-                non_attack_effects.append(e.format_map(self.emoji_map))
-
-        # Damage
-        atk = encounter.atk
-        if skill.min_hits != 0:
-            emoji = self.emoji_map['attack']
-            if skill.min_hits > 1:
-                emoji = self.emoji_map['multi_attack']
-            damage_per_hit = (int)(atk * (skill.atk_mult / 100.0))
-            min_damage = skill.min_hits * damage_per_hit
-            max_damage = skill.max_hits * damage_per_hit
-            if min_damage != max_damage:
-                non_attack_effects.append("({}:{}~{})".format(emoji, f'{min_damage:,}', f'{max_damage:,}'))
-            else:
-                non_attack_effects.append("({}:{})".format(emoji, f'{min_damage:,}'))
-
-        return non_attack_effects
-
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name)
         if dungeon is None:
@@ -629,66 +510,6 @@ class DungeonCog(commands.Cog):
         for sd in dung2.sub_dungeons:
             message += "\n" + sd.name_en
         await ctx.send(message)
-
-    """
-    Process_[behavior, behavior_group, monster]: These functions take the behavior data and convert it to a easier to work
-    (for me) objects
-    """
-
-    async def process_behavior(self, behavior: Behavior, database, q: EncounterModel, parent: GroupedSkills = None):
-        skill = database.dungeon.get_enemy_skill(behavior.enemy_skill_id)
-        if skill is None:
-            return "Unknown"
-        skill_name = skill.name_en
-        skill_effect = skill.desc_en
-        # skill_processed_text = process_enemy_skill(skill_effect, q, skill)
-        skill_processed_texts = self.process_enemy_skill2(q, skill)
-
-        condition = format_condition(behavior.condition)
-        processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_texts, condition,
-                                                         parent)
-        # embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
-        return processed_skill
-
-    async def process_behavior_group(self, group: BehaviorGroup, database, q: EncounterModel,
-                                     parent: GroupedSkills = None):
-        condition = format_condition(group.condition)
-        processed_group: GroupedSkills = GroupedSkills(condition, GroupType[group.group_type], parent)
-        for child in group.children:
-            if child.HasField('group'):
-                processed_group.add_group(await self.process_behavior_group(child.group, database, q, processed_group))
-            elif child.HasField('behavior'):
-                processed_group.add_skill(await self.process_behavior(child.behavior, database, q, processed_group))
-        return processed_group
-
-    # return output
-
-    # Format:
-    # Skill Name    Type:Preemptive/Passive/Etc
-    # Skill Effect
-    # Condition
-    async def process_monster(self, mb: MonsterBehavior, q: EncounterModel, database: DbContext):
-        # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
-        """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
-                              description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
-        monster_model = database.graph.get_monster(q.monster_id)
-        monster: DungeonMonster = DungeonMonster(
-            name=monster_model.name_en,
-            hp=q.hp,
-            atk=q.atk,
-            defense=q.defence,
-            turns=q.turns,
-            level=q.level
-        )
-        if mb is None:
-            return monster
-        levelBehavior = behaviorForLevel(mb, q.level)
-        if levelBehavior is None:
-            return monster
-        for group in levelBehavior.groups:
-            monster.add_group(await self.process_behavior_group(group, database, q))
-
-        return monster
 
     async def make_emoji_dictionary(self, ctx, scroll_monsters=None, scroll_floors=None, compact_page=None,
                                     verbose_page=None, preempt_page=None, show=False):
@@ -787,7 +608,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                pm = await self.process_monster(behavior_test, enc_model, dg_cog.database)
+                pm = process_monster(behavior_test, enc_model, dg_cog.database)
                 if enc_model.stage < 0:
                     pm.am_invade = True
                     invades.append(pm)
@@ -802,11 +623,11 @@ class DungeonCog(commands.Cog):
                     f.extend(invades)
 
             pm = pm_dungeon[0][0]
-            compacts = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
+            compacts = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
                                            floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
-            verboses = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
+            verboses = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
                                            floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
-            preempts = await pm.make_embed(spawn=[1, len(pm_dungeon[0])],
+            preempts = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
                                            floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
             emoji_to_embed = await self.make_emoji_dictionary(ctx, compact_page=compacts[0], verbose_page=verboses[0],
                                                               preempt_page=preempts[0], show=len(compacts) > 1)
@@ -814,6 +635,65 @@ class DungeonCog(commands.Cog):
                                       pm_dungeon, pm_dungeon[0], technical=int(dungeon.sub_dungeons[0].technical),
                                       compacts=compacts, verboses=verboses, preempts=preempts)
             await self._do_menu(ctx, start_selection[starting], dmu, 60)
+
+    # 1 is Condensed, 2 is detailed, 3 is preempts
+    @commands.command()
+    async def dungeon_info2(self, ctx, name: str, difficulty: str = None, starting: int = 1):
+        '''
+        Name: Name of Dungeon
+        Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
+        Starting: Starting screen: 1 is condensed information. 2 is detailed information. 3 is preempts only
+        '''
+        # load dadguide cog for database access
+        start_selection = {1: self.current_monster,
+                           2: self.verbose_monster,
+                           3: self.preempt_monster}
+        dg_cog = self.bot.get_cog('Dadguide')
+        if not dg_cog:
+            logger.warning("Cog 'Dadguide' not loaded")
+            return
+        logger.info('Waiting until DG is ready')
+        await dg_cog.wait_until_ready()
+        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.database.dungeon,
+                                                     difficulty=difficulty)
+
+        if dungeon is not None:
+            # await ctx.send(formatOverview(test_result))
+            current_stage = 0
+            pm_dungeon = []
+            # check for invades:
+            invades = []
+            for enc_model in dungeon.sub_dungeons[0].encounter_models:
+                behavior_test = MonsterBehavior()
+                if (enc_model.enemy_data is not None) and (enc_model.enemy_data.behavior is not None):
+                    behavior_test.ParseFromString(enc_model.enemy_data.behavior)
+                else:
+                    behavior_test = None
+
+                # await ctx.send(formatOverview(test_result))
+                #pm = process_monster(behavior_test, enc_model, dg_cog.database)
+                if enc_model.stage < 0:
+                    # pm.am_invade = True
+                    invades.append(enc_model)
+                elif enc_model.stage > current_stage:
+                    current_stage = enc_model.stage
+                    floor = [enc_model]
+                    pm_dungeon.append(floor)
+                else:
+                    pm_dungeon[current_stage - 1].append(enc_model)
+            for f in pm_dungeon:
+                if pm_dungeon.index(f) != (len(pm_dungeon) - 1):
+                    f.extend(invades)
+
+            menu = DungeonMenu.menu()
+            original_author_id = ctx.message.author.id
+            full_reaction_list = [emoji_cache.get_by_name(e) for e in DungeonMenuPanes.emoji_names()]
+            test_list = ['1', '2', '3', '4']
+            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0], dungeon.sub_dungeons[0].sub_dungeon_id, 3, 0, 0,
+                                          int(dungeon.sub_dungeons[0].technical), dg_cog.database,
+                                          reaction_list=full_reaction_list)
+            message = await menu.create(ctx, view_state)
+            await ctx.send("This is a test of menu2")
 
     @commands.command()
     async def spinner_help(self, ctx, spin_time, move_time):
@@ -872,7 +752,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                pm = await self.process_monster(behavior_test, enc, dg_cog.database)
+                pm = process_monster(behavior_test, enc, dg_cog.database)
                 if r['stage'] > current_stage:
                     current_stage = r['stage']
                     floor = [pm]
