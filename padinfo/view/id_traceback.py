@@ -4,9 +4,9 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
+from tsutils import pad_info_footer_with_state
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
-from padinfo.view.components.base import pad_info_footer_with_state
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel

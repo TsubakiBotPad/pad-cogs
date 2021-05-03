@@ -2,10 +2,10 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
 from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
+from tsutils import pad_info_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId

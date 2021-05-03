@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
+from tsutils import pad_info_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
@@ -10,7 +11,6 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribu
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId

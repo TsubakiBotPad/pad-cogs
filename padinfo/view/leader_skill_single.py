@@ -4,10 +4,10 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
+from tsutils import pad_info_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import createSingleMultiplierText
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 from padinfo.view.common import get_monster_from_ims
