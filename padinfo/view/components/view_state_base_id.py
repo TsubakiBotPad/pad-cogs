@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, List
 
+from discordmenu.embed.view_state import ViewState
+
 from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
 
@@ -7,17 +9,15 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class ViewStateBaseId:
+class ViewStateBaseId(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List["MonsterModel"],
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
+        super().__init__(original_author_id=original_author_id, menu_type=menu_type, raw_query=raw_query,
+                         extra_state=extra_state)
         self.alt_monsters = alt_monsters
-        self.extra_state = extra_state or {}
-        self.menu_type = menu_type
-        self.original_author_id = original_author_id
-        self.raw_query = raw_query
         self.reaction_list = reaction_list
         self.color = color
         self.monster = monster
@@ -25,16 +25,13 @@ class ViewStateBaseId:
         self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
-        ret = {
-            'raw_query': self.raw_query,
-            'menu_type': self.menu_type,
-            'original_author_id': self.original_author_id,
+        ret = super().serialize()
+        ret.update({
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
             'reaction_list': self.reaction_list,
-        }
-        ret.update(self.extra_state)
+        })
         return ret
 
     @classmethod
