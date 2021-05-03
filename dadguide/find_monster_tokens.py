@@ -76,6 +76,7 @@ class MultipleAwakeningToken(SpecialToken):
             if monster_total_awakenings_matching_token >= self.minimum_count:
                 return True
 
+            # If we already matched an SA and didn't return True, fail immediately.
             # We only allow one SA to count towards the total for each MultipleAwakeningToken
             if awakening.is_super and matched:
                 return False
