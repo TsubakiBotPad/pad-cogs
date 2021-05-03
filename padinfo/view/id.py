@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
-from tsutils import pad_info_footer_with_state
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
@@ -285,5 +285,5 @@ class IdView(BaseIdView):
                                                        ).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

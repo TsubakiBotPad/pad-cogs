@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils import pad_info_footer_with_state
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import createMultiplierText
@@ -60,4 +60,4 @@ class LeaderSkillView:
                     BoldText(MonsterHeader.name(state.r_mon, link=True, show_jp=True)),
                     Text(rls.desc if rls else 'None')),
                 color=state.color),
-            embed_footer=pad_info_footer_with_state(state))
+            embed_footer=embed_footer_with_state(state))

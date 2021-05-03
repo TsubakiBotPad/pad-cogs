@@ -3,7 +3,7 @@ from typing import List, TYPE_CHECKING
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
-from tsutils import pad_info_footer_with_state
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
@@ -111,5 +111,5 @@ class EvosView(BaseIdView):
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

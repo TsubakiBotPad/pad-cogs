@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
-from tsutils import pad_info_footer_with_state
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
@@ -174,7 +174,7 @@ class PantheonView(BaseIdView):
                                                        "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields,
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
         )

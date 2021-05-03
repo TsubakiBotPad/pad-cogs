@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
-from tsutils import pad_info_footer_with_state
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
@@ -160,7 +160,7 @@ class MaterialsView(BaseIdView):
                 url=puzzledragonx(state.monster)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=[f for f in [
                 mat_use_field(state.mats, "Evo materials")
                 if state.mats or not (state.monster.is_stackable or state.gem_override) else None,
