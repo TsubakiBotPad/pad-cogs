@@ -6,9 +6,10 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
+from tsutils import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.components.base import pad_info_footer_with_state
+from padinfo.view.base import BaseIdView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.id import evos_embed_field
@@ -42,18 +43,20 @@ def statsbox(m):
     return box(tbl.get_string())
 
 
-class OtherInfoView:
+class OtherInfoView(BaseIdView):
     VIEW_TYPE = 'OtherInfo'
 
-    @staticmethod
-    def embed(state: OtherInfoViewState):
+    @classmethod
+    def embed(cls, state: OtherInfoViewState):
         m: "MonsterModel" = state.monster
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
+                title=MonsterHeader.long_maybe_tsubaki(state.monster,
+                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       ).to_markdown(),
                 url=puzzledragonx(m)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=[
                 EmbedField(
                     "Stats at +297:",

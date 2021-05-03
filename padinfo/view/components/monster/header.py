@@ -45,6 +45,18 @@ class MonsterHeader:
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @staticmethod
+    def long_maybe_tsubaki(m: "MonsterModel", is_tsubaki):
+        """Returns long_v2 as well as an `!` if the monster is Tsubaki
+    
+        To celebrate 1000 issues/PRs in our main Tsubaki repo, we added this easter egg! Yay!
+        """
+        return Text('[{}] {}{}{}'.format(
+            m.monster_no_na,
+            m.name_en,
+            '!' if is_tsubaki else '',
+            MonsterHeader.jp_suffix(m)))
+
+    @staticmethod
     def short_with_emoji(m: "MonsterModel", link=True, prefix=None):
         msg = f"{m.monster_no_na} - {m.name_en}"
         return Box(

@@ -4,18 +4,13 @@ import os
 import random
 import re
 import urllib.parse
-from copy import deepcopy
 from io import BytesIO
 from typing import TYPE_CHECKING, List
 
 import discord
 import tsutils
 from discord import Color
-from discordmenu.embed.emoji import EmbedMenuEmojiConfig
 from discordmenu.emoji.emoji_cache import emoji_cache
-from discordmenu.intra_message_state import IntraMessageState
-from discordmenu.reaction_filter import FriendReactionFilter, MessageOwnerReactionFilter, \
-    BotAuthoredMessageReactionFilter, NotPosterEmojiReactionFilter, ValidEmojiReactionFilter
 from redbot.core import checks, commands, data_manager, Config
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
@@ -32,7 +27,7 @@ from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
-from padinfo.menu.menu_maps import type_to_panes, get_panes_class, get_menu
+from padinfo.menu.menu_map import padinfo_menu_map
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu
@@ -90,6 +85,8 @@ COLORS = {
 class PadInfo(commands.Cog):
     """Info for PAD Cards"""
 
+    menu_map = padinfo_menu_map
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -106,6 +103,7 @@ class PadInfo(commands.Cog):
 
         self.historic_lookups = safe_read_json(_data_file('historic_lookups_id3.json'))
 
+        self.id_menu = IdMenu  # TODO: Support multi-menus for real
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
         self.settings = settings
@@ -124,6 +122,14 @@ class PadInfo(commands.Cog):
         No personal data is stored in this cog.
         """
         return
+
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
 
     async def reload_nicknames(self):
         await self.bot.wait_until_ready()
@@ -147,94 +153,16 @@ class PadInfo(commands.Cog):
         await dgcog.wait_until_ready()
         return dgcog
 
-    def get_monster(self, monster_id: int):
-        dgcog = self.bot.get_cog('Dadguide')
-        return dgcog.get_monster(monster_id)
-
-    @commands.Cog.listener('on_reaction_add')
-    async def test_reaction_add(self, reaction, member):
-        emoji_clicked = self.get_emoji_clicked(reaction)
-        if emoji_clicked is None:
-            return
-
-        message = reaction.message
-        ims = message.embeds and IntraMessageState.extract_data(message.embeds[0])
-        if not ims:
-            return
-        menu = get_menu(ims)
-        if not (await menu.should_respond(message, reaction, await self.get_reaction_filters(ims), member)):
-            return
-
-        data = await self.get_menu_default_data(ims)
-        data.update({
-            'reaction': emoji_clicked
-        })
-
-        await menu.transition(message, deepcopy(ims), emoji_clicked, member, **data)
-        await self.listener_respond_with_child(deepcopy(ims), message, emoji_clicked, member)
-
-    @staticmethod
-    def get_emoji_clicked(reaction):
-        emoji_obj = reaction.emoji
-        if isinstance(emoji_obj, str):
-            emoji_clicked = emoji_obj
-        else:
-            emoji_clicked = emoji_obj.name
-
-        # determine if this is potentially a valid reaction prior to doing any network call:
-        # this is true if it's a default emoji or in any of our global panes emoji lists
-        if emoji_clicked in EmbedMenuEmojiConfig().to_list():
-            return emoji_clicked
-        for menu_type, panes_type in type_to_panes.items():
-            if emoji_clicked in panes_type.emoji_names():
-                return emoji_clicked
-        return None
-
-    async def listener_respond_with_child(self, menu_1_ims, message_1, emoji_clicked, member):
-        failsafe = 0
-        while menu_1_ims.get('child_message_id'):
-            # before this loop can actually work as a loop, the type of menu_2 can't be hard-coded as IdMenu anymore,
-            # and we have to update menu_1_class to be menu_2_class during the loop.
-            if failsafe == 10:
-                break
-            failsafe += 1
-            menu_2 = IdMenu.menu()
-            panes_class = type_to_panes[menu_1_ims['menu_type']]
-            child_data_func = panes_class.get_child_data_func(emoji_clicked)
-            data = await self.get_menu_default_data(menu_1_ims)
-            emoji_simulated_clicked_2, extra_ims = None, {}
-            if child_data_func is not None:
-                emoji_simulated_clicked_2, extra_ims = child_data_func(menu_1_ims, emoji_clicked, **data)
-            if emoji_simulated_clicked_2 is not None:
-                fctx = await self.bot.get_context(message_1)
-                try:
-                    message_2 = await fctx.fetch_message(int(menu_1_ims['child_message_id']))
-                    menu_2_ims = message_2.embeds and IntraMessageState.extract_data(message_2.embeds[0])
-                    menu_2_ims.update(extra_ims)
-                    await menu_2.transition(message_2, menu_2_ims, emoji_simulated_clicked_2, member, **data)
-                except discord.errors.NotFound:
-                    break
-                menu_1_ims = menu_2_ims
-                message_1 = message_2
-
-    async def get_reaction_filters(self, ims):
-        original_author_id = ims['original_author_id']
-        friend_cog = self.bot.get_cog("Friend")
-        friend_ids = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        reaction_filters = [
-            ValidEmojiReactionFilter(get_panes_class(ims).emoji_names()),
-            NotPosterEmojiReactionFilter(),
-            BotAuthoredMessageReactionFilter(self.bot.user.id),
-            MessageOwnerReactionFilter(original_author_id, FriendReactionFilter(original_author_id, friend_ids))
-        ]
-        return reaction_filters
-
     async def get_menu_default_data(self, ims):
         data = {
             'dgcog': await self.get_dgcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
         }
         return data
+
+    def get_monster(self, monster_id: int):
+        dgcog = self.bot.get_cog('Dadguide')
+        return dgcog.get_monster(monster_id)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -1073,7 +1001,7 @@ class PadInfo(commands.Cog):
         ret += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
         mtable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.MISC_MAP.items()]
         ret += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_MAP.items()]
+        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
                   for k, v in DGCOG.index.series_id_to_pantheon_nickname.items()]
@@ -1098,7 +1026,7 @@ class PadInfo(commands.Cog):
         await DGCOG.wait_until_ready()
 
         tms = DGCOG.token_maps
-        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_MAP.values() for aw in aws) + ")"
+        awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_SKILL_MAP.values() for aw in aws) + ")"
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
 
@@ -1153,7 +1081,7 @@ class PadInfo(commands.Cog):
             *["Misc: " + k.value + additmods(v, token)
               for k, v in tms.MISC_MAP.items() if token in v],
             *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, token)
-              for k, v in tms.AWOKEN_MAP.items() if token in v],
+              for k, v in tms.AWOKEN_SKILL_MAP.items() if token in v],
             *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") +
               additmods(v, token)
               for k, v in tms.COLOR_MAP.items() if token in v],
@@ -1171,7 +1099,7 @@ class PadInfo(commands.Cog):
             *[f"[UNSUPPORTED] Multiple awakenings: {m}x {awakenings[a.value].name_en}"
               f"{additmods([f'{m}*{d}' for d in v], token)}"
               for m, ag in re.findall(r"^(\d+)\*{}$".format(awokengroup), token)
-              for a, v in tms.AWOKEN_MAP.items() if ag in v]
+              for a, v in tms.AWOKEN_SKILL_MAP.items() if ag in v]
         ])
 
         if meanings or ret:

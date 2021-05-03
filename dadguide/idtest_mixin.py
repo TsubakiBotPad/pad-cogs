@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import List
 
 import tsutils
 from redbot.core import commands, Config, checks
@@ -40,7 +41,7 @@ class IdTest:
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_reaction(ctx, f"Added test case `{mid} - {query}`"
+            if await tsutils.get_reaction(ctx, f"Added test case `{mid}: {query}`"
                                                f" with ref `{sorted(suite).index(query)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
@@ -50,7 +51,7 @@ class IdTest:
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
                 await ctx.send(
-                    f"Successfully added test case `{mid} - {query}` with ref `{sorted(suite).index(query)}`")
+                    f"Successfully added test case `{mid}: {query}` with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -91,7 +92,7 @@ class IdTest:
                 old = [t for t in suite if t['id'] == mid and t['token'] == token][0]
                 if not await tsutils.confirm_message(ctx, f"Are you sure you want to change"
                                                           f" the type of test case #{suite.index(old)}"
-                                                          f" `{mid} - {token}` from "
+                                                          f" `{mid}: {token}` from "
                                                           f" **{'fluff' if fluffy else 'name'}** to"
                                                           f" **{'name' if fluffy else 'fluff'}**?"):
                     await ctx.react_quietly("\N{CROSS MARK}")
@@ -110,7 +111,7 @@ class IdTest:
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
             if await tsutils.get_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
-                                               f"case `{mid} - {token}` with ref `{suite.index(case)}`",
+                                               f"case `{mid}: {token}` with ref `{suite.index(case)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 suite.pop()
                 if old:
@@ -118,7 +119,7 @@ class IdTest:
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
                 m = await ctx.send(f"Successfully added {'fluff' if fluffy else 'name'} "
-                                   f"case `{mid} - {token}` with ref `{suite.index(case)}`")
+                                   f"case `{mid}: {token}` with ref `{suite.index(case)}`")
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @idtest.command(name="import")
@@ -187,7 +188,7 @@ class IdTest:
             res = suite[case]['result']
             del suite[case]
         await ctx.send(
-            f"Removed test case `{case} - {res}` with ref")
+            f"Removed test case `{case}: {res}` with ref")
 
     @idt_name.command(name="remove")
     @checks.is_owner()
@@ -215,7 +216,7 @@ class IdTest:
             suite.remove(case)
         # noinspection PyTypeChecker
         await ctx.send(f"Successfully removed {'fluff' if case['fluff'] else 'name'} case"
-                       f" `{case['id']} - {case['token']}`")
+                       f" `{case['id']}: {case['token']}`")
 
     @idtest.command(name="setreason", aliases=["addreason"])
     @checks.is_owner()
@@ -272,7 +273,7 @@ class IdTest:
         o = ""
         ml = len(max(suite, key=len))
         for c, kv in enumerate(sorted(suite.items())):
-            o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+            o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)}: {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -295,7 +296,7 @@ class IdTest:
         o = ""
         for c, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
             if inclusive or case['fluff'] == fluff:
-                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)} - {str(case['id']).ljust(4)}" \
+                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)}: {str(case['id']).ljust(4)}" \
                      f"\t{'fluff' if case['fluff'] else 'name '}\t{case.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
@@ -312,7 +313,7 @@ class IdTest:
         ml = len(max(suite, key=len))
         for c, kv in enumerate(sorted(suite.items())):
             if not kv[1].get('reason'):
-                o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)} - {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
+                o += f"{str(c).rjust(3)}. {kv[0].ljust(ml)}: {str(kv[1]['result']).ljust(4)}\t{kv[1].get('reason') or ''}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -335,7 +336,7 @@ class IdTest:
         o = ""
         for c, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
             if inclusive or case['fluff'] == fluff and not case['reason']:
-                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)} - {str(case['id']).ljust(4)}" \
+                o += f"{str(c).rjust(3)}. {case['token'].ljust(10)}: {str(case['id']).ljust(4)}" \
                      f"\t{'fluff' if case['fluff'] else 'name '}\t{case.get('reason', '')}\n"
         if not o:
             await ctx.send("There are no test cases.")
@@ -352,7 +353,7 @@ class IdTest:
         ml = len(max(suite, key=len))
         for c, kv_tuple in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
             key, val = kv_tuple
-            o += f"{key.ljust(ml)} - {str(val['result']).ljust(4)}\t{val.get('reason') or ''}\n"
+            o += f"{key.ljust(ml)}: {str(val['result']).ljust(4)}\t{val.get('reason') or ''}\n"
         if not o:
             await ctx.send("There are no test cases.")
         for page in pagify(o):
@@ -382,7 +383,7 @@ class IdTest:
                 if mid != r['result']:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
                     q = '"' + q + '"'
-                    o += f"{i}. {q.ljust(ml)} - {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
+                    o += f"{i}. {q.ljust(ml)}: {rcircle} Ex: {r['result']}, Ac: {mid}{reason}\n"
                 else:
                     c += 1
         if c != len(suite):
@@ -421,7 +422,7 @@ class IdTest:
 
                 if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
                     q = '"{}"'.format(case['token'])
-                    o += f"{i}. {str(case['id']).ljust(4)} {q.ljust(10)} - " \
+                    o += f"{i}. {str(case['id']).ljust(4)} {q.ljust(10)}: " \
                          f"{ycircle if name or fluff else rcircle} " \
                          f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
                 else:
@@ -452,7 +453,7 @@ class IdTest:
                 if mid != qsuite[q]['result']:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
                     qq = '"' + q + '"'
-                    qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)} - {rcircle} "
+                    qo += (f"{str(c).rjust(4)}. {qq.ljust(ml)}: {rcircle} "
                            f"Ex: {qsuite[q]['result']}, Ac: {mid}{reason}\n")
                 else:
                     qc += 1
@@ -467,7 +468,7 @@ class IdTest:
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
-                    fo += f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml - 5)} - " \
+                    fo += f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml - 5)}: " \
                           f"{ycircle if name or fluff else rcircle} " \
                           f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token\n"
                 else:
@@ -486,9 +487,14 @@ class IdTest:
         for page in pagify(o):
             await ctx.send(box(page))
 
-    async def run_tests(self):
+    async def run_tests(self) -> List[str]:
+        """Run all tests"""
+        rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
+        failures = []
+
         qsuite = await self.config.test_suite()
-        for q in qsuite:
+        ml = len(max(qsuite or [''], key=len)) + 2
+        for c, q in enumerate(sorted(qsuite)):
             try:
                 m = await self.find_monster(q) or -1
             except Exception:
@@ -496,14 +502,19 @@ class IdTest:
             mid = getattr(m, "monster_id", m)
 
             if mid != qsuite[q]['result']:
-                return False
+                reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
+                qq = '"' + q + '"'
+                failures.append(f"{str(c).rjust(4)}. {qq.ljust(ml)}: {rcircle} "
+                                f"Ex: {qsuite[q]['result']}, Ac: {mid}{reason}")
 
         fsuite = await self.config.fluff_suite()
-        for v in fsuite:
+        for c, v in enumerate(fsuite):
             fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
             name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
-                return False
-
-        return True
+                q = '"{}"'.format(v['token'])
+                failures.append(f"{str(c).rjust(4)}. {str(v['id']).ljust(4)} {q.ljust(ml - 5)}: "
+                                f"{ycircle if name or fluff else rcircle} "
+                                f"Not {'Fluff' if name else 'Name' if fluff else 'A'} Token")
+        return failures

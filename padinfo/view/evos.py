@@ -3,11 +3,12 @@ from typing import List, TYPE_CHECKING
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
@@ -76,7 +77,7 @@ class EvosViewState(ViewStateBaseId):
         return alt_versions, gem_versions
 
 
-class EvosView:
+class EvosView(BaseIdView):
     VIEW_TYPE = 'Evos'
 
     @staticmethod
@@ -88,8 +89,8 @@ class EvosView:
             for ae in sorted(monsters, key=lambda x: int(x.monster_id))
         ]
 
-    @staticmethod
-    def embed(state: EvosViewState):
+    @classmethod
+    def embed(cls, state: EvosViewState):
         fields = [
             EmbedField(
                 ("{} evolution" if len(state.alt_versions) == 1 else "{} evolutions").format(len(state.alt_versions)),
@@ -105,8 +106,10 @@ class EvosView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(state.monster).to_markdown(),
+                title=MonsterHeader.long_maybe_tsubaki(state.monster,
+                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

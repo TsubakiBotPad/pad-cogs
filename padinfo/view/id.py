@@ -4,13 +4,14 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
+from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
@@ -127,7 +128,7 @@ def evos_embed_field(state: ViewStateBaseId):
     )
 
 
-class IdView:
+class IdView(BaseIdView):
     VIEW_TYPE = 'Id'
 
     @staticmethod
@@ -244,8 +245,8 @@ class IdView:
             delimiter=' '
         )
 
-    @staticmethod
-    def embed(state: IdViewState):
+    @classmethod
+    def embed(cls, state: IdViewState):
         m = state.monster
         fields = [
             EmbedField(
@@ -279,8 +280,10 @@ class IdView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
+                title=MonsterHeader.long_maybe_tsubaki(m,
+                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       ).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

@@ -2,7 +2,7 @@
 
 Red v3 Cogs developed originally for Miru Bot, now for Tsubaki Bot.
 
-Code should be PEP 8 formatted with a 100 character line limit.
+Code should be PEP 8 formatted with a 120 character line limit.
 
 # Setting up your own Tsubaki instance for contributing code
 

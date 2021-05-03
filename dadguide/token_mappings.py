@@ -1,6 +1,20 @@
+from collections import defaultdict, namedtuple
 from enum import Enum
+from typing import Mapping, Tuple, TypeVar
 
 from .models.enum_types import Attribute, MonsterType
+
+K = TypeVar('K')
+V = TypeVar('V')
+
+
+def inverse_map(token_map: Mapping[K, Tuple[V]]) -> Mapping[V, Tuple[K]]:
+    ret = defaultdict(tuple)
+    for k, vs in token_map.items():
+        for v in vs:
+            ret[v] += (k,)
+    return ret
+
 
 COLOR_MAP = {
     Attribute.Fire: ('r', 'red', 'fire'),
@@ -74,7 +88,7 @@ EVO_MAP = {
 }
 
 
-class Awakenings(Enum):
+class AwokenSkills(Enum):
     ENHANCEDHP = 1
     ENHANCEDATK = 2
     ENHANCEDRCV = 3
@@ -155,85 +169,86 @@ class Awakenings(Enum):
     CROSSATTACK = 78
 
 
-AWOKEN_MAP = {
-    Awakenings.ENHANCEDHP: ('hp+', 'hp'),
-    Awakenings.ENHANCEDATK: ('atk+', 'atk'),
-    Awakenings.ENHANCEDRCV: ('rcv+', 'rcv'),
-    Awakenings.REDUCERED: ('elresr', 'elres'),  # element resist
-    Awakenings.REDUCEBLUE: ('elresb', 'elres'),
-    Awakenings.REDUCEGREEN: ('elresg', 'elres'),
-    Awakenings.REDUCELIGHT: ('elresl', 'elres'),
-    Awakenings.REDUCEDARK: ('elresd', 'elres'),
-    Awakenings.AUTOHEAL: ('autoheal',),
-    Awakenings.BINDRES: ('unbindable',),
-    Awakenings.BLINDRES: ('resb',),
-    Awakenings.JAMMERRES: ('resj',),
-    Awakenings.POISONRES: ('resp',),
-    Awakenings.ENHANCEDRED: ('oer', 'oe'),
-    Awakenings.ENHANCEDBLUE: ('oeb', 'oe'),
-    Awakenings.ENHANCEDGREEN: ('oeg', 'oe'),
-    Awakenings.ENHANCEDLIGHT: ('oel', 'oe'),
-    Awakenings.ENHANCEDDARK: ('oed', 'oe'),
-    Awakenings.EXTMOVE: ('te', 'finger'),
-    Awakenings.BINDRECOVERY: ('bindrcv',),
-    Awakenings.SKILLBOOST: ('sb',),
-    Awakenings.REDROW: ('rowr', 'row'),
-    Awakenings.BLUEROW: ('rowb', 'row'),
-    Awakenings.GREENROW: ('rowg', 'row'),
-    Awakenings.LIGHTROW: ('rowl', 'row'),
-    Awakenings.DARKROW: ('rowd', 'row'),
-    Awakenings.TPA: ('tpa', 'pronged'),
-    Awakenings.SKILLBINDRES: ('sbr',),
-    Awakenings.ENHANCEDHEAL: ('htpa', 'oeh'),
-    Awakenings.MULTIBOOST: ('multi', 'mb'),
-    Awakenings.DRAGONKILLER: ('dragonkiller', 'dk', 'drk', 'killer'),
-    Awakenings.GODKILLER: ('godkiller', 'gk', 'gok', 'killer'),
-    Awakenings.DEVILKILLER: ('devilkiller', 'vk', 'dek', 'killer'),
-    Awakenings.MACHINEKILLER: ('machinekiller', 'mk', 'mak', 'killer'),
-    Awakenings.BALANCEDKILLER: ('balancedkiller', 'bk', 'bak', 'killer'),
-    Awakenings.ATTACKERKILLER: ('attackerkiller', 'ak', 'aak', 'killer'),
-    Awakenings.PHYSICALKILLER: ('physicalkiller', 'pk', 'phk', 'killer'),
-    Awakenings.HEALERKILLER: ('healerkiller', 'hk', 'hek', 'killer'),
-    Awakenings.EVOMATKILLER: ('evokiller', 'evok', 'a2killer'),
-    Awakenings.AWOKENKILLER: ('awokenkiller', 'awok', 'a2killer'),
-    Awakenings.FODDERKILLER: ('enhancekiller', 'enhk', 'a2killer'),
-    Awakenings.REDEEMKILLER: ('vendorkiller', 'vendork', 'a2killer'),
-    Awakenings.ENHCOMBO7C: ('7c',),
-    Awakenings.GUARDBREAK: ('gb',),
-    Awakenings.FUA: ('fua',),
-    Awakenings.ENHTEAMHP: ('teamhp', 'thp'),
-    Awakenings.ENHTEAMRCV: ('teamrcv', 'trcv'),
-    Awakenings.VDP: ('vdp',),
-    Awakenings.EQUIP: ('equip', 'assist', 'eq'),
-    Awakenings.SUPERFUA: ('sfua',),
-    Awakenings.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
-    Awakenings.UNBINDABLE: ('unbindable',),
-    Awakenings.EXTMOVEPLUS: ('te+', 'finger+'),
-    Awakenings.CLOUDRESIST: ('cloudres', 'cloud'),
-    Awakenings.TAPERESIST: ('taperes', 'tape'),
-    Awakenings.SKILLBOOSTPLUS: ('sb+',),
-    Awakenings.HP80ORMORE: ('>80', 'highhp'),
-    Awakenings.HP50ORLESS: ('<50', 'lowhp'),
-    Awakenings.ELSHIELD: ('elshield', 'elh', 'hel'),
-    Awakenings.ELATTACK: ('el',),
-    Awakenings.ENHCOMBO10C: ('10c',),
-    Awakenings.COMBOORB: ('co', 'corb'),
-    Awakenings.VOICE: ('voice',),
-    Awakenings.DUNGEONBONUS: ('dgbonus', 'dgboost'),
-    Awakenings.REDUCEDHP: ('hp-',),
-    Awakenings.REDUCEDATK: ('atk-',),
-    Awakenings.REDUCEDRCV: ('rcv-',),
-    Awakenings.UNBLINDABLE: ('resb+', 'b+',),
-    Awakenings.UNJAMMABLE: ('resj+', 'j+',),
-    Awakenings.UNPOISONABLE: ('resp+', 'p+',),
-    Awakenings.JAMMERBLESSING: ('jblessing', 'sfj', 'jsurge'),
-    Awakenings.POISONBLESSING: ('pblessing', 'sfp', 'psurge'),
-    Awakenings.REDCOMBOCOUNT: ('ccr', 'cc'),
-    Awakenings.BLUECOMBOCOUNT: ('ccb', 'cc'),
-    Awakenings.GREENCOMBOCOUNT: ('ccg', 'cc'),
-    Awakenings.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
-    Awakenings.DARKCOMBOCOUNT: ('ccd', 'cc'),
-    Awakenings.CROSSATTACK: ('crossattack', 'crossblind'),
+AWOKEN_SKILL_MAP = {
+    AwokenSkills.ENHANCEDHP: ('hp+', 'hp'),
+    AwokenSkills.ENHANCEDATK: ('atk+', 'atk'),
+    AwokenSkills.ENHANCEDRCV: ('rcv+', 'rcv'),
+    AwokenSkills.REDUCERED: ('elresr', 'elres'),  # element resist
+    AwokenSkills.REDUCEBLUE: ('elresb', 'elres'),
+    AwokenSkills.REDUCEGREEN: ('elresg', 'elres'),
+    AwokenSkills.REDUCELIGHT: ('elresl', 'elres'),
+    AwokenSkills.REDUCEDARK: ('elresd', 'elres'),
+    AwokenSkills.AUTOHEAL: ('autoheal',),
+    AwokenSkills.BINDRES: ('unbindable', 'bindres'),
+    AwokenSkills.BLINDRES: ('resb',),
+    AwokenSkills.JAMMERRES: ('resj',),
+    AwokenSkills.POISONRES: ('resp',),
+    AwokenSkills.ENHANCEDRED: ('oer', 'oe'),
+    AwokenSkills.ENHANCEDBLUE: ('oeb', 'oe'),
+    AwokenSkills.ENHANCEDGREEN: ('oeg', 'oe'),
+    AwokenSkills.ENHANCEDLIGHT: ('oel', 'oe'),
+    AwokenSkills.ENHANCEDDARK: ('oed', 'oe'),
+    AwokenSkills.EXTMOVE: ('te', 'finger'),
+    AwokenSkills.BINDRECOVERY: ('bindrcv',),
+    AwokenSkills.SKILLBOOST: ('sb',),
+    AwokenSkills.REDROW: ('rowr', 'row'),
+    AwokenSkills.BLUEROW: ('rowb', 'row'),
+    AwokenSkills.GREENROW: ('rowg', 'row'),
+    AwokenSkills.LIGHTROW: ('rowl', 'row'),
+    AwokenSkills.DARKROW: ('rowd', 'row'),
+    AwokenSkills.TPA: ('tpa', 'pronged'),
+    AwokenSkills.SKILLBINDRES: ('sbr',),
+    AwokenSkills.ENHANCEDHEAL: ('htpa', 'oeh'),
+    AwokenSkills.MULTIBOOST: ('multi', 'mb'),
+    AwokenSkills.DRAGONKILLER: ('dragonkiller', 'dk', 'drk', 'killer'),
+    AwokenSkills.GODKILLER: ('godkiller', 'gk', 'gok', 'killer'),
+    AwokenSkills.DEVILKILLER: ('devilkiller', 'vk', 'dek', 'killer'),
+    AwokenSkills.MACHINEKILLER: ('machinekiller', 'mk', 'mak', 'killer'),
+    AwokenSkills.BALANCEDKILLER: ('balancedkiller', 'bk', 'bak', 'killer'),
+    AwokenSkills.ATTACKERKILLER: ('attackerkiller', 'ak', 'aak', 'killer'),
+    AwokenSkills.PHYSICALKILLER: ('physicalkiller', 'pk', 'phk', 'killer'),
+    AwokenSkills.HEALERKILLER: ('healerkiller', 'hk', 'hek', 'killer'),
+    AwokenSkills.EVOMATKILLER: ('evokiller', 'evok', 'a2killer'),
+    AwokenSkills.AWOKENKILLER: ('awokenkiller', 'awok', 'a2killer'),
+    AwokenSkills.FODDERKILLER: ('enhancekiller', 'enhk', 'a2killer'),
+    AwokenSkills.REDEEMKILLER: ('vendorkiller', 'vendork', 'a2killer'),
+    AwokenSkills.ENHCOMBO7C: ('7c',),
+    AwokenSkills.GUARDBREAK: ('gb',),
+    AwokenSkills.FUA: ('fua',),
+    AwokenSkills.ENHTEAMHP: ('teamhp', 'thp'),
+    AwokenSkills.ENHTEAMRCV: ('teamrcv', 'trcv'),
+    AwokenSkills.VDP: ('vdp',),
+    AwokenSkills.EQUIP: ('equip', 'assist', 'eq'),
+    AwokenSkills.SUPERFUA: ('sfua',),
+    AwokenSkills.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
+    AwokenSkills.UNBINDABLE: ('unbindable', ''
+                                          ''),
+    AwokenSkills.EXTMOVEPLUS: ('te+', 'te', 'finger+', 'finger'),
+    AwokenSkills.CLOUDRESIST: ('cloudres', 'cloud'),
+    AwokenSkills.TAPERESIST: ('taperes', 'tape'),
+    AwokenSkills.SKILLBOOSTPLUS: ('sb+', 'sb'),
+    AwokenSkills.HP80ORMORE: ('>80', 'highhp'),
+    AwokenSkills.HP50ORLESS: ('<50', 'lowhp'),
+    AwokenSkills.ELSHIELD: ('elshield', 'elh', 'hel'),
+    AwokenSkills.ELATTACK: ('el',),
+    AwokenSkills.ENHCOMBO10C: ('10c',),
+    AwokenSkills.COMBOORB: ('co', 'corb'),
+    AwokenSkills.VOICE: ('voice',),
+    AwokenSkills.DUNGEONBONUS: ('dgbonus', 'dgboost'),
+    AwokenSkills.REDUCEDHP: ('hp-',),
+    AwokenSkills.REDUCEDATK: ('atk-',),
+    AwokenSkills.REDUCEDRCV: ('rcv-',),
+    AwokenSkills.UNBLINDABLE: ('resb+', 'b+',),
+    AwokenSkills.UNJAMMABLE: ('resj+', 'j+',),
+    AwokenSkills.UNPOISONABLE: ('resp+', 'p+',),
+    AwokenSkills.JAMMERBLESSING: ('jblessing', 'sfj', 'jsurge'),
+    AwokenSkills.POISONBLESSING: ('pblessing', 'sfp', 'psurge'),
+    AwokenSkills.REDCOMBOCOUNT: ('ccr', 'cc'),
+    AwokenSkills.BLUECOMBOCOUNT: ('ccb', 'cc'),
+    AwokenSkills.GREENCOMBOCOUNT: ('ccg', 'cc'),
+    AwokenSkills.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
+    AwokenSkills.DARKCOMBOCOUNT: ('ccd', 'cc'),
+    AwokenSkills.CROSSATTACK: ('crossattack', 'crossblind'),
 }
 
 
@@ -288,7 +303,7 @@ ALL_TOKEN_DICTS = {
     *SUB_COLOR_MAP.values(),
     *DUAL_COLOR_MAP.values(),
     *TYPE_MAP.values(),
-    *AWOKEN_MAP.values(),
+    *AWOKEN_SKILL_MAP.values(),
     *EVO_MAP.values(),
     *MISC_MAP.values(),
 }
@@ -301,7 +316,7 @@ COLOR_TOKENS = {
     *sum(DUAL_COLOR_MAP.values(), ()),
 }
 
-AWAKENING_TOKENS = {*sum(AWOKEN_MAP.values(), ())}
+AWAKENING_TOKENS = {*sum(AWOKEN_SKILL_MAP.values(), ())}
 EVO_TOKENS = {*sum(EVO_MAP.values(), ())}
 TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
 
@@ -335,3 +350,11 @@ PROBLEMATIC_SERIES_TOKENS = {
 ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
                  'bg', 'bb', 'bl', 'bd', 'bx', 'g', 'gr', 'gg', 'gb', 'gl', 'gd', 'gx', 'l', 'lr', 'lg', 'lb', 'll',
                  'ld', 'lx', 'd', 'dr', 'dg', 'db', 'dl', 'dd', 'dx', 'x', 'xr', 'xg', 'xb', 'xl', 'xd', 'xx'}
+
+# This probably doesn't belong in here
+PlusAwakeningData = namedtuple("PlusAwakeningData", "awoken_skill value")
+PLUS_AWOKENSKILL_MAP = {
+    AwokenSkills.UNBINDABLE: PlusAwakeningData(AwokenSkills.BINDRES, 2),
+    AwokenSkills.EXTMOVEPLUS: PlusAwakeningData(AwokenSkills.EXTMOVE, 2),
+    AwokenSkills.SKILLBOOSTPLUS: PlusAwakeningData(AwokenSkills.SKILLBOOST, 2),
+}

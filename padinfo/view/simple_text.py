@@ -2,9 +2,9 @@ from typing import List
 
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.view import EmbedView
+from tsutils import embed_footer_with_state
 
 from padinfo.common.config import UserConfig
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.view_state_base import ViewStateBase
 
 
@@ -42,5 +42,5 @@ class SimpleTextView:
                 color=state.color,
                 description=state.message
             ),
-            embed_footer=pad_info_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state),
         )
