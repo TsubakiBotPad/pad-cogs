@@ -491,7 +491,7 @@ class PadGlobal(commands.Cog):
             else:
                 await ctx.send(inline('No mechanics found'))
             return
-        msg = self.boss_to_text(ctx)
+        msg = await self.boss_to_text(ctx)
         for page in pagify(msg):
             await ctx.author.send(page)
 
@@ -519,20 +519,23 @@ class PadGlobal(commands.Cog):
 
         return name, definition
 
-    def boss_to_text(self, ctx):
+    async def boss_to_text(self, ctx):
         bosses = self.settings.boss()
-        msg = '__**PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
+        dgcog = self.bot.get_cog('Dadguide')
+        msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
         for term in sorted(bosses.keys()):
-            definition = bosses[term]
-            msg += '\n**{}**\n{}'.format(term, definition)
+            m = await dgcog.find_monster(str(term), ctx.author.id)
+            if not m:  # monster not found
+                continue
+            msg += '\n[{}] {}'.format(term, m.name_en)
         return msg
 
     def boss_to_text_index(self, ctx):
         bosses = self.settings.boss()
         msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
-        msg = msg + '\n' + ',\n'.join(sorted(bosses.keys()))
+        msg = msg + '\n' + ',\n'.join(map(str, sorted(bosses.keys())))
         return msg
 
     @padglobal.command()
@@ -1027,8 +1030,7 @@ class PadGlobal(commands.Cog):
         msg = '__**Dungeon Guides**__'
         dungeon_guide = self.settings.dungeonGuide()
         for term in sorted(dungeon_guide.keys()):
-            definition = dungeon_guide[term]
-            msg += '\n**{}** :\n{}\n'.format(term, definition)
+            msg += '\n{}'.format(term)
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
@@ -1036,7 +1038,7 @@ class PadGlobal(commands.Cog):
             if m is None:
                 continue
             name = m.name_en.split(', ')[-1].title()
-            msg += '\n**{}** :\n{}\n'.format(name, definition)
+            msg += '\n[{}] {}'.format(monster_id, name)
 
         return msg
 
