@@ -35,6 +35,7 @@ from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
 from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
+from dungeon.menu.menu_map import dungeon_menu_map
 from dungeon.menu.simple import SimpleMenu, SimpleEmoji, SimpleMenuPanes
 from dungeon.processors import process_monster, formatOverview
 from dungeon.view.dungeon import DungeonViewState
@@ -290,7 +291,7 @@ Give a condition type, output a player readable string that actually explains wh
 
 class DungeonCog(commands.Cog):
     """My custom cog"""
-
+    menu_map = dungeon_menu_map
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -446,6 +447,14 @@ class DungeonCog(commands.Cog):
                                   enhance_material_type=emoji_cache.get_by_name('killer_enhancemat'),
                                   redeemable_material_type='🪙'
                                   )
+
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name)

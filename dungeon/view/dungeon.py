@@ -5,12 +5,12 @@ from discordmenu.embed.base import Box
 from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
+from tsutils import embed_footer_with_state
 
 from dungeon.SafeDict import SafeDict
 from dungeon.enemy_skills_pb2 import MonsterBehavior
 from dungeon.processors import process_monster
 from padinfo.common.config import UserConfig
-from padinfo.view.components.base import pad_info_footer_with_state
 from padinfo.view.components.view_state_base import ViewStateBase
 
 
@@ -113,5 +113,5 @@ class DungeonView:
                 title=encounter_model.stage,
             ),
             embed_fields=fields,
-            embed_footer=pad_info_footer_with_state(state)
+            embed_footer=embed_footer_with_state(state)
         )
