@@ -3,7 +3,6 @@ import csv
 import io
 import logging
 import re
-from collections import defaultdict
 
 import aiohttp
 import tsutils
@@ -48,7 +47,6 @@ class MonsterIndex(tsutils.aobject):
         self.replacement_tokens = defaultdict(set)
         self.remove_mods = defaultdict(set)
         self.treename_overrides = set()
-
 
         nickname_data, treenames_data, pantheon_data, nt_alias_data, mod_data, treemod_data = await asyncio.gather(
             sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 5),
@@ -417,7 +415,7 @@ class MonsterIndex(tsutils.aobject):
 
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
-        else: 
+        else:
             if self.graph.monster_is_vendor_exchange(monster):
                 modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
             if self.graph.monster_is_mp_evo(monster):
@@ -450,7 +448,7 @@ class MonsterIndex(tsutils.aobject):
     def add_numbered_modifier(self, monster, curr_mods, added_mods, condition, *, else_mods=None):
         if condition(monster):
             curr_mods.update(added_mods)
-            ms = sorted((m for m in self.graph.get_alt_monsters(monster) if condition(m)), key=lambda m: m.monster_id)
+            ms = [m for m in self.graph.get_alt_monsters(monster) if condition(m)]
             if len(ms) > 1:
                 curr_mods.update(f'{mod}-{ms.index(monster) + 1}' for mod in added_mods)
         elif else_mods:

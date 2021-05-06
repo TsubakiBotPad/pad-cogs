@@ -9,7 +9,7 @@ async def perform_transforminfo_query(dgcog, raw_query, author_id):
     transformed_mon = None
     base_mon = None
     altversions = mgraph.process_alt_versions(found_monster.monster_id)
-    for mon_id in sorted(altversions):
+    for mon_id in altversions:
         if mgraph.monster_is_transform_base_by_id(mon_id):
             transformed_mon = dgcog.get_monster(mgraph.get_next_transform_id_by_monster_id(mon_id))
             if transformed_mon:
