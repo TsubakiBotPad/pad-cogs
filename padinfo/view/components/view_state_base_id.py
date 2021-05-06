@@ -56,6 +56,5 @@ class ViewStateBaseId(ViewState):
     @classmethod
     def get_alt_monsters(cls, dgcog, monster):
         db_context = dgcog.database
-        alt_monsters = sorted(db_context.graph.get_alt_monsters_by_id(monster.monster_no),
-                              key=lambda x: x.monster_id)
+        alt_monsters = db_context.graph.get_alt_monsters_by_id(monster.monster_id)
         return alt_monsters
