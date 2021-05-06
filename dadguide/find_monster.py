@@ -212,6 +212,7 @@ class FindMonster:
             tokenized_query = []
 
         return (matches[monster].score,
+                not self.dgcog.database.graph.monster_is_evo_gem(monster),
                 # Don't deprio evos with new modifier
                 not monster.is_equip if not {m[0] for m in matches[monster].mod}.intersection(
                     {'new', 'base'}) else True,

@@ -50,7 +50,7 @@ class IdMenu:
     @staticmethod
     def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            evos = db_context.graph.get_alt_ids_by_id(monster.monster_id)
             index = evos.index(monster.monster_id)
             new_id = evos[index - 1]
             return new_id
@@ -77,7 +77,7 @@ class IdMenu:
     @staticmethod
     def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            evos = db_context.graph.get_alt_ids_by_id(monster.monster_id)
             index = evos.index(monster.monster_id)
             if index == len(evos) - 1:
                 # cycle back to the beginning of the evos list
