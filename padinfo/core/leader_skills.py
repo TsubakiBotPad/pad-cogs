@@ -1,5 +1,7 @@
 import re
 
+from dadguide.models.leader_skill_model import LeaderSkillModel
+
 
 def humanize_number(number, sigfigs=2):
     n = float("{0:.{1}g}".format(number, sigfigs))
@@ -13,19 +15,23 @@ def humanize_number(number, sigfigs=2):
         return str(int(n))
 
 
-def createMultiplierText(ls1, ls2=None):
+def createMultiplierText(ls1, ls2=False):
     if ls2 and not ls1:
         ls1, ls2 = ls2, ls1
 
-    if ls1:
+    if isinstance(ls1, LeaderSkillModel):
         hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = ls1.data
     else:
         hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = 1, 1, 1, 0, 0, 0, 0, 0
 
-    if ls2:
+    if isinstance(ls2, LeaderSkillModel):
         hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = ls2.data
-    else:
+    elif ls2 is False:
         hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1
+    elif ls2 is None:
+        hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = 1, 1, 1, 0, 0, 0, 0, 0
+    else:
+        raise ValueError(f"ls2 must be LeaderSkillModel or None, not {type(ls2)}")
 
     return format_ls_text(
         hp1 * hp2,
