@@ -19,6 +19,7 @@ from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT
   monsters.*,
+  COALESCE(monster_name_overrides.name_en, monsters.name_en_override) AS name_en_override,
   leader_skills.name_ja AS ls_name_ja,
   leader_skills.name_en AS ls_name_en,
   leader_skills.name_ko AS ls_name_ko,
@@ -56,6 +57,7 @@ FROM
   LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' = target_monsters.name_ja
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
+  LEFT OUTER JOIN monster_name_overrides ON monsters.monster_id = monster_name_overrides.monster_id
 GROUP BY
   monsters.monster_id"""
 
