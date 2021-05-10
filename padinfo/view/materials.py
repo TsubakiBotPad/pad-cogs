@@ -12,7 +12,7 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.id import evos_embed_field
 
@@ -24,7 +24,7 @@ MAX_MONS_TO_SHOW = 5
 
 class MaterialsViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List["MonsterModel"],
+                 alt_monsters: List[MonsterEvolution],
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
@@ -63,7 +63,7 @@ class MaterialsViewState(ViewStateBaseId):
         if mats is None:
             return None
 
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         menu_type = ims['menu_type']
@@ -155,7 +155,7 @@ class MaterialsView(BaseIdView):
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)
             ),

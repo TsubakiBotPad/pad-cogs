@@ -13,7 +13,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ NIL_ATT = 'Nil'
 
 class PantheonViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel", alt_monsters,
-                 pantheon_list: List["MonsterModel"], series_name: str, base_monster,
+                 pantheon_list: List[MonsterEvolution], series_name: str, base_monster,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
@@ -55,7 +55,7 @@ class PantheonViewState(ViewStateBaseId):
         if pantheon_list is None:
             return None
 
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -122,20 +122,20 @@ class PantheonViewState(ViewStateBaseId):
         if main_att.name == NIL_ATT:
             att_emoji = get_attribute_emoji_by_enum(sub_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == sub_att.name
-                                                       or (m.attr1.name == NIL_ATT
-                                                           and m.attr2.name == sub_att.name)]
+                             or (m.attr1.name == NIL_ATT
+                                 and m.attr2.name == sub_att.name)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
-                                                       or (m.attr1.name == NIL_ATT
-                                                           and m.attr2.name == main_att.name)]
+                             or (m.attr1.name == NIL_ATT
+                                 and m.attr2.name == main_att.name)]
         if 0 < len(main_att_list) <= MAX_MONS_TO_SHOW:
             # append after check this time, because if we go to subatt we only want one emoji
             filters.append(att_emoji)
             return main_att_list, cls.make_series_name(series_name, filters), base_mon
 
         sub_att_list = [m for m in main_att_list if m.attr1.name == main_att.name
-                                                    and m.attr2.name == sub_att.name]
+                        and m.attr2.name == sub_att.name]
         filters.append(get_attribute_emoji_by_monster(base_mon))
         if 0 < len(sub_att_list) <= MAX_MONS_TO_SHOW:
             return sub_att_list, cls.make_series_name(series_name, filters), base_mon
@@ -171,7 +171,7 @@ class PantheonView(BaseIdView):
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),

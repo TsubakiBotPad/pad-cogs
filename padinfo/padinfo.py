@@ -249,7 +249,7 @@ class PadInfo(commands.Cog):
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
-        alt_monsters = IdViewState.get_alt_monsters(dgcog, monster)
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -336,6 +336,7 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
+        alt_monsters = EvosViewState.get_alt_monsters_and_evos(dgcog, monster)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
 
         if alt_versions is None:
@@ -347,7 +348,7 @@ class PadInfo(commands.Cog):
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                              monster, alt_versions, alt_versions, gem_versions,
+                              monster, alt_monsters, alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
@@ -376,7 +377,7 @@ class PadInfo(commands.Cog):
             await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
             return
 
-        alt_monsters = MaterialsViewState.get_alt_monsters(dgcog, monster)
+        alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
@@ -409,7 +410,7 @@ class PadInfo(commands.Cog):
             await ctx.send('Unable to find a pantheon for the result of your query,'
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
-        alt_monsters = PantheonViewState.get_alt_monsters(dgcog, monster)
+        alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
@@ -437,7 +438,7 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
+        alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
@@ -465,7 +466,7 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        alt_monsters = PicViewState.get_alt_monsters(dgcog, monster)
+        alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
