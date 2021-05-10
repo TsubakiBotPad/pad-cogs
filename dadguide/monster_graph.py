@@ -617,14 +617,14 @@ class MonsterGraph(object):
         return monster.reg_date == latest_time
 
     def monster_acquisition(self, monster: MonsterModel):
-        if self.monster_is_mp_evo(monster):
+        if self.monster_is_rem_evo(monster):
+            return 'REM Card'
+        elif self.monster_is_mp_evo(monster):
             return 'MP Shop Card'
         elif self.monster_is_farmable_evo(monster):
             return 'Farmable Card'
         elif self.monster_is_pem_evo(monster):
             return 'PEM Card'
-        elif self.monster_is_rem_evo(monster):
-            return 'REM Card'
 
     def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
         next_monster = None
