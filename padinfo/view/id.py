@@ -100,7 +100,7 @@ class IdViewState(ViewStateBaseId):
         transform_base = db_context.graph.get_transform_base(monster)
         true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
-        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_no).rarity
+        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_id).rarity
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
 
 

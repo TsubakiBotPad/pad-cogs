@@ -35,7 +35,7 @@ class MonsterListViewState(ViewStateBase):
         ret.update({
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
-            'monster_list': [str(m.monster_no) for m in self.monster_list],
+            'monster_list': [str(m.monster_id) for m in self.monster_list],
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
             'message': self.message,
