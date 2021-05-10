@@ -61,10 +61,10 @@ class MonsterIndex(tsutils.aobject):
             if m_id.isdigit() and not i:
                 name = name.strip().lower()
                 mid = int(m_id)
-                if ov:
-                    self.treename_overrides.add(mid)
                 if lp:
                     self.monster_id_to_nametokens[mid].update(self._name_to_tokens(name))
+                if ov:
+                    self.treename_overrides.add(mid)
                 else:
                     if " " in name:
                         self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
@@ -96,7 +96,7 @@ class MonsterIndex(tsutils.aobject):
 
         next(nt_alias_data)  # Skip over heading
         for tokens, alias in nt_alias_data:
-            self.replacement_tokens[frozenset(re.split(r'\W+', tokens))].add(alias)
+            self.replacement_tokens[frozenset(re.split(r'[,\s]+', tokens))].add(alias)
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods, rmv in mod_data:
@@ -321,13 +321,13 @@ class MonsterIndex(tsutils.aobject):
 
         # Evo
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.EVO],
-                                   lambda m: self.graph.monster_is_normal_evo(m)
-                                             or self.graph.monster_is_first_evo(m))
+                                   lambda m: (self.graph.monster_is_normal_evo(m)
+                                              or self.graph.monster_is_first_evo(m)))
 
         # Uvo
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.UVO],
-                                   lambda m: self.graph.monster_is_reversible_evo(m)
-                                             and not special_evo)
+                                   lambda m: (self.graph.monster_is_reversible_evo(m)
+                                              and not special_evo))
 
         # UUvo
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.UUVO],
@@ -337,8 +337,8 @@ class MonsterIndex(tsutils.aobject):
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.TRANS],
                                    lambda m: not self.graph.monster_is_transform_base(m))
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.BASETRANS],
-                                   lambda m: self.graph.monster_is_transform_base(m)
-                                             and self.graph.get_next_transform_by_monster(m))
+                                   lambda m: (self.graph.monster_is_transform_base(m)
+                                              and self.graph.get_next_transform_by_monster(m)))
 
         # Awoken
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.AWOKEN],
@@ -358,8 +358,8 @@ class MonsterIndex(tsutils.aobject):
 
         # Pixel
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.PIXEL],
-                                   lambda m: m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
-                                             or self.graph.true_evo_type_by_monster(m).value == "Pixel",
+                                   lambda m: (m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
+                                             or self.graph.true_evo_type_by_monster(m).value == "Pixel"),
                                    else_mods=EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
@@ -376,8 +376,8 @@ class MonsterIndex(tsutils.aobject):
 
         # Chibi
         self.add_numbered_modifier(monster, modifiers, MISC_MAP[MiscModifiers.CHIBI],
-                                   lambda m: m.name_en == m.name_en.lower() and m.name_en != m.name_ja
-                                             or 'ミニ' in m.name_ja or '(chibi)' in m.name_en)
+                                   lambda m: (m.name_en == m.name_en.lower() and m.name_en != m.name_ja
+                                             or 'ミニ' in m.name_ja or '(chibi)' in m.name_en))
 
         # Series Type
         if monster.series.series_type == 'regular':
