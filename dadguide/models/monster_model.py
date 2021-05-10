@@ -16,7 +16,6 @@ from .monster_stats import monster_stats
 class MonsterModel(BaseModel):
     def __init__(self, **m):
         self.monster_id = m['monster_id']
-        self.monster_id = self.monster_id
         self.monster_no_jp = m['monster_no_jp']
         self.monster_no_na = m['monster_no_na']
         self.monster_no_kr = m['monster_no_kr']
