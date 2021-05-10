@@ -302,6 +302,7 @@ class MonsterIndex(tsutils.aobject):
             modifiers.update(TYPE_MAP[mt])
 
         # Series
+        modifiers.add("series" + str(monster.series_id))
         if monster.series_id in self.series_id_to_pantheon_nickname:
             modifiers.update(self.series_id_to_pantheon_nickname[monster.series_id])
 
@@ -359,7 +360,7 @@ class MonsterIndex(tsutils.aobject):
         # Pixel
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.PIXEL],
                                    lambda m: (m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
-                                             or self.graph.true_evo_type_by_monster(m).value == "Pixel"),
+                                              or self.graph.true_evo_type_by_monster(m).value == "Pixel"),
                                    else_mods=EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
@@ -377,7 +378,7 @@ class MonsterIndex(tsutils.aobject):
         # Chibi
         self.add_numbered_modifier(monster, modifiers, MISC_MAP[MiscModifiers.CHIBI],
                                    lambda m: (m.name_en == m.name_en.lower() and m.name_en != m.name_ja
-                                             or 'ミニ' in m.name_ja or '(chibi)' in m.name_en))
+                                              or 'ミニ' in m.name_ja or '(chibi)' in m.name_en))
 
         # Series Type
         if monster.series.series_type == 'regular':
