@@ -130,12 +130,12 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 def evos_embed_field(state: ViewStateBaseId):
-    m = state.monster
+    monster = state.monster
     return EmbedField(
         "Alternate Evos",
         HighlightableLinks(
-            links=[LinkedText(alt_fmt(me, state), puzzledragonx(m)) for me in state.alt_monsters],
-            highlighted=next(i for i, me in enumerate(state.alt_monsters) if m.monster_id == me.monster.monster_id)
+            links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
+            highlighted=next(i for i, me in enumerate(state.alt_monsters) if monster.monster_id == me.monster.monster_id)
         )
     )
 
