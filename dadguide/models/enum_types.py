@@ -27,14 +27,6 @@ class MonsterType(Enum):
     Vendor = 15
 
 
-class EvoType(Enum):
-    """Evo types supported by DadGuide. Numbers correspond to their id values."""
-    Base = 0  # Represents monsters who didn't require evo
-    Evo = 1
-    UvoAwoken = 2
-    UuvoReincarnated = 3
-
-
 class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
     Base = "Base"
