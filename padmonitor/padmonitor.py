@@ -48,8 +48,8 @@ class PadMonitor(commands.Cog):
         await DGCOG.wait_until_ready()
         db_context: "DbContext" = DGCOG.database
         all_monsters = db_context.get_all_monsters(as_generator=False)
-        jp_monster_map = {m.monster_no: m for m in all_monsters if m.on_jp}
-        na_monster_map = {m.monster_no: m for m in all_monsters if m.on_na}
+        jp_monster_map = {m.monster_id: m for m in all_monsters if m.on_jp}
+        na_monster_map = {m.monster_id: m for m in all_monsters if m.on_na}
 
         def process(existing, new_map, name):
             if not existing:
@@ -68,7 +68,7 @@ class PadMonitor(commands.Cog):
 
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
-                    msg += '\n\t[{}] {}'.format(m.monster_no, m.unoverridden_name_en)
+                    msg += '\n\t[{}] {}'.format(m.monster_id, m.unoverridden_name_en)
                     if tsutils.contains_ja(m.name_en) and m.name_en_override is not None:
                         msg += ' ({})'.format(m.name_en_override)
                 return msg

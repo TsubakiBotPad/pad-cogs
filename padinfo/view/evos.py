@@ -66,7 +66,7 @@ class EvosViewState(ViewStateBaseId):
     @staticmethod
     async def query(dgcog, monster):
         db_context = dgcog.database
-        alt_versions = sorted(db_context.graph.get_alt_monsters_by_id(monster.monster_no),
+        alt_versions = sorted(db_context.graph.get_alt_monsters_by_id(monster.monster_id),
                               key=lambda x: x.monster_id)
         gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
         if len(alt_versions) == 1 and len(gem_versions) == 0:
