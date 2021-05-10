@@ -17,7 +17,7 @@
   "disabled": false,
   "required_cogs": {},
   "requirements": [
-    "tsutils>=3.2.3",
+    "tsutils>=3.3.3",
     "pytz",
     "romkan",
     "networkx"
