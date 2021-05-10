@@ -1,8 +1,4 @@
 import re
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from dadguide.models.leader_skill_model import LeaderSkillModel
 
 
 def humanize_number(number, sigfigs=2):
@@ -21,12 +17,12 @@ def createMultiplierText(ls1, ls2=False):
     if ls2 and not ls1:
         ls1, ls2 = ls2, ls1
 
-    if isinstance(ls1, LeaderSkillModel):
+    if ls1.__class__.__name__ == "LeaderSkillModel":
         hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = ls1.data
     else:
         hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1 = 1, 1, 1, 0, 0, 0, 0, 0
 
-    if isinstance(ls2, LeaderSkillModel):
+    if ls2.__class__.__name__ == "LeaderSkillModel":
         hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = ls2.data
     elif ls2 is False:
         hp2, atk2, rcv2, resist2, combo2, fua2, mfua2, te2 = hp1, atk1, rcv1, resist1, combo1, fua1, mfua1, te1
