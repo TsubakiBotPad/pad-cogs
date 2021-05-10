@@ -1,6 +1,8 @@
 import re
+from typing import TYPE_CHECKING
 
-from dadguide.models.leader_skill_model import LeaderSkillModel
+if TYPE_CHECKING:
+    from dadguide.models.leader_skill_model import LeaderSkillModel
 
 
 def humanize_number(number, sigfigs=2):
