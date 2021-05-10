@@ -14,16 +14,28 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
 
 
+def alt_fmt(monsterevo, state):
+    if not monsterevo.evolution:
+        fmt = "{}"
+    elif not monsterevo.evolution.reversible:
+        fmt = "⌊{}⌋"
+    elif monsterevo.monster.is_equip:
+        fmt = "⌈{}⌉"
+    else:
+        fmt = "{}"
+    return fmt.format(monsterevo.monster.monster_no_na)
+
+
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List["MonsterModel"],
+                 alt_monsters: List[MonsterEvolution],
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
@@ -53,7 +65,7 @@ class IdViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.query(dgcog, monster)
 
@@ -122,8 +134,8 @@ def evos_embed_field(state: ViewStateBaseId):
     return EmbedField(
         "Alternate Evos",
         HighlightableLinks(
-            links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
-            highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
+            links=[LinkedText(alt_fmt(me, state), puzzledragonx(m)) for me in state.alt_monsters],
+            highlighted=next(i for i, me in enumerate(state.alt_monsters) if m.monster_id == me.monster.monster_id)
         )
     )
 
@@ -173,8 +185,8 @@ class IdView(BaseIdView):
         return Box(
             BoldText('Available killers:'),
             Text('\N{DOWN-POINTING RED TRIANGLE}' if m != transform_base else ''),
-            Text('[{} slots]'.format(m.latent_slots if m == transform_base \
-                                         else transform_base.latent_slots)),
+            Text('[{} slots]'.format(m.latent_slots if m == transform_base
+                                     else transform_base.latent_slots)),
             Text(killers_text),
             delimiter=' '
         )
@@ -281,7 +293,7 @@ class IdView(BaseIdView):
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.long_maybe_tsubaki(m,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
                                                        ).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),

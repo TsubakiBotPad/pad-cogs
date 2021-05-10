@@ -55,7 +55,7 @@ class PicView(BaseIdView):
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),

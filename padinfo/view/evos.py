@@ -11,7 +11,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
@@ -19,15 +19,12 @@ if TYPE_CHECKING:
 
 class EvosViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color,
-                 monster: "MonsterModel",
-
-                 # this param is needed to placate the superclass but we won't duplicate evos in this view
-                 _alt_monsters,
+                 monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_versions,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -50,7 +47,7 @@ class EvosViewState(ViewStateBaseId):
 
         if alt_versions is None:
             return None
-        alt_monsters = alt_versions
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -107,7 +104,7 @@ class EvosView(BaseIdView):
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
+                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
                                                        ).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
