@@ -30,16 +30,16 @@ SUB_COLOR_MAP = {k: tuple('?' + t for t in v if t != "white") for k, v in COLOR_
 DUAL_COLOR_MAP = {}
 for cid1, cns1 in COLOR_MAP.items():
     for cid2, cns2 in COLOR_MAP.items():
-        ts = ()
+        _ts = ()
         for t1 in cns1:
             for t2 in cns2:
                 if t2 in ("white",):
                     continue
                 if len(t1) + len(t2) == 2:
-                    ts += (t1 + t2,)
+                    _ts += (t1 + t2,)
                 if (len(t1) == 1) == (len(t2) == 1):
-                    ts += (t1 + "/" + t2,)
-        DUAL_COLOR_MAP[(cid1, cid2)] = ts
+                    _ts += (t1 + "/" + t2,)
+        DUAL_COLOR_MAP[(cid1, cid2)] = _ts
 
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
@@ -221,8 +221,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.EQUIP: ('equip', 'assist', 'eq'),
     AwokenSkills.SUPERFUA: ('sfua',),
     AwokenSkills.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
-    AwokenSkills.UNBINDABLE: ('unbindable', ''
-                                          ''),
+    AwokenSkills.UNBINDABLE: ('unbindable', 'bindres'),
     AwokenSkills.EXTMOVEPLUS: ('te+', 'te', 'finger+', 'finger'),
     AwokenSkills.CLOUDRESIST: ('cloudres', 'cloud'),
     AwokenSkills.TAPERESIST: ('taperes', 'tape'),
