@@ -5,11 +5,14 @@ from typing import List
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
 import discord
+
+
 def indent(level):
     ret = ""
     for l in range(level):
         ret += "\u200b \u200b \u200b \u200b \u200b "
     return ret
+
 
 def embed_helper(level, names, values, line):
     current_index = len(names) - 1
@@ -22,6 +25,8 @@ def embed_helper(level, names, values, line):
         names.append("")
         values.append("")
         embed_helper(level, names, values, line)
+
+
 # Called to check if a field/value/description hits character limit
 def field_value_split(data: str, limit):
     names = []
@@ -79,7 +84,7 @@ class DungeonMonster(object):
         self.groups.append(group)
 
     def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
-                         technical: int = None, has_invade=False):
+                   technical: int = None, has_invade=False):
         # top_level = []
         # field_value_dict = OrderedDict()
 
@@ -100,13 +105,15 @@ class DungeonMonster(object):
                                                                    f'{self.turns:,}', desc)
             )
         embeds.append(embed)
-        embeds.append(discord.Embed(title="test", desc="test"))
+        embeds.append(embed.copy())
         lines = []
         for group in self.groups:
             group.give_string2(lines, 0, verbose)
         names = [""]
         values = [""]
         fields = 0
+        current_embed = 0
+        length = len(embed.title) + len(embed.description)
         first = None
         for l in lines:
             for comp in l[1]:
@@ -117,7 +124,12 @@ class DungeonMonster(object):
             name = names[index]
             value = values[index]
             if len(name) > 0:
-                embed.add_field(name=name, value=value, inline=False)
+                temp_length = length + len(name) + len(value)
+                if temp_length > 6000:
+                    current_embed += 1
+                    length = len(embed.title) + len(embed.description)
+                embeds[current_embed].add_field(name=name, value=value, inline=False)
+                length += len(name) + len(value)
                 fields += 1
             # embed.add_field(name=k, value=content, inline=False)
         return embeds
@@ -194,4 +206,3 @@ class DungeonMonster(object):
         for g in self.groups:
             skills.extend(await g.collect_skills())
         return skills
-

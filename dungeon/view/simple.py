@@ -26,12 +26,12 @@ class SimpleViewState(ViewStateBase):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict, inc):
+    async def deserialize(cls, dgcog, color, ims: dict, inc):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
         print("hi")
-        return cls(original_author_id, menu_type, raw_query, user_config.color, ims.get('message_list'), ims.get('index') + inc,
+        return cls(original_author_id, menu_type, raw_query, color, ims.get('message_list'), ims.get('index') + inc,
                    reaction_list=ims.get('reaction_list'))
 
 

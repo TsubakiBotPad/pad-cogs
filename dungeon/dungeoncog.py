@@ -264,15 +264,15 @@ class DungeonEmojiUpdater(EmojiUpdater):
             return True
 
         if update:
-            self.compacts = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
-                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
-                                                     technical=self.technical)
-            self.verboses = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
-                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
-                                                     technical=self.technical)
+            self.compacts = self.pm.make_embed(verbose=False, spawn=[index_monster + 1, len(self.pm_floor)],
+                                               floor=[index_floor + 1, len(self.pm_dungeon)],
+                                               technical=self.technical)
+            self.verboses = self.pm.make_embed(verbose=True, spawn=[index_monster + 1, len(self.pm_floor)],
+                                               floor=[index_floor + 1, len(self.pm_dungeon)],
+                                               technical=self.technical)
             self.preempts = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
-                                                     floor=[index_floor + 1, len(self.pm_dungeon)],
-                                                     technical=self.technical)
+                                               floor=[index_floor + 1, len(self.pm_dungeon)],
+                                               technical=self.technical)
         if selected_emoji != self.dungeon_cog.next_page:
             self.current_page = 0
 
@@ -289,9 +289,11 @@ class DungeonEmojiUpdater(EmojiUpdater):
 Give a condition type, output a player readable string that actually explains what it does
 """
 
+
 class DungeonCog(commands.Cog):
     """My custom cog"""
     menu_map = dungeon_menu_map
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -455,6 +457,20 @@ class DungeonCog(commands.Cog):
             logger.warning("MenuListener is not loaded.")
             return
         await menulistener.register(self)
+
+    async def get_menu_default_data(self, ims):
+        data = {
+            'dgcog': await self.get_dgcog(),
+            'color': Color.default()
+        }
+        return data
+
+    async def get_dgcog(self):
+        dgcog = self.bot.get_cog("Dadguide")
+        if dgcog is None:
+            raise ValueError("Dadguide cog is not loaded")
+        await dgcog.wait_until_ready()
+        return dgcog
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name)
@@ -632,12 +648,12 @@ class DungeonCog(commands.Cog):
                     f.extend(invades)
 
             pm = pm_dungeon[0][0]
-            compacts = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
-            verboses = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+            compacts = pm.make_embed(verbose=False, spawn=[1, len(pm_dungeon[0])],
+                                     floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+            verboses = pm.make_embed(verbose=True, spawn=[1, len(pm_dungeon[0])],
+                                     floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
             preempts = pm.make_embed(spawn=[1, len(pm_dungeon[0])],
-                                           floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
+                                     floor=[1, len(pm_dungeon)], technical=int(dungeon.sub_dungeons[0].technical))
             emoji_to_embed = await self.make_emoji_dictionary(ctx, compact_page=compacts[0], verbose_page=verboses[0],
                                                               preempt_page=preempts[0], show=len(compacts) > 1)
             dmu = DungeonEmojiUpdater(ctx, emoji_to_embed, self, start_selection[starting], pm_dungeon[0][0],
@@ -672,6 +688,8 @@ class DungeonCog(commands.Cog):
             pm_dungeon = []
             # check for invades:
             invades = []
+
+            # print(dungeon.sub_dungeons[0].encounter_models)
             for enc_model in dungeon.sub_dungeons[0].encounter_models:
                 behavior_test = MonsterBehavior()
                 if (enc_model.enemy_data is not None) and (enc_model.enemy_data.behavior is not None):
@@ -680,7 +698,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(formatOverview(test_result))
-                #pm = process_monster(behavior_test, enc_model, dg_cog.database)
+                # pm = process_monster(behavior_test, enc_model, dg_cog.database)
                 if enc_model.stage < 0:
                     # pm.am_invade = True
                     invades.append(enc_model)
@@ -698,8 +716,11 @@ class DungeonCog(commands.Cog):
             original_author_id = ctx.message.author.id
             full_reaction_list = [emoji_cache.get_by_name(e) for e in DungeonMenuPanes.emoji_names()]
             test_list = ['1', '2', '3', '4']
-            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0], dungeon.sub_dungeons[0].sub_dungeon_id, 3, 0, 0,
-                                          int(dungeon.sub_dungeons[0].technical), dg_cog.database,
+            # print(pm_dungeon[0])
+            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0],
+                                          dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
+                                          len(pm_dungeon[0]), 0,
+                                          int(dungeon.sub_dungeons[0].technical), dg_cog.database, verbose=False,
                                           reaction_list=full_reaction_list)
             message = await menu.create(ctx, view_state)
             await ctx.send("This is a test of menu2")

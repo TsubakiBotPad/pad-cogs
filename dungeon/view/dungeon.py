@@ -16,7 +16,7 @@ from padinfo.view.components.view_state_base import ViewStateBase
 
 class DungeonViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, pm,
-                 sub_dungeon_id, num_floors, floor, floor_index, technical, database,
+                 sub_dungeon_id, num_floors, floor, num_spawns, floor_index, technical, database, page=0, verbose=False,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, reaction_list=reaction_list)
         self.pm = pm
@@ -27,6 +27,9 @@ class DungeonViewState(ViewStateBase):
         self.technical = technical
         self.color = color
         self.database = database
+        self.num_spawns = num_spawns
+        self.page = page
+        self.verbose = verbose
 
     def serialize(self):
         ret = super().serialize()
@@ -36,12 +39,15 @@ class DungeonViewState(ViewStateBase):
             'floor': self.floor,
             'floor_index': self.floor_index,
             'technical': self.technical,
-            'pane_type': DungeonView.VIEW_TYPE
+            'pane_type': DungeonView.VIEW_TYPE,
+            'verbose': self.verbose,
+            'page': self.page
         })
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict, inc_floor: int = 0, inc_index: int = 0):
+    async def deserialize(cls, dgcog, color, ims: dict, inc_floor: int = 0, inc_index: int = 0,
+                          verbose_toggle: bool = False, page: int = 0):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
@@ -50,30 +56,34 @@ class DungeonViewState(ViewStateBase):
         floor = ims.get('floor') + inc_floor
         floor_index = ims.get('floor_index') + inc_index
         technical = ims.get('technical')
-
+        verbose = ims.get('verbose')
         # check if we are on final floor/final monster of the floor
         if floor > num_floors:
-            floor = 0
+            floor = 1
 
         if floor < 1:
             floor = num_floors
 
+        # toggle verbose
+        if verbose_toggle:
+            verbose = not verbose
+
         # get encounter models for the floor
-        floor = dgcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor)
+        floor_models = dgcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor)
 
         # check if we are on final monster of the floor
-        if floor_index >= len(floor):
+        if floor_index >= len(floor_models):
             floor_index = 0
 
         if floor_index < 0:
-            floor_index = len(floor) + floor_index
+            floor_index = len(floor_models) + floor_index
 
-        encounter_model = floor[floor_index]
+        encounter_model = floor_models[floor_index]
 
-        return cls(original_author_id, menu_type, raw_query, user_config.color, encounter_model, sub_dungeon_id,
-                   num_floors, floor, floor_index,
-                   technical, dgcog.database,
-                   ims.get('reaction_list'))
+        return cls(original_author_id, menu_type, raw_query, color, encounter_model, sub_dungeon_id,
+                   num_floors, floor, len(floor_models), floor_index,
+                   technical, dgcog.database, verbose=verbose,
+                   reaction_list=ims.get('reaction_list'), page=page)
 
 
 class DungeonView:
@@ -82,16 +92,6 @@ class DungeonView:
     @staticmethod
     def embed(state: DungeonViewState):
         fields = []
-        """fields = [
-            EmbedField("Title", Box(*["1", '2']))
-        ]
-        return EmbedView(
-            EmbedMain(
-                color=state.color,
-            ),
-            embed_fields=fields,
-            embed_footer=pad_info_footer_with_state(state),
-        )"""
         mb = MonsterBehavior()
         encounter_model = state.pm
         if (encounter_model.enemy_data is not None) and (encounter_model.enemy_data.behavior is not None):
@@ -99,7 +99,13 @@ class DungeonView:
         else:
             mb = None
         monster = process_monster(mb, encounter_model, state.database)
-        monster_embed: Embed = monster.make_embed()[0]
+        monster_embed: Embed = \
+            monster.make_embed(verbose=state.verbose, spawn=[state.floor_index + 1, state.num_spawns],
+                               floor=[state.floor, state.num_floors])[state.page]
+        hp = f'{monster.hp:,}'
+        atk = f'{monster.atk:,}'
+        defense = f'{monster.defense:,}'
+        turns = f'{monster.turns:,}'
 
         title = monster_embed.title
         desc = monster_embed.description
@@ -110,7 +116,8 @@ class DungeonView:
             )
         return EmbedView(
             EmbedMain(
-                title=encounter_model.stage,
+                title=title,
+                description=desc,
             ),
             embed_fields=fields,
             embed_footer=embed_footer_with_state(state)

@@ -25,8 +25,8 @@ class SimpleMenu:
     @staticmethod
     async def respond_with_message(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
-        user_config = data.get('user_config')
-        view_state = await SimpleViewState.deserialize(dgcog, user_config, ims)
+        color = data.get('color')
+        view_state = await SimpleViewState.deserialize(dgcog, color, ims)
         control = SimpleMenu.message_control(view_state)
         return control
 
@@ -37,9 +37,9 @@ class SimpleMenu:
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
-        user_config = data.get('user_config')
+        color = data.get('color')
         print("test")
-        view_state = await SimpleViewState.deserialize(dgcog, user_config, ims, 1)
+        view_state = await SimpleViewState.deserialize(dgcog, color, ims, 1)
         control = SimpleMenu.message_control(view_state)
         return control
 

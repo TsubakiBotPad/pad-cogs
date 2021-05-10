@@ -23,8 +23,16 @@ class DungeonMenu:
     @staticmethod
     async def respond_with_message(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
-        user_config = data.get('user_config')
-        view_state = await DungeonViewState.deserialize(dgcog, user_config, ims)
+        color = data.get('color')
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims)
+        control = DungeonMenu.message_control(view_state)
+        return control
+
+    @staticmethod
+    async def respond_with_verbose(message: Optional[Message], ims, **data):
+        dgcog = data.get('dgcog')
+        color = data.get('color')
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, verbose_toggle=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
@@ -35,33 +43,45 @@ class DungeonMenu:
     @staticmethod
     async def respond_with_previous_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        user_config = data['user_config']
-        view_state = await DungeonViewState.deserialize(dgcog, user_config, ims, 0, -1)
+        color = data['color']
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 0, -1)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_next_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        user_config = data['user_config']
-        view_state = await DungeonViewState.deserialize(dgcog, user_config, ims, 0, 1)
+        color = data['color']
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 0, 1)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_previous_floor(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        user_config = data['user_config']
-        view_state = await DungeonViewState.deserialize(dgcog, user_config, ims, -1, 0)
+        color = data['color']
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, -1, 0)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_next_floor(message: Optional[Message], ims, **data):
-        print('next floor')
         dgcog = data['dgcog']
-        user_config = data['user_config']
-        view_state = await DungeonViewState.deserialize(dgcog, user_config, ims, 1, 0)
+        color = data['color']
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 1, 0)
+        control = DungeonMenu.message_control(view_state)
+        return control
+
+    @staticmethod
+    async def respond_with_next_page(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        color = data['color']
+        page = ims.get('page')
+        if page == 0:
+            page = 1
+        else:
+            page = 0
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, page=page)
         control = DungeonMenu.message_control(view_state)
         return control
 
@@ -86,17 +106,19 @@ class DungeonEmoji:
     next_floor = '\N{UPWARDS BLACK ARROW}'
     previous_floor = '\N{DOWNWARDS BLACK ARROW}'
     next_page = '📖'
+    verbose = '📜'
 
 
 class DungeonMenuPanes(MenuPanes):
     INITIAL_EMOJI = DungeonEmoji.home
     DATA = {
         DungeonEmoji.home: (DungeonMenu.respond_with_message, DungeonView.VIEW_TYPE),
+        DungeonEmoji.verbose: (DungeonMenu.respond_with_verbose, DungeonView.VIEW_TYPE),
         DungeonEmoji.previous_monster_emoji: (DungeonMenu.respond_with_previous_monster, DungeonView.VIEW_TYPE),
         DungeonEmoji.next_monster_emoji: (DungeonMenu.respond_with_next_monster, DungeonView.VIEW_TYPE),
         DungeonEmoji.previous_floor: (DungeonMenu.respond_with_previous_floor, DungeonView.VIEW_TYPE),
-        DungeonEmoji.next_floor: (DungeonMenu.respond_with_next_floor, DungeonView.VIEW_TYPE)
-
+        DungeonEmoji.next_floor: (DungeonMenu.respond_with_next_floor, DungeonView.VIEW_TYPE),
+        DungeonEmoji.next_page: (DungeonMenu.respond_with_next_page, DungeonView.VIEW_TYPE)
     }
     HIDDEN_EMOJIS = [
 

@@ -112,6 +112,8 @@ FROM
 encounters
 WHERE
 encounters.sub_dungeon_id = {}
+ORDER BY
+encounters.stage
 '''
 
 specific_floor_query = '''
@@ -159,13 +161,13 @@ DungeonNickNames = {
     'bipolar goddess 3': 1022003,
     'bp3': 1022003,
     'a4': 1022004,
-    'arena4': 102204,
+    'arena4': 1022004,
     'three hands of fate': 1022004,
     'thof': 1022004,
     'a5': 1022005,
-    'arena5': 102205,
-    'incarnation of worlds': 1022005,
-    'iow': 1022005,
+    'arena5': 1022005,
+    'incarnation of worlds': 1022006,
+    'iow': 1022006,
     'aa1': 2660001,
     'aa2': 2660002,
     'aa3': 2660003,
