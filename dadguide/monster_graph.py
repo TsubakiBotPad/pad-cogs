@@ -11,7 +11,7 @@ from .database_manager import DadguideDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
-from .models.enum_types import EvoType, InternalEvoType
+from .models.enum_types import InternalEvoType
 from .models.evolution_model import EvolutionModel
 from .models.leader_skill_model import LeaderSkillModel
 from .models.monster_model import MonsterModel
@@ -419,13 +419,6 @@ class MonsterGraph(object):
     def get_evo_by_monster(self, monster) -> Optional[EvolutionModel]:
         return self._get_edge_model(monster.monster_id, 'back_evolution')
 
-    def cur_evo_type_by_monster_id(self, monster_id: int) -> EvoType:
-        prev_evo = self.get_evo_by_monster_id(monster_id)
-        return EvoType(prev_evo.evolution_type) if prev_evo else EvoType.Base
-
-    def cur_evo_type_by_monster(self, monster: MonsterModel) -> EvoType:
-        return self.cur_evo_type_by_monster_id(monster.monster_id)
-
     def monster_is_reversible_evo(self, monster: MonsterModel) -> bool:
         prev_evo = self.get_evo_by_monster(monster)
         return prev_evo is not None and prev_evo.reversible
@@ -433,11 +426,9 @@ class MonsterGraph(object):
     def monster_is_reincarnated(self, monster: MonsterModel) -> bool:
         if self.monster_is_reversible_evo(monster):
             return False
-        prev = self.get_prev_evolution_by_monster(monster)
-        while prev:
-            if not self.monster_is_reversible_evo(prev):
+        while (monster := self.get_prev_evolution_by_monster(monster)):
+            if self.monster_is_reversible_evo(monster):
                 return True
-            prev = self.get_prev_evolution_by_monster(prev)
         return False
 
     def monster_is_normal_evo(self, monster: MonsterModel) -> bool:
@@ -459,6 +450,10 @@ class MonsterGraph(object):
         return False
 
     def true_evo_type_by_monster_id(self, monster_id: int) -> InternalEvoType:
+        monster = self.get_monster(monster_id)
+        if monster.is_equip:
+            return InternalEvoType.Assist
+
         if self.get_base_id_by_id(monster_id) == monster_id:
             return InternalEvoType.Base
 
@@ -471,14 +466,9 @@ class MonsterGraph(object):
         elif evo.is_pixel:
             return InternalEvoType.Pixel
 
-        monster = self.get_monster(monster_id)
-        if monster.is_equip:
-            return InternalEvoType.Assist
-
-        cur_evo_type = self.cur_evo_type_by_monster_id(monster_id)
-        if cur_evo_type == EvoType.UuvoReincarnated:
+        if self.monster_is_reincarnated(monster):
             return InternalEvoType.Reincarnated
-        elif cur_evo_type == EvoType.UvoAwoken:
+        elif self.monster_is_reversible_evo(monster):
             return InternalEvoType.Ultimate
 
         return InternalEvoType.Normal
