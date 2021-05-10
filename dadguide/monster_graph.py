@@ -427,7 +427,7 @@ class MonsterGraph(object):
         if self.monster_is_reversible_evo(monster):
             return False
         while (monster := self.get_prev_evolution_by_monster(monster)):
-            if not self.monster_is_reversible_evo(monster):
+            if self.monster_is_reversible_evo(monster):
                 return True
         return False
 
