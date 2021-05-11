@@ -131,11 +131,24 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 def evos_embed_field(state: ViewStateBaseId):
     monster = state.monster
+    irreversible = False
+    equip = False
+    for alt_evo in state.alt_monsters:
+        if not alt_evo.evolution:
+            continue
+        elif not alt_evo.evolution.reversible:
+            irreversible = True
+        elif alt_evo.monster.is_equip:
+            equip = True
+        else:
+            continue
     return EmbedField(
-        "**Evos** - ⌊Irreversible⌋ ⌈Equip⌉",
+        "**Evos**" + (" - " if irreversible or equip else "") +
+        ("⌊Irreversible⌋" if irreversible else "") + ("⌈Equip⌉" if equip else ""),
         HighlightableLinks(
             links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
-            highlighted=next(i for i, me in enumerate(state.alt_monsters) if monster.monster_id == me.monster.monster_id)
+            highlighted=next(i for i, me in enumerate(state.alt_monsters)
+                             if monster.monster_id == me.monster.monster_id)
         )
     )
 
