@@ -1131,12 +1131,12 @@ class PadGlobal(commands.Cog):
         """Display which yinyangdra is currently invading for Mystics & Spectres event"""
         pst = pytz.timezone("America/Los_Angeles")
         curtime = datetime.datetime.now(pst)
-        if datetime.time(6) < curtime.time() < datetime.time(18):
+        if datetime.time(7) < curtime.time() < datetime.time(19):
             await ctx.send(self.c_commands['redinvadecurrent'])
-            totime = curtime.replace(hour=18, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=19, minute=0, second=0, microsecond=0)
         else:
             await ctx.send(self.c_commands['blueinvadecurrent'])
-            totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=7, minute=0, second=0, microsecond=0)
             if totime < curtime:
                 totime += datetime.timedelta(1)
         await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
