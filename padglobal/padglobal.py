@@ -973,7 +973,8 @@ class PadGlobal(commands.Cog):
 
         cmd = self.format_cc(result, message)
 
-        await message.channel.send(cmd)
+        for page in pagify(cmd):
+            await message.channel.send(page)
 
     def _lookup_command(self, cmd):
         """Returns the corrected cmd name.
