@@ -259,23 +259,24 @@ class PadGlobal(commands.Cog):
     async def append(self, ctx, command: str, *, addition):
         """Append the additional text to an existing command after a blank line."""
         # the same cleaning that padglobal add does
+        command = command.lower()
         addition = clean_global_mentions(addition)
         addition = addition.replace(u'\u200b', '')
         addition = replace_emoji_names_with_code(self._get_emojis(), addition)
 
         corrected_cmd = self._lookup_command(command)
         if not corrected_cmd:
-            await ctx.send('Could not find a good match for that command.')
+            await ctx.send('Could not find a good match for command `{}`.'.format(command))
             return
         result = self.c_commands.get(corrected_cmd, None)
         while result in self.c_commands:
             result = self.c_commands[result]
 
         result = "{}\n\n{}".format(result, addition)
-        self.c_commands[command] = result
+        self.c_commands[corrected_cmd] = result
         json.dump(self.c_commands, open(self.file_path, 'w+'))
 
-        await ctx.send("Successfully appended to PAD command {}.".format(command))
+        await ctx.send("Successfully appended to PAD command `{}`.".format(corrected_cmd))
 
     @padglobal.command()
     async def setgeneral(self, ctx, command: str):
