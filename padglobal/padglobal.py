@@ -740,25 +740,14 @@ class PadGlobal(commands.Cog):
     @padglobal.command()
     async def prependwhich(self, ctx, monster_id: int, *, addition):
         """Prepend the additional text to an existing which entry before a blank line."""
-        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
-        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
-        if m != base_monster:
-            m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
-        mon_id = m.monster_id
-
-        if mon_id not in self.settings.which():
-            await ctx.send("No which info exists for {}.".format(m.name_en))
-            return
-
-        definition, _ = self.settings.which().get(mon_id, None)
-
-        self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
-        await ctx.send("Successfully prepended to PAD which info for {}.".format(m.name_en))
+        await self._concatenate_which(ctx, monster_id, 'prepend', addition)
 
     @padglobal.command()
     async def appendwhich(self, ctx, monster_id: int, *, addition):
         """Append the additional text to an existing which entry after a blank line."""
+        await self._concatenate_which(ctx, monster_id, 'append', addition)
+
+    async def _concatenate_which(self, ctx, monster_id: int, operation: str, addition):
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
@@ -772,8 +761,12 @@ class PadGlobal(commands.Cog):
 
         definition, _ = self.settings.which().get(mon_id, None)
 
-        self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
-        await ctx.send("Successfully appended to PAD which info for {}.".format(m.name_en))
+        if operation == 'prepend':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
+            await ctx.send("Successfully prepended to PAD which info for {}.".format(m.name_en))
+        elif operation == 'append':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
+            await ctx.send("Successfully appended to PAD which info for {}.".format(m.name_en))
 
     @padglobal.command()
     async def getwhich(self, ctx):
