@@ -793,6 +793,8 @@ class PadGlobal(commands.Cog):
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
             await ctx.send("Successfully appended to PAD which info for {}.".format(m.name_en))
+        else:
+            raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
     @padglobal.command()
     async def getwhich(self, ctx):
