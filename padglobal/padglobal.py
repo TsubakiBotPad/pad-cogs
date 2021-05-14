@@ -756,7 +756,10 @@ class PadGlobal(commands.Cog):
         mon_id = m.monster_id
 
         if mon_id not in self.settings.which():
-            await ctx.send("No which info exists for {}.".format(m.name_en))
+            if await confirm_message(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
+                    m.name_en)):
+                self.settings.addWhich(mon_id, addition)
+                await ctx.send("PAD which info successfully ADDED.")
             return
 
         definition, _ = self.settings.which().get(mon_id, None)
