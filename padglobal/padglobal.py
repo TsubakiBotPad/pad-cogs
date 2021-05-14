@@ -256,6 +256,29 @@ class PadGlobal(commands.Cog):
             await ctx.send("PAD command doesn't exist.")
 
     @padglobal.command()
+    async def append(self, ctx, command: str, *, addition):
+        """Append the additional text to an existing command after a blank line."""
+        # the same cleaning that padglobal add does
+        command = command.lower()
+        addition = clean_global_mentions(addition)
+        addition = addition.replace(u'\u200b', '')
+        addition = replace_emoji_names_with_code(self._get_emojis(), addition)
+
+        corrected_cmd = self._lookup_command(command)
+        if not corrected_cmd:
+            await ctx.send('Could not find a good match for command `{}`.'.format(command))
+            return
+        result = self.c_commands.get(corrected_cmd, None)
+        while result in self.c_commands:
+            result = self.c_commands[result]
+
+        result = "{}\n\n{}".format(result, addition)
+        self.c_commands[corrected_cmd] = result
+        json.dump(self.c_commands, open(self.file_path, 'w+'))
+
+        await ctx.send("Successfully appended to PAD command `{}`.".format(corrected_cmd))
+
+    @padglobal.command()
     async def setgeneral(self, ctx, command: str):
         """Sets a command to show up in [p]pad (the default).
 
@@ -738,6 +761,42 @@ class PadGlobal(commands.Cog):
         await ctx.tick()
 
     @padglobal.command()
+    async def prependwhich(self, ctx, monster_id: int, *, addition):
+        """Prepend the additional text to an existing which entry before a blank line."""
+        await self._concatenate_which(ctx, monster_id, 'prepend', addition)
+
+    @padglobal.command()
+    async def appendwhich(self, ctx, monster_id: int, *, addition):
+        """Append the additional text to an existing which entry after a blank line."""
+        await self._concatenate_which(ctx, monster_id, 'append', addition)
+
+    async def _concatenate_which(self, ctx, monster_id: int, operation: str, addition):
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
+        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+        mon_id = m.monster_id
+
+        if mon_id not in self.settings.which():
+            if await confirm_message(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
+                    m.name_en)):
+                self.settings.addWhich(mon_id, addition)
+                await ctx.send("PAD which info successfully ADDED.")
+            return
+
+        definition, _ = self.settings.which().get(mon_id, None)
+
+        if operation == 'prepend':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
+            await ctx.send("Successfully prepended to PAD which info for {}.".format(m.name_en))
+        elif operation == 'append':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
+            await ctx.send("Successfully appended to PAD which info for {}.".format(m.name_en))
+        else:
+            raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
+
+    @padglobal.command()
     async def getwhich(self, ctx):
         """Gets a list of all which commands."""
         items = list()
@@ -917,7 +976,8 @@ class PadGlobal(commands.Cog):
 
         cmd = self.format_cc(result, message)
 
-        await message.channel.send(cmd)
+        for page in pagify(cmd):
+            await message.channel.send(page)
 
     def _lookup_command(self, cmd):
         """Returns the corrected cmd name.
