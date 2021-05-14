@@ -335,6 +335,7 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_MODS = {
     "reincarnated",
     "awoken",
+    "equip",
 }
 
 PROBLEMATIC_SERIES_TOKENS = {
