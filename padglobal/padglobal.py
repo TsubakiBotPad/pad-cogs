@@ -105,6 +105,14 @@ class PadGlobal(commands.Cog):
         """
         return
 
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
+
     def _export_data(self):
 
         faq_and_boards = self.settings.faq() + self.settings.boards()
