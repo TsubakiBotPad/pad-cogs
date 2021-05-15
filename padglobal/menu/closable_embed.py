@@ -1,6 +1,7 @@
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 
+from padglobal.menu.common import MenuPanes
 from padglobal.view.closable_embed import ClosableEmbedViewState
 
 
@@ -22,5 +23,5 @@ class ClosableEmbedMenu:
         )
 
 
-class ClosableEmbedMenuPanes:
+class ClosableEmbedMenuPanes(MenuPanes):
     pass
