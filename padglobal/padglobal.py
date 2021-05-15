@@ -19,6 +19,8 @@ from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_time
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
     auth_check
 
+from padglobal.menu.menu_map import padglobal_menu_map
+
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
 global PADGLOBAL_COG
@@ -73,6 +75,8 @@ async def check_enabled(ctx):
 
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
+
+    menu_map = padglobal_menu_map
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
