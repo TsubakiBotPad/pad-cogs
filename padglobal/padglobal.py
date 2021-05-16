@@ -682,7 +682,7 @@ class PadGlobal(commands.Cog):
         name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
-        timestamp = "1969-01-01"
+        timestamp = "1970-01-01"
 
         if isinstance(definition, list):
             definition, timestamp = definition
@@ -853,7 +853,7 @@ class PadGlobal(commands.Cog):
             if isinstance(result, list):
                 monsters.append([name, result[1]])
             else:
-                monsters.append([name, "1969-01-01"])
+                monsters.append([name, "1970-01-01"])
 
         tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
         tbl.hrules = prettytable.HEADER
