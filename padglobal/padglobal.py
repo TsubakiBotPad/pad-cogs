@@ -265,18 +265,26 @@ class PadGlobal(commands.Cog):
         addition = replace_emoji_names_with_code(self._get_emojis(), addition)
 
         corrected_cmd = self._lookup_command(command)
+        alias = False
         if not corrected_cmd:
-            await ctx.send('Could not find a good match for command `{}`.'.format(command))
+            await ctx.send("Could not find a good match for command `{}`.".format(command))
             return
         result = self.c_commands.get(corrected_cmd, None)
-        while result in self.c_commands:
+        # go a level deeper if trying to append to an alias
+        if result in self.c_commands:
+            alias = True
+            source_cmd = result
             result = self.c_commands[result]
 
         result = "{}\n\n{}".format(result, addition)
-        self.c_commands[corrected_cmd] = result
+        if alias:
+            self.c_commands[source_cmd] = result
+        else:
+            self.c_commands[corrected_cmd] = result
         json.dump(self.c_commands, open(self.file_path, 'w+'))
 
-        await ctx.send("Successfully appended to PAD command `{}`.".format(corrected_cmd))
+        await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
+                                                                             source_cmd if alias else corrected_cmd))
 
     @padglobal.command()
     async def setgeneral(self, ctx, command: str):
