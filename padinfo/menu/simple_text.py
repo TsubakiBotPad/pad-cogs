@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 
-from padinfo.menu.common import MenuPanes, emoji_buttons
+from tsutils.menu.panes import MenuPanes, emoji_buttons
 from padinfo.view.simple_text import SimpleTextView, SimpleTextViewState
 
 
