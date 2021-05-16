@@ -39,11 +39,11 @@ def _replace_bullets(line, color_index):
         return line
 
 
-def get_title(name, timestamp, success):
+def get_description(definition, timestamp, success):
     if success:
-        return Text('Which {} - Last Updated {}'.format(name, timestamp))
+        return Text('Last Updated {}'.format(timestamp))
     else:
-        return Text('Which {}'.format(name))
+        return definition
 
 
 def get_fields(definition):
@@ -73,8 +73,8 @@ class WhichView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=get_title(name, timestamp, success),
-                description=definition if not success else ''
+                title='Which {}'.format(name),
+                description=get_description(definition, timestamp, success)
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields
