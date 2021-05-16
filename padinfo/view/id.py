@@ -132,24 +132,22 @@ def _monster_is_enhance(m: "MonsterModel"):
 def evos_embed_field(state: ViewStateBaseId):
     field_text = "**Evos**"
     help_text = ""
+    # this isn't used right now, but maybe later if discord changes the api for embed titles...?
     help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
     legend_parts = []
     if any([alt_evo.evolution and not alt_evo.evolution.reversible for alt_evo in state.alt_monsters]):
         legend_parts.append("⌊Irreversible⌋")
-    if any([alt_evo.evolution and alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
+    if any([alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
         legend_parts.append("⌈Equip⌉")
     if legend_parts:
-        help_text += ' (?): '
-    help_text += " ".join(legend_parts)
+        help_text = ' - Help: {}'.format(" ".join(legend_parts))
     return EmbedField(
         field_text + help_text,
-        Box(
-            Box("[Help]({})".format(help_link)),
-            HighlightableLinks(
-                links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
-                highlighted=next(i for i, me in enumerate(state.alt_monsters)
-                                 if state.monster.monster_id == me.monster.monster_id)
-            ), delimiter=" ‧ ")
+        HighlightableLinks(
+            links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
+            highlighted=next(i for i, me in enumerate(state.alt_monsters)
+                             if state.monster.monster_id == me.monster.monster_id)
+        )
     )
 
 
