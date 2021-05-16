@@ -121,6 +121,10 @@ class PadGlobal(commands.Cog):
             return
         await menulistener.register(self)
 
+    async def get_menu_default_data(self, ims):
+        data = {}
+        return data
+
     def _export_data(self):
 
         faq_and_boards = self.settings.faq() + self.settings.boards()
