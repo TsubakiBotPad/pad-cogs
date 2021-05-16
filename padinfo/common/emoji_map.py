@@ -124,7 +124,4 @@ def get_awakening_emoji(awid: Union[Enum, int], default: str = None):
 def get_emoji(name):
     if isinstance(name, int):
         name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
-    for e in emoji_cache.custom_emojis:
-        if e.name == name:
-            return str(e)
-    return ":{}:".format(name)
+    return emoji_cache.get_emoji(name)
