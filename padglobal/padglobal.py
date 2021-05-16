@@ -13,11 +13,17 @@ import discord
 import prettytable
 import pytz
 import tsutils
+from discord import Color
 from redbot.core import checks, data_manager
 from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
     auth_check
+
+from padglobal.menu.closable_embed import ClosableEmbedMenu
+from padglobal.menu.menu_map import padglobal_menu_map
+from padglobal.view.closable_embed import ClosableEmbedViewState
+from padglobal.view.which import WhichView, WhichViewProps, UNKNOWN_EDIT_TIMESTAMP
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -74,6 +80,8 @@ async def check_enabled(ctx):
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
 
+    menu_map = padglobal_menu_map
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         global PADGLOBAL_COG
@@ -104,6 +112,18 @@ class PadGlobal(commands.Cog):
         No personal data is stored in this cog.
         """
         return
+
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
+
+    async def get_menu_default_data(self, ims):
+        data = {}
+        return data
 
     def _export_data(self):
 
@@ -637,11 +657,14 @@ class PadGlobal(commands.Cog):
         name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        if not success:
-            await ctx.send('Which {}\n{}'.format(name, definition))
-            return
-        for page in pagify('Which {} - Last Updated {}\n{}'.format(name, timestamp, self.emojify(definition))):
-            await ctx.send(page)
+        # TODO: maybe support different colors one day if the configuration gets moved out of padinfo
+        color = Color.default()
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = WhichViewProps(name=name, definition=definition, timestamp=timestamp, success=success)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, term,
+                                       color, WhichView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
         dgcog = self.bot.get_cog('Dadguide')
@@ -659,7 +682,7 @@ class PadGlobal(commands.Cog):
         name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
-        timestamp = "1969-01-01"
+        timestamp = UNKNOWN_EDIT_TIMESTAMP
 
         if isinstance(definition, list):
             definition, timestamp = definition
@@ -804,6 +827,17 @@ class PadGlobal(commands.Cog):
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
+    @padglobal.command(aliases=['whichdump'])
+    async def dumpwhich(self, ctx, *, term: str):
+        """Dump the raw text of an existing which entry, boxed."""
+        _, definition, _, _ = await self._resolve_which(ctx, term)
+
+        if definition is None:
+            return
+        else:
+            content = box(definition.replace('`', u'\u200b`'))
+            await ctx.send(content)
+
     @padglobal.command()
     async def getwhich(self, ctx):
         """Gets a list of all which commands."""
@@ -819,7 +853,7 @@ class PadGlobal(commands.Cog):
             if isinstance(result, list):
                 monsters.append([name, result[1]])
             else:
-                monsters.append([name, "1969-01-01"])
+                monsters.append([name, UNKNOWN_EDIT_TIMESTAMP])
 
         tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
         tbl.hrules = prettytable.HEADER
