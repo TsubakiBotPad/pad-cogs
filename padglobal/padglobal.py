@@ -657,6 +657,7 @@ class PadGlobal(commands.Cog):
         name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
+        # TODO: maybe support different colors one day if the configuration gets moved out of padinfo
         color = Color.default()
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
