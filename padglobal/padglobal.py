@@ -48,7 +48,7 @@ DISABLED_MSG = 'PAD Global info disabled on this server'
 
 FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever evos you like.'
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
-              ', check {}mpdra? for specific recommendations.')
+              ', check `{}mpdra?` for specific recommendations.')
 SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
 
 
@@ -661,7 +661,7 @@ class PadGlobal(commands.Cog):
 
         monster = dgcog.get_monster(monster_id)
 
-        if db_context.graph.monster_is_mp_evo(monster):
+        if db_context.graph.monster_is_mp_evo(monster) and not db_context.graph.monster_is_rem(monster):
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
