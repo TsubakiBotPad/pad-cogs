@@ -48,12 +48,12 @@ def get_description(definition, timestamp, success):
 
 def get_fields(definition):
     paragraphs = definition.split('\n\n')
-    current_color = 0
+    color = 0
     fields = []
 
     for paragraph in paragraphs:
-        fields.append(_get_field(paragraph, current_color))
-        current_color = ((current_color + 1) % len(BULLET_EMOJIS))
+        fields.append(_get_field(paragraph, color))
+        color = ((color + 1) % len(BULLET_EMOJIS))
 
     return fields
 
