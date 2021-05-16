@@ -5,7 +5,7 @@ from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 
-from padinfo.menu.common import MenuPanes
+from tsutils.menu.panes import MenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.evos import EvosView, EvosViewState
 from padinfo.view.id import IdView, IdViewState
