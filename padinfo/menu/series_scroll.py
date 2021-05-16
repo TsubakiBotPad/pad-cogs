@@ -229,7 +229,7 @@ class SeriesScrollMenu:
             return None, {}
         n = SeriesScrollMenuPanes.emoji_names().index(emoji_clicked)
         paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
-        page = ims.get('page') or 0
+        page = ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         extra_ims = {
             'is_child': True,

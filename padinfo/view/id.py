@@ -22,14 +22,12 @@ if TYPE_CHECKING:
 
 
 def alt_fmt(monsterevo, state):
-    if not monsterevo.evolution:
-        fmt = "{}"
-    elif not monsterevo.evolution.reversible:
-        fmt = "⌊{}⌋"
-    elif monsterevo.monster.is_equip:
+    if monsterevo.monster.is_equip:
         fmt = "⌈{}⌉"
-    else:
+    elif not monsterevo.evolution or monsterevo.evolution.reversible:
         fmt = "{}"
+    else:
+        fmt = "⌊{}⌋"
     return fmt.format(monsterevo.monster.monster_no_na)
 
 
@@ -130,25 +128,23 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 def evos_embed_field(state: ViewStateBaseId):
-    monster = state.monster
-    irreversible = False
-    equip = False
-    for alt_evo in state.alt_monsters:
-        if not alt_evo.evolution:
-            continue
-        elif not alt_evo.evolution.reversible:
-            irreversible = True
-        elif alt_evo.monster.is_equip:
-            equip = True
-        else:
-            continue
+    field_text = "**Evos**"
+    help_text = ""
+    # this isn't used right now, but maybe later if discord changes the api for embed titles...?
+    help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
+    legend_parts = []
+    if any([alt_evo.evolution and not alt_evo.evolution.reversible for alt_evo in state.alt_monsters]):
+        legend_parts.append("⌊Irreversible⌋")
+    if any([alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
+        legend_parts.append("⌈Equip⌉")
+    if legend_parts:
+        help_text = ' – Help: {}'.format(" ".join(legend_parts))
     return EmbedField(
-        "**Evos**" + (" - " if irreversible or equip else "") +
-        ("⌊Irreversible⌋" if irreversible else "") + ("⌈Equip⌉" if equip else ""),
+        field_text + help_text,
         HighlightableLinks(
             links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
             highlighted=next(i for i, me in enumerate(state.alt_monsters)
-                             if monster.monster_id == me.monster.monster_id)
+                             if state.monster.monster_id == me.monster.monster_id)
         )
     )
 
