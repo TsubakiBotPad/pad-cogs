@@ -22,14 +22,12 @@ if TYPE_CHECKING:
 
 
 def alt_fmt(monsterevo, state):
-    if not monsterevo.evolution:
-        fmt = "{}"
-    elif not monsterevo.evolution.reversible:
-        fmt = "⌊{}⌋"
-    elif monsterevo.monster.is_equip:
+    if monsterevo.monster.is_equip:
         fmt = "⌈{}⌉"
-    else:
+    elif not monsterevo.evolution or monsterevo.evolution.reversible:
         fmt = "{}"
+    else:
+        fmt = "⌊{}⌋"
     return fmt.format(monsterevo.monster.monster_no_na)
 
 
@@ -148,7 +146,7 @@ def evos_embed_field(state: ViewStateBaseId):
         HighlightableLinks(
             links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
             highlighted=next(i for i, me in enumerate(state.alt_monsters)
-                             if monster.monster_id == me.monster.monster_id)
+                             if state.monster.monster_id == me.monster.monster_id)
         )
     )
 
