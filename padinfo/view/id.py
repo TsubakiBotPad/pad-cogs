@@ -140,7 +140,7 @@ def evos_embed_field(state: ViewStateBaseId):
     if any([alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
         legend_parts.append("⌈Equip⌉")
     if legend_parts:
-        help_text = ' - Help: {}'.format(" ".join(legend_parts))
+        help_text = ' – Help: {}'.format(" ".join(legend_parts))
     return EmbedField(
         field_text + help_text,
         HighlightableLinks(
