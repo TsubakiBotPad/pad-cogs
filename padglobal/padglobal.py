@@ -814,7 +814,7 @@ class PadGlobal(commands.Cog):
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
-    @padglobal.command(aliases=['whichdump', 'ditch', 'whump'])
+    @padglobal.command(aliases=['whichdump'])
     async def dumpwhich(self, ctx, *, term: str):
         """Dump the raw text of an existing which entry, boxed."""
         _, definition, _, _ = await self._resolve_which(ctx, term)
