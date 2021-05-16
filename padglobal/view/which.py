@@ -2,7 +2,11 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
+from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import embed_footer_with_state
+
+STAR = '* '
+BULLET_EMOJIS = ['db', 'dp', 'dg']
 
 
 class WhichViewProps:
@@ -13,19 +17,26 @@ class WhichViewProps:
         self.success = success
 
 
-def _get_field(paragraph):
-    paragraph = paragraph.strip()
-    newline = paragraph.find('\n')
+def _get_field(paragraph, color):
+    lines = paragraph.strip().splitlines()
+    lines = [_replace_bullets(line, color) for line in lines]
 
-    if newline >= 0:
-        data = paragraph.split('\n')
-        evo = paragraph[:newline]
+    if len(lines) > 1:
+        evo = lines[0]
+        information = '\n'.join(lines[1:])
         if evo.startswith('**'):
-            information = paragraph[newline:]
             return EmbedField(evo, Box(information))
 
-    # it didn't start with a bolded line, assume it's not an evo description
+    # it wasn't multiple lines that started with a bolded line, assume it's not an evo description
     return EmbedField('**Additional Information**', Box(paragraph))
+
+
+def _replace_bullets(line, color_index):
+    if line.startswith(STAR):
+        bullet = emoji_cache.get_emoji(BULLET_EMOJIS[color_index])
+        return '{} {}'.format(bullet, line[len(STAR):])
+    else:
+        return line
 
 
 def get_title(name, timestamp, success):
@@ -37,7 +48,14 @@ def get_title(name, timestamp, success):
 
 def get_fields(definition):
     paragraphs = definition.split('\n\n')
-    return [_get_field(paragraph) for paragraph in paragraphs]
+    current_color = 0
+    fields = []
+
+    for paragraph in paragraphs:
+        fields.append(_get_field(paragraph, current_color))
+        current_color = ((current_color + 1) % len(BULLET_EMOJIS))
+
+    return fields
 
 
 class WhichView:
