@@ -814,6 +814,17 @@ class PadGlobal(commands.Cog):
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
+    @padglobal.command(aliases=['whichdump', 'ditch', 'whump'])
+    async def dumpwhich(self, ctx, *, term: str):
+        """Dump the raw text of an existing which entry, boxed."""
+        _, definition, _, _ = await self._resolve_which(ctx, term)
+
+        if definition is None:
+            return
+        else:
+            content = box(definition.replace('`', u'\u200b`'))
+            await ctx.send(content)
+
     @padglobal.command()
     async def getwhich(self, ctx):
         """Gets a list of all which commands."""
