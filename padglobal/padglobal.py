@@ -23,7 +23,7 @@ from tsutils import CogSettings, clean_global_mentions, confirm_message, replace
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
 from padglobal.view.closable_embed import ClosableEmbedViewState
-from padglobal.view.which import WhichView, WhichViewProps
+from padglobal.view.which import WhichView, WhichViewProps, UNKNOWN_EDIT_TIMESTAMP
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -682,7 +682,7 @@ class PadGlobal(commands.Cog):
         name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
-        timestamp = "1970-01-01"
+        timestamp = UNKNOWN_EDIT_TIMESTAMP
 
         if isinstance(definition, list):
             definition, timestamp = definition
@@ -853,7 +853,7 @@ class PadGlobal(commands.Cog):
             if isinstance(result, list):
                 monsters.append([name, result[1]])
             else:
-                monsters.append([name, "1970-01-01"])
+                monsters.append([name, UNKNOWN_EDIT_TIMESTAMP])
 
         tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
         tbl.hrules = prettytable.HEADER

@@ -7,7 +7,7 @@ from tsutils import embed_footer_with_state
 
 STAR = '* '
 BULLET_EMOJIS = ['db', 'dp', 'dg']
-DISTANT_PAST = '1970-01-01'
+UNKNOWN_EDIT_TIMESTAMP = '1970-01-01'
 
 
 class WhichViewProps:
@@ -42,7 +42,7 @@ def _replace_bullets(line, color_index):
 
 def get_description(definition, timestamp, success):
     if success:
-        if timestamp == DISTANT_PAST:
+        if timestamp == UNKNOWN_EDIT_TIMESTAMP:
             return Text('No last-updated date recorded')
         else:
             return Text('Last Updated {}'.format(timestamp))
