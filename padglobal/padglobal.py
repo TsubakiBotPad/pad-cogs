@@ -13,13 +13,17 @@ import discord
 import prettytable
 import pytz
 import tsutils
+from discord import Color
 from redbot.core import checks, data_manager
 from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
     auth_check
 
+from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
+from padglobal.view.closable_embed import ClosableEmbedViewState
+from padglobal.view.which import WhichView, WhichViewProps
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -641,11 +645,13 @@ class PadGlobal(commands.Cog):
         name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        if not success:
-            await ctx.send('Which {}\n{}'.format(name, definition))
-            return
-        for page in pagify('Which {} - Last Updated {}\n{}'.format(name, timestamp, self.emojify(definition))):
-            await ctx.send(page)
+        color = Color.default()
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = WhichViewProps(name=name, definition=definition, timestamp=timestamp, success=success)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, term,
+                                       color, WhichView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
         dgcog = self.bot.get_cog('Dadguide')

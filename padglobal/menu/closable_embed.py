@@ -3,6 +3,11 @@ from discordmenu.embed.menu import EmbedMenu
 
 from padglobal.menu.common import MenuPanes
 from padglobal.view.closable_embed import ClosableEmbedViewState
+from padglobal.view.which import WhichView
+
+view_types = {
+    WhichView.VIEW_TYPE: WhichView
+}
 
 
 class ClosableEmbedMenu:
