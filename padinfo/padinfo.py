@@ -553,8 +553,10 @@ class PadInfo(commands.Cog):
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
+        paginated_monsters = MonsterListViewState.paginate(monster_list)
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
-                                     monster_list, title, instruction_message,
+                                     paginated_monsters, len(paginated_monsters), 0,
+                                     title, instruction_message,
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu()
@@ -1181,6 +1183,5 @@ class PadInfo(commands.Cog):
             if base_id not in used:
                 used.add(base_id)
                 monster_list.append(mon)
-        monster_list = monster_list[:11]
 
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results')
