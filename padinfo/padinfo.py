@@ -531,6 +531,31 @@ class PadInfo(commands.Cog):
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
+    async def allmats(self, ctx, *, query: str):
+        """Monster info (evo materials tab)"""
+        dgcog = await self.get_dgcog()
+        raw_query = query
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+
+        if not monster:
+            await self.send_id_failure_message(ctx, query)
+            return
+
+        await self.log_id_result(ctx, monster.monster_id)
+
+        _, usedin, _, gemusedin, _, _, _, _ = \
+            await MaterialsViewState.query(dgcog, monster)
+
+        if usedin is None and gemusedin is None:
+            await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
+            return
+
+        monster_list = usedin or gemusedin
+        title = 'Material For' if usedin else 'Gem is Material For'
+        await self._do_monster_list(ctx, dgcog, query, monster_list, title)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
         dgcog = await self.get_dgcog()
         monster = await dgcog.find_monster(query, ctx.author.id)
@@ -553,10 +578,15 @@ class PadInfo(commands.Cog):
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
+        subtitle = None
+        if len(monster_list) > MonsterListViewState.MAX_INTERNAL_STORE_SIZE:
+            subtitle = 'List has been truncated to first {} items'.format(MonsterListViewState.MAX_INTERNAL_STORE_SIZE)
+        monster_list = monster_list[:MonsterListViewState.MAX_INTERNAL_STORE_SIZE]
         paginated_monsters = MonsterListViewState.paginate(monster_list)
         state = MonsterListViewState(original_author_id, MonsterListMenu.MENU_TYPE, raw_query, query, color,
                                      paginated_monsters, len(paginated_monsters), 0,
                                      title, instruction_message,
+                                     subtitle,
                                      reaction_list=initial_reaction_list
                                      )
         parent_menu = MonsterListMenu.menu()
