@@ -119,7 +119,7 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
     if len(mons) == 0:
         text = "None"
     elif len(mons) > max_mons:
-        text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''})"
+        text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''}, see `^allmats` for full list)"
     return EmbedField(
         title,
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:max_mons]), text))

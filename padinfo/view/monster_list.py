@@ -17,10 +17,11 @@ if TYPE_CHECKING:
 
 class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
+    MAX_INTERNAL_STORE_SIZE = 100
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color,
                  paginated_monsters: List[List["MonsterModel"]], page_count, current_page,
-                 title, message,
+                 title, message, subtitle: str = None,
                  current_index: int = None,
                  max_len_so_far: int = None,
                  reaction_list=None,
@@ -29,6 +30,7 @@ class MonsterListViewState(ViewStateBase):
                  ):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
+        self.subtitle = subtitle
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = page_count
@@ -49,6 +51,7 @@ class MonsterListViewState(ViewStateBase):
         ret.update({
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
+            'subtitle': self.subtitle,
             'monster_list': [m.monster_id for m in self.monster_list],
             'full_monster_list': [m.monster_id for page in self.paginated_monsters for m in page],
             'current_page': self.current_page,
@@ -65,6 +68,7 @@ class MonsterListViewState(ViewStateBase):
         if ims.get('unsupported_transition'):
             return None
         title = ims['title']
+        subtitle = ims['subtitle']
 
         paginated_monsters = MonsterListViewState.query_from_ims(dgcog, ims)
         page_count = len(paginated_monsters)
@@ -84,6 +88,7 @@ class MonsterListViewState(ViewStateBase):
                                     paginated_monsters,
                                     page_count, current_page,
                                     title, message,
+                                    subtitle=subtitle,
                                     current_index=current_index,
                                     max_len_so_far=max_len_so_far,
                                     reaction_list=reaction_list,
@@ -127,7 +132,7 @@ class MonsterListView:
     def embed(state: MonsterListViewState):
         fields = [
             EmbedField(state.title,
-                       Box(*_monster_list(state.monster_list))),
+                       Box(state.subtitle, *_monster_list(state.monster_list))),
             EmbedField(BoldText('Page'),
                        Box('{} of {}'.format(state.current_page + 1, state.page_count)),
                        inline=True
