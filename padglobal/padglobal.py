@@ -1201,7 +1201,7 @@ class PadGlobal(commands.Cog):
 
         op = 'EDITED' if name in self.settings.leaderGuide() else 'ADDED'
         if op == 'EDITED' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the boss info for {}?".format(
+                                                        "Are you sure you want to edit the leader guide for {}?".format(
                                                             m.name_en)):
             return
         self.settings.addLeaderGuide(name, definition)
