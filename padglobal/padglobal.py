@@ -769,7 +769,7 @@ class PadGlobal(commands.Cog):
                                                             m.name_en)):
             return
         self.settings.addWhich(name, definition)
-        await ctx.send("PAD which info successfully {}.".format(op))
+        await ctx.send("PAD which info successfully {} for [{}] {}.".format(op, m.monster_id, m.name_en))
 
     @padglobal.command()
     async def rmwhich(self, ctx, *, monster_id: int):
