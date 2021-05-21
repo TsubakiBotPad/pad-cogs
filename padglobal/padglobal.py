@@ -786,7 +786,7 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addWhich(name, definition)
-        await ctx.send("PAD which info successfully {} for [{}] {}.".format(op, m.monster_id, m.name_en))
+        await ctx.send("PAD which info successfully {} for [{}] {}.".format(op, m.monster_no_na, m.name_en))
 
     @padglobal.command()
     async def rmwhich(self, ctx, *, monster_id: int):
