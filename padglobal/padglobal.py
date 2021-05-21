@@ -753,7 +753,7 @@ class PadGlobal(commands.Cog):
     async def addwhich(self, ctx, term, *, definition):
         """Adds an entry to the which monster evo list.
 
-        If you provide a monster ID, the term will be entered for that monster tree.
+        Accepts queries. The which text will be entered for the resulting monster's tree.
         e.x. [p]padglobal addwhich 3818 take the pixel one
         """
         dgcog = self.bot.get_cog("Dadguide")
