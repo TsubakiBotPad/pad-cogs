@@ -766,13 +766,12 @@ class PadGlobal(commands.Cog):
             return
 
         base_monster = dgcog.database.graph.get_base_monster(m)
-
-        is_int = re.fullmatch(r'\d+', term)
-
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
+
+        is_int = re.fullmatch(r'\d+', term)
 
         op = 'EDITED' if name in self.settings.which() else 'ADDED'
         if op == 'ADDED' and not is_int or op == 'EDITED':
