@@ -497,8 +497,13 @@ class PadGlobal(commands.Cog):
             term = matches[0]
             return term, glossary[term]
 
-    @padglobal.command()
-    async def addglossary(self, ctx, term, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pglossary(self, ctx):
+        """Commands related to the PAD global glossary."""
+
+    @pglossary.command()
+    async def add(self, ctx, term, *, definition):
         """Adds a term to the glossary.
         If you want to use a multiple word term, enclose it in quotes.
 
@@ -518,8 +523,8 @@ class PadGlobal(commands.Cog):
         self.settings.addGlossary(term, definition)
         await ctx.send("PAD glossary term successfully {}.".format(op))
 
-    @padglobal.command()
-    async def rmglossary(self, ctx, *, term):
+    @pglossary.command(aliases=['rm'])
+    async def remove(self, ctx, *, term):
         """Removes a term from the glossary."""
         term = term.lower()
         if term not in self.settings.glossary():
@@ -589,8 +594,13 @@ class PadGlobal(commands.Cog):
         msg = msg + '\n' + ',\n'.join(map(str, sorted(bosses.keys())))
         return msg
 
-    @padglobal.command()
-    async def addboss(self, ctx, term, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pboss(self, ctx):
+        """Commands related to PAD global boss mechanics."""
+
+    @pboss.command()
+    async def add(self, ctx, term, *, definition):
         """Adds a set of boss mechanics.
         If you want to use a multiple word boss name, enclose it in quotes."""
         dgcog = self.bot.get_cog('Dadguide')
@@ -615,8 +625,8 @@ class PadGlobal(commands.Cog):
         self.settings.addBoss(base.monster_id, definition)
         await ctx.send("PAD boss mechanics successfully {}.".format(op))
 
-    @padglobal.command()
-    async def rmboss(self, ctx, *, term):
+    @pboss.command(aliases=['rm'])
+    async def remove(self, ctx, *, term):
         """Adds a set of boss mechanics."""
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
@@ -749,8 +759,13 @@ class PadGlobal(commands.Cog):
             await to_user.send(page)
         await ctx.send("Sent info on {} to {}".format(name, to_user.name))
 
-    @padglobal.command()
-    async def addwhich(self, ctx, term, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pwhich(self, ctx):
+        """Commands related to PAD global which definitions."""
+
+    @pwhich.command()
+    async def add(self, ctx, term, *, definition):
         """Adds an entry to the which monster evo list.
 
         Accepts queries. The which text will be entered for the resulting monster's tree.
@@ -788,8 +803,8 @@ class PadGlobal(commands.Cog):
         self.settings.addWhich(name, definition)
         await ctx.send("PAD which info successfully {} for [{}] {}.".format(op, m.monster_no_na, m.name_en))
 
-    @padglobal.command()
-    async def rmwhich(self, ctx, *, monster_id: int):
+    @pwhich.command(aliases=['rm'])
+    async def remove(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
@@ -808,13 +823,13 @@ class PadGlobal(commands.Cog):
         self.settings.rmWhich(name)
         await ctx.tick()
 
-    @padglobal.command()
-    async def prependwhich(self, ctx, term: str, *, addition):
+    @pwhich.command()
+    async def prepend(self, ctx, term: str, *, addition):
         """Prepend the additional text to an existing which entry before a blank line."""
         await self._concatenate_which(ctx, term, 'prepend', addition)
 
-    @padglobal.command()
-    async def appendwhich(self, ctx, term: str, *, addition):
+    @pwhich.command()
+    async def append(self, ctx, term: str, *, addition):
         """Append the additional text to an existing which entry after a blank line."""
         await self._concatenate_which(ctx, term, 'append', addition)
 
@@ -865,8 +880,8 @@ class PadGlobal(commands.Cog):
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
-    @padglobal.command(aliases=['whichdump'])
-    async def dumpwhich(self, ctx, *, term: str):
+    @pwhich.command()
+    async def dump(self, ctx, *, term: str):
         """Dump the raw text of an existing which entry, boxed."""
         _, definition, _, _ = await self._resolve_which(ctx, term)
 
@@ -876,8 +891,8 @@ class PadGlobal(commands.Cog):
             content = box(definition.replace('`', u'\u200b`'))
             await ctx.send(content)
 
-    @padglobal.command()
-    async def getwhich(self, ctx):
+    @pwhich.command()
+    async def get(self, ctx):
         """Gets a list of all which commands."""
         items = list()
         monsters = []
@@ -1201,8 +1216,13 @@ class PadGlobal(commands.Cog):
         msg = "Sent guide for {} to {}".format(term, to_user.name)
         await ctx.send(inline(msg))
 
-    @padglobal.command()
-    async def adddungeonguide(self, ctx, term: str, *, definition: str):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pguide(self, ctx):
+        """Commands related to PAD global dungeon and leader guides."""
+
+    @pguide.command()
+    async def adddungeon(self, ctx, term: str, *, definition: str):
         """Adds a dungeon guide to the [p]guide command"""
         term = term.lower()
         op = 'EDITED' if term in self.settings.dungeonGuide() else 'ADDED'
@@ -1213,8 +1233,8 @@ class PadGlobal(commands.Cog):
         self.settings.addDungeonGuide(term, definition)
         await ctx.send("PAD dungeon guide successfully {}.".format(op))
 
-    @padglobal.command()
-    async def rmdungeonguide(self, ctx, term: str):
+    @pguide.command()
+    async def rmdungeon(self, ctx, term: str):
         """Removes a dungeon guide from the [p]guide command"""
         term = term.lower()
         if term not in self.settings.dungeonGuide():
@@ -1227,8 +1247,8 @@ class PadGlobal(commands.Cog):
         self.settings.rmDungeonGuide(term)
         await ctx.tick()
 
-    @padglobal.command()
-    async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
+    @pguide.command()
+    async def addleader(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
@@ -1245,8 +1265,8 @@ class PadGlobal(commands.Cog):
         self.settings.addLeaderGuide(name, definition)
         await ctx.send("PAD leader guide info successfully {}.".format(op))
 
-    @padglobal.command()
-    async def rmleaderguide(self, ctx, monster_id: int):
+    @pguide.command()
+    async def rmleader(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
