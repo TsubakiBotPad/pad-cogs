@@ -809,22 +809,39 @@ class PadGlobal(commands.Cog):
         await ctx.tick()
 
     @padglobal.command()
-    async def prependwhich(self, ctx, monster_id: int, *, addition):
+    async def prependwhich(self, ctx, term: str, *, addition):
         """Prepend the additional text to an existing which entry before a blank line."""
-        await self._concatenate_which(ctx, monster_id, 'prepend', addition)
+        await self._concatenate_which(ctx, term, 'prepend', addition)
 
     @padglobal.command()
-    async def appendwhich(self, ctx, monster_id: int, *, addition):
+    async def appendwhich(self, ctx, term: str, *, addition):
         """Append the additional text to an existing which entry after a blank line."""
-        await self._concatenate_which(ctx, monster_id, 'append', addition)
+        await self._concatenate_which(ctx, term, 'append', addition)
 
-    async def _concatenate_which(self, ctx, monster_id: int, operation: str, addition):
-        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
-        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+    async def _concatenate_which(self, ctx, term: str, operation: str, addition):
+        dgcog = self.bot.get_cog("Dadguide")
+        pdicog = self.bot.get_cog("PadInfo")
+
+        term = term.lower()
+        m = await dgcog.find_monster(term, ctx.author.id)
+        if m is None:
+            await ctx.send(f"No monster found for `{term}`")
+            return
+
+        base_monster = dgcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         mon_id = m.monster_id
+
+        # ask for extra confirmation if the term was not an id
+        if not re.fullmatch(r'\d+', term):
+            if not await confirm_message(ctx, 'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
+                    operation,
+                    pdicog.get_attribute_emoji_by_monster(m),
+                    m.monster_no_na,
+                    m.name_en)):
+                return
 
         if mon_id not in self.settings.which():
             if await confirm_message(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
@@ -835,12 +852,16 @@ class PadGlobal(commands.Cog):
 
         definition, _ = self.settings.which().get(mon_id, None)
 
+        addition = clean_global_mentions(addition)
+        addition = addition.replace(u'\u200b', '')
+        addition = replace_emoji_names_with_code(self._get_emojis(), addition)
+
         if operation == 'prepend':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
-            await ctx.send("Successfully prepended to PAD which info for {}.".format(m.name_en))
+            await ctx.send("Successfully PREPENDED to PAD which info for {}.".format(m.name_en))
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
-            await ctx.send("Successfully appended to PAD which info for {}.".format(m.name_en))
+            await ctx.send("Successfully APPENDED to PAD which info for {}.".format(m.name_en))
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
