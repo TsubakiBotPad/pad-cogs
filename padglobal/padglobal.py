@@ -858,10 +858,10 @@ class PadGlobal(commands.Cog):
 
         if operation == 'prepend':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
-            await ctx.send("Successfully PREPENDED to PAD which info for {}.".format(m.name_en))
+            await ctx.send("Successfully PREPENDED to PAD which info for [{}] {}.".format(m.monster_no_na, m.name_en))
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
-            await ctx.send("Successfully APPENDED to PAD which info for {}.".format(m.name_en))
+            await ctx.send("Successfully APPENDED to PAD which info for [{}] {}.".format(m.monster_no_na, m.name_en))
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
