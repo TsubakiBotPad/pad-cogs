@@ -1,4 +1,5 @@
 from typing import Literal
+from dadguide.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP, AwokenSkills
 
 StatType = Literal['hp', 'atk', 'rcv']
 
@@ -41,8 +42,8 @@ class MonsterStats:
     PLUS_DICT = {'hp': 10, 'atk': 5, 'rcv': 3}
     LV_120_MULT_DICT = {'hp': 10, 'atk': 5, 'rcv': 5}
 
-    def stat(self, monster_model, key: StatType, lv, inherit_monster_model=None, plus=99, inherit=False, is_plus_297=True,
-             stat_latents: MonsterStatModifierInput = None, multiplayer=False):
+    def stat(self, monster_model, key: StatType, lv, *, plus=99, inherit=False, is_plus_297=True,
+             stat_latents: MonsterStatModifierInput = None, multiplayer=False, inherited_monster: "MonsterModel" = None, inherited_monster_lvl=99):
         # TODO: deal with atk-, rcv-, and hp- awakenings
         s_val = self.base_stat(key, lv, monster_model)
         if stat_latents and not (monster_model.is_equip or inherit):
@@ -50,7 +51,7 @@ class MonsterStats:
             stat_awakenings = stat_latents.get_awakening_addition(key)
             voice = s_val * stat_latents.num_voice_awakening * 0.1
             s_val += latents + stat_awakenings + voice
-        
+
         # include plus calculations. todo: is there a way to do this without subtraction?
         s_val += self.PLUS_DICT[key] * max(min(plus, 99), 0)
         if inherit:
@@ -58,27 +59,29 @@ class MonsterStats:
             if not is_plus_297:
                 s_val -= self.PLUS_DICT[key] * max(min(plus, 99), 0)
             s_val *= inherit_dict[key]
-        
-        if inherit_monster_model:
-            # recursion is not possible because inherits do not have inherits on top of them
-            if monster_model.attr1.value == inherit_monster_model.attr1.value:
-                # add base stats of inherit only if main atts are the same
-                s_val += self.stat(inherit_monster_model, key, 99, inherit=True, multiplayer=False)
 
-            inherit_bonus = MonsterStatModifierInput(
-                num_hp_awakening=inherit_monster_model.awakening_count(1),
-                num_atk_awakening=inherit_monster_model.awakening_count(2),
-                num_rcv_awakening=inherit_monster_model.awakening_count(3)
-            )
+        if inherited_monster:
+            # add base stats of inherit only if main atts are the same and not no-main-att
+            if monster_model.attr1.value == inherited_monster.attr1.value and monster_model.attr1.value != 6 and inherited_monster.attr1.value != 6:
+                # recursion is not possible because inherits do not have inherits on top of them
+                # inherit=True to calculate inherit stats and multiplayer=False in case the inherit has a multiboost awakening
+                s_val += self.stat(inherited_monster, key, inherited_monster_lvl,
+                                   inherit=True, multiplayer=False)
             # add bonus atk, hp, or rcv awakenings
+            inherit_bonus = MonsterStatModifierInput(
+                num_hp_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDHP.value),
+                num_atk_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDATK.value),
+                num_rcv_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDRCV.value)
+            )
             s_val += inherit_bonus.get_awakening_addition(key)
             s_val = round(s_val)
-            
+
         if multiplayer:
-            num_multiboost = monster_model.awakening_count(30)
-            num_multiboost += inherit_monster_model.awakening_count(30) if inherit_monster_model else 0
-            s_val = round(s_val+0.5) * (1.5 ** num_multiboost) # + 0.5 to round up 
-            
+            num_multiboost = monster_model.awakening_count(AwokenSkills.MULTIBOOST.value)
+            num_multiboost += inherited_monster.awakening_count(
+                AwokenSkills.MULTIBOOST.value) if inherited_monster else 0
+            s_val = round(s_val+0.5) * (1.5 ** num_multiboost)
+
         return s_val
 
     def base_stat(self, key, lv, monster_model):
@@ -86,7 +89,8 @@ class MonsterStats:
         s_max = float(monster_model.stat_values[key]['max'])
         if monster_model.level > 1:
             scale = monster_model.stat_values[key]['scale']
-            s_val = s_min + (s_max - s_min) * ((min(lv, monster_model.level) - 1) / (monster_model.level - 1)) ** scale
+            s_val = s_min + (s_max - s_min) * ((min(lv, monster_model.level) - 1) /
+                                               (monster_model.level - 1)) ** scale
         else:
             s_val = s_min
         if 99 < lv:
@@ -105,15 +109,18 @@ class MonsterStats:
 
         if not stat_latents:
             stat_latents = MonsterStatModifierInput(
-                num_hp_awakening=monster_model.awakening_count(1),
-                num_atk_awakening=monster_model.awakening_count(2),
-                num_rcv_awakening=monster_model.awakening_count(3),
-                num_voice_awakening=monster_model.awakening_count(63)
+                num_hp_awakening=monster_model.awakening_count(AwokenSkills.ENHANCEDHP.value),
+                num_atk_awakening=monster_model.awakening_count(AwokenSkills.ENHANCEDATK.value),
+                num_rcv_awakening=monster_model.awakening_count(AwokenSkills.ENHANCEDRCV.value),
+                num_voice_awakening=monster_model.awakening_count(AwokenSkills.VOICE.value)
             )
-
-        hp = int(round(self.stat(monster_model, 'hp', lv, plus=plus[0], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
-        atk = int(round(self.stat(monster_model, 'atk', lv, plus=plus[1], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
-        rcv = int(round(self.stat(monster_model, 'rcv', lv, plus=plus[2], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+        # TODO: Fix rounding
+        hp = int(round(self.stat(monster_model, 'hp', lv,
+                 plus=plus[0], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+        atk = int(round(self.stat(monster_model, 'atk', lv,
+                  plus=plus[1], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+        rcv = int(round(self.stat(monster_model, 'rcv', lv,
+                  plus=plus[2], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
         weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
         return hp, atk, rcv, weighted
 

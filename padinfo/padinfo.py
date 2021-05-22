@@ -525,7 +525,7 @@ class PadInfo(commands.Cog):
             return
         DGCOG = self.bot.get_cog("Dadguide")
         info = button_info.get_info(DGCOG, monster)
-        info_str = button_info.to_string(monster, info, DGCOG)
+        info_str = button_info.to_string(DGCOG, monster, info)
         for page in pagify(info_str):
             await ctx.send(box(page))
 
