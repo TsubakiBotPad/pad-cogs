@@ -20,8 +20,8 @@ Total:   {}
 {}
 """
 
-TEAM_BUTTON_FORMAT = "As {} base ({}x {}): Contributes {}"
-CARD_BUTTON_FORMAT = "As {} base ({}x): Deals {}"
+TEAM_BUTTON_FORMAT = "As [{}] {} base ({}x {}): Contributes {}"
+CARD_BUTTON_FORMAT = "As [{}] {} base ({}x): Deals {}"
 
 MonsterStat = namedtuple('MonsterStat', 'name id mult att')
 
@@ -32,7 +32,7 @@ TEAM_BUTTONS = [
 ]
 CARD_BUTTONS = [
     MonsterStat("Satan", 4286, 300, []),
-    MonsterStat("Brachydios", 4134, 350, []),
+    MonsterStat("Brachydios", 4152, 350, []),
     MonsterStat("Rajang", 5527, 550, []),
     MonsterStat("Balrog", 5108, 450, [])
 ]
@@ -79,11 +79,9 @@ class ButtonInfo:
         stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=num_atkpp_latent)
         stat_latents.num_atk_awakening = len([x for x in monster_model.awakenings if x.awoken_skill_id == 1])
 
-        dmg = dgcog.monster_stats.stat(monster_model, 'atk', level, stat_latents=stat_latents)
-        num_mult_boost = len([x for x in monster_model.awakenings if x.awoken_skill_id == 30])
-
-        dmg *= 1.5 ** num_mult_boost
-        return dmg
+        dmg = dgcog.monster_stats.stat(monster_model, 'atk', level, stat_latents=stat_latents, multiplayer=True)
+        
+        return int(round(dmg))
 
     def _get_sub_attr_multiplier(self, monster_model):
         if monster_model.attr2.value == 6 or monster_model.attr1.value == 6:
@@ -92,36 +90,43 @@ class ButtonInfo:
             return 1 / 10
         return 1 / 3
 
-    def to_string(self, monster, info):
-        card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, info, monster)
-        team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, info, monster)
-        return INFO_STRING.format(monster.monster_id, monster.name_en, info.main_damage, info.sub_damage,
-                                  info.total_damage,
-                                  info.main_damage_with_atk_latent, info.sub_damage_with_atk_latent,
-                                  info.total_damage_with_atk_latent, card_btn_str, team_btn_str)
+    def to_string(self, monster, info, dgcog):
+        card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, dgcog, monster)
+        team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dgcog, monster)
+        return INFO_STRING.format(monster.monster_id, monster.name_en, int(round(info.main_damage)), int(round(info.sub_damage)),
+                                  int(round(info.total_damage)),
+                                  int(round(info.main_damage_with_atk_latent)), int(round(info.sub_damage_with_atk_latent)),
+                                  int(round(info.total_damage_with_atk_latent)), card_btn_str, team_btn_str)
 
-    def _get_card_btn_damage(self, card_buttons, info, monster):
+    def _get_card_btn_damage(self, card_buttons, dgcog, monster):
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
         for card in card_buttons:
-            lines.append(CARD_BUTTON_FORMAT.format(card.name, card.mult,
-                         (info.main_damage_with_atk_latent * card.mult)))
+            inherit_model = dgcog.get_monster(card.id)
+            max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+            stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
+            dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents, inherit_monster_model=inherit_model, multiplayer=True)))
+            lines.append(CARD_BUTTON_FORMAT.format(card.id, card.name, card.mult, (dmg * card.mult)))
         return "\n".join(lines)
 
-    def _get_team_btn_damage(self, team_buttons, info, monster):
+    def _get_team_btn_damage(self, team_buttons, dgcog, monster):
         # TODO: calculate with oncolor assist damage and ATK+ eq (Oversoul)
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
             total_dmg = 0
+            inherit_model = dgcog.get_monster(card.id)
+            max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+            stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
+            dmg = dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents, inherit_monster_model=inherit_model, multiplayer=True)
             if(monster.attr1.value in card.att):
-                total_dmg += info.main_damage_with_atk_latent
+                total_dmg += dmg
             if(monster.attr2.value in card.att):
-                total_dmg += info.sub_damage_with_atk_latent
+                total_dmg += dmg * self._get_sub_attr_multiplier(monster)
             colors_str = ""
             for i in card.att:
                 colors_str += COLORS[i]
-            lines.append(TEAM_BUTTON_FORMAT.format(card.name, card.mult, colors_str, (total_dmg * card.mult)))
+            lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name, card.mult, colors_str, (total_dmg * card.mult)))
         return "\n".join(lines)
 
 
