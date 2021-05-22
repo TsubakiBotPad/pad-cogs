@@ -991,56 +991,57 @@ class PadGlobal(commands.Cog):
                 pass
         return emojis
 
-    @padglobal.command()
-    async def addemoji(self, ctx, monster_id: int, server: str = 'jp'):
-        """Create padglobal monster emoji by id.
+    # temporarily removed since emoji servers are full
+    # @padglobal.command()
+    # async def addemoji(self, ctx, monster_id: int, server: str = 'jp'):
+    #     """Create padglobal monster emoji by id.
 
-        Uses jp monster IDs by default. You only need to change to na if you want to add
-        voltron or something.
+    #     Uses jp monster IDs by default. You only need to change to na if you want to add
+    #     voltron or something.
 
-        If you add a jp ID, it will look like ':pad_123:'.
-        If you add a na ID, it will look like ':pad_na_123:'.
-        """
-        all_emoji_servers = self.settings.emojiServers()
-        if not all_emoji_servers:
-            await ctx.send('No emoji servers set')
-            return
+    #     If you add a jp ID, it will look like ':pad_123:'.
+    #     If you add a na ID, it will look like ':pad_na_123:'.
+    #     """
+    #     all_emoji_servers = self.settings.emojiServers()
+    #     if not all_emoji_servers:
+    #         await ctx.send('No emoji servers set')
+    #         return
 
-        if server not in ['na', 'jp']:
-            await ctx.send('Server must be one of [jp, na]')
-            return
+    #     if server not in ['na', 'jp']:
+    #         await ctx.send('Server must be one of [jp, na]')
+    #         return
 
-        if monster_id <= 0:
-            await ctx.send('Invalid monster id')
-            return
+    #     if monster_id <= 0:
+    #         await ctx.send('Invalid monster id')
+    #         return
 
-        server_ids = self.settings.emojiServers()
-        all_emojis = self._get_emojis()
+    #     server_ids = self.settings.emojiServers()
+    #     all_emojis = self._get_emojis()
 
-        source_url = PORTRAIT_TEMPLATE.format(monster_id)
-        emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
+    #     source_url = PORTRAIT_TEMPLATE.format(monster_id)
+    #     emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
 
-        for e in all_emojis:
-            if emoji_name == e.name:
-                await ctx.send(inline('Already exists'))
-                return
+    #     for e in all_emojis:
+    #         if emoji_name == e.name:
+    #             await ctx.send(inline('Already exists'))
+    #             return
 
-        for server_id in server_ids:
-            emoji_server = self.bot.get_guild(int(server_id))
-            if len(emoji_server.emojis) < 50:
-                break
-        else:
-            await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
-            return
+    #     for server_id in server_ids:
+    #         emoji_server = self.bot.get_guild(int(server_id))
+    #         if len(emoji_server.emojis) < 50:
+    #             break
+    #     else:
+    #         await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
+    #         return
 
-        try:
-            async with aiohttp.ClientSession() as sess:
-                async with sess.get(source_url) as resp:
-                    emoji_content = await resp.read()
-                    await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
-                    await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
-        except Exception as ex:
-            await ctx.send(box('Error:\n' + str(ex)))
+    #     try:
+    #         async with aiohttp.ClientSession() as sess:
+    #             async with sess.get(source_url) as resp:
+    #                 emoji_content = await resp.read()
+    #                 await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
+    #                 await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
+    #     except Exception as ex:
+    #         await ctx.send(box('Error:\n' + str(ex)))
 
     @commands.Cog.listener('on_message')
     async def checkCC(self, message):
