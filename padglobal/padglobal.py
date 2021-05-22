@@ -925,29 +925,6 @@ class PadGlobal(commands.Cog):
         for page in pagify(msg):
             await ctx.send(box(page))
 
-    @padglobal.command()
-    @checks.is_owner()
-    async def addadmin(self, ctx, user: discord.Member):
-        """Adds a user to the pad global admin"""
-        self.settings.addAdmin(user.id)
-        await ctx.tick()
-
-    @padglobal.command()
-    @checks.is_owner()
-    async def rmadmin(self, ctx, user):
-        """Removes a user from the pad global admin"""
-        try:
-            u = await commands.MemberConverter().convert(ctx, user)
-            self.settings.rmAdmin(u.id)
-        except commands.BadArgument as e:
-            try:
-                u = int(user)
-                self.settings.rmAdmin(u)
-            except ValueError:
-                await ctx.send(inline("Invalid user id."))
-                return
-        await ctx.tick()
-
     @padglobal.group()
     @checks.is_owner()
     async def emojiservers(self, ctx):
