@@ -20,7 +20,7 @@ class WhichViewProps:
 
 def _get_field(paragraph, color):
     lines = paragraph.strip().splitlines()
-    lines = [_replace_bullets(line, color) for line in lines]
+    lines = [_replace_bullets(line.strip(), color) for line in lines]
 
     if len(lines) > 1:
         evo = lines[0]
