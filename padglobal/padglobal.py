@@ -194,7 +194,10 @@ class PadGlobal(commands.Cog):
     @commands.group(aliases=['pdg'])
     @auth_check('contentadmin')
     async def padglobal(self, ctx):
-        """PAD global custom commands."""
+        """PAD global custom commands.
+
+        See also `[p]pglossary`, `[p]pboss`, `[p]pwhich`, and `[p]pguide`.
+        """
 
     @padglobal.command()
     async def say(self, ctx, *, text: str):
@@ -507,8 +510,8 @@ class PadGlobal(commands.Cog):
         """Adds a term to the glossary.
         If you want to use a multiple word term, enclose it in quotes.
 
-        e.x. [p]padglobal addglossary alb Awoken Liu Bei
-        e.x. [p]padglobal addglossary "never dathena" NA will never get dathena
+        e.x. [p]pglossary add alb Awoken Liu Bei
+        e.x. [p]pglossary add "never dathena" NA will never get dathena
         """
         term = term.lower()
         definition = clean_global_mentions(definition)
@@ -602,7 +605,9 @@ class PadGlobal(commands.Cog):
     @pboss.command()
     async def add(self, ctx, term, *, definition):
         """Adds a set of boss mechanics.
-        If you want to use a multiple word boss name, enclose it in quotes."""
+
+        If you want to use a multiple word boss name, enclose it in quotes.
+        """
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -627,7 +632,7 @@ class PadGlobal(commands.Cog):
 
     @pboss.command(aliases=['rm'])
     async def remove(self, ctx, *, term):
-        """Adds a set of boss mechanics."""
+        """Removes a set of boss mechanics."""
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -769,7 +774,7 @@ class PadGlobal(commands.Cog):
         """Adds an entry to the which monster evo list.
 
         Accepts queries. The which text will be entered for the resulting monster's tree.
-        e.x. [p]padglobal addwhich 3818 take the pixel one
+        e.x. [p]pwhich add 3818 take the pixel one
         """
         dgcog = self.bot.get_cog("Dadguide")
         pdicog = self.bot.get_cog("PadInfo")
