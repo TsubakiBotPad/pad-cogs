@@ -67,7 +67,7 @@ class AwakeningListView:
     @staticmethod
     def embed(state: AwakeningListViewState):
         fields = [
-            EmbedField('Awakenings - by {}'.format('name' if state.sort_type == 'alphabetical' else 'id number'),
+            EmbedField('Awakenings - by {}'.format('name' if state.sort_type == AwakeningListSortTypes.alphabetical else 'id number'),
                        Box(*[get_awoken_skill_description(awo) for awo in state.paginated_skills[state.current_page]])),
             EmbedField('Page', Box(
                 '{} of {}'.format(str(state.current_page + 1), str(len(state.paginated_skills)))

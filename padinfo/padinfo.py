@@ -761,10 +761,12 @@ class PadInfo(commands.Cog):
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
 
-    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp', 'awakenings'])
+    @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp', 'awakeninghelp'])
     @checks.bot_has_permissions(embed_links=True)
-    async def awakeninghelp(self, ctx, *, query=None):
-        """Describe a monster's regular and super awakenings in detail."""
+    async def awakenings(self, ctx, *, query=None):
+        """Describe a monster's regular and super awakenings in detail.
+
+        Leave <query> blank to see a list of every awakening in the game."""
         dgcog = await self.get_dgcog()
         color = await self.get_user_embed_color(ctx)
 
