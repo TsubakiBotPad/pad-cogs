@@ -897,9 +897,9 @@ class PadGlobal(commands.Cog):
                 content = box(page.replace('`', u'\u200b`'))
                 await ctx.send(content)
 
-    @pwhich.command(name='get')
-    async def pwhich_get(self, ctx):
-        """Gets a list of all which commands."""
+    @pwhich.command(name='list')
+    async def pwhich_list(self, ctx):
+        """List all which commands."""
         items = list()
         monsters = []
         for w in self.settings.which():
