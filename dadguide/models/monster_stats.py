@@ -47,10 +47,13 @@ class MonsterStats:
         # TODO: deal with atk-, rcv-, and hp- awakenings
         s_val = self.base_stat(key, lv, monster_model)
         if stat_latents and not (monster_model.is_equip or inherit):
+            print("base atk:"+str(s_val))
             latents = s_val * stat_latents.get_latent_multiplier(key)
+            print("latents:"+str(latents))
             stat_awakenings = stat_latents.get_awakening_addition(key)
             voice = s_val * stat_latents.num_voice_awakening * 0.1
             s_val += latents + stat_awakenings + voice
+            print("added"+str(s_val))
 
         # include plus calculations. todo: is there a way to do this without subtraction?
         s_val += self.PLUS_DICT[key] * max(min(plus, 99), 0)
@@ -65,8 +68,8 @@ class MonsterStats:
             if monster_model.attr1.value == inherited_monster.attr1.value or monster_model.attr1.value == 6 or inherited_monster.attr1.value == 6:
                 # recursion is not possible because inherits do not have inherits on top of them
                 # inherit=True to calculate inherit stats and multiplayer=False in case the inherit has a multiboost awakening
-                s_val += self.stat(inherited_monster, key, inherited_monster_lvl,
-                                   inherit=True, multiplayer=False)
+                s_val += round(self.stat(inherited_monster, key, inherited_monster_lvl,
+                                   inherit=True, multiplayer=False))
             # add bonus atk, hp, or rcv awakenings
             inherit_bonus = MonsterStatModifierInput(
                 num_hp_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDHP.value),
@@ -74,13 +77,14 @@ class MonsterStats:
                 num_rcv_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDRCV.value)
             )
             s_val += inherit_bonus.get_awakening_addition(key)
-            s_val = round(s_val)
 
         if multiplayer:
+            print(s_val)
             num_multiboost = monster_model.awakening_count(AwokenSkills.MULTIBOOST.value)
             num_multiboost += inherited_monster.awakening_count(
                 AwokenSkills.MULTIBOOST.value) if inherited_monster else 0
-            s_val = round(s_val+0.5) * (1.5 ** num_multiboost)
+            s_val = round(round(s_val) * (1.5 ** num_multiboost))
+            print(s_val)
 
         return s_val
 
