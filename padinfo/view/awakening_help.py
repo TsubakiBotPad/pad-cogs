@@ -55,13 +55,13 @@ def _get_all_awakening_descs(awakening_list):
     return Box(*awakening_descs)
 
 
-def normal_awakenings(monster: "MonsterModel"):
+def get_normal_awakenings(monster: "MonsterModel"):
     normal_awakening_count = len(monster.awakenings) - monster.superawakening_count
     normal_awakenings = monster.awakenings[:normal_awakening_count]
     return _get_all_awakening_descs(normal_awakenings)
 
 
-def super_awakenings(monster: "MonsterModel"):
+def get_super_awakenings(monster: "MonsterModel"):
     normal_awakening_count = len(monster.awakenings) - monster.superawakening_count
     super_awakenings = monster.awakenings[normal_awakening_count:]
     return _get_all_awakening_descs(super_awakenings)
@@ -75,8 +75,8 @@ class AwakeningHelpView:
         monster = props.monster
 
         fields = [
-            EmbedField('Normal Awakenings', normal_awakenings(monster)),
-            EmbedField('Super Awakenings', super_awakenings(monster))
+            EmbedField('Normal Awakenings', get_normal_awakenings(monster)),
+            EmbedField('Super Awakenings', get_super_awakenings(monster))
         ]
 
         return EmbedView(
