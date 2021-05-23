@@ -73,7 +73,7 @@ COLORS = [
 TYPES = [
     "attacker",
     "awoken",
-    "balance",
+    "balanced",
     "devil",
     "dragon",
     "enhance",

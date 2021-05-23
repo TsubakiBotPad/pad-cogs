@@ -43,7 +43,7 @@ for cid1, cns1 in COLOR_MAP.items():
 
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
-    MonsterType.Balance: ('balanced', 'bal'),
+    MonsterType.Balanced: ('balanced', 'bal', 'balance'),
     MonsterType.Physical: ('physical', 'phys'),
     MonsterType.Healer: ('healer',),
     MonsterType.Dragon: ('dragon', 'dra'),

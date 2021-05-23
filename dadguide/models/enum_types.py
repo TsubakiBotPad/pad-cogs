@@ -14,7 +14,7 @@ class Attribute(Enum):
 
 class MonsterType(Enum):
     Evolve = 0
-    Balance = 1
+    Balanced = 1
     Physical = 2
     Healer = 3
     Dragon = 4
