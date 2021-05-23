@@ -905,7 +905,7 @@ class PadGlobal(commands.Cog):
         channel = '\N{WHITE HEAVY CHECK MARK}'
         send_as_dm = '\N{ENVELOPE}'
         cancel = '\N{CROSS MARK}'
-        destination = cancel
+        destination = channel
         if len(self.settings.which()) > MAX_WHICH_LIST_BEFORE_DM_PROMPT:
             destination = await get_reaction(ctx,
                                              'This will send a lot of messages. Are you sure? '
