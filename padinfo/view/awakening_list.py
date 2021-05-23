@@ -10,6 +10,11 @@ from padinfo.view.common import get_awoken_skill_description
 from padinfo.view.components.view_state_base import ViewStateBase
 
 
+class AwakeningListSortTypes:
+    alphabetical = "Alphabetical"
+    numerical = "Numerical"
+
+
 class AwakeningListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 10
 
@@ -46,12 +51,11 @@ class AwakeningListViewState(ViewStateBase):
     @classmethod
     async def query(cls, dgcog, sort_type):
         awoken_skills = dgcog.database.get_all_awoken_skills()
-        if sort_type == 'alphabetical':
+        if sort_type == AwakeningListSortTypes.alphabetical:
             awoken_skills = sorted(awoken_skills, key=lambda awo: awo.name_en)
-        elif sort_type == 'numerical':
+        elif sort_type == AwakeningListSortTypes.numerical:
             awoken_skills = sorted(awoken_skills, key=lambda awo: awo.awoken_skill_id)
-        else:
-            raise KeyError('Invalid sort type for awoken skills')
+
         paginated_skills = [awoken_skills[i:i + AwakeningListViewState.MAX_ITEMS_PER_PANE]
                             for i in range(0, len(awoken_skills), AwakeningListViewState.MAX_ITEMS_PER_PANE)]
         return paginated_skills

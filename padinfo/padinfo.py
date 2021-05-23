@@ -35,7 +35,7 @@ from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
-from padinfo.view.awakening_list import AwakeningListViewState
+from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
@@ -769,11 +769,12 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
 
         if not query:
-            paginated_skills = await AwakeningListViewState.query(dgcog, 'alphabetical')
+            sort_type = AwakeningListSortTypes.alphabetical
+            paginated_skills = await AwakeningListViewState.query(dgcog, sort_type)
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
-                                           'alphabetical', paginated_skills, 0,
-                                           reaction_list=AwakeningListMenuPanes.emoji_names())
+                                           AwakeningListSortTypes.alphabetical, paginated_skills, 0,
+                                           reaction_list=AwakeningListMenuPanes.get_reaction_list(sort_type))
             await menu.create(ctx, state)
             return
 

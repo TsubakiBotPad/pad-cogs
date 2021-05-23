@@ -5,7 +5,7 @@ from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.panes import emoji_buttons, MenuPanes
 
-from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListView
+from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListView, AwakeningListSortTypes
 
 
 class AwakeningListEmoji:
@@ -52,12 +52,12 @@ class AwakeningListMenu:
 
     @staticmethod
     async def respond_with_alphabetical(message: Optional[Message], ims, **data):
-        ims['sort_type'] = 'alphabetical'
+        ims['sort_type'] = AwakeningListSortTypes.alphabetical
         return await AwakeningListMenu.respond_with_awakening_list(message, ims, **data)
 
     @staticmethod
     async def respond_with_numerical(message: Optional[Message], ims, **data):
-        ims['sort_type'] = 'numerical'
+        ims['sort_type'] = AwakeningListSortTypes.numerical
         return await AwakeningListMenu.respond_with_awakening_list(message, ims, **data)
 
     @staticmethod
@@ -72,7 +72,7 @@ class AwakeningListMenu:
     def awakening_list_control(state: AwakeningListViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
+        reaction_list = AwakeningListMenuPanes.get_reaction_list(state.sort_type)
         return EmbedControl(
             [AwakeningListView.embed(state)],
             reaction_list
@@ -95,3 +95,17 @@ class AwakeningListMenuPanes(MenuPanes):
         AwakeningListEmoji.home,
         AwakeningListEmoji.refresh,
     ]
+
+    OPTIONAL_EMOJIS = [
+        AwakeningListEmoji.alphabetical,
+        AwakeningListEmoji.numerical,
+    ]
+
+    @classmethod
+    def get_reaction_list(cls, cur_sort_type):
+        other_toggle_reaction = None
+        if cur_sort_type == AwakeningListSortTypes.alphabetical:
+            other_toggle_reaction = AwakeningListEmoji.numerical
+        elif cur_sort_type == AwakeningListSortTypes.numerical:
+            other_toggle_reaction = AwakeningListEmoji.alphabetical
+        return [_ for _ in cls.emoji_names() if _ not in cls.OPTIONAL_EMOJIS] + [other_toggle_reaction]
