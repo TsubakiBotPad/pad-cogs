@@ -893,8 +893,9 @@ class PadGlobal(commands.Cog):
         if definition is None:
             return
         else:
-            content = box(definition.replace('`', u'\u200b`'))
-            await ctx.send(content)
+            for page in pagify(definition):
+                content = box(page.replace('`', u'\u200b`'))
+                await ctx.send(content)
 
     @pwhich.command(name='get')
     async def pwhich_get(self, ctx):
