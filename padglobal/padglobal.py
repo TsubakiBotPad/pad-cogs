@@ -18,7 +18,7 @@ from redbot.core import checks, data_manager
 from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
-    auth_check
+    auth_check, get_reaction
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
@@ -902,11 +902,17 @@ class PadGlobal(commands.Cog):
     @pwhich.command(name='list')
     async def pwhich_list(self, ctx):
         """List all which commands."""
-        confirmed = False
+        affirmative = '\N{WHITE HEAVY CHECK MARK}'
+        negative = '\N{CROSS MARK}'
+        cancel = '\N{WASTEBASKET}'
+        send_as_dm = negative
         if len(self.settings.which()) > WHICH_LIMIT:
-            confirmed = await confirm_message(ctx, 'This will send a long list. Do you really want it sent to this '
-                                                 + 'channel (instead of DM)? Cancel action by not reacting.')
-        if confirmed is None:
+            send_as_dm = await get_reaction(ctx,
+                                            'This will send a long list. Do you want it as a DM? (Trash to cancel.)',
+                                            affirmative,
+                                            negative,
+                                            cancel)
+        if send_as_dm == cancel or send_as_dm is None:
             return
 
         items = list()
@@ -933,7 +939,7 @@ class PadGlobal(commands.Cog):
         msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
-            if confirmed:
+            if send_as_dm == negative:
                 await ctx.send(box(page))
             else:
                 await ctx.author.send(box(page))
