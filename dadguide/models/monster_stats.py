@@ -1,5 +1,5 @@
 from typing import Literal
-from dadguide.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP, AwokenSkills
+from dadguide.token_mappings import AwokenSkills
 
 StatType = Literal['hp', 'atk', 'rcv']
 
@@ -62,7 +62,7 @@ class MonsterStats:
 
         if inherited_monster:
             # add base stats of inherit only if main atts are the same and not no-main-att
-            if monster_model.attr1.value == inherited_monster.attr1.value and monster_model.attr1.value != 6 and inherited_monster.attr1.value != 6:
+            if monster_model.attr1.value == inherited_monster.attr1.value or monster_model.attr1.value == 6 or inherited_monster.attr1.value == 6:
                 # recursion is not possible because inherits do not have inherits on top of them
                 # inherit=True to calculate inherit stats and multiplayer=False in case the inherit has a multiboost awakening
                 s_val += self.stat(inherited_monster, key, inherited_monster_lvl,
