@@ -124,6 +124,7 @@ class ButtonInfo:
             total_dmg = 0
             inherit_model = dgcog.get_monster(card.id)
             max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+            inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
             dmg = dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                                            inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)
