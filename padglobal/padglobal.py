@@ -57,6 +57,8 @@ MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards wi
               ', check `{}mpdra?` for specific recommendations.')
 SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
 
+WHICH_LIMIT = 30
+
 
 def mod_help(self, ctx, help_type):
     hs = getattr(self, help_type)
@@ -900,6 +902,13 @@ class PadGlobal(commands.Cog):
     @pwhich.command(name='list')
     async def pwhich_list(self, ctx):
         """List all which commands."""
+        confirmed = False
+        if len(self.settings.which()) > WHICH_LIMIT:
+            confirmed = await confirm_message(ctx, 'This will send a long list. Do you really want it sent to this '
+                                                 + 'channel (instead of DM)? Cancel action by not reacting.')
+        if confirmed is None:
+            return
+
         items = list()
         monsters = []
         for w in self.settings.which():
@@ -924,7 +933,10 @@ class PadGlobal(commands.Cog):
         msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
-            await ctx.send(box(page))
+            if confirmed:
+                await ctx.send(box(page))
+            else:
+                await ctx.author.send(box(page))
 
     @padglobal.group()
     @checks.is_owner()
