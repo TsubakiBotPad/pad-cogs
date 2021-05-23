@@ -68,10 +68,12 @@ class MonsterStats:
             s_val = s_min + (s_max - s_min) * ((min(lv, monster_model.level) - 1) / (monster_model.level - 1)) ** scale
         else:
             s_val = s_min
+        val_at_99 = s_val
         if 99 < lv:
             s_val *= 1 + (monster_model.limit_mult / 11 * (min(lv, 110) - 99)) / 100
         if 110 < lv:
-            s_val *= 1 + (self.LV_120_MULT_DICT[key] / 10 * (lv - 110)) / 100
+            slb_bonus = self.LV_120_MULT_DICT[key] * val_at_99 * (lv-110) / 1000
+            s_val += slb_bonus
         return s_val
 
     def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatModifierInput = None):
