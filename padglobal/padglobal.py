@@ -902,17 +902,18 @@ class PadGlobal(commands.Cog):
     @pwhich.command(name='list')
     async def pwhich_list(self, ctx):
         """List all which commands."""
-        affirmative = '\N{WHITE HEAVY CHECK MARK}'
-        negative = '\N{CROSS MARK}'
-        cancel = '\N{WASTEBASKET}'
-        send_as_dm = negative
+        channel = '\N{WHITE HEAVY CHECK MARK}'
+        send_as_dm = '\N{ENVELOPE}'
+        cancel = '\N{CROSS MARK}'
+        destination = cancel
         if len(self.settings.which()) > MAX_WHICH_LIST_BEFORE_DM_PROMPT:
-            send_as_dm = await get_reaction(ctx,
-                                            'This will send a long list. Do you want it as a DM? (Trash to cancel.)',
-                                            affirmative,
-                                            negative,
-                                            cancel)
-        if send_as_dm == cancel or send_as_dm is None:
+            destination = await get_reaction(ctx,
+                                             'This will send a lot of messages. Are you sure? '
+                                             + '(Yes / DM me instead / Cancel)',
+                                             channel,
+                                             send_as_dm,
+                                             cancel)
+        if destination == cancel or destination is None:
             return
 
         items = list()
@@ -939,7 +940,7 @@ class PadGlobal(commands.Cog):
         msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
-            if send_as_dm == negative:
+            if destination == channel:
                 await ctx.send(box(page))
             else:
                 await ctx.author.send(box(page))
