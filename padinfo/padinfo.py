@@ -769,11 +769,11 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
 
         if not query:
-            sort_type = AwakeningListSortTypes.alphabetical
+            sort_type = AwakeningListSortTypes.numerical
             paginated_skills = await AwakeningListViewState.query(dgcog, sort_type)
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
-                                           AwakeningListSortTypes.alphabetical, paginated_skills, 0,
+                                           sort_type, paginated_skills, 0,
                                            reaction_list=AwakeningListMenuPanes.get_reaction_list(sort_type))
             await menu.create(ctx, state)
             return
