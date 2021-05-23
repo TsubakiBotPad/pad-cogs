@@ -23,6 +23,7 @@ from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import perform_leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
+from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
@@ -34,6 +35,7 @@ from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
+from padinfo.view.awakening_list import AwakeningListViewState
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
@@ -761,16 +763,26 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=['awakehelp', 'awakeningshelp', 'awohelp', 'awokenhelp', 'awakenings'])
     @checks.bot_has_permissions(embed_links=True)
-    async def awakeninghelp(self, ctx, *, query):
+    async def awakeninghelp(self, ctx, *, query=None):
         """Describe a monster's regular and super awakenings in detail."""
         dgcog = await self.get_dgcog()
+        color = await self.get_user_embed_color(ctx)
+
+        if not query:
+            paginated_skills = await AwakeningListViewState.query(dgcog, 'alphabetical')
+            menu = AwakeningListMenu.menu()
+            state = AwakeningListViewState(ctx.author.id, AwakeningListMenu.MENU_TYPE, color,
+                                           'alphabetical', paginated_skills, 0,
+                                           reaction_list=AwakeningListMenuPanes.emoji_names())
+            await menu.create(ctx, state)
+            return
+
         monster = await dgcog.find_monster(query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
         props = AwakeningHelpViewProps(monster=monster)
