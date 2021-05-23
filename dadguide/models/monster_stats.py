@@ -45,15 +45,13 @@ class MonsterStats:
     def stat(self, monster_model, key: StatType, lv, *, plus=99, inherit=False, is_plus_297=True,
              stat_latents: MonsterStatModifierInput = None, multiplayer=False, inherited_monster: "MonsterModel" = None, inherited_monster_lvl=99):
         # TODO: deal with atk-, rcv-, and hp- awakenings
-        s_val = self.base_stat(key, lv, monster_model)
+        # PAD rounds stats from the start before any calculations
+        s_val = round(self.base_stat(key, lv, monster_model))
         if stat_latents and not (monster_model.is_equip or inherit):
-            print("base atk:"+str(s_val))
             latents = s_val * stat_latents.get_latent_multiplier(key)
-            print("latents:"+str(latents))
             stat_awakenings = stat_latents.get_awakening_addition(key)
             voice = s_val * stat_latents.num_voice_awakening * 0.1
             s_val += latents + stat_awakenings + voice
-            print("added"+str(s_val))
 
         # include plus calculations. todo: is there a way to do this without subtraction?
         s_val += self.PLUS_DICT[key] * max(min(plus, 99), 0)

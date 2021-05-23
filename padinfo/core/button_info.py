@@ -16,6 +16,7 @@ Subattr: {}
 Total:   {}
 
 --------------
+Inherits are assumed to be the max possible level (up to 110) and +297
 {}
 {}
 """
@@ -26,16 +27,16 @@ CARD_BUTTON_FORMAT = "As [{}] {} base ({}x): Deals {}"
 MonsterStat = namedtuple('MonsterStat', 'name id mult att')
 
 TEAM_BUTTONS = [
-    #MonsterStat("Nergi Hunter", 4172, 40, [2, 4]),
-    #MonsterStat("Oversoul", 5273, 50, [0, 1, 2, 3, 4]),
-    #MonsterStat("Ryuno Ume", 5252, 80, [2, 4])
+    MonsterStat("Nergi Hunter", 4172, 40, [2, 4]),
+    MonsterStat("Oversoul", 5273, 50, [0, 1, 2, 3, 4]),
+    MonsterStat("Ryuno Ume", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
     MonsterStat("Satan", 4286, 300, []),
     MonsterStat("Durandalf Equip", 4723, 300, []),
-    #MonsterStat("Brachydios Equip", 4152, 350, []),
-    #MonsterStat("Rajang", 5527, 550, []),
-    #MonsterStat("Balrog", 5108, 450, [])
+    MonsterStat("Brachydios Equip", 4152, 350, []),
+    MonsterStat("Rajang", 5527, 550, []),
+    MonsterStat("Balrog", 5108, 450, [])
 ]
 
 COLORS = ["R", "B", "G", "L", "D"]
