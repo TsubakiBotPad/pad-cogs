@@ -18,7 +18,7 @@ from redbot.core import checks, data_manager
 from redbot.core import commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
-    auth_check
+    auth_check, get_reaction
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
@@ -56,6 +56,8 @@ FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
               ', check `{}mpdra?` for specific recommendations.')
 SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
+
+MAX_WHICH_LIST_BEFORE_DM_PROMPT = 30
 
 
 def mod_help(self, ctx, help_type):
@@ -893,12 +895,27 @@ class PadGlobal(commands.Cog):
         if definition is None:
             return
         else:
-            content = box(definition.replace('`', u'\u200b`'))
-            await ctx.send(content)
+            for page in pagify(definition):
+                content = box(page.replace('`', u'\u200b`'))
+                await ctx.send(content)
 
-    @pwhich.command(name='get')
-    async def pwhich_get(self, ctx):
-        """Gets a list of all which commands."""
+    @pwhich.command(name='list')
+    async def pwhich_list(self, ctx):
+        """List all which commands."""
+        channel = '\N{WHITE HEAVY CHECK MARK}'
+        send_as_dm = '\N{ENVELOPE}'
+        cancel = '\N{CROSS MARK}'
+        destination = channel
+        if len(self.settings.which()) > MAX_WHICH_LIST_BEFORE_DM_PROMPT:
+            destination = await get_reaction(ctx,
+                                             'This will send a lot of messages. Are you sure? '
+                                             + '(Yes / DM me instead / Cancel)',
+                                             channel,
+                                             send_as_dm,
+                                             cancel)
+        if destination == cancel or destination is None:
+            return
+
         items = list()
         monsters = []
         for w in self.settings.which():
@@ -923,7 +940,10 @@ class PadGlobal(commands.Cog):
         msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
-            await ctx.send(box(page))
+            if destination == channel:
+                await ctx.send(box(page))
+            else:
+                await ctx.author.send(box(page))
 
     @padglobal.group()
     @checks.is_owner()
