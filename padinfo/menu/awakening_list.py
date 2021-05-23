@@ -34,20 +34,20 @@ class AwakeningListMenu:
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
-        cur_page = ims['page']
+        cur_page = ims['current_page']
         if cur_page == 0:
-            ims['page'] = ims['total_pages'] - 1
+            ims['current_page'] = ims['total_pages'] - 1
         else:
-            ims['page'] = cur_page - 1
+            ims['current_page'] = cur_page - 1
         return await AwakeningListMenu.respond_with_awakening_list(message, ims, **data)
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        cur_page = ims['page']
+        cur_page = ims['current_page']
         if cur_page == ims['total_pages'] - 1:
-            ims['page'] = 0
+            ims['current_page'] = 0
         else:
-            ims['page'] = cur_page + 1
+            ims['current_page'] = cur_page + 1
         return await AwakeningListMenu.respond_with_awakening_list(message, ims, **data)
 
     @staticmethod

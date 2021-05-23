@@ -18,20 +18,20 @@ class AwakeningListSortTypes:
 class AwakeningListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 10
 
-    def __init__(self, original_author_id, menu_type, color, sort_type, paginated_skills, page,
+    def __init__(self, original_author_id, menu_type, color, sort_type, paginated_skills, current_page,
                  extra_state=None,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, '', extra_state=extra_state, reaction_list=reaction_list)
         self.sort_type = sort_type
         self.paginated_skills = paginated_skills
         self.total_pages = len(self.paginated_skills)
-        self.page = page
+        self.current_page = current_page
         self.color = color
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'page': self.page,
+            'current_page': self.current_page,
             'total_pages': self.total_pages,
             'sort_type': self.sort_type,
         })
@@ -42,11 +42,11 @@ class AwakeningListViewState(ViewStateBase):
         sort_type = ims['sort_type']
         paginated_skills = await cls.query(dgcog, sort_type)
         original_author_id = ims['original_author_id']
-        page = ims['page']
+        current_page = ims['current_page']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
         return AwakeningListViewState(original_author_id, menu_type, user_config.color, sort_type, paginated_skills,
-                                      page, reaction_list=reaction_list)
+                                      current_page, reaction_list=reaction_list)
 
     @classmethod
     async def query(cls, dgcog, sort_type):
@@ -68,9 +68,9 @@ class AwakeningListView:
     def embed(state: AwakeningListViewState):
         fields = [
             EmbedField('Awakenings - by {}'.format('name' if state.sort_type == 'alphabetical' else 'id number'),
-                       Box(*[get_awoken_skill_description(awo) for awo in state.paginated_skills[state.page]])),
+                       Box(*[get_awoken_skill_description(awo) for awo in state.paginated_skills[state.current_page]])),
             EmbedField('Page', Box(
-                '{} of {}'.format(str(state.page + 1), str(len(state.paginated_skills)))
+                '{} of {}'.format(str(state.current_page + 1), str(len(state.paginated_skills)))
             ))
         ]
 
