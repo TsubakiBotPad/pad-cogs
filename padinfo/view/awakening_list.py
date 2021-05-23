@@ -11,7 +11,7 @@ from padinfo.view.components.view_state_base import ViewStateBase
 
 
 class AwakeningListViewState(ViewStateBase):
-    MAX_ITEMS_PER_PANE = 5
+    MAX_ITEMS_PER_PANE = 10
 
     def __init__(self, original_author_id, menu_type, color, sort_type, paginated_skills, page,
                  extra_state=None,
@@ -28,7 +28,9 @@ class AwakeningListViewState(ViewStateBase):
         ret.update({
             'page': self.page,
             'total_pages': self.total_pages,
+            'sort_type': self.sort_type,
         })
+        return ret
 
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
@@ -37,8 +39,9 @@ class AwakeningListViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         page = ims['page']
         menu_type = ims['menu_type']
+        reaction_list = ims['reaction_list']
         return AwakeningListViewState(original_author_id, menu_type, user_config.color, sort_type, paginated_skills,
-                                      page)
+                                      page, reaction_list=reaction_list)
 
     @classmethod
     async def query(cls, dgcog, sort_type):
@@ -60,10 +63,10 @@ class AwakeningListView:
     @staticmethod
     def embed(state: AwakeningListViewState):
         fields = [
-            EmbedField('Awakenings',
+            EmbedField('Awakenings - by {}'.format('name' if state.sort_type == 'alphabetical' else 'id number'),
                        Box(*[get_awoken_skill_description(awo) for awo in state.paginated_skills[state.page]])),
             EmbedField('Page', Box(
-                '{} of {}'.format(str(state.page), str(len(state.paginated_skills)))
+                '{} of {}'.format(str(state.page + 1), str(len(state.paginated_skills)))
             ))
         ]
 

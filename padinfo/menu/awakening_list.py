@@ -36,7 +36,7 @@ class AwakeningListMenu:
     async def respond_with_left(message: Optional[Message], ims, **data):
         cur_page = ims['page']
         if cur_page == 0:
-            ims['page'] = ims['total_pages']
+            ims['page'] = ims['total_pages'] - 1
         else:
             ims['page'] = cur_page - 1
         return await AwakeningListMenu.respond_with_awakening_list(message, ims, **data)
@@ -44,7 +44,7 @@ class AwakeningListMenu:
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
         cur_page = ims['page']
-        if cur_page == ims['total_pages']:
+        if cur_page == ims['total_pages'] - 1:
             ims['page'] = 0
         else:
             ims['page'] = cur_page + 1
@@ -62,7 +62,6 @@ class AwakeningListMenu:
 
     @staticmethod
     async def respond_with_awakening_list(message: Optional[Message], ims, **data):
-        print(ims)
         dgcog = data['dgcog']
         user_config = data['user_config']
         view_state = await AwakeningListViewState.deserialize(dgcog, user_config, ims)
@@ -88,8 +87,8 @@ class AwakeningListMenuPanes(MenuPanes):
         AwakeningListEmoji.home: (AwakeningListMenu.respond_with_awakening_list, AwakeningListView.VIEW_TYPE),
         AwakeningListEmoji.prev_page: (AwakeningListMenu.respond_with_left, AwakeningListView.VIEW_TYPE),
         AwakeningListEmoji.next_page: (AwakeningListMenu.respond_with_right, AwakeningListView.VIEW_TYPE),
-        AwakeningListEmoji.alphabetical: (AwakeningListMenu.respond_with_awakening_list, AwakeningListView.VIEW_TYPE),
-        AwakeningListEmoji.numerical: (AwakeningListMenu.respond_with_awakening_list, AwakeningListView.VIEW_TYPE),
+        AwakeningListEmoji.alphabetical: (AwakeningListMenu.respond_with_alphabetical, AwakeningListView.VIEW_TYPE),
+        AwakeningListEmoji.numerical: (AwakeningListMenu.respond_with_numerical, AwakeningListView.VIEW_TYPE),
     }
 
     HIDDEN_EMOJIS = [

@@ -771,7 +771,7 @@ class PadInfo(commands.Cog):
         if not query:
             paginated_skills = await AwakeningListViewState.query(dgcog, 'alphabetical')
             menu = AwakeningListMenu.menu()
-            state = AwakeningListViewState(ctx.author.id, AwakeningListMenu.MENU_TYPE, color,
+            state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
                                            'alphabetical', paginated_skills, 0,
                                            reaction_list=AwakeningListMenuPanes.emoji_names())
             await menu.create(ctx, state)
