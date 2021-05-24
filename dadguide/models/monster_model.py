@@ -103,13 +103,13 @@ class MonsterModel(BaseModel):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],
             MonsterType.Devil: ['God'],
-            MonsterType.Machine: ['God', 'Balance'],
+            MonsterType.Machine: ['God', 'Balanced'],
             MonsterType.Dragon: ['Machine', 'Healer'],
             MonsterType.Physical: ['Machine', 'Healer'],
             MonsterType.Attacker: ['Devil', 'Physical'],
             MonsterType.Healer: ['Dragon', 'Attacker'],
         }
-        if MonsterType.Balance in self.types:
+        if MonsterType.Balanced in self.types:
             return ['Any']
         killers = set()
         for t in self.types:

@@ -145,7 +145,7 @@ TYPE_TO_KILLERS_MAP = {
     'Physical': [208, 203],  # machine healer
     'Attacker': [207, 202],  # devil physical
     'Healer': [204, 206],  # dragon attacker
-    'Balance': [201, 202, 203, 204, 205, 206, 207, 208]
+    'Balanced': [201, 202, 203, 204, 205, 206, 207, 208]
 }
 
 AWK_CIRCLE = 'circle'
