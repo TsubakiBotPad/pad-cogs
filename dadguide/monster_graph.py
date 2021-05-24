@@ -1,11 +1,10 @@
 import json
 import re
 from collections import defaultdict
-from typing import Optional, List, Union, Set
+from typing import Optional, List, Union, Set, Literal
 
 from networkx import MultiDiGraph
 from networkx.classes.coreviews import AtlasView
-from networkx.classes.reportviews import OutMultiEdgeView, NodeView
 
 from .database_manager import DadguideDatabase
 from .models.active_skill_model import ActiveSkillModel
@@ -18,31 +17,31 @@ from .models.monster_model import MonsterModel
 from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT
-  monsters.*,
-  COALESCE(monster_name_overrides.name_en, monsters.name_en_override) AS name_en_override,
-  leader_skills.name_ja AS ls_name_ja,
-  leader_skills.name_en AS ls_name_en,
-  leader_skills.name_ko AS ls_name_ko,
-  leader_skills.desc_ja AS ls_desc_ja,
-  leader_skills.desc_en AS ls_desc_en,
-  leader_skills.desc_ko AS ls_desc_ko,
-  leader_skills.max_hp,
-  leader_skills.max_atk,
-  leader_skills.max_rcv,
-  leader_skills.max_rcv,
-  leader_skills.max_shield,
-  leader_skills.max_combos,
-  leader_skills.bonus_damage,
-  leader_skills.mult_bonus_damage,
-  leader_skills.extra_time,
-  active_skills.name_ja AS as_name_ja,
-  active_skills.name_en AS as_name_en,
-  active_skills.name_ko AS as_name_ko,
-  active_skills.desc_ja AS as_desc_ja,
-  active_skills.desc_en AS as_desc_en,
-  active_skills.desc_ko AS as_desc_ko,
-  active_skills.turn_max,
-  active_skills.turn_min,
+  monsters{0}.*,
+  COALESCE(monster_name_overrides.name_en, monsters{0}.name_en_override) AS name_en_override,
+  leader_skills{0}.name_ja AS ls_name_ja,
+  leader_skills{0}.name_en AS ls_name_en,
+  leader_skills{0}.name_ko AS ls_name_ko,
+  leader_skills{0}.desc_ja AS ls_desc_ja,
+  leader_skills{0}.desc_en AS ls_desc_en,
+  leader_skills{0}.desc_ko AS ls_desc_ko,
+  leader_skills{0}.max_hp,
+  leader_skills{0}.max_atk,
+  leader_skills{0}.max_rcv,
+  leader_skills{0}.max_rcv,
+  leader_skills{0}.max_shield,
+  leader_skills{0}.max_combos,
+  leader_skills{0}.bonus_damage,
+  leader_skills{0}.mult_bonus_damage,
+  leader_skills{0}.extra_time,
+  active_skills{0}.name_ja AS as_name_ja,
+  active_skills{0}.name_en AS as_name_en,
+  active_skills{0}.name_ko AS as_name_ko,
+  active_skills{0}.desc_ja AS as_desc_ja,
+  active_skills{0}.desc_en AS as_desc_en,
+  active_skills{0}.desc_ko AS as_desc_ko,
+  active_skills{0}.turn_max,
+  active_skills{0}.turn_min,
   series.name_ja AS s_name_ja,
   series.name_en AS s_name_en,
   series.name_ko AS s_name_ko,
@@ -50,16 +49,16 @@ MONSTER_QUERY = """SELECT
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
-  monsters
-  LEFT OUTER JOIN leader_skills ON monsters.leader_skill_id = leader_skills.leader_skill_id
-  LEFT OUTER JOIN active_skills ON monsters.active_skill_id = active_skills.active_skill_id
-  LEFT OUTER JOIN series ON monsters.series_id = series.series_id
-  LEFT OUTER JOIN monsters AS target_monsters ON monsters.name_ja || 'の希石' = target_monsters.name_ja
+  monsters{0}
+  LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
+  LEFT OUTER JOIN active_skills{0} ON monsters{0}.active_skill_id = active_skills{0}.active_skill_id
+  LEFT OUTER JOIN series ON monsters{0}.series_id = series.series_id
+  LEFT OUTER JOIN monsters{0} AS target_monsters ON monsters{0}.name_ja || 'の希石' = target_monsters.name_ja
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
-  LEFT OUTER JOIN drops ON monsters.monster_id = drops.monster_id
-  LEFT OUTER JOIN monster_name_overrides ON monsters.monster_id = monster_name_overrides.monster_id
+  LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
+  LEFT OUTER JOIN monster_name_overrides ON monsters{0}.monster_id = monster_name_overrides.monster_id
 GROUP BY
-  monsters.monster_id"""
+  monsters{0}.monster_id"""
 
 # make sure we're only looking at the most recent row for any evolution
 # since the database might have old data in it still
@@ -81,14 +80,14 @@ FROM
   AND evolutions.tstamp = latest_evolutions.tstamp"""
 
 AWAKENINGS_QUERY = """SELECT
-  awakenings.awakening_id,
-  awakenings.monster_id,
-  awakenings.is_super,
-  awakenings.order_idx,
+  awakenings{0}.awakening_id,
+  awakenings{0}.monster_id,
+  awakenings{0}.is_super,
+  awakenings{0}.order_idx,
   awoken_skills.*
 FROM
-  awakenings
-  JOIN awoken_skills ON awakenings.awoken_skill_id = awoken_skills.awoken_skill_id"""
+  awakenings{0}
+  JOIN awoken_skills ON awakenings{0}.awoken_skill_id = awoken_skills.awoken_skill_id"""
 
 EGG_QUERY = """SELECT
    d_egg_machine_types.name AS type,
@@ -108,20 +107,22 @@ FROM
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
-        self.graph: Optional[MultiDiGraph] = None
-        self.edges: Optional[OutMultiEdgeView] = None
-        self.nodes: Optional[NodeView] = None
         self.max_monster_id = -1
-        self.build_graph()
+        self.graph = self.build_graph("JP")
+        self.graph_na = self.build_graph("NA")
 
-    def build_graph(self):
-        self.graph = MultiDiGraph()
+    def build_graph(self, server: Literal["JP", "NA"]) -> MultiDiGraph:
+        graph = MultiDiGraph()
 
-        ms = self.database.query_many(MONSTER_QUERY, ())
-        es = self.database.query_many(EVOS_QUERY, ())
-        aws = self.database.query_many(AWAKENINGS_QUERY, ())
-        ems = self.database.query_many(EGG_QUERY, ())
-        exs = self.database.query_many(EXCHANGE_QUERY, ())
+        table_suffix = ""
+        if server == "NA":
+            table_suffix = "_na"
+
+        ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
+        es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())
+        aws = self.database.query_many(AWAKENINGS_QUERY.format(table_suffix), ())
+        ems = self.database.query_many(EGG_QUERY.format(table_suffix), ())
+        exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix), ())
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -229,23 +230,23 @@ class MonsterGraph(object):
                                    has_hqimage=m.has_hqimage == 1,
                                    )
 
-            self.graph.add_node(m.monster_id, model=m_model)
+            graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
-                self.graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
-                self.graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+                graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
+                graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
 
             if m.evo_gem_id:
-                self.graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
-                self.graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
+                graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
+                graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
 
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
         for e in es:
             evo_model = EvolutionModel(**e)
 
-            self.graph.add_edge(
+            graph.add_edge(
                 evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
-            self.graph.add_edge(
+            graph.add_edge(
                 evo_model.to_id, evo_model.from_id, type='back_evolution', model=evo_model)
 
             # for material_of queries
@@ -253,23 +254,22 @@ class MonsterGraph(object):
             for mat in evo_model.mats:
                 if mat in already_used_in_this_evo:
                     continue
-                self.graph.add_edge(
+                graph.add_edge(
                     mat, evo_model.to_id, type="material_of", model=evo_model)
                 already_used_in_this_evo.append(mat)
 
         for ex in exs:
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
-                self.graph.add_edge(
+                graph.add_edge(
                     ex.target_monster_id, int(vendor_id), type='exchange_from')
-                self.graph.add_edge(
+                graph.add_edge(
                     int(vendor_id), ex.target_monster_id, type='exchange_for')
 
         # Caching
-        for mid in self.graph.nodes:
-            self.graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
+        for mid in graph.nodes:
+            graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
 
-        self.edges = self.graph.edges
-        self.nodes = self.graph.nodes
+        return graph
 
     def _get_edges(self, node: Union[int, AtlasView], etype) -> Set[int]:
         if isinstance(node, int):
@@ -339,7 +339,7 @@ class MonsterGraph(object):
         return ids
 
     def get_alt_ids_by_id(self, monster_id):
-        return self.nodes[monster_id]['alt_versions']
+        return self.graph.nodes[monster_id]['alt_versions']
 
     def get_alt_monsters_by_id(self, monster_id):
         ids = self.get_alt_ids_by_id(monster_id)
