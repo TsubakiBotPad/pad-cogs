@@ -8,7 +8,9 @@ from tsutils import char_to_emoji
 from tsutils.menu.panes import emoji_buttons, MenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
-from padinfo.view.monster_list import MonsterListView, MonsterListViewState
+from padinfo.view.monster_list.all_mats import AllMatsViewState
+from padinfo.view.monster_list.id_search import IdSearchViewState
+from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
 
 
 class MonsterListEmoji:
@@ -31,6 +33,16 @@ class MonsterListEmoji:
     ten = char_to_emoji('10')
     refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
     reset = emoji_buttons['reset']
+
+
+view_state_types = {
+    AllMatsViewState.VIEW_STATE_TYPE: AllMatsViewState,
+    IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
+}
+
+
+def _get_view_state(ims: dict):
+    return view_state_types.get(ims['menu_type'] or MonsterListMenu.MENU_TYPE)
 
 
 class MonsterListMenu:
@@ -63,14 +75,14 @@ class MonsterListMenu:
             ims['current_page'] = current_page - 1
             ims['current_index'] = None
             return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
-        paginated_monsters = MonsterListViewState.query_from_ims(data['dgcog'], ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(data['dgcog'], ims)
         ims['current_page'] = len(paginated_monsters) - 1
         ims['current_index'] = None
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        paginated_monsters = MonsterListViewState.query_from_ims(data['dgcog'], ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(data['dgcog'], ims)
         current_page = ims['current_page']
         if current_page < len(paginated_monsters) - 1:
             ims['current_page'] = current_page + 1
@@ -84,21 +96,21 @@ class MonsterListMenu:
     async def respond_with_monster_list(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         user_config = data['user_config']
-        view_state = await MonsterListViewState.deserialize(dgcog, user_config, ims)
+        view_state = await _get_view_state(ims).deserialize(dgcog, user_config, ims)
         control = MonsterListMenu.monster_list_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_previous_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        MonsterListMenu._update_ims_prev(dgcog, ims)
+        await MonsterListMenu._update_ims_prev(dgcog, ims)
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
-    def _update_ims_prev(dgcog, ims):
+    async def _update_ims_prev(dgcog, ims):
         current_index = ims['current_index']
         page = ims['current_page']
-        paginated_monsters = MonsterListViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(dgcog, ims)
         max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
             ims['current_index'] = max_index
@@ -118,14 +130,14 @@ class MonsterListMenu:
     @staticmethod
     async def respond_with_next_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        MonsterListMenu._update_ims_next(dgcog, ims)
+        await MonsterListMenu._update_ims_next(dgcog, ims)
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
-    def _update_ims_next(dgcog, ims):
+    async def _update_ims_next(dgcog, ims):
         current_index = ims['current_index']
         page = ims['current_page']
-        paginated_monsters = MonsterListViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(dgcog, ims)
         max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
             ims['current_index'] = 0
@@ -147,7 +159,7 @@ class MonsterListMenu:
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, n, **data):
-        ims['current_index'] =n
+        ims['current_index'] = n
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -205,14 +217,14 @@ class MonsterListMenu:
         )
 
     @staticmethod
-    def click_child_number(ims, emoji_clicked, **data):
+    async def click_child_number(ims, emoji_clicked, **data):
         dgcog = data['dgcog']
         emoji_response = IdMenuEmoji.refresh \
             if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:
             return None, {}
         n = MonsterListMenuPanes.emoji_names().index(emoji_clicked)
-        paginated_monsters = MonsterListViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(dgcog, ims)
         page = ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         extra_ims = {
@@ -225,19 +237,19 @@ class MonsterListMenu:
         return emoji_response, extra_ims
 
     @staticmethod
-    def auto_scroll_child_left(ims, _emoji_clicked, **data):
-        return MonsterListMenu._scroll_child(ims, MonsterListMenu._update_ims_prev, **data)
+    async def auto_scroll_child_left(ims, _emoji_clicked, **data):
+        return await MonsterListMenu._scroll_child(ims, MonsterListMenu._update_ims_prev, **data)
 
     @staticmethod
-    def auto_scroll_child_right(ims, _emoji_clicked, **data):
-        return MonsterListMenu._scroll_child(ims, MonsterListMenu._update_ims_next, **data)
+    async def auto_scroll_child_right(ims, _emoji_clicked, **data):
+        return await MonsterListMenu._scroll_child(ims, MonsterListMenu._update_ims_next, **data)
 
     @staticmethod
-    def _scroll_child(ims, update_fn, **data):
+    async def _scroll_child(ims, update_fn, **data):
         dgcog = data['dgcog']
         copy_ims = deepcopy(ims)
-        update_fn(dgcog, copy_ims)
-        paginated_monsters = MonsterListViewState.query_from_ims(dgcog, copy_ims)
+        await update_fn(dgcog, copy_ims)
+        paginated_monsters = await _get_view_state(ims).query_from_ims(dgcog, copy_ims)
         page = copy_ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         # after we figure out new rarity

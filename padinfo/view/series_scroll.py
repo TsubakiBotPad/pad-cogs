@@ -69,7 +69,7 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity)
         current_page = ims['current_page']
         monster_list = paginated_monsters[current_page]
         title = ims['title']
@@ -96,7 +96,7 @@ class SeriesScrollViewState(ViewStateBase):
                                      child_message_id=child_message_id)
 
     @staticmethod
-    def query(dgcog, series_id, rarity):
+    async def query(dgcog, series_id, rarity):
         db_context: "DbContext" = dgcog.database
         all_series_monsters = db_context.get_monsters_by_series(series_id)
         base_monsters_of_rarity = list(filter(
@@ -113,10 +113,10 @@ class SeriesScrollViewState(ViewStateBase):
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod
-    def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
+    async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity)
         return paginated_monsters
 
 

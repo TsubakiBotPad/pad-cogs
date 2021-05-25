@@ -17,23 +17,22 @@ if TYPE_CHECKING:
 
 class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
-    MAX_INTERNAL_STORE_SIZE = 100
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color,
-                 paginated_monsters: List[List["MonsterModel"]], page_count, current_page,
-                 title, message, subtitle: str = None,
+    def __init__(self, original_author_id, menu_type, query, color,
+                 paginated_monsters: List[List["MonsterModel"]],
+                 title, message,
+                 *,
+                 current_page: int = 0,
                  current_index: int = None,
-                 max_len_so_far: int = None,
                  reaction_list=None,
                  extra_state=None,
                  child_message_id=None
                  ):
-        super().__init__(original_author_id, menu_type, raw_query,
+        super().__init__(original_author_id, menu_type, query,
                          extra_state=extra_state)
-        self.subtitle = subtitle
         self.current_index = current_index
         self.current_page = current_page
-        self.page_count = page_count
+        self.page_count = len(paginated_monsters)
         self.message = message
         self.child_message_id = child_message_id
         self.title = title
@@ -42,40 +41,30 @@ class MonsterListViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
-        self.max_len_so_far = max(
-            max_len_so_far or len(paginated_monsters[current_page]),
-            len(paginated_monsters[current_page]))
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
-            'subtitle': self.subtitle,
             'monster_list': [m.monster_id for m in self.monster_list],
-            'full_monster_list': [m.monster_id for page in self.paginated_monsters for m in page],
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
             'message': self.message,
-            'max_len_so_far': self.max_len_so_far,
             'current_index': self.current_index,
         })
         return ret
 
-    @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    @classmethod
+    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
         title = ims['title']
-        subtitle = ims['subtitle']
 
-        paginated_monsters = MonsterListViewState.query_from_ims(dgcog, ims)
-        page_count = len(paginated_monsters)
+        paginated_monsters = await cls.query_from_ims(dgcog, ims)
         current_page = ims['current_page']
-        monster_list = paginated_monsters[current_page]
         current_index = ims.get('current_index')
-        max_len_so_far = max(ims['max_len_so_far'] or len(monster_list), len(monster_list))
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
@@ -84,20 +73,18 @@ class MonsterListViewState(ViewStateBase):
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
-        return MonsterListViewState(original_author_id, menu_type, raw_query, query, user_config.color,
+        return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
                                     paginated_monsters,
-                                    page_count, current_page,
                                     title, message,
-                                    subtitle=subtitle,
+                                    current_page=current_page,
                                     current_index=current_index,
-                                    max_len_so_far=max_len_so_far,
                                     reaction_list=reaction_list,
                                     extra_state=ims,
                                     child_message_id=child_message_id
                                     )
 
     @staticmethod
-    def query(dgcog, monster_list):
+    async def query(dgcog, monster_list):
         db_context: "DbContext" = dgcog.database
         monster_list = [db_context.graph.get_monster(int(m)) for m in monster_list]
         paginated_monsters = [monster_list[i:i + MonsterListViewState.MAX_ITEMS_PER_PANE]
@@ -105,9 +92,9 @@ class MonsterListViewState(ViewStateBase):
         return paginated_monsters
 
     @staticmethod
-    def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
+    async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         monster_list = ims['full_monster_list']
-        return MonsterListViewState.query(dgcog, monster_list)
+        return await MonsterListViewState.query(dgcog, monster_list)
 
     @staticmethod
     def paginate(monster_list: List["MonsterModel"]) -> List[List["MonsterModel"]]:
@@ -132,7 +119,7 @@ class MonsterListView:
     def embed(state: MonsterListViewState):
         fields = [
             EmbedField(state.title,
-                       Box(state.subtitle, *_monster_list(state.monster_list))),
+                       Box(*_monster_list(state.monster_list))),
             EmbedField(BoldText('Page'),
                        Box('{} of {}'.format(state.current_page + 1, state.page_count)),
                        inline=True

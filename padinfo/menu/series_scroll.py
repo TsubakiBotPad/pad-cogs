@@ -68,14 +68,14 @@ class SeriesScrollMenu:
             return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
         current_rarity_index = ims['all_rarities'].index(ims['rarity'])
         ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
-        paginated_monsters = SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
         ims['current_page'] = len(paginated_monsters) - 1
         ims['current_index'] = None
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        paginated_monsters = SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
         current_page = ims['current_page']
         if current_page < len(paginated_monsters) - 1:
             ims['current_page'] = current_page + 1
@@ -101,14 +101,14 @@ class SeriesScrollMenu:
     @staticmethod
     async def respond_with_previous_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        SeriesScrollMenu._update_ims_prev(dgcog, ims)
+        await SeriesScrollMenu._update_ims_prev(dgcog, ims)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
-    def _update_ims_prev(dgcog, ims):
+    async def _update_ims_prev(dgcog, ims):
         current_index = ims['current_index']
         page = ims['current_page']
-        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(dgcog, ims)
         max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
             ims['current_index'] = max_index
@@ -124,21 +124,21 @@ class SeriesScrollMenu:
             # respond with left but then set the current index to the max thing possible
             current_rarity_index = ims['all_rarities'].index(ims['rarity'])
             ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
-            paginated_monsters_new = SeriesScrollViewState.query_from_ims(dgcog, ims)
+            paginated_monsters_new = await SeriesScrollViewState.query_from_ims(dgcog, ims)
             ims['current_page'] = len(paginated_monsters_new) - 1
             ims['current_index'] = len(paginated_monsters_new[-1]) - 1
 
     @staticmethod
     async def respond_with_next_monster(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        SeriesScrollMenu._update_ims_next(dgcog, ims)
+        await SeriesScrollMenu._update_ims_next(dgcog, ims)
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
-    def _update_ims_next(dgcog, ims):
+    async def _update_ims_next(dgcog, ims):
         current_index = ims['current_index']
         page = ims['current_page']
-        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(dgcog, ims)
         max_index = len(paginated_monsters[page]) - 1
         if current_index is None:
             ims['current_index'] = 0
@@ -221,14 +221,14 @@ class SeriesScrollMenu:
         )
 
     @staticmethod
-    def click_child_number(ims, emoji_clicked, **data):
+    async def click_child_number(ims, emoji_clicked, **data):
         dgcog = data['dgcog']
         emoji_response = IdMenuEmoji.refresh \
             if SeriesScrollMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:
             return None, {}
         n = SeriesScrollMenuPanes.emoji_names().index(emoji_clicked)
-        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(dgcog, ims)
         page = ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         extra_ims = {
@@ -249,11 +249,11 @@ class SeriesScrollMenu:
         return SeriesScrollMenu._scroll_child(ims, SeriesScrollMenu._update_ims_next, **data)
 
     @staticmethod
-    def _scroll_child(ims, update_fn, **data):
+    async def _scroll_child(ims, update_fn, **data):
         dgcog = data['dgcog']
         copy_ims = deepcopy(ims)
-        update_fn(dgcog, copy_ims)
-        paginated_monsters = SeriesScrollViewState.query_from_ims(dgcog, copy_ims)
+        await update_fn(dgcog, copy_ims)
+        paginated_monsters = await SeriesScrollViewState.query_from_ims(dgcog, copy_ims)
         page = copy_ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
         # after we figure out new rarity
