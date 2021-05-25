@@ -12,6 +12,7 @@ from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.evo_list import EvoListViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
+from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 
 
 class MonsterListEmoji:
@@ -38,13 +39,14 @@ class MonsterListEmoji:
 
 view_state_types = {
     AllMatsViewState.VIEW_STATE_TYPE: AllMatsViewState,
-    IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
     EvoListViewState.VIEW_STATE_TYPE: EvoListViewState,
+    IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
+    StaticMonsterListViewState.VIEW_STATE_TYPE: StaticMonsterListViewState,
 }
 
 
 def _get_view_state(ims: dict):
-    return view_state_types.get(ims['menu_type'] or MonsterListMenu.MENU_TYPE)
+    return view_state_types.get(ims['menu_type']) or MonsterListMenu.MENU_TYPE
 
 
 class MonsterListMenu:

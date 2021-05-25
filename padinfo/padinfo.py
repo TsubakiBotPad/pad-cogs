@@ -50,6 +50,7 @@ from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.evo_list import EvoListViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
 from padinfo.view.pantheon import PantheonViewState
 from padinfo.view.pic import PicViewState
@@ -569,11 +570,10 @@ class PadInfo(commands.Cog):
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which has no alt evos.')
             return
-        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List', EvoListViewState, EvoListViewState.VIEW_STATE_TYPE)
+        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List', EvoListViewState)
 
     async def _do_monster_list(self, ctx, dgcog, query, paginated_monsters: List[List["MonsterModel"]],
-                               title, view_state_type,
-                               menu_type: str = MonsterListMenu.MENU_TYPE):
+                               title, view_state_type):
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
@@ -594,7 +594,7 @@ class PadInfo(commands.Cog):
             'dgcog': dgcog,
             'user_config': user_config,
         }
-        child_state = SimpleTextViewState(original_author_id, menu_type, raw_query, color,
+        child_state = SimpleTextViewState(original_author_id, view_state_type.VIEW_STATE_TYPE, raw_query, color,
                                           instruction_message,
                                           reaction_list=[]
                                           )
@@ -799,8 +799,8 @@ class PadInfo(commands.Cog):
         if not monsters:
             await ctx.send('Did not find any recent queries in history.')
             return
-
-        await self._do_monster_list(ctx, dgcog, '', monsters, 'Result History')
+        paginated_monsters = StaticMonsterListViewState.paginate(monsters)
+        await self._do_monster_list(ctx, dgcog, '', paginated_monsters, 'Result History', StaticMonsterListViewState)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -1216,5 +1216,4 @@ class PadInfo(commands.Cog):
             return
 
         print(paginated_monsters)
-        await self._do_monster_list(ctx, dgcog, query, paginated_monsters,
-                                    'ID Search Results', IdSearchViewState, IdSearchViewState.VIEW_STATE_TYPE)
+        await self._do_monster_list(ctx, dgcog, query, paginated_monsters, 'ID Search Results', IdSearchViewState)

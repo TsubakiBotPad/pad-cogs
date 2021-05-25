@@ -12,7 +12,6 @@ from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
-    from dadguide.database_context import DbContext
 
 
 class MonsterListViewState(ViewStateBase):
@@ -83,18 +82,9 @@ class MonsterListViewState(ViewStateBase):
                                     child_message_id=child_message_id
                                     )
 
-    @staticmethod
-    async def query(dgcog, monster_list):
-        db_context: "DbContext" = dgcog.database
-        monster_list = [db_context.graph.get_monster(int(m)) for m in monster_list]
-        paginated_monsters = [monster_list[i:i + MonsterListViewState.MAX_ITEMS_PER_PANE]
-                              for i in range(0, len(monster_list), MonsterListViewState.MAX_ITEMS_PER_PANE)]
-        return paginated_monsters
-
-    @staticmethod
-    async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
-        monster_list = ims['full_monster_list']
-        return await MonsterListViewState.query(dgcog, monster_list)
+    @classmethod
+    async def query_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
+        ...
 
     @staticmethod
     def paginate(monster_list: List["MonsterModel"]) -> List[List["MonsterModel"]]:
