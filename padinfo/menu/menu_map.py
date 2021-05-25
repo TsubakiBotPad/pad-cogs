@@ -8,6 +8,7 @@ from padinfo.menu.series_scroll import SeriesScrollMenu, SeriesScrollMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.view.monster_list.all_mats import AllMatsViewState
+from padinfo.view.monster_list.evo_list import EvoListViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 
 padinfo_menu_map = {
@@ -19,6 +20,7 @@ padinfo_menu_map = {
     MonsterListMenu.MENU_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     AllMatsViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     IdSearchViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
+    EvoListViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     SeriesScrollMenu.MENU_TYPE: (SeriesScrollMenu, SeriesScrollMenuPanes),
     SimpleTextMenu.MENU_TYPE: (SimpleTextMenu, SimpleTextMenuPanes),
     TransformInfoMenu.MENU_TYPE: (TransformInfoMenu, TransformInfoMenuPanes),

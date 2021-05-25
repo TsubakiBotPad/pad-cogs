@@ -9,6 +9,7 @@ from tsutils.menu.panes import emoji_buttons, MenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
+from padinfo.view.monster_list.evo_list import EvoListViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
 
@@ -38,6 +39,7 @@ class MonsterListEmoji:
 view_state_types = {
     AllMatsViewState.VIEW_STATE_TYPE: AllMatsViewState,
     IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
+    EvoListViewState.VIEW_STATE_TYPE: EvoListViewState,
 }
 
 

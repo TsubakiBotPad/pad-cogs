@@ -47,6 +47,7 @@ from padinfo.view.links import LinksView
 from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.all_mats import AllMatsViewState
+from padinfo.view.monster_list.evo_list import EvoListViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
@@ -563,12 +564,12 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        alt_versions, _ = await EvosViewState.query(dgcog, monster)
+        alt_versions = await EvoListViewState.query(dgcog, monster)
         if alt_versions is None:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which has no alt evos.')
             return
-        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List')
+        await self._do_monster_list(ctx, dgcog, query, alt_versions, 'Evolution List', EvoListViewState, EvoListViewState.VIEW_STATE_TYPE)
 
     async def _do_monster_list(self, ctx, dgcog, query, paginated_monsters: List[List["MonsterModel"]],
                                title, view_state_type,
