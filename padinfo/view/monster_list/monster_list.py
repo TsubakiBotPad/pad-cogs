@@ -18,7 +18,7 @@ class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, query, color,
-                 paginated_monsters: List[List["MonsterModel"]],
+                 monster_list: List["MonsterModel"],
                  title, message,
                  *,
                  current_page: int = 0,
@@ -29,6 +29,7 @@ class MonsterListViewState(ViewStateBase):
                  ):
         super().__init__(original_author_id, menu_type, query,
                          extra_state=extra_state)
+        paginated_monsters = self.paginate(monster_list)
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = len(paginated_monsters)
@@ -61,7 +62,7 @@ class MonsterListViewState(ViewStateBase):
             return None
         title = ims['title']
 
-        paginated_monsters = await cls.query_from_ims(dgcog, ims)
+        monster_list = await cls.query_from_ims(dgcog, ims)
         current_page = ims['current_page']
         current_index = ims.get('current_index')
 
@@ -73,7 +74,7 @@ class MonsterListViewState(ViewStateBase):
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
         return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
-                                    paginated_monsters,
+                                    monster_list,
                                     title, message,
                                     current_page=current_page,
                                     current_index=current_index,
@@ -83,7 +84,7 @@ class MonsterListViewState(ViewStateBase):
                                     )
 
     @classmethod
-    async def query_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
+    async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
         ...
 
     @staticmethod
@@ -91,6 +92,10 @@ class MonsterListViewState(ViewStateBase):
         paginated_monsters = [monster_list[i:i + MonsterListViewState.MAX_ITEMS_PER_PANE]
                               for i in range(0, len(monster_list), MonsterListViewState.MAX_ITEMS_PER_PANE)]
         return paginated_monsters
+
+    @classmethod
+    async def query_paginated_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
+        return cls.paginate(await cls.query_from_ims(dgcog, ims))
 
 
 def _monster_list(monsters):

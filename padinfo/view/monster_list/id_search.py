@@ -10,7 +10,7 @@ class IdSearchViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "IdSearch"
 
     @classmethod
-    async def query(cls, dgcog, query, original_author_id):
+    async def query(cls, dgcog, query, original_author_id) -> List["MonsterModel"]:
         found_monsters = await dgcog.find_monsters(query, original_author_id)
 
         if not found_monsters:
@@ -24,8 +24,9 @@ class IdSearchViewState(MonsterListViewState):
                 used.add(base_id)
                 monster_list.append(mon)
 
-        return cls.paginate(monster_list)
+        return monster_list
 
     @classmethod
-    async def query_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
-        return await cls.query(dgcog, ims['raw_query'], ims['original_author_id'])
+    async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
+        monster_list = await cls.query(dgcog, ims['raw_query'], ims['original_author_id'])
+        return monster_list
