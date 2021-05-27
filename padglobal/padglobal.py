@@ -236,6 +236,9 @@ class PadGlobal(commands.Cog):
 
         if text in self.c_commands:
             op = 'ALIASED'
+            if text == command:
+                await ctx.send('You cannot alias something to itself.')
+                return
             if self.c_commands[text] in self.c_commands:
                 await ctx.send("You cannot alias an alias")
                 return
