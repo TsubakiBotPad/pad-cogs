@@ -265,6 +265,15 @@ class PadGlobal(commands.Cog):
         Example:
         [p]padglobal delete yourcommand"""
         command = command.lower()
+
+        aliases = await self._find_aliases(command)
+        if aliases:
+            if not await confirm_message(ctx, 'Are you sure? `{}` has alias(es) `{}` which will also be deleted.'
+                                         .format(command, '`, `'.join(aliases))):
+                await ctx.send('Cancelling delete of `{}`.'.format(command))
+                return
+
+
         if command in self.c_commands:
             ocm = self.c_commands.copy()
             self.c_commands.pop(command, None)
@@ -310,6 +319,14 @@ class PadGlobal(commands.Cog):
 
         await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
                                                                              source_cmd if alias else corrected_cmd))
+
+    async def _find_aliases(self, command: str):
+        aliases = []
+        for cmd in self.c_commands:
+            if self.c_commands[cmd] == command:
+                aliases.append(cmd)
+
+        return aliases
 
     @padglobal.command()
     async def setgeneral(self, ctx, command: str):
