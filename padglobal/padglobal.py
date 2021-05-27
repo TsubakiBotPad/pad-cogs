@@ -276,7 +276,6 @@ class PadGlobal(commands.Cog):
                 await ctx.send('Cancelling delete of `{}`.'.format(command))
                 return
 
-
         if command in self.c_commands:
             alias = self.c_commands[command] in self.c_commands
             ocm = self.c_commands.copy()
@@ -329,7 +328,6 @@ class PadGlobal(commands.Cog):
         for cmd in self.c_commands:
             if self.c_commands[cmd] == command:
                 aliases.append(cmd)
-
         return aliases
 
     @padglobal.command()
