@@ -65,19 +65,19 @@ GROUP BY
 # group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
 # the evolution_id changes when data changes so grouping by evolution_id is unhelpful
 EVOS_QUERY = """SELECT
-  evolutions.*
+  evolutions{0}.*
 FROM
   (
     SELECT
       evolution_id,
       MAX(tstamp) AS tstamp
     FROM
-      evolutions
+      evolutions{0}
     GROUP BY
       to_id
   ) AS latest_evolutions
-  INNER JOIN evolutions ON evolutions.evolution_id = latest_evolutions.evolution_id
-  AND evolutions.tstamp = latest_evolutions.tstamp"""
+  INNER JOIN evolutions{0} ON evolutions{0}.evolution_id = latest_evolutions.evolution_id
+  AND evolutions{0}.tstamp = latest_evolutions.tstamp"""
 
 AWAKENINGS_QUERY = """SELECT
   awakenings{0}.awakening_id,
@@ -103,26 +103,40 @@ FROM
   exchanges
 """
 
+SPECIFY_SERVER = " WHERE server = {1}"
+
+DEFAULT_SERVER = "COMBINED"
+
+Server = Literal["COMBINED", "NA"]
+
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
         self.max_monster_id = -1
-        self.graph = self.build_graph("JP")
-        self.graph_na = self.build_graph("NA")
+        self.graph_dict = {
+            "COMBINED": self.build_graph("NA"),
+            "NA": self.build_graph("NA"),
+        }
 
-    def build_graph(self, server: Literal["JP", "NA"]) -> MultiDiGraph:
+        # for server in self.graph_dict:
+        #     self._cache_graph(server)
+
+    def build_graph(self, server: Server) -> MultiDiGraph:
         graph = MultiDiGraph()
 
         table_suffix = ""
+        where = ""
         if server == "NA":
             table_suffix = "_na"
+        if server != "COMBINED":
+            where = SPECIFY_SERVER.format(server)
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
         es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())
         aws = self.database.query_many(AWAKENINGS_QUERY.format(table_suffix), ())
-        ems = self.database.query_many(EGG_QUERY.format(table_suffix), ())
-        exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix), ())
+        ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where, ())
+        exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where, ())
 
         mtoawo = defaultdict(list)
         for a in aws:
@@ -228,6 +242,7 @@ class MonsterGraph(object):
                                    latent_slots=m.latent_slots,
                                    has_animation=m.has_animation == 1,
                                    has_hqimage=m.has_hqimage == 1,
+                                   server_priority=server,
                                    )
 
             graph.add_node(m.monster_id, model=m_model)
@@ -265,26 +280,27 @@ class MonsterGraph(object):
                 graph.add_edge(
                     int(vendor_id), ex.target_monster_id, type='exchange_for')
 
-        # Caching
-        for mid in graph.nodes:
-            graph.nodes[mid]['alt_versions'] = self.process_alt_versions(mid)
-
         return graph
 
-    def _get_edges(self, node: Union[int, AtlasView], etype) -> Set[int]:
+    def _cache_graph(self, server: str):
+        for mid in self.graph_dict[server].nodes:
+            print(mid, self.graph_dict[server].nodes[mid])
+            self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_versions(mid, server)
+
+    def _get_edges(self, node: Union[int, AtlasView], etype, server: Server = DEFAULT_SERVER) -> Set[int]:
         if isinstance(node, int):
-            node = self.graph[node]
+            node = self.graph_dict[server][node]
 
         return {mid for mid, atlas in node.items() for edge in atlas.values() if edge.get('type') == etype}
 
-    def _get_edge_or_none(self, node: Union[int, AtlasView], etype) -> Optional[int]:
-        edges = self._get_edges(node, etype)
+    def _get_edge_or_none(self, node: Union[int, AtlasView], etype, server: Server = DEFAULT_SERVER) -> Optional[int]:
+        edges = self._get_edges(node, etype, server)
         if edges:
             return edges.pop()
 
-    def _get_edge_model(self, node: Union[int, AtlasView], etype):
+    def _get_edge_model(self, node: Union[int, AtlasView], etype, server: Server = DEFAULT_SERVER):
         if isinstance(node, int):
-            node = self.graph[node]
+            node = self.graph_dict[server][node]
 
         possible_results = set()
         for atlas in node.values():
@@ -295,61 +311,63 @@ class MonsterGraph(object):
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
 
-    def get_monster(self, monster_id) -> Optional[MonsterModel]:
-        if monster_id not in self.graph.nodes:
+    def get_monster(self, monster_id: int, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
+        if monster_id not in self.graph_dict[server].nodes \
+                or not hasattr(self.graph_dict[server].nodes[monster_id], 'model'):
             return None
-        return self.graph.nodes[monster_id]['model']
+        return self.graph_dict[server].nodes[monster_id]['model']
 
-    def get_evo_tree(self, monster_id) -> List[int]:
-        while (prev := self._get_edges(monster_id, 'back_evolution')):
+    def get_evo_tree(self, monster_id, server: Server = DEFAULT_SERVER) -> List[int]:
+        while (prev := self._get_edges(monster_id, 'back_evolution', server)):
             monster_id = prev
-        return self.get_evo_tree_from_base(monster_id)
+        return self.get_evo_tree_from_base(monster_id, server)
 
-    def get_evo_tree_from_base(self, base_monster_id) -> List[int]:
+    def get_evo_tree_from_base(self, base_monster_id, server: Server = DEFAULT_SERVER) -> List[int]:
         ids = [base_monster_id]
-        for evo in sorted(self._get_edges(base_monster_id, 'evolution')):
-            ids += self.get_evo_tree_from_base(evo)
+        for evo in sorted(self._get_edges(base_monster_id, 'evolution', server)):
+            ids += self.get_evo_tree_from_base(evo, server)
         return ids
 
-    def get_transform_tree(self, monster_id: int):
+    def get_transform_tree(self, monster_id: int, server: Server = DEFAULT_SERVER):
         ids = set()
         to_check = {monster_id}
         while to_check:
             mid = to_check.pop()
             if mid in ids:
                 continue
-            to_check.update(self._get_edges(mid, 'transformation'))
-            to_check.update(self._get_edges(mid, 'back_transformation'))
+            to_check.update(self._get_edges(mid, 'transformation', server))
+            to_check.update(self._get_edges(mid, 'back_transformation', server))
             ids.add(mid)
         return ids
 
-    def get_transform_monsters(self, monster):
-        return {self.get_monster(m) for m in self.get_transform_tree(monster.monster_id)}
+    def get_transform_monsters(self, monster: MonsterModel):
+        return {self.get_monster(mid, monster.server_priority)
+                for mid in self.get_transform_tree(monster.monster_id, monster.server_priority)}
 
-    def process_alt_versions(self, monster_id) -> List[int]:
-        return self.process_alt_versions_from_base(self.get_base_id_by_id(monster_id))
+    def process_alt_versions(self, monster_id, server) -> List[int]:
+        return self.process_alt_versions_from_base(self.get_base_id_by_id(monster_id, server), server)
 
-    def process_alt_versions_from_base(self, base_monster_id) -> List[int]:
+    def process_alt_versions_from_base(self, base_monster_id, server: Server = DEFAULT_SERVER) -> List[int]:
         ids = [base_monster_id]
-        for trans in sorted(self._get_edges(base_monster_id, 'transformation')):
+        for trans in sorted(self._get_edges(base_monster_id, 'transformation', server)):
             if trans > base_monster_id or trans == 5802:  # I hate DMG very much
-                ids += self.process_alt_versions_from_base(trans)
-        for evo in sorted(self._get_edges(base_monster_id, 'evolution')):
-            ids += self.process_alt_versions_from_base(evo)
+                ids += self.process_alt_versions_from_base(trans, server)
+        for evo in sorted(self._get_edges(base_monster_id, 'evolution', server)):
+            ids += self.process_alt_versions_from_base(evo, server)
         return ids
 
-    def get_alt_ids_by_id(self, monster_id):
-        return self.graph.nodes[monster_id]['alt_versions']
+    def get_alt_ids_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.graph_dict[server].nodes[monster_id]['alt_versions']
 
-    def get_alt_monsters_by_id(self, monster_id):
-        ids = self.get_alt_ids_by_id(monster_id)
-        return [self.get_monster(m_id) for m_id in ids]
+    def get_alt_monsters_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        ids = self.get_alt_ids_by_id(monster_id, server)
+        return [self.get_monster(m_id, server) for m_id in ids]
 
     def get_alt_monsters(self, monster: MonsterModel):
-        return self.get_alt_monsters_by_id(monster.monster_id)
+        return self.get_alt_monsters_by_id(monster.monster_id, monster.server_priority)
 
-    def get_base_id_by_id(self, monster_id):
-        return self.get_base_id(self.get_monster(monster_id))
+    def get_base_id_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_base_id(self.get_monster(monster_id, server))
 
     def get_base_id(self, monster):
         # This fixes DMG.  I *hate* DMG.
@@ -362,19 +380,19 @@ class MonsterGraph(object):
 
         return monster.base_evo_id
 
-    def get_base_monster_by_id(self, monster_id):
-        return self.get_monster(self.get_base_id_by_id(monster_id))
+    def get_base_monster_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(self.get_base_id_by_id(monster_id, server), server)
 
     def get_base_monster(self, monster: MonsterModel):
-        return self.get_monster(self.get_base_id(monster))
+        return self.get_monster(self.get_base_id(monster), monster.server_priority)
 
-    def monster_is_base_by_id(self, monster_id: int) -> bool:
-        return self.get_base_id_by_id(monster_id) == monster_id
+    def monster_is_base_by_id(self, monster_id: int, server: Server = DEFAULT_SERVER) -> bool:
+        return self.monster_is_base(self.get_monster(monster_id, server))
 
     def monster_is_base(self, monster: MonsterModel) -> bool:
-        return self.monster_is_base_by_id(monster.monster_id)
+        return self.get_base_id(monster) == monster.monster_id
 
-    def get_transform_base_id_by_id(self, monster_id):
+    def get_transform_base_id_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
         # NOTE: This assumes that no two monsters will transform to the same monster. This
         #        also doesn't work for monsters like DMG which are transforms but also base
         #        cards.  This also assumes that the "base" monster will be the lowest id in
@@ -383,7 +401,7 @@ class MonsterGraph(object):
         curr = monster_id
         while curr not in seen:
             seen.add(curr)
-            next_ids = self.get_prev_transform_ids_by_monster_id(curr)
+            next_ids = self.get_prev_transform_ids_by_monster_id(curr, server)
             if next_ids:
                 curr = next_ids.pop()
             else:
@@ -392,32 +410,32 @@ class MonsterGraph(object):
             curr = min(seen)
         return curr
 
-    def get_transform_base_by_id(self, monster_id):
-        return self.get_monster(self.get_transform_base_id_by_id(monster_id))
+    def get_transform_base_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(self.get_transform_base_id_by_id(monster_id, server), server)
 
-    def get_transform_base(self, monster):
-        return self.get_transform_base_by_id(monster.monster_id)
+    def get_transform_base(self, monster: MonsterModel):
+        return self.get_transform_base_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_transform_base_by_id(self, monster_id: int) -> bool:
-        return self.get_transform_base_id_by_id(monster_id) == monster_id
+    def monster_is_transform_base_by_id(self, monster_id: int, server: Server = DEFAULT_SERVER) -> bool:
+        return self.get_transform_base_id_by_id(monster_id, server) == monster_id
 
     def monster_is_transform_base(self, monster: MonsterModel) -> bool:
-        return self.monster_is_transform_base_by_id(monster.monster_id)
+        return self.monster_is_transform_base_by_id(monster.monster_id, monster.server_priority)
 
-    def get_numerical_sort_top_id_by_id(self, monster_id):
-        alt_cards = self.get_alt_ids_by_id(monster_id)
+    def get_numerical_sort_top_id_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        alt_cards = self.get_alt_ids_by_id(monster_id, server)
         if alt_cards is None:
             return None
         return sorted(alt_cards)[-1]
 
-    def get_numerical_sort_top_monster_by_id(self, monster_id):
-        return self.get_monster(self.get_numerical_sort_top_id_by_id(monster_id))
+    def get_numerical_sort_top_monster_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_numerical_sort_top_monster_by_id(monster_id, server)
 
-    def get_evo_by_monster_id(self, monster_id) -> Optional[EvolutionModel]:
-        return self._get_edge_model(monster_id, 'back_evolution')
+    def get_evo_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER) -> Optional[EvolutionModel]:
+        return self._get_edge_model(monster_id, 'back_evolution', server)
 
     def get_evo_by_monster(self, monster) -> Optional[EvolutionModel]:
-        return self._get_edge_model(monster.monster_id, 'back_evolution')
+        return self._get_edge_model(monster.monster_id, 'back_evolution', monster.server_priority)
 
     def monster_is_reversible_evo(self, monster: MonsterModel) -> bool:
         prev_evo = self.get_evo_by_monster(monster)
@@ -449,15 +467,14 @@ class MonsterGraph(object):
                 return self.monster_is_reversible_evo(prev)
         return False
 
-    def true_evo_type_by_monster_id(self, monster_id: int) -> InternalEvoType:
-        monster = self.get_monster(monster_id)
+    def true_evo_type_by_monster(self, monster: MonsterModel) -> InternalEvoType:
         if monster.is_equip:
             return InternalEvoType.Assist
 
-        if self.get_base_id_by_id(monster_id) == monster_id:
+        if self.monster_is_base(monster):
             return InternalEvoType.Base
 
-        evo = self.get_evo_by_monster_id(monster_id)
+        evo = self.get_evo_by_monster(monster)
         if evo is None:
             # this is possible without being the above case for transforms
             return InternalEvoType.Base
@@ -473,144 +490,146 @@ class MonsterGraph(object):
 
         return InternalEvoType.Normal
 
-    def true_evo_type_by_monster(self, monster: MonsterModel) -> InternalEvoType:
-        return self.true_evo_type_by_monster_id(monster.monster_id)
+    def true_evo_type_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER) -> InternalEvoType:
+        return self.true_evo_type_by_monster(self.get_monster(monster_id, server))
 
-    def get_prev_evolution_id_by_monster_id(self, monster_id):
-        return self._get_edge_or_none(monster_id, 'back_evolution')
+    def get_prev_evolution_id_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self._get_edge_or_none(monster_id, 'back_evolution', server)
 
     def get_prev_evolution_id_by_monster(self, monster: MonsterModel):
-        return self.get_prev_evolution_id_by_monster_id(monster.monster_id)
+        return self.get_prev_evolution_id_by_monster_id(monster.monster_id, monster.server_priority)
 
     def get_prev_evolution_by_monster(self, monster: MonsterModel):
         pe = self.get_prev_evolution_id_by_monster(monster)
-        return pe and self.get_monster(pe)
+        return pe and self.get_monster(pe, monster.server_priority)
 
-    def get_next_evolution_ids_by_monster_id(self, monster_id):
-        return self._get_edges(monster_id, 'evolution')
+    def get_next_evolution_ids_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self._get_edges(monster_id, 'evolution', server)
 
     def get_next_evolution_ids_by_monster(self, monster: MonsterModel):
-        return self.get_next_evolution_ids_by_monster_id(monster.monster_id)
+        return self.get_next_evolution_ids_by_monster_id(monster.monster_id, monster.server_priority)
 
     def get_next_evolutions_by_monster(self, monster: MonsterModel):
-        return {self.get_monster(mid) for mid in self.get_next_evolution_ids_by_monster(monster)}
+        return {self.get_monster(mid, monster.server_priority)
+                for mid in self.get_next_evolution_ids_by_monster(monster)}
 
-    def get_prev_transform_ids_by_monster_id(self, monster_id):
-        return self._get_edges(monster_id, 'back_transformation')
+    def get_prev_transform_ids_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self._get_edges(monster_id, 'back_transformation', server)
 
     def get_prev_transform_ids_by_monster(self, monster: MonsterModel):
-        return self.get_prev_transform_ids_by_monster_id(monster.monster_id)
+        return self.get_prev_transform_ids_by_monster_id(monster.monster_id, monster.server_priority)
 
     def get_prev_transforms_by_monster(self, monster: MonsterModel):
-        return {self.get_monster(mid) for mid in self.get_prev_transform_ids_by_monster(monster)}
+        return {self.get_monster(mid, monster.server_priority)
+                for mid in self.get_prev_transform_ids_by_monster(monster)}
 
-    def get_next_transform_id_by_monster_id(self, monster_id):
-        return self._get_edge_or_none(monster_id, 'transformation')
+    def get_next_transform_id_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self._get_edge_or_none(monster_id, 'transformation', server)
 
     def get_next_transform_id_by_monster(self, monster: MonsterModel):
-        return self.get_next_transform_id_by_monster_id(monster.monster_id)
+        return self.get_next_transform_id_by_monster_id(monster.monster_id, monster.server_priority)
 
     def get_next_transform_by_monster(self, monster: MonsterModel):
         nt = self.get_next_transform_id_by_monster(monster)
-        return nt and self.get_monster(nt)
+        return nt and self.get_monster(nt, monster.server_priority)
 
-    def evo_mats_by_monster_id(self, monster_id: int) -> List[MonsterModel]:
-        evo = self.get_evo_by_monster_id(monster_id)
+    def evo_mats_by_monster_id(self, monster_id: int, server: Server = DEFAULT_SERVER) -> List[MonsterModel]:
+        evo = self.get_evo_by_monster_id(monster_id, server)
         if evo is None:
             return []
-        return [self.get_monster(mat) for mat in evo.mats]
+        return [self.get_monster(mat, server) for mat in evo.mats]
 
     def evo_mats_by_monster(self, monster: MonsterModel) -> List[MonsterModel]:
-        return self.evo_mats_by_monster_id(monster.monster_id)
+        return self.evo_mats_by_monster_id(monster.monster_id, monster.server_priority)
 
-    # farmable
-    def monster_is_farmable_by_id(self, monster_id):
-        return self.get_monster(monster_id).is_farmable
+    def monster_is_farmable_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(monster_id, server).is_farmable
 
     def monster_is_farmable(self, monster: MonsterModel):
-        return self.monster_is_farmable_by_id(monster.monster_id)
+        return self.monster_is_farmable_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_farmable_evo_by_id(self, monster_id):
-        return any(
-            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_farmable_by_id(m))
+    def monster_is_farmable_evo_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return any(m
+                   for m in self.get_alt_ids_by_id(monster_id, server)
+                   if self.monster_is_farmable_by_id(m, server))
 
     def monster_is_farmable_evo(self, monster: MonsterModel):
-        return self.monster_is_farmable_evo_by_id(monster.monster_id)
+        return self.monster_is_farmable_evo_by_id(monster.monster_id, monster.server_priority)
 
-    # mp
-    def monster_is_mp_by_id(self, monster_id):
-        return self.get_monster(monster_id).in_mpshop
+    def monster_is_mp_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(monster_id, server).in_mpshop
 
     def monster_is_mp(self, monster: MonsterModel):
-        return self.monster_is_mp_by_id(monster.monster_id)
+        return self.monster_is_mp_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_mp_evo_by_id(self, monster_id):
+    def monster_is_mp_evo_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
         return any(
-            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_mp_by_id(m))
+            m for m in self.get_alt_ids_by_id(monster_id, server) if self.monster_is_mp_by_id(m, server))
 
     def monster_is_mp_evo(self, monster: MonsterModel):
-        return self.monster_is_mp_evo_by_id(monster.monster_id)
+        return self.monster_is_mp_evo_by_id(monster.monster_id, monster.server_priority)
 
-    # pem
-    def monster_is_pem_by_id(self, monster_id):
-        return self.get_monster(monster_id).in_pem
+    def monster_is_pem_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(monster_id, server).in_pem
 
     def monster_is_pem(self, monster: MonsterModel):
-        return self.monster_is_pem_by_id(monster.monster_id)
+        return self.monster_is_pem_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_pem_evo_by_id(self, monster_id):
-        return any(
-            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_pem_by_id(m))
+    def monster_is_pem_evo_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return any(m
+                   for m in self.get_alt_ids_by_id(monster_id, server)
+                   if self.monster_is_pem_by_id(m, server))
 
     def monster_is_pem_evo(self, monster: MonsterModel):
-        return self.monster_is_pem_evo_by_id(monster.monster_id)
+        return self.monster_is_pem_evo_by_id(monster.monster_id, monster.server_priority)
 
-    # rem
-    def monster_is_rem_by_id(self, monster_id):
-        return self.get_monster(monster_id).in_rem
+    def monster_is_rem_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self.get_monster(monster_id, server).in_rem
 
     def monster_is_rem(self, monster: MonsterModel):
-        return self.monster_is_rem_by_id(monster.monster_id)
+        return self.monster_is_rem_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_rem_evo_by_id(self, monster_id):
-        return any(
-            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_rem_by_id(m))
+    def monster_is_rem_evo_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return any(m
+                   for m in self.get_alt_ids_by_id(monster_id, server)
+                   if self.monster_is_rem_by_id(m, server))
 
     def monster_is_rem_evo(self, monster: MonsterModel):
-        return self.monster_is_rem_evo_by_id(monster.monster_id)
+        return self.monster_is_rem_evo_by_id(monster.monster_id, monster.server_priority)
 
-    # redeemable
-    def monster_is_exchange_by_id(self, monster_id):
-        return bool(self._get_edges(monster_id, 'exchange_from'))
+    def monster_is_exchange_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return bool(self._get_edges(monster_id, 'exchange_from', server))
 
     def monster_is_exchange(self, monster: MonsterModel):
-        return self.monster_is_exchange_by_id(monster.monster_id)
+        return self.monster_is_exchange_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_exchange_evo_by_id(self, monster_id):
-        return any(
-            m for m in self.get_alt_ids_by_id(monster_id) if self.monster_is_exchange_by_id(m))
+    def monster_is_exchange_evo_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return any(m
+                   for m in self.get_alt_ids_by_id(monster_id, server)
+                   if self.monster_is_exchange_by_id(m, server))
 
     def monster_is_exchange_evo(self, monster: MonsterModel):
-        return self.monster_is_exchange_evo_by_id(monster.monster_id)
+        return self.monster_is_exchange_evo_by_id(monster.monster_id, monster.server_priority)
 
-    def get_monster_exchange_mat_ids_by_id(self, monster_id):
-        return self._get_edges(monster_id, 'exchange_from')
+    def get_monster_exchange_mat_ids_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return self._get_edges(monster_id, 'exchange_from', server)
 
     def get_monster_exchange_mat_ids(self, monster: MonsterModel):
-        return self.get_monster_exchange_mat_ids_by_id(monster.monster_id)
+        return self.get_monster_exchange_mat_ids_by_id(monster.monster_id, monster.server_priority)
 
-    def get_monster_exchange_mats_by_id(self, monster_id):
-        return {self.get_monster(mid) for mid in self.get_monster_exchange_mat_ids_by_id(monster_id)}
+    def get_monster_exchange_mats_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        return {self.get_monster(mid, server)
+                for mid in self.get_monster_exchange_mat_ids_by_id(monster_id, server)}
 
     def get_monster_exchange_mats(self, monster: MonsterModel):
-        return self.get_monster_exchange_mats_by_id(monster.monster_id)
+        return self.get_monster_exchange_mats_by_id(monster.monster_id, monster.server_priority)
 
-    def monster_is_vendor_exchange_by_id(self, monster_id):
-        ids = self.get_monster_exchange_mats_by_id(monster_id)
+    def monster_is_vendor_exchange_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
+        ids = self.get_monster_exchange_mats_by_id(monster_id, server)
         return bool(ids) and all(15 in [t.value for t in m.types] for m in ids)
 
     def monster_is_vendor_exchange(self, monster: MonsterModel):
-        return self.monster_is_vendor_exchange_by_id(monster.monster_id)
+        return self.monster_is_vendor_exchange_by_id(monster.monster_id, monster.server_priority)
 
     def monster_is_new(self, monster: MonsterModel):
         latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
@@ -626,59 +645,60 @@ class MonsterGraph(object):
         elif self.monster_is_pem_evo(monster):
             return 'PEM Card'
 
-    def numeric_next_monster_id_by_id(self, monster_id: int) -> Optional[int]:
+    def numeric_next_monster_id_by_id(self, monster_id: int, server: Server = DEFAULT_SERVER) -> Optional[int]:
         next_monster = None
         offset = 1
         while next_monster is None and monster_id + offset <= self.max_monster_id:
-            next_monster = self.get_monster(monster_id + offset)
+            next_monster = self.get_monster(monster_id + offset, server)
             offset += 1
         if next_monster is None:
             return None
         return next_monster.monster_id
 
     def numeric_next_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        next_monster_id = self.numeric_next_monster_id_by_id(monster.monster_id)
+        next_monster_id = self.numeric_next_monster_id_by_id(monster.monster_id, monster.server_priority)
         if next_monster_id is None:
             return None
-        return self.get_monster(next_monster_id)
+        return self.get_monster(next_monster_id, monster.server_priority)
 
-    def numeric_prev_monster_id_by_id(self, monster_id) -> Optional[int]:
+    def numeric_prev_monster_id_by_id(self, monster_id, server: Server = DEFAULT_SERVER) -> Optional[int]:
         prev_monster = None
         offset = 1
         while prev_monster is None and monster_id - offset >= 1:
-            prev_monster = self.get_monster(monster_id - offset)
+            prev_monster = self.get_monster(monster_id - offset, server)
             offset += 1
         if prev_monster is None:
             return None
         return prev_monster.monster_id
 
     def numeric_prev_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        prev_monster_id = self.numeric_prev_monster_id_by_id(monster.monster_id)
+        prev_monster_id = self.numeric_prev_monster_id_by_id(monster.monster_id, monster.server_priority)
         if prev_monster_id is None:
             return None
-        return self.get_monster(prev_monster_id)
+        return self.get_monster(prev_monster_id, monster.server_priority)
 
-    def evo_gem_monster_by_id(self, monster_id) -> Optional[MonsterModel]:
-        this_monster = self.get_monster(monster_id)
+    def evo_gem_monster_by_id(self, monster_id, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
+        this_monster = self.get_monster(monster_id, server)
         if this_monster.evo_gem_id is None:
             return None
-        return self.get_monster(this_monster.evo_gem_id)
+        return self.get_monster(this_monster.evo_gem_id, server)
 
     def evo_gem_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        return self.evo_gem_monster_by_id(monster.monster_id)
+        return self.evo_gem_monster_by_id(monster.monster_id, monster.server_priority)
 
     def get_monster_from_evo_gem(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        return self.get_monster(self._get_edge_or_none(monster.monster_id, "evo_gem_of"))
+        return self.get_monster(self._get_edge_or_none(monster.monster_id, "evo_gem_of", monster.server_priority), 
+                                monster.server_priority)
 
     def monster_is_evo_gem(self, monster: MonsterModel) -> bool:
         return bool(self.get_monster_from_evo_gem(monster))
 
-    def material_of_ids_by_id(self, monster_id: int) -> List[int]:
-        return sorted(self._get_edges(monster_id, 'material_of'))
+    def material_of_ids_by_id(self, monster_id: int, server: Server = DEFAULT_SERVER) -> List[int]:
+        return sorted(self._get_edges(monster_id, 'material_of', server))
 
     def material_of_ids(self, monster: MonsterModel) -> List[int]:
-        return self.material_of_ids_by_id(monster.monster_id)
+        return self.material_of_ids_by_id(monster.monster_id, monster.server_priority)
 
     def material_of_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
-        return [self.get_monster(m)
-                for m in self.material_of_ids_by_id(monster.monster_id)]
+        return [self.get_monster(m, monster.server_priority)
+                for m in self.material_of_ids(monster)]

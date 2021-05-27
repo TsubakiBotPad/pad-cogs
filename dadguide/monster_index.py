@@ -437,7 +437,7 @@ class MonsterIndex(tsutils.aobject):
             modifiers.update(MISC_MAP[MiscModifiers.INNA])
             if not monster.on_jp:
                 modifiers.update(MISC_MAP[MiscModifiers.ONLYNA])
-        if monster.monster_id + 10000 in self.graph.nodes:
+        if monster.monster_id + 10000 in self.graph.graph_dict[monster.server_priority].nodes:
             modifiers.add("idjp")
         if monster.monster_id > 10000:
             modifiers.add("idna")

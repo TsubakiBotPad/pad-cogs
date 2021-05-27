@@ -47,7 +47,7 @@ class PadMonitor(commands.Cog):
         DGCOG = self.bot.get_cog('Dadguide')
         await DGCOG.wait_until_ready()
         db_context: "DbContext" = DGCOG.database
-        all_monsters = db_context.get_all_monsters(as_generator=False)
+        all_monsters = [*db_context.get_all_monsters()]
         jp_monster_map = {m.monster_id: m for m in all_monsters if m.on_jp}
         na_monster_map = {m.monster_id: m for m in all_monsters if m.on_na}
 

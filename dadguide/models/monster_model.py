@@ -96,6 +96,8 @@ class MonsterModel(BaseModel):
         self.has_animation = m['has_animation']
         self.has_hqimage = m['has_hqimage']
 
+        self.server_priority = m['server_priority']
+
         self.search = MonsterSearchHelper(self)
 
     @property

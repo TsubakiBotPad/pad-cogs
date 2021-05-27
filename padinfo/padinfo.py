@@ -241,8 +241,8 @@ class PadInfo(commands.Cog):
 
         # id3 messaging stuff
         if monster and monster.monster_no_na != monster.monster_no_jp:
-            await ctx.send("The NA ID and JP ID of this card differ! "
-                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
+            await ctx.send(f"The NA ID and JP ID of this card differ! The JP ID is {monster.monster_id}, so "
+                           f"you can query with {ctx.prefix}id jp{monster.monster_id}." +
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
 
