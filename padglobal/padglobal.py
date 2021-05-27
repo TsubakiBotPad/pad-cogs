@@ -275,6 +275,7 @@ class PadGlobal(commands.Cog):
 
 
         if command in self.c_commands:
+            alias = self.c_commands[command] in self.c_commands
             ocm = self.c_commands.copy()
             self.c_commands.pop(command, None)
             todel = [command]
@@ -285,7 +286,7 @@ class PadGlobal(commands.Cog):
                         self.c_commands.pop(comm, None)
                         todel.append(comm)
             json.dump(self.c_commands, open(self.file_path, 'w+'))
-            await ctx.send("PAD command successfully deleted.")
+            await ctx.send("PAD {} successfully deleted.".format('alias' if alias else 'command'))
         else:
             await ctx.send("PAD command doesn't exist.")
 
