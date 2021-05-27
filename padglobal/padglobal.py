@@ -233,6 +233,9 @@ class PadGlobal(commands.Cog):
 
         if text in self.c_commands:
             op = 'ALIASED'
+            if text == command:
+                await ctx.send('You cannot alias something to itself.')
+                return
             if self.c_commands[text] in self.c_commands:
                 await ctx.send("You cannot alias an alias")
                 return
@@ -262,7 +265,17 @@ class PadGlobal(commands.Cog):
         Example:
         [p]padglobal delete yourcommand"""
         command = command.lower()
+
+        aliases = await self._find_aliases(command)
+        if aliases:
+            if not await confirm_message(ctx,
+                                         'Are you sure? `{}` has **{}** alias(es): `{}` which will also be deleted.'
+                                         .format(command, len(aliases), '`, `'.join(aliases))):
+                await ctx.send('Cancelling delete of `{}`.'.format(command))
+                return
+
         if command in self.c_commands:
+            alias = self.c_commands[command] in self.c_commands
             ocm = self.c_commands.copy()
             self.c_commands.pop(command, None)
             todel = [command]
@@ -273,7 +286,7 @@ class PadGlobal(commands.Cog):
                         self.c_commands.pop(comm, None)
                         todel.append(comm)
             json.dump(self.c_commands, open(self.file_path, 'w+'))
-            await ctx.send("PAD command successfully deleted.")
+            await ctx.send("PAD {} successfully deleted.".format('ALIAS' if alias else 'COMMAND'))
         else:
             await ctx.send("PAD command doesn't exist.")
 
@@ -307,6 +320,13 @@ class PadGlobal(commands.Cog):
 
         await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
                                                                              source_cmd if alias else corrected_cmd))
+
+    async def _find_aliases(self, command: str):
+        aliases = []
+        for cmd in self.c_commands:
+            if self.c_commands[cmd] == command:
+                aliases.append(cmd)
+        return aliases
 
     @padglobal.command()
     async def setgeneral(self, ctx, command: str):
