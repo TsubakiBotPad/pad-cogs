@@ -54,7 +54,7 @@ DISABLED_MSG = 'PAD Global info disabled on this server'
 FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever evos you like.'
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
               ', check `{}mpdra?` for specific recommendations.')
-SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
+SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial because the skill never changes & there are no branching evos; use the highest evolution: `[{}] {}`.'
 
 MAX_WHICH_LIST_BEFORE_DM_PROMPT = 30
 
