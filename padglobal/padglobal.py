@@ -14,8 +14,7 @@ import prettytable
 import pytz
 import tsutils
 from discord import Color
-from redbot.core import checks, data_manager
-from redbot.core import commands, errors
+from redbot.core import checks, data_manager, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
     auth_check, get_reaction
@@ -128,7 +127,6 @@ class PadGlobal(commands.Cog):
         return data
 
     def _export_data(self):
-
         faq_and_boards = self.settings.faq() + self.settings.boards()
         general = {k: v for k, v in self.c_commands.items() if k not in faq_and_boards}
         faq = {k: v for k, v in self.c_commands.items() if k in self.settings.faq()}
@@ -172,14 +170,13 @@ class PadGlobal(commands.Cog):
         logger.critical(msg)
 
         try:
-            app_info = await self.bot.application_info()
-            owner = app_info.owner
-            await owner.send(msg)
-            await ctx.send("Owner has been notified, shutting down...")
+            for uid in self.bot.owner_ids:
+                await self.bot.get_user(uid).send(msg)
+            await ctx.send("Owners have been notified, shutting down...")
         except Exception as ex:
-            logger.exception('Failed to notifiy for breakglass: ' + str(ex))
+            logger.exception("Failed to notifiy for breakglass.")
 
-        await self.bot.shutdown()
+        await self.bot.shutdown(restart=True)
 
     @commands.command()
     @checks.admin_or_permissions(manage_guild=True)
