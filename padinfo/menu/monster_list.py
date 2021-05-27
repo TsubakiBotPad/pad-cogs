@@ -79,7 +79,8 @@ class MonsterListMenu:
             return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
         paginated_monsters = await _get_view_state(ims).query_paginated_from_ims(data['dgcog'], ims)
         ims['current_page'] = len(paginated_monsters) - 1
-        ims['current_index'] = None
+        if len(paginated_monsters) > 1:
+            ims['current_index'] = None
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
@@ -91,7 +92,8 @@ class MonsterListMenu:
             ims['current_index'] = None
             return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
         ims['current_page'] = 0
-        ims['current_index'] = None
+        if len(paginated_monsters) > 1:
+            ims['current_index'] = None
         return await MonsterListMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
