@@ -269,8 +269,8 @@ class PadGlobal(commands.Cog):
         aliases = await self._find_aliases(command)
         if aliases:
             if not await confirm_message(ctx,
-                                         'Are you sure? `{}` has **{}** alias(es): `{}` which will also be deleted.'
-                                         .format(command, len(aliases), '`, `'.join(aliases))):
+                                         'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
+                                         .format(command, bold(len(aliases)), '`, `'.join(aliases))):
                 await ctx.send('Cancelling delete of `{}`.'.format(command))
                 return
 
@@ -286,7 +286,7 @@ class PadGlobal(commands.Cog):
                         self.c_commands.pop(comm, None)
                         todel.append(comm)
             json.dump(self.c_commands, open(self.file_path, 'w+'))
-            await ctx.send("PAD {} successfully deleted.".format('ALIAS' if alias else 'COMMAND'))
+            await ctx.send("PAD {} successfully deleted.".format(bold('alias' if alias else 'command')))
         else:
             await ctx.send("PAD command doesn't exist.")
 
