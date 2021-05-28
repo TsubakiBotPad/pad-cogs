@@ -15,7 +15,7 @@ import pytz
 import tsutils
 from discord import Color
 from redbot.core import checks, data_manager, commands, errors
-from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
+from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta, bold
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
     auth_check, get_reaction
 
@@ -232,7 +232,7 @@ class PadGlobal(commands.Cog):
             self.c_commands = {}
 
         if text in self.c_commands:
-            op = 'ALIASED'
+            op = 'aliased'
             if text == command:
                 await ctx.send('You cannot alias something to itself.')
                 return
@@ -240,7 +240,7 @@ class PadGlobal(commands.Cog):
                 await ctx.send("You cannot alias an alias")
                 return
         elif command in self.c_commands:
-            op = 'EDITED'
+            op = 'edited'
             ted = self.c_commands[command]
             alias = False
             while ted in self.c_commands:
@@ -252,11 +252,11 @@ class PadGlobal(commands.Cog):
                 if not conf:
                     return
         else:
-            op = 'ADDED'
+            op = 'added'
 
         self.c_commands[command] = text
         json.dump(self.c_commands, open(self.file_path, 'w+'))
-        await ctx.send("PAD command successfully {}.".format(op))
+        await ctx.send("PAD command successfully {}.".format(bold(op)))
 
     @padglobal.command(aliases=['rmalias', 'delalias', 'remove', 'rm', 'del'])
     async def delete(self, ctx, command: str):
