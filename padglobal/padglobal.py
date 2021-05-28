@@ -537,13 +537,13 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
 
-        op = 'EDITED' if term in self.settings.glossary() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if term in self.settings.glossary() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the glossary info for {}?".format(
                                                             term)):
             return
         self.settings.addGlossary(term, definition)
-        await ctx.send("PAD glossary term successfully {}.".format(op))
+        await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
 
     @pglossary.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pglossary_remove(self, ctx, *, term):
@@ -638,8 +638,8 @@ class PadGlobal(commands.Cog):
 
         base = dgcog.database.graph.get_base_monster(m)
 
-        op = 'EDITED' if base.monster_id in self.settings.boss() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if base.monster_id in self.settings.boss() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the boss info for {}?".format(
                                                             base.name_en)):
             return
@@ -647,7 +647,7 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addBoss(base.monster_id, definition)
-        await ctx.send("PAD boss mechanics successfully {}.".format(op))
+        await ctx.send("PAD boss mechanics successfully {}.".format(bold(op)))
 
     @pboss.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pboss_remove(self, ctx, *, term):
@@ -812,10 +812,10 @@ class PadGlobal(commands.Cog):
 
         is_int = re.fullmatch(r'\d+', term)
 
-        op = 'EDITED' if name in self.settings.which() else 'ADDED'
-        if op == 'ADDED' and not is_int or op == 'EDITED':
+        op = 'edited' if name in self.settings.which() else 'added'
+        if op == 'added' and not is_int or op == 'edited':
             if not await confirm_message(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
-                    'edit the' if op == 'EDITED' else 'add new',
+                    'edit the' if op == 'edited' else 'add new',
                     pdicog.get_attribute_emoji_by_monster(m),
                     m.monster_no_na,
                     m.name_en)):
@@ -825,7 +825,7 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addWhich(name, definition)
-        await ctx.send("PAD which info successfully {} for [{}] {}.".format(op, m.monster_no_na, m.name_en))
+        await ctx.send("PAD which info successfully {} for [{}] {}.".format(bold(op), m.monster_no_na, m.name_en))
 
     @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pwhich_remove(self, ctx, *, monster_id: int):
@@ -886,7 +886,7 @@ class PadGlobal(commands.Cog):
             if await confirm_message(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
                     m.name_en)):
                 self.settings.addWhich(mon_id, addition)
-                await ctx.send("PAD which info successfully ADDED.")
+                await ctx.send("PAD which info successfully {}.".format(bold('added')))
             return
 
         definition, _ = self.settings.which().get(mon_id, None)
@@ -897,10 +897,12 @@ class PadGlobal(commands.Cog):
 
         if operation == 'prepend':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
-            await ctx.send("Successfully PREPENDED to PAD which info for [{}] {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('prepended'), m.monster_no_na,
+                                                                                   m.name_en))
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
-            await ctx.send("Successfully APPENDED to PAD which info for [{}] {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('appended'), m.monster_no_na,
+                                                                                   m.name_en))
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
@@ -1249,13 +1251,13 @@ class PadGlobal(commands.Cog):
     async def dungeon_add(self, ctx, term: str, *, definition: str):
         """Adds a dungeon guide to the [p]guide command"""
         term = term.lower()
-        op = 'EDITED' if term in self.settings.dungeonGuide() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if term in self.settings.dungeonGuide() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the dungeon guide info for {}?".format(
                                                             term)):
             return
         self.settings.addDungeonGuide(term, definition)
-        await ctx.send("PAD dungeon guide successfully {}.".format(op))
+        await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
 
     @dungeon.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def dungeon_remove(self, ctx, term: str):
@@ -1285,13 +1287,13 @@ class PadGlobal(commands.Cog):
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
-        op = 'EDITED' if name in self.settings.leaderGuide() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if name in self.settings.leaderGuide() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the leader guide for {}?".format(
                                                             m.name_en)):
             return
         self.settings.addLeaderGuide(name, definition)
-        await ctx.send("PAD leader guide info successfully {}.".format(op))
+        await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
 
     @leader.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def leader_remove(self, ctx, monster_id: int):
