@@ -189,7 +189,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDLIGHT: ('oel', 'oe'),
     AwokenSkills.ENHANCEDDARK: ('oed', 'oe'),
     AwokenSkills.EXTMOVE: ('te', 'finger'),
-    AwokenSkills.BINDRECOVERY: ('bindrcv',),
+    AwokenSkills.BINDRECOVERY: ('bindrcv', 'bindclear', 'rowclear'),
     AwokenSkills.SKILLBOOST: ('sb',),
     AwokenSkills.REDROW: ('rowr', 'row'),
     AwokenSkills.BLUEROW: ('rowb', 'row'),
