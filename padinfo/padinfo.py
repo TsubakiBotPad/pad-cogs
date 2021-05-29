@@ -5,7 +5,7 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 import discord
 import tsutils
@@ -16,6 +16,7 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, safe_read_json
 
+from dadguide.monster_graph import Server, DEFAULT_SERVER
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster, AWAKENING_ID_TO_EMOJI_NAME_MAP
@@ -206,20 +207,20 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index.all_name_tokens:
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index.all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
-            for monster in dgcog.index.all_name_tokens[goodquery[1]]:
-                for modifier in dgcog.index.modifiers[monster]:
+            for monster in dgcog.indexes[DEFAULT_SERVER].all_name_tokens[goodquery[1]]:
+                for modifier in dgcog.indexes[DEFAULT_SERVER].modifiers[monster]:
                     if modifier == 'xm' and goodquery[0] == 'x':
                         goodquery[0] = 'xm'
                     if modifier == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.index.all_name_tokens:
+            if bad and query not in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
                 async def send_message():
                     await asyncio.sleep(1)
                     await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
@@ -921,7 +922,7 @@ class PadInfo(commands.Cog):
                        "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
 
     @commands.command(aliases=["iddebug", "dbid", "iddb"])
-    async def debugid(self, ctx, *, query):
+    async def debugid(self, ctx, server: Optional[Server] = DEFAULT_SERVER, *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
         mon = await dgcog.find_monster(query, ctx.author.id)
@@ -929,17 +930,17 @@ class PadInfo(commands.Cog):
             await ctx.send(box("Your query didn't match any monsters."))
             return
         base_monster = dgcog.database.graph.get_base_monster(mon)
-        mods = dgcog.index.modifiers[mon]
-        manual_modifiers = dgcog.index.manual_prefixes[mon.monster_id]
+        mods = dgcog.indexes[server].modifiers[mon]
+        manual_modifiers = dgcog.indexes[server].manual_prefixes[mon.monster_id]
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
                f"Series: {mon.series.name_en} ({mon.series_id}, {mon.series.series_type})\n\n"
-               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index.name_tokens.items() if mon in ms))}\n"
-               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index.fluff_tokens.items() if mon in ms))}\n\n"
+               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].name_tokens.items() if mon in ms))}\n"
+               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].fluff_tokens.items() if mon in ms))}\n\n"
                f"[Manual Tokens]\n"
-               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.index.manual_tree.items() if mon in ms))}\n"
-               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.index.manual_nick.items() if mon in ms))}\n\n"
+               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_tree.items() if mon in ms))}\n"
+               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_nick.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
                f"     Attribute: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.COLOR_TOKENS))}\n"
                f"     Awakening: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.AWAKENING_TOKENS))}\n"
@@ -982,7 +983,7 @@ class PadInfo(commands.Cog):
             await self.debugid(ctx, query=query)
 
     @commands.command()
-    async def exportmodifiers(self, ctx):
+    async def exportmodifiers(self, ctx, server: Server = DEFAULT_SERVER):
         DGCOG = self.bot.get_cog("Dadguide")
         maps = DGCOG.token_maps
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
@@ -1005,7 +1006,7 @@ class PadInfo(commands.Cog):
         atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
-                  for k, v in DGCOG.index.series_id_to_pantheon_nickname.items()]
+                  for k, v in DGCOG.indexes[server].series_id_to_pantheon_nickname.items()]
         ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
@@ -1019,7 +1020,7 @@ class PadInfo(commands.Cog):
         await ctx.send(file=text_to_file(ret, filename="table.md"))
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod", "luid", "idlu"])
-    async def idmeaning(self, ctx, *, token):
+    async def idmeaning(self, ctx, token, server: Server = DEFAULT_SERVER):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
@@ -1040,7 +1041,7 @@ class PadInfo(commands.Cog):
             token_ret = ""
             so = []
             for mon in sorted(token_dict[token], key=lambda m: m.monster_id):
-                if (mon in DGCOG.index.mwtoken_creators[token]) == is_multiword:
+                if (mon in DGCOG.indexes[server].mwtoken_creators[token]) == is_multiword:
                     so.append(mon)
             if len(so) > 5:
                 token_ret += f"\n\n{token_type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
@@ -1050,22 +1051,22 @@ class PadInfo(commands.Cog):
                     f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
             return token_ret
 
-        ret += write_name_token(DGCOG.index.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
-        ret += write_name_token(DGCOG.index.manual, "[Manual Tokens]")
-        ret += write_name_token(DGCOG.index.name_tokens, "[Name Tokens]")
-        ret += write_name_token(DGCOG.index.fluff_tokens, "[Fluff Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
+        ret += write_name_token(DGCOG.indexes[server].manual, "[Manual Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].name_tokens, "[Name Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].fluff_tokens, "[Fluff Tokens]")
 
-        submwtokens = [t for t in DGCOG.index.multi_word_tokens if token in t]
+        submwtokens = [t for t in DGCOG.indexes[server].multi_word_tokens if token in t]
         if submwtokens:
             ret += "\n\n[Multi-word Super-tokens]\n"
             for t in submwtokens:
-                if not DGCOG.index.all_name_tokens[''.join(t)]:
+                if not DGCOG.indexes[server].all_name_tokens[''.join(t)]:
                     continue
-                creators = sorted(DGCOG.index.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
+                creators = sorted(DGCOG.indexes[server].mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
                 ret += f"{' '.join(t).title()}"
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
-                        str(DGCOG.mon_finder.get_most_eligable_monster(DGCOG.index.all_name_tokens[''.join(t)],
+                        str(DGCOG.mon_finder.get_most_eligable_monster(DGCOG.indexes[server].all_name_tokens[''.join(t)],
                                                                        DGCOG).monster_id)
                         + ")\n")
 
@@ -1093,7 +1094,7 @@ class PadInfo(commands.Cog):
               '/' + k[1].name.replace("Nil", "None") + additmods(v, token)
               for k, v in tms.DUAL_COLOR_MAP.items() if token in v],
             *["Series: " + series[k].name_en + additmods(v, token)
-              for k, v in DGCOG.index.series_id_to_pantheon_nickname.items() if token in v],
+              for k, v in DGCOG.indexes[server].series_id_to_pantheon_nickname.items() if token in v],
 
             *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", token)],
             *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", token)],

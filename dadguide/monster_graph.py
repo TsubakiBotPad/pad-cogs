@@ -103,9 +103,10 @@ FROM
   exchanges
 """
 
-SPECIFY_SERVER = " WHERE server = {1}"
+SPECIFY_SERVER = " WHERE server_id = {}"
 
 DEFAULT_SERVER = "COMBINED"
+SERVERS = ["NA", "COMBINED"]
 
 Server = Literal["COMBINED", "NA"]
 
@@ -115,12 +116,12 @@ class MonsterGraph(object):
         self.database = database
         self.max_monster_id = -1
         self.graph_dict = {
-            "COMBINED": self.build_graph("NA"),
+            "COMBINED": self.build_graph("COMBINED"),
             "NA": self.build_graph("NA"),
         }
 
-        # for server in self.graph_dict:
-        #     self._cache_graph(server)
+        for server in self.graph_dict:
+            self._cache_graph(server)
 
     def build_graph(self, server: Server) -> MultiDiGraph:
         graph = MultiDiGraph()
@@ -130,7 +131,7 @@ class MonsterGraph(object):
         if server == "NA":
             table_suffix = "_na"
         if server != "COMBINED":
-            where = SPECIFY_SERVER.format(server)
+            where = SPECIFY_SERVER.format(["JP", "NA", "KR"].index(server))
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
         es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())
@@ -284,7 +285,6 @@ class MonsterGraph(object):
 
     def _cache_graph(self, server: str):
         for mid in self.graph_dict[server].nodes:
-            print(mid, self.graph_dict[server].nodes[mid])
             self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_versions(mid, server)
 
     def _get_edges(self, node: Union[int, AtlasView], etype, server: Server = DEFAULT_SERVER) -> Set[int]:
@@ -312,10 +312,12 @@ class MonsterGraph(object):
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
 
     def get_monster(self, monster_id: int, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
-        if monster_id not in self.graph_dict[server].nodes \
-                or not hasattr(self.graph_dict[server].nodes[monster_id], 'model'):
+        if monster_id not in self.graph_dict[server].nodes:
             return None
         return self.graph_dict[server].nodes[monster_id]['model']
+
+    def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> Set[MonsterModel]:
+        return {mdata['model'] for mdata in self.graph_dict[server].nodes.values()}
 
     def get_evo_tree(self, monster_id, server: Server = DEFAULT_SERVER) -> List[int]:
         while (prev := self._get_edges(monster_id, 'back_evolution', server)):

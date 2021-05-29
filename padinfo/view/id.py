@@ -133,9 +133,9 @@ def evos_embed_field(state: ViewStateBaseId):
     # this isn't used right now, but maybe later if discord changes the api for embed titles...?
     help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
     legend_parts = []
-    if any([alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution]):
+    if any(not alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution):
         legend_parts.append("⌊Irreversible⌋")
-    if any([alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
+    if any(alt_evo.monster.is_equip for alt_evo in state.alt_monsters):
         legend_parts.append("⌈Equip⌉")
     if legend_parts:
         help_text = ' – Help: {}'.format(" ".join(legend_parts))

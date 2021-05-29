@@ -46,13 +46,12 @@ class DbContext(object):
 
     def get_all_monster_ids_query(self, server: Server = DEFAULT_SERVER):
         table = 'monsters_na' if server == "NA" else 'monsters'
-        print(self.database.select_builder(tables={table: ('monster_id',)}))
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}), (),
             as_generator=True)
         return map(lambda m: m.monster_id, query)
 
-    def get_all_monsters(self,  server: Server = "NA"):
+    def get_all_monsters(self,  server: Server = DEFAULT_SERVER):
         return (self.graph.get_monster(mid, server) for mid in self.get_all_monster_ids_query(server))
 
     def get_all_events(self) -> Generator[ScheduledEventModel, None, None]:

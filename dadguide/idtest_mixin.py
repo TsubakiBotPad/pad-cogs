@@ -1,15 +1,18 @@
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Dict, Optional
 
 import tsutils
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
+from dadguide.monster_graph import Server, DEFAULT_SERVER
+from dadguide.monster_index import MonsterIndex
+
 
 class IdTest:
     bot = None
-    index = None
+    indexes: Dict[str, MonsterIndex]
     find_monster = None
 
     def __init__(self):
@@ -64,17 +67,17 @@ class IdTest:
 
     @idt_name.command(name="add")
     @checks.is_owner()
-    async def idtn_add(self, ctx, mid: int, token, *, reason=""):
+    async def idtf_add(self, ctx, mid: int, token, server: Optional[Server] = DEFAULT_SERVER, *, reason=""):
         """Add a name token test to the id3 test suite"""
-        await self.norf_add(ctx, mid, token, reason, False)
+        await self.norf_add(ctx, mid, token, server, reason, False)
 
     @idt_fluff.command(name="add")
     @checks.is_owner()
-    async def idtf_add(self, ctx, mid: int, token, *, reason=""):
+    async def idtf_add(self, ctx, mid: int, token, server: Optional[Server] = DEFAULT_SERVER, *, reason=""):
         """Add a fluff token test to the id3 test suite"""
-        await self.norf_add(ctx, mid, token, reason, True)
+        await self.norf_add(ctx, mid, token, server, reason, True)
 
-    async def norf_add(self, ctx, mid: int, token, reason, fluffy):
+    async def norf_add(self, ctx, mid: int, token, server, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.confirm_message(ctx,
@@ -104,6 +107,7 @@ class IdTest:
                 'token': token,
                 'fluff': fluffy,
                 'reason': reason,
+                'server': server,
                 'ts': datetime.now().timestamp()
             }
 
@@ -414,11 +418,11 @@ class IdTest:
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
-            for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff']))):
+            for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff'], v['server']))):
                 fluff = case['id'] in [m.monster_id for m in
-                                       self.bot.get_cog("Dadguide").index.fluff_tokens[case['token']]]
+                                       self.indexes[case['server']].fluff_tokens[case['token']]]
                 name = case['id'] in [m.monster_id for m in
-                                      self.bot.get_cog("Dadguide").index.name_tokens[case['token']]]
+                                      self.indexes[case['server']].name_tokens[case['token']]]
 
                 if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
                     q = '"{}"'.format(case['token'])
@@ -463,8 +467,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.indexes[v['server']].fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.indexes[v['server']].name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -509,8 +513,8 @@ class IdTest:
 
         fsuite = await self.config.fluff_suite()
         for c, v in enumerate(fsuite):
-            fluff = v['id'] in [m.monster_id for m in self.index.fluff_tokens[v['token']]]
-            name = v['id'] in [m.monster_id for m in self.index.name_tokens[v['token']]]
+            fluff = v['id'] in [m.monster_id for m in self.indexes[v['server']].fluff_tokens[v['token']]]
+            name = v['id'] in [m.monster_id for m in self.indexes[v['server']].name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                 q = '"{}"'.format(v['token'])
