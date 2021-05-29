@@ -237,8 +237,14 @@ class PadGlobal(commands.Cog):
                 await ctx.send('You cannot alias something to itself.')
                 return
             if self.c_commands[text] in self.c_commands:
-                await ctx.send("You cannot alias an alias")
-                return
+                source = self.c_commands[text]
+                if await confirm_message(ctx, '{} is already an alias for {}, and you can\'t alias to an alias.'
+                                         .format(inline(text), inline(source))
+                                         + ' Would you like to alias to {} instead?'.format(inline(source))):
+                    # change target
+                    text = source
+                else:
+                    return
         elif command in self.c_commands:
             op = 'edited'
             ted = self.c_commands[command]
@@ -270,7 +276,7 @@ class PadGlobal(commands.Cog):
         if aliases:
             if not await confirm_message(ctx,
                                          'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
-                                         .format(command, bold(len(aliases)), '`, `'.join(aliases))):
+                                         .format(command, bold(str(len(aliases))), '`, `'.join(aliases))):
                 await ctx.send('Cancelling delete of `{}`.'.format(command))
                 return
 
