@@ -238,8 +238,8 @@ class PadGlobal(commands.Cog):
                 return
             if self.c_commands[text] in self.c_commands:
                 source = self.c_commands[text]
-                if await confirm_message(ctx, 'You cannot alias to an alias.'
-                                         + ' {} is already an alias for {}.'.format(inline(text), inline(source))
+                if await confirm_message(ctx, '{} is already an alias for {}, and you can\'t alias to an alias.'
+                                         .format(inline(text), inline(source))
                                          + ' Would you like to alias to {} instead?'.format(inline(source))):
                     # change target
                     text = source
