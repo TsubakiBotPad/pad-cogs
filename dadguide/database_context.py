@@ -33,16 +33,16 @@ class DbContext(object):
     def get_monsters_where(self, f, server: Server = DEFAULT_SERVER):
         return [m for m in self.get_all_monsters(server) if f(m)]
 
-    def get_first_monster_where(self, f):
-        ms = self.get_monsters_where(f)
+    def get_first_monster_where(self, f, server):
+        ms = self.get_monsters_where(f, server)
         if ms:
             return min(ms, key=lambda m: m.monster_id)
 
-    def get_monsters_by_series(self, series_id: int):
-        return self.get_monsters_where(lambda m: m.series_id == series_id)
+    def get_monsters_by_series(self, series_id: int, server: Server = DEFAULT_SERVER):
+        return self.get_monsters_where(lambda m: m.series_id == series_id, server)
 
-    def get_monsters_by_active(self, active_skill_id: int):
-        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id)
+    def get_monsters_by_active(self, active_skill_id: int, server: Server = DEFAULT_SERVER):
+        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server)
 
     def get_all_monster_ids_query(self, server: Server = DEFAULT_SERVER):
         table = 'monsters_na' if server == "NA" else 'monsters'

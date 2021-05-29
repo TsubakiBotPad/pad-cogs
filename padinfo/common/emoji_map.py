@@ -1,5 +1,9 @@
 from enum import Enum
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.enum_types import AwakeningRestrictedLatent, MonsterType
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 
@@ -95,8 +99,8 @@ def awakening_restricted_latent_emoji(latent: "AwakeningRestrictedLatent"):
     return get_emoji('latent_{}'.format(AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP[latent.value]))
 
 
-def get_type_emoji(type: Enum):
-    return get_emoji('mons_type_'+type.name.lower())
+def get_type_emoji(mons_type: "MonsterType"):
+    return get_emoji('mons_type_' + mons_type.name.lower())
 
 
 def get_attribute_emoji_by_monster(monster: "MonsterModel"):
@@ -104,6 +108,7 @@ def get_attribute_emoji_by_monster(monster: "MonsterModel"):
     attr2 = monster.attr2.name.lower()
     emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)
     return get_emoji(emoji)
+
 
 def get_attribute_emoji_by_enum(type1: Union[Enum, Literal[False]], type2: Optional[Union[Enum, Literal[bool]]] = None):
     attr1 = 'nil' if type1 is False else type1.name.lower()
@@ -124,7 +129,4 @@ def get_awakening_emoji(awid: Union[Enum, int], default: str = None):
 def get_emoji(name):
     if isinstance(name, int):
         name = AWAKENING_ID_TO_EMOJI_NAME_MAP[name]
-    for e in emoji_cache.custom_emojis:
-        if e.name == name:
-            return str(e)
-    return ":{}:".format(name)
+    return emoji_cache.get_emoji(name)

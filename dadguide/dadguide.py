@@ -26,7 +26,7 @@ from .database_loader import load_database
 from .idtest_mixin import IdTest
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .monster_graph import SERVERS
+from .monster_graph import SERVERS, Server, DEFAULT_SERVER
 from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
@@ -156,9 +156,9 @@ class Dadguide(commands.Cog, IdTest):
             for page in pagify(f"Index Load Warnings:\n" + "\n".join(index.issues[:100])):
                 await channel.send(box(page))
 
-    def get_monster(self, monster_id: int) -> MonsterModel:
+    def get_monster(self, monster_id: int, server: Server = DEFAULT_SERVER) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
-        return self.database.graph.get_monster(monster_id)
+        return self.database.graph.get_monster(monster_id, server)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

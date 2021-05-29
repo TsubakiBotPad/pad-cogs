@@ -43,7 +43,7 @@ for cid1, cns1 in COLOR_MAP.items():
 
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
-    MonsterType.Balance: ('balanced', 'bal'),
+    MonsterType.Balanced: ('balanced', 'bal', 'balance'),
     MonsterType.Physical: ('physical', 'phys'),
     MonsterType.Healer: ('healer',),
     MonsterType.Dragon: ('dragon', 'dra'),
@@ -189,7 +189,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDLIGHT: ('oel', 'oe'),
     AwokenSkills.ENHANCEDDARK: ('oed', 'oe'),
     AwokenSkills.EXTMOVE: ('te', 'finger'),
-    AwokenSkills.BINDRECOVERY: ('bindrcv',),
+    AwokenSkills.BINDRECOVERY: ('bindrcv', 'bindclear', 'rowclear'),
     AwokenSkills.SKILLBOOST: ('sb',),
     AwokenSkills.REDROW: ('rowr', 'row'),
     AwokenSkills.BLUEROW: ('rowb', 'row'),

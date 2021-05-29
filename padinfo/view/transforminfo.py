@@ -35,6 +35,7 @@ class TransformInfoViewState(ViewStateBase):
         ret = super().serialize()
         ret.update({
             'resolved_monster_ids': self.monster_ids,
+            'resolved_monster_server': self.base_mon.server_priority,
             'reaction_list': self.reaction_list
         })
         return ret
@@ -48,8 +49,8 @@ class TransformInfoViewState(ViewStateBase):
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
 
-        base_mon = dgcog.get_monster(base_mon_id)
-        transformed_mon = dgcog.get_monster(transformed_mon_id)
+        base_mon = dgcog.get_monster(base_mon_id, ims['resolved_monster_server'])
+        transformed_mon = dgcog.get_monster(transformed_mon_id, ims['resolved_monster_server'])
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']

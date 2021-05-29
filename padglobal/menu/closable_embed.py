@@ -2,13 +2,11 @@ from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 
 from tsutils.menu.panes import MenuPanes
-from padinfo.view.awakening_help import AwakeningHelpView
-from padinfo.view.closable_embed import ClosableEmbedViewState
-from padinfo.view.id_traceback import IdTracebackView
+from padglobal.view.closable_embed import ClosableEmbedViewState
+from padglobal.view.which import WhichView
 
 view_types = {
-    AwakeningHelpView.VIEW_TYPE: AwakeningHelpView,
-    IdTracebackView.VIEW_TYPE: IdTracebackView,
+    WhichView.VIEW_TYPE: WhichView
 }
 
 
