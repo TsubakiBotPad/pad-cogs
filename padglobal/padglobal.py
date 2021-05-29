@@ -237,8 +237,14 @@ class PadGlobal(commands.Cog):
                 await ctx.send('You cannot alias something to itself.')
                 return
             if self.c_commands[text] in self.c_commands:
-                await ctx.send("You cannot alias an alias")
-                return
+                source = self.c_commands[text]
+                if await confirm_message(ctx, 'You cannot alias to an alias.'
+                                         + ' {} is already an alias for {}.'.format(inline(text), inline(source))
+                                         + ' Would you like to alias to {} instead?'.format(inline(source))):
+                    # change target
+                    text = source
+                else:
+                    return
         elif command in self.c_commands:
             op = 'edited'
             ted = self.c_commands[command]
