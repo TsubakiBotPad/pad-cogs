@@ -276,7 +276,7 @@ class PadGlobal(commands.Cog):
         if aliases:
             if not await confirm_message(ctx,
                                          'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
-                                         .format(command, bold(len(aliases)), '`, `'.join(aliases))):
+                                         .format(command, bold(str(len(aliases))), '`, `'.join(aliases))):
                 await ctx.send('Cancelling delete of `{}`.'.format(command))
                 return
 
