@@ -31,7 +31,7 @@ class DbContext(object):
                     SELECT_AWOKEN_SKILL_IDS, (), as_generator=True)]
 
     def get_monsters_where(self, f, server: Server = DEFAULT_SERVER):
-        return [m for m in self.get_all_monsters() if f(m)]
+        return [m for m in self.get_all_monsters(server) if f(m)]
 
     def get_first_monster_where(self, f):
         ms = self.get_monsters_where(f)

@@ -35,7 +35,7 @@ class IdMenu:
     async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']))
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), ims['resolved_monster_server'])
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll)
@@ -50,7 +50,7 @@ class IdMenu:
     @staticmethod
     def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = db_context.graph.get_alt_ids_by_id(monster.monster_id)
+            evos = db_context.graph.get_alt_ids(monster)
             index = evos.index(monster.monster_id)
             new_id = evos[index - 1]
             return new_id
@@ -62,13 +62,13 @@ class IdMenu:
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']))
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), ims['resolved_monster_server'])
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
+        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll) or '')
         if new_monster_id is None:
             ims['unsupported_transition'] = True
-        ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
+        ims['resolved_monster_id'] = new_monster_id
         pane_type = ims.get('pane_type')
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
@@ -77,7 +77,7 @@ class IdMenu:
     @staticmethod
     def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = db_context.graph.get_alt_ids_by_id(monster.monster_id)
+            evos = db_context.graph.get_alt_ids(monster)
             index = evos.index(monster.monster_id)
             if index == len(evos) - 1:
                 # cycle back to the beginning of the evos list

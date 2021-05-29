@@ -35,6 +35,7 @@ class ViewStateBaseId(ViewState):
         ret.update({
             'query': self.query,
             'resolved_monster_id': self.monster.monster_id,
+            'resolved_monster_server': self.monster.server_priority,
             'use_evo_scroll': str(self.use_evo_scroll),
             'reaction_list': self.reaction_list,
         })
@@ -62,5 +63,5 @@ class ViewStateBaseId(ViewState):
     @classmethod
     def get_alt_monsters_and_evos(cls, dgcog, monster) -> List[MonsterEvolution]:
         graph = dgcog.database.graph
-        alt_monsters = graph.get_alt_monsters_by_id(monster.monster_id)
-        return [MonsterEvolution(m, graph.get_evo_by_monster_id(m.monster_id)) for m in alt_monsters]
+        alt_monsters = graph.get_alt_monsters(monster)
+        return [MonsterEvolution(m, graph.get_evo_by_monster(m)) for m in alt_monsters]

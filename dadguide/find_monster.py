@@ -167,7 +167,7 @@ class FindMonster:
                 if matched_mons is not None:
                     matched_mons.difference_update(invalid)
                 else:
-                    matched_mons = set(self.dgcog.database.get_all_monsters()).difference(invalid)
+                    matched_mons = set(self.dgcog.database.get_all_monsters(self.index.server)).difference(invalid)
             else:
                 valid = self._get_valid_monsters_from_name_token(name_token, matches)
                 if matched_mons is not None:
@@ -285,7 +285,7 @@ class FindMonster:
             matched_mons = self._get_monster_evos(matched_mons, matches)
         else:
             # There are no name tokens in the query
-            matched_mons = {*self.dgcog.database.get_all_monsters()}
+            matched_mons = {*self.dgcog.database.get_all_monsters(self.index.server)}
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree

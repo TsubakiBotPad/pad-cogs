@@ -27,6 +27,7 @@ logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 class MonsterIndex(tsutils.aobject):
     async def __ainit__(self, graph: MonsterGraph, server: Server = DEFAULT_SERVER):
         self.graph = graph
+        self.server = server
         monsters = graph.get_all_monsters(server)
 
         self.issues = []

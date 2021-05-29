@@ -36,6 +36,7 @@ class MonsterListViewState(ViewStateBase):
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
             'monster_list': [str(m.monster_id) for m in self.monster_list],
+            'monster_server': self.monster_list[0].server_priority if self.monster_list else "COMBINED",
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
             'message': self.message,
@@ -46,7 +47,7 @@ class MonsterListViewState(ViewStateBase):
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
-        monster_list = [dgcog.database.graph.get_monster(int(m)) for m in ims['monster_list']]
+        monster_list = [dgcog.database.graph.get_monster(int(m), ims['monster_server']) for m in ims['monster_list']]
         title = ims['title']
 
         raw_query = ims['raw_query']

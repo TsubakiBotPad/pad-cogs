@@ -107,9 +107,9 @@ class SeriesScrollViewState(ViewStateBase):
         return paginated_monsters
 
     @staticmethod
-    def query_all_rarities(dgcog, series_id):
+    def query_all_rarities(dgcog, series_id, server):
         db_context: "DbContext" = dgcog.database
-        return sorted({m.rarity for m in db_context.get_all_monsters() if
+        return sorted({m.rarity for m in db_context.get_all_monsters(server) if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod

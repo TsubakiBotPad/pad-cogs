@@ -128,9 +128,8 @@ class MonsterGraph(object):
 
         table_suffix = ""
         where = ""
-        if server == "NA":
-            table_suffix = "_na"
         if server != "COMBINED":
+            table_suffix = "_" + server.lower()
             where = SPECIFY_SERVER.format(["JP", "NA", "KR"].index(server))
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
@@ -361,6 +360,9 @@ class MonsterGraph(object):
     def get_alt_ids_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
         return self.graph_dict[server].nodes[monster_id]['alt_versions']
 
+    def get_alt_ids(self, monster: MonsterModel):
+        return self.get_alt_ids_by_id(monster.monster_id, monster.server_priority)
+
     def get_alt_monsters_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
         ids = self.get_alt_ids_by_id(monster_id, server)
         return [self.get_monster(m_id, server) for m_id in ids]
@@ -431,7 +433,10 @@ class MonsterGraph(object):
         return sorted(alt_cards)[-1]
 
     def get_numerical_sort_top_monster_by_id(self, monster_id, server: Server = DEFAULT_SERVER):
-        return self.get_numerical_sort_top_monster_by_id(monster_id, server)
+        return self.get_monster(self.get_numerical_sort_top_id_by_id(monster_id, server), server)
+
+    def get_numerical_sort_top_monster(self, monster: MonsterModel):
+        return self.get_numerical_sort_top_monster_by_id(monster.monster_id, monster.server_priority)
 
     def get_evo_by_monster_id(self, monster_id, server: Server = DEFAULT_SERVER) -> Optional[EvolutionModel]:
         return self._get_edge_model(monster_id, 'back_evolution', server)

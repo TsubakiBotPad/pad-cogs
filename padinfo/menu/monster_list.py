@@ -126,6 +126,7 @@ class MonsterListMenu:
         extra_ims = {
             'is_child': True,
             'resolved_monster_id': int(ims['monster_list'][n]),
+            'resolved_monster_server': ims['monster_server'],
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
         }

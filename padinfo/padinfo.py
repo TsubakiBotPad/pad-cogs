@@ -5,7 +5,7 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Literal
 
 import discord
 import tsutils
@@ -16,7 +16,6 @@ from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, safe_read_json
 
-from dadguide.monster_graph import Server, DEFAULT_SERVER
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster, AWAKENING_ID_TO_EMOJI_NAME_MAP
@@ -207,20 +206,20 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes["COMBINED"].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes["COMBINED"].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
-            for monster in dgcog.indexes[DEFAULT_SERVER].all_name_tokens[goodquery[1]]:
-                for modifier in dgcog.indexes[DEFAULT_SERVER].modifiers[monster]:
+            for monster in dgcog.indexes["COMBINED"].all_name_tokens[goodquery[1]]:
+                for modifier in dgcog.indexes["COMBINED"].modifiers[monster]:
                     if modifier == 'xm' and goodquery[0] == 'x':
                         goodquery[0] = 'xm'
                     if modifier == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.indexes[DEFAULT_SERVER].all_name_tokens:
+            if bad and query not in dgcog.indexes["COMBINED"].all_name_tokens:
                 async def send_message():
                     await asyncio.sleep(1)
                     await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
@@ -600,7 +599,7 @@ class PadInfo(commands.Cog):
             paginated_monsters = SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
             if paginated_monsters:
                 break
-        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
+        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id, monster.server_priority)
 
         raw_query = query
         original_author_id = ctx.message.author.id
@@ -922,7 +921,7 @@ class PadInfo(commands.Cog):
                        "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
 
     @commands.command(aliases=["iddebug", "dbid", "iddb"])
-    async def debugid(self, ctx, server: Optional[Server] = DEFAULT_SERVER, *, query):
+    async def debugid(self, ctx, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED", *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
         mon = await dgcog.find_monster(query, ctx.author.id)
@@ -983,7 +982,7 @@ class PadInfo(commands.Cog):
             await self.debugid(ctx, query=query)
 
     @commands.command()
-    async def exportmodifiers(self, ctx, server: Server = DEFAULT_SERVER):
+    async def exportmodifiers(self, ctx, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED"):
         DGCOG = self.bot.get_cog("Dadguide")
         maps = DGCOG.token_maps
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
@@ -1020,7 +1019,7 @@ class PadInfo(commands.Cog):
         await ctx.send(file=text_to_file(ret, filename="table.md"))
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod", "luid", "idlu"])
-    async def idmeaning(self, ctx, token, server: Server = DEFAULT_SERVER):
+    async def idmeaning(self, ctx, token, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED"):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
