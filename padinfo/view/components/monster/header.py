@@ -14,7 +14,6 @@ class MonsterHeader:
     @classmethod
     def jp_suffix(cls, m: "MonsterModel", monster_diff, subname_on_override=True):
         suffix = ""
-        print(monster_diff)
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
         if not m.on_na:
