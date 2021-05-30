@@ -64,7 +64,6 @@ class SeriesScrollViewState(ViewStateBase):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        # print(ims)
         if ims.get('unsupported_transition'):
             return None
         series_id = ims['series_id']

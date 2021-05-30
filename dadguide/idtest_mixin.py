@@ -162,7 +162,6 @@ class IdTest:
         cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (\d+)\s+(\w*) *(.*)', queries)
         async with self.config.fluff_suite() as suite:
             for query, result, fluff, reason in cases:
-                # print(query, result, fluff, reason)
                 if not any(c['id'] == int(result) and c['token'] == query for c in suite):
                     suite.append({
                         'id': int(result),

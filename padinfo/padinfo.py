@@ -1225,5 +1225,4 @@ class PadInfo(commands.Cog):
             await ctx.send("No monster matched.")
             return
 
-        print(monster_list)
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results', IdSearchViewState)

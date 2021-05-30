@@ -8,7 +8,6 @@ graph = MonsterGraph(database)
 db_context = DbContext(database, graph)
 get_monster = lambda mid, server="COMBINED": graph.get_monster(mid, server=server)
 
-# print(ctx.get_awoken_skill_ids())
 assert get_monster(4).is_farmable
 assert not get_monster(5156).is_farmable
 assert graph.get_base_monster(get_monster(1074)).monster_id == 1073  # evo pandora
