@@ -1,11 +1,12 @@
 import json
 import re
 from collections import defaultdict
-from typing import Optional, List, Union, Set, Literal
+from typing import Optional, List, Union, Set
 
 from networkx import MultiDiGraph
 from networkx.classes.coreviews import AtlasView
 
+from .common.enums import DEFAULT_SERVER, Server
 from .database_manager import DadguideDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
@@ -104,11 +105,6 @@ FROM
 """
 
 SPECIFY_SERVER = " WHERE server_id = {}"
-
-DEFAULT_SERVER = "COMBINED"
-SERVERS = ["NA", "COMBINED"]
-
-Server = Literal["COMBINED", "NA"]
 
 
 class MonsterGraph(object):

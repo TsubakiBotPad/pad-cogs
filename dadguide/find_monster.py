@@ -8,7 +8,7 @@ from tsutils import rmdiacritics
 
 from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
 from dadguide.models.monster_model import MonsterModel
-from dadguide.monster_graph import DEFAULT_SERVER
+from dadguide.common.enums import DEFAULT_SERVER
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,

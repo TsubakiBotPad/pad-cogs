@@ -26,7 +26,7 @@ from .database_loader import load_database
 from .idtest_mixin import IdTest
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .monster_graph import SERVERS, Server, DEFAULT_SERVER
+from .common.enums import DEFAULT_SERVER, SERVERS, Server
 from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
