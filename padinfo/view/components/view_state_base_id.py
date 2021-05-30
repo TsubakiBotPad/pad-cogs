@@ -6,7 +6,7 @@ from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.monster_model import MonsterModel, MonsterDifference
     from dadguide.models.evolution_model import EvolutionModel
 
 
@@ -17,7 +17,7 @@ class MonsterEvolution(NamedTuple):
 
 class ViewStateBaseId(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution],
+                 alt_monsters: List[MonsterEvolution], monster_difference: "MonsterDifference",
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
@@ -27,6 +27,7 @@ class ViewStateBaseId(ViewState):
         self.reaction_list = reaction_list
         self.color = color
         self.monster = monster
+        self.monster_diff = monster_difference
         self.query = query
         self.use_evo_scroll = use_evo_scroll
 
@@ -55,9 +56,12 @@ class ViewStateBaseId(ViewState):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
+        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
-                   use_evo_scroll=use_evo_scroll, reaction_list=reaction_list,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, monsterdiff,
+                   use_evo_scroll=use_evo_scroll,
+                   reaction_list=reaction_list,
                    extra_state=ims)
 
     @classmethod

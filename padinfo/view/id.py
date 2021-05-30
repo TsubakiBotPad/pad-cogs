@@ -33,11 +33,12 @@ def alt_fmt(monsterevo, state):
 
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution],
+                 alt_monsters: List[MonsterEvolution], monster_diff,
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, monster_diff,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -76,8 +77,10 @@ class IdViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
+        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, monsterdiff,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
@@ -301,9 +304,9 @@ class IdView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(m,
-                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(m,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.monster_diff).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=embed_footer_with_state(state),

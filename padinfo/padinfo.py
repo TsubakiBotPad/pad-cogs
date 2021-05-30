@@ -189,7 +189,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id(ctx, "inna " + query)
+        await self._do_id(ctx, "--na " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -258,8 +258,10 @@ class PadInfo(commands.Cog):
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
 
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                            alt_monsters, monsterdiff,
                             transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                             use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
         menu = IdMenu.menu()

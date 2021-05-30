@@ -13,7 +13,7 @@ from .models.awoken_skill_model import AwokenSkillModel
 from .models.enum_types import InternalEvoType
 from .models.evolution_model import EvolutionModel
 from .models.leader_skill_model import LeaderSkillModel
-from .models.monster_model import MonsterModel
+from .models.monster_model import MonsterModel, MonsterDifference
 from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT
@@ -709,3 +709,6 @@ class MonsterGraph(object):
     def material_of_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
         return [self.get_monster(m, monster.server_priority)
                 for m in self.material_of_ids(monster)]
+
+    def monster_difference(self, monster: MonsterModel, server: Server = DEFAULT_SERVER) -> MonsterDifference:
+        return monster.get_difference(self.get_monster(monster.monster_id, server))

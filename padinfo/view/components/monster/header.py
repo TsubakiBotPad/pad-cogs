@@ -11,58 +11,67 @@ if TYPE_CHECKING:
 
 
 class MonsterHeader:
-    @staticmethod
-    def jp_suffix(m: "MonsterModel", subname_on_override=True):
+    @classmethod
+    def jp_suffix(cls, m: "MonsterModel", monster_diff, subname_on_override=True):
         suffix = ""
+        print(monster_diff)
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
         if not m.on_na:
             suffix += ' (JP only)'
+        if monster_diff:
+            suffix += ' (JP Buffed)'
         return suffix
 
-    @staticmethod
-    def short(m: "MonsterModel", link=False):
+    @classmethod
+    def short(cls, m: "MonsterModel", link=False):
         type_emojis = ''
         msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
         return '[{}]({})'.format(msg, puzzledragonx(m)) if link else msg
 
-    @staticmethod
-    def long(m: "MonsterModel", link=False):
-        msg = MonsterHeader.short(m) + MonsterHeader.jp_suffix(m)
+    @classmethod
+    def long(cls, m: "MonsterModel", link=False):
+        msg = cls.short(m) + cls.jp_suffix(m)
         return '[{}]({})'.format(msg, puzzledragonx(m)) if link else msg
 
-    @staticmethod
-    def name(m: "MonsterModel", link=False, show_jp=False):
+    @classmethod
+    def name(cls, m: "MonsterModel", link=False, show_jp=False):
         msg = '[{}] {}{}'.format(
             m.monster_no_na,
             m.name_en,
-            MonsterHeader.jp_suffix(m) if show_jp else '')
+            cls.jp_suffix(m) if show_jp else '')
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
-    @staticmethod
-    def long_v2(m: "MonsterModel", link=False):
-        msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, MonsterHeader.jp_suffix(m))
+    @classmethod
+    def long_v2(cls, m: "MonsterModel", link=False):
+        msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, cls.jp_suffix(m))
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
-    @staticmethod
-    def long_maybe_tsubaki(m: "MonsterModel", is_tsubaki):
+    @classmethod
+    def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, monster_diff=False):
         """Returns long_v2 as well as an `!` if the monster is Tsubaki
     
         To celebrate 1000 issues/PRs in our main Tsubaki repo, we added this easter egg! Yay!
         """
-        return Text('[{}] {}{}{}'.format(
+        return '[{}] {}{}{}'.format(
             m.monster_no_na,
             m.name_en,
             '!' if is_tsubaki else '',
-            MonsterHeader.jp_suffix(m)))
+            cls.jp_suffix(m, monster_diff))
 
-    @staticmethod
-    def short_with_emoji(m: "MonsterModel", link=True, prefix=None):
+    @classmethod
+    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, monster_diff=False):
+        return Text('{} {}'.strip().format(
+            '\N{EARTH GLOBE AMERICAS}' if m.server_priority == "NA" else '',
+            cls.long_maybe_tsubaki(m, is_tsubaki, monster_diff)))
+
+    @classmethod
+    def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None):
         msg = f"{m.monster_no_na} - {m.name_en}"
         return Box(
             prefix,
             Text(get_attribute_emoji_by_monster(m)),
             LinkedText(msg, puzzledragonx(m)) if link else Text(msg),
-            Text(MonsterHeader.jp_suffix(m, False)),
+            Text(cls.jp_suffix(m, False, False)),
             delimiter=' '
         )
