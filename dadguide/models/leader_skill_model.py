@@ -40,7 +40,7 @@ class LeaderSkillModel(BaseModel):
 
     def to_dict(self):
         return {
-            'monster_id': self.leader_skill_id,
+            'leader_skill_id': self.leader_skill_id,
             'name_ja': self.name_ja,
             'name_en': self.name_en,
         }

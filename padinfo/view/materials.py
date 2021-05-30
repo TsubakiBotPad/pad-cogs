@@ -74,7 +74,7 @@ class MaterialsViewState(ViewStateBaseId):
         discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrepant,
+                   alt_monsters, discrep,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,

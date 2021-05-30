@@ -22,7 +22,7 @@ TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 acquire_raw, monster_ids, reaction_list):
+                 acquire_raw, monster_ids, discrepant, reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
@@ -30,6 +30,7 @@ class TransformInfoViewState(ViewStateBase):
         self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
         self.reaction_list = reaction_list
+        self.discrepant = discrepant
 
     def serialize(self):
         ret = super().serialize()
@@ -54,9 +55,11 @@ class TransformInfoViewState(ViewStateBase):
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
+        discrep = dgcog.database.graph.monster_is_discrepant(base_mon) \
+                  or dgcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-                                      base_mon, transformed_mon, acquire_raw, monster_ids,
+                                      base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
                                       reaction_list=reaction_list)
 
     @staticmethod
@@ -203,7 +206,9 @@ class TransformInfoView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_v2(transformed_mon).to_markdown(),
+                title=MonsterHeader.fmt_id_header(transformed_mon,
+                                                  False,
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(transformed_mon)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon)),

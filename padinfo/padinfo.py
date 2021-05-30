@@ -757,9 +757,11 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
+        discrep = dgcog.database.graph.monster_is_discrepant(base_mon) \
+                  or dgcog.database.graph.monster_is_discrepant(transformed_mon)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw, monster_ids,
+                                       color, base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
