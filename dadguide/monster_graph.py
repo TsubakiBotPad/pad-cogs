@@ -14,7 +14,8 @@ from .models.awoken_skill_model import AwokenSkillModel
 from .models.enum_types import InternalEvoType
 from .models.evolution_model import EvolutionModel
 from .models.leader_skill_model import LeaderSkillModel
-from .models.monster_model import MonsterModel, MonsterDifference
+from .models.monster_model import MonsterModel
+from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
 
 MONSTER_QUERY = """SELECT

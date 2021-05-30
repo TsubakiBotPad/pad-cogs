@@ -6,7 +6,8 @@ from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel, MonsterDifference
+    from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.monster.monster_difference import MonsterDifference
     from dadguide.models.evolution_model import EvolutionModel
 
 

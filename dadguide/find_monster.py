@@ -45,11 +45,11 @@ class FindMonster:
         self.index = self.dgcog.indexes["COMBINED"]
         self.flags = flags
 
-    def _process_flags(self, original_query: str) -> str:
-        flags = re.findall(r'--\w+(?:{.+?})?', original_query)
+    def _process_settings(self, original_query: str) -> str:
+        settings = re.findall(r'--\w+(?:{.+?})?', original_query)
 
-        for flag in flags:
-            if self.calc_ratio_modifier(flag, '--na') >= self.MODIFIER_JW_DISTANCE:
+        for setting in settings:
+            if self.calc_ratio_modifier(setting, '--na') >= self.MODIFIER_JW_DISTANCE:
                 self.index = self.dgcog.indexes['NA']
             else:
                 self.index = self.dgcog.indexes[DEFAULT_SERVER]
@@ -308,7 +308,7 @@ class FindMonster:
         await self.dgcog.wait_until_ready()
 
         query = rmdiacritics(query).lower().replace(",", "")
-        tokenized_query = self._process_flags(query).split()
+        tokenized_query = self._process_settings(query).split()
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
 
         best_monster, matches_dict, valid_monsters = max(
