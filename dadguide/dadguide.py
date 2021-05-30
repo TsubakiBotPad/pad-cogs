@@ -156,9 +156,9 @@ class Dadguide(commands.Cog, IdTest):
             for page in pagify(f"Index Load Warnings:\n" + "\n".join(index.issues[:100])):
                 await channel.send(box(page))
 
-    def get_monster(self, monster_id: int, server: Server = DEFAULT_SERVER) -> MonsterModel:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
-        return self.database.graph.get_monster(monster_id, server)
+        return self.database.graph.get_monster(monster_id, server=server)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

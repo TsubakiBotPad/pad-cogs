@@ -93,7 +93,8 @@ class MaterialsViewState(ViewStateBaseId):
         link = ilmina_skill(monster)
 
         if monster.active_skill:
-            sums = [m for m in db_context.get_monsters_by_active(monster.active_skill.active_skill_id)
+            sums = [m for m in db_context.get_monsters_by_active(monster.active_skill.active_skill_id,
+                                                                 server=monster.server_priority)
                     if db_context.graph.monster_is_farmable_evo(m)]
             sugs = [db_context.graph.evo_gem_monster(su) for su in sums]
             vsums = []

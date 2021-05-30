@@ -62,7 +62,7 @@ class MonsterIndex(tsutils.aobject):
         )
 
         for m_id, name, lp, ov, i in nickname_data:
-            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server):
+            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
                 name = name.strip().lower()
                 mid = int(m_id)
                 if lp:
@@ -71,23 +71,23 @@ class MonsterIndex(tsutils.aobject):
                     self.treename_overrides.add(mid)
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
         for m_id, name, mp, ov, i in treenames_data:
-            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server):
+            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
                 name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.treename_overrides.add(emid)
                 if mp:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
 
@@ -104,7 +104,7 @@ class MonsterIndex(tsutils.aobject):
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods, rmv in mod_data:
-            if mid.isdigit() and graph.get_monster(int(mid), server):
+            if mid.isdigit() and graph.get_monster(int(mid), server=server):
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
@@ -117,7 +117,7 @@ class MonsterIndex(tsutils.aobject):
                         self.manual_prefixes[mid].update(get_modifier_aliases(mod))
 
         for mid, mods in treemod_data:
-            if mid.isdigit() and graph.get_monster(int(mid), server):
+            if mid.isdigit() and graph.get_monster(int(mid), server=server):
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
@@ -125,7 +125,7 @@ class MonsterIndex(tsutils.aobject):
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.manual_prefixes[emid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()

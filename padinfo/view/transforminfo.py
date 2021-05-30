@@ -49,8 +49,8 @@ class TransformInfoViewState(ViewStateBase):
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
 
-        base_mon = dgcog.get_monster(base_mon_id, ims['resolved_monster_server'])
-        transformed_mon = dgcog.get_monster(transformed_mon_id, ims['resolved_monster_server'])
+        base_mon = dgcog.get_monster(base_mon_id, server=ims['resolved_monster_server'])
+        transformed_mon = dgcog.get_monster(transformed_mon_id, server=ims['resolved_monster_server'])
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']

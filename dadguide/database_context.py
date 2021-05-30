@@ -31,29 +31,24 @@ class DbContext(object):
                 self.database.query_many(
                     SELECT_AWOKEN_SKILL_IDS, (), as_generator=True)]
 
-    def get_monsters_where(self, f, server: Server = DEFAULT_SERVER):
+    def get_monsters_where(self, f, *, server: Server):
         return [m for m in self.get_all_monsters(server) if f(m)]
 
-    def get_first_monster_where(self, f, server):
-        ms = self.get_monsters_where(f, server)
-        if ms:
-            return min(ms, key=lambda m: m.monster_id)
+    def get_monsters_by_series(self, series_id: int, *, server: Server):
+        return self.get_monsters_where(lambda m: m.series_id == series_id, server=server)
 
-    def get_monsters_by_series(self, series_id: int, server: Server = DEFAULT_SERVER):
-        return self.get_monsters_where(lambda m: m.series_id == series_id, server)
+    def get_monsters_by_active(self, active_skill_id: int, *, server: Server):
+        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
-    def get_monsters_by_active(self, active_skill_id: int, server: Server = DEFAULT_SERVER):
-        return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server)
-
-    def get_all_monster_ids_query(self, server: Server = DEFAULT_SERVER):
+    def get_all_monster_ids_query(self, server: Server):
         table = 'monsters_na' if server == "NA" else 'monsters'
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}), (),
             as_generator=True)
         return map(lambda m: m.monster_id, query)
 
-    def get_all_monsters(self,  server: Server = DEFAULT_SERVER):
-        return (self.graph.get_monster(mid, server) for mid in self.get_all_monster_ids_query(server))
+    def get_all_monsters(self, server: Server = DEFAULT_SERVER):
+        return (self.graph.get_monster(mid, server=server) for mid in self.get_all_monster_ids_query(server))
 
     def get_all_events(self) -> Generator[ScheduledEventModel, None, None]:
         result = self.database.query_many(SCHEDULED_EVENT_QUERY, ())

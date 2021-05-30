@@ -89,7 +89,7 @@ class PantheonViewState(ViewStateBaseId):
 
         db_context = dgcog.database
         series_name = monster.series.name_en
-        full_pantheon = db_context.get_monsters_by_series(monster.series_id, monster.server_priority)
+        full_pantheon = db_context.get_monsters_by_series(monster.series_id, server=monster.server_priority)
         if not full_pantheon:
             return None, None, None
 

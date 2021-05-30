@@ -21,7 +21,7 @@ class StaticMonsterListViewState(MonsterListViewState):
     @classmethod
     async def query(cls, dgcog, monster_list, server) -> List["MonsterModel"]:
         db_context: "DbContext" = dgcog.database
-        monster_list = [db_context.graph.get_monster(int(m), server) for m in monster_list]
+        monster_list = [db_context.graph.get_monster(int(m), server=server) for m in monster_list]
         return monster_list
 
     @classmethod

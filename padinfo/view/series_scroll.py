@@ -99,7 +99,7 @@ class SeriesScrollViewState(ViewStateBase):
     @staticmethod
     async def query(dgcog, series_id, rarity, server):
         db_context: "DbContext" = dgcog.database
-        all_series_monsters = db_context.get_monsters_by_series(series_id, server)
+        all_series_monsters = db_context.get_monsters_by_series(series_id, server=server)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
         paginated_monsters = [base_monsters_of_rarity[i:i + SeriesScrollViewState.MAX_ITEMS_PER_PANE]
