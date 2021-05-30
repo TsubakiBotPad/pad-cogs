@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class MonsterHeader:
     @classmethod
-    def jp_suffix(cls, m: "MonsterModel", monster_diff, subname_on_override=True):
+    def jp_suffix(cls, m: "MonsterModel", monster_diff=False, subname_on_override=True):
         suffix = ""
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
@@ -59,10 +59,10 @@ class MonsterHeader:
             cls.jp_suffix(m, monster_diff))
 
     @classmethod
-    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, monster_diff=False):
+    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, monster_diff):
         return Text('{} {}'.strip().format(
             '\N{EARTH GLOBE AMERICAS}' if m.server_priority == "NA" else '',
-            cls.long_maybe_tsubaki(m, is_tsubaki, monster_diff)))
+            cls.long_maybe_tsubaki(m, is_tsubaki, bool(monster_diff))))
 
     @classmethod
     def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None):
