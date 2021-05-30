@@ -726,7 +726,7 @@ class PadGlobal(commands.Cog):
 
         monster = dgcog.get_monster(monster_id)
 
-        if db_context.graph.monster_is_mp_evo(monster) and not db_context.graph.monster_is_rem(monster):
+        if db_context.graph.monster_is_mp_evo(monster) and not monster.in_rem:
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False

@@ -70,7 +70,7 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity)
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, ims['server'])
         current_page = ims['current_page']
         monster_list = paginated_monsters[current_page]
         title = ims['title']

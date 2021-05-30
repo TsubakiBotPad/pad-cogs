@@ -80,10 +80,10 @@ class MonsterIndex(tsutils.aobject):
                 name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
-                    for emid in self.graph.get_alt_ids_by_id(mid, server):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
                         self.treename_overrides.add(emid)
                 if mp:
-                    for emid in self.graph.get_alt_ids_by_id(mid, server):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
                         self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
@@ -125,7 +125,7 @@ class MonsterIndex(tsutils.aobject):
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for emid in self.graph.get_alt_ids_by_id(mid, server):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server)):
                         self.manual_prefixes[emid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
@@ -319,9 +319,9 @@ class MonsterIndex(tsutils.aobject):
             modifiers.update(EVO_MAP[EvoTypes.BASE])
 
         special_evo = ('覚醒' in monster.name_ja or 'awoken' in monster.name_en or '転生' in monster.name_ja or
-                       self.graph.true_evo_type_by_monster(monster).value == "Reincarnated" or
+                       self.graph.true_evo_type(monster).value == "Reincarnated" or
                        'reincarnated' in monster.name_en or
-                       self.graph.true_evo_type_by_monster(monster).value == "Super Reincarnated" or
+                       self.graph.true_evo_type(monster).value == "Super Reincarnated" or
                        monster.is_equip or '極醒' in monster.name_ja)
 
         # Evo
@@ -343,7 +343,7 @@ class MonsterIndex(tsutils.aobject):
                                    lambda m: not self.graph.monster_is_transform_base(m))
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.BASETRANS],
                                    lambda m: (self.graph.monster_is_transform_base(m)
-                                              and self.graph.get_next_transform_by_monster(m)))
+                                              and self.graph.get_next_transform(m)))
 
         # Awoken
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.AWOKEN],
@@ -355,16 +355,16 @@ class MonsterIndex(tsutils.aobject):
 
         # Reincarnated
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.REVO],
-                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Reincarnated")
+                                   lambda m: self.graph.true_evo_type(m).value == "Reincarnated")
 
         # Super Reincarnated
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.SREVO],
-                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated")
+                                   lambda m: self.graph.true_evo_type(m).value == "Super Reincarnated")
 
         # Pixel
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.PIXEL],
                                    lambda m: (m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
-                                              or self.graph.true_evo_type_by_monster(m).value == "Pixel"),
+                                              or self.graph.true_evo_type(m).value == "Pixel"),
                                    else_mods=EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
@@ -396,13 +396,13 @@ class MonsterIndex(tsutils.aobject):
 
         # Story
         def is_story(m, do_transform=True):
-            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats_by_monster(m)):
+            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats(m)):
                 return True
             if do_transform:
                 for pt in self.graph.get_transform_monsters(m):
                     if is_story(pt, False):
                         return True
-            pe = self.graph.get_prev_evolution_by_monster(m)
+            pe = self.graph.get_prev_evolution(m)
             if pe and is_story(pe):
                 return True
             return False

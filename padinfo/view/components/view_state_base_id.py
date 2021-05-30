@@ -28,7 +28,7 @@ class ViewStateBaseId(ViewState):
         self.reaction_list = reaction_list
         self.color = color
         self.monster = monster
-        self.monster_diff = monster_difference
+        self.discrepant = monster_difference
         self.query = query
         self.use_evo_scroll = use_evo_scroll
 
@@ -57,10 +57,10 @@ class ViewStateBaseId(ViewState):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, monsterdiff,
+                   alt_monsters, discrep,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
@@ -69,4 +69,4 @@ class ViewStateBaseId(ViewState):
     def get_alt_monsters_and_evos(cls, dgcog, monster) -> List[MonsterEvolution]:
         graph = dgcog.database.graph
         alt_monsters = graph.get_alt_monsters(monster)
-        return [MonsterEvolution(m, graph.get_evo_by_monster(m)) for m in alt_monsters]
+        return [MonsterEvolution(m, graph.get_evolution(m)) for m in alt_monsters]

@@ -24,7 +24,7 @@ MAX_MONS_TO_SHOW = 5
 
 class MaterialsViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], monster_diff,
+                 alt_monsters: List[MonsterEvolution], discrepant,
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
@@ -32,7 +32,7 @@ class MaterialsViewState(ViewStateBaseId):
                  reaction_list: List[str] = None,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
-                         alt_monsters, monster_diff,
+                         alt_monsters, discrepant,
                          reaction_list=reaction_list,
                          use_evo_scroll=use_evo_scroll,
                          extra_state=extra_state)
@@ -71,10 +71,10 @@ class MaterialsViewState(ViewStateBaseId):
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
-        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, monster_diff,
+                   alt_monsters, discrepant,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -83,7 +83,7 @@ class MaterialsViewState(ViewStateBaseId):
     @staticmethod
     async def query(dgcog, monster):
         db_context = dgcog.database
-        mats = db_context.graph.evo_mats_by_monster(monster)
+        mats = db_context.graph.evo_mats(monster)
         usedin = db_context.graph.material_of_monsters(monster)
         evo_gem = db_context.graph.evo_gem_monster(monster)
         gemid = str(evo_gem.monster_no_na) if evo_gem else None
@@ -159,7 +159,7 @@ class MaterialsView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.monster_diff).to_markdown(),
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(state.monster)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),

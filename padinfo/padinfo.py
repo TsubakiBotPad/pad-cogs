@@ -258,10 +258,10 @@ class PadInfo(commands.Cog):
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
-        monsterdiff = dgcog.database.graph.monster_difference(monster, "COMBINED")
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
-                            alt_monsters, monsterdiff,
+                            alt_monsters, discrep,
                             transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                             use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
@@ -344,6 +344,7 @@ class PadInfo(commands.Cog):
 
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dgcog, monster)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         if alt_versions is None:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
@@ -353,8 +354,9 @@ class PadInfo(commands.Cog):
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                              monster, alt_monsters, alt_versions, gem_versions,
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                              alt_monsters, discrep,
+                              alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
@@ -384,10 +386,12 @@ class PadInfo(commands.Cog):
             return
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   alt_monsters, discrep,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
@@ -417,11 +421,13 @@ class PadInfo(commands.Cog):
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
         alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                  monster, alt_monsters, pantheon_list, series_name, base_monster,
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                  alt_monsters, discrep,
+                                  pantheon_list, series_name, base_monster,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
@@ -445,11 +451,12 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                             monster, alt_monsters,
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                             alt_monsters, discrep,
                              reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)
@@ -473,11 +480,12 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                   monster, alt_monsters,
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   alt_monsters, discrep,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
@@ -624,7 +632,8 @@ class PadInfo(commands.Cog):
         paginated_monsters = None
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            paginated_monsters = await SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            paginated_monsters = await SeriesScrollViewState.query(dgcog, monster.series_id,
+                                                                   rarity, monster.server_priority)
             if paginated_monsters:
                 break
         all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id, monster.server_priority)

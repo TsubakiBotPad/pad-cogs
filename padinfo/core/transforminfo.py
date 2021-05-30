@@ -11,7 +11,7 @@ async def perform_transforminfo_query(dgcog, raw_query, author_id):
     altversions = mgraph.get_alt_monsters(found_monster)
     for mon in altversions:
         if mgraph.monster_is_transform_base(mon):
-            transformed_mon = dgcog.get_monster(mgraph.get_next_transform_id_by_monster(mon))
+            transformed_mon = dgcog.get_monster(mgraph.get_next_transform_id(mon))
             if transformed_mon:
                 base_mon = mon
                 break
@@ -20,12 +20,12 @@ async def perform_transforminfo_query(dgcog, raw_query, author_id):
         return found_monster, None, None
 
     reaction_ids = [base_mon.monster_id, transformed_mon.monster_id]
-    current_id = transformed_mon.monster_id
+    current = transformed_mon
     while True:
-        next_transform_id = mgraph.get_next_transform_id_by_monster_id(current_id)
-        if next_transform_id is not None and next_transform_id not in reaction_ids:
-            reaction_ids.append(next_transform_id)
-            current_id = next_transform_id
+        next_transform = mgraph.get_next_transform(current)
+        if next_transform is not None and next_transform.monster_id not in reaction_ids:
+            reaction_ids.append(next_transform.monster_id)
+            current = next_transform
         else:
             break
 

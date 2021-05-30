@@ -12,13 +12,13 @@ if TYPE_CHECKING:
 
 class MonsterHeader:
     @classmethod
-    def jp_suffix(cls, m: "MonsterModel", monster_diff=False, subname_on_override=True):
+    def jp_suffix(cls, m: "MonsterModel", discrepant=False, subname_on_override=True):
         suffix = ""
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
         if not m.on_na:
             suffix += ' (JP only)'
-        if monster_diff:
+        if discrepant:
             suffix += ' (JP Buffed)'
         return suffix
 
@@ -47,7 +47,7 @@ class MonsterHeader:
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @classmethod
-    def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, monster_diff=False):
+    def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, discrepant=False):
         """Returns long_v2 as well as an `!` if the monster is Tsubaki
     
         To celebrate 1000 issues/PRs in our main Tsubaki repo, we added this easter egg! Yay!
@@ -56,13 +56,13 @@ class MonsterHeader:
             m.monster_no_na,
             m.name_en,
             '!' if is_tsubaki else '',
-            cls.jp_suffix(m, monster_diff))
+            cls.jp_suffix(m, discrepant))
 
     @classmethod
-    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, monster_diff):
+    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, discrepant):
         return Text('{} {}'.strip().format(
             '\N{EARTH GLOBE AMERICAS}' if m.server_priority == "NA" else '',
-            cls.long_maybe_tsubaki(m, is_tsubaki, bool(monster_diff))))
+            cls.long_maybe_tsubaki(m, is_tsubaki, bool(discrepant))))
 
     @classmethod
     def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None):

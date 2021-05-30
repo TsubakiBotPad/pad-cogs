@@ -54,7 +54,7 @@ class OtherInfoView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.monster_diff).to_markdown(),
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(m)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=[

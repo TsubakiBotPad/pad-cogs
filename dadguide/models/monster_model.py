@@ -166,7 +166,7 @@ class MonsterModel(BaseModel):
         }
 
     def get_difference(self, other):
-        if self.monster_id != other.monster_id:
+        if other and self.monster_id != other.monster_id:
             raise ValueError("You cannot get the difference of monsters with different ids.")
         return MonsterDifference.from_monsters(self, other)
 
