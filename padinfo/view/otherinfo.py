@@ -52,9 +52,9 @@ class OtherInfoView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(state.monster,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(m)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=[

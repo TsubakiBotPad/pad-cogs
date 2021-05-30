@@ -33,11 +33,12 @@ def alt_fmt(monsterevo, state):
 
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution],
+                 alt_monsters: List[MonsterEvolution], discrepant,
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, discrepant,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -76,8 +77,10 @@ class IdViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, discrep,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
@@ -96,9 +99,9 @@ class IdViewState(ViewStateBaseId):
     @classmethod
     async def _get_monster_misc_info(cls, db_context, monster):
         transform_base = db_context.graph.get_transform_base(monster)
-        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
+        true_evo_type_raw = db_context.graph.true_evo_type(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
-        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_id).rarity
+        base_rarity = db_context.graph.get_base_monster(monster).rarity
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
 
 
@@ -133,9 +136,9 @@ def evos_embed_field(state: ViewStateBaseId):
     # this isn't used right now, but maybe later if discord changes the api for embed titles...?
     help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
     legend_parts = []
-    if any([alt_evo.evolution and not alt_evo.evolution.reversible for alt_evo in state.alt_monsters]):
+    if any(not alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution):
         legend_parts.append("⌊Irreversible⌋")
-    if any([alt_evo.monster.is_equip for alt_evo in state.alt_monsters]):
+    if any(alt_evo.monster.is_equip for alt_evo in state.alt_monsters):
         legend_parts.append("⌈Equip⌉")
     if legend_parts:
         help_text = ' – Help: {}'.format(" ".join(legend_parts))
@@ -301,9 +304,9 @@ class IdView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(m,
-                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(m,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=embed_footer_with_state(state),

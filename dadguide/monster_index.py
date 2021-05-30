@@ -9,6 +9,8 @@ import tsutils
 from redbot.core.utils import AsyncIter
 
 from .models.monster_model import MonsterModel
+from .monster_graph import MonsterGraph
+from .common.enums import DEFAULT_SERVER, Server
 from .token_mappings import *
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
@@ -24,8 +26,10 @@ logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
 
 
 class MonsterIndex(tsutils.aobject):
-    async def __ainit__(self, monsters, db):
-        self.graph = db.graph
+    async def __ainit__(self, graph: MonsterGraph, server: Server = DEFAULT_SERVER):
+        self.graph = graph
+        self.server = server
+        monsters = graph.get_all_monsters(server)
 
         self.issues = []
 
@@ -34,14 +38,14 @@ class MonsterIndex(tsutils.aobject):
         self.monster_id_to_treename = defaultdict(set)
         self.series_id_to_pantheon_nickname = \
             defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
-                              for m in db.get_all_monsters()
+                              for m in monsters
                               if m.series.name_en.lower() not in PROBLEMATIC_SERIES_TOKENS})
 
         self.mwtoken_creators = defaultdict(set)
 
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
-                                  in db.get_all_monsters()
+                                  in monsters
                                   if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
 
         self.replacement_tokens = defaultdict(set)
@@ -58,7 +62,7 @@ class MonsterIndex(tsutils.aobject):
         )
 
         for m_id, name, lp, ov, i in nickname_data:
-            if m_id.isdigit() and not i:
+            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
                 name = name.strip().lower()
                 mid = int(m_id)
                 if lp:
@@ -67,23 +71,23 @@ class MonsterIndex(tsutils.aobject):
                     self.treename_overrides.add(mid)
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
         for m_id, name, mp, ov, i in treenames_data:
-            if m_id.isdigit() and not i:
+            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
                 name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
-                    for emid in self.graph.get_alt_ids_by_id(mid):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.treename_overrides.add(emid)
                 if mp:
-                    for emid in self.graph.get_alt_ids_by_id(mid):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(db.graph.get_monster(mid))
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
 
@@ -100,7 +104,7 @@ class MonsterIndex(tsutils.aobject):
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods, rmv in mod_data:
-            if mid.isdigit():
+            if mid.isdigit() and graph.get_monster(int(mid), server=server):
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
@@ -113,7 +117,7 @@ class MonsterIndex(tsutils.aobject):
                         self.manual_prefixes[mid].update(get_modifier_aliases(mod))
 
         for mid, mods in treemod_data:
-            if mid.isdigit():
+            if mid.isdigit() and graph.get_monster(int(mid), server=server):
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
@@ -121,7 +125,7 @@ class MonsterIndex(tsutils.aobject):
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for emid in self.graph.get_alt_ids_by_id(mid):
+                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
                         self.manual_prefixes[emid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
@@ -315,9 +319,9 @@ class MonsterIndex(tsutils.aobject):
             modifiers.update(EVO_MAP[EvoTypes.BASE])
 
         special_evo = ('覚醒' in monster.name_ja or 'awoken' in monster.name_en or '転生' in monster.name_ja or
-                       self.graph.true_evo_type_by_monster(monster).value == "Reincarnated" or
+                       self.graph.true_evo_type(monster).value == "Reincarnated" or
                        'reincarnated' in monster.name_en or
-                       self.graph.true_evo_type_by_monster(monster).value == "Super Reincarnated" or
+                       self.graph.true_evo_type(monster).value == "Super Reincarnated" or
                        monster.is_equip or '極醒' in monster.name_ja)
 
         # Evo
@@ -339,7 +343,7 @@ class MonsterIndex(tsutils.aobject):
                                    lambda m: not self.graph.monster_is_transform_base(m))
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.BASETRANS],
                                    lambda m: (self.graph.monster_is_transform_base(m)
-                                              and self.graph.get_next_transform_by_monster(m)))
+                                              and self.graph.get_next_transform(m)))
 
         # Awoken
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.AWOKEN],
@@ -351,16 +355,16 @@ class MonsterIndex(tsutils.aobject):
 
         # Reincarnated
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.REVO],
-                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Reincarnated")
+                                   lambda m: self.graph.true_evo_type(m).value == "Reincarnated")
 
         # Super Reincarnated
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.SREVO],
-                                   lambda m: self.graph.true_evo_type_by_monster(m).value == "Super Reincarnated")
+                                   lambda m: self.graph.true_evo_type(m).value == "Super Reincarnated")
 
         # Pixel
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.PIXEL],
                                    lambda m: (m.name_ja.startswith('ドット') or m.name_en.startswith('pixel')
-                                              or self.graph.true_evo_type_by_monster(m).value == "Pixel"),
+                                              or self.graph.true_evo_type(m).value == "Pixel"),
                                    else_mods=EVO_MAP[EvoTypes.NONPIXEL])
 
         # Awakenings
@@ -392,13 +396,13 @@ class MonsterIndex(tsutils.aobject):
 
         # Story
         def is_story(m, do_transform=True):
-            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats_by_monster(m)):
+            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats(m)):
                 return True
             if do_transform:
                 for pt in self.graph.get_transform_monsters(m):
                     if is_story(pt, False):
                         return True
-            pe = self.graph.get_prev_evolution_by_monster(m)
+            pe = self.graph.get_prev_evolution(m)
             if pe and is_story(pe):
                 return True
             return False
@@ -437,7 +441,7 @@ class MonsterIndex(tsutils.aobject):
             modifiers.update(MISC_MAP[MiscModifiers.INNA])
             if not monster.on_jp:
                 modifiers.update(MISC_MAP[MiscModifiers.ONLYNA])
-        if monster.monster_id + 10000 in self.graph.nodes:
+        if monster.monster_id + 10000 in self.graph.graph_dict[monster.server_priority].nodes:
             modifiers.add("idjp")
         if monster.monster_id > 10000:
             modifiers.add("idna")

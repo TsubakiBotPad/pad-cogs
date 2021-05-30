@@ -48,6 +48,7 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
+            'server': self.monster_list[0].monster_id if self.monster_list else "COMBINED",
             'current_page': self.current_page,
             'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
@@ -63,13 +64,12 @@ class SeriesScrollViewState(ViewStateBase):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        # print(ims)
         if ims.get('unsupported_transition'):
             return None
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity)
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, ims['server'])
         current_page = ims['current_page']
         monster_list = paginated_monsters[current_page]
         title = ims['title']
@@ -96,9 +96,9 @@ class SeriesScrollViewState(ViewStateBase):
                                      child_message_id=child_message_id)
 
     @staticmethod
-    async def query(dgcog, series_id, rarity):
+    async def query(dgcog, series_id, rarity, server):
         db_context: "DbContext" = dgcog.database
-        all_series_monsters = db_context.get_monsters_by_series(series_id)
+        all_series_monsters = db_context.get_monsters_by_series(series_id, server=server)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
         paginated_monsters = [base_monsters_of_rarity[i:i + SeriesScrollViewState.MAX_ITEMS_PER_PANE]
@@ -107,16 +107,16 @@ class SeriesScrollViewState(ViewStateBase):
         return paginated_monsters
 
     @staticmethod
-    def query_all_rarities(dgcog, series_id):
+    def query_all_rarities(dgcog, series_id, server):
         db_context: "DbContext" = dgcog.database
-        return sorted({m.rarity for m in db_context.get_all_monsters() if
+        return sorted({m.rarity for m in db_context.get_all_monsters(server) if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod
     async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity)
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, ims['server'])
         return paginated_monsters
 
 

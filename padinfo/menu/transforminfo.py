@@ -22,8 +22,7 @@ class TransformInfoMenu:
         user_config = data['user_config']
 
         # base is always first
-        ims['query'] = str(ims['resolved_monster_ids'][0])
-        ims['resolved_monster_id'] = None
+        ims['resolved_monster_id'] = ims['resolved_monster_ids'][0]
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
@@ -35,8 +34,7 @@ class TransformInfoMenu:
         user_config = data['user_config']
 
         # transform is always second
-        ims['query'] = str(ims['resolved_monster_ids'][1])
-        ims['resolved_monster_id'] = None
+        ims['resolved_monster_id'] = ims['resolved_monster_ids'][1]
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
@@ -51,8 +49,7 @@ class TransformInfoMenu:
         if n is None:
             return None
 
-        ims['query'] = str(ims['resolved_monster_ids'][n])
-        ims['resolved_monster_id'] = None
+        ims['resolved_monster_id'] = ims['resolved_monster_ids'][n]
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)

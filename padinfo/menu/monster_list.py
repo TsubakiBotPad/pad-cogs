@@ -237,6 +237,7 @@ class MonsterListMenu:
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id':
                 monster_list[n - MonsterListMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
+            'resolved_monster_server': ims['monster_server'],
         }
         return emoji_response, extra_ims
 

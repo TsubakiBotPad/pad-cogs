@@ -8,6 +8,7 @@ from tsutils import rmdiacritics
 
 from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
 from dadguide.models.monster_model import MonsterModel
+from dadguide.common.enums import DEFAULT_SERVER
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -41,12 +42,25 @@ class FindMonster:
 
     def __init__(self, dgcog, flags: Mapping[str, Any]):
         self.dgcog = dgcog
+        self.index = self.dgcog.indexes["COMBINED"]
         self.flags = flags
+
+    def _process_settings(self, original_query: str) -> str:
+        settings = re.findall(r'--\w+(?:{.+?})?', original_query)
+
+        for setting in settings:
+            if self.calc_ratio_modifier(setting, '--na') >= self.MODIFIER_JW_DISTANCE:
+                self.index = self.dgcog.indexes['NA']
+            else:
+                self.index = self.dgcog.indexes[DEFAULT_SERVER]
+
+        return re.sub(r'\s*--\w+(?:{.+?})?\s*', ' ', original_query)
 
     def _merge_multi_word_tokens(self, tokens: List[str]) -> List[str]:
         result = []
         skip = 0
-        multi_word_tokens_sorted = sorted(self.dgcog.index.multi_word_tokens,
+
+        multi_word_tokens_sorted = sorted(self.index.multi_word_tokens,
                                           key=lambda x: (len(x), len(''.join(x))),
                                           reverse=True)
         for c1, token1 in enumerate(tokens):
@@ -73,12 +87,12 @@ class FindMonster:
             return False
 
         if len(token.value) < 6:
-            if token.value in self.dgcog.index.modifiers[monster]:
+            if token.value in self.index.modifiers[monster]:
                 matches[monster].mod.add((token.value, token.value))
                 matches[monster].score += 1
                 return True
         else:
-            closest = max(self.dgcog.index.modifiers[monster], key=lambda m: self.calc_ratio_modifier(token, m))
+            closest = max(self.index.modifiers[monster], key=lambda m: self.calc_ratio_modifier(token, m))
             ratio = self.calc_ratio_modifier(closest, token.value)
             if ratio > self.MODIFIER_JW_DISTANCE:
                 matches[monster].mod.add((token.value, closest))
@@ -100,7 +114,7 @@ class FindMonster:
     def _interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[Token], Set[Token]]:
         modifiers = []
         name = set()
-        longmods = [p for p in self.dgcog.index.all_modifiers if len(p) > 8]
+        longmods = [p for p in self.index.all_modifiers if len(p) > 8]
         lastmodpos = False
 
         # Suffixes
@@ -108,7 +122,7 @@ class FindMonster:
             token = self._string_to_token(value)
 
             if any(self.calc_ratio_modifier(m, token.value.split('-')[0], .1) > self.MODIFIER_JW_DISTANCE
-                   for m in self.dgcog.index.suffixes):
+                   for m in self.index.suffixes):
                 # TODO: Store this as a list of regexes.  Don't split on '-' anymore.
                 modifiers.append(token)
             else:
@@ -120,9 +134,9 @@ class FindMonster:
         for i, value in enumerate(tokenized_query):
             token = self._string_to_token(value)
 
-            if token.value in self.dgcog.index.all_modifiers or (
+            if token.value in self.index.all_modifiers or (
                     any(self.calc_ratio_modifier(token, m, .1) > self.MODIFIER_JW_DISTANCE for m in longmods)
-                    and token.value not in self.dgcog.index.all_name_tokens
+                    and token.value not in self.index.all_name_tokens
                     and len(token.value) >= 8):
                 lastmodpos = not token.negated
                 modifiers.append(token)
@@ -138,7 +152,7 @@ class FindMonster:
 
         # Allow modifiers to match as name tokens if they're alone (Fix for hel and cloud)
         if not name and modifiers and lastmodpos:
-            if self.dgcog.index.manual[modifiers[-1].full_value]:
+            if self.index.manual[modifiers[-1].full_value]:
                 name.add(modifiers[-1])
                 modifiers = modifiers[:-1]
 
@@ -153,7 +167,7 @@ class FindMonster:
                 if matched_mons is not None:
                     matched_mons.difference_update(invalid)
                 else:
-                    matched_mons = set(self.dgcog.database.get_all_monsters()).difference(invalid)
+                    matched_mons = set(self.dgcog.database.get_all_monsters(self.index.server)).difference(invalid)
             else:
                 valid = self._get_valid_monsters_from_name_token(name_token, matches)
                 if matched_mons is not None:
@@ -167,23 +181,23 @@ class FindMonster:
                                             mult: Union[int, float] = 1) -> Set[MonsterModel]:
         valid_monsters = set()
         all_monsters_name_tokens_scores = {nt: self.calc_ratio_name(token, nt) for nt in
-                                           self.dgcog.index.all_name_tokens}
+                                           self.index.all_name_tokens}
         matched_tokens = sorted((nt for nt, s in all_monsters_name_tokens_scores.items() if s > self.TOKEN_JW_DISTANCE),
                                 key=lambda nt: all_monsters_name_tokens_scores[nt], reverse=True)
-        matched_tokens += [t for t in self.dgcog.index.all_name_tokens if t.startswith(token.value)]
+        matched_tokens += [t for t in self.index.all_name_tokens if t.startswith(token.value)]
         for match in matched_tokens:
             score = all_monsters_name_tokens_scores[match]
-            for matched_monster in self.dgcog.index.manual[match]:
+            for matched_monster in self.index.manual[match]:
                 if matched_monster not in valid_monsters and token.matches(matched_monster):
                     matches[matched_monster].name.add((token.value, match, '(manual)'))
                     matches[matched_monster].score += (score + .001) * mult
                     valid_monsters.add(matched_monster)
-            for matched_monster in self.dgcog.index.name_tokens[match]:
+            for matched_monster in self.index.name_tokens[match]:
                 if matched_monster not in valid_monsters and token.matches(matched_monster):
                     matches[matched_monster].name.add((token.value, match, '(name)'))
                     matches[matched_monster].score += score * mult
                     valid_monsters.add(matched_monster)
-            for matched_monster in self.dgcog.index.fluff_tokens[match]:
+            for matched_monster in self.index.fluff_tokens[match]:
                 if matched_monster not in valid_monsters and token.matches(matched_monster):
                     matches[matched_monster].name.add((token.value, match, '(fluff)'))
                     matches[matched_monster].score += score * mult / 2
@@ -258,7 +272,7 @@ class FindMonster:
         name_query_tokens.difference_update({'|'})
 
         for mod_token in mod_tokens:
-            if mod_token.value not in self.dgcog.index.all_modifiers:
+            if mod_token.value not in self.index.all_modifiers:
                 async with self.dgcog.config.typo_mods() as typo_mods:
                     typo_mods.append(mod_token.value)
 
@@ -271,7 +285,7 @@ class FindMonster:
             matched_mons = self._get_monster_evos(matched_mons, matches)
         else:
             # There are no name tokens in the query
-            matched_mons = {*self.dgcog.database.get_all_monsters()}
+            matched_mons = {*self.dgcog.database.get_all_monsters(self.index.server)}
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
@@ -294,7 +308,7 @@ class FindMonster:
         await self.dgcog.wait_until_ready()
 
         query = rmdiacritics(query).lower().replace(",", "")
-        tokenized_query = query.split()
+        tokenized_query = self._process_settings(query).split()
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
 
         best_monster, matches_dict, valid_monsters = max(
@@ -333,7 +347,7 @@ class FindMonster:
         """Calculate the name distance between two tokens"""
         string = token.value if isinstance(token, Token) else token
 
-        mw = self.dgcog.index.mwt_to_len[full_word] != 1
+        mw = self.index.mwt_to_len[full_word] != 1
         jw = jaro_winkler(string, full_word, prefix_weight)
 
         if isinstance(token, Token) and token.exact and string != full_word:
@@ -352,6 +366,6 @@ class FindMonster:
             score = jw
 
         if mw:
-            score = score ** 10 * self.dgcog.index.mwt_to_len[full_word]
+            score = score ** 10 * self.index.mwt_to_len[full_word]
 
         return score

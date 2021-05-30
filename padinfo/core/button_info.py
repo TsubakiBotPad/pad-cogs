@@ -108,7 +108,7 @@ class ButtonInfo:
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
         for card in card_buttons:
-            inherit_model = dgcog.get_monster(card.id)
+            inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
             max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
@@ -124,7 +124,7 @@ class ButtonInfo:
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
             total_dmg = 0
-            inherit_model = dgcog.get_monster(card.id)
+            inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
             max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
