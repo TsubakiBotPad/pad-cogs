@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from dadguide.models.monster_model import MonsterModel
+if TYPE_CHECKING:
+    from dadguide.models.monster_model import MonsterModel
 
 
 class MonsterDifference:
@@ -28,7 +29,7 @@ class MonsterDifference:
         self.existance = existance
 
     @classmethod
-    def from_monsters(cls, monster1: MonsterModel, monster2: Optional[MonsterModel]):
+    def from_monsters(cls, monster1: "MonsterModel", monster2: Optional["MonsterModel"]):
         if monster2 is None:
             return cls(existance=True)
 
