@@ -40,7 +40,14 @@ class LeaderSkillModel(BaseModel):
 
     def to_dict(self):
         return {
-            'monster_id': self.leader_skill_id,
+            'leader_skill_id': self.leader_skill_id,
             'name_ja': self.name_ja,
             'name_en': self.name_en,
         }
+
+    def __eq__(self, other):
+        if isinstance(other, LeaderSkillModel):
+            return self.leader_skill_id == other.leader_skill_id \
+                   and self.data == other.data \
+                   and self.desc_en == other.desc_en
+        return False

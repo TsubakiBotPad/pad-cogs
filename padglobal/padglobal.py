@@ -732,12 +732,12 @@ class PadGlobal(commands.Cog):
 
         monster = dgcog.get_monster(monster_id)
 
-        if db_context.graph.monster_is_mp_evo(monster) and not db_context.graph.monster_is_rem(monster):
+        if db_context.graph.monster_is_mp_evo(monster) and not monster.in_rem:
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster, db_context):
-            top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_id)
+            top_monster = db_context.graph.get_numerical_sort_top_monster(monster)
             return name, SIMPLE_TREE_MSG.format(top_monster.monster_id, top_monster.name_en), None, False
         else:
             await ctx.send('No which info for {} (#{})'.format(name, monster_id))
@@ -1395,7 +1395,7 @@ class PadGlobal(commands.Cog):
 def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in db_context.graph.get_alt_monsters_by_id(monster.monster_id):
+    for m in db_context.graph.get_alt_monsters(monster):
         if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:

@@ -18,13 +18,14 @@ if TYPE_CHECKING:
 
 
 class EvosViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color,
-                 monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 alt_monsters: List[MonsterEvolution], discrepant,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, discrepant,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -54,10 +55,10 @@ class EvosViewState(ViewStateBaseId):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color,
-                   monster,
-                   alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, discrep,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
                    use_evo_scroll=use_evo_scroll,
@@ -66,7 +67,7 @@ class EvosViewState(ViewStateBaseId):
     @staticmethod
     async def query(dgcog, monster):
         db_context = dgcog.database
-        alt_versions = sorted(db_context.graph.get_alt_monsters_by_id(monster.monster_id),
+        alt_versions = sorted(db_context.graph.get_alt_monsters(monster),
                               key=lambda x: x.monster_id)
         gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
         if len(alt_versions) == 1 and len(gem_versions) == 0:
@@ -103,9 +104,9 @@ class EvosView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       state.alt_monsters[0].monster.monster_id == cls.TSUBAKI
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(state.monster,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.discrepant).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
             embed_footer=embed_footer_with_state(state),

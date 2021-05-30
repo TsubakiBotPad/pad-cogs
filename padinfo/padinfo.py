@@ -5,7 +5,7 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional, Literal
 
 import discord
 import tsutils
@@ -189,7 +189,7 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def idna(self, ctx, *, query: str):
         """Monster info (limited to NA monsters ONLY)"""
-        await self._do_id(ctx, "inna " + query)
+        await self._do_id(ctx, "--na " + query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -210,20 +210,20 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.index.all_name_tokens:
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes["COMBINED"].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.index.all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes["COMBINED"].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
-            for monster in dgcog.index.all_name_tokens[goodquery[1]]:
-                for modifier in dgcog.index.modifiers[monster]:
+            for monster in dgcog.indexes["COMBINED"].all_name_tokens[goodquery[1]]:
+                for modifier in dgcog.indexes["COMBINED"].modifiers[monster]:
                     if modifier == 'xm' and goodquery[0] == 'x':
                         goodquery[0] = 'xm'
                     if modifier == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.index.all_name_tokens:
+            if bad and query not in dgcog.indexes["COMBINED"].all_name_tokens:
                 async def send_message():
                     await asyncio.sleep(1)
                     await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
@@ -245,8 +245,8 @@ class PadInfo(commands.Cog):
 
         # id3 messaging stuff
         if monster and monster.monster_no_na != monster.monster_no_jp:
-            await ctx.send("The NA ID and JP ID of this card differ! "
-                           "The JP ID is 1053 you can query with {0.prefix}id jp1053.".format(ctx) +
+            await ctx.send(f"The NA ID and JP ID of this card differ! The JP ID is {monster.monster_id}, so "
+                           f"you can query with {ctx.prefix}id jp{monster.monster_id}." +
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
 
@@ -258,8 +258,10 @@ class PadInfo(commands.Cog):
             await IdViewState.query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                            alt_monsters, discrep,
                             transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                             use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
@@ -342,6 +344,7 @@ class PadInfo(commands.Cog):
 
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dgcog, monster)
         alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         if alt_versions is None:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
@@ -351,8 +354,9 @@ class PadInfo(commands.Cog):
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                              monster, alt_monsters, alt_versions, gem_versions,
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                              alt_monsters, discrep,
+                              alt_versions, gem_versions,
                               reaction_list=initial_reaction_list,
                               use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
@@ -382,10 +386,12 @@ class PadInfo(commands.Cog):
             return
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster, alt_monsters,
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   alt_monsters, discrep,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
@@ -415,11 +421,13 @@ class PadInfo(commands.Cog):
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
         alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                  monster, alt_monsters, pantheon_list, series_name, base_monster,
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                  alt_monsters, discrep,
+                                  pantheon_list, series_name, base_monster,
                                   reaction_list=initial_reaction_list,
                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
@@ -443,11 +451,12 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                             monster, alt_monsters,
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                             alt_monsters, discrep,
                              reaction_list=initial_reaction_list,
                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)
@@ -471,11 +480,12 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
+        discrep = dgcog.database.graph.monster_is_discrepant(monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
 
-        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color,
-                                   monster, alt_monsters,
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                   alt_monsters, discrep,
                                    reaction_list=initial_reaction_list,
                                    use_evo_scroll=settings.checkEvoID(ctx.author.id))
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
@@ -622,10 +632,11 @@ class PadInfo(commands.Cog):
         paginated_monsters = None
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            paginated_monsters = await SeriesScrollViewState.query(dgcog, monster.series_id, rarity)
+            paginated_monsters = await SeriesScrollViewState.query(dgcog, monster.series_id,
+                                                                   rarity, monster.server_priority)
             if paginated_monsters:
                 break
-        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id)
+        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id, monster.server_priority)
 
         raw_query = query
         original_author_id = ctx.message.author.id
@@ -746,9 +757,11 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
+        discrep = dgcog.database.graph.monster_is_discrepant(base_mon) \
+                  or dgcog.database.graph.monster_is_discrepant(transformed_mon)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw, monster_ids,
+                                       color, base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
@@ -959,7 +972,7 @@ class PadInfo(commands.Cog):
                        "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
 
     @commands.command(aliases=["iddebug", "dbid", "iddb"])
-    async def debugid(self, ctx, *, query):
+    async def debugid(self, ctx, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED", *, query):
         """Get helpful id information about a monster"""
         dgcog = self.bot.get_cog("Dadguide")
         mon = await dgcog.find_monster(query, ctx.author.id)
@@ -967,17 +980,17 @@ class PadInfo(commands.Cog):
             await ctx.send(box("Your query didn't match any monsters."))
             return
         base_monster = dgcog.database.graph.get_base_monster(mon)
-        mods = dgcog.index.modifiers[mon]
-        manual_modifiers = dgcog.index.manual_prefixes[mon.monster_id]
+        mods = dgcog.indexes[server].modifiers[mon]
+        manual_modifiers = dgcog.indexes[server].manual_prefixes[mon.monster_id]
         EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
                f"Series: {mon.series.name_en} ({mon.series_id}, {mon.series.series_type})\n\n"
-               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.index.name_tokens.items() if mon in ms))}\n"
-               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.index.fluff_tokens.items() if mon in ms))}\n\n"
+               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].name_tokens.items() if mon in ms))}\n"
+               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].fluff_tokens.items() if mon in ms))}\n\n"
                f"[Manual Tokens]\n"
-               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.index.manual_tree.items() if mon in ms))}\n"
-               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.index.manual_nick.items() if mon in ms))}\n\n"
+               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_tree.items() if mon in ms))}\n"
+               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_nick.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
                f"     Attribute: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.COLOR_TOKENS))}\n"
                f"     Awakening: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.AWAKENING_TOKENS))}\n"
@@ -1020,7 +1033,7 @@ class PadInfo(commands.Cog):
             await self.debugid(ctx, query=query)
 
     @commands.command()
-    async def exportmodifiers(self, ctx):
+    async def exportmodifiers(self, ctx, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED"):
         DGCOG = self.bot.get_cog("Dadguide")
         maps = DGCOG.token_maps
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
@@ -1043,7 +1056,7 @@ class PadInfo(commands.Cog):
         atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
-                  for k, v in DGCOG.index.series_id_to_pantheon_nickname.items()]
+                  for k, v in DGCOG.indexes[server].series_id_to_pantheon_nickname.items()]
         ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
@@ -1057,7 +1070,7 @@ class PadInfo(commands.Cog):
         await ctx.send(file=text_to_file(ret, filename="table.md"))
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod", "luid", "idlu"])
-    async def idmeaning(self, ctx, *, token):
+    async def idmeaning(self, ctx, token, server: Optional[Literal["COMBINED", "NA"]] = "COMBINED"):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
         DGCOG = self.bot.get_cog("Dadguide")
@@ -1078,7 +1091,7 @@ class PadInfo(commands.Cog):
             token_ret = ""
             so = []
             for mon in sorted(token_dict[token], key=lambda m: m.monster_id):
-                if (mon in DGCOG.index.mwtoken_creators[token]) == is_multiword:
+                if (mon in DGCOG.indexes[server].mwtoken_creators[token]) == is_multiword:
                     so.append(mon)
             if len(so) > 5:
                 token_ret += f"\n\n{token_type}\n" + ", ".join(f(m, str(m.monster_id)) for m in so[:10])
@@ -1088,22 +1101,22 @@ class PadInfo(commands.Cog):
                     f(m, f"{str(m.monster_id).rjust(4)}. {m.name_en}") for m in so)
             return token_ret
 
-        ret += write_name_token(DGCOG.index.manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
-        ret += write_name_token(DGCOG.index.manual, "[Manual Tokens]")
-        ret += write_name_token(DGCOG.index.name_tokens, "[Name Tokens]")
-        ret += write_name_token(DGCOG.index.fluff_tokens, "[Fluff Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].manual, "\N{LARGE PURPLE CIRCLE} [Multi-Word Tokens]", True)
+        ret += write_name_token(DGCOG.indexes[server].manual, "[Manual Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].name_tokens, "[Name Tokens]")
+        ret += write_name_token(DGCOG.indexes[server].fluff_tokens, "[Fluff Tokens]")
 
-        submwtokens = [t for t in DGCOG.index.multi_word_tokens if token in t]
+        submwtokens = [t for t in DGCOG.indexes[server].multi_word_tokens if token in t]
         if submwtokens:
             ret += "\n\n[Multi-word Super-tokens]\n"
             for t in submwtokens:
-                if not DGCOG.index.all_name_tokens[''.join(t)]:
+                if not DGCOG.indexes[server].all_name_tokens[''.join(t)]:
                     continue
-                creators = sorted(DGCOG.index.mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
+                creators = sorted(DGCOG.indexes[server].mwtoken_creators["".join(t)], key=lambda m: m.monster_id)
                 ret += f"{' '.join(t).title()}"
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
-                        str(DGCOG.mon_finder.get_most_eligable_monster(DGCOG.index.all_name_tokens[''.join(t)],
+                        str(DGCOG.mon_finder.get_most_eligable_monster(DGCOG.indexes[server].all_name_tokens[''.join(t)],
                                                                        DGCOG).monster_id)
                         + ")\n")
 
@@ -1131,7 +1144,7 @@ class PadInfo(commands.Cog):
               '/' + k[1].name.replace("Nil", "None") + additmods(v, token)
               for k, v in tms.DUAL_COLOR_MAP.items() if token in v],
             *["Series: " + series[k].name_en + additmods(v, token)
-              for k, v in DGCOG.index.series_id_to_pantheon_nickname.items() if token in v],
+              for k, v in DGCOG.indexes[server].series_id_to_pantheon_nickname.items() if token in v],
 
             *["Rarity: " + m for m in re.findall(r"^(\d+)\*$", token)],
             *["Base rarity: " + m for m in re.findall(r"^(\d+)\*b$", token)],
@@ -1212,5 +1225,4 @@ class PadInfo(commands.Cog):
             await ctx.send("No monster matched.")
             return
 
-        print(monster_list)
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results', IdSearchViewState)

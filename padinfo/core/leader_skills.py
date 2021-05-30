@@ -85,10 +85,9 @@ async def perform_leaderskill_query(dgcog, raw_query, author_id):
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
                 m = await dgcog.find_monster(query, author_id)
-                if m and left_query in dgcog.index.modifiers[m]:
+                if m and left_query in dgcog.indexes[m.server_priority].modifiers[m]:
                     left_query = query
                     right_query = None
-
             break
 
     else:  # no separators

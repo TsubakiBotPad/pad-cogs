@@ -23,8 +23,7 @@ class AwakeningModel(BaseModel):
 
     def __eq__(self, other):
         if isinstance(other, AwakeningModel):
-            return self.awakening_id == other.awakening_id
+            return self.awoken_skill_id == other.awoken_skill_id and self.is_super == other.is_super
         elif isinstance(other, AwokenSkillModel):
             return self.awoken_skill == other
-        else:
-            return False
+        return False
