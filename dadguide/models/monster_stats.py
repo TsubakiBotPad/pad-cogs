@@ -1,5 +1,5 @@
 from typing import Literal
-from dadguide.token_mappings import AwokenSkills
+from dadguide.common.enums import AwokenSkills
 
 StatType = Literal['hp', 'atk', 'rcv']
 
