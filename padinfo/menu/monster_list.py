@@ -237,7 +237,7 @@ class MonsterListMenu:
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id':
                 monster_list[n - MonsterListMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
-            'resolved_monster_server': ims['monster_server'],
+            'resolved_monster_server': ims['resolved_monster_server'],
         }
         return emoji_response, extra_ims
 
@@ -257,11 +257,13 @@ class MonsterListMenu:
         paginated_monsters = await _get_view_state(ims).query_paginated_from_ims(dgcog, copy_ims)
         page = copy_ims.get('current_page') or 0
         monster_list = paginated_monsters[page]
+        monster = monster_list[copy_ims['current_index']]
         extra_ims = {
             'is_child': True,
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
-            'resolved_monster_id': monster_list[copy_ims['current_index']].monster_id,
+            'resolved_monster_id': monster.monster_id,
+            'resolved_monster_server': monster.server_priority,
         }
         return IdMenuEmoji.refresh, extra_ims
 
