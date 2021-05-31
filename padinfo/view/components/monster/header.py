@@ -19,7 +19,7 @@ class MonsterHeader:
         if not m.on_na:
             suffix += ' (JP only)'
         if discrepant:
-            suffix += ' (JP Buffed)'
+            suffix += ' (JP buffed)'
         return suffix
 
     @classmethod
