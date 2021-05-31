@@ -64,12 +64,15 @@ class OtherInfoView(BaseIdView):
                         Text(statsbox(m)),
                         LabeledText("JP Name", m.name_ja),
                         LinksView.linksbox(m),
-                        LabeledText("History", m.history_us) if m.history_us else None,
+                        LabeledText("JP Added", str(m.reg_date)) if m.reg_date else None,
                         LabeledText("Series", m.series.name_en),
                         Box(
                             LabeledText("Sell MP", '{:,}'.format(m.sell_mp)),
                             LabeledText("Buy MP", '{:,}'.format(m.buy_mp)) if m.buy_mp else None,
                             delimiter='  '),
+                        Box(
+                            LabeledText("Sell Gold", '{:,}'.format(m.sell_gold))
+                        ),
                         Box(
                             LabeledText("XP to Max", '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
                             if m.exp >= 1000000 else '{:,}'.format(m.exp)),
