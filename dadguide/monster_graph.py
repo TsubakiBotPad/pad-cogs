@@ -318,7 +318,7 @@ class MonsterGraph(object):
 
     def get_evo_tree_from_base(self, base_monster: MonsterModel) -> List[MonsterModel]:
         mons = [base_monster]
-        for evo in sorted(self.get_next_evolutions(base_monster), key=lambda m: m.monster_id)
+        for evo in sorted(self.get_next_evolutions(base_monster), key=lambda m: m.monster_id):
             mons += self.get_evo_tree_from_base(evo)
         return mons
 
