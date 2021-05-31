@@ -48,7 +48,7 @@ class MonsterListViewState(ViewStateBase):
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
             'monster_list': [m.monster_id for m in self.monster_list],
-            'monster_server': self.monster_list[0].server_priority if self.monster_list else "COMBINED",
+            'resolved_monster_server': self.monster_list[0].server_priority if self.monster_list else "COMBINED",
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
