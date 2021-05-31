@@ -916,6 +916,11 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def server(self, ctx, server: str):
+        """Change the server to be used for your `[p]id` queries
+
+        `[p]idset server default`: Include both NA & JP cards. You can still use `--na` as needed.
+        `[p]idset server na`: Include only NA cards. You can still use `--notnaonly` as needed.
+        """
         dgcog = await self.get_dgcog()
         async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
             if server.upper() == "DEFAULT":
