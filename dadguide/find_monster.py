@@ -42,17 +42,19 @@ class FindMonster:
 
     def __init__(self, dgcog, flags: Mapping[str, Any]):
         self.dgcog = dgcog
-        self.index = self.dgcog.indexes["COMBINED"]
         self.flags = flags
+        self.index = self.dgcog.indexes[flags['server']]
 
     def _process_settings(self, original_query: str) -> str:
         settings = re.findall(r'--\w+(?:{.+?})?', original_query)
 
         for setting in settings:
-            if self.calc_ratio_modifier(setting, '--na') >= self.MODIFIER_JW_DISTANCE:
+            if setting == '--na':
                 self.index = self.dgcog.indexes['NA']
+            if setting == '--notnaonly':
+                self.index = self.dgcog.indexes['COMBINED']
             else:
-                self.index = self.dgcog.indexes[DEFAULT_SERVER]
+                self.index = self.dgcog.indexes[self.flags['server']]
 
         return re.sub(r'\s*--\w+(?:{.+?})?\s*', ' ', original_query)
 

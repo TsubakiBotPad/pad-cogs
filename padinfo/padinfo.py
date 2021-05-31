@@ -57,6 +57,7 @@ from padinfo.view.simple_text import SimpleTextViewState
 from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
+    from dadguide.dadguide import Dadguide
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.series_model import SeriesModel
 
@@ -150,7 +151,7 @@ class PadInfo(commands.Cog):
 
             await asyncio.sleep(wait_time)
 
-    async def get_dgcog(self):
+    async def get_dgcog(self) -> "Dadguide":
         dgcog = self.bot.get_cog("Dadguide")
         if dgcog is None:
             raise ValueError("Dadguide cog is not loaded")
@@ -757,8 +758,7 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
-        discrep = dgcog.database.graph.monster_is_discrepant(base_mon) \
-                  or dgcog.database.graph.monster_is_discrepant(transformed_mon)
+        discrep = dgcog.database.graph.monster_is_discrepant(base_mon)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
                                        color, base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
@@ -913,6 +913,22 @@ class PadInfo(commands.Cog):
         async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
             fm_flags['na_prio'] = value
         await ctx.send(f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
+
+    @idset.command()
+    async def server(self, ctx, server: str):
+        dgcog = await self.get_dgcog()
+        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+            if server.upper() == "DEFAULT":
+                fm_flags['server'] = dgcog.DEFAULT_SERVER
+            elif server.upper() in dgcog.SERVERS:
+                fm_flags['server'] = server.upper()
+            else:
+                if dgcog.DEFAULT_SERVER == "COMBINED":
+                    await ctx.send("Server must be `default` or `na`")
+                else:
+                    await ctx.send("Server must be `na` or `combined`")
+                return
+        await ctx.tick()
 
     @commands.group()
     @checks.is_owner()
@@ -1116,8 +1132,9 @@ class PadInfo(commands.Cog):
                 ret += f"{' '.join(t).title()}"
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
-                        str(DGCOG.mon_finder.get_most_eligable_monster(DGCOG.indexes[server].all_name_tokens[''.join(t)],
-                                                                       DGCOG).monster_id)
+                        str(DGCOG.mon_finder.get_most_eligable_monster(
+                            DGCOG.indexes[server].all_name_tokens[''.join(t)],
+                            DGCOG).monster_id)
                         + ")\n")
 
         def additmods(ms, om):

@@ -73,7 +73,7 @@ class Dadguide(commands.Cog, IdTest):
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
 
-        self.fm_flags_default = {'na_prio': True}
+        self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
         self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
         self.config.register_user(lastaction=None, fm_flags={})
@@ -84,6 +84,8 @@ class Dadguide(commands.Cog, IdTest):
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
+        self.DEFAULT_SERVER = DEFAULT_SERVER
+        self.SERVERS = SERVERS
         self.mon_finder = None  # type: Optional[FindMonster]
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
