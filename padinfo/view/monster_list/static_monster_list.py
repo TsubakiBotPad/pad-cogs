@@ -14,7 +14,8 @@ class StaticMonsterListViewState(MonsterListViewState):
         ret = super().serialize()
         ret.update({
             'full_monster_list': [m.monster_id for page in self.paginated_monsters for m in page],
-            'resolved_monster_server': self.paginated_monsters[0].server_priority if self.paginated_monsters else "COMBINED",
+            'resolved_monster_server': (self.paginated_monsters[0][0].server_priority
+                                        if self.paginated_monsters else "COMBINED"),
         })
         return ret
 
