@@ -51,7 +51,7 @@ class FindMonster:
         for setting in settings:
             if setting == '--na':
                 self.index = self.dgcog.indexes['NA']
-            if setting == '--notnaonly':
+            if setting == '--allservers':
                 self.index = self.dgcog.indexes['COMBINED']
             else:
                 self.index = self.dgcog.indexes[self.flags['server']]
