@@ -1,7 +1,7 @@
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
 from dadguide.monster_graph import MonsterGraph
-from dadguide.common.enums import InternalEvoType
+from dadguide.models.enum_types import InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)

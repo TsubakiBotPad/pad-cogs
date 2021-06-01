@@ -3,7 +3,7 @@ from typing import Union, Optional, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
-    from dadguide.common.enums import MonsterType, AwakeningRestrictedLatent
+    from dadguide.models.enum_types import AwakeningRestrictedLatent, MonsterType
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 
