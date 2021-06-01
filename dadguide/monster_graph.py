@@ -5,13 +5,12 @@ from typing import Optional, List, Set, Dict
 
 from networkx import MultiDiGraph
 
-from .common.enums import DEFAULT_SERVER, Server, SERVERS
+from .common.enums import DEFAULT_SERVER, Server, SERVERS, InternalEvoType
 from .database_manager import DadguideDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel
-from .models.enum_types import InternalEvoType
 from .models.evolution_model import EvolutionModel
 from .models.leader_skill_model import LeaderSkillModel
 from .models.monster_model import MonsterModel
