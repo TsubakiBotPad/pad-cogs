@@ -1,8 +1,5 @@
 from .base_model import BaseModel
-from .enum_types import Attribute
-from .enum_types import MonsterType
-from .enum_types import AwakeningRestrictedLatent
-from .enum_types import enum_or_none
+from ..common.enums import Attribute, MonsterType, AwakeningRestrictedLatent, enum_or_none
 from .active_skill_model import ActiveSkillModel
 from .leader_skill_model import LeaderSkillModel
 import tsutils
