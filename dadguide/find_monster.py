@@ -46,15 +46,15 @@ class FindMonster:
         self.index = self.dgcog.indexes[flags['server']]
 
     def _process_settings(self, original_query: str) -> str:
-        settings = re.findall(r'--(\w+)(?::{(.+?)})?', original_query)
+        settings = re.findall(r'(?:--|—)(\w+)(?::{(.+?)})?', original_query)
 
         for setting, data in settings:
             if setting == 'na':
                 self.index = self.dgcog.indexes['NA']
-            if setting == '--allservers':
+            if setting == 'allservers':
                 self.index = self.dgcog.indexes['COMBINED']
 
-        return re.sub(r'\s*--\w+(?:{.+?})?\s*', ' ', original_query)
+        return re.sub(r'\s*(--|—)\w+(:{.+?})?\s*', ' ', original_query)
 
     def _merge_multi_word_tokens(self, tokens: List[str]) -> List[str]:
         result = []
