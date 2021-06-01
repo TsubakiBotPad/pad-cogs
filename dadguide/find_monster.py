@@ -310,6 +310,7 @@ class FindMonster:
         await self.dgcog.wait_until_ready()
 
         query = rmdiacritics(query).lower().replace(",", "")
+        query = re.sub(r'(\s|^)\'(\S+)\'(\s|$)', r'\1"\2"\3', query)  # Replace ' with " around tokens
         tokenized_query = self._process_settings(query).split()
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
 
