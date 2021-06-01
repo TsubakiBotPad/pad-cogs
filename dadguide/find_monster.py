@@ -46,15 +46,13 @@ class FindMonster:
         self.index = self.dgcog.indexes[flags['server']]
 
     def _process_settings(self, original_query: str) -> str:
-        settings = re.findall(r'--\w+(?:{.+?})?', original_query)
+        settings = re.findall(r'--(\w+)(?::{(.+?)})?', original_query)
 
-        for setting in settings:
-            if setting == '--na':
+        for setting, data in settings:
+            if setting == 'na':
                 self.index = self.dgcog.indexes['NA']
-            if setting == '--notnaonly':
+            elif setting == 'notnaonly':
                 self.index = self.dgcog.indexes['COMBINED']
-            else:
-                self.index = self.dgcog.indexes[self.flags['server']]
 
         return re.sub(r'\s*--\w+(?:{.+?})?\s*', ' ', original_query)
 
