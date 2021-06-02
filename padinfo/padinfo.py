@@ -710,6 +710,9 @@ class PadInfo(commands.Cog):
             await ctx.send(inline(err_msg.format('Right', r_query)))
             return
 
+        l_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), l_query)
+        r_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), r_query or l_query)
+
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
