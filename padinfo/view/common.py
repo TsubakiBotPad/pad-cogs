@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import Text, BoldText
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.emoji_map import get_awakening_emoji
 
@@ -11,11 +12,12 @@ if TYPE_CHECKING:
 
 async def get_monster_from_ims(dgcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
+    query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
     resolved_monster_id = int(resolved_monster_id_str or 0)
     if resolved_monster_id:
-        return dgcog.database.graph.get_monster(resolved_monster_id, server=ims.get('resolved_monster_server'))
+        return dgcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
     monster = await dgcog.find_monster(query, ims['original_author_id'])
     return monster
 

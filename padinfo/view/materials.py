@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
@@ -24,7 +25,7 @@ MAX_MONS_TO_SHOW = 5
 
 class MaterialsViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], discrepant,
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
@@ -32,7 +33,7 @@ class MaterialsViewState(ViewStateBaseId):
                  reaction_list: List[str] = None,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
-                         alt_monsters, discrepant,
+                         alt_monsters, is_jp_buffed, query_settings,
                          reaction_list=reaction_list,
                          use_evo_scroll=use_evo_scroll,
                          extra_state=extra_state)
@@ -67,14 +68,15 @@ class MaterialsViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
-        discrep = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrep,
+                   alt_monsters, is_jp_buffed, query_settings,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -160,7 +162,7 @@ class MaterialsView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.discrepant).to_markdown(),
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),

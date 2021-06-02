@@ -1,12 +1,14 @@
 from typing import Generator, List
 
+from tsutils.enums import Server
+
 from .database_manager import DadguideDatabase
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.series_model import SeriesModel
 from .monster_graph import MonsterGraph
-from .common.enums import DEFAULT_SERVER, Server
+from .common.enums import DEFAULT_SERVER
 
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,
@@ -41,7 +43,7 @@ class DbContext(object):
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
     def get_all_monster_ids_query(self, server: Server):
-        table = 'monsters_na' if server == "NA" else 'monsters'
+        table = 'monsters_na' if server == Server.NA else 'monsters'
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}), (),
             as_generator=True)

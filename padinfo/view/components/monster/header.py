@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import LinkedText, Text
+from tsutils.enums import Server
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 from padinfo.common.external_links import puzzledragonx
@@ -12,13 +13,13 @@ if TYPE_CHECKING:
 
 class MonsterHeader:
     @classmethod
-    def jp_suffix(cls, m: "MonsterModel", discrepant=False, subname_on_override=True):
+    def jp_suffix(cls, m: "MonsterModel", is_jp_buffed=False, subname_on_override=True):
         suffix = ""
         if m.roma_subname and (subname_on_override or m.name_en_override is None):
             suffix += ' [{}]'.format(m.roma_subname)
         if not m.on_na:
             suffix += ' (JP only)'
-        if discrepant:
+        if is_jp_buffed:
             suffix += ' (JP buffed)'
         return suffix
 
@@ -47,7 +48,7 @@ class MonsterHeader:
         return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
 
     @classmethod
-    def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, discrepant=False):
+    def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, is_jp_buffed=False):
         """Returns long_v2 as well as an `!` if the monster is Tsubaki
     
         To celebrate 1000 issues/PRs in our main Tsubaki repo, we added this easter egg! Yay!
@@ -56,13 +57,13 @@ class MonsterHeader:
             m.monster_no_na,
             m.name_en,
             '!' if is_tsubaki else '',
-            cls.jp_suffix(m, discrepant))
+            cls.jp_suffix(m, is_jp_buffed))
 
     @classmethod
-    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, discrepant):
+    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, is_jp_buffed):
         return Text('{} {}'.strip().format(
-            '\N{EARTH GLOBE AMERICAS}' if m.server_priority == "NA" else '',
-            cls.long_maybe_tsubaki(m, is_tsubaki, bool(discrepant))))
+            '\N{EARTH GLOBE AMERICAS}' if m.server_priority == Server.NA else '',
+            cls.long_maybe_tsubaki(m, is_tsubaki, bool(is_jp_buffed))))
 
     @classmethod
     def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None):
