@@ -712,7 +712,7 @@ class PadInfo(commands.Cog):
             return
 
         l_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), l_query)
-        r_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), r_query)
+        r_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), r_query or l_query)
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
