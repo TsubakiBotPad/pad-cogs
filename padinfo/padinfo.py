@@ -217,7 +217,8 @@ class PadInfo(commands.Cog):
         goodquery = None
         if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes[
+            Server.COMBINED].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
@@ -716,7 +717,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
-                                     l_query, r_query)
+                                     l_query, r_query, l_query_settings, r_query_settings)
         menu = LeaderSkillMenu.menu()
         await menu.create(ctx, state)
 
@@ -747,9 +748,12 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, color, monster)
+        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, query_settings,
+                                           color, monster)
         menu = LeaderSkillSingleMenu.menu()
         await menu.create(ctx, state)
 
@@ -943,7 +947,7 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
             if server.upper() == "DEFAULT":
-                fm_flags['server'] = dgcog.DEFAULT_SERVER
+                fm_flags['server'] = dgcog.DEFAULT_SERVER.value
             elif server.upper() in [s.value for s in dgcog.SERVERS]:
                 fm_flags['server'] = server.upper()
             else:
