@@ -1395,12 +1395,10 @@ class PadGlobal(commands.Cog):
 def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in db_context.graph.get_alt_monsters(monster):
+    for m in db_context.graph.get_evo_tree(monster):
         if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:
-            return False
-        if 'awoken' in m.name_en.lower():
             return False
     return True
 
