@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import createMultiplierText
@@ -17,19 +18,24 @@ if TYPE_CHECKING:
 
 
 class LeaderSkillViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query):
+    def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query,
+                 l_query_settings, r_query_settings):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.l_mon = l_mon
         self.l_query = l_query
+        self.l_query_settings = l_query_settings
         self.r_mon = r_mon
         self.r_query = r_query
+        self.r_query_settings = r_query_settings
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
             'l_query': self.l_query,
             'r_query': self.r_query,
+            'l_query_settings': self.l_query_settings.serialize(),
+            'r_query_settings': self.r_query_settings.serialize()
         })
         return ret
 
@@ -38,10 +44,12 @@ class LeaderSkillViewState(ViewStateBase):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
+        l_query_settings = QuerySettings.deserialize(ims['l_query_settings'])
+        r_query_settings = QuerySettings.deserialize(ims['r_query_settings'])
 
         l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, ims['original_author_id'])
         return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
-                                    r_query)
+                                    r_query, l_query_settings, r_query_settings)
 
 
 class LeaderSkillView:

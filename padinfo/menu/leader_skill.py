@@ -24,6 +24,7 @@ class LeaderSkillMenu:
 
         # Extract the query from the ls state
         ims['query'] = ims['r_query']
+        ims['query_settings'] = ims['r_query_settings']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
@@ -36,6 +37,7 @@ class LeaderSkillMenu:
 
         # Extract the query from the ls state
         ims['query'] = ims['l_query']
+        ims['query_settings'] = ims['l_query_settings']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
