@@ -29,6 +29,6 @@ class StaticMonsterListViewState(MonsterListViewState):
     @classmethod
     async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
         monster_ids = ims['full_monster_list']
-        qsettings = QuerySettings.deserialize(ims['qsettings'])
-        monster_list = await cls.query(dgcog, monster_ids, qsettings.server)
+        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        monster_list = await cls.query(dgcog, monster_ids, query_settings.server)
         return monster_list

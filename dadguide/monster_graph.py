@@ -106,7 +106,7 @@ FROM
   exchanges
 """
 
-SPECIFY_SERVER = " WHERE server_id = {}"
+SERVER_ID_WHERE_CONDITION = " WHERE server_id = {}"
 
 
 class MonsterGraph(object):
@@ -127,7 +127,7 @@ class MonsterGraph(object):
         where = ""
         if server != Server.COMBINED:
             table_suffix = "_" + server.value.lower()
-            where = SPECIFY_SERVER.format(["JP", "NA", "KR"].index(server.value))
+            where = SERVER_ID_WHERE_CONDITION.format(["JP", "NA", "KR"].index(server.value))
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
         es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())

@@ -23,7 +23,7 @@ TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 acquire_raw, monster_ids, discrepant, qsettings,
+                 acquire_raw, monster_ids, is_jp_buffed, query_settings,
                  reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
@@ -31,14 +31,14 @@ class TransformInfoViewState(ViewStateBase):
         self.transformed_mon = transformed_mon
         self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
-        self.discrepant = discrepant
-        self.qsettings = qsettings
+        self.is_jp_buffed = is_jp_buffed
+        self.query_settings = query_settings
         self.reaction_list = reaction_list
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'qsettings': self.qsettings.serialize(),
+            'query_settings': self.query_settings.serialize(),
             'resolved_monster_ids': self.monster_ids,
             'reaction_list': self.reaction_list
         })
@@ -52,19 +52,19 @@ class TransformInfoViewState(ViewStateBase):
         monster_ids = ims['resolved_monster_ids']
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
-        base_mon = dgcog.get_monster(base_mon_id, server=qsettings.server)
-        transformed_mon = dgcog.get_monster(transformed_mon_id, server=qsettings.server)
+        base_mon = dgcog.get_monster(base_mon_id, server=query_settings.server)
+        transformed_mon = dgcog.get_monster(transformed_mon_id, server=query_settings.server)
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
-        discrep = dgcog.database.graph.monster_is_discrepant(base_mon) \
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon) \
                   or dgcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-                                      base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
-                                      qsettings,
+                                      base_mon, transformed_mon, acquire_raw, monster_ids, is_jp_buffed,
+                                      query_settings,
                                       reaction_list=reaction_list)
 
     @staticmethod
@@ -213,7 +213,7 @@ class TransformInfoView:
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(transformed_mon,
                                                   False,
-                                                  state.discrepant).to_markdown(),
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(transformed_mon)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon)),

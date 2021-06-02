@@ -21,7 +21,7 @@ class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_page,
-                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int, qsettings: QuerySettings,
+                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int, query_settings: QuerySettings,
                  all_rarities: List[int],
                  title, message,
                  current_index: int = None,
@@ -36,7 +36,7 @@ class SeriesScrollViewState(ViewStateBase):
         self.current_page = current_page or 0
         self.series_id = series_id
         self.rarity = rarity
-        self.qsettings = qsettings
+        self.query_settings = query_settings
         self.message = message
         self.child_message_id = child_message_id
         self.title = title
@@ -51,7 +51,7 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
-            'qsettings': self.qsettings.serialize(),
+            'query_settings': self.query_settings.serialize(),
             'current_page': self.current_page,
             'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
@@ -72,8 +72,8 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
-        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, qsettings.server)
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, query_settings.server)
         current_page = ims['current_page']
         monster_list = paginated_monsters[current_page]
         title = ims['title']
@@ -90,7 +90,7 @@ class SeriesScrollViewState(ViewStateBase):
         current_index = ims.get('current_index')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     current_page, monster_list, rarity, pages_in_rarity, qsettings,
+                                     current_page, monster_list, rarity, pages_in_rarity, query_settings,
                                      all_rarities,
                                      title, message,
                                      current_index=current_index,
@@ -120,8 +120,8 @@ class SeriesScrollViewState(ViewStateBase):
     async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        qsettings = QuerySettings.deserialize(ims['qsettings'])
-        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, qsettings.server)
+        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        paginated_monsters = await SeriesScrollViewState.query(dgcog, series_id, rarity, query_settings.server)
         return paginated_monsters
 
 

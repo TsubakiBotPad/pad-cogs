@@ -12,12 +12,12 @@ if TYPE_CHECKING:
 
 async def get_monster_from_ims(dgcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
-    qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+    query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
     resolved_monster_id = int(resolved_monster_id_str or 0)
     if resolved_monster_id:
-        return dgcog.database.graph.get_monster(resolved_monster_id, server=qsettings.server)
+        return dgcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
     monster = await dgcog.find_monster(query, ims['original_author_id'])
     return monster
 

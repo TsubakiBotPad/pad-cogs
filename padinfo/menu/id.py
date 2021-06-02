@@ -37,9 +37,9 @@ class IdMenu:
     async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=qsettings.server)
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll)
@@ -66,9 +66,9 @@ class IdMenu:
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=qsettings.server)
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll) or '')

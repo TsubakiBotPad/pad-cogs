@@ -27,13 +27,13 @@ NIL_ATT = 'Nil'
 
 class PantheonViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters, discrepant, qsettings,
+                 alt_monsters, is_jp_buffed, query_settings,
                  pantheon_list: List[MonsterEvolution], series_name: str, base_monster,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
-                         alt_monsters, discrepant, qsettings,
+                         alt_monsters, is_jp_buffed, query_settings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -61,15 +61,15 @@ class PantheonViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        discrep = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrep, qsettings,
+                   alt_monsters, is_jp_buffed, query_settings,
                    pantheon_list, series_name, base_monster,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -178,7 +178,7 @@ class PantheonView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.discrepant).to_markdown(),
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields,

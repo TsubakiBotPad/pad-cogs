@@ -18,7 +18,7 @@ class MonsterEvolution(NamedTuple):
 
 class ViewStateBaseId(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], discrepant: bool, qsettings: QuerySettings,
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
@@ -28,16 +28,16 @@ class ViewStateBaseId(ViewState):
         self.reaction_list = reaction_list
         self.color = color
         self.monster = monster
-        self.discrepant = discrepant
+        self.is_jp_buffed = is_jp_buffed
         self.query = query
-        self.qsettings = qsettings
+        self.query_settings = query_settings
         self.use_evo_scroll = use_evo_scroll
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
             'query': self.query,
-            'qsettings': self.qsettings.serialize(),
+            'query_settings': self.query_settings.serialize(),
             'resolved_monster_id': self.monster.monster_id,
             'use_evo_scroll': str(self.use_evo_scroll),
             'reaction_list': self.reaction_list,
@@ -54,15 +54,15 @@ class ViewStateBaseId(ViewState):
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        discrep = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrep, qsettings,
+                   alt_monsters, is_jp_buffed, query_settings,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)

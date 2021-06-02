@@ -47,9 +47,9 @@ class FindMonster:
         self.index = self.dgcog.indexes[Server(flags['server'])]
 
     def _process_settings(self, original_query: str) -> str:
-        qsettings = QuerySettings.extract(self.flags, original_query)
+        query_settings = QuerySettings.extract(self.flags, original_query)
 
-        self.index = self.dgcog.indexes[qsettings.server]
+        self.index = self.dgcog.indexes[query_settings.server]
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?\s*', ' ', original_query)
 

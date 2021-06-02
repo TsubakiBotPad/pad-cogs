@@ -237,7 +237,7 @@ class MonsterListMenu:
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id':
                 monster_list[n - MonsterListMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
-            'qsettings': ims['qsettings'],
+            'query_settings': ims['query_settings'],
         }
         return emoji_response, extra_ims
 
@@ -263,7 +263,7 @@ class MonsterListMenu:
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id': monster.monster_id,
-            'qsettings': ims['qsettings'],
+            'query_settings': ims['query_settings'],
         }
         return IdMenuEmoji.refresh, extra_ims
 
