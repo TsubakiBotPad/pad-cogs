@@ -5,13 +5,14 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional, Type, Literal
+from typing import TYPE_CHECKING, List, Optional, Type
 
 import discord
 import tsutils
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import checks, commands, data_manager, Config
+from redbot.core.commands import Literal as LiteralConverter
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, safe_read_json
@@ -1069,7 +1070,7 @@ class PadInfo(commands.Cog):
             await self.debugid(ctx, query=query)
 
     @commands.command()
-    async def exportmodifiers(self, ctx, server: Literal["COMBINED", "NA"] = "COMBINED"):
+    async def exportmodifiers(self, ctx, server: LiteralConverter["COMBINED", "NA"] = "COMBINED"):
         server = Server(server)
         DGCOG = self.bot.get_cog("Dadguide")
         maps = DGCOG.token_maps
