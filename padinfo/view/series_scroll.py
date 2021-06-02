@@ -48,7 +48,7 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
-            'server': self.monster_list[0].series_priority if self.monster_list else "COMBINED",
+            'server': self.monster_list[0].server_priority if self.monster_list else "COMBINED",
             'current_page': self.current_page,
             'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
