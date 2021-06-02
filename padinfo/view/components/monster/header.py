@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import LinkedText, Text
+from tsutils.enums import Server
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 from padinfo.common.external_links import puzzledragonx
@@ -61,7 +62,7 @@ class MonsterHeader:
     @classmethod
     def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, discrepant):
         return Text('{} {}'.strip().format(
-            '\N{EARTH GLOBE AMERICAS}' if m.server_priority == "NA" else '',
+            '\N{EARTH GLOBE AMERICAS}' if m.server_priority == Server.NA else '',
             cls.long_maybe_tsubaki(m, is_tsubaki, bool(discrepant))))
 
     @classmethod

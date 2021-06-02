@@ -3,16 +3,17 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 import tsutils
+from tsutils.enums import Server
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
-from dadguide.common.enums import DEFAULT_SERVER, Server
+from dadguide.common.enums import DEFAULT_SERVER
 from dadguide.monster_index import MonsterIndex
 
 
 class IdTest:
     bot = None
-    indexes: Dict[str, MonsterIndex]
+    indexes: Dict[Server, MonsterIndex]
     find_monster = None
 
     def __init__(self):
@@ -419,9 +420,9 @@ class IdTest:
         async with ctx.typing():
             for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff'], v['server']))):
                 fluff = case['id'] in [m.monster_id for m in
-                                       self.indexes[case['server']].fluff_tokens[case['token']]]
+                                       self.indexes[Server(case['server'])].fluff_tokens[case['token']]]
                 name = case['id'] in [m.monster_id for m in
-                                      self.indexes[case['server']].name_tokens[case['token']]]
+                                      self.indexes[Server(case['server'])].name_tokens[case['token']]]
 
                 if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
                     q = '"{}"'.format(case['token'])
@@ -466,8 +467,8 @@ class IdTest:
         fc = 0
         async with ctx.typing():
             for c, v in enumerate(fsuite):
-                fluff = v['id'] in [m.monster_id for m in self.indexes[v['server']].fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.indexes[v['server']].name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -512,8 +513,8 @@ class IdTest:
 
         fsuite = await self.config.fluff_suite()
         for c, v in enumerate(fsuite):
-            fluff = v['id'] in [m.monster_id for m in self.indexes[v['server']].fluff_tokens[v['token']]]
-            name = v['id'] in [m.monster_id for m in self.indexes[v['server']].name_tokens[v['token']]]
+            fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
+            name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                 q = '"{}"'.format(v['token'])

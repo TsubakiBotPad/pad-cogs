@@ -19,6 +19,7 @@ import tsutils
 from redbot.core import checks, data_manager, commands, Config
 from redbot.core.utils.chat_formatting import pagify, box
 from tsutils import auth_check, safe_read_json
+from tsutils.enums import Server
 
 from . import token_mappings
 from .find_monster import FindMonster
@@ -26,7 +27,7 @@ from .database_loader import load_database
 from .idtest_mixin import IdTest
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
-from .common.enums import DEFAULT_SERVER, SERVERS, Server
+from .common.enums import DEFAULT_SERVER, SERVERS
 from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
@@ -68,7 +69,7 @@ class Dadguide(commands.Cog, IdTest):
         self._is_ready = asyncio.Event()
 
         self.database = None
-        self.indexes = {}  # type: Dict[str, MonsterIndex]
+        self.indexes = {}  # type: Dict[Server, MonsterIndex]
 
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
@@ -150,7 +151,7 @@ class Dadguide(commands.Cog, IdTest):
         if not await self.config.indexlog():
             return
 
-        index = self.indexes["COMBINED"]
+        index = self.indexes[Server.COMBINED]
         index.issues.extend((await self.run_tests())[:25])
 
         channel = self.bot.get_channel(await self.config.indexlog())

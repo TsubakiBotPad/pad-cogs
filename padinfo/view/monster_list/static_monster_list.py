@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING, List
 
+from tsutils.enums import Server
+from tsutils.query_settings import QuerySettings
+
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 
 if TYPE_CHECKING:
@@ -14,8 +17,6 @@ class StaticMonsterListViewState(MonsterListViewState):
         ret = super().serialize()
         ret.update({
             'full_monster_list': [m.monster_id for page in self.paginated_monsters for m in page],
-            'resolved_monster_server': (self.paginated_monsters[0][0].server_priority
-                                        if self.paginated_monsters else "COMBINED"),
         })
         return ret
 
@@ -28,6 +29,6 @@ class StaticMonsterListViewState(MonsterListViewState):
     @classmethod
     async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
         monster_ids = ims['full_monster_list']
-        server = ims['resolved_monster_server']
-        monster_list = await cls.query(dgcog, monster_ids, server)
+        qsettings = QuerySettings.deserialize(ims['qsettings'])
+        monster_list = await cls.query(dgcog, monster_ids, qsettings.server)
         return monster_list

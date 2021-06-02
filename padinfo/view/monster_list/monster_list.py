@@ -5,6 +5,8 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji, embed_footer_with_state
+from tsutils.enums import Server
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.view.components.monster.header import MonsterHeader
@@ -18,7 +20,7 @@ class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, query, color,
-                 monster_list: List["MonsterModel"],
+                 monster_list: List["MonsterModel"], qsettings: QuerySettings,
                  title, message,
                  *,
                  current_page: int = 0,
@@ -41,6 +43,7 @@ class MonsterListViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
+        self.qsettings = qsettings
 
     def serialize(self):
         ret = super().serialize()
@@ -48,7 +51,7 @@ class MonsterListViewState(ViewStateBase):
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
             'monster_list': [m.monster_id for m in self.monster_list],
-            'resolved_monster_server': self.monster_list[0].server_priority if self.monster_list else "COMBINED",
+            'qsettings': self.qsettings.serialize(),
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
@@ -69,13 +72,14 @@ class MonsterListViewState(ViewStateBase):
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
         return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
-                                    monster_list,
+                                    monster_list, qsettings,
                                     title, message,
                                     current_page=current_page,
                                     current_index=current_index,

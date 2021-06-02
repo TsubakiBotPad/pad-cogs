@@ -4,8 +4,9 @@ from collections import defaultdict
 from typing import Optional, List, Set, Dict
 
 from networkx import MultiDiGraph
+from tsutils.enums import Server
 
-from .common.enums import DEFAULT_SERVER, Server, SERVERS
+from .common.enums import DEFAULT_SERVER, SERVERS
 from .database_manager import DadguideDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
@@ -113,8 +114,8 @@ class MonsterGraph(object):
         self.database = database
         self.max_monster_id = -1
         self.graph_dict: Dict[Server, MultiDiGraph] = {  # noqa
-            "COMBINED": self.build_graph("COMBINED"),
-            "NA": self.build_graph("NA"),
+            Server.COMBINED: self.build_graph(Server.COMBINED),
+            Server.NA: self.build_graph(Server.NA),
         }
 
         self._cache_graphs()
@@ -124,9 +125,9 @@ class MonsterGraph(object):
 
         table_suffix = ""
         where = ""
-        if server != "COMBINED":
-            table_suffix = "_" + server.lower()
-            where = SPECIFY_SERVER.format(["JP", "NA", "KR"].index(server))
+        if server != Server.COMBINED:
+            table_suffix = "_" + server.value.lower()
+            where = SPECIFY_SERVER.format(["JP", "NA", "KR"].index(server.value))
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
         es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())

@@ -4,6 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
@@ -19,13 +20,13 @@ if TYPE_CHECKING:
 
 class EvosViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], discrepant,
+                 alt_monsters: List[MonsterEvolution], discrepant: bool, qsettings: QuerySettings,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
-                         alt_monsters, discrepant,
+                         alt_monsters, discrepant, qsettings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -51,6 +52,7 @@ class EvosViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
@@ -58,7 +60,7 @@ class EvosViewState(ViewStateBaseId):
         discrep = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrep,
+                   alt_monsters, discrep, qsettings,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
                    use_evo_scroll=use_evo_scroll,

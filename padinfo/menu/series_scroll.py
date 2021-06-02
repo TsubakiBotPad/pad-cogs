@@ -237,8 +237,7 @@ class SeriesScrollMenu:
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id':
                 monster_list[n - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
-            'resolved_monster_server':
-                monster_list[n - SeriesScrollMenuPanes.NON_MONSTER_EMOJI_COUNT].server_priority,
+            'qsettings': ims['qsettings']
         }
         return emoji_response, extra_ims
 
@@ -264,7 +263,7 @@ class SeriesScrollMenu:
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
             'resolved_monster_id': monster_list[copy_ims['current_index']].monster_id,
-            'resolved_monster_server': monster_list[copy_ims['current_index']].server_priority,
+            'qsettings': ims['qsettings']
         }
         return IdMenuEmoji.refresh, extra_ims
 

@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
@@ -22,21 +23,23 @@ TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 acquire_raw, monster_ids, discrepant, reaction_list):
+                 acquire_raw, monster_ids, discrepant, qsettings,
+                 reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
         self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
-        self.reaction_list = reaction_list
         self.discrepant = discrepant
+        self.qsettings = qsettings
+        self.reaction_list = reaction_list
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
+            'qsettings': self.qsettings.serialize(),
             'resolved_monster_ids': self.monster_ids,
-            'resolved_monster_server': self.base_mon.server_priority,
             'reaction_list': self.reaction_list
         })
         return ret
@@ -49,9 +52,10 @@ class TransformInfoViewState(ViewStateBase):
         monster_ids = ims['resolved_monster_ids']
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
+        qsettings = QuerySettings.deserialize(ims.get('qsettings'))
 
-        base_mon = dgcog.get_monster(base_mon_id, server=ims['resolved_monster_server'])
-        transformed_mon = dgcog.get_monster(transformed_mon_id, server=ims['resolved_monster_server'])
+        base_mon = dgcog.get_monster(base_mon_id, server=qsettings.server)
+        transformed_mon = dgcog.get_monster(transformed_mon_id, server=qsettings.server)
 
         acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
@@ -60,6 +64,7 @@ class TransformInfoViewState(ViewStateBase):
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
                                       base_mon, transformed_mon, acquire_raw, monster_ids, discrep,
+                                      qsettings,
                                       reaction_list=reaction_list)
 
     @staticmethod

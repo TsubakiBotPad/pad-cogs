@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Literal
+from tsutils.enums import Server
 
-DEFAULT_SERVER = "COMBINED"
-SERVERS = ["NA", "COMBINED"]
-Server = Literal["COMBINED", "NA"]
+DEFAULT_SERVER = Server.COMBINED
+SERVERS = [Server.NA, Server.COMBINED]
 
 
 class AwokenSkills(Enum):
