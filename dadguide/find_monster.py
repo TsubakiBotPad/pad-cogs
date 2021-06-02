@@ -1,14 +1,15 @@
 import json
 import re
 from collections import defaultdict
-from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any
+from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any, Dict
 
 from Levenshtein import jaro_winkler
 from tsutils import rmdiacritics
+from tsutils.query_settings import QuerySettings
+from tsutils.enums import Server
 
 from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
 from dadguide.models.monster_model import MonsterModel
-from dadguide.common.enums import DEFAULT_SERVER
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -40,19 +41,15 @@ class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def __init__(self, dgcog, flags: Mapping[str, Any]):
+    def __init__(self, dgcog, flags: Dict[str, Any]):
         self.dgcog = dgcog
         self.flags = flags
-        self.index = self.dgcog.indexes[flags['server']]
+        self.index = self.dgcog.indexes[Server(flags['server'])]
 
     def _process_settings(self, original_query: str) -> str:
-        settings = re.findall(r'(?:--|—)(\w+)(?::{(.+?)})?', original_query)
+        query_settings = QuerySettings.extract(self.flags, original_query)
 
-        for setting, data in settings:
-            if setting == 'na':
-                self.index = self.dgcog.indexes['NA']
-            if setting == 'allservers':
-                self.index = self.dgcog.indexes['COMBINED']
+        self.index = self.dgcog.indexes[query_settings.server]
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?\s*', ' ', original_query)
 

@@ -56,7 +56,7 @@ class PicView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.discrepant).to_markdown(),
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields,

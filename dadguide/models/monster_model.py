@@ -1,3 +1,5 @@
+from tsutils.enums import Server
+
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType
@@ -171,13 +173,12 @@ class MonsterModel(BaseModel):
         return MonsterDifference.from_monsters(self, other)
 
     def __repr__(self):
-        server_prefix = self.server_priority + " " if self.server_priority != "COMBINED" else ""
+        server_prefix = self.server_priority + " " if self.server_priority != Server.COMBINED else ""
         return "Monster<{}{} ({})>".format(server_prefix, self.name_en, self.monster_id)
 
 
 class MonsterSearchHelper:
     def __init__(self, m: MonsterModel):
-
         self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
         leader_skill = m.leader_skill
         self.leader = leader_skill.desc.lower() if leader_skill else ''
