@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 class MonsterListViewState(ViewStateBase):
+    VIEW_STATE_TYPE: str
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, query, color,

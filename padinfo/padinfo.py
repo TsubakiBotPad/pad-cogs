@@ -5,7 +5,7 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Type
 
 import discord
 import tsutils
@@ -50,6 +50,7 @@ from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
+from padinfo.view.monster_list.monster_list import MonsterListViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
 from padinfo.view.pantheon import PantheonViewState
@@ -590,15 +591,16 @@ class PadInfo(commands.Cog):
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
 
     async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"],
-                               title, view_state_type):
+                               title, view_state_type: Type[MonsterListViewState]):
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
+        qsettings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query, color,
-                                monster_list,
+                                monster_list, qsettings,
                                 title, instruction_message,
                                 reaction_list=initial_reaction_list
                                 )
