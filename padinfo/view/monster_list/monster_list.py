@@ -40,11 +40,15 @@ class MonsterListViewState(ViewStateBase):
         self.child_message_id = child_message_id
         self.title = title
         self.paginated_monsters = paginated_monsters
-        self.monster_list = paginated_monsters[current_page]
+        self.monster_list = None
+        self._update_monster_list()
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
         self.query_settings = query_settings
+
+    def _update_monster_list(self):
+        self.monster_list = self.paginated_monsters[self.current_page]
 
     def serialize(self):
         ret = super().serialize()
@@ -106,6 +110,7 @@ class MonsterListViewState(ViewStateBase):
     def increment_page(self):
         if self.current_page < len(self.paginated_monsters) - 1:
             self.current_page = self.current_page + 1
+            self._update_monster_list()
             self.current_index = None
             return
         self.current_page = 0
@@ -115,9 +120,11 @@ class MonsterListViewState(ViewStateBase):
     def decrement_page(self):
         if self.current_page > 0:
             self.current_page = self.current_page - 1
+            self._update_monster_list()
             self.current_index = None
             return
         self.current_page = len(self.paginated_monsters) - 1
+        self._update_monster_list()
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
@@ -131,10 +138,12 @@ class MonsterListViewState(ViewStateBase):
             return
         if self.current_index == max_index and self.current_page < len(self.paginated_monsters) - 1:
             self.current_page = self.current_page + 1
+            self._update_monster_list()
             self.current_index = 0
             return
         if self.current_index == max_index:
             self.current_page = 0
+            self._update_monster_list()
             self.current_index = 0
 
     def decrement_index(self):
@@ -147,17 +156,14 @@ class MonsterListViewState(ViewStateBase):
             return
         if self.current_index == 0 and self.current_page > 0:
             self.current_page = self.current_page - 1
+            self._update_monster_list()
             self.current_index = MonsterListViewState.MAX_ITEMS_PER_PANE - 1
             return
         if self.current_index == 0:
             # respond with left but then set the current index to the max thing possible
             self.current_page = len(self.paginated_monsters) - 1
+            self._update_monster_list()
             self.current_index = len(self.paginated_monsters[-1]) - 1
-
-    @staticmethod
-    def get_current_monster(ims):
-        monster_list = ims['monster_list']
-        current_index = ims['current_index']
 
 
 def _monster_list(monsters):
