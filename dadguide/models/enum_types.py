@@ -1,6 +1,6 @@
 from enum import Enum
 
-from tsutils.enums import Server as TsutilsServer
+from tsutils.enums import Server
 
 
 class Attribute(Enum):
@@ -40,12 +40,6 @@ class InternalEvoType(Enum):
     SuperReincarnated = "Super Reincarnated"
 
 
-class Server(Enum):
-    JP = 0
-    NA = 1
-    KR = 2
-
-
 class AwakeningRestrictedLatent(Enum):
     """Latent awakenings with availability gated by having an awakening"""
     UnmatchableClear = 606
@@ -60,8 +54,8 @@ def enum_or_none(enum, value, default=None):
         return default
 
 
-DEFAULT_SERVER = TsutilsServer.COMBINED
-SERVERS = [TsutilsServer.NA, TsutilsServer.COMBINED]
+DEFAULT_SERVER = Server.COMBINED
+SERVERS = [Server.NA, Server.COMBINED]
 
 
 class AwokenSkills(Enum):
