@@ -8,7 +8,7 @@ from .models.dungeon_model import DungeonModel
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.series_model import SeriesModel
 from .monster_graph import MonsterGraph
-from .common.enums import DEFAULT_SERVER
+from .models.enum_types import DEFAULT_SERVER
 
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,

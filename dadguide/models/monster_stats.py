@@ -1,5 +1,5 @@
 from typing import Literal
-from dadguide.common.enums import AwokenSkills
+from dadguide.models.enum_types import AwokenSkills
 
 StatType = Literal['hp', 'atk', 'rcv']
 
