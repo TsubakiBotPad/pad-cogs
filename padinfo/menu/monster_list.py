@@ -175,8 +175,8 @@ class MonsterListMenu:
             'is_child': True,
             'reaction_list': IdMenuPanes.emoji_names(),
             'menu_type': IdMenu.MENU_TYPE,
-            'resolved_monster_id':
-                view_state.monster_list[n - MonsterListMenuPanes.NON_MONSTER_EMOJI_COUNT].monster_id,
+            'resolved_monster_id': view_state.monster_list[
+                MonsterListMenuPanes.get_monster_index(n)].monster_id,
             'query_settings': view_state.query_settings.serialize(),
         }
         return emoji_response, extra_ims
@@ -259,3 +259,7 @@ class MonsterListMenuPanes(MenuPanes):
     @classmethod
     def get_previous_reaction_list_num_monsters(cls, reaction_list: List):
         return len(reaction_list) - cls.NON_MONSTER_EMOJI_COUNT
+
+    @classmethod
+    def get_monster_index(cls, n: int):
+        return n - cls.NON_MONSTER_EMOJI_COUNT
