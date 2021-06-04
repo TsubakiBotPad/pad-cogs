@@ -5,7 +5,6 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji, embed_footer_with_state
-from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -40,11 +39,15 @@ class MonsterListViewState(ViewStateBase):
         self.child_message_id = child_message_id
         self.title = title
         self.paginated_monsters = paginated_monsters
-        self.monster_list = paginated_monsters[current_page]
+        self.monster_list = None
+        self._update_monster_list()
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
         self.query_settings = query_settings
+
+    def _update_monster_list(self):
+        self.monster_list = self.paginated_monsters[self.current_page]
 
     def serialize(self):
         ret = super().serialize()
@@ -102,6 +105,64 @@ class MonsterListViewState(ViewStateBase):
     @classmethod
     async def query_paginated_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
         return cls.paginate(await cls.query_from_ims(dgcog, ims))
+
+    def increment_page(self):
+        if self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self._update_monster_list()
+            self.current_index = None
+            return
+        self.current_page = 0
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    def decrement_page(self):
+        if self.current_page > 0:
+            self.current_page = self.current_page - 1
+            self._update_monster_list()
+            self.current_index = None
+            return
+        self.current_page = len(self.paginated_monsters) - 1
+        self._update_monster_list()
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    def increment_index(self):
+        max_index = len(self.paginated_monsters[self.current_page]) - 1
+        if self.current_index is None:
+            self.current_index = 0
+            return
+        if self.current_index < max_index:
+            self.current_index = self.current_index + 1
+            return
+        if self.current_index == max_index and self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self._update_monster_list()
+            self.current_index = 0
+            return
+        if self.current_index == max_index:
+            self.current_page = 0
+            self._update_monster_list()
+            self.current_index = 0
+
+    def decrement_index(self):
+        max_index = len(self.paginated_monsters[self.current_page]) - 1
+        if self.current_index is None:
+            self.current_index = max_index
+            return
+        if self.current_index > 0:
+            self.current_index = self.current_index - 1
+            return
+        if self.current_index == 0 and self.current_page > 0:
+            self.current_page = self.current_page - 1
+            self._update_monster_list()
+            self.current_index = MonsterListViewState.MAX_ITEMS_PER_PANE - 1
+            return
+        if self.current_index == 0:
+            # respond with left but then set the current index to the max thing possible
+            self.current_page = len(self.paginated_monsters) - 1
+            self._update_monster_list()
+            self.current_index = len(self.paginated_monsters[-1]) - 1
 
 
 def _monster_list(monsters):
