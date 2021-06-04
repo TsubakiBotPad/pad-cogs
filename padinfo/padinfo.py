@@ -326,12 +326,6 @@ class PadInfo(commands.Cog):
         bad = await self.config.bad()
         await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
 
-    @commands.command()
-    @checks.bot_has_permissions()
-    async def id2(self, ctx):
-        """Monster info (main tab)"""
-        await ctx.send("id2 has been discontinued!".format(ctx.prefix))
-
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
