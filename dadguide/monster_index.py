@@ -11,7 +11,7 @@ from tsutils.enums import Server
 
 from .models.monster_model import MonsterModel
 from .monster_graph import MonsterGraph
-from .common.enums import DEFAULT_SERVER
+from .models.enum_types import DEFAULT_SERVER
 from .token_mappings import *
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
