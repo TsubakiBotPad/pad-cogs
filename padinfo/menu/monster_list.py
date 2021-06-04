@@ -193,6 +193,8 @@ class MonsterListMenu:
 
     @staticmethod
     async def _scroll_child(view_state: MonsterListViewState, update_fn):
+        # when the parent ims updated, it was a deepcopy of the ims / view_state we have now, so we have to
+        # redo the update function that we did before
         update_fn()
         extra_ims = {
             'is_child': True,
