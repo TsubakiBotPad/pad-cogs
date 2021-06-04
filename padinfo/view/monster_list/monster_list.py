@@ -98,6 +98,62 @@ class MonsterListViewState(ViewStateBase):
     async def query_paginated_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
         return cls.paginate(await cls.query_from_ims(dgcog, ims))
 
+    def increment_page(self):
+        if self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self.current_index = None
+            return
+        self.current_page = 0
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    def decrement_page(self):
+        if self.current_page > 0:
+            self.current_page = self.current_page - 1
+            self.current_index = None
+            return
+        self.current_page = len(self.paginated_monsters) - 1
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    def increment_index(self):
+        max_index = len(self.paginated_monsters[self.current_page]) - 1
+        if self.current_index is None:
+            self.current_index = 0
+            return
+        if self.current_index < max_index:
+            self.current_index = self.current_index + 1
+            return
+        if self.current_index == max_index and self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self.current_index = 0
+            return
+        if self.current_index == max_index:
+            self.current_page = 0
+            self.current_index = 0
+
+    def decrement_index(self):
+        max_index = len(self.paginated_monsters[self.current_page]) - 1
+        if self.current_index is None:
+            self.current_index = max_index
+            return
+        if self.current_index > 0:
+            self.current_index = self.current_index - 1
+            return
+        if self.current_index == 0 and self.current_page > 0:
+            self.current_page = self.current_page - 1
+            self.current_index = MonsterListViewState.MAX_ITEMS_PER_PANE - 1
+            return
+        if self.current_index == 0:
+            # respond with left but then set the current index to the max thing possible
+            self.current_page = len(self.paginated_monsters) - 1
+            self.current_index = len(self.paginated_monsters[-1]) - 1
+
+    @staticmethod
+    def get_current_monster(ims):
+        monster_list = ims['monster_list']
+        current_index = ims['current_index']
+
 
 def _monster_list(monsters):
     if not len(monsters):
