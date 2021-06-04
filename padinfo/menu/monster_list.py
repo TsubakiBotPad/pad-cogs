@@ -192,10 +192,10 @@ class MonsterListMenu:
         return await MonsterListMenu._scroll_child(view_state, view_state.increment_index)
 
     @staticmethod
-    async def _scroll_child(view_state: MonsterListViewState, update_fn):
+    async def _scroll_child(view_state: MonsterListViewState, update_function):
         # when the parent ims updated, it was a deepcopy of the ims / view_state we have now, so we have to
         # redo the update function that we did before
-        update_fn()
+        update_function()
         extra_ims = {
             'is_child': True,
             'reaction_list': IdMenuPanes.emoji_names(),
