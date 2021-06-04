@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
@@ -33,12 +34,12 @@ def alt_fmt(monsterevo, state):
 
 class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], discrepant,
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
-                         alt_monsters, discrepant,
+                         alt_monsters, is_jp_buffed, query_settings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -71,16 +72,17 @@ class IdViewState(ViewStateBaseId):
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
-        discrep = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
-                   alt_monsters, discrep,
+                   alt_monsters, is_jp_buffed, query_settings,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
@@ -306,7 +308,7 @@ class IdView(BaseIdView):
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(m,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.discrepant).to_markdown(),
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=embed_footer_with_state(state),

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 
@@ -10,7 +10,7 @@ class IdSearchViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "IdSearch"
 
     @classmethod
-    async def query(cls, dgcog, query, original_author_id) -> List["MonsterModel"]:
+    async def query(cls, dgcog, query, original_author_id) -> Optional[List["MonsterModel"]]:
         found_monsters = await dgcog.find_monsters(query, original_author_id)
 
         if not found_monsters:
