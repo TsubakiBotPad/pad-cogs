@@ -1,11 +1,10 @@
-from copy import deepcopy
 from typing import Optional, List
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
-
 from tsutils.menu.panes import emoji_buttons, MenuPanes
+
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
