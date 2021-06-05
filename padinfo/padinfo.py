@@ -33,6 +33,7 @@ from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_map import padinfo_menu_map
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
+from padinfo.menu.na_diff import NaDiffMenu
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -325,6 +326,37 @@ class PadInfo(commands.Cog):
         good = await self.config.good()
         bad = await self.config.bad()
         await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def nadiff(self, ctx, *, query: str):
+        """Show differences between NA & JP versions of a card"""
+        dgcog = await self.get_dgcog()
+        raw_query = query
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+
+        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
+
+        if monster is None:
+            await self.send_id_failure_message(ctx, query)
+            return
+
+        await self.log_id_result(ctx, monster.monster_id)
+
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
+            await IdViewState.query(dgcog, monster)
+
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+
+        state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
+                            alt_monsters, is_jp_buffed, query_settings,
+                            transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                            )
+        menu = NaDiffMenu.menu()
+        await menu.create(ctx, state)
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
