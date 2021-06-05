@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List, NamedTuple, Optional
 
 from discordmenu.embed.view_state import ViewState
+from tsutils.enums import AltEvoSort
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -24,7 +25,7 @@ class ViewStateBaseId(ViewState):
                  extra_state=None):
         super().__init__(original_author_id=original_author_id, menu_type=menu_type, raw_query=raw_query,
                          extra_state=extra_state)
-        self.alt_monsters = alt_monsters
+        self.dfs_alt_monsters = alt_monsters
         self.reaction_list = reaction_list
         self.color = color
         self.monster = monster
@@ -32,6 +33,11 @@ class ViewStateBaseId(ViewState):
         self.query = query
         self.query_settings = query_settings
         self.use_evo_scroll = use_evo_scroll
+
+        if self.query_settings.evosort == AltEvoSort.dfs:
+            self.alt_monsters = self.dfs_alt_monsters
+        else:
+            self.alt_monsters = sorted(self.dfs_alt_monsters, key=lambda m: m.monster.monster_id)
 
     def serialize(self):
         ret = super().serialize()
