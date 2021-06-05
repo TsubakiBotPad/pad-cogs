@@ -33,7 +33,7 @@ from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_map import padinfo_menu_map
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
-from padinfo.menu.na_diff import NaDiffMenu
+from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -41,6 +41,7 @@ from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
 from padinfo.view.closable_embed import ClosableEmbedViewState
+from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
 from padinfo.view.id import IdViewState
@@ -329,8 +330,7 @@ class PadInfo(commands.Cog):
 
     @staticmethod
     async def send_invalid_monster_message(ctx, query: str, monster: "MonsterModel", append_text: str):
-        base_text = 'Your query `{}` found {}{}.'
-        await ctx.send(base_text.format(query, MonsterHeader.short_with_emoji(monster, link=False).to_markdown(), append_text))
+        await ctx.send(invalid_monster_text(query, monster, append_text))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -341,30 +341,17 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        original_monster = await dgcog.find_monster(raw_query, ctx.author.id)
-        await self.log_id_result(ctx, original_monster.monster_id)
-        if original_monster is None:
-            await self.send_id_failure_message(ctx, query)
-            return
-
-        if original_monster.on_na and not original_monster.on_jp:
-            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in NA')
-            return
-
-        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        await self.log_id_result(ctx, monster.monster_id)
         if monster is None:
-            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in JP')
-            return
-
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
-        if not is_jp_buffed:
-            await self.send_invalid_monster_message(ctx, query, monster, ', which is the same in NA & JP')
+            await self.send_id_failure_message(ctx, query)
             return
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.do_query(dgcog, monster)
 
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
@@ -372,6 +359,11 @@ class PadInfo(commands.Cog):
                             transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                             )
         menu = NaDiffMenu.menu()
+        message = state.get_na_diff_invalid_message()
+        if message:
+            state = SimpleTextViewState(original_author_id, NaDiffMenu.MENU_TYPE,
+                                        raw_query, color, message)
+            menu = NaDiffMenu.menu(initial_control=NaDiffMenu.message_control)
         await menu.create(ctx, state)
 
     @commands.command(name="evos")
@@ -633,7 +625,9 @@ class PadInfo(commands.Cog):
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
 
     async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"],
-                               title, view_state_type: Type[MonsterListViewState]):
+                               title, view_state_type: Type[MonsterListViewState],
+                               child_menu_type: str = IdMenu.MENU_TYPE,
+                               child_reaction_list: List = IdMenuPanes.emoji_names()):
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
@@ -644,6 +638,8 @@ class PadInfo(commands.Cog):
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query, color,
                                 monster_list, query_settings,
                                 title, instruction_message,
+                                child_menu_type=child_menu_type,
+                                child_reaction_list=child_reaction_list,
                                 reaction_list=initial_reaction_list
                                 )
         parent_menu = MonsterListMenu.menu()
@@ -1301,6 +1297,16 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["ids"])
     @checks.bot_has_permissions(embed_links=True)
     async def idsearch(self, ctx, *, query):
+        await self._do_idsearch(ctx, query, child_menu_type=IdMenu.MENU_TYPE)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def nadiffs(self, ctx, *, query):
+        await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
+                                child_reaction_list=NaDiffMenuPanes.emoji_names())
+
+    async def _do_idsearch(self, ctx, query, child_menu_type=IdMenu.MENU_TYPE,
+                           child_reaction_list=IdMenuPanes.emoji_names()):
         dgcog = self.bot.get_cog("Dadguide")
 
         monster_list = await IdSearchViewState.do_query(dgcog, query, ctx.author.id)
@@ -1309,7 +1315,10 @@ class PadInfo(commands.Cog):
             await ctx.send("No monster matched.")
             return
 
-        await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results', IdSearchViewState)
+        await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results',
+                                    IdSearchViewState,
+                                    child_menu_type=child_menu_type,
+                                    child_reaction_list=child_reaction_list)
 
     async def get_fm_flags(self, user: discord.User):
         return await self.bot.get_cog("Dadguide").config.user(user).fm_flags()
