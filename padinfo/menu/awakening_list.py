@@ -3,6 +3,7 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
+from tsutils.enums import ChildMenuSelector
 from tsutils.menu.panes import emoji_buttons, MenuPanes
 
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListView, AwakeningListSortTypes
@@ -19,7 +20,7 @@ class AwakeningListEmoji:
 
 
 class AwakeningListMenu:
-    MENU_TYPE = 'AwakeningList'
+    MENU_TYPE = ChildMenuSelector.AwakeningList.name
 
     @staticmethod
     def menu(initial_control=None):
