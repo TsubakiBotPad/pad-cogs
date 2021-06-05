@@ -8,9 +8,11 @@ from tsutils.enums import Server
 from tsutils.menu.panes import MenuPanes
 
 from padinfo.view.id import IdViewState, IdView
+from padinfo.view.simple_text import SimpleTextViewState, SimpleTextView
 
 
 class NaDiffEmoji:
+    home = '\N{HOUSE BUILDING}'
     na = '\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER S}'
     jp = '\N{REGIONAL INDICATOR SYMBOL LETTER J}\N{REGIONAL INDICATOR SYMBOL LETTER P}'
 
@@ -24,6 +26,16 @@ class NaDiffMenu:
             initial_control = NaDiffMenu.id_control
         embed = EmbedMenu(NaDiffMenuPanes.transitions(), initial_control)
         return embed
+
+    @staticmethod
+    async def respond_with_home(message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        if view_state.set_na_diff_invalid_message(ims):
+            new_view_state = await SimpleTextViewState.deserialize(dgcog, user_config, ims)
+            return NaDiffMenu.message_control(new_view_state)
+        return await NaDiffMenu.respond_with_na(message, ims, **data)
 
     @staticmethod
     async def respond_with_na(message: Optional[Message], ims, **data):
@@ -53,9 +65,23 @@ class NaDiffMenu:
             reaction_list or [emoji_cache.get_by_name(e) for e in NaDiffMenuPanes.emoji_names()]
         )
 
+    @staticmethod
+    def message_control(state: SimpleTextViewState):
+        if state is None:
+            return None
+        reaction_list = state.reaction_list
+        return EmbedControl(
+            [SimpleTextView.embed(state)],
+            reaction_list
+        )
+
 
 class NaDiffMenuPanes(MenuPanes):
     DATA = {
+        NaDiffEmoji.home: (NaDiffMenu.respond_with_home, IdView.VIEW_TYPE),
         NaDiffEmoji.na: (NaDiffMenu.respond_with_na, IdView.VIEW_TYPE),
         NaDiffEmoji.jp: (NaDiffMenu.respond_with_jp, IdView.VIEW_TYPE),
     }
+    HIDDEN_EMOJIS = [
+        NaDiffEmoji.home,
+    ]

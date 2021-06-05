@@ -13,7 +13,7 @@ from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.leader_skills import createMultiplierText
 from padinfo.view.base import BaseIdView
-from padinfo.view.common import get_monster_from_ims
+from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
@@ -34,6 +34,10 @@ def alt_fmt(monsterevo, state):
 
 
 class IdViewState(ViewStateBaseId):
+    nadiff_na_only_text = ', which is only in NA'
+    nadiff_jp_only_text = ', which is only in JP'
+    nadiff_identical_text = ', which is the same in NA & JP'
+
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
@@ -116,6 +120,22 @@ class IdViewState(ViewStateBaseId):
         acquire_raw = db_context.graph.monster_acquisition(monster)
         base_rarity = db_context.graph.get_base_monster(monster).rarity
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
+
+    def set_na_diff_invalid_message(self, ims):
+        monster: "MonsterModel" = self.monster
+        if monster.on_na and not monster.on_jp:
+            print('1')
+            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_na_only_text, link=True)
+            return True
+        if monster.on_jp and not monster.on_na:
+            print('2')
+            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_jp_only_text, link=True)
+            return True
+        if not self.is_jp_buffed:
+            print('3')
+            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_identical_text, link=True)
+            return True
+        return False
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):

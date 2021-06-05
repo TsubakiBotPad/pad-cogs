@@ -47,7 +47,7 @@ class MonsterListMenu:
 
     child_menu_type_to_emoji_response_map = {
         IdMenu.MENU_TYPE: IdMenuEmoji.refresh,
-        NaDiffMenu.MENU_TYPE: NaDiffEmoji.na
+        NaDiffMenu.MENU_TYPE: NaDiffEmoji.home
     }
 
     @staticmethod

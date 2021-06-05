@@ -41,6 +41,7 @@ from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
 from padinfo.view.closable_embed import ClosableEmbedViewState
+from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
 from padinfo.view.id import IdViewState
@@ -329,9 +330,7 @@ class PadInfo(commands.Cog):
 
     @staticmethod
     async def send_invalid_monster_message(ctx, query: str, monster: "MonsterModel", append_text: str):
-        base_text = 'Your query `{}` found {}{}.'
-        await ctx.send(
-            base_text.format(query, MonsterHeader.short_with_emoji(monster, link=False).to_markdown(), append_text))
+        await ctx.send(invalid_monster_text(query, monster, append_text))
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
