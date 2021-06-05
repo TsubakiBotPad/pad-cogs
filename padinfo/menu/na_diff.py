@@ -7,6 +7,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.enums import Server
 from tsutils.menu.panes import MenuPanes
 
+from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.id import IdViewState, IdView
 from padinfo.view.simple_text import SimpleTextViewState, SimpleTextView
 
@@ -24,7 +25,8 @@ class NaDiffMenu:
     def menu(initial_control=None):
         if initial_control is None:
             initial_control = NaDiffMenu.id_control
-        embed = EmbedMenu(NaDiffMenuPanes.transitions(), initial_control)
+        embed = EmbedMenu(NaDiffMenuPanes.transitions(), initial_control,
+                          delete_func=NaDiffMenu.respond_with_delete)
         return embed
 
     @staticmethod
@@ -54,6 +56,16 @@ class NaDiffMenu:
         await view_state.set_server(dgcog, server)
         control = NaDiffMenu.id_control(view_state)
         return control
+
+    @staticmethod
+    async def respond_with_delete(message: Optional[Message], ims, **data):
+        if not ims.get('is_child'):
+            return await message.delete()
+        if ims.get('idle_message'):
+            ims['menu_type'] = SimpleTextMenu.MENU_TYPE
+            ims['message'] = ims['idle_message']
+            return await SimpleTextMenu.respond_with_message(message, ims, **data)
+        return await message.edit(embed=None)
 
     @staticmethod
     def id_control(state: IdViewState):
