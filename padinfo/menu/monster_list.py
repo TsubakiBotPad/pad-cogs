@@ -171,14 +171,9 @@ class MonsterListMenu:
         if emoji_response is None:
             return None, {}
         n = MonsterListMenuPanes.emoji_names().index(emoji_clicked)
-        extra_ims = {
-            'is_child': True,
-            'reaction_list': IdMenuPanes.emoji_names(),
-            'menu_type': IdMenu.MENU_TYPE,
-            'resolved_monster_id': view_state.monster_list[
-                MonsterListMenuPanes.get_monster_index(n)].monster_id,
-            'query_settings': view_state.query_settings.serialize(),
-        }
+        view_state.set_index(MonsterListMenuPanes.get_monster_index(n))
+        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
+                                                              IdMenu.MENU_TYPE)
         return emoji_response, extra_ims
 
     @classmethod
@@ -193,16 +188,11 @@ class MonsterListMenu:
 
     @staticmethod
     async def _scroll_child(view_state: MonsterListViewState, update_function):
-        # when the parent ims updated, it was a deepcopy of the ims / view_state we have now, so we have to
-        # redo the update function that we did before
+        # when the parent ims updated, it was a deepcopy of the ims / view_state we have now,
+        # so we have to redo the update function that we did before
         update_function()
-        extra_ims = {
-            'is_child': True,
-            'reaction_list': IdMenuPanes.emoji_names(),
-            'menu_type': IdMenu.MENU_TYPE,
-            'resolved_monster_id': view_state.monster_list[view_state.current_index].monster_id,
-            'query_settings': view_state.query_settings.serialize(),
-        }
+        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
+                                                              IdMenu.MENU_TYPE)
         return IdMenuEmoji.refresh, extra_ims
 
 
