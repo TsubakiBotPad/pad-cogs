@@ -37,7 +37,7 @@ class MonsterListViewState(ViewStateBase):
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = len(paginated_monsters)
-        self.message = message
+        self.idle_message = message
         self.child_message_id = child_message_id
         self.child_menu_type = child_menu_type
         self.child_reaction_list = child_reaction_list
@@ -66,7 +66,7 @@ class MonsterListViewState(ViewStateBase):
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
-            'message': self.message,
+            'idle_message': self.idle_message,
             'current_index': self.current_index,
             'child_menu_type': self.child_menu_type,
             'child_reaction_list': self.child_reaction_list,
@@ -80,6 +80,7 @@ class MonsterListViewState(ViewStateBase):
             'menu_type': self.child_menu_type,
             'resolved_monster_id': self.current_monster_id,
             'query_settings': self.query_settings.serialize(),
+            'idle_message': self.idle_message,
         }
         return extra_ims
 
@@ -102,10 +103,10 @@ class MonsterListViewState(ViewStateBase):
         child_message_id = ims.get('child_message_id')
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
-        message = ims.get('message')
+        idle_message = ims.get('idle_message')
         return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
                                     monster_list, query_settings,
-                                    title, message,
+                                    title, idle_message,
                                     current_page=current_page,
                                     current_index=current_index,
                                     child_menu_type=child_menu_type,

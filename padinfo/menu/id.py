@@ -106,12 +106,13 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
-        if ims.get('is_child'):
-            if ims.get('message'):
-                ims['menu_type'] = SimpleTextMenu.MENU_TYPE
-                return await SimpleTextMenu.respond_with_message(message, ims, **data)
-            return await message.edit(embed=None)
-        return await message.delete()
+        if not ims.get('is_child'):
+            return await message.delete()
+        if ims.get('idle_message'):
+            ims['menu_type'] = SimpleTextMenu.MENU_TYPE
+            ims['message'] = ims['idle_message']
+            return await SimpleTextMenu.respond_with_message(message, ims, **data)
+        return await message.edit(embed=None)
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):
