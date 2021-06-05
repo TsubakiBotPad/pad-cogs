@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
@@ -122,20 +122,21 @@ class IdViewState(ViewStateBaseId):
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
 
     def set_na_diff_invalid_message(self, ims):
-        monster: "MonsterModel" = self.monster
-        if monster.on_na and not monster.on_jp:
-            print('1')
-            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_na_only_text, link=True)
-            return True
-        if monster.on_jp and not monster.on_na:
-            print('2')
-            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_jp_only_text, link=True)
-            return True
-        if not self.is_jp_buffed:
-            print('3')
-            ims['message'] = invalid_monster_text(self.query, monster, self.nadiff_identical_text, link=True)
+        message = self.get_na_diff_invalid_message()
+        if message is not None:
+            ims['message'] = message
             return True
         return False
+
+    def get_na_diff_invalid_message(self) -> Optional[str]:
+        monster: "MonsterModel" = self.monster
+        if monster.on_na and not monster.on_jp:
+            return invalid_monster_text(self.query, monster, self.nadiff_na_only_text, link=True)
+        if monster.on_jp and not monster.on_na:
+            return invalid_monster_text(self.query, monster, self.nadiff_jp_only_text, link=True)
+        if not self.is_jp_buffed:
+            return invalid_monster_text(self.query, monster, self.nadiff_identical_text, link=True)
+        return None
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):

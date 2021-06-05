@@ -341,30 +341,17 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        original_monster = await dgcog.find_monster(raw_query, ctx.author.id)
-        await self.log_id_result(ctx, original_monster.monster_id)
-        if original_monster is None:
-            await self.send_id_failure_message(ctx, query)
-            return
-
-        if original_monster.on_na and not original_monster.on_jp:
-            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in NA')
-            return
-
-        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
+        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        await self.log_id_result(ctx, monster.monster_id)
         if monster is None:
-            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in JP')
-            return
-
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
-        if not is_jp_buffed:
-            await self.send_invalid_monster_message(ctx, query, monster, ', which is the same in NA & JP')
+            await self.send_id_failure_message(ctx, query)
             return
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.do_query(dgcog, monster)
 
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
@@ -372,6 +359,11 @@ class PadInfo(commands.Cog):
                             transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                             )
         menu = NaDiffMenu.menu()
+        message = state.get_na_diff_invalid_message()
+        if message:
+            state = SimpleTextViewState(original_author_id, NaDiffMenu.MENU_TYPE,
+                                        raw_query, color, message)
+            menu = NaDiffMenu.menu(initial_control=NaDiffMenu.message_control)
         await menu.create(ctx, state)
 
     @commands.command(name="evos")
