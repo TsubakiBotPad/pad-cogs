@@ -165,12 +165,12 @@ class MonsterListMenu:
 
     @classmethod
     async def click_child_number(cls, ims, emoji_clicked, **data):
-        view_state = await cls._get_view_state(ims, **data)
         emoji_response = IdMenuEmoji.refresh \
             if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:
             return None, {}
         n = MonsterListMenuPanes.emoji_names().index(emoji_clicked)
+        view_state = await cls._get_view_state(ims, **data)
         view_state.set_index(MonsterListMenuPanes.get_monster_index(n))
         extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
                                                               IdMenu.MENU_TYPE)
