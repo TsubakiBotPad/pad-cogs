@@ -344,11 +344,17 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+
+        if not is_jp_buffed:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
+                                                                    monster.name_en) + 'which is the same in NA & JP.')
+            return
+
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.query(dgcog, monster)
 
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
