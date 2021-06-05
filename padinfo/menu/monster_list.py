@@ -175,8 +175,7 @@ class MonsterListMenu:
         n = MonsterListMenuPanes.emoji_names().index(emoji_clicked)
         view_state = await cls._get_view_state(ims, **data)
         view_state.set_index(MonsterListMenuPanes.get_monster_index(n))
-        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
-                                                              IdMenu.MENU_TYPE)
+        extra_ims = view_state.get_serialized_child_extra_ims()
         emoji_response = cls.child_menu_type_to_emoji_response_map[view_state.child_menu_type]
         return emoji_response, extra_ims
 
@@ -195,8 +194,7 @@ class MonsterListMenu:
         # when the parent ims updated, it was a deepcopy of the ims / view_state we have now,
         # so we have to redo the update function that we did before
         update_function()
-        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
-                                                              IdMenu.MENU_TYPE)
+        extra_ims = view_state.get_serialized_child_extra_ims()
         emoji_response = cls.child_menu_type_to_emoji_response_map[view_state.child_menu_type]
         return emoji_response, extra_ims
 

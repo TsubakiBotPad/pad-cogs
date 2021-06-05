@@ -73,11 +73,11 @@ class MonsterListViewState(ViewStateBase):
         })
         return ret
 
-    def get_serialized_child_extra_ims(self, emoji_names, menu_type):
+    def get_serialized_child_extra_ims(self):
         extra_ims = {
             'is_child': True,
-            'reaction_list': self.child_reaction_list or emoji_names,
-            'menu_type': self.child_menu_type or menu_type,
+            'reaction_list': self.child_reaction_list,
+            'menu_type': self.child_menu_type,
             'resolved_monster_id': self.current_monster_id,
             'query_settings': self.query_settings.serialize(),
         }
