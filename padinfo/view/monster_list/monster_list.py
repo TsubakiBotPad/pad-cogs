@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
@@ -25,6 +25,8 @@ class MonsterListViewState(ViewStateBase):
                  *,
                  current_page: int = 0,
                  current_index: int = None,
+                 child_menu_type: str = None,
+                 child_reaction_list: Optional[List] = None,
                  reaction_list=None,
                  extra_state=None,
                  child_message_id=None
@@ -37,6 +39,8 @@ class MonsterListViewState(ViewStateBase):
         self.page_count = len(paginated_monsters)
         self.message = message
         self.child_message_id = child_message_id
+        self.child_menu_type = child_menu_type
+        self.child_reaction_list = child_reaction_list
         self.title = title
         self.paginated_monsters = paginated_monsters
         self.reaction_list = reaction_list
@@ -64,14 +68,16 @@ class MonsterListViewState(ViewStateBase):
             'child_message_id': self.child_message_id,
             'message': self.message,
             'current_index': self.current_index,
+            'child_menu_type': self.child_menu_type,
+            'child_reaction_list': self.child_reaction_list,
         })
         return ret
 
     def get_serialized_child_extra_ims(self, emoji_names, menu_type):
         extra_ims = {
             'is_child': True,
-            'reaction_list': emoji_names,
-            'menu_type': menu_type,
+            'reaction_list': self.child_reaction_list or emoji_names,
+            'menu_type': self.child_menu_type or menu_type,
             'resolved_monster_id': self.current_monster_id,
             'query_settings': self.query_settings.serialize(),
         }
@@ -94,12 +100,16 @@ class MonsterListViewState(ViewStateBase):
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
+        child_menu_type = ims.get('child_menu_type')
+        child_reaction_list = ims.get('child_reaction_list')
         message = ims.get('message')
         return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
                                     monster_list, query_settings,
                                     title, message,
                                     current_page=current_page,
                                     current_index=current_index,
+                                    child_menu_type=child_menu_type,
+                                    child_reaction_list=child_reaction_list,
                                     reaction_list=reaction_list,
                                     extra_state=ims,
                                     child_message_id=child_message_id
