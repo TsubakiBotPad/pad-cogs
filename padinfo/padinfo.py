@@ -262,7 +262,7 @@ class PadInfo(commands.Cog):
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.query(dgcog, monster)
+            await IdViewState.do_query(dgcog, monster)
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
@@ -363,7 +363,7 @@ class PadInfo(commands.Cog):
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.query(dgcog, monster)
+            await IdViewState.do_query(dgcog, monster)
 
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
@@ -392,7 +392,7 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dgcog, monster)
-        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
@@ -428,7 +428,7 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
-            await MaterialsViewState.query(dgcog, monster)
+            await MaterialsViewState.do_query(dgcog, monster)
 
         if mats is None:
             await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
@@ -465,7 +465,7 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dgcog, monster)
         if pantheon_list is None:
             await ctx.send('Unable to find a pantheon for the result of your query,'
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
@@ -606,12 +606,12 @@ class PadInfo(commands.Cog):
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
-        monster_list = await AllMatsViewState.query(dgcog, monster)
+        monster_list = await AllMatsViewState.do_query(dgcog, monster)
         if monster_list is None:
             await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
             return
 
-        _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.query(dgcog, monster)
+        _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dgcog, monster)
 
         title = 'Material For' if usedin else 'Gem is Material For'
         await self._do_monster_list(ctx, dgcog, query, monster_list, title, AllMatsViewState)
@@ -626,7 +626,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        monster_list, _ = await EvosViewState.query(dgcog, monster)
+        monster_list, _ = await EvosViewState.do_query(dgcog, monster)
         if monster_list is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos')
             return
@@ -686,8 +686,8 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            paginated_monsters = await SeriesScrollViewState.query(dgcog, monster.series_id,
-                                                                   rarity, monster.server_priority)
+            paginated_monsters = await SeriesScrollViewState.do_query(dgcog, monster.series_id,
+                                                                      rarity, monster.server_priority)
             if paginated_monsters:
                 break
         all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id, monster.server_priority)
@@ -814,7 +814,7 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
@@ -837,7 +837,7 @@ class PadInfo(commands.Cog):
 
         if not query:
             sort_type = AwakeningListSortTypes.numerical
-            paginated_skills = await AwakeningListViewState.query(dgcog, sort_type)
+            paginated_skills = await AwakeningListViewState.do_query(dgcog, sort_type)
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
                                            sort_type, paginated_skills, 0,
@@ -1303,7 +1303,7 @@ class PadInfo(commands.Cog):
     async def idsearch(self, ctx, *, query):
         dgcog = self.bot.get_cog("Dadguide")
 
-        monster_list = await IdSearchViewState.query(dgcog, query, ctx.author.id)
+        monster_list = await IdSearchViewState.do_query(dgcog, query, ctx.author.id)
 
         if monster_list is None:
             await ctx.send("No monster matched.")

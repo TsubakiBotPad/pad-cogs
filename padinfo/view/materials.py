@@ -60,7 +60,7 @@ class MaterialsViewState(ViewStateBaseId):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable = \
-            await MaterialsViewState.query(dgcog, monster)
+            await MaterialsViewState.do_query(dgcog, monster)
 
         if mats is None:
             return None
@@ -83,7 +83,7 @@ class MaterialsViewState(ViewStateBaseId):
                    extra_state=ims)
 
     @staticmethod
-    async def query(dgcog, monster):
+    async def do_query(dgcog, monster):
         db_context = dgcog.database
         mats = db_context.graph.evo_mats(monster)
         usedin = db_context.graph.material_of_monsters(monster)
@@ -114,7 +114,7 @@ class MaterialsViewState(ViewStateBaseId):
             return None, None, None, None, None, None, None, None
         if not any([mats, usedin, skillups and not monster.is_stackable]):
             mats, gemusedin, _, usedin, skillups, skillup_evo_count, link, _ \
-                = await MaterialsViewState.query(dgcog, evo_gem)
+                = await MaterialsViewState.do_query(dgcog, evo_gem)
             gem_override = True
 
         return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override

@@ -45,7 +45,7 @@ class EvosViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
 
         if alt_versions is None:
             return None
@@ -67,7 +67,7 @@ class EvosViewState(ViewStateBaseId):
                    extra_state=ims)
 
     @staticmethod
-    async def query(dgcog, monster):
+    async def do_query(dgcog, monster):
         db_context = dgcog.database
         alt_versions = sorted(db_context.graph.get_alt_monsters(monster),
                               key=lambda x: x.monster_id)

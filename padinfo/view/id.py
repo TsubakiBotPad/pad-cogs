@@ -68,7 +68,7 @@ class IdViewState(ViewStateBaseId):
         monster = await get_monster_from_ims(dgcog, ims)
         alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.query(dgcog, monster)
+            await IdViewState.do_query(dgcog, monster)
 
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
@@ -95,14 +95,14 @@ class IdViewState(ViewStateBaseId):
         self.query_settings.server = server
         self.monster = dgcog.database.graph.get_monster(self.monster.monster_id, server=server)
         self.alt_monsters = self.get_alt_monsters_and_evos(dgcog, self.monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await IdViewState.query(dgcog, self.monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dgcog, self.monster)
         self.transform_base = transform_base
         self.true_evo_type_raw = true_evo_type_raw
         self.acquire_raw = acquire_raw
         self.base_rarity = base_rarity
 
     @classmethod
-    async def query(cls, dgcog, monster):
+    async def do_query(cls, dgcog, monster):
         db_context = dgcog.database
         acquire_raw, base_rarity, transform_base, true_evo_type_raw = \
             await IdViewState._get_monster_misc_info(db_context, monster)
