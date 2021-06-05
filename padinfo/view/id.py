@@ -121,7 +121,7 @@ class IdViewState(ViewStateBaseId):
         base_rarity = db_context.graph.get_base_monster(monster).rarity
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
 
-    def set_na_diff_invalid_message(self, ims):
+    def set_na_diff_invalid_message(self, ims: dict) -> bool:
         message = self.get_na_diff_invalid_message()
         if message is not None:
             ims['message'] = message
