@@ -626,14 +626,20 @@ class PadInfo(commands.Cog):
 
     async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"],
                                title, view_state_type: Type[MonsterListViewState],
-                               child_menu_type: str = IdMenu.MENU_TYPE,
-                               child_reaction_list: List = IdMenuPanes.emoji_names()):
+                               child_menu_type: Optional[str] = None,
+                               child_reaction_list: Optional[List] = None
+                               ):
         raw_query = query
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
+
+        if child_menu_type is None:
+            child_menu_type = query_settings.menuselect.name
+            _, child_panes_class = padinfo_menu_map[child_menu_type]
+            child_reaction_list = child_panes_class.emoji_names()
 
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query, color,
                                 monster_list, query_settings,
@@ -1302,11 +1308,10 @@ class PadInfo(commands.Cog):
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def nadiffs(self, ctx, *, query):
-        await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
-                                child_reaction_list=NaDiffMenuPanes.emoji_names())
+        await self._do_idsearch(ctx, query)
 
-    async def _do_idsearch(self, ctx, query, child_menu_type=IdMenu.MENU_TYPE,
-                           child_reaction_list=IdMenuPanes.emoji_names()):
+    async def _do_idsearch(self, ctx, query, child_menu_type=None,
+                           child_reaction_list=None):
         dgcog = self.bot.get_cog("Dadguide")
 
         monster_list = await IdSearchViewState.do_query(dgcog, query, ctx.author.id)
