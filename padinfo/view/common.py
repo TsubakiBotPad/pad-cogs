@@ -5,8 +5,10 @@ from discordmenu.embed.text import Text, BoldText
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.emoji_map import get_awakening_emoji
+from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
+    from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwokenSkillModel
 
 
@@ -31,3 +33,8 @@ def get_awoken_skill_description(awoken_skill: "AwokenSkillModel"):
         Text(desc),
         delimiter=' '
     )
+
+
+def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str, link=False):
+    base_text = 'Your query `{}` found {}{}.'
+    return base_text.format(query, MonsterHeader.short_with_emoji(monster, link=link).to_markdown(), append_text)

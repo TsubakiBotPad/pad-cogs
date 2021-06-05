@@ -6,6 +6,7 @@ from tsutils import char_to_emoji
 from tsutils.menu.panes import emoji_buttons, MenuPanes
 
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
+from padinfo.menu.na_diff import NaDiffMenu, NaDiffEmoji
 from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
@@ -37,12 +38,16 @@ class MonsterListEmoji:
 
 class MonsterListMenu:
     MENU_TYPE = 'MonsterListMenu'
-    CHILD_MENU_TYPE = 'IdMenu'
 
     view_state_types = {
         AllMatsViewState.VIEW_STATE_TYPE: AllMatsViewState,
         IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
         StaticMonsterListViewState.VIEW_STATE_TYPE: StaticMonsterListViewState,
+    }
+
+    child_menu_type_to_emoji_response_map = {
+        IdMenu.MENU_TYPE: IdMenuEmoji.refresh,
+        NaDiffMenu.MENU_TYPE: NaDiffEmoji.home
     }
 
     @staticmethod
@@ -165,15 +170,13 @@ class MonsterListMenu:
 
     @classmethod
     async def click_child_number(cls, ims, emoji_clicked, **data):
-        emoji_response = IdMenuEmoji.refresh \
-            if MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
-        if emoji_response is None:
+        if not MonsterListMenuPanes.respond_to_emoji_with_child(emoji_clicked):
             return None, {}
         n = MonsterListMenuPanes.emoji_names().index(emoji_clicked)
         view_state = await cls._get_view_state(ims, **data)
         view_state.set_index(MonsterListMenuPanes.get_monster_index(n))
-        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
-                                                              IdMenu.MENU_TYPE)
+        extra_ims = view_state.get_serialized_child_extra_ims()
+        emoji_response = cls.child_menu_type_to_emoji_response_map[view_state.child_menu_type]
         return emoji_response, extra_ims
 
     @classmethod
@@ -186,14 +189,14 @@ class MonsterListMenu:
         view_state = await cls._get_view_state(ims, **data)
         return await MonsterListMenu._scroll_child(view_state, view_state.increment_index)
 
-    @staticmethod
-    async def _scroll_child(view_state: MonsterListViewState, update_function):
+    @classmethod
+    async def _scroll_child(cls, view_state: MonsterListViewState, update_function):
         # when the parent ims updated, it was a deepcopy of the ims / view_state we have now,
         # so we have to redo the update function that we did before
         update_function()
-        extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(),
-                                                              IdMenu.MENU_TYPE)
-        return IdMenuEmoji.refresh, extra_ims
+        extra_ims = view_state.get_serialized_child_extra_ims()
+        emoji_response = cls.child_menu_type_to_emoji_response_map[view_state.child_menu_type]
+        return emoji_response, extra_ims
 
 
 class MonsterListMenuPanes(MenuPanes):
