@@ -57,7 +57,7 @@ class TransformInfoViewState(ViewStateBase):
         base_mon = dgcog.get_monster(base_mon_id, server=query_settings.server)
         transformed_mon = dgcog.get_monster(transformed_mon_id, server=query_settings.server)
 
-        acquire_raw = await TransformInfoViewState.query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon) \
                   or dgcog.database.graph.monster_is_discrepant(transformed_mon)
@@ -68,7 +68,7 @@ class TransformInfoViewState(ViewStateBase):
                                       reaction_list=reaction_list)
 
     @staticmethod
-    async def query(dgcog, base_mon, transformed_mon):
+    async def do_query(dgcog, base_mon, transformed_mon):
         db_context = dgcog.database
         acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
         return acquire_raw
