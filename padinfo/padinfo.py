@@ -1303,12 +1303,13 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["ids"])
     @checks.bot_has_permissions(embed_links=True)
     async def idsearch(self, ctx, *, query):
-        await self._do_idsearch(ctx, query, child_menu_type=IdMenu.MENU_TYPE)
+        await self._do_idsearch(ctx, query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def nadiffs(self, ctx, *, query):
-        await self._do_idsearch(ctx, query)
+        await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
+                                child_reaction_list=NaDiffMenuPanes.emoji_names())
 
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
