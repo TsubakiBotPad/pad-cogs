@@ -327,6 +327,11 @@ class PadInfo(commands.Cog):
         bad = await self.config.bad()
         await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
 
+    @staticmethod
+    async def send_invalid_monster_message(ctx, query: str, monster: "MonsterModel", append_text: str):
+        base_text = 'Your query `{}` found {}{}.'
+        await ctx.send(base_text.format(query, MonsterHeader.short_with_emoji(monster, link=False).to_markdown(), append_text))
+
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def nadiff(self, ctx, *, query: str):
@@ -337,22 +342,23 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         original_monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        await self.log_id_result(ctx, original_monster.monster_id)
         if original_monster is None:
             await self.send_id_failure_message(ctx, query)
             return
 
-        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
-        if monster is None:
-            await ctx.send('Your query `{}` found [{}] {}, '.format(query, original_monster.monster_id,
-                                                                    original_monster.name_en) + 'which is only in JP.')
+        if original_monster.on_na and not original_monster.on_jp:
+            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in NA')
             return
 
-        await self.log_id_result(ctx, monster.monster_id)
+        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
+        if monster is None:
+            await self.send_invalid_monster_message(ctx, query, original_monster, ', which is only in JP')
+            return
 
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         if not is_jp_buffed:
-            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
-                                                                    monster.name_en) + 'which is the same in NA & JP.')
+            await self.send_invalid_monster_message(ctx, query, monster, ', which is the same in NA & JP')
             return
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
@@ -391,8 +397,7 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         if alt_versions is None:
-            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
-                                                                    monster.name_en) + 'which has no alt evos or gems.')
+            await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos or gems')
             return
 
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
@@ -623,8 +628,7 @@ class PadInfo(commands.Cog):
 
         monster_list, _ = await EvosViewState.query(dgcog, monster)
         if monster_list is None:
-            await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
-                                                                    monster.name_en) + 'which has no alt evos.')
+            await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos')
             return
         await self._do_monster_list(ctx, dgcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
 
@@ -805,9 +809,7 @@ class PadInfo(commands.Cog):
             return
 
         if not transformed_mon:
-            await ctx.send('Your query `{}` '.format(query)
-                           + 'found [{}] {}, '.format(base_mon.monster_id, base_mon.name_en)
-                           + 'which has no evos that transform.')
+            await self.send_invalid_monster_message(ctx, query, base_mon, ', which has no evos that transform')
             return
 
         color = await self.get_user_embed_color(ctx)
