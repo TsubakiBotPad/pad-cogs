@@ -4,6 +4,7 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from discordmenu.emoji.emoji_cache import emoji_cache
+from tsutils import char_to_emoji
 from tsutils.enums import Server
 from tsutils.menu.panes import MenuPanes
 
@@ -11,8 +12,8 @@ from padinfo.view.id import IdViewState, IdView
 
 
 class NaDiffEmoji:
-    na = '\N{EARTH GLOBE AMERICAS}'
-    jp = '\N{EARTH GLOBE ASIA-AUSTRALIA}'
+    na = '\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER S}'
+    jp = '\N{REGIONAL INDICATOR SYMBOL LETTER J}\N{REGIONAL INDICATOR SYMBOL LETTER P}'
 
 
 class NaDiffMenu:
