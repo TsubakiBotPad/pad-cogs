@@ -11,8 +11,8 @@ from padinfo.view.id import IdViewState, IdView
 
 
 class NaDiffEmoji:
-    na = '\N{EARTH GLOBE AMERICAS}'
-    jp = '\N{EARTH GLOBE ASIA-AUSTRALIA}'
+    na = '\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER S}'
+    jp = '\N{REGIONAL INDICATOR SYMBOL LETTER J}\N{REGIONAL INDICATOR SYMBOL LETTER P}'
 
 
 class NaDiffMenu:

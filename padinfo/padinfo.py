@@ -336,16 +336,20 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
-
-        if monster is None:
+        original_monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        if original_monster is None:
             await self.send_id_failure_message(ctx, query)
+            return
+
+        monster = await dgcog.find_monster(raw_query + ' --na', ctx.author.id)
+        if monster is None:
+            await ctx.send('Your query `{}` found [{}] {}, '.format(query, original_monster.monster_id,
+                                                                    original_monster.name_en) + 'which is only in JP.')
             return
 
         await self.log_id_result(ctx, monster.monster_id)
 
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
-
         if not is_jp_buffed:
             await ctx.send('Your query `{}` found [{}] {}, '.format(query, monster.monster_id,
                                                                     monster.name_en) + 'which is the same in NA & JP.')
