@@ -40,7 +40,7 @@ class AwakeningListViewState(ViewStateBase):
     @classmethod
     async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
         sort_type = ims['sort_type']
-        paginated_skills = await cls.query(dgcog, sort_type)
+        paginated_skills = await cls.do_query(dgcog, sort_type)
         original_author_id = ims['original_author_id']
         current_page = ims['current_page']
         menu_type = ims['menu_type']
@@ -49,7 +49,7 @@ class AwakeningListViewState(ViewStateBase):
                                       current_page, reaction_list=reaction_list)
 
     @classmethod
-    async def query(cls, dgcog, sort_type):
+    async def do_query(cls, dgcog, sort_type):
         awoken_skills = dgcog.database.get_all_awoken_skills()
         if sort_type == AwakeningListSortTypes.alphabetical:
             awoken_skills = sorted(awoken_skills, key=lambda awo: awo.name_en)

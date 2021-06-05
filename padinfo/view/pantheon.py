@@ -53,7 +53,7 @@ class PantheonViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dgcog, monster)
 
         if pantheon_list is None:
             return None
@@ -80,7 +80,7 @@ class PantheonViewState(ViewStateBaseId):
         return '{} [Filters: {}]'.format(series_name, ' '.join(filter_strings))
 
     @classmethod
-    async def query(cls, dgcog, monster):
+    async def do_query(cls, dgcog, monster):
         # filtering rules:
         # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
         # 2. if still too many, show only monsters with the same base rarity

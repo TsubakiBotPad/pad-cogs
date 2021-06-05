@@ -19,15 +19,15 @@ async def get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
         full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
     if not force_evoscroll and not settings.checkEvoID(ctx.author.id):
         return full_reaction_list
-    alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+    alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
     if alt_versions is None and gem_versions is None:
         full_reaction_list.remove(IdMenuEmoji.left)
         full_reaction_list.remove(IdMenuEmoji.right)
         full_reaction_list.remove(IdMenuEmoji.evos)
-    pantheon_list, _, _ = await PantheonViewState.query(dgcog, monster)
+    pantheon_list, _, _ = await PantheonViewState.do_query(dgcog, monster)
     if pantheon_list is None:
         full_reaction_list.remove(IdMenuEmoji.pantheon)
-    mats, usedin, gemid, _, skillups, _, _, _ = await MaterialsViewState.query(dgcog, monster)
+    mats, usedin, gemid, _, skillups, _, _, _ = await MaterialsViewState.do_query(dgcog, monster)
     if mats is None and usedin is None and gemid is None and skillups is None:
         full_reaction_list.remove(IdMenuEmoji.mats)
     return full_reaction_list

@@ -21,7 +21,7 @@ class StaticMonsterListViewState(MonsterListViewState):
         return ret
 
     @classmethod
-    async def query(cls, dgcog, monster_list, server) -> List["MonsterModel"]:
+    async def do_query(cls, dgcog, monster_list, server) -> List["MonsterModel"]:
         db_context: "DbContext" = dgcog.database
         monster_list = [db_context.graph.get_monster(int(m), server=server) for m in monster_list]
         return monster_list
@@ -30,5 +30,5 @@ class StaticMonsterListViewState(MonsterListViewState):
     async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
         monster_ids = ims['full_monster_list']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
-        monster_list = await cls.query(dgcog, monster_ids, query_settings.server)
+        monster_list = await cls.do_query(dgcog, monster_ids, query_settings.server)
         return monster_list
