@@ -95,7 +95,7 @@ class IdViewState(ViewStateBaseId):
         self.query_settings.server = server
         self.monster = dgcog.database.graph.get_monster(self.monster.monster_id, server=server)
         self.alt_monsters = self.get_alt_monsters_and_evos(dgcog, self.monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await IdViewState.do_query(dgcog, self.monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dgcog, self.monster)
         self.transform_base = transform_base
         self.true_evo_type_raw = true_evo_type_raw
         self.acquire_raw = acquire_raw
