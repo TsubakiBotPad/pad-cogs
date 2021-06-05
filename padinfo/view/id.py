@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -89,6 +90,16 @@ class IdViewState(ViewStateBaseId):
                    reaction_list=reaction_list,
                    is_child=is_child,
                    extra_state=ims)
+
+    async def set_server(self, dgcog, server: Server):
+        self.query_settings.server = server
+        self.monster = dgcog.database.graph.get_monster(self.monster.monster_id, server=server)
+        self.alt_monsters = self.get_alt_monsters_and_evos(dgcog, self.monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await IdViewState.query(dgcog, self.monster)
+        self.transform_base = transform_base
+        self.true_evo_type_raw = true_evo_type_raw
+        self.acquire_raw = acquire_raw
+        self.base_rarity = base_rarity
 
     @classmethod
     async def query(cls, dgcog, monster):
