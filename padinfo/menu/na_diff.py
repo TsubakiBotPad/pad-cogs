@@ -4,7 +4,6 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils import char_to_emoji
 from tsutils.enums import Server
 from tsutils.menu.panes import MenuPanes
 
