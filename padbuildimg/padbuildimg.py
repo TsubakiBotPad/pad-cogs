@@ -44,7 +44,7 @@ Repeat:
 Stats Format:
     | LV### SLV## AW# SA# +H## +A## +R## +(0 or 297)
     | indicates end of card name and start of stats
-    LV: level, 1 to 110
+    LV: level, 1 to 120
     SLV: skill level, 1 to 99 or MAX
     AW: awakenings, 0 to 9
     SA: super awakening, 0 to 9
@@ -55,17 +55,17 @@ Stats Format:
     Case insensitive, order does not matter
 """
 EXAMPLE_MSG = "Examples:\n1P{}\n2P{}\n3P{}\nLatent Validation{}\nStats Validation{}".format(
-    box("bj(weld)lv110/baldin[gok *3](gilgamesh)/youyu(assist reeche)/mel(chocolate)/isis(koenma)/bj(rathian)"),
+    box("bj(weld)lv120/baldin[gok *3](gilgamesh)/youyu(assist reeche)/mel(chocolate)/isis(koenma)/bj(rathian)"),
     box("amen/dios(sdr) * 3/whaledor; mnoah(assist jack frost) *3/tengu/tengu[sdr,sdr,sdr,sdr,sdr,sdr](durandalf)"),
     box("zela(assist amen) *3/base raizer * 2/zela; zela(assist amen) *4/base valeria/zela; zela * 6"),
     box("eir[drk,drk,sdr]/eir[bak,bak,sdr]/eir[sdr *4, dek]/eir[sdr *8, dek]"),
-    box("dmeta(uruka|lv110+297slvmax)|+h33+a66+r99lv110slv15/    hmyne(buruka|lv110+297slv1)|+h99+a99+r99lv110slv15")
+    box("dmeta(uruka|lv120+297slvmax)|+h33+a66+r99lv120slv15/    hmyne(buruka|lv120+297slv1)|+h99+a99+r99lv120slv15")
 )
 
 """
 Examples:
 1P:
-    bj(weld)lv110/baldin[gok, gok, gok](gilgamesh)/youyu(assist reeche)/mel(chocolate)/isis(koenma)/bj(rathian)
+    bj(weld)lv120/baldin[gok, gok, gok](gilgamesh)/youyu(assist reeche)/mel(chocolate)/isis(koenma)/bj(rathian)
 2P:
     amen/dios(sdr) * 3/whaledor; mnoah(assist jack frost) *3/tengu/tengu[sdr,sdr,sdr,sdr,sdr,sdr](durandalf)
 3P:
@@ -73,7 +73,7 @@ Examples:
 Latent Validation:
     eir[drk,drk,sdr]/eir[bak,bak,sdr]
 Stats Validation:
-    dmeta(uruka|lv110+297slvmax)|+h33+a66+r99lv110slv15/    hmyne(buruka|lv110+297slv1)|+h99+a99+r99lv110slv15
+    dmeta(uruka|lv120+297slvmax)|+h33+a66+r99lv120slv15/    hmyne(buruka|lv120+297slv1)|+h99+a99+r99lv120slv15
 
 """
 
@@ -555,7 +555,7 @@ class PadBuildImageGenerator(object):
             )
             result_card['LV'] = min(
                 result_card['LV'],
-                110 if card.limit_mult is not None and card.limit_mult > 1 else card.level
+                120 if card.limit_mult is not None and card.limit_mult > 1 else card.level
             )
             if card.active_skill:
                 result_card['MAX_SLV'] = card.active_skill.turn_max - card.active_skill.turn_min + 1
