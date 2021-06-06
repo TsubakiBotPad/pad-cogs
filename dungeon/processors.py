@@ -238,7 +238,16 @@ def process_monster(mb: MonsterBehavior, q: EncounterModel, database: DbContext)
                          machine_type=emoji_cache.get_by_name('killer_machine'),
                          awakening_material_type=emoji_cache.get_by_name('killer_awoken'),
                          enhance_material_type=emoji_cache.get_by_name('killer_enhancemat'),
-                         redeemable_material_type='🪙'
+                         redeemable_material_type='🪙',
+                         no_match_fire=emoji_cache.get_by_name('no_match_fire'),
+                         no_match_wood=emoji_cache.get_by_name('no_match_wood'),
+                         no_match_water=emoji_cache.get_by_name('no_match_water'),
+                         no_match_dark=emoji_cache.get_by_name('no_match_dark'),
+                         no_match_light=emoji_cache.get_by_name('no_match_light'),
+                         no_match_heart=emoji_cache.get_by_name('no_match_heart'),
+                         no_match_jammer=emoji_cache.get_by_name('no_match_jammer'),
+                         no_match_poison=emoji_cache.get_by_name('no_match_poison'),
+                         no_match_heal=emoji_cache.get_by_name('no_match_heal')
                          )
     monster_model = database.graph.get_monster(q.monster_id)
     monster: DungeonMonster = DungeonMonster(
