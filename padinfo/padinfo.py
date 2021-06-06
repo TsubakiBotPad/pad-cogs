@@ -1008,9 +1008,9 @@ class PadInfo(commands.Cog):
         dgcog = await self.get_dgcog()
         async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
-            if value == AltEvoSort.dfs.name:
+            if value == "dfs":
                 fm_flags['evosort'] = AltEvoSort.dfs.value
-            elif value == AltEvoSort.numerical.name:
+            elif value == "numerical":
                 fm_flags['evosort'] = AltEvoSort.numerical.value
             else:
                 await ctx.send(f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
