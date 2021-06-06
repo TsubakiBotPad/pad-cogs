@@ -16,7 +16,7 @@ from redbot.core.commands import Literal as LiteralConverter
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, safe_read_json
-from tsutils.enums import Server
+from tsutils.enums import Server, AltEvoSort
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import BotConfig
@@ -997,6 +997,25 @@ class PadInfo(commands.Cog):
                     await ctx.send("Server must be `na` or `combined`")
                 return
         await ctx.tick()
+
+    @idset.command()
+    async def evosort(self, ctx, value: str):
+        """Change the order for scrolling alt evos in your your `[p]id` queries
+
+        `[p]idset evosort numerical`: Show alt evos sorted by card ID number.
+        `[p]idset evosort dfs`: Show alt evos in a depth-first-sort order, starting with the base of the tree.
+        """
+        dgcog = await self.get_dgcog()
+        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "dfs":
+                fm_flags['evosort'] = AltEvoSort.dfs.value
+            elif value == "numerical":
+                fm_flags['evosort'] = AltEvoSort.numerical.value
+            else:
+                await ctx.send(f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
+                return
+        await ctx.send(f"Your `{ctx.prefix}id` evo sort preference has been set to **{value}**.")
 
     @commands.group()
     @checks.is_owner()
