@@ -1000,7 +1000,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def evosort(self, ctx, value: str):
-        """Change the server to be used for your `[p]id` queries
+        """Change the order for scrolling alt evos in your your `[p]id` queries
 
         `[p]idset evosort numerical`: Show alt evos sorted by card ID number.
         `[p]idset evosort dfs`: Show alt evos in a depth-first-sort order, starting with the base of the tree.
