@@ -427,6 +427,9 @@ class MonsterIndex(tsutils.aobject):
             if self.graph.monster_is_mp_evo(monster):
                 modifiers.update(MISC_MAP[MiscModifiers.MP])
 
+        if monster.sell_mp and monster.sell_mp < 100:
+            modifiers.update(MISC_MAP[MiscModifiers.TRADEABLE])
+
         # Art
         if monster.orb_skin_id:
             modifiers.update(MISC_MAP[MiscModifiers.ORBSKIN])

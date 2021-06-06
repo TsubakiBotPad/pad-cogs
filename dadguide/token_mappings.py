@@ -173,6 +173,7 @@ class MiscModifiers(Enum):
     CHIBI = 'Chibi'
     STORY = 'Story'
     FARMABLE = 'Farmable'
+    TRADEABLE = 'Tradeable'
     REM = 'REM'
     MP = 'MP'
     INJP = 'In JP Server'
@@ -193,6 +194,7 @@ MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
     MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
+    MiscModifiers.TRADEABLE: ('tradeable',),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
