@@ -255,8 +255,8 @@ class IdView(BaseIdView):
 
     @staticmethod
     def stats(m: "MonsterModel"):
-        hp, atk, rcv, weighted = m.stats()
-        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110) if m.limit_mult > 0 else (None, None, None, None)
+        hp, atk, rcv, weighted = m.stats(plus=297)
+        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=297, lv=110) if m.limit_mult > 0 else (None, None, None, None)
         return Box(
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
             LabeledText('ATK', _get_stat_text(atk, lb_atk, _get_awakening_emoji_for_stats(m, 2))),
@@ -266,9 +266,11 @@ class IdView(BaseIdView):
 
     @staticmethod
     def stats_header(m: "MonsterModel"):
-        voice = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
+        voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
+        plus_297_emoji = get_emoji('plus_297_thin')
         header = Box(
-            Text(voice),
+            Text(voice_emoji),
+            Text(plus_297_emoji),
             Text('Stats'),
             Text('(LB, +{}%)'.format(m.limit_mult)) if m.limit_mult else None,
             delimiter=' '
