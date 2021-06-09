@@ -21,6 +21,7 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterE
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
+    from dadguide.models.series_model import SeriesModel
 
 
 def alt_fmt(monsterevo, state):
@@ -248,10 +249,11 @@ class IdView(BaseIdView):
 
         cost = LabeledText('Cost', str(m.cost))
         acquire = BoldText(acquire_raw) if acquire_raw else None
+        series = BoldText(m.series.name_en)
         valid_true_evo_types = ("Reincarnated", "Assist", "Pixel", "Super Reincarnated")
         true_evo_type = BoldText(true_evo_type_raw) if true_evo_type_raw in valid_true_evo_types else None
 
-        return Box(rarity, cost, acquire, true_evo_type)
+        return Box(rarity, cost, acquire, series, true_evo_type)
 
     @staticmethod
     def stats(m: "MonsterModel"):
