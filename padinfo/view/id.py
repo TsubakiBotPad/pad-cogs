@@ -267,7 +267,7 @@ class IdView(BaseIdView):
     @staticmethod
     def stats_header(m: "MonsterModel"):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
-        plus_297_emoji = get_emoji('plus_297_thin')
+        plus_297_emoji = get_emoji('plus_297')
         header = Box(
             Text(voice_emoji),
             Text(plus_297_emoji),
