@@ -21,7 +21,6 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterE
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
-    from dadguide.models.series_model import SeriesModel
 
 
 def alt_fmt(monsterevo, state):
