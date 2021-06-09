@@ -62,6 +62,8 @@ class OtherInfoView(BaseIdView):
                 EmbedField(
                     "Stats at +297:",
                     Box(
+                        # need to put these on the same line to get around discord's insane
+                        # whitespace margins around code blocks
                         Text(statsbox(m, plus=297) + 'Stats at +0:'),
                         Text(statsbox(m, plus=0)),
                         LabeledText("JP Name", m.name_ja),
