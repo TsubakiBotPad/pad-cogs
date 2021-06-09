@@ -248,10 +248,11 @@ class IdView(BaseIdView):
 
         cost = LabeledText('Cost', str(m.cost))
         acquire = BoldText(acquire_raw) if acquire_raw else None
+        series = BoldText(m.series.name_en) if m.series else None
         valid_true_evo_types = ("Reincarnated", "Assist", "Pixel", "Super Reincarnated")
         true_evo_type = BoldText(true_evo_type_raw) if true_evo_type_raw in valid_true_evo_types else None
 
-        return Box(rarity, cost, acquire, true_evo_type)
+        return Box(rarity, cost, series, acquire, true_evo_type)
 
     @staticmethod
     def stats(m: "MonsterModel"):
