@@ -28,16 +28,17 @@ class OtherInfoViewState(ViewStateBaseId):
         return ret
 
 
-def statsbox(m):
+def statsbox(m, plus: int):
     stat_cols = ['', 'HP', 'ATK', 'RCV']
     tbl = prettytable.PrettyTable(stat_cols)
     tbl.hrules = prettytable.NONE
     tbl.vrules = prettytable.NONE
     tbl.align = "l"
     levels = (m.level, 110, 120) if m.limit_mult > 0 else (m.level,)
+    inh_tuple = (False, True) if plus == 297 else (False,)
     for lv in levels:
-        for inh in (False, True):
-            hp, atk, rcv, _ = m.stats(lv, plus=297, inherit=inh)
+        for inh in inh_tuple:
+            hp, atk, rcv, _ = m.stats(lv, plus=plus, inherit=inh)
             row_name = '(Inh)' if inh else 'Lv{}'.format(lv)
             tbl.add_row([row_name, hp, atk, rcv])
     return box(tbl.get_string())
@@ -61,7 +62,10 @@ class OtherInfoView(BaseIdView):
                 EmbedField(
                     "Stats at +297:",
                     Box(
-                        Text(statsbox(m)),
+                        # need to put these on the same line to get around discord's insane
+                        # whitespace margins around code blocks
+                        Text(statsbox(m, plus=297) + 'Stats at +0:'),
+                        Text(statsbox(m, plus=0)),
                         LabeledText("JP Name", m.name_ja),
                         LinksView.linksbox(m),
                         LabeledText("JP Added", str(m.reg_date)) if m.reg_date else None,
