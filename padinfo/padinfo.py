@@ -16,7 +16,7 @@ from redbot.core.commands import Literal as LiteralConverter
 from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
 from tabulate import tabulate
 from tsutils import char_to_emoji, is_donor, safe_read_json
-from tsutils.enums import Server, AltEvoSort
+from tsutils.enums import Server, AltEvoSort, LsMultiplier, CardPlusModifier
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import BotConfig
@@ -1013,9 +1013,58 @@ class PadInfo(commands.Cog):
             elif value == "numerical":
                 fm_flags['evosort'] = AltEvoSort.numerical.value
             else:
-                await ctx.send(f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
+                await ctx.send(
+                    f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
                 return
         await ctx.send(f"Your `{ctx.prefix}id` evo sort preference has been set to **{value}**.")
+
+    @idset.command()
+    async def lsmultiplier(self, ctx, value: str):
+        """Change the display of leader skill multipliers in your `[p]id` queries
+
+        `[p]idset lsmultiplier double`: [Default] Show leader skill multipliers assuming the card is paired with itself.
+        `[p]idset lsmultiplier single`: Show leader skill multipliers of just the single card.
+        """
+        dgcog = await self.get_dgcog()
+        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "double":
+                fm_flags['lsmultiplier'] = LsMultiplier.lsdouble.value
+                not_value = 'single'
+                not_value_flag = 'lssingle'
+            elif value == "single":
+                fm_flags['lsmultiplier'] = LsMultiplier.lssingle.value
+                not_value = 'double'
+                not_value_flag = 'lsdouble'
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `double` or `single`.')
+                return
+        await ctx.send(f"Your default `{ctx.prefix}id` lsmultiplier preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+
+    @idset.command()
+    async def cardplus(self, ctx, value: str):
+        """Change the monster stat plus points amount in your your `[p]id` queries
+
+        `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
+        `[p]idset cardplus 0`: Show cards with +0 stats.
+        """
+        dgcog = await self.get_dgcog()
+        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "297":
+                fm_flags['cardplus'] = CardPlusModifier.plus297.value
+                not_value = '0'
+                not_value_flag = 'plus0'
+            elif value == "0":
+                fm_flags['cardplus'] = CardPlusModifier.plus0.value
+                not_value = '297'
+                not_value_flag = 'plus297'
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `297` or `0`.')
+                return
+        await ctx.send(f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @commands.group()
     @checks.is_owner()
