@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.enums import Server, ChildMenuSelector
+from tsutils.enums import Server, ChildMenuType
 from tsutils.menu.panes import MenuPanes
 
 from padinfo.menu.simple_text import SimpleTextMenu
@@ -19,7 +19,7 @@ class NaDiffEmoji:
 
 
 class NaDiffMenu:
-    MENU_TYPE = ChildMenuSelector.NaDiffMenu.name
+    MENU_TYPE = ChildMenuType.NaDiffMenu.name
 
     @staticmethod
     def menu(initial_control=None):

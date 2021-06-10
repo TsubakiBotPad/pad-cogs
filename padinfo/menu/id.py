@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
-from tsutils.enums import ChildMenuSelector
+from tsutils.enums import ChildMenuType
 
 from tsutils.menu.panes import MenuPanes
 from tsutils.query_settings import QuerySettings
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class IdMenu:
-    MENU_TYPE = ChildMenuSelector.IdMenu.name
+    MENU_TYPE = ChildMenuType.IdMenu.name
 
     @staticmethod
     def menu(initial_control=None):
