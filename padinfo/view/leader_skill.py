@@ -8,8 +8,8 @@ from tsutils import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
-from padinfo.core.leader_skills import createMultiplierText
-from padinfo.core.leader_skills import perform_leaderskill_query
+from padinfo.core.leader_skills import ls_multiplier_text
+from padinfo.core.leader_skills import leaderskill_query
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 
@@ -47,7 +47,7 @@ class LeaderSkillViewState(ViewStateBase):
         l_query_settings = QuerySettings.deserialize(ims['l_query_settings'])
         r_query_settings = QuerySettings.deserialize(ims['r_query_settings'])
 
-        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, ims['original_author_id'])
+        l_mon, l_query, r_mon, r_query = await leaderskill_query(dgcog, raw_query, ims['original_author_id'])
         return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
                                     r_query, l_query_settings, r_query_settings)
 
@@ -61,7 +61,7 @@ class LeaderSkillView:
         rls = state.r_mon.leader_skill
         return EmbedView(
             embed_main=EmbedMain(
-                title=createMultiplierText(lls, rls),
+                title=ls_multiplier_text(lls, rls),
                 description=Box(
                     BoldText(MonsterHeader.name(state.l_mon, link=True, show_jp=True)),
                     Text(lls.desc if lls else 'None'),
