@@ -4,14 +4,14 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state
-from tsutils.enums import Server
+from tsutils import embed_footer_with_state, char_to_emoji
+from tsutils.enums import Server, LsMultiplier, CardPlusModifier
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
@@ -255,8 +255,9 @@ class IdView(BaseIdView):
         return Box(rarity, cost, series, acquire, true_evo_type)
 
     @staticmethod
-    def stats(m: "MonsterModel"):
-        hp, atk, rcv, weighted = m.stats(plus=297)
+    def stats(m: "MonsterModel", cardplus: CardPlusModifier):
+        plus = 297 if cardplus == CardPlusModifier.plus297 else 0
+        hp, atk, rcv, weighted = m.stats(plus=plus)
         lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=297, lv=110) if m.limit_mult > 0 else (None, None, None, None)
         return Box(
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
@@ -266,9 +267,10 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def stats_header(m: "MonsterModel"):
+    def stats_header(m: "MonsterModel", cardplus: CardPlusModifier):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
-        plus_297_emoji = get_emoji('plus_297')
+        # TODO: Get a +0 emoji for the +0 setting
+        plus_297_emoji = get_emoji('plus_297') if cardplus == CardPlusModifier.plus297 else ''
         header = Box(
             Text(voice_emoji),
             Text(plus_297_emoji),
@@ -299,10 +301,11 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def leader_skill_header(m: "MonsterModel"):
+    def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier):
         return Box(
             BoldText('Leader Skill'),
-            BoldText(createMultiplierText(m.leader_skill)),
+            BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
+                     else char_to_emoji(1) + ' ' + ls_single_multiplier_text(m.leader_skill)),
             delimiter=' '
         )
 
@@ -323,8 +326,8 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m).to_markdown(),
-                IdView.stats(m),
+                IdView.stats_header(m, state.query_settings.cardplus).to_markdown(),
+                IdView.stats(m, state.query_settings.cardplus),
                 inline=True
             ),
             EmbedField(
@@ -332,7 +335,7 @@ class IdView(BaseIdView):
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
-                IdView.leader_skill_header(m).to_markdown(),
+                IdView.leader_skill_header(m, state.query_settings.lsmultiplier).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
             evos_embed_field(state)

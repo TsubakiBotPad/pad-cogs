@@ -8,7 +8,7 @@ from tsutils import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
-from padinfo.core.leader_skills import createSingleMultiplierText
+from padinfo.core.leader_skills import ls_single_multiplier_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 from padinfo.view.common import get_monster_from_ims
@@ -50,7 +50,7 @@ class LeaderSkillSingleView:
         ls = state.mon.leader_skill
         return EmbedView(
             embed_main=EmbedMain(
-                title=createSingleMultiplierText(ls),
+                title=ls_single_multiplier_text(ls),
                 description=Box(
                     BoldText(MonsterHeader.name(state.mon, link=True, show_jp=True)),
                     Text(ls.desc if ls else 'None')),
