@@ -194,7 +194,7 @@ MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
     MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
-    MiscModifiers.TRADEABLE: ('tradeable',),
+    MiscModifiers.TRADEABLE: ('tradeable', 'tradable'),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
