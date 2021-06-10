@@ -11,7 +11,7 @@ from tsutils.query_settings import QuerySettings
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import multiplier_text
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
@@ -302,7 +302,7 @@ class IdView(BaseIdView):
     def leader_skill_header(m: "MonsterModel"):
         return Box(
             BoldText('Leader Skill'),
-            BoldText(createMultiplierText(m.leader_skill)),
+            BoldText(multiplier_text(m.leader_skill)),
             delimiter=' '
         )
 

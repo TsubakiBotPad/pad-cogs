@@ -23,7 +23,7 @@ from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
     get_attribute_emoji_by_monster, AWAKENING_ID_TO_EMOJI_NAME_MAP
 from padinfo.core.button_info import button_info
-from padinfo.core.leader_skills import perform_leaderskill_query
+from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
@@ -742,7 +742,7 @@ class PadInfo(commands.Cog):
         [p]ls sonia lubu
         """
         dgcog = await self.get_dgcog()
-        l_mon, l_query, r_mon, r_query = await perform_leaderskill_query(dgcog, raw_query, ctx.author.id)
+        l_mon, l_query, r_mon, r_query = await leaderskill_query(dgcog, raw_query, ctx.author.id)
 
         err_msg = ('{} query failed to match a monster: [ {} ]. If your query is multiple words,'
                    ' try separating the queries with / or wrap with quotes.')

@@ -1,7 +1,7 @@
 import re
 
 
-def humanize_number(number, sigfigs=2):
+def _humanize_number(number, sigfigs=2):
     n = float("{0:.{1}g}".format(number, sigfigs))
     if n >= 1e9:
         return str(int(n // 1e9)) + "B"
@@ -13,7 +13,7 @@ def humanize_number(number, sigfigs=2):
         return str(int(n))
 
 
-def createMultiplierText(ls1, ls2=False):
+def multiplier_text(ls1, ls2=False):
     if ls2 and not ls1:
         ls1, ls2 = ls2, ls1
 
@@ -43,7 +43,7 @@ def createMultiplierText(ls1, ls2=False):
     )
 
 
-def createSingleMultiplierText(ls=None):
+def multiplier_text_single(ls=None):
     if ls:
         hp, atk, rcv, resist, combo, fua, mfua, te = ls.data
     else:
@@ -60,7 +60,7 @@ def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     resist = ' Resist {}%'.format(format_number(100 * resist)) if resist else ''
 
     combos = '+{}c'.format(combo) if combo else ''
-    true_damage = '{}'.format(humanize_number(fua, 2)) if fua else ''
+    true_damage = '{}'.format(_humanize_number(fua, 2)) if fua else ''
     any_fua = 'fua' if fua or mfua else ''
 
     joined = ' '.join((a for a in [combos, true_damage, any_fua] if a))
@@ -69,7 +69,7 @@ def format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     return f"[{format_number(hp)}/{format_number(atk)}/{format_number(rcv)}{resist}] {extras}"
 
 
-async def perform_leaderskill_query(dgcog, raw_query, author_id):
+async def leaderskill_query(dgcog, raw_query, author_id):
     # Remove unicode quotation marks
     query = re.sub("[\u201c\u201d]", '"', raw_query)
 
