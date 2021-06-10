@@ -13,7 +13,7 @@ def _humanize_number(number, sigfigs=2):
         return str(int(n))
 
 
-def multiplier_text(ls1, ls2=False):
+def ls_multiplier_text(ls1, ls2=False):
     if ls2 and not ls1:
         ls1, ls2 = ls2, ls1
 
@@ -43,7 +43,7 @@ def multiplier_text(ls1, ls2=False):
     )
 
 
-def multiplier_text_single(ls=None):
+def ls_single_multiplier_text(ls=None):
     if ls:
         hp, atk, rcv, resist, combo, fua, mfua, te = ls.data
     else:
