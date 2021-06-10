@@ -637,7 +637,7 @@ class PadInfo(commands.Cog):
         instruction_message = 'Click a reaction to see monster details!'
 
         if child_menu_type is None:
-            child_menu_type = query_settings.menuselect.name
+            child_menu_type = query_settings.child_menu_type.name
             _, child_panes_class = padinfo_menu_map[child_menu_type]
             child_reaction_list = child_panes_class.emoji_names()
 
