@@ -1395,11 +1395,16 @@ class PadGlobal(commands.Cog):
 def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in db_context.graph.get_evo_tree(monster):
+    for m in (evo_tree := db_context.graph.get_evo_tree(monster)):
         if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:
             return False
+        if len(db_context.graph.get_next_evolutions(m)) > 1:
+            return False
+    # every evo has super awakenings (can limit break)
+    if len(evo_tree) > 1 and all(m.superawakening_count for m in evo_tree):
+        return False
     return True
 
 
