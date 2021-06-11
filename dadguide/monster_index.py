@@ -84,7 +84,13 @@ class MonsterIndex(tsutils.aobject):
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
         for m_id, name, mp, ov, i in treenames_data:
-            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
+            if m_id.isdigit() and not i:
+                try:
+                    monster = graph.get_monster(int(m_id), server=server)
+                except InvalidGraphState:
+                    continue
+                if not monster:
+                    continue
                 name = name.strip().lower()
                 mid = int(m_id)
                 if ov:
@@ -112,7 +118,13 @@ class MonsterIndex(tsutils.aobject):
 
         self.manual_prefixes = defaultdict(set)
         for mid, mods, rmv in mod_data:
-            if mid.isdigit() and graph.get_monster(int(mid), server=server):
+            if mid.isdigit():
+                try:
+                    monster = graph.get_monster(int(mid), server=server)
+                except InvalidGraphState:
+                    continue
+                if not monster:
+                    continue
                 mid = int(mid)
                 for mod in mods.split(","):
                     mod = mod.strip().lower()
