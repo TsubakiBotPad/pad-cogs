@@ -1264,12 +1264,20 @@ class PadGlobal(commands.Cog):
     @dungeon.command(name='add')
     async def dungeon_add(self, ctx, term: str, *, definition: str):
         """Adds a dungeon guide to the [p]guide command"""
+        await self._dungeon_add(ctx, term, definition, True)
+
+    @dungeon.command(name='edit')
+    async def dungeon_edit(self, ctx, term: str, *, definition: str):
+        """Edit a dungeon guide from the [p]guide command."""
+        await self._dungeon_add(ctx, term, definition, False)
+
+    async def _dungeon_add(self, ctx, term: str, definition: str, need_confirm=True):
         term = term.lower()
         op = 'edited' if term in self.settings.dungeonGuide() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the dungeon guide info for {}?".format(
-                                                            term)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the dungeon guide info for {}?".format(term)):
+                return
         self.settings.addDungeonGuide(term, definition)
         await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
 
