@@ -9,6 +9,7 @@ import tsutils
 from redbot.core.utils import AsyncIter
 from tsutils.enums import Server
 
+from .errors import InvalidGraphState
 from .models.monster_model import MonsterModel
 from .monster_graph import MonsterGraph
 from .models.enum_types import DEFAULT_SERVER
@@ -63,7 +64,13 @@ class MonsterIndex(tsutils.aobject):
         )
 
         for m_id, name, lp, ov, i in nickname_data:
-            if m_id.isdigit() and not i and graph.get_monster(int(m_id), server=server):
+            if m_id.isdigit() and not i:
+                try:
+                    monster = graph.get_monster(int(m_id), server=server)
+                except InvalidGraphState:
+                    continue
+                if not monster:
+                    continue
                 name = name.strip().lower()
                 mid = int(m_id)
                 if lp:
