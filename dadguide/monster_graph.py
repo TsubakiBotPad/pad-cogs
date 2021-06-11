@@ -256,6 +256,15 @@ class MonsterGraph(object):
 
         for e in es:
             evo_model = EvolutionModel(**e)
+            # TODO: add logging in these error cases
+            if evo_model.from_id not in graph.nodes:
+                continue
+            if evo_model.to_id not in graph.nodes:
+                continue
+            if graph.nodes[evo_model.from_id].get('model') is None:
+                continue
+            if graph.nodes[evo_model.to_id].get('model') is None:
+                continue
 
             graph.add_edge(
                 evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
