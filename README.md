@@ -17,7 +17,7 @@ Code should be PEP 8 formatted with a 120 character line limit.
 
 Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/padbot-cogs).
 
-> Note: If you are developing a cog that is' in the [misc-cogs repo](https://github.com/TsubakiBotPad/misc-cogs), you may need to complete some steps for both pad-cogs AND misc-cogs. 
+> Note: If you are developing a cog that is in the [misc-cogs repo](https://github.com/TsubakiBotPad/misc-cogs), you may need to complete some steps for both pad-cogs AND misc-cogs. 
 
 You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
 
