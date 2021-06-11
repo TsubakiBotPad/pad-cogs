@@ -640,6 +640,14 @@ class PadGlobal(commands.Cog):
 
         If you want to use a multiple word boss name, enclose it in quotes.
         """
+        await self._pboss_add(ctx, term, definition, True)
+
+    @pboss.command(name='edit')
+    async def pboss_edit(self, ctx, term, *, definition):
+        """Edit a set of boss mechanics."""
+        await self._pboss_add(ctx, term, definition, False)
+
+    async def _pboss_add(self, ctx, term, definition, need_confirm=True):
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -652,10 +660,10 @@ class PadGlobal(commands.Cog):
         base = dgcog.database.graph.get_base_monster(m)
 
         op = 'edited' if base.monster_id in self.settings.boss() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the boss info for {}?".format(
-                                                            base.name_en)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the boss info for {}?".format(base.name_en)):
+                return
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
