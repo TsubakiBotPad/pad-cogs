@@ -241,7 +241,8 @@ class MonsterGraph(object):
                                    has_hqimage=m.has_hqimage == 1,
                                    server_priority=server,
                                    )
-
+            if not m_model:
+                continue
             graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
                 graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
