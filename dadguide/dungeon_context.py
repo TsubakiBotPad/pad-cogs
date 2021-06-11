@@ -209,7 +209,6 @@ class DungeonContext(object):
         sub_id = DungeonNickNames.get(name)
         mega = self.database.query_many(nickname_query.format(sub_id), ())
         ems = []
-        print(mega[0])
         for enc in mega:
             data = self.database.query_one(enemy_data_query.format(enc["enemy_id"]), ())
             if data is not None:

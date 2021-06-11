@@ -1,35 +1,17 @@
-import asyncio
 import logging
 import os
-import urllib.request
-from io import BytesIO
-from typing import List
 
 import discord
-import tsutils
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 
 from tsutils import Menu, EmojiUpdater
 from redbot.core import commands, data_manager
-
-from google.protobuf import text_format
-
-from dadguide import database_manager
-from dadguide.database_context import DbContext
-from dadguide.database_manager import DadguideDatabase
 from dadguide.dungeon_context import DungeonContext
-from dadguide.models.dungeon_model import DungeonModel
-from dadguide.models.encounter_model import EncounterModel
-from dadguide.models.enemy_skill_model import EnemySkillModel
 from dungeon.SafeDict import SafeDict
-from dungeon.encounter import Encounter
-from dungeon.enemy_skill import ProcessedSkill
-# from dungeon.enemy_skill_parser import process_enemy_skill2, emoji_dict
 from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
 from collections import OrderedDict
 
-from dungeon.grouped_skillls import GroupedSkills
 from dungeon.dungeon_monster import DungeonMonster
 from redbot.core.utils.chat_formatting import pagify
 
@@ -248,7 +230,7 @@ class DungeonEmojiUpdater(EmojiUpdater):
             index_monster = 0
             update = True
         elif selected_emoji == self.dungeon_cog.next_page:
-            print(self.compacts)
+            # print(self.compacts)
             if self.current_page == 0:
                 self.current_page = -1
             else:
@@ -661,13 +643,11 @@ class DungeonCog(commands.Cog):
                                       compacts=compacts, verboses=verboses, preempts=preempts)
             await self._do_menu(ctx, start_selection[starting], dmu, 60)
 
-    # 1 is Condensed, 2 is detailed, 3 is preempts
     @commands.command()
     async def dungeon_info2(self, ctx, name: str, difficulty: str = None, starting: int = 1):
         '''
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
-        Starting: Starting screen: 1 is condensed information. 2 is detailed information. 3 is preempts only
         '''
         # load dadguide cog for database access
         start_selection = {1: self.current_monster,
@@ -722,8 +702,8 @@ class DungeonCog(commands.Cog):
                                           len(pm_dungeon[0]), 0,
                                           int(dungeon.sub_dungeons[0].technical), dg_cog.database, verbose=False,
                                           reaction_list=full_reaction_list)
+            await ctx.send("EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja, dungeon.sub_dungeons[0].name_ja))
             message = await menu.create(ctx, view_state)
-            await ctx.send("This is a test of menu2")
 
     @commands.command()
     async def spinner_help(self, ctx, spin_time, move_time):
@@ -745,115 +725,3 @@ class DungeonCog(commands.Cog):
             output += "\n{} {} {}".format(k, "➡", v)
         embed.add_field(name="Original -> Final", value=output)
         await ctx.send(embed=embed)
-
-    @commands.command()
-    async def weather_warning(self, ctx, name: str, difficulty: str = None):
-        '''
-        Lists all of the preempt hazards/passives of a dungeon
-        Name: Name of Dungeon
-        Difficulty: Default to the highest difficulty
-        '''
-        # load dadguide cog for database access
-        start_selection = {1: self.current_monster,
-                           2: self.verbose_monster,
-                           3: self.preempt_monster}
-        dg_cog = self.bot.get_cog('Dadguide')
-        if not dg_cog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
-        sub_id = await self.find_dungeon_from_name(ctx=ctx, name=name, database=dg_cog.database, difficulty=difficulty)
-        if sub_id is None:
-            return
-        test_result = dg_cog.database.database.query_many(dungeon_query.format(sub_id), ())
-        if test_result is None:
-            await ctx.send("Dungeon not Found")
-        else:
-            # await ctx.send(formatOverview(test_result))
-            current_stage = 0
-            pm_dungeon = []
-            for r in test_result:
-                enc = dg_cog.database.database.query_one(encounter_query.format(r["encounter_id"]), ())
-                behavior_test = MonsterBehavior()
-                if enc["behavior"] is not None:
-                    behavior_test.ParseFromString(enc["behavior"])
-                else:
-                    behavior_test = None
-
-                # await ctx.send(formatOverview(test_result))
-                pm = process_monster(behavior_test, enc, dg_cog.database)
-                if r['stage'] > current_stage:
-                    current_stage = r['stage']
-                    floor = [pm]
-                    pm_dungeon.append(floor)
-                else:
-                    pm_dungeon[current_stage - 1].append(pm)
-        skills = []
-        # array of params for a table of hell:
-        # [[resolves], [debuffs], Absurd Preempt Damage, awoken bind, regular bind, skill delay,[hazard emojis], [skyfall hazard emojis], fucks with leader,
-        # unmatchables, [skyfalls]]
-
-        idk = []
-        idk.append("Preemptives for {}:{}".format(test_result[0]['dungeon_name_en'], test_result[0]['sub_name_en']))
-        for f in pm_dungeon:
-            floor_skills = []
-            for m in f:
-                monster_dangers = await self.danger_skill_checker_simple(await m.collect_skills())
-                floor_skills.append(''.join(monster_dangers))
-            idk.append("Floor {}: {}".format((pm_dungeon.index(f) + 1), '\t'.join(floor_skills)))
-
-        """df = pd.DataFrame(idk, columns=['Resolves', 'Debuffs', 'Attack', 'A. Bind'])
-        browser = await launch()
-        page = await browser.newPage()
-        await page.setContent(df.to_html())
-        img = BytesIO(await page.screenshot())
-        img.seek(0)
-        await ctx.send('Test', file=discord.File(img, filename='test.png'))"""
-        for page in pagify("\n".join(idk)):
-            await ctx.send(page)
-
-    """async def danger_skill_checker(self, skills: List[ProcessedSkill]):
-        resolves = set()
-        debuffs = set()
-        absurd_preempt = 'Maybe Later'
-        awoken_bind = set()
-        regular_bind = set()
-        skill_delay = set()
-        hazards = set()
-        skyfalls = set()
-        leader_fuck = set()
-        unmatchables = set()
-        skyfalls = set()
-        for s in skills:
-            for es_raw in s.es_raw:
-                if s.is_passive_preempt:
-                    if es_raw.type == 73:
-                        resolves.add(emoji_dict['resolve'])
-                    elif es_raw.type == 129:
-                        resolves.add(emoji_dict['super_resolve'])
-                    elif es_raw.type == 39:
-                        debuffs.add(emoji_dict['time_debuff'])
-                    elif es_raw.type == 105:
-                        debuffs.add(emoji_dict['rcv_debuff'] if emoji_dict['rcv_debuff'] in s.processed else emoji_dict[
-                            'rcv_buff'])
-                    elif es_raw.type == 130:
-                        debuffs.add(emoji_dict['atk_debuff'])
-                    elif es_raw.type == 88:
-                        awoken_bind.add(emoji_dict['awoken_bind'])
-        ret = [''.join(resolves), ''.join(debuffs), absurd_preempt, ''.join(awoken_bind)]
-        return ret"""
-
-    async def danger_skill_checker_simple(self, skills: List[ProcessedSkill]):
-        ret = []
-        for s in skills:
-            if s.is_passive_preempt:
-                ret.append(s.processed)
-        return ret
-
-
-"""
-"list all hazard resist that appears in dg
-.... as preempt
-.... at all"
-"""
