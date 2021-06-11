@@ -1302,6 +1302,14 @@ class PadGlobal(commands.Cog):
     @leader.command(name='add')
     async def leader_add(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
+        await self._leader_add(ctx, monster_id, definition, True)
+
+    @leader.command(name='edit')
+    async def leader_edit(self, ctx, monster_id: int, *, definition: str):
+        """Edit a leader guide from the [p]guide command."""
+        await self._leader_add(ctx, monster_id, definition, False)
+
+    async def _leader_add(self, ctx, monster_id: int, definition: str, need_confirm=True):
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
@@ -1310,10 +1318,10 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         op = 'edited' if name in self.settings.leaderGuide() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the leader guide for {}?".format(
-                                                            m.name_en)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the leader guide for {}?".format(m.name_en)):
+                return
         self.settings.addLeaderGuide(name, definition)
         await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
 
