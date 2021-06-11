@@ -3,9 +3,9 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
+from tsutils.menu.panes import MenuPanes, emoji_buttons
 
 from dungeon.view.simple import SimpleViewState, SimpleView
-from padinfo.menu.common import MenuPanes, emoji_buttons
 
 
 class SimpleNames:

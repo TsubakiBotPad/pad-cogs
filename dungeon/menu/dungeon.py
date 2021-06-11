@@ -2,8 +2,9 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
+from tsutils.menu.panes import MenuPanes, emoji_buttons
+
 from dungeon.view.dungeon import DungeonViewState, DungeonView
-from padinfo.menu.common import emoji_buttons, MenuPanes
 
 
 class DungeonNames:
