@@ -4,6 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
@@ -13,7 +14,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
@@ -25,12 +26,14 @@ NIL_ATT = 'Nil'
 
 
 class PantheonViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel", alt_monsters,
-                 pantheon_list: List["MonsterModel"], series_name: str, base_monster,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 alt_monsters, is_jp_buffed, query_settings,
+                 pantheon_list: List[MonsterEvolution], series_name: str, base_monster,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, is_jp_buffed, query_settings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -50,20 +53,23 @@ class PantheonViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        pantheon_list, series_name, base_monster = await PantheonViewState.query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dgcog, monster)
 
         if pantheon_list is None:
             return None
 
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, is_jp_buffed, query_settings,
                    pantheon_list, series_name, base_monster,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -74,7 +80,7 @@ class PantheonViewState(ViewStateBaseId):
         return '{} [Filters: {}]'.format(series_name, ' '.join(filter_strings))
 
     @classmethod
-    async def query(cls, dgcog, monster):
+    async def do_query(cls, dgcog, monster):
         # filtering rules:
         # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
         # 2. if still too many, show only monsters with the same base rarity
@@ -85,7 +91,7 @@ class PantheonViewState(ViewStateBaseId):
 
         db_context = dgcog.database
         series_name = monster.series.name_en
-        full_pantheon = db_context.get_monsters_by_series(monster.series_id)
+        full_pantheon = db_context.get_monsters_by_series(monster.series_id, server=monster.server_priority)
         if not full_pantheon:
             return None, None, None
 
@@ -122,20 +128,20 @@ class PantheonViewState(ViewStateBaseId):
         if main_att.name == NIL_ATT:
             att_emoji = get_attribute_emoji_by_enum(sub_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == sub_att.name
-                                                       or (m.attr1.name == NIL_ATT
-                                                           and m.attr2.name == sub_att.name)]
+                             or (m.attr1.name == NIL_ATT
+                                 and m.attr2.name == sub_att.name)]
         else:
             att_emoji = get_attribute_emoji_by_enum(main_att)
             main_att_list = [m for m in rarity_list if m.attr1.name == main_att.name
-                                                       or (m.attr1.name == NIL_ATT
-                                                           and m.attr2.name == main_att.name)]
+                             or (m.attr1.name == NIL_ATT
+                                 and m.attr2.name == main_att.name)]
         if 0 < len(main_att_list) <= MAX_MONS_TO_SHOW:
             # append after check this time, because if we go to subatt we only want one emoji
             filters.append(att_emoji)
             return main_att_list, cls.make_series_name(series_name, filters), base_mon
 
         sub_att_list = [m for m in main_att_list if m.attr1.name == main_att.name
-                                                    and m.attr2.name == sub_att.name]
+                        and m.attr2.name == sub_att.name]
         filters.append(get_attribute_emoji_by_monster(base_mon))
         if 0 < len(sub_att_list) <= MAX_MONS_TO_SHOW:
             return sub_att_list, cls.make_series_name(series_name, filters), base_mon
@@ -170,9 +176,9 @@ class PantheonView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(state.monster,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields,

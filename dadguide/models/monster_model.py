@@ -1,3 +1,5 @@
+from tsutils.enums import Server
+
 from .base_model import BaseModel
 from .enum_types import Attribute
 from .enum_types import MonsterType
@@ -10,18 +12,18 @@ import re
 from collections import defaultdict
 import romkan
 
+from .monster.monster_difference import MonsterDifference
 from .monster_stats import monster_stats
 
 
 class MonsterModel(BaseModel):
     def __init__(self, **m):
         self.monster_id = m['monster_id']
-        self.monster_no = self.monster_id
         self.monster_no_jp = m['monster_no_jp']
         self.monster_no_na = m['monster_no_na']
         self.monster_no_kr = m['monster_no_kr']
+        self.base_evo_id = m['base_evo_id']
 
-        # these things are literally named backwards atm
         self.awakenings = sorted(m['awakenings'], key=lambda a: a.order_idx)
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
         self.leader_skill: LeaderSkillModel = m['leader_skill']
@@ -96,6 +98,8 @@ class MonsterModel(BaseModel):
         self.has_animation = m['has_animation']
         self.has_hqimage = m['has_hqimage']
 
+        self.server_priority = m['server_priority']
+
         self.search = MonsterSearchHelper(self)
 
     @property
@@ -103,13 +107,13 @@ class MonsterModel(BaseModel):
         type_to_killers_map = {
             MonsterType.God: ['Devil'],
             MonsterType.Devil: ['God'],
-            MonsterType.Machine: ['God', 'Balance'],
+            MonsterType.Machine: ['God', 'Balanced'],
             MonsterType.Dragon: ['Machine', 'Healer'],
             MonsterType.Physical: ['Machine', 'Healer'],
             MonsterType.Attacker: ['Devil', 'Physical'],
             MonsterType.Healer: ['Dragon', 'Attacker'],
         }
-        if MonsterType.Balance in self.types:
+        if MonsterType.Balanced in self.types:
             return ['Any']
         killers = set()
         for t in self.types:
@@ -163,13 +167,18 @@ class MonsterModel(BaseModel):
             'name_en': self.name_en,
         }
 
+    def get_difference(self, other):
+        if other and self.monster_id != other.monster_id:
+            raise ValueError("You cannot get the difference of monsters with different ids.")
+        return MonsterDifference.from_monsters(self, other)
+
     def __repr__(self):
-        return "Monster<{} ({})>".format(self.name_en, self.monster_id)
+        server_prefix = self.server_priority + " " if self.server_priority != Server.COMBINED else ""
+        return "Monster<{}{} ({})>".format(server_prefix, self.name_en, self.monster_id)
 
 
-class MonsterSearchHelper(object):
+class MonsterSearchHelper:
     def __init__(self, m: MonsterModel):
-
         self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
         leader_skill = m.leader_skill
         self.leader = leader_skill.desc.lower() if leader_skill else ''
@@ -187,8 +196,8 @@ class MonsterSearchHelper(object):
 
         self.types = [t.name for t in m.types]
 
-        def replace_colors(text: str):
-            return text.replace('red', 'fire').replace('blue', 'water').replace('green', 'wood')
+        def replace_colors(txt: str):
+            return txt.replace('red', 'fire').replace('blue', 'water').replace('green', 'wood')
 
         self.leader = replace_colors(self.leader)
         self.active = replace_colors(self.active)

@@ -1,9 +1,40 @@
+from typing import TYPE_CHECKING
+
+from discordmenu.embed.base import Box
+from discordmenu.embed.text import Text, BoldText
+from tsutils.query_settings import QuerySettings
+
+from padinfo.common.emoji_map import get_awakening_emoji
+from padinfo.view.components.monster.header import MonsterHeader
+
+if TYPE_CHECKING:
+    from dadguide.models.monster_model import MonsterModel
+    from dadguide.models.awakening_model import AwokenSkillModel
+
+
 async def get_monster_from_ims(dgcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
+    query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
-    resolved_monster_id = int(resolved_monster_id_str) if resolved_monster_id_str else None
+    resolved_monster_id = int(resolved_monster_id_str or 0)
     if resolved_monster_id:
-        return dgcog.database.graph.get_monster(resolved_monster_id)
+        return dgcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
     monster = await dgcog.find_monster(query, ims['original_author_id'])
     return monster
+
+
+def get_awoken_skill_description(awoken_skill: "AwokenSkillModel"):
+    emoji_text = get_awakening_emoji(awoken_skill.awoken_skill_id, awoken_skill.name)
+    desc = awoken_skill.desc_en
+    return Box(
+        Text(emoji_text),
+        BoldText(awoken_skill.name_en),
+        Text(desc),
+        delimiter=' '
+    )
+
+
+def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str, link=False):
+    base_text = 'Your query `{}` found {}{}.'
+    return base_text.format(query, MonsterHeader.short_with_emoji(monster, link=link).to_markdown(), append_text)

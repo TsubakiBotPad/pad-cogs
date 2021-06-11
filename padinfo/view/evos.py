@@ -4,6 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
@@ -11,23 +12,21 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
 class EvosViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color,
-                 monster: "MonsterModel",
-
-                 # this param is needed to placate the superclass but we won't duplicate evos in this view
-                 _alt_monsters,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  use_evo_scroll: bool = True,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_versions,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, is_jp_buffed, query_settings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -46,30 +45,31 @@ class EvosViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        alt_versions, gem_versions = await EvosViewState.query(dgcog, monster)
+        alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
 
         if alt_versions is None:
             return None
-        alt_monsters = alt_versions
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color,
-                   monster,
-                   alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, is_jp_buffed, query_settings,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
                    use_evo_scroll=use_evo_scroll,
                    extra_state=ims)
 
     @staticmethod
-    async def query(dgcog, monster):
+    async def do_query(dgcog, monster):
         db_context = dgcog.database
-        alt_versions = sorted(db_context.graph.get_alt_monsters_by_id(monster.monster_no),
+        alt_versions = sorted(db_context.graph.get_alt_monsters(monster),
                               key=lambda x: x.monster_id)
         gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))
         if len(alt_versions) == 1 and len(gem_versions) == 0:
@@ -106,9 +106,9 @@ class EvosView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(state.monster,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),
             embed_footer=embed_footer_with_state(state),

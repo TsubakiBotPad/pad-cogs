@@ -4,8 +4,11 @@ from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
+from tsutils.enums import ChildMenuType
 
-from padinfo.menu.common import MenuPanes
+from tsutils.menu.panes import MenuPanes
+from tsutils.query_settings import QuerySettings
+
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.evos import EvosView, EvosViewState
 from padinfo.view.id import IdView, IdViewState
@@ -20,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class IdMenu:
-    MENU_TYPE = 'IdMenu'
+    MENU_TYPE = ChildMenuType.IdMenu.name
 
     @staticmethod
     def menu(initial_control=None):
@@ -35,7 +38,9 @@ class IdMenu:
     async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll)
@@ -50,7 +55,7 @@ class IdMenu:
     @staticmethod
     def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            evos = db_context.graph.get_alt_ids(monster)
             index = evos.index(monster.monster_id)
             new_id = evos[index - 1]
             return new_id
@@ -62,13 +67,15 @@ class IdMenu:
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         db_context: "DbContext" = dgcog.database
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']))
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+
+        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll))
+        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll) or '')
         if new_monster_id is None:
             ims['unsupported_transition'] = True
-        ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
+        ims['resolved_monster_id'] = new_monster_id
         pane_type = ims.get('pane_type')
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
@@ -77,7 +84,7 @@ class IdMenu:
     @staticmethod
     def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
         if use_evo_scroll:
-            evos = sorted({*db_context.graph.get_alt_ids_by_id(monster.monster_id)})
+            evos = db_context.graph.get_alt_ids(monster)
             index = evos.index(monster.monster_id)
             if index == len(evos) - 1:
                 # cycle back to the beginning of the evos list
@@ -100,12 +107,13 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
-        if ims.get('is_child'):
-            if ims.get('message'):
-                ims['menu_type'] = SimpleTextMenu.MENU_TYPE
-                return await SimpleTextMenu.respond_with_message(message, ims, **data)
-            return await message.edit(embed=None)
-        return await message.delete()
+        if not ims.get('is_child'):
+            return await message.delete()
+        if ims.get('idle_message'):
+            ims['menu_type'] = SimpleTextMenu.MENU_TYPE
+            ims['message'] = ims['idle_message']
+            return await SimpleTextMenu.respond_with_message(message, ims, **data)
+        return await message.edit(embed=None)
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):

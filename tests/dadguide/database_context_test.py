@@ -1,39 +1,31 @@
+from tsutils.enums import Server
+
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
 from dadguide.dungeon_context import DungeonContext
 from dadguide.monster_graph import MonsterGraph
-from dadguide.models.enum_types import EvoType, InternalEvoType
+from dadguide.models.enum_types import InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
 dungeon = DungeonContext(database)
+dungeon = DungeonContext(database)
 db_context = DbContext(database, graph, dungeon)
+get_monster = lambda mid, server=Server.COMBINED: graph.get_monster(mid, server=server)
 
-# print(ctx.get_awoken_skill_ids())
-assert db_context.graph.monster_is_farmable_by_id(4)
-assert not db_context.graph.monster_is_farmable_by_id(5156)
-assert db_context.graph.get_base_monster_by_id(1074).monster_id == 1073  # evo pandora
-assert db_context.get_monsters_by_series(1)[0].name_en == 'Tyrra'
-assert db_context.get_monsters_by_active(1)[0].name_en == 'Tyrra'
+assert get_monster(4).is_farmable
+assert not get_monster(5156).is_farmable
+assert graph.get_base_monster(get_monster(1074)).monster_id == 1073  # evo pandora
+assert db_context.get_monsters_by_series(1, server=Server.COMBINED)[0].name_en == 'Tyrra'
+assert db_context.get_monsters_by_active(1, server=Server.COMBINED)[0].name_en == 'Tyrra'
 
 # evo types
-# 5392 is mega dkali
-assert db_context.graph.get_prev_evolution_id_by_monster_id(5392) == 1588
-assert db_context.graph.cur_evo_type_by_monster_id(5392) == EvoType.UvoAwoken
-assert db_context.graph.cur_evo_type_by_monster_id(1587) == EvoType.Base  # base dkali
-assert db_context.graph.cur_evo_type_by_monster_id(6238) == EvoType.UuvoReincarnated  # b sam3
-assert db_context.graph.cur_evo_type_by_monster_id(3270) == EvoType.UuvoReincarnated  # revo hades
-assert db_context.graph.cur_evo_type_by_monster_id(3391) == EvoType.UuvoReincarnated  # revo blodin
-assert db_context.graph.cur_evo_type_by_monster_id(1748) == EvoType.UvoAwoken  # awoken hades
+assert graph.true_evo_type(get_monster(5392)) == InternalEvoType.Ultimate
+assert graph.true_evo_type(get_monster(6337)) == InternalEvoType.SuperReincarnated  # sr hades
+assert graph.true_evo_type(get_monster(5871)) == InternalEvoType.Pixel  # px sakuya
+assert graph.true_evo_type(get_monster(1465)) == InternalEvoType.Normal  # awoken thoth
+assert graph.true_evo_type(get_monster(1464)) == InternalEvoType.Base  # base thoth
 
-assert db_context.graph.true_evo_type_by_monster_id(5392) == InternalEvoType.Ultimate
-assert db_context.graph.true_evo_type_by_monster_id(6337) == InternalEvoType.SuperReincarnated  # sr hades
-assert db_context.graph.true_evo_type_by_monster_id(5871) == InternalEvoType.Pixel  # px sakuya
-assert db_context.graph.true_evo_type_by_monster_id(1465) == InternalEvoType.Normal  # awoken thoth
-assert db_context.graph.true_evo_type_by_monster_id(1464) == InternalEvoType.Base  # base thoth
-
-# check that we're using the most recent data
-assert db_context.graph.true_evo_type_by_monster_id(3908) == InternalEvoType.Reincarnated  # revo typhon
-
-assert len(db_context.graph.get_evo_by_monster_id(3).mats) == 2
-assert 153 in db_context.graph.get_evo_by_monster_id(3).mats
+# mats
+assert len(graph.get_evolution(get_monster(3)).mats) == 2
+assert 153 in graph.get_evolution(get_monster(3)).mats

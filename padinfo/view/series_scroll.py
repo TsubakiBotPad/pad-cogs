@@ -5,6 +5,8 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji, embed_footer_with_state
+from tsutils.enums import Server
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.view.components.monster.header import MonsterHeader
@@ -19,7 +21,7 @@ class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_page,
-                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int,
+                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int, query_settings: QuerySettings,
                  all_rarities: List[int],
                  title, message,
                  current_index: int = None,
@@ -34,6 +36,7 @@ class SeriesScrollViewState(ViewStateBase):
         self.current_page = current_page or 0
         self.series_id = series_id
         self.rarity = rarity
+        self.query_settings = query_settings
         self.message = message
         self.child_message_id = child_message_id
         self.title = title
@@ -48,6 +51,7 @@ class SeriesScrollViewState(ViewStateBase):
         ret.update({
             'pane_type': SeriesScrollView.VIEW_TYPE,
             'series_id': self.series_id,
+            'query_settings': self.query_settings.serialize(),
             'current_page': self.current_page,
             'pages_in_rarity': self.pages_in_rarity,
             'title': self.title,
@@ -63,13 +67,13 @@ class SeriesScrollViewState(ViewStateBase):
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
-        # print(ims)
         if ims.get('unsupported_transition'):
             return None
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
         current_page = ims['current_page']
         monster_list = paginated_monsters[current_page]
         title = ims['title']
@@ -86,7 +90,7 @@ class SeriesScrollViewState(ViewStateBase):
         current_index = ims.get('current_index')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     current_page, monster_list, rarity, pages_in_rarity,
+                                     current_page, monster_list, rarity, pages_in_rarity, query_settings,
                                      all_rarities,
                                      title, message,
                                      current_index=current_index,
@@ -96,9 +100,9 @@ class SeriesScrollViewState(ViewStateBase):
                                      child_message_id=child_message_id)
 
     @staticmethod
-    def query(dgcog, series_id, rarity):
+    async def do_query(dgcog, series_id, rarity, server):
         db_context: "DbContext" = dgcog.database
-        all_series_monsters = db_context.get_monsters_by_series(series_id)
+        all_series_monsters = db_context.get_monsters_by_series(series_id, server=server)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
         paginated_monsters = [base_monsters_of_rarity[i:i + SeriesScrollViewState.MAX_ITEMS_PER_PANE]
@@ -107,16 +111,17 @@ class SeriesScrollViewState(ViewStateBase):
         return paginated_monsters
 
     @staticmethod
-    def query_all_rarities(dgcog, series_id):
+    def query_all_rarities(dgcog, series_id, server):
         db_context: "DbContext" = dgcog.database
-        return sorted({m.rarity for m in db_context.get_all_monsters() if
+        return sorted({m.rarity for m in db_context.get_all_monsters(server) if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod
-    def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
+    async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        paginated_monsters = SeriesScrollViewState.query(dgcog, series_id, rarity)
+        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
         return paginated_monsters
 
 

@@ -1,33 +1,50 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state
+from tsutils import embed_footer_with_state, char_to_emoji
+from tsutils.enums import Server, LsMultiplier, CardPlusModifier
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import createMultiplierText
+from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
 from padinfo.view.base import BaseIdView
-from padinfo.view.common import get_monster_from_ims
+from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
     from dadguide.models.awakening_model import AwakeningModel
 
 
+def alt_fmt(monsterevo, state):
+    if monsterevo.monster.is_equip:
+        fmt = "⌈{}⌉"
+    elif not monsterevo.evolution or monsterevo.evolution.reversible:
+        fmt = "{}"
+    else:
+        fmt = "⌊{}⌋"
+    return fmt.format(monsterevo.monster.monster_no_na)
+
+
 class IdViewState(ViewStateBaseId):
+    nadiff_na_only_text = ', which is only in NA'
+    nadiff_jp_only_text = ', which is only in JP'
+    nadiff_identical_text = ', which is the same in NA & JP'
+
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List["MonsterModel"],
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, is_jp_buffed, query_settings,
                          use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -53,21 +70,24 @@ class IdViewState(ViewStateBaseId):
         if ims.get('unsupported_transition'):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.query(dgcog, monster)
+            await IdViewState.do_query(dgcog, monster)
 
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, is_jp_buffed, query_settings,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
@@ -75,8 +95,18 @@ class IdViewState(ViewStateBaseId):
                    is_child=is_child,
                    extra_state=ims)
 
+    async def set_server(self, dgcog, server: Server):
+        self.query_settings.server = server
+        self.monster = dgcog.database.graph.get_monster(self.monster.monster_id, server=server)
+        self.alt_monsters = self.get_alt_monsters_and_evos(dgcog, self.monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dgcog, self.monster)
+        self.transform_base = transform_base
+        self.true_evo_type_raw = true_evo_type_raw
+        self.acquire_raw = acquire_raw
+        self.base_rarity = base_rarity
+
     @classmethod
-    async def query(cls, dgcog, monster):
+    async def do_query(cls, dgcog, monster):
         db_context = dgcog.database
         acquire_raw, base_rarity, transform_base, true_evo_type_raw = \
             await IdViewState._get_monster_misc_info(db_context, monster)
@@ -86,10 +116,27 @@ class IdViewState(ViewStateBaseId):
     @classmethod
     async def _get_monster_misc_info(cls, db_context, monster):
         transform_base = db_context.graph.get_transform_base(monster)
-        true_evo_type_raw = db_context.graph.true_evo_type_by_monster(monster).value
+        true_evo_type_raw = db_context.graph.true_evo_type(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
-        base_rarity = db_context.graph.get_base_monster_by_id(monster.monster_no).rarity
+        base_rarity = db_context.graph.get_base_monster(monster).rarity
         return acquire_raw, base_rarity, transform_base, true_evo_type_raw
+
+    def set_na_diff_invalid_message(self, ims: dict) -> bool:
+        message = self.get_na_diff_invalid_message()
+        if message is not None:
+            ims['message'] = message
+            return True
+        return False
+
+    def get_na_diff_invalid_message(self) -> Optional[str]:
+        monster: "MonsterModel" = self.monster
+        if monster.on_na and not monster.on_jp:
+            return invalid_monster_text(self.query, monster, self.nadiff_na_only_text, link=True)
+        if monster.on_jp and not monster.on_na:
+            return invalid_monster_text(self.query, monster, self.nadiff_jp_only_text, link=True)
+        if not self.is_jp_buffed:
+            return invalid_monster_text(self.query, monster, self.nadiff_identical_text, link=True)
+        return None
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
@@ -118,12 +165,23 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 def evos_embed_field(state: ViewStateBaseId):
-    m = state.monster
+    field_text = "**Evos**"
+    help_text = ""
+    # this isn't used right now, but maybe later if discord changes the api for embed titles...?
+    help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
+    legend_parts = []
+    if any(not alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution):
+        legend_parts.append("⌊Irreversible⌋")
+    if any(alt_evo.monster.is_equip for alt_evo in state.alt_monsters):
+        legend_parts.append("⌈Equip⌉")
+    if legend_parts:
+        help_text = ' – Help: {}'.format(" ".join(legend_parts))
     return EmbedField(
-        "Alternate Evos",
+        field_text + help_text,
         HighlightableLinks(
-            links=[LinkedText(str(m.monster_no_na), puzzledragonx(m)) for m in state.alt_monsters],
-            highlighted=next(i for i, mon in enumerate(state.alt_monsters) if m.monster_id == mon.monster_id)
+            links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
+            highlighted=next(i for i, me in enumerate(state.alt_monsters)
+                             if state.monster.monster_id == me.monster.monster_id)
         )
     )
 
@@ -173,8 +231,8 @@ class IdView(BaseIdView):
         return Box(
             BoldText('Available killers:'),
             Text('\N{DOWN-POINTING RED TRIANGLE}' if m != transform_base else ''),
-            Text('[{} slots]'.format(m.latent_slots if m == transform_base \
-                                         else transform_base.latent_slots)),
+            Text('[{} slots]'.format(m.latent_slots if m == transform_base
+                                     else transform_base.latent_slots)),
             Text(killers_text),
             delimiter=' '
         )
@@ -190,15 +248,17 @@ class IdView(BaseIdView):
 
         cost = LabeledText('Cost', str(m.cost))
         acquire = BoldText(acquire_raw) if acquire_raw else None
+        series = BoldText(m.series.name_en) if m.series else None
         valid_true_evo_types = ("Reincarnated", "Assist", "Pixel", "Super Reincarnated")
         true_evo_type = BoldText(true_evo_type_raw) if true_evo_type_raw in valid_true_evo_types else None
 
-        return Box(rarity, cost, acquire, true_evo_type)
+        return Box(rarity, cost, series, acquire, true_evo_type)
 
     @staticmethod
-    def stats(m: "MonsterModel"):
-        hp, atk, rcv, weighted = m.stats()
-        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(lv=110) if m.limit_mult > 0 else (None, None, None, None)
+    def stats(m: "MonsterModel", cardplus: CardPlusModifier):
+        plus = 297 if cardplus == CardPlusModifier.plus297 else 0
+        hp, atk, rcv, weighted = m.stats(plus=plus)
+        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=297, lv=110) if m.limit_mult > 0 else (None, None, None, None)
         return Box(
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
             LabeledText('ATK', _get_stat_text(atk, lb_atk, _get_awakening_emoji_for_stats(m, 2))),
@@ -207,10 +267,13 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def stats_header(m: "MonsterModel"):
-        voice = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
+    def stats_header(m: "MonsterModel", cardplus: CardPlusModifier):
+        voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
+        # TODO: Get a +0 emoji for the +0 setting
+        plus_297_emoji = get_emoji('plus_297') if cardplus == CardPlusModifier.plus297 else ''
         header = Box(
-            Text(voice),
+            Text(voice_emoji),
+            Text(plus_297_emoji),
             Text('Stats'),
             Text('(LB, +{}%)'.format(m.limit_mult)) if m.limit_mult else None,
             delimiter=' '
@@ -238,10 +301,11 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def leader_skill_header(m: "MonsterModel"):
+    def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier):
         return Box(
             BoldText('Leader Skill'),
-            BoldText(createMultiplierText(m.leader_skill)),
+            BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
+                     else char_to_emoji(1) + ' ' + ls_single_multiplier_text(m.leader_skill)),
             delimiter=' '
         )
 
@@ -262,8 +326,8 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m).to_markdown(),
-                IdView.stats(m),
+                IdView.stats_header(m, state.query_settings.cardplus).to_markdown(),
+                IdView.stats(m, state.query_settings.cardplus),
                 inline=True
             ),
             EmbedField(
@@ -271,7 +335,7 @@ class IdView(BaseIdView):
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
-                IdView.leader_skill_header(m).to_markdown(),
+                IdView.leader_skill_header(m, state.query_settings.lsmultiplier).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
             evos_embed_field(state)
@@ -280,9 +344,9 @@ class IdView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(m,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(m,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
             embed_footer=embed_footer_with_state(state),

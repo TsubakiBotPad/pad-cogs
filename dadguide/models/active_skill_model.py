@@ -29,3 +29,11 @@ class ActiveSkillModel(BaseModel):
             'name_ja': self.name_ja,
             'name_en': self.name_en,
         }
+
+    def __eq__(self, other):
+        if isinstance(other, ActiveSkillModel):
+            return self.active_skill_id == other.active_skill_id \
+                   and self.desc_en == other.desc_en \
+                   and self.turn_max == other.turn_max \
+                   and self.turn_min == other.turn_min
+        return False

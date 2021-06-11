@@ -11,7 +11,7 @@ import logging
 import os
 import shutil
 from io import BytesIO
-from typing import Optional, List
+from typing import List, Dict, Optional
 
 import discord
 import time
@@ -19,6 +19,7 @@ import tsutils
 from redbot.core import checks, data_manager, commands, Config
 from redbot.core.utils.chat_formatting import pagify, box
 from tsutils import auth_check, safe_read_json
+from tsutils.enums import Server
 
 from . import token_mappings
 from .find_monster import FindMonster
@@ -26,6 +27,7 @@ from .database_loader import load_database
 from .idtest_mixin import IdTest
 from .models.monster_model import MonsterModel
 from .models.monster_stats import monster_stats, MonsterStatModifierInput
+from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dadguide')
@@ -67,12 +69,12 @@ class Dadguide(commands.Cog, IdTest):
         self._is_ready = asyncio.Event()
 
         self.database = None
-        self.index = None  # type: Optional[MonsterIndex]
+        self.indexes = {}  # type: Dict[Server, MonsterIndex]
 
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
 
-        self.fm_flags_default = {'na_prio': True}
+        self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
         self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
         self.config.register_user(lastaction=None, fm_flags={})
@@ -83,7 +85,9 @@ class Dadguide(commands.Cog, IdTest):
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
         self.token_maps = token_mappings
-        self.mon_finder = FindMonster(self, self.fm_flags_default)
+        self.DEFAULT_SERVER = DEFAULT_SERVER
+        self.SERVERS = SERVERS
+        self.mon_finder = None  # type: Optional[FindMonster]
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -138,23 +142,26 @@ class Dadguide(commands.Cog, IdTest):
 
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
-        self.index = await MonsterIndex(self.database.get_all_monsters(), self.database)  # noqa
+        for server in SERVERS:
+            self.indexes[server] = await MonsterIndex(self.database.graph, server)  # noqa
+        self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())
 
     async def check_index(self):
         if not await self.config.indexlog():
             return
 
-        self.index.issues.extend((await self.run_tests())[:25])
+        index = self.indexes[Server.COMBINED]
+        index.issues.extend((await self.run_tests())[:25])
 
         channel = self.bot.get_channel(await self.config.indexlog())
-        if self.index.issues:
-            for page in pagify("Index Load Warnings:\n" + "\n".join(self.index.issues[:100])):
+        if index.issues:
+            for page in pagify(f"Index Load Warnings:\n" + "\n".join(index.issues[:100])):
                 await channel.send(box(page))
 
-    def get_monster(self, monster_id: int) -> MonsterModel:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
-        return self.database.graph.get_monster(monster_id)
+        return self.database.graph.get_monster(monster_id, server=server)
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

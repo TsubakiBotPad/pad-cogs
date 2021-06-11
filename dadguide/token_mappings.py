@@ -2,7 +2,7 @@ from collections import defaultdict, namedtuple
 from enum import Enum
 from typing import Mapping, Tuple, TypeVar
 
-from .models.enum_types import Attribute, MonsterType
+from .models.enum_types import Attribute, MonsterType, AwokenSkills
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -30,20 +30,20 @@ SUB_COLOR_MAP = {k: tuple('?' + t for t in v if t != "white") for k, v in COLOR_
 DUAL_COLOR_MAP = {}
 for cid1, cns1 in COLOR_MAP.items():
     for cid2, cns2 in COLOR_MAP.items():
-        ts = ()
+        _ts = ()
         for t1 in cns1:
             for t2 in cns2:
                 if t2 in ("white",):
                     continue
                 if len(t1) + len(t2) == 2:
-                    ts += (t1 + t2,)
+                    _ts += (t1 + t2,)
                 if (len(t1) == 1) == (len(t2) == 1):
-                    ts += (t1 + "/" + t2,)
-        DUAL_COLOR_MAP[(cid1, cid2)] = ts
+                    _ts += (t1 + "/" + t2,)
+        DUAL_COLOR_MAP[(cid1, cid2)] = _ts
 
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
-    MonsterType.Balance: ('balanced', 'bal'),
+    MonsterType.Balanced: ('balanced', 'bal', 'balance'),
     MonsterType.Physical: ('physical', 'phys'),
     MonsterType.Healer: ('healer',),
     MonsterType.Dragon: ('dragon', 'dra'),
@@ -87,88 +87,6 @@ EVO_MAP = {
     EvoTypes.NONPIXEL: ('nonpixel', 'np'),
 }
 
-
-class AwokenSkills(Enum):
-    ENHANCEDHP = 1
-    ENHANCEDATK = 2
-    ENHANCEDRCV = 3
-    REDUCERED = 4
-    REDUCEBLUE = 5
-    REDUCEGREEN = 6
-    REDUCELIGHT = 7
-    REDUCEDARK = 8
-    AUTOHEAL = 9
-    BINDRES = 10
-    BLINDRES = 11
-    JAMMERRES = 12
-    POISONRES = 13
-    ENHANCEDRED = 14
-    ENHANCEDBLUE = 15
-    ENHANCEDGREEN = 16
-    ENHANCEDLIGHT = 17
-    ENHANCEDDARK = 18
-    EXTMOVE = 19
-    BINDRECOVERY = 20
-    SKILLBOOST = 21
-    REDROW = 22
-    BLUEROW = 23
-    GREENROW = 24
-    LIGHTROW = 25
-    DARKROW = 26
-    TPA = 27
-    SKILLBINDRES = 28
-    ENHANCEDHEAL = 29
-    MULTIBOOST = 30
-    DRAGONKILLER = 31
-    GODKILLER = 32
-    DEVILKILLER = 33
-    MACHINEKILLER = 34
-    BALANCEDKILLER = 35
-    ATTACKERKILLER = 36
-    PHYSICALKILLER = 37
-    HEALERKILLER = 38
-    EVOMATKILLER = 39
-    AWOKENKILLER = 40
-    FODDERKILLER = 41
-    REDEEMKILLER = 42
-    ENHCOMBO7C = 43
-    GUARDBREAK = 44
-    FUA = 45
-    ENHTEAMHP = 46
-    ENHTEAMRCV = 47
-    VDP = 48
-    EQUIP = 49
-    SUPERFUA = 50
-    SKILLCHARGE = 51
-    UNBINDABLE = 52
-    EXTMOVEPLUS = 53
-    CLOUDRESIST = 54
-    TAPERESIST = 55
-    SKILLBOOSTPLUS = 56
-    HP80ORMORE = 57
-    HP50ORLESS = 58
-    ELSHIELD = 59
-    ELATTACK = 60
-    ENHCOMBO10C = 61
-    COMBOORB = 62
-    VOICE = 63
-    DUNGEONBONUS = 64
-    REDUCEDHP = 65
-    REDUCEDATK = 66
-    REDUCEDRCV = 67
-    UNBLINDABLE = 68
-    UNJAMMABLE = 69
-    UNPOISONABLE = 70
-    JAMMERBLESSING = 71
-    POISONBLESSING = 72
-    REDCOMBOCOUNT = 73
-    BLUECOMBOCOUNT = 74
-    GREENCOMBOCOUNT = 75
-    LIGHTCOMBOCOUNT = 76
-    DARKCOMBOCOUNT = 77
-    CROSSATTACK = 78
-
-
 AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDHP: ('hp+', 'hp'),
     AwokenSkills.ENHANCEDATK: ('atk+', 'atk'),
@@ -189,7 +107,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDLIGHT: ('oel', 'oe'),
     AwokenSkills.ENHANCEDDARK: ('oed', 'oe'),
     AwokenSkills.EXTMOVE: ('te', 'finger'),
-    AwokenSkills.BINDRECOVERY: ('bindrcv',),
+    AwokenSkills.BINDRECOVERY: ('bindrcv', 'bindclear', 'rowclear'),
     AwokenSkills.SKILLBOOST: ('sb',),
     AwokenSkills.REDROW: ('rowr', 'row'),
     AwokenSkills.BLUEROW: ('rowb', 'row'),
@@ -221,8 +139,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.EQUIP: ('equip', 'assist', 'eq'),
     AwokenSkills.SUPERFUA: ('sfua',),
     AwokenSkills.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
-    AwokenSkills.UNBINDABLE: ('unbindable', ''
-                                          ''),
+    AwokenSkills.UNBINDABLE: ('unbindable', 'bindres'),
     AwokenSkills.EXTMOVEPLUS: ('te+', 'te', 'finger+', 'finger'),
     AwokenSkills.CLOUDRESIST: ('cloudres', 'cloud'),
     AwokenSkills.TAPERESIST: ('taperes', 'tape'),
@@ -256,6 +173,7 @@ class MiscModifiers(Enum):
     CHIBI = 'Chibi'
     STORY = 'Story'
     FARMABLE = 'Farmable'
+    TRADEABLE = 'Tradeable'
     REM = 'REM'
     MP = 'MP'
     INJP = 'In JP Server'
@@ -276,6 +194,7 @@ MISC_MAP = {
     MiscModifiers.CHIBI: ('chibi', 'mini'),
     MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
+    MiscModifiers.TRADEABLE: ('tradeable', 'tradable'),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
@@ -336,6 +255,7 @@ LEGAL_END_TOKENS = {
 HAZARDOUS_IN_NAME_MODS = {
     "reincarnated",
     "awoken",
+    "equip",
 }
 
 PROBLEMATIC_SERIES_TOKENS = {

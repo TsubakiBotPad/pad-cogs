@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
@@ -12,7 +13,7 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.id import evos_embed_field
 
@@ -24,14 +25,15 @@ MAX_MONS_TO_SHOW = 5
 
 class MaterialsViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
-                 alt_monsters: List["MonsterModel"],
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
                  use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster, alt_monsters,
+        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+                         alt_monsters, is_jp_buffed, query_settings,
                          reaction_list=reaction_list,
                          use_evo_scroll=use_evo_scroll,
                          extra_state=extra_state)
@@ -58,29 +60,32 @@ class MaterialsViewState(ViewStateBaseId):
             return None
         monster = await get_monster_from_ims(dgcog, ims)
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable = \
-            await MaterialsViewState.query(dgcog, monster)
+            await MaterialsViewState.do_query(dgcog, monster)
 
         if mats is None:
             return None
 
-        alt_monsters = cls.get_alt_monsters(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
+        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster, alt_monsters,
+        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+                   alt_monsters, is_jp_buffed, query_settings,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
 
     @staticmethod
-    async def query(dgcog, monster):
+    async def do_query(dgcog, monster):
         db_context = dgcog.database
-        mats = db_context.graph.evo_mats_by_monster(monster)
+        mats = db_context.graph.evo_mats(monster)
         usedin = db_context.graph.material_of_monsters(monster)
         evo_gem = db_context.graph.evo_gem_monster(monster)
         gemid = str(evo_gem.monster_no_na) if evo_gem else None
@@ -90,7 +95,8 @@ class MaterialsViewState(ViewStateBaseId):
         link = ilmina_skill(monster)
 
         if monster.active_skill:
-            sums = [m for m in db_context.get_monsters_by_active(monster.active_skill.active_skill_id)
+            sums = [m for m in db_context.get_monsters_by_active(monster.active_skill.active_skill_id,
+                                                                 server=monster.server_priority)
                     if db_context.graph.monster_is_farmable_evo(m)]
             sugs = [db_context.graph.evo_gem_monster(su) for su in sums]
             vsums = []
@@ -108,7 +114,7 @@ class MaterialsViewState(ViewStateBaseId):
             return None, None, None, None, None, None, None, None
         if not any([mats, usedin, skillups and not monster.is_stackable]):
             mats, gemusedin, _, usedin, skillups, skillup_evo_count, link, _ \
-                = await MaterialsViewState.query(dgcog, evo_gem)
+                = await MaterialsViewState.do_query(dgcog, evo_gem)
             gem_override = True
 
         return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override
@@ -119,7 +125,7 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
     if len(mons) == 0:
         text = "None"
     elif len(mons) > max_mons:
-        text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''})"
+        text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''}, see `^allmats` for full list)"
     return EmbedField(
         title,
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:max_mons]), text))
@@ -154,9 +160,9 @@ class MaterialsView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.long_maybe_tsubaki(state.monster,
-                                                       "!" if state.alt_monsters[0].monster_id == cls.TSUBAKI else ""
-                                                       ).to_markdown(),
+                title=MonsterHeader.fmt_id_header(state.monster,
+                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                                  state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(state.monster)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster)),

@@ -1,5 +1,7 @@
 from enum import Enum
 
+from tsutils.enums import Server
+
 
 class Attribute(Enum):
     """Standard 5 PAD colors in enum form. Values correspond to DadGuide values."""
@@ -14,7 +16,7 @@ class Attribute(Enum):
 
 class MonsterType(Enum):
     Evolve = 0
-    Balance = 1
+    Balanced = 1
     Physical = 2
     Healer = 3
     Dragon = 4
@@ -27,14 +29,6 @@ class MonsterType(Enum):
     Vendor = 15
 
 
-class EvoType(Enum):
-    """Evo types supported by DadGuide. Numbers correspond to their id values."""
-    Base = 0  # Represents monsters who didn't require evo
-    Evo = 1
-    UvoAwoken = 2
-    UuvoReincarnated = 3
-
-
 class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
     Base = "Base"
@@ -44,12 +38,6 @@ class InternalEvoType(Enum):
     Assist = "Assist"
     Pixel = "Pixel"
     SuperReincarnated = "Super Reincarnated"
-
-
-class Server(Enum):
-    JP = 0
-    NA = 1
-    KR = 2
 
 
 class AwakeningRestrictedLatent(Enum):
@@ -64,3 +52,88 @@ def enum_or_none(enum, value, default=None):
         return enum(value)
     else:
         return default
+
+
+DEFAULT_SERVER = Server.COMBINED
+SERVERS = [Server.NA, Server.COMBINED]
+
+
+class AwokenSkills(Enum):
+    ENHANCEDHP = 1
+    ENHANCEDATK = 2
+    ENHANCEDRCV = 3
+    REDUCERED = 4
+    REDUCEBLUE = 5
+    REDUCEGREEN = 6
+    REDUCELIGHT = 7
+    REDUCEDARK = 8
+    AUTOHEAL = 9
+    BINDRES = 10
+    BLINDRES = 11
+    JAMMERRES = 12
+    POISONRES = 13
+    ENHANCEDRED = 14
+    ENHANCEDBLUE = 15
+    ENHANCEDGREEN = 16
+    ENHANCEDLIGHT = 17
+    ENHANCEDDARK = 18
+    EXTMOVE = 19
+    BINDRECOVERY = 20
+    SKILLBOOST = 21
+    REDROW = 22
+    BLUEROW = 23
+    GREENROW = 24
+    LIGHTROW = 25
+    DARKROW = 26
+    TPA = 27
+    SKILLBINDRES = 28
+    ENHANCEDHEAL = 29
+    MULTIBOOST = 30
+    DRAGONKILLER = 31
+    GODKILLER = 32
+    DEVILKILLER = 33
+    MACHINEKILLER = 34
+    BALANCEDKILLER = 35
+    ATTACKERKILLER = 36
+    PHYSICALKILLER = 37
+    HEALERKILLER = 38
+    EVOMATKILLER = 39
+    AWOKENKILLER = 40
+    FODDERKILLER = 41
+    REDEEMKILLER = 42
+    ENHCOMBO7C = 43
+    GUARDBREAK = 44
+    FUA = 45
+    ENHTEAMHP = 46
+    ENHTEAMRCV = 47
+    VDP = 48
+    EQUIP = 49
+    SUPERFUA = 50
+    SKILLCHARGE = 51
+    UNBINDABLE = 52
+    EXTMOVEPLUS = 53
+    CLOUDRESIST = 54
+    TAPERESIST = 55
+    SKILLBOOSTPLUS = 56
+    HP80ORMORE = 57
+    HP50ORLESS = 58
+    ELSHIELD = 59
+    ELATTACK = 60
+    ENHCOMBO10C = 61
+    COMBOORB = 62
+    VOICE = 63
+    DUNGEONBONUS = 64
+    REDUCEDHP = 65
+    REDUCEDATK = 66
+    REDUCEDRCV = 67
+    UNBLINDABLE = 68
+    UNJAMMABLE = 69
+    UNPOISONABLE = 70
+    JAMMERBLESSING = 71
+    POISONBLESSING = 72
+    REDCOMBOCOUNT = 73
+    BLUECOMBOCOUNT = 74
+    GREENCOMBOCOUNT = 75
+    LIGHTCOMBOCOUNT = 76
+    DARKCOMBOCOUNT = 77
+    CROSSATTACK = 78

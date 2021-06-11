@@ -13,11 +13,16 @@ import discord
 import prettytable
 import pytz
 import tsutils
-from redbot.core import checks, data_manager
-from redbot.core import commands, errors
-from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta
+from discord import Color
+from redbot.core import checks, data_manager, commands, errors
+from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta, bold
 from tsutils import CogSettings, clean_global_mentions, confirm_message, replace_emoji_names_with_code, safe_read_json, \
-    auth_check
+    auth_check, get_reaction
+
+from padglobal.menu.closable_embed import ClosableEmbedMenu
+from padglobal.menu.menu_map import padglobal_menu_map
+from padglobal.view.closable_embed import ClosableEmbedViewState
+from padglobal.view.which import WhichView, WhichViewProps, UNKNOWN_EDIT_TIMESTAMP
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
 
@@ -48,8 +53,10 @@ DISABLED_MSG = 'PAD Global info disabled on this server'
 
 FARMABLE_MSG = 'This monster is **farmable** so make as many copies of whichever evos you like.'
 MP_BUY_MSG = ('This monster can be purchased with MP. **DO NOT** buy MP cards without a good reason'
-              ', check {}mpdra? for specific recommendations.')
-SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial; use the highest evolution: `[{}] {}`.'
+              ', check `{}mpdra?` for specific recommendations.')
+SIMPLE_TREE_MSG = 'This monster appears to be uncontroversial because the skill never changes & there are no branching evos; use the highest evolution: `[{}] {}`.'
+
+MAX_WHICH_LIST_BEFORE_DM_PROMPT = 30
 
 
 def mod_help(self, ctx, help_type):
@@ -73,6 +80,8 @@ async def check_enabled(ctx):
 
 class PadGlobal(commands.Cog):
     """Global PAD commands."""
+
+    menu_map = padglobal_menu_map
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -105,8 +114,19 @@ class PadGlobal(commands.Cog):
         """
         return
 
-    def _export_data(self):
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
 
+    async def get_menu_default_data(self, ims):
+        data = {}
+        return data
+
+    def _export_data(self):
         faq_and_boards = self.settings.faq() + self.settings.boards()
         general = {k: v for k, v in self.c_commands.items() if k not in faq_and_boards}
         faq = {k: v for k, v in self.c_commands.items() if k in self.settings.faq()}
@@ -150,14 +170,13 @@ class PadGlobal(commands.Cog):
         logger.critical(msg)
 
         try:
-            app_info = await self.bot.application_info()
-            owner = app_info.owner
-            await owner.send(msg)
-            await ctx.send("Owner has been notified, shutting down...")
+            for uid in self.bot.owner_ids:
+                await self.bot.get_user(uid).send(msg)
+            await ctx.send("Owners have been notified, shutting down...")
         except Exception as ex:
-            logger.exception('Failed to notifiy for breakglass: ' + str(ex))
+            logger.exception("Failed to notifiy for breakglass.")
 
-        await self.bot.shutdown()
+        await self.bot.shutdown(restart=True)
 
     @commands.command()
     @checks.admin_or_permissions(manage_guild=True)
@@ -174,7 +193,10 @@ class PadGlobal(commands.Cog):
     @commands.group(aliases=['pdg'])
     @auth_check('contentadmin')
     async def padglobal(self, ctx):
-        """PAD global custom commands."""
+        """PAD global custom commands.
+
+        See also `[p]pglossary`, `[p]pboss`, `[p]pwhich`, and `[p]pguide`.
+        """
 
     @padglobal.command()
     async def say(self, ctx, *, text: str):
@@ -210,12 +232,21 @@ class PadGlobal(commands.Cog):
             self.c_commands = {}
 
         if text in self.c_commands:
-            op = 'ALIASED'
-            if self.c_commands[text] in self.c_commands:
-                await ctx.send("You cannot alias an alias")
+            op = 'aliased'
+            if text == command:
+                await ctx.send('You cannot alias something to itself.')
                 return
+            if self.c_commands[text] in self.c_commands:
+                source = self.c_commands[text]
+                if await confirm_message(ctx, '{} is already an alias for {}, and you can\'t alias to an alias.'
+                                         .format(inline(text), inline(source))
+                                         + ' Would you like to alias to {} instead?'.format(inline(source))):
+                    # change target
+                    text = source
+                else:
+                    return
         elif command in self.c_commands:
-            op = 'EDITED'
+            op = 'edited'
             ted = self.c_commands[command]
             alias = False
             while ted in self.c_commands:
@@ -227,11 +258,11 @@ class PadGlobal(commands.Cog):
                 if not conf:
                     return
         else:
-            op = 'ADDED'
+            op = 'added'
 
         self.c_commands[command] = text
         json.dump(self.c_commands, open(self.file_path, 'w+'))
-        await ctx.send("PAD command successfully {}.".format(op))
+        await ctx.send("PAD command successfully {}.".format(bold(op)))
 
     @padglobal.command(aliases=['rmalias', 'delalias', 'remove', 'rm', 'del'])
     async def delete(self, ctx, command: str):
@@ -240,7 +271,17 @@ class PadGlobal(commands.Cog):
         Example:
         [p]padglobal delete yourcommand"""
         command = command.lower()
+
+        aliases = await self._find_aliases(command)
+        if aliases:
+            if not await confirm_message(ctx,
+                                         'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
+                                         .format(command, bold(str(len(aliases))), '`, `'.join(aliases))):
+                await ctx.send('Cancelling delete of `{}`.'.format(command))
+                return
+
         if command in self.c_commands:
+            alias = self.c_commands[command] in self.c_commands
             ocm = self.c_commands.copy()
             self.c_commands.pop(command, None)
             todel = [command]
@@ -251,9 +292,47 @@ class PadGlobal(commands.Cog):
                         self.c_commands.pop(comm, None)
                         todel.append(comm)
             json.dump(self.c_commands, open(self.file_path, 'w+'))
-            await ctx.send("PAD command successfully deleted.")
+            await ctx.send("PAD {} successfully deleted.".format(bold('alias' if alias else 'command')))
         else:
             await ctx.send("PAD command doesn't exist.")
+
+    @padglobal.command()
+    async def append(self, ctx, command: str, *, addition):
+        """Append the additional text to an existing command after a blank line."""
+        # the same cleaning that padglobal add does
+        command = command.lower()
+        addition = clean_global_mentions(addition)
+        addition = addition.replace(u'\u200b', '')
+        addition = replace_emoji_names_with_code(self._get_emojis(), addition)
+
+        corrected_cmd = self._lookup_command(command)
+        alias = False
+        if not corrected_cmd:
+            await ctx.send("Could not find a good match for command `{}`.".format(command))
+            return
+        result = self.c_commands.get(corrected_cmd, None)
+        # go a level deeper if trying to append to an alias
+        if result in self.c_commands:
+            alias = True
+            source_cmd = result
+            result = self.c_commands[result]
+
+        result = "{}\n\n{}".format(result, addition)
+        if alias:
+            self.c_commands[source_cmd] = result
+        else:
+            self.c_commands[corrected_cmd] = result
+        json.dump(self.c_commands, open(self.file_path, 'w+'))
+
+        await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
+                                                                             source_cmd if alias else corrected_cmd))
+
+    async def _find_aliases(self, command: str):
+        aliases = []
+        for cmd in self.c_commands:
+            if self.c_commands[cmd] == command:
+                aliases.append(cmd)
+        return aliases
 
     @padglobal.command()
     async def setgeneral(self, ctx, command: str):
@@ -446,29 +525,34 @@ class PadGlobal(commands.Cog):
             term = matches[0]
             return term, glossary[term]
 
-    @padglobal.command()
-    async def addglossary(self, ctx, term, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pglossary(self, ctx):
+        """Commands related to the PAD global glossary."""
+
+    @pglossary.command(name='add')
+    async def pglossary_add(self, ctx, term, *, definition):
         """Adds a term to the glossary.
         If you want to use a multiple word term, enclose it in quotes.
 
-        e.x. [p]padglobal addglossary alb Awoken Liu Bei
-        e.x. [p]padglobal addglossary "never dathena" NA will never get dathena
+        e.x. [p]pglossary add alb Awoken Liu Bei
+        e.x. [p]pglossary add "never dathena" NA will never get dathena
         """
         term = term.lower()
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
 
-        op = 'EDITED' if term in self.settings.glossary() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if term in self.settings.glossary() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the glossary info for {}?".format(
                                                             term)):
             return
         self.settings.addGlossary(term, definition)
-        await ctx.send("PAD glossary term successfully {}.".format(op))
+        await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
 
-    @padglobal.command()
-    async def rmglossary(self, ctx, *, term):
+    @pglossary.command(name='remove', aliases=['rm', 'delete', 'del'])
+    async def pglossary_remove(self, ctx, *, term):
         """Removes a term from the glossary."""
         term = term.lower()
         if term not in self.settings.glossary():
@@ -491,7 +575,7 @@ class PadGlobal(commands.Cog):
             else:
                 await ctx.send(inline('No mechanics found'))
             return
-        msg = self.boss_to_text(ctx)
+        msg = await self.boss_to_text(ctx)
         for page in pagify(msg):
             await ctx.author.send(page)
 
@@ -519,26 +603,36 @@ class PadGlobal(commands.Cog):
 
         return name, definition
 
-    def boss_to_text(self, ctx):
+    async def boss_to_text(self, ctx):
         bosses = self.settings.boss()
-        msg = '__**PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
+        dgcog = self.bot.get_cog('Dadguide')
+        msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
         for term in sorted(bosses.keys()):
-            definition = bosses[term]
-            msg += '\n**{}**\n{}'.format(term, definition)
+            m = await dgcog.find_monster(str(term), ctx.author.id)
+            if not m:  # monster not found
+                continue
+            msg += '\n[{}] {}'.format(term, m.name_en)
         return msg
 
     def boss_to_text_index(self, ctx):
         bosses = self.settings.boss()
         msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
-        msg = msg + '\n' + ',\n'.join(sorted(bosses.keys()))
+        msg = msg + '\n' + ',\n'.join(map(str, sorted(bosses.keys())))
         return msg
 
-    @padglobal.command()
-    async def addboss(self, ctx, term, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pboss(self, ctx):
+        """Commands related to PAD global boss mechanics."""
+
+    @pboss.command(name='add')
+    async def pboss_add(self, ctx, term, *, definition):
         """Adds a set of boss mechanics.
-        If you want to use a multiple word boss name, enclose it in quotes."""
+
+        If you want to use a multiple word boss name, enclose it in quotes.
+        """
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -550,8 +644,8 @@ class PadGlobal(commands.Cog):
 
         base = dgcog.database.graph.get_base_monster(m)
 
-        op = 'EDITED' if base.monster_id in self.settings.boss() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if base.monster_id in self.settings.boss() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the boss info for {}?".format(
                                                             base.name_en)):
             return
@@ -559,11 +653,11 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addBoss(base.monster_id, definition)
-        await ctx.send("PAD boss mechanics successfully {}.".format(op))
+        await ctx.send("PAD boss mechanics successfully {}.".format(bold(op)))
 
-    @padglobal.command()
-    async def rmboss(self, ctx, *, term):
-        """Adds a set of boss mechanics."""
+    @pboss.command(name='remove', aliases=['rm', 'delete', 'del'])
+    async def pboss_remove(self, ctx, *, term):
+        """Removes a set of boss mechanics."""
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -603,11 +697,14 @@ class PadGlobal(commands.Cog):
         name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        if not success:
-            await ctx.send('Which {}\n{}'.format(name, definition))
-            return
-        for page in pagify('Which {} - Last Updated {}\n{}'.format(name, timestamp, self.emojify(definition))):
-            await ctx.send(page)
+        # TODO: maybe support different colors one day if the configuration gets moved out of padinfo
+        color = Color.default()
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = WhichViewProps(name=name, definition=definition, timestamp=timestamp, success=success)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, term,
+                                       color, WhichView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
         dgcog = self.bot.get_cog('Dadguide')
@@ -625,7 +722,7 @@ class PadGlobal(commands.Cog):
         name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
-        timestamp = "1969-01-01"
+        timestamp = UNKNOWN_EDIT_TIMESTAMP
 
         if isinstance(definition, list):
             definition, timestamp = definition
@@ -635,13 +732,13 @@ class PadGlobal(commands.Cog):
 
         monster = dgcog.get_monster(monster_id)
 
-        if db_context.graph.monster_is_mp_evo(monster):
+        if db_context.graph.monster_is_mp_evo(monster) and not monster.in_rem:
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
         elif db_context.graph.monster_is_farmable_evo(monster):
             return name, FARMABLE_MSG, None, False
         elif check_simple_tree(monster, db_context):
-            top_monster = db_context.graph.get_numerical_sort_top_monster_by_id(monster.monster_no)
-            return name, SIMPLE_TREE_MSG.format(top_monster.monster_no, top_monster.name_en), None, False
+            top_monster = db_context.graph.get_numerical_sort_top_monster(monster)
+            return name, SIMPLE_TREE_MSG.format(top_monster.monster_id, top_monster.name_en), None, False
         else:
             await ctx.send('No which info for {} (#{})'.format(name, monster_id))
             return None, None, None, None
@@ -692,30 +789,52 @@ class PadGlobal(commands.Cog):
             await to_user.send(page)
         await ctx.send("Sent info on {} to {}".format(name, to_user.name))
 
-    @padglobal.command()
-    async def addwhich(self, ctx, monster_id: int, *, definition):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pwhich(self, ctx):
+        """Commands related to PAD global which definitions."""
+
+    @pwhich.command(name='add')
+    async def pwhich_add(self, ctx, term, *, definition):
         """Adds an entry to the which monster evo list.
 
-        If you provide a monster ID, the term will be entered for that monster tree.
-        e.x. [p]padglobal addwhich 3818 take the pixel one
+        Accepts queries. The which text will be entered for the resulting monster's tree.
+        e.x. [p]pwhich add 3818 take the pixel one
         """
-        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
-        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
+        dgcog = self.bot.get_cog("Dadguide")
+        pdicog = self.bot.get_cog("PadInfo")
+
+        term = term.lower()
+        m = await dgcog.find_monster(term, ctx.author.id)
+        if m is None:
+            await ctx.send(f"No monster found for `{term}`")
+            return
+
+        base_monster = dgcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
-        op = 'EDITED' if name in self.settings.which() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the which info for {}?".format(
-                                                            m.name_en)):
-            return
-        self.settings.addWhich(name, definition)
-        await ctx.send("PAD which info successfully {}.".format(op))
+        is_int = re.fullmatch(r'\d+', term)
 
-    @padglobal.command()
-    async def rmwhich(self, ctx, *, monster_id: int):
+        op = 'edited' if name in self.settings.which() else 'added'
+        if op == 'added' and not is_int or op == 'edited':
+            if not await confirm_message(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
+                    'edit the' if op == 'edited' else 'add new',
+                    pdicog.get_attribute_emoji_by_monster(m),
+                    m.monster_no_na,
+                    m.name_en)):
+                return
+
+        definition = clean_global_mentions(definition)
+        definition = definition.replace(u'\u200b', '')
+        definition = replace_emoji_names_with_code(self._get_emojis(), definition)
+        self.settings.addWhich(name, definition)
+        await ctx.send("PAD which info successfully {} for [{}] {}.".format(bold(op), m.monster_no_na, m.name_en))
+
+    @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
+    async def pwhich_remove(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
@@ -734,9 +853,94 @@ class PadGlobal(commands.Cog):
         self.settings.rmWhich(name)
         await ctx.tick()
 
-    @padglobal.command()
-    async def getwhich(self, ctx):
-        """Gets a list of all which commands."""
+    @pwhich.command(name='prepend')
+    async def pwhich_prepend(self, ctx, term: str, *, addition):
+        """Prepend the additional text to an existing which entry before a blank line."""
+        await self._concatenate_which(ctx, term, 'prepend', addition)
+
+    @pwhich.command(name='append')
+    async def pwhich_append(self, ctx, term: str, *, addition):
+        """Append the additional text to an existing which entry after a blank line."""
+        await self._concatenate_which(ctx, term, 'append', addition)
+
+    async def _concatenate_which(self, ctx, term: str, operation: str, addition):
+        dgcog = self.bot.get_cog("Dadguide")
+        pdicog = self.bot.get_cog("PadInfo")
+
+        term = term.lower()
+        m = await dgcog.find_monster(term, ctx.author.id)
+        if m is None:
+            await ctx.send(f"No monster found for `{term}`")
+            return
+
+        base_monster = dgcog.database.graph.get_base_monster(m)
+        if m != base_monster:
+            m = base_monster
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+        mon_id = m.monster_id
+
+        # ask for extra confirmation if the term was not an id
+        if not re.fullmatch(r'\d+', term):
+            if not await confirm_message(ctx, 'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
+                    operation,
+                    pdicog.get_attribute_emoji_by_monster(m),
+                    m.monster_no_na,
+                    m.name_en)):
+                return
+
+        if mon_id not in self.settings.which():
+            if await confirm_message(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
+                    m.name_en)):
+                self.settings.addWhich(mon_id, addition)
+                await ctx.send("PAD which info successfully {}.".format(bold('added')))
+            return
+
+        definition, _ = self.settings.which().get(mon_id, None)
+
+        addition = clean_global_mentions(addition)
+        addition = addition.replace(u'\u200b', '')
+        addition = replace_emoji_names_with_code(self._get_emojis(), addition)
+
+        if operation == 'prepend':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
+            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('prepended'), m.monster_no_na,
+                                                                                   m.name_en))
+        elif operation == 'append':
+            self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
+            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('appended'), m.monster_no_na,
+                                                                                   m.name_en))
+        else:
+            raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
+
+    @pwhich.command(name='dump')
+    async def pwhich_dump(self, ctx, *, term: str):
+        """Dump the raw text of an existing which entry, boxed."""
+        _, definition, _, _ = await self._resolve_which(ctx, term)
+
+        if definition is None:
+            return
+        else:
+            for page in pagify(definition):
+                content = box(page.replace('`', u'\u200b`'))
+                await ctx.send(content)
+
+    @pwhich.command(name='list')
+    async def pwhich_list(self, ctx):
+        """List all which commands."""
+        channel = '\N{WHITE HEAVY CHECK MARK}'
+        send_as_dm = '\N{ENVELOPE}'
+        cancel = '\N{CROSS MARK}'
+        destination = channel
+        if len(self.settings.which()) > MAX_WHICH_LIST_BEFORE_DM_PROMPT:
+            destination = await get_reaction(ctx,
+                                             'This will send a lot of messages. Are you sure? '
+                                             + '(Yes / DM me instead / Cancel)',
+                                             channel,
+                                             send_as_dm,
+                                             cancel)
+        if destination == cancel or destination is None:
+            return
+
         items = list()
         monsters = []
         for w in self.settings.which():
@@ -749,7 +953,7 @@ class PadGlobal(commands.Cog):
             if isinstance(result, list):
                 monsters.append([name, result[1]])
             else:
-                monsters.append([name, "1969-01-01"])
+                monsters.append([name, UNKNOWN_EDIT_TIMESTAMP])
 
         tbl = prettytable.PrettyTable(['Monster', 'Timestamp'])
         tbl.hrules = prettytable.HEADER
@@ -761,30 +965,10 @@ class PadGlobal(commands.Cog):
         msg = tsutils.strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
-            await ctx.send(box(page))
-
-    @padglobal.command()
-    @checks.is_owner()
-    async def addadmin(self, ctx, user: discord.Member):
-        """Adds a user to the pad global admin"""
-        self.settings.addAdmin(user.id)
-        await ctx.tick()
-
-    @padglobal.command()
-    @checks.is_owner()
-    async def rmadmin(self, ctx, user):
-        """Removes a user from the pad global admin"""
-        try:
-            u = await commands.MemberConverter().convert(ctx, user)
-            self.settings.rmAdmin(u.id)
-        except commands.BadArgument as e:
-            try:
-                u = int(user)
-                self.settings.rmAdmin(u)
-            except ValueError:
-                await ctx.send(inline("Invalid user id."))
-                return
-        await ctx.tick()
+            if destination == channel:
+                await ctx.send(box(page))
+            else:
+                await ctx.author.send(box(page))
 
     @padglobal.group()
     @checks.is_owner()
@@ -829,56 +1013,57 @@ class PadGlobal(commands.Cog):
                 pass
         return emojis
 
-    @padglobal.command()
-    async def addemoji(self, ctx, monster_id: int, server: str = 'jp'):
-        """Create padglobal monster emoji by id.
+    # temporarily removed since emoji servers are full
+    # @padglobal.command()
+    # async def addemoji(self, ctx, monster_id: int, server: str = 'jp'):
+    #     """Create padglobal monster emoji by id.
 
-        Uses jp monster IDs by default. You only need to change to na if you want to add
-        voltron or something.
+    #     Uses jp monster IDs by default. You only need to change to na if you want to add
+    #     voltron or something.
 
-        If you add a jp ID, it will look like ':pad_123:'.
-        If you add a na ID, it will look like ':pad_na_123:'.
-        """
-        all_emoji_servers = self.settings.emojiServers()
-        if not all_emoji_servers:
-            await ctx.send('No emoji servers set')
-            return
+    #     If you add a jp ID, it will look like ':pad_123:'.
+    #     If you add a na ID, it will look like ':pad_na_123:'.
+    #     """
+    #     all_emoji_servers = self.settings.emojiServers()
+    #     if not all_emoji_servers:
+    #         await ctx.send('No emoji servers set')
+    #         return
 
-        if server not in ['na', 'jp']:
-            await ctx.send('Server must be one of [jp, na]')
-            return
+    #     if server not in ['na', 'jp']:
+    #         await ctx.send('Server must be one of [jp, na]')
+    #         return
 
-        if monster_id <= 0:
-            await ctx.send('Invalid monster id')
-            return
+    #     if monster_id <= 0:
+    #         await ctx.send('Invalid monster id')
+    #         return
 
-        server_ids = self.settings.emojiServers()
-        all_emojis = self._get_emojis()
+    #     server_ids = self.settings.emojiServers()
+    #     all_emojis = self._get_emojis()
 
-        source_url = PORTRAIT_TEMPLATE.format(monster_id)
-        emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
+    #     source_url = PORTRAIT_TEMPLATE.format(monster_id)
+    #     emoji_name = 'pad_' + ('na_' if server == 'na' else '') + str(monster_id)
 
-        for e in all_emojis:
-            if emoji_name == e.name:
-                await ctx.send(inline('Already exists'))
-                return
+    #     for e in all_emojis:
+    #         if emoji_name == e.name:
+    #             await ctx.send(inline('Already exists'))
+    #             return
 
-        for server_id in server_ids:
-            emoji_server = self.bot.get_guild(int(server_id))
-            if len(emoji_server.emojis) < 50:
-                break
-        else:
-            await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
-            return
+    #     for server_id in server_ids:
+    #         emoji_server = self.bot.get_guild(int(server_id))
+    #         if len(emoji_server.emojis) < 50:
+    #             break
+    #     else:
+    #         await ctx.send("There is no room.  Add a new emoji server to add more emoji.")
+    #         return
 
-        try:
-            async with aiohttp.ClientSession() as sess:
-                async with sess.get(source_url) as resp:
-                    emoji_content = await resp.read()
-                    await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
-                    await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
-        except Exception as ex:
-            await ctx.send(box('Error:\n' + str(ex)))
+    #     try:
+    #         async with aiohttp.ClientSession() as sess:
+    #             async with sess.get(source_url) as resp:
+    #                 emoji_content = await resp.read()
+    #                 await emoji_server.create_custom_emoji(name=emoji_name, image=emoji_content)
+    #                 await ctx.send(inline('Done creating emoji named {}'.format(emoji_name)))
+    #     except Exception as ex:
+    #         await ctx.send(box('Error:\n' + str(ex)))
 
     @commands.Cog.listener('on_message')
     async def checkCC(self, message):
@@ -914,7 +1099,8 @@ class PadGlobal(commands.Cog):
 
         cmd = self.format_cc(result, message)
 
-        await message.channel.send(cmd)
+        for page in pagify(cmd):
+            await message.channel.send(page)
 
     def _lookup_command(self, cmd):
         """Returns the corrected cmd name.
@@ -1027,8 +1213,7 @@ class PadGlobal(commands.Cog):
         msg = '__**Dungeon Guides**__'
         dungeon_guide = self.settings.dungeonGuide()
         for term in sorted(dungeon_guide.keys()):
-            definition = dungeon_guide[term]
-            msg += '\n**{}** :\n{}\n'.format(term, definition)
+            msg += '\n{}'.format(term)
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
@@ -1036,7 +1221,7 @@ class PadGlobal(commands.Cog):
             if m is None:
                 continue
             name = m.name_en.split(', ')[-1].title()
-            msg += '\n**{}** :\n{}\n'.format(name, definition)
+            msg += '\n[{}] {}'.format(monster_id, name)
 
         return msg
 
@@ -1059,20 +1244,29 @@ class PadGlobal(commands.Cog):
         msg = "Sent guide for {} to {}".format(term, to_user.name)
         await ctx.send(inline(msg))
 
-    @padglobal.command()
-    async def adddungeonguide(self, ctx, term: str, *, definition: str):
+    @commands.group()
+    @auth_check('contentadmin')
+    async def pguide(self, ctx):
+        """Commands related to PAD global dungeon and leader guides."""
+
+    @pguide.group()
+    async def dungeon(self, ctx):
+        """Dungeon guide subcommands."""
+
+    @dungeon.command(name='add')
+    async def dungeon_add(self, ctx, term: str, *, definition: str):
         """Adds a dungeon guide to the [p]guide command"""
         term = term.lower()
-        op = 'EDITED' if term in self.settings.dungeonGuide() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
+        op = 'edited' if term in self.settings.dungeonGuide() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
                                                         "Are you sure you want to edit the dungeon guide info for {}?".format(
                                                             term)):
             return
         self.settings.addDungeonGuide(term, definition)
-        await ctx.send("PAD dungeon guide successfully {}.".format(op))
+        await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
 
-    @padglobal.command()
-    async def rmdungeonguide(self, ctx, term: str):
+    @dungeon.command(name='remove', aliases=['rm', 'delete', 'del'])
+    async def dungeon_remove(self, ctx, term: str):
         """Removes a dungeon guide from the [p]guide command"""
         term = term.lower()
         if term not in self.settings.dungeonGuide():
@@ -1085,8 +1279,12 @@ class PadGlobal(commands.Cog):
         self.settings.rmDungeonGuide(term)
         await ctx.tick()
 
-    @padglobal.command()
-    async def addleaderguide(self, ctx, monster_id: int, *, definition: str):
+    @pguide.group()
+    async def leader(self, ctx):
+        """Leader guide subcommands."""
+
+    @leader.command(name='add')
+    async def leader_add(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
@@ -1095,16 +1293,16 @@ class PadGlobal(commands.Cog):
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         name = m.monster_id
 
-        op = 'EDITED' if name in self.settings.leaderGuide() else 'ADDED'
-        if op == 'EDITED' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the boss info for {}?".format(
+        op = 'edited' if name in self.settings.leaderGuide() else 'added'
+        if op == 'edited' and not await confirm_message(ctx,
+                                                        "Are you sure you want to edit the leader guide for {}?".format(
                                                             m.name_en)):
             return
         self.settings.addLeaderGuide(name, definition)
-        await ctx.send("PAD leader guide info successfully {}.".format(op))
+        await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
 
-    @padglobal.command()
-    async def rmleaderguide(self, ctx, monster_id: int):
+    @leader.command(name='remove', aliases=['rm', 'delete', 'del'])
+    async def leader_remove(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
@@ -1129,12 +1327,12 @@ class PadGlobal(commands.Cog):
         """Display which yinyangdra is currently invading for Mystics & Spectres event"""
         pst = pytz.timezone("America/Los_Angeles")
         curtime = datetime.datetime.now(pst)
-        if datetime.time(6) < curtime.time() < datetime.time(18):
+        if datetime.time(7) < curtime.time() < datetime.time(19):
             await ctx.send(self.c_commands['redinvadecurrent'])
-            totime = curtime.replace(hour=18, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=19, minute=0, second=0, microsecond=0)
         else:
             await ctx.send(self.c_commands['blueinvadecurrent'])
-            totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=7, minute=0, second=0, microsecond=0)
             if totime < curtime:
                 totime += datetime.timedelta(1)
         await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
@@ -1197,13 +1395,16 @@ class PadGlobal(commands.Cog):
 def check_simple_tree(monster, db_context):
     attr1 = monster.attr1
     active_skill = monster.active_skill
-    for m in db_context.graph.get_alt_monsters_by_id(monster.monster_no):
+    for m in (evo_tree := db_context.graph.get_evo_tree(monster)):
         if m.attr1 != attr1 or m.active_skill.active_skill_id != active_skill.active_skill_id:
             return False
         if m.is_equip:
             return False
-        if 'awoken' in m.name_en.lower():
+        if len(db_context.graph.get_next_evolutions(m)) > 1:
             return False
+    # every evo has super awakenings (can limit break)
+    if len(evo_tree) > 1 and all(m.superawakening_count for m in evo_tree):
+        return False
     return True
 
 
