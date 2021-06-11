@@ -441,8 +441,11 @@ class MonsterIndex(tsutils.aobject):
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
         else:
-            if self.graph.monster_is_vendor_exchange(monster):
-                modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
+            try:
+                if self.graph.monster_is_vendor_exchange(monster):
+                    modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
+            except InvalidGraphState:
+                pass
             if self.graph.monster_is_mp_evo(monster):
                 modifiers.update(MISC_MAP[MiscModifiers.MP])
 
