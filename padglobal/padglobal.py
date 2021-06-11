@@ -538,16 +538,23 @@ class PadGlobal(commands.Cog):
         e.x. [p]pglossary add alb Awoken Liu Bei
         e.x. [p]pglossary add "never dathena" NA will never get dathena
         """
+        await self._pglossary_add(ctx, term, definition, True)
+
+    @pglossary.command(name='edit')
+    async def pglossary_edit(self, ctx, term, *, definition):
+        """Edit a term from the glossary."""
+        await self._pglossary_add(ctx, term, definition, False)
+
+    async def _pglossary_add(self, ctx, term, definition, need_confirm=True):
         term = term.lower()
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
 
         op = 'edited' if term in self.settings.glossary() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the glossary info for {}?".format(
-                                                            term)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx, "Are you sure you want to edit the glossary info for {}?".format(term)):
+                return
         self.settings.addGlossary(term, definition)
         await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
 
@@ -633,6 +640,14 @@ class PadGlobal(commands.Cog):
 
         If you want to use a multiple word boss name, enclose it in quotes.
         """
+        await self._pboss_add(ctx, term, definition, True)
+
+    @pboss.command(name='edit')
+    async def pboss_edit(self, ctx, term, *, definition):
+        """Edit a set of boss mechanics."""
+        await self._pboss_add(ctx, term, definition, False)
+
+    async def _pboss_add(self, ctx, term, definition, need_confirm=True):
         dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -645,10 +660,10 @@ class PadGlobal(commands.Cog):
         base = dgcog.database.graph.get_base_monster(m)
 
         op = 'edited' if base.monster_id in self.settings.boss() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the boss info for {}?".format(
-                                                            base.name_en)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the boss info for {}?".format(base.name_en)):
+                return
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
@@ -801,6 +816,14 @@ class PadGlobal(commands.Cog):
         Accepts queries. The which text will be entered for the resulting monster's tree.
         e.x. [p]pwhich add 3818 take the pixel one
         """
+        await self._pwhich_add(ctx, term, definition, True)
+
+    @pwhich.command(name='edit')
+    async def pwhich_edit(self, ctx, term, *, definition):
+        """Edit an entry from the which monster evo list."""
+        await self._pwhich_add(ctx, term, definition, False)
+
+    async def _pwhich_add(self, ctx, term, definition, need_confirm=True):
         dgcog = self.bot.get_cog("Dadguide")
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -819,7 +842,7 @@ class PadGlobal(commands.Cog):
         is_int = re.fullmatch(r'\d+', term)
 
         op = 'edited' if name in self.settings.which() else 'added'
-        if op == 'added' and not is_int or op == 'edited':
+        if not is_int or op == 'edited' and need_confirm:
             if not await confirm_message(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
                     'edit the' if op == 'edited' else 'add new',
                     pdicog.get_attribute_emoji_by_monster(m),
@@ -1256,12 +1279,20 @@ class PadGlobal(commands.Cog):
     @dungeon.command(name='add')
     async def dungeon_add(self, ctx, term: str, *, definition: str):
         """Adds a dungeon guide to the [p]guide command"""
+        await self._dungeon_add(ctx, term, definition, True)
+
+    @dungeon.command(name='edit')
+    async def dungeon_edit(self, ctx, term: str, *, definition: str):
+        """Edit a dungeon guide from the [p]guide command."""
+        await self._dungeon_add(ctx, term, definition, False)
+
+    async def _dungeon_add(self, ctx, term: str, definition: str, need_confirm=True):
         term = term.lower()
         op = 'edited' if term in self.settings.dungeonGuide() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the dungeon guide info for {}?".format(
-                                                            term)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the dungeon guide info for {}?".format(term)):
+                return
         self.settings.addDungeonGuide(term, definition)
         await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
 
@@ -1286,6 +1317,14 @@ class PadGlobal(commands.Cog):
     @leader.command(name='add')
     async def leader_add(self, ctx, monster_id: int, *, definition: str):
         """Adds a leader guide to the [p]guide command"""
+        await self._leader_add(ctx, monster_id, definition, True)
+
+    @leader.command(name='edit')
+    async def leader_edit(self, ctx, monster_id: int, *, definition: str):
+        """Edit a leader guide from the [p]guide command."""
+        await self._leader_add(ctx, monster_id, definition, False)
+
+    async def _leader_add(self, ctx, monster_id: int, definition: str, need_confirm=True):
         m = self.bot.get_cog("Dadguide").get_monster(monster_id)
         base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
@@ -1294,10 +1333,10 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         op = 'edited' if name in self.settings.leaderGuide() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the leader guide for {}?".format(
-                                                            m.name_en)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx,
+                                         "Are you sure you want to edit the leader guide for {}?".format(m.name_en)):
+                return
         self.settings.addLeaderGuide(name, definition)
         await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
 
