@@ -7,6 +7,7 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DadguideDatabase
+from .errors import InvalidGraphState
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
@@ -306,7 +307,11 @@ class MonsterGraph(object):
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
-        return self.graph_dict[server].nodes[monster_id]['model']
+        try:
+            server_graph = self.graph_dict[server]
+            return server_graph.nodes[monster_id]['model']
+        except KeyError:
+            raise InvalidGraphState(monster_id)
 
     def get_all_monsters(self, server: Server) -> Set[MonsterModel]:
         return {mdata['model'] for mdata in self.graph_dict[server].nodes.values()}
