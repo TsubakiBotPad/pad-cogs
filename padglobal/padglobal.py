@@ -538,16 +538,23 @@ class PadGlobal(commands.Cog):
         e.x. [p]pglossary add alb Awoken Liu Bei
         e.x. [p]pglossary add "never dathena" NA will never get dathena
         """
+        await self._pglossary_add(ctx, term, definition, True)
+
+    @pglossary.command(name='edit')
+    async def pglossary_edit(self, ctx, term, *, definition):
+        """Edit a term from the glossary."""
+        await self._pglossary_add(ctx, term, definition, False)
+
+    async def _pglossary_add(self, ctx, term, definition, need_confirm=True):
         term = term.lower()
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
 
         op = 'edited' if term in self.settings.glossary() else 'added'
-        if op == 'edited' and not await confirm_message(ctx,
-                                                        "Are you sure you want to edit the glossary info for {}?".format(
-                                                            term)):
-            return
+        if op == 'edited' and need_confirm:
+            if not await confirm_message(ctx, "Are you sure you want to edit the glossary info for {}?".format(term)):
+                return
         self.settings.addGlossary(term, definition)
         await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
 
