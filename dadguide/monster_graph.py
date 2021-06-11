@@ -282,8 +282,12 @@ class MonsterGraph(object):
     def _cache_graphs(self) -> None:
         for server in self.graph_dict:
             for mid in self.graph_dict[server].nodes:
-                self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
-                    self.get_monster(mid, server=server))
+                try:
+                    self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
+                        self.get_monster(mid, server=server))
+                except InvalidGraphState:
+                    # TODO: Actually log something to a channel
+                    pass
 
     def _get_edges(self, monster: MonsterModel, etype) -> Set[int]:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
