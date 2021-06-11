@@ -318,7 +318,9 @@ class MonsterGraph(object):
             raise InvalidGraphState(monster_id)
 
     def get_all_monsters(self, server: Server) -> Set[MonsterModel]:
-        return {mdata['model'] for mdata in self.graph_dict[server].nodes.values()}
+        # Fail gracefully if one of the nodes doesn't exist
+        # TODO: log which node doesn't exist? Or unneeded bc we will do that at startup
+        return {mdata['model'] for mdata in self.graph_dict[server].nodes.values() if mdata.get('model')}
 
     def get_evo_tree(self, monster: MonsterModel) -> List[MonsterModel]:
         while (prev := self.get_prev_evolution(monster)):
