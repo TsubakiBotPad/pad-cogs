@@ -801,6 +801,14 @@ class PadGlobal(commands.Cog):
         Accepts queries. The which text will be entered for the resulting monster's tree.
         e.x. [p]pwhich add 3818 take the pixel one
         """
+        await self._pwhich_add(ctx, term, definition, True)
+
+    @pwhich.command(name='edit')
+    async def pwhich_edit(self, ctx, term, *, definition):
+        """Edit an entry from the which monster evo list."""
+        await self._pwhich_add(ctx, term, definition, False)
+
+    async def _pwhich_add(self, ctx, term, definition, need_confirm=True):
         dgcog = self.bot.get_cog("Dadguide")
         pdicog = self.bot.get_cog("PadInfo")
 
@@ -819,7 +827,7 @@ class PadGlobal(commands.Cog):
         is_int = re.fullmatch(r'\d+', term)
 
         op = 'edited' if name in self.settings.which() else 'added'
-        if op == 'added' and not is_int or op == 'edited':
+        if not is_int or op == 'edited' and need_confirm:
             if not await confirm_message(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
                     'edit the' if op == 'edited' else 'add new',
                     pdicog.get_attribute_emoji_by_monster(m),
