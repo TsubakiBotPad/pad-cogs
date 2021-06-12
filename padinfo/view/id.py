@@ -52,7 +52,7 @@ class IdViewState(ViewStateBaseId):
         self.is_child = is_child
         self.acquire_raw = acquire_raw
         self.base_rarity = base_rarity
-        self.transform_base = transform_base
+        self.transform_base: "MonsterModel" = transform_base
         self.true_evo_type_raw = true_evo_type_raw
 
     def serialize(self):
@@ -301,11 +301,12 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier):
+    def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
         return Box(
             BoldText('Leader Skill'),
             BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
                      else char_to_emoji(1) + ' ' + ls_single_multiplier_text(m.leader_skill)),
+            BoldText('(' + get_emoji('\N{DOWN-POINTING RED TRIANGLE}') + '7x6)') if m != transform_base and transform_base.leader_skill.is_7x6 else None,
             delimiter=' '
         )
 
@@ -335,7 +336,7 @@ class IdView(BaseIdView):
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
-                IdView.leader_skill_header(m, state.query_settings.lsmultiplier).to_markdown(),
+                IdView.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
             evos_embed_field(state)

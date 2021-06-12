@@ -1,3 +1,5 @@
+import re
+
 from .base_model import BaseModel
 
 
@@ -15,6 +17,7 @@ class LeaderSkillModel(BaseModel):
         self.bonus_damage = kwargs['bonus_damage']
         self.mult_bonus_damage = kwargs['mult_bonus_damage']
         self.extra_time = kwargs['extra_time']
+        self.tags = [int(tag) for tag in re.findall(r'\((\d+)\)', kwargs['tags'])]
         self.desc_en = kwargs['desc_en']
         self.desc_ja = kwargs['desc_ja']
         self.desc_ko = kwargs['desc_ko']
@@ -37,6 +40,10 @@ class LeaderSkillModel(BaseModel):
     @property
     def name(self):
         return self.name_en or self.name_ja
+
+    @property
+    def is_7x6(self):
+        return 200 in self.tags
 
     def to_dict(self):
         return {
