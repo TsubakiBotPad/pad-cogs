@@ -163,7 +163,6 @@ def _data_file(file_name: str) -> str:
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
-
 class DungeonEmojiUpdater(EmojiUpdater):
     # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
     """
@@ -455,7 +454,7 @@ class DungeonCog(commands.Cog):
         return dgcog
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
-        dungeon = database.get_dungeons_from_nickname(name)
+        dungeon = database.get_dungeons_from_nickname(name.lower())
         if dungeon is None:
             dungeons = database.get_dungeons_from_name(name)
             if len(dungeons) == 0:
