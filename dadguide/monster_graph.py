@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from collections import defaultdict
 from typing import Optional, List, Set, Dict
@@ -18,6 +19,8 @@ from .models.leader_skill_model import LeaderSkillModel
 from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
+
+logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
@@ -98,15 +101,19 @@ EGG_QUERY = """SELECT
 FROM
   egg_machines
   JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
+WHERE
+  start_timestamp < strftime('%s', 'now')
 """
 
 EXCHANGE_QUERY = """SELECT
    *
 FROM
   exchanges
+WHERE
+  start_timestamp < strftime('%s', 'now')
 """
 
-SERVER_ID_WHERE_CONDITION = " WHERE server_id = {}"
+SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
@@ -321,11 +328,10 @@ class MonsterGraph(object):
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
-        try:
-            server_graph = self.graph_dict[server]
-            return server_graph.nodes[monster_id]['model']
-        except KeyError:
-            raise InvalidGraphState(monster_id)
+        if 'model' not in self.graph_dict[server].nodes[monster_id]:
+            logger.warning(f'{monster_id} has no model in the {server.name} graph.')
+            return None
+        return self.graph_dict[server].nodes[monster_id]['model']
 
     def get_all_monsters(self, server: Server) -> Set[MonsterModel]:
         # Fail gracefully if one of the nodes doesn't exist

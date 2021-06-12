@@ -173,7 +173,7 @@ class MonsterModel(BaseModel):
         return MonsterDifference.from_monsters(self, other)
 
     def __repr__(self):
-        server_prefix = self.server_priority + " " if self.server_priority != Server.COMBINED else ""
+        server_prefix = self.server_priority.name + " " if self.server_priority != Server.COMBINED else ""
         return "Monster<{}{} ({})>".format(server_prefix, self.name_en, self.monster_id)
 
 
