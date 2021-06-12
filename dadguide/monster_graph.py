@@ -285,11 +285,11 @@ class MonsterGraph(object):
     def _cache_graphs(self) -> None:
         for server in self.graph_dict:
             for mid in self.graph_dict[server].nodes:
-                try:
+                if 'model' in self.graph_dict[server].nodes[mid]:
                     self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
                         self.get_monster(mid, server=server))
-                except InvalidGraphState as igs:
-                    self.issues.append(igs.args[0])
+                else:
+                    self.issues.append(f"{mid} has no model in the {server.name} graph.")
 
     def _get_edges(self, monster: MonsterModel, etype) -> Set[int]:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
@@ -310,7 +310,8 @@ class MonsterGraph(object):
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
 
-    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
+            -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
         if 'model' not in self.graph_dict[server].nodes[monster_id]:

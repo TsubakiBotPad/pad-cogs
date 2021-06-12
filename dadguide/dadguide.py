@@ -156,7 +156,7 @@ class Dadguide(commands.Cog, IdTest):
 
         issues = []
         issues.extend(self.database.graph.issues)
-        for index in self.indexes:
+        for index in self.indexes.values():
             issues.extend(index.issues)
         issues.extend((await self.run_tests())[:25])
 
