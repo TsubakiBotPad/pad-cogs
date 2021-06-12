@@ -143,20 +143,25 @@ class Dadguide(commands.Cog, IdTest):
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         for server in SERVERS:
-            self.indexes[server] = await MonsterIndex(self.database.graph, server)  # noqa
+            index = await MonsterIndex(self.database.graph, server)  # noqa
+            self.indexes[server] = index
+
         self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())
 
     async def check_index(self):
-        if not await self.config.indexlog():
+        channel = self.bot.get_channel(await self.config.indexlog())
+        if not channel:
             return
 
-        index = self.indexes[Server.COMBINED]
-        index.issues.extend((await self.run_tests())[:25])
+        issues = []
+        issues.extend(self.database.graph.issues)
+        for index in self.indexes.values():
+            issues.extend(index.issues)
+        issues.extend((await self.run_tests())[:25])
 
-        channel = self.bot.get_channel(await self.config.indexlog())
-        if index.issues:
-            for page in pagify(f"Index Load Warnings:\n" + "\n".join(index.issues[:100])):
+        if issues:
+            for page in pagify(f"Load Warnings:\n" + "\n".join(issues[:100])):
                 await channel.send(box(page))
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
@@ -194,7 +199,7 @@ class Dadguide(commands.Cog, IdTest):
                 await asyncio.sleep(wait_time)
             except Exception as ex:
                 logger.exception("dadguide data wait loop failed: %s", ex)
-                raise ex
+                raise
 
     async def download_and_refresh_nicknames(self):
         if await self.config.datafile():

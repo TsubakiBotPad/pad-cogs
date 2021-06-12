@@ -111,6 +111,8 @@ SERVER_ID_WHERE_CONDITION = " WHERE server_id = {}"
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
+        self.issues = []
+
         self.database = database
         self.max_monster_id = -1
         self.graph_dict: Dict[Server, MultiDiGraph] = {  # noqa
@@ -256,15 +258,6 @@ class MonsterGraph(object):
 
         for e in es:
             evo_model = EvolutionModel(**e)
-            # TODO: add logging in these error cases
-            if evo_model.from_id not in graph.nodes:
-                continue
-            if evo_model.to_id not in graph.nodes:
-                continue
-            if graph.nodes[evo_model.from_id].get('model') is None:
-                continue
-            if graph.nodes[evo_model.to_id].get('model') is None:
-                continue
 
             graph.add_edge(
                 evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
@@ -292,12 +285,11 @@ class MonsterGraph(object):
     def _cache_graphs(self) -> None:
         for server in self.graph_dict:
             for mid in self.graph_dict[server].nodes:
-                try:
+                if 'model' in self.graph_dict[server].nodes[mid]:
                     self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
                         self.get_monster(mid, server=server))
-                except InvalidGraphState:
-                    # TODO: Actually log something to a channel
-                    pass
+                else:
+                    self.issues.append(f"{mid} has no model in the {server.name} graph.")
 
     def _get_edges(self, monster: MonsterModel, etype) -> Set[int]:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
@@ -318,14 +310,13 @@ class MonsterGraph(object):
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
 
-    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
+            -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
-        try:
-            server_graph = self.graph_dict[server]
-            return server_graph.nodes[monster_id]['model']
-        except KeyError:
-            raise InvalidGraphState(monster_id)
+        if 'model' not in self.graph_dict[server].nodes[monster_id]:
+            raise InvalidGraphState(f"{monster_id} has no model in the {server.name} graph.")
+        return self.graph_dict[server].nodes[monster_id]['model']
 
     def get_all_monsters(self, server: Server) -> Set[MonsterModel]:
         # Fail gracefully if one of the nodes doesn't exist
