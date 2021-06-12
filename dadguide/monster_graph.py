@@ -37,6 +37,7 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.bonus_damage,
   leader_skills{0}.mult_bonus_damage,
   leader_skills{0}.extra_time,
+  leader_skills{0}.tags,
   active_skills{0}.name_ja AS as_name_ja,
   active_skills{0}.name_en AS as_name_en,
   active_skills{0}.name_ko AS as_name_ko,
@@ -167,6 +168,7 @@ class MonsterGraph(object):
                                         bonus_damage=m.bonus_damage,
                                         mult_bonus_damage=m.mult_bonus_damage,
                                         extra_time=m.extra_time,
+                                        tags=m.tags,
                                         ) if m.leader_skill_id != 0 else None
 
             as_model = ActiveSkillModel(active_skill_id=m.active_skill_id,
