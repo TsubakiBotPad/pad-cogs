@@ -150,19 +150,23 @@ class Dadguide(commands.Cog, IdTest):
         asyncio.create_task(self.check_index())
 
     async def check_index(self):
-        channel = self.bot.get_channel(await self.config.indexlog())
-        if not channel:
-            return
-
         issues = []
         issues.extend(self.database.graph.issues)
         for index in self.indexes.values():
             issues.extend(index.issues)
-        issues.extend((await self.run_tests())[:25])
+        issues.extend(await self.run_tests())
 
         if issues:
+            channels = [self.bot.get_channel(await self.config.indexlog())]
+            if not any(channels):
+                channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(owner))]
+                for channel in channels:
+                    await channel.send("Use `{}dadguide setfailurechannel <channel>`"
+                                       " to move these out of your DMs!"
+                                       "".format((await self.bot.get_valid_prefixes())[0]))
             for page in pagify(f"Load Warnings:\n" + "\n".join(issues[:100])):
-                await channel.send(box(page))
+                for channel in channels:
+                    await channel.send(box(page))
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
@@ -234,7 +238,7 @@ class Dadguide(commands.Cog, IdTest):
 
     @dadguide.command()
     @checks.is_owner()
-    async def setindexlog(self, ctx, channel: discord.TextChannel):
+    async def setfailurechannel(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
 
