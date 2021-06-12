@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
-from tsutils.enums import ChildMenuType
+from tsutils.enums import ChildMenuType, AltEvoSort
 
 from tsutils.menu.panes import MenuPanes
 from tsutils.query_settings import QuerySettings
@@ -43,7 +43,8 @@ class IdMenu:
         m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll)
+        evosort = query_settings.evosort
+        new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll, evosort)
         if new_monster_id is None:
             ims['unsupported_transition'] = True
         ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
@@ -53,9 +54,11 @@ class IdMenu:
         return await response_func(message, ims, **data)
 
     @staticmethod
-    def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
+    def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll, evosort):
         if use_evo_scroll:
             evos = db_context.graph.get_alt_ids(monster)
+            if evosort != AltEvoSort.dfs:
+                evos = sorted(evos)
             index = evos.index(monster.monster_id)
             new_id = evos[index - 1]
             return new_id
@@ -72,7 +75,8 @@ class IdMenu:
         m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
 
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll) or '')
+        evosort = query_settings.evosort
+        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll, evosort) or '')
         if new_monster_id is None:
             ims['unsupported_transition'] = True
         ims['resolved_monster_id'] = new_monster_id
@@ -82,9 +86,11 @@ class IdMenu:
         return await response_func(message, ims, **data)
 
     @staticmethod
-    def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll):
+    def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll, evosort):
         if use_evo_scroll:
             evos = db_context.graph.get_alt_ids(monster)
+            if evosort != AltEvoSort.dfs:
+                evos = sorted(evos)
             index = evos.index(monster.monster_id)
             if index == len(evos) - 1:
                 # cycle back to the beginning of the evos list

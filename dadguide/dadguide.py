@@ -143,21 +143,30 @@ class Dadguide(commands.Cog, IdTest):
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         for server in SERVERS:
-            self.indexes[server] = await MonsterIndex(self.database.graph, server)  # noqa
+            index = await MonsterIndex(self.database.graph, server)  # noqa
+            self.indexes[server] = index
+
         self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())
 
     async def check_index(self):
-        if not await self.config.indexlog():
-            return
+        issues = []
+        issues.extend(self.database.graph.issues)
+        for index in self.indexes.values():
+            issues.extend(index.issues)
+        issues.extend(await self.run_tests())
 
-        index = self.indexes[Server.COMBINED]
-        index.issues.extend((await self.run_tests())[:25])
-
-        channel = self.bot.get_channel(await self.config.indexlog())
-        if index.issues:
-            for page in pagify(f"Index Load Warnings:\n" + "\n".join(index.issues[:100])):
-                await channel.send(box(page))
+        if issues:
+            channels = [self.bot.get_channel(await self.config.indexlog())]
+            if not any(channels):
+                channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(owner))]
+                for channel in channels:
+                    await channel.send("Use `{}dadguide setfailurechannel <channel>`"
+                                       " to move these out of your DMs!"
+                                       "".format((await self.bot.get_valid_prefixes())[0]))
+            for page in pagify(f"Load Warnings:\n" + "\n".join(issues[:100])):
+                for channel in channels:
+                    await channel.send(box(page))
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
@@ -194,7 +203,7 @@ class Dadguide(commands.Cog, IdTest):
                 await asyncio.sleep(wait_time)
             except Exception as ex:
                 logger.exception("dadguide data wait loop failed: %s", ex)
-                raise ex
+                raise
 
     async def download_and_refresh_nicknames(self):
         if await self.config.datafile():
@@ -229,7 +238,7 @@ class Dadguide(commands.Cog, IdTest):
 
     @dadguide.command()
     @checks.is_owner()
-    async def setindexlog(self, ctx, channel: discord.TextChannel):
+    async def setfailurechannel(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
 

@@ -16,6 +16,9 @@ Code should be PEP 8 formatted with a 120 character line limit.
 ## Check out the repo
 
 Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/padbot-cogs).
+
+> Note: If you are developing a cog that is in the [misc-cogs repo](https://github.com/TsubakiBotPad/misc-cogs), you may need to complete some steps for both pad-cogs AND misc-cogs. 
+
 You will need a GitHub account to do this. Click the button that says "Fork" in the upper-right-hand corner of the page.
 
 I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) for development. Change into the
@@ -31,6 +34,8 @@ The installation instructions in Red's official documentation are pretty good. Y
 * Create a venv
 * Install the Red library
 * Create a Discord API key, make a bot, and associate it to your installation
+
+> You may want to perform the next step, "Installing dependencies," partway through the RED installation. The ideal time is immediately after you have created your venv, but before doing anything else. 
 
 Installation instruction links:
 * [Windows install instructions](https://docs.discord.red/en/stable/install_windows.html)
@@ -51,12 +56,15 @@ deactivate
 ```
 The rest of the guide takes place from inside Discord.  Replace `^` with your prefix.
 
-## Configuring development version
+## Telling your bot where to find your cogs
 Once the bot is launched, set it to use your repo directory as a cog path. Type this in Discord where the bot is:
 
 ```
 ^addpath path/to/repo/root
 ```
+
+> Note: you may have to do this for both `pad-cogs` and `misc-cogs`.
+
 ## Loading cogs
 
 * Some cogs will have cross dependencies on each other.  Use `^traceback 1` if you encounter any errors to see your traceback.
@@ -65,11 +73,10 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
     * padinfo
 
 ### Emoji
-* You probably don't actually need emoji to be working in order to do development for Tsubaki.
-* There are over seven emoji servers. River has access to these, talk to her if you think you need access to them.  In-depth development of the `^id` command may be reason to get access to them.
+* If you are doing in-depth development of the `^id` command, you may need your bot invited to the emoji servers. River has access to these, talk to her.
 * You will use `^padinfo emojiserver add` with the IDs she gives you.
 
-# Puzzle and Dragons
+## Cog list
 
 Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 

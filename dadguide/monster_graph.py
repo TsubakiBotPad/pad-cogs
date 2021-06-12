@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from collections import defaultdict
 from typing import Optional, List, Set, Dict
@@ -7,6 +8,7 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DadguideDatabase
+from .errors import InvalidGraphState
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
@@ -17,6 +19,8 @@ from .models.leader_skill_model import LeaderSkillModel
 from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
+
+logger = logging.getLogger('red.padbot-cogs.dadguide')
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
@@ -36,6 +40,7 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.bonus_damage,
   leader_skills{0}.mult_bonus_damage,
   leader_skills{0}.extra_time,
+  leader_skills{0}.tags,
   active_skills{0}.name_ja AS as_name_ja,
   active_skills{0}.name_en AS as_name_en,
   active_skills{0}.name_ko AS as_name_ko,
@@ -97,19 +102,25 @@ EGG_QUERY = """SELECT
 FROM
   egg_machines
   JOIN d_egg_machine_types ON d_egg_machine_types.egg_machine_type_id = egg_machines.egg_machine_type_id
+WHERE
+  start_timestamp < strftime('%s', 'now')
 """
 
 EXCHANGE_QUERY = """SELECT
    *
 FROM
   exchanges
+WHERE
+  start_timestamp < strftime('%s', 'now')
 """
 
-SERVER_ID_WHERE_CONDITION = " WHERE server_id = {}"
+SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
     def __init__(self, database: DadguideDatabase):
+        self.issues = []
+
         self.database = database
         self.max_monster_id = -1
         self.graph_dict: Dict[Server, MultiDiGraph] = {  # noqa
@@ -164,6 +175,7 @@ class MonsterGraph(object):
                                         bonus_damage=m.bonus_damage,
                                         mult_bonus_damage=m.mult_bonus_damage,
                                         extra_time=m.extra_time,
+                                        tags=m.tags,
                                         ) if m.leader_skill_id != 0 else None
 
             as_model = ActiveSkillModel(active_skill_id=m.active_skill_id,
@@ -240,7 +252,8 @@ class MonsterGraph(object):
                                    has_hqimage=m.has_hqimage == 1,
                                    server_priority=server,
                                    )
-
+            if not m_model:
+                continue
             graph.add_node(m.monster_id, model=m_model)
             if m.linked_monster_id:
                 graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
@@ -281,8 +294,11 @@ class MonsterGraph(object):
     def _cache_graphs(self) -> None:
         for server in self.graph_dict:
             for mid in self.graph_dict[server].nodes:
-                self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
-                    self.get_monster(mid, server=server))
+                if 'model' in self.graph_dict[server].nodes[mid]:
+                    self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
+                        self.get_monster(mid, server=server))
+                else:
+                    self.issues.append(f"{mid} has no model in the {server.name} graph.")
 
     def _get_edges(self, monster: MonsterModel, etype) -> Set[int]:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
@@ -303,13 +319,18 @@ class MonsterGraph(object):
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
 
-    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
+            -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
+            return None
+        if 'model' not in self.graph_dict[server].nodes[monster_id]:
             return None
         return self.graph_dict[server].nodes[monster_id]['model']
 
     def get_all_monsters(self, server: Server) -> Set[MonsterModel]:
-        return {mdata['model'] for mdata in self.graph_dict[server].nodes.values()}
+        # Fail gracefully if one of the nodes doesn't exist
+        # TODO: log which node doesn't exist? Or unneeded bc we will do that at startup
+        return {mdata['model'] for mdata in self.graph_dict[server].nodes.values() if mdata.get('model')}
 
     def get_evo_tree(self, monster: MonsterModel) -> List[MonsterModel]:
         while (prev := self.get_prev_evolution(monster)):
