@@ -45,8 +45,8 @@ class SeriesScrollViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
-        monster_list = paginated_monsters[current_page]
-        self.max_len_so_far = max(max_len_so_far or len(monster_list), len(monster_list))
+        self.monster_list = paginated_monsters[current_page]
+        self.max_len_so_far = max(max_len_so_far or len(self.monster_list), len(self.monster_list))
 
     def serialize(self):
         ret = super().serialize()
