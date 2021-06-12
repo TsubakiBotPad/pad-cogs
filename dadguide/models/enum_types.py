@@ -55,7 +55,7 @@ def enum_or_none(enum, value, default=None):
 
 
 DEFAULT_SERVER = Server.COMBINED
-SERVERS = [Server.NA, Server.COMBINED]
+SERVERS = [Server.COMBINED, Server.NA]
 
 
 class AwokenSkills(Enum):
