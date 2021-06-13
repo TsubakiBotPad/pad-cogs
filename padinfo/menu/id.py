@@ -10,6 +10,7 @@ from tsutils.menu.panes import MenuPanes
 from tsutils.query_settings import QuerySettings
 
 from padinfo.menu.simple_text import SimpleTextMenu
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.evos import EvosView, EvosViewState
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.materials import MaterialsView, MaterialsViewState
@@ -37,70 +38,28 @@ class IdMenu:
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        db_context: "DbContext" = dgcog.database
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        user_config = data['user_config']
+        # Figure out the new monster before doing all of the queries necessary for
+        # The specific pane type. For now just deserialize as the base Id ViewState.
+        view_state = await ViewStateBaseId.deserialize(dgcog, user_config, ims)
+        view_state.decrement_monster(dgcog, ims)
 
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
-
-        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        evosort = query_settings.evosort
-        new_monster_id = IdMenu.get_prev_monster_id(db_context, m, use_evo_scroll, evosort)
-        if new_monster_id is None:
-            ims['unsupported_transition'] = True
-        ims['resolved_monster_id'] = str(new_monster_id) if new_monster_id else None
         pane_type = ims['pane_type']
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
 
     @staticmethod
-    def get_prev_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll, evosort):
-        if use_evo_scroll:
-            evos = db_context.graph.get_alt_ids(monster)
-            if evosort != AltEvoSort.dfs:
-                evos = sorted(evos)
-            index = evos.index(monster.monster_id)
-            new_id = evos[index - 1]
-            return new_id
-        else:
-            prev_monster = db_context.graph.numeric_prev_monster(monster)
-            return prev_monster.monster_id if prev_monster else None
-
-    @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        db_context: "DbContext" = dgcog.database
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        user_config = data['user_config']
+        view_state = await ViewStateBaseId.deserialize(dgcog, user_config, ims)
+        view_state.increment_monster(dgcog, ims)
 
-        m = db_context.graph.get_monster(int(ims['resolved_monster_id']), server=query_settings.server)
-
-        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
-        evosort = query_settings.evosort
-        new_monster_id = str(IdMenu.get_next_monster_id(db_context, m, use_evo_scroll, evosort) or '')
-        if new_monster_id is None:
-            ims['unsupported_transition'] = True
-        ims['resolved_monster_id'] = new_monster_id
         pane_type = ims.get('pane_type')
         pane_type_to_func_map = IdMenuPanes.pane_types()
         response_func = pane_type_to_func_map[pane_type]
         return await response_func(message, ims, **data)
-
-    @staticmethod
-    def get_next_monster_id(db_context: "DbContext", monster: "MonsterModel", use_evo_scroll, evosort):
-        if use_evo_scroll:
-            evos = db_context.graph.get_alt_ids(monster)
-            if evosort != AltEvoSort.dfs:
-                evos = sorted(evos)
-            index = evos.index(monster.monster_id)
-            if index == len(evos) - 1:
-                # cycle back to the beginning of the evos list
-                new_id = evos[0]
-            else:
-                new_id = evos[index + 1]
-            return new_id
-        else:
-            next_monster = db_context.graph.numeric_next_monster(monster)
-            return next_monster.monster_id if next_monster else None
 
     @staticmethod
     async def respond_with_refresh(message: Optional[Message], ims, **data):
