@@ -1,13 +1,11 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
-from tsutils.enums import ChildMenuType, AltEvoSort
-
+from tsutils.enums import ChildMenuType
 from tsutils.menu.panes import MenuPanes
-from tsutils.query_settings import QuerySettings
 
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
@@ -17,10 +15,6 @@ from padinfo.view.materials import MaterialsView, MaterialsViewState
 from padinfo.view.otherinfo import OtherInfoView, OtherInfoViewState
 from padinfo.view.pantheon import PantheonView, PantheonViewState
 from padinfo.view.pic import PicView, PicViewState
-
-if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.database_context import DbContext
 
 
 class IdMenu:
