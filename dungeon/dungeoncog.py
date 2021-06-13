@@ -5,124 +5,19 @@ import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from tsutils import Menu, EmojiUpdater
+from tsutils import Menu
 from redbot.core import commands, data_manager
 from dadguide.dungeon_context import DungeonContext
-from dungeon.SafeDict import SafeDict
-from dungeon.enemy_skills_pb2 import MonsterBehavior, LevelBehavior, BehaviorGroup, Condition, Behavior
+from dungeon.enemy_skills_pb2 import MonsterBehavior
 from collections import OrderedDict
-
-from dungeon.dungeon_monster import DungeonMonster
-from redbot.core.utils.chat_formatting import pagify
 
 # If these are unused remember to remove
 from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.menu_map import dungeon_menu_map
-from dungeon.menu.simple import SimpleMenu, SimpleEmoji, SimpleMenuPanes
-from dungeon.processors import process_monster, formatOverview
 from dungeon.view.dungeon import DungeonViewState
-from dungeon.view.simple import SimpleViewState
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
-
-dungeon_query = '''
-SELECT
-monsters.name_en,
-dungeons.dungeon_id,
-dungeons.name_en as dungeon_name_en,
-sub_dungeons.name_en as sub_name_en,
-sub_dungeons.technical,
-encounters.*,
-enemy_data.behavior
-FROM
-encounters
-LEFT OUTER JOIN dungeons ON encounters.dungeon_id = dungeons.dungeon_id
-LEFT OUTER JOIN enemy_data ON encounters.enemy_id = enemy_data.enemy_id
-LEFT OUTER JOIN monsters ON encounters.monster_id = monsters.monster_id
-LEFT OUTER JOIN sub_dungeons on sub_dungeons.sub_dungeon_id = encounters.sub_dungeon_id
-WHERE
-encounters.sub_dungeon_id = {}
-ORDER BY
-encounters.stage
-'''
-
-dungeon_search_query = '''
-SELECT
-DISTINCT
-dungeons.name_en,
-dungeons.dungeon_id
-FROM 
-dungeons
-LEFT OUTER JOIN encounters ON dungeons.dungeon_id = encounters.dungeon_id
-WHERE
-dungeons.name_en LIKE "{}%" 
-AND 
-EXISTS 
-(SELECT encounters.sub_dungeon_id WHERE encounters.dungeon_id = dungeons.dungeon_id)
-'''
-
-"""We are looking for the highest difficulty"""
-
-dungeon_sub_id_query = '''
-SELECT
-dungeons.name_en,
-dungeons.dungeon_id,
-encounters.sub_dungeon_id
-FROM
-dungeons
-LEFT OUTER JOIN encounters ON dungeons.dungeon_id = encounters.dungeon_id
-WHERE
-dungeons.dungeon_id = {}
-ORDER BY
-encounters.sub_dungeon_id DESC
-'''
-
-sub_dungeons_query = '''
-SELECT
-sub_dungeons.*
-FROM
-sub_dungeons
-WHERE 
-sub_dungeons.dungeon_id = {} AND
-sub_dungeons.name_en LIKE "%{}%"
-ORDER BY
-sub_dungeons.sub_dungeon_id
-'''
-
-encounter_query = '''
-SELECT
-monsters.name_en,
-monsters.name_ja,
-monsters.name_ko,
-encounters.*,
-enemy_data.behavior,
-enemy_data.status
-FROM
-encounters
-LEFT OUTER JOIN enemy_data ON encounters.enemy_id = enemy_data.enemy_id
-LEFT OUTER JOIN monsters ON encounters.monster_id = monsters.monster_id
-WHERE
-encounters.encounter_id = {}
-'''
-
-sub_dungeon_exists_query = '''
-SELECT
-encounters.sub_dungeon_id
-FROM
-encounters
-WHERE
-encounters.sub_dungeon_id = {}
-'''
-
-skill_query = '''
-SELECT
-enemy_skills.*
-FROM
-enemy_skills
-WHERE
-enemy_skill_id = {}
-'''
 
 DungeonNickNames = {
     'a1': 1022001,
@@ -162,108 +57,6 @@ def _data_file(file_name: str) -> str:
 
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
-
-class DungeonEmojiUpdater(EmojiUpdater):
-    # DungeonEmojiUpdater takes a starting monster, starting floor (list of monsters) and the dungeon (array of floors)
-    """
-    Emoji:
-    <<, >> previous and next monster of the current floor (a floor is a list of potential spawns of the floor)
-    <, > (not implemented) previous and next page of the current monster
-    up and down arrows are go up one floor and go down one floor
-    """
-
-    def __init__(self, ctx, emoji_to_embed, dungeon_cog=None, selected_emoji=None, pm: DungeonMonster = None,
-                 pm_dungeon: "list[list[DungeonMonster]]" = None, pm_floor: "list[DungeonMonster]" = None,
-                 technical: int = None, compacts=None, verboses=None, preempts=None):
-        self.emoji_dict = emoji_to_embed
-        self.selected_emoji = selected_emoji
-        self.pm = pm
-        self.pm_floor = pm_floor
-        self.pm_dungeon = pm_dungeon
-        self.ctx = ctx
-        self.dungeon_cog = dungeon_cog
-        self.technical = technical
-        self.current_page = 0
-        self.compacts = compacts
-        self.verboses = verboses
-        self.preempts = preempts
-        self.current_pages = self.compacts
-
-    async def on_update(self, ctx, selected_emoji):
-        index_monster = self.pm_floor.index(self.pm)
-        index_floor = self.pm_dungeon.index(self.pm_floor)
-        update = False
-        if selected_emoji == self.dungeon_cog.previous_monster_emoji:
-            self.pm = self.pm_floor[index_monster - 1]
-            if index_monster == 0:
-                index_monster = len(self.pm_floor) - 1
-            else:
-                index_monster -= 1
-            update = True
-        elif selected_emoji == self.dungeon_cog.next_monster_emoji:
-            if index_monster == len(self.pm_floor) - 1:
-                self.pm = self.pm_floor[0]
-                index_monster = 0
-            else:
-                self.pm = self.pm_floor[index_monster + 1]
-                index_monster += 1
-            update = True
-
-        elif selected_emoji == self.dungeon_cog.previous_floor:
-            self.pm_floor = self.pm_dungeon[index_floor - 1]
-            self.pm = self.pm_floor[0]
-            if index_floor == 0:
-                index_floor = len(self.pm_dungeon) - 1
-            else:
-                index_floor -= 1
-            index_monster = 0
-            update = True
-        elif selected_emoji == self.dungeon_cog.next_floor:
-            if index_floor == len(self.pm_dungeon) - 1:
-                self.pm_floor = self.pm_dungeon[0]
-                index_floor = 0
-            else:
-                self.pm_floor = self.pm_dungeon[index_floor + 1]
-                index_floor += 1
-            self.pm = self.pm_floor[0]
-            index_monster = 0
-            update = True
-        elif selected_emoji == self.dungeon_cog.next_page:
-            # print(self.compacts)
-            if self.current_page == 0:
-                self.current_page = -1
-            else:
-                self.current_page = 0
-        elif selected_emoji == self.dungeon_cog.current_monster:
-            self.current_pages = self.compacts
-        elif selected_emoji == self.dungeon_cog.verbose_monster:
-            self.current_pages = self.verboses
-        elif selected_emoji == self.dungeon_cog.preempt_monster:
-            self.current_pages = self.preempts
-        else:
-            self.selected_emoji = selected_emoji
-            return True
-
-        if update:
-            self.compacts = self.pm.make_embed(verbose=False, spawn=[index_monster + 1, len(self.pm_floor)],
-                                               floor=[index_floor + 1, len(self.pm_dungeon)],
-                                               technical=self.technical)
-            self.verboses = self.pm.make_embed(verbose=True, spawn=[index_monster + 1, len(self.pm_floor)],
-                                               floor=[index_floor + 1, len(self.pm_dungeon)],
-                                               technical=self.technical)
-            self.preempts = self.pm.make_embed(spawn=[index_monster + 1, len(self.pm_floor)],
-                                               floor=[index_floor + 1, len(self.pm_dungeon)],
-                                               technical=self.technical)
-        if selected_emoji != self.dungeon_cog.next_page:
-            self.current_page = 0
-
-        self.emoji_dict = await self.dungeon_cog.make_emoji_dictionary(self.ctx,
-                                                                       compact_page=self.compacts[self.current_page],
-                                                                       verbose_page=self.verboses[self.current_page],
-                                                                       preempt_page=self.preempts[self.current_page],
-                                                                       show=len(self.current_pages) > 1)
-        return True
-
 
 # From pad-data-pipeline
 """
@@ -351,38 +144,6 @@ class DungeonCog(commands.Cog):
             dungeon = dungeon[0]
         return dungeon
 
-    @commands.command()
-    async def test_menu2(self, ctx, message):
-        menu = SimpleMenu.menu()
-        original_author_id = ctx.message.author.id
-        full_reaction_list = [emoji_cache.get_by_name(e) for e in SimpleMenuPanes.emoji_names()]
-        test_list = ['1', '2', '3', '4']
-        view_state = SimpleViewState(original_author_id, 'SimpleMenu', message, Color.default(), test_list, 0,
-                                     reaction_list=full_reaction_list)
-        message = await menu.create(ctx, view_state)
-        await ctx.send("This is a test of menu2")
-
-    @commands.command()
-    async def test(self, ctx):
-        dg_cog = self.bot.get_cog('Dadguide')
-        # Your code will go here
-        if not dg_cog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
-        context: DungeonContext = dg_cog.database.dungeon
-        dung = context.get_dungeons_from_name("Raziel")[0]
-        dung2 = await self.find_dungeon_from_name2(ctx, "Raziel", context, "Mythical")
-
-        message = "Dung1:"
-        for sd in dung.sub_dungeons:
-            message += "\n" + sd.name_en
-        message += "\nDung2:"
-        for sd in dung2.sub_dungeons:
-            message += "\n" + sd.name_en
-        await ctx.send(message)
-
     async def make_emoji_dictionary(self, ctx, scroll_monsters=None, scroll_floors=None, compact_page=None,
                                     verbose_page=None, preempt_page=None, show=False):
         if scroll_monsters is None:
@@ -420,30 +181,6 @@ class DungeonCog(commands.Cog):
                 await result_msg.e
         except Exception as ex:
             logger.error('Menu failure', exc_info=True)
-
-    @commands.command()
-    async def dungeon_encounters(self, ctx, name: str, difficulty: str = None):
-        """
-        List encounters you will find in a dungeon. Mostly for debug.
-        Name: Dungeon
-        Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
-        """
-        dg_cog = self.bot.get_cog('Dadguide')
-        if not dg_cog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
-
-        sub_id = await self.find_dungeon_from_name(ctx=ctx, name=name, database=dg_cog.database, difficulty=difficulty)
-        if sub_id is None:
-            return
-        test_result = dg_cog.database.database.query_many(dungeon_query.format(sub_id), ())
-        if test_result is None:
-            await ctx.send("Dungeon not Found")
-        else:
-            for page in pagify(formatOverview(test_result)):
-                await ctx.send(page)
 
     @commands.command()
     async def dungeon_info2(self, ctx, name: str, difficulty: str = None):
