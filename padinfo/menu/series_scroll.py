@@ -4,8 +4,8 @@ from typing import Optional, List
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils import char_to_emoji
-
 from tsutils.menu.panes import MenuPanes, emoji_buttons
+
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
 from padinfo.view.id import IdView
 from padinfo.view.series_scroll import SeriesScrollView, SeriesScrollViewState
@@ -47,6 +47,12 @@ class SeriesScrollMenu:
         embed = EmbedMenu(SeriesScrollMenuPanes.transitions(), initial_control)
         return embed
 
+    @classmethod
+    async def _get_view_state(cls, ims: dict, **data) -> SeriesScrollViewState:
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        return await SeriesScrollViewState.deserialize(dgcog, user_config, ims)
+
     @staticmethod
     async def respond_with_refresh(message: Optional[Message], ims, **data):
         # this is only called once on message load
@@ -59,19 +65,12 @@ class SeriesScrollMenu:
         # replace with the overview list after the child menu changes
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
-    @staticmethod
-    async def respond_with_left(message: Optional[Message], ims, **data):
-        current_page = ims['current_page']
-        if current_page > 0:
-            ims['current_page'] = current_page - 1
-            ims['current_index'] = None
-            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
-        current_rarity_index = ims['all_rarities'].index(ims['rarity'])
-        ims['rarity'] = ims['all_rarities'][current_rarity_index - 1]
-        paginated_monsters = await SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
-        ims['current_page'] = len(paginated_monsters) - 1
-        ims['current_index'] = None
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+    @classmethod
+    async def respond_with_left(cls, message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        view_state = await cls._get_view_state(ims, **data)
+        await view_state.decrement_page(dgcog, ims)
+        return SeriesScrollMenu.monster_list_control(view_state)
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
