@@ -1,17 +1,46 @@
 import logging
 import json
+import random
 from typing import List
 
 from dungeon.grouped_skillls import GroupedSkills
 from collections import OrderedDict
 import discord
 
+egg_text = [
+    "But nobody came...",
+    "Come again later",
+    "Tsubaki loves you",
+    "Remember 100 turn Hera stalling?",
+    "Odin x Mermaid are the OG heroes",
+    "Never forget 10 minute stamina",
+    "Another 3*...",
+    "Nice!",
+    "Maybe one day DBZ will come",
+    "Special thanks to the PADX team and tactical_retreat!"
+]
 
+# Helper function that indents text for the embed
 def indent(level):
     ret = ""
     for l in range(level):
-        ret += "\u200b \u200b \u200b \u200b \u200b "
+        if l == 0:
+            ret += "> "
+        else:
+            ret += "\u200b \u200b \u200b \u200b \u200b "
     return ret
+
+
+"""
+The Discord Embeds suck real bad function. This function takes:
+names: an existing list (a list of strings that will be placed in "name fields"
+values: an existing list (a list of strings that will be placed in the value part of the name/value field
+line: the line of text we want to add
+level: how many indents the line needs
+Essentially this function adds a line in such a way to maximize discord embed limits. We first try to add it to the most
+recent name part of the name/value pair if that fails we try to add it to the corresponding value, if that fails, we
+create another name/value pair.
+"""
 
 
 def embed_helper(level, names, values, line):
@@ -27,42 +56,9 @@ def embed_helper(level, names, values, line):
         embed_helper(level, names, values, line)
 
 
-# Called to check if a field/value/description hits character limit
-def field_value_split(data: str, limit):
-    names = []
-    content = [""]
-    hit_limit = False
-    freshly_added = False
-    if len(data) < limit:
-        content[0] = data
-        return names, content
-    current_index = 0
-    for e in data.split("\n"):
-        if not hit_limit:
-            if len(content[current_index]) + len(e) > limit:
-                current_index += 1
-                names.append(e)
-                freshly_added = True
-                content.append("")
-                hit_limit = True
-            else:
-                if freshly_added:
-                    content[current_index] += e.strip('\n')
-                    freshly_added = False
-                else:
-                    content[current_index] += '\n' + e
-        elif len(content[current_index]) + len(e) > 1024:
-            current_index += 1
-            names.append(e)
-            freshly_added = True
-            content.append("")
-        else:
-            if freshly_added:
-                content[current_index] += e.strip('\n')
-                freshly_added = False
-            else:
-                content[current_index] += '\n' + e
-    return names, content
+"""
+A class that symbolizes an encounter in a dungeon. Why is it not a model? Good question.
+"""
 
 
 class DungeonMonster(object):
@@ -83,6 +79,13 @@ class DungeonMonster(object):
     def add_group(self, group: GroupedSkills):
         self.groups.append(group)
 
+    '''
+    When called this generates an embed that displays the encounter (what is seen in dungeon_info).
+    verbose: whether or not to display effect text
+    spawn: used to show what spawn this is on a floor [spawn, max] -> "spawn/max"
+    floor: used to show what floor this is [current floor, number of floors]
+    '''
+
     def make_embed(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
                    technical: int = None, has_invade=False):
         # top_level = []
@@ -91,9 +94,11 @@ class DungeonMonster(object):
         embeds = []
 
         desc = ""
+
+        # We create two pages as monsters at max will only ever require two pages of embeds
         if spawn is not None:
             embed = discord.Embed(
-                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{} Page:".format(self.name, self.level, spawn[0], spawn[1],
                                                                              floor[0], floor[1]),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc)
@@ -104,20 +109,34 @@ class DungeonMonster(object):
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc)
             )
+
+
         embeds.append(embed)
         embeds.append(embed.copy())
+
+        if technical == 0:
+            embeds[0].title += " 1/1"
+            embeds[1].title += " 2/1"
+            return embeds
+        embeds[0].title += " 1/"
+        embeds[1].title += " 2/"
+        # We collect text from the skills and groups of skills
         lines = []
         for group in self.groups:
             group.give_string2(lines, 0, verbose)
+
+        # We add the lines using embed_helper
         names = [""]
         values = [""]
         fields = 0
         current_embed = 0
-        length = len(embed.title) + len(embed.description)
+        length = len(embed.title) + len(embed.description) + 1
         first = None
         for l in lines:
             for comp in l[1]:
                 embed_helper(l[0], names, values, comp)
+
+        # We add the name/value pairs to the actual embed. If needed we go to the second page
         if len(values[len(values) - 1]) == 0:
             values[len(values) - 1] = '\u200b'
         for index in range(len(names)):
@@ -132,7 +151,22 @@ class DungeonMonster(object):
                 length += len(name) + len(value)
                 fields += 1
             # embed.add_field(name=k, value=content, inline=False)
+
+        if current_embed == 0:
+            embeds[0].title += '1'
+            embeds[1].title += '1'
+
+            # for fun
+            random_index = random.randint(0, len(egg_text) - 1)
+            embeds[1].add_field(name=egg_text[random_index], value="Come back when you see 1/2 for page!")
+        else:
+            embeds[0].title += '2'
+            embeds[1].title += '2'
         return embeds
+
+    '''
+    Currently unused, when called displays preempt information only
+    '''
 
     async def make_preempt_embed(self, spawn: "list[int]" = None, floor: "list[int]" = None, technical: int = None):
         skills = await self.collect_skills()
@@ -154,52 +188,6 @@ class DungeonMonster(object):
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
                                                                    f'{self.turns:,}', desc))
         return [embed, discord.Embed(title="test", desc="test")]
-
-    """def make_menu2_stuff(self, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
-                   technical: int = None, has_invade=False, color=None):
-        # top_level = []
-        # field_value_dict = OrderedDict()
-
-        embeds = []
-
-        desc = ""
-        if spawn is not None:
-            embed = discord.Embed(
-                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(self.name, self.level, spawn[0], spawn[1],
-                                                                             floor[0], floor[1]),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
-                                                                   f'{self.turns:,}', desc),
-                color=color
-            )
-        else:
-            embed = discord.Embed(
-                title="Enemy:{} at Level: {}".format(self.name, self.level),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{self.hp:,}', f'{self.atk:,}', f'{self.defense:,}',
-                                                                   f'{self.turns:,}', desc),
-                color=color
-            )
-        embeds.append(embed)
-        embeds.append(discord.Embed(title="test", desc="test"))
-        lines = []
-        for group in self.groups:
-            group.give_string2(lines, 0, verbose)
-        names = [""]
-        values = [""]
-        fields = 0
-        first = None
-        for l in lines:
-            for comp in l[1]:
-                embed_helper(l[0], names, values, comp)
-        if len(values[len(values) - 1]) == 0:
-            values[len(values) - 1] = '\u200b'
-        for index in range(len(names)):
-            name = names[index]
-            value = values[index]
-            if len(name) > 0:
-                embed.add_field(name=name, value=value, inline=False)
-                fields += 1
-            # embed.add_field(name=k, value=content, inline=False)
-        return embeds"""
 
     async def collect_skills(self):
         skills = []

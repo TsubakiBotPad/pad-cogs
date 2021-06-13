@@ -47,7 +47,7 @@ class DungeonViewState(ViewStateBase):
 
     @classmethod
     async def deserialize(cls, dgcog, color, ims: dict, inc_floor: int = 0, inc_index: int = 0,
-                          verbose_toggle: bool = False, page: int = 0):
+                          verbose_toggle: bool = False, page: int = 0, reset_spawn: bool = False):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
@@ -78,6 +78,10 @@ class DungeonViewState(ViewStateBase):
         if floor_index < 0:
             floor_index = len(floor_models) + floor_index
 
+        # check if we reset the floor_index
+        if reset_spawn:
+            floor_index = 0
+
         encounter_model = floor_models[floor_index]
 
         return cls(original_author_id, menu_type, raw_query, color, encounter_model, sub_dungeon_id,
@@ -101,7 +105,7 @@ class DungeonView:
         monster = process_monster(mb, encounter_model, state.database)
         monster_embed: Embed = \
             monster.make_embed(verbose=state.verbose, spawn=[state.floor_index + 1, state.num_spawns],
-                               floor=[state.floor, state.num_floors])[state.page]
+                               floor=[state.floor, state.num_floors], technical=state.technical)[state.page]
         hp = f'{monster.hp:,}'
         atk = f'{monster.atk:,}'
         defense = f'{monster.defense:,}'

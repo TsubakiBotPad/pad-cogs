@@ -61,7 +61,7 @@ class DungeonMenu:
     async def respond_with_previous_floor(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, -1, 0)
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, -1, 0, reset_spawn=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
@@ -69,7 +69,7 @@ class DungeonMenu:
     async def respond_with_next_floor(message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 1, 0)
+        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 1, 0, reset_spawn=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
@@ -122,5 +122,5 @@ class DungeonMenuPanes(MenuPanes):
         DungeonEmoji.next_page: (DungeonMenu.respond_with_next_page, DungeonView.VIEW_TYPE)
     }
     HIDDEN_EMOJIS = [
-
+        DungeonEmoji.home
     ]

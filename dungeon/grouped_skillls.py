@@ -1,11 +1,8 @@
 import logging
 from collections import OrderedDict
-def indent(level):
-    ret = ""
-    for l in range(level):
-        ret += "\u200b \u200b \u200b \u200b \u200b "
-    return ret
-
+'''
+A class that represents a group of skills. 
+'''
 class GroupedSkills(object):
     """This is a container class that holds the top level condition, and its processed children"""
     def __init__(self, condition: str, type, parent= None):
@@ -19,10 +16,16 @@ class GroupedSkills(object):
     def add_skill(self, skill):
         self.skills.append(skill)
 
+    '''
+    When called it stores the necessary text of it's child skills in lines.
+    lines: a list to store lines of text in the following format [number of indents needed, actual line of text]
+    level: how many indents do we need (essentially is this a nested group or not)
+    verbose: display skill effect text or not
+    '''
     def give_string2(self, lines, level=0, verbose: bool = False):
         condition = self.condition
         if condition is not None:
-            lines.append([level, ["**Condition: {}**".format(condition)]])
+            lines.append([level, ["**Condition: {}:**".format(condition)]])
             level += 1
         for g in self.nested_groups:
             g.give_string2(lines, level, verbose)

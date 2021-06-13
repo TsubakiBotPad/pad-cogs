@@ -204,7 +204,7 @@ def process_monster(mb: MonsterBehavior, q: EncounterModel, database: DbContext)
                          enrage_status=emoji_cache.get_by_name('enrage'),
                          active_skill_bind=emoji_cache.get_by_name('skill_bound'),
                          do_nothing="💤",
-                         awoken_bind=emoji_cache.get_by_name('awoken_bound'),
+                         awoken_skill_bind=emoji_cache.get_by_name('awoken_skill_bind'),
                          no_skyfall_status=emoji_cache.get_by_name('no_skyfall'),
                          bind=emoji_cache.get_by_name('res_bind'),
                          skyfall_status='🌧',
@@ -217,7 +217,7 @@ def process_monster(mb: MonsterBehavior, q: EncounterModel, database: DbContext)
                          health=emoji_cache.get_by_name('health'),
                          combo_orb=emoji_cache.get_by_name('orb_combo'),
                          locked_bomb_orb=emoji_cache.get_by_name('locked_bomb_orb'),
-                         random_attribute='Random Att',
+                         random_attribute='[Random Att]',
                          water_orb=emoji_cache.get_by_name('orb_water'),
                          wood_orb=emoji_cache.get_by_name('orb_wood'),
                          light_orb=emoji_cache.get_by_name('orb_light'),
@@ -247,7 +247,9 @@ def process_monster(mb: MonsterBehavior, q: EncounterModel, database: DbContext)
                          no_match_heart=emoji_cache.get_by_name('no_match_heart'),
                          no_match_jammer=emoji_cache.get_by_name('no_match_jammer'),
                          no_match_poison=emoji_cache.get_by_name('no_match_poison'),
-                         no_match_heal=emoji_cache.get_by_name('no_match_heal')
+                         no_match_heal=emoji_cache.get_by_name('no_match_heal'),
+                         recover_debuff_status=emoji_cache.get_by_name('recover_debuff_status'),
+                         attack_debuff_status='⚔️''⬇️'
                          )
     monster_model = database.graph.get_monster(q.monster_id)
     monster: DungeonMonster = DungeonMonster(
