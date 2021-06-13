@@ -118,11 +118,12 @@ class SeriesScrollMenu:
             ims['current_page'] = len(paginated_monsters_new) - 1
             ims['current_index'] = len(paginated_monsters_new[-1]) - 1
 
-    @staticmethod
-    async def respond_with_next_monster(message: Optional[Message], ims, **data):
+    @classmethod
+    async def respond_with_next_monster(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        await SeriesScrollMenu._update_ims_next(dgcog, ims)
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        view_state = await cls._get_view_state(ims, **data)
+        await view_state.increment_index(dgcog, ims)
+        return SeriesScrollMenu.monster_list_control(view_state)
 
     @staticmethod
     async def _update_ims_next(dgcog, ims):

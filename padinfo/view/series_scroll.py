@@ -176,6 +176,16 @@ class SeriesScrollViewState(ViewStateBase):
         await self.decrement_page(dgcog, ims)
         self.current_index = len(self.monster_list) - 1
 
+    async def increment_index(self, dgcog, ims: dict):
+        if self.current_index is None:
+            self.current_index = 0
+            return
+        if self.current_index < len(self.monster_list) - 1:
+            self.current_index = self.current_index + 1
+            return
+        await self.increment_page(dgcog, ims)
+        self.current_index = 0
+
 
 class SeriesScrollView:
     VIEW_TYPE = 'SeriesScroll'
