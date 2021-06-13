@@ -87,11 +87,12 @@ class SeriesScrollMenu:
         control = SeriesScrollMenu.monster_list_control(view_state)
         return control
 
-    @staticmethod
-    async def respond_with_previous_monster(message: Optional[Message], ims, **data):
+    @classmethod
+    async def respond_with_previous_monster(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
-        await SeriesScrollMenu._update_ims_prev(dgcog, ims)
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+        view_state = await cls._get_view_state(ims, **data)
+        await view_state.decrement_index(dgcog, ims)
+        return SeriesScrollMenu.monster_list_control(view_state)
 
     @staticmethod
     async def _update_ims_prev(dgcog, ims):
