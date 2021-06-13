@@ -183,7 +183,7 @@ class DungeonCog(commands.Cog):
             logger.error('Menu failure', exc_info=True)
 
     @commands.command()
-    async def dungeon_info2(self, ctx, name: str, difficulty: str = None):
+    async def dungeon_info(self, ctx, name: str, difficulty: str = None):
         '''
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
