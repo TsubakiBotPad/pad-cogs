@@ -131,7 +131,7 @@ class SeriesScrollViewState(ViewStateBase):
             self.current_page = self.current_page - 1
             self.current_index = None
         else:
-            # if there are multiple rarities, decrementing 0th page will change rarity (and monsters)
+            # if there are multiple rarities, decrementing first page will change rarity
             if len(self.all_rarities) > 1:
                 rarity_index = self.all_rarities.index(self.rarity)
                 self.rarity = self.all_rarities[rarity_index - 1]
@@ -140,6 +140,26 @@ class SeriesScrollViewState(ViewStateBase):
                 self.pages_in_rarity = len(self.paginated_monsters)
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
+
+        self.monster_list = self.paginated_monsters[self.current_page]
+        self.max_len_so_far = len(self.monster_list)
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    async def increment_page(self, dgcog, ims: dict):
+        if self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self.current_index = None
+        else:
+            # if there are multiple rarities, incrementing last page will change rarity
+            if len(self.all_rarities) > 1:
+                rarity_index = self.all_rarities.index(self.rarity)
+                self.rarity = self.all_rarities[(rarity_index + 1) % len(self.all_rarities)]
+                self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
+                                                                               self.query_settings.server)
+                self.pages_in_rarity = len(self.paginated_monsters)
+                self.current_index = None
+            self.current_page = 0
 
         self.monster_list = self.paginated_monsters[self.current_page]
         self.max_len_so_far = len(self.monster_list)

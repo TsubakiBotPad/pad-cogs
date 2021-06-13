@@ -72,22 +72,12 @@ class SeriesScrollMenu:
         await view_state.decrement_page(dgcog, ims)
         return SeriesScrollMenu.monster_list_control(view_state)
 
-    @staticmethod
-    async def respond_with_right(message: Optional[Message], ims, **data):
-        paginated_monsters = await SeriesScrollViewState.query_from_ims(data['dgcog'], ims)
-        current_page = ims['current_page']
-        if current_page < len(paginated_monsters) - 1:
-            ims['current_page'] = current_page + 1
-            ims['current_index'] = None
-            return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
-        current_rarity_index = ims['all_rarities'].index(ims['rarity'])
-        if current_rarity_index == len(ims['all_rarities']) - 1:
-            ims['rarity'] = ims['all_rarities'][0]
-        else:
-            ims['rarity'] = ims['all_rarities'][current_rarity_index + 1]
-        ims['current_page'] = 0
-        ims['current_index'] = None
-        return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
+    @classmethod
+    async def respond_with_right(cls, message: Optional[Message], ims, **data):
+        dgcog = data['dgcog']
+        view_state = await cls._get_view_state(ims, **data)
+        await view_state.increment_page(dgcog, ims)
+        return SeriesScrollMenu.monster_list_control(view_state)
 
     @staticmethod
     async def respond_with_monster_list(message: Optional[Message], ims, **data):
