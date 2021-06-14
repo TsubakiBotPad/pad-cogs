@@ -704,7 +704,7 @@ class PadGlobal(commands.Cog):
             await ctx.author.send(
                 '__**PAD Which Monster**__ *(also check out {0}pad / {0}padfaq / {0}boards / {0}glossary)*'.format(
                     ctx.prefix))
-            msg = self.which_to_text()
+            msg = await self.which_to_text()
             for page in pagify(msg):
                 await ctx.author.send(box(page))
             return
@@ -774,7 +774,7 @@ class PadGlobal(commands.Cog):
             return
         await self._do_send_which(ctx, to_user, name, definition, timestamp)
 
-    def which_to_text(self):
+    async def which_to_text(self):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
             m = (await self.get_dgcog()).get_monster(monster_id)
@@ -1229,11 +1229,11 @@ class PadGlobal(commands.Cog):
         return name, definition, None
 
     async def send_guide(self, ctx):
-        msg = self.guide_to_text()
+        msg = await self.guide_to_text()
         for page in pagify(msg):
             await ctx.author.send(page)
 
-    def guide_to_text(self):
+    async def guide_to_text(self):
         msg = '__**Dungeon Guides**__'
         dungeon_guide = self.settings.dungeonGuide()
         for term in sorted(dungeon_guide.keys()):
