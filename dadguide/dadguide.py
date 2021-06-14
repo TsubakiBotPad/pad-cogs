@@ -159,7 +159,7 @@ class Dadguide(commands.Cog, IdTest):
         if issues:
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
-                channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(owner))]
+                channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
                 for channel in channels:
                     await channel.send("Use `{}dadguide setfailurechannel <channel>`"
                                        " to move these out of your DMs!"
