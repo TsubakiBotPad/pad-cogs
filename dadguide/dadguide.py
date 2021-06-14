@@ -93,13 +93,28 @@ class Dadguide(commands.Cog, IdTest):
         if GADMIN_COG:
             GADMIN_COG.register_perm("contentadmin")
 
-    async def wait_until_ready(self):
+    async def wait_until_ready(self) -> None:
         """Wait until the Dadguide cog is ready.
 
         Call this from other cogs to wait until Dadguide finishes refreshing its database
         for the first time.
         """
-        return await self._is_ready.wait()
+        await self._is_ready.wait()
+
+    async def wait_until_ready_verbose(self, ctx) -> None:
+        """Wait until the Dadguide cog is ready but loudly.
+
+        Call this from other cogs to wait until Dadguide finishes refreshing its database
+        for the first time.
+        """
+        if self._is_ready.is_set():
+            return
+        msg = await ctx.send("Index is still loading. Please wait...")
+        await self._is_ready.wait()
+        try:
+            await msg.delete()
+        except discord.Forbidden:
+            pass
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
