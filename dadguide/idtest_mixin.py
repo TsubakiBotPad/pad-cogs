@@ -169,6 +169,7 @@ class IdTest:
                         'token': query,
                         'fluff': fluff == 'fluff',
                         'reason': reason,
+                        'server': "COMBINED",
                         'ts': datetime.now().timestamp()})
         await ctx.tick()
 
