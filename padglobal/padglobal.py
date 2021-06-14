@@ -8,6 +8,7 @@ import re
 from collections import defaultdict
 from io import BytesIO
 
+import aiohttp
 import discord
 import prettytable
 import pytz
@@ -311,7 +312,6 @@ class PadGlobal(commands.Cog):
             return
         result = self.c_commands.get(corrected_cmd, None)
         # go a level deeper if trying to append to an alias
-        source_cmd = None
         if result in self.c_commands:
             alias = True
             source_cmd = result
@@ -411,7 +411,7 @@ class PadGlobal(commands.Cog):
         cmdlist = {k: v for k, v in self.c_commands.items() if k in self.settings.boards()}
         await self.send_cmdlist(ctx, cmdlist)
 
-    async def send_cmdlist(self, ctx, cmdlist, write_inline=False):
+    async def send_cmdlist(self, ctx, cmdlist, inline=False):
         if not cmdlist:
             await ctx.send("There are no padglobal commands yet")
             return
@@ -595,7 +595,7 @@ class PadGlobal(commands.Cog):
             await ctx.author.send(page)
 
     async def lookup_boss(self, term, ctx):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
@@ -612,7 +612,7 @@ class PadGlobal(commands.Cog):
 
     async def boss_to_text(self, ctx):
         bosses = self.settings.boss()
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog('Dadguide')
         msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
         for term in sorted(bosses.keys()):
@@ -648,7 +648,7 @@ class PadGlobal(commands.Cog):
         await self._pboss_add(ctx, term, definition, False)
 
     async def _pboss_add(self, ctx, term, definition, need_confirm=True):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
@@ -673,7 +673,7 @@ class PadGlobal(commands.Cog):
     @pboss.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pboss_remove(self, ctx, *, term):
         """Removes a set of boss mechanics."""
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog('Dadguide')
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
@@ -722,7 +722,7 @@ class PadGlobal(commands.Cog):
         await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog('Dadguide')
         db_context = dgcog.database
         padinfo = self.bot.get_cog("PadInfo")
 
@@ -777,7 +777,7 @@ class PadGlobal(commands.Cog):
     def which_to_text(self):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
-            m = (await self.get_dgcog()).get_monster(monster_id)
+            m = self.bot.get_cog("Dadguide").get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(", ")[-1]
@@ -824,7 +824,7 @@ class PadGlobal(commands.Cog):
         await self._pwhich_add(ctx, term, definition, False)
 
     async def _pwhich_add(self, ctx, term, definition, need_confirm=True):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
@@ -859,9 +859,8 @@ class PadGlobal(commands.Cog):
     @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pwhich_remove(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
-        dgcog = await self.get_dgcog()
-        m = dgcog.get_monster(monster_id)
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
+        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -888,7 +887,7 @@ class PadGlobal(commands.Cog):
         await self._concatenate_which(ctx, term, 'append', addition)
 
     async def _concatenate_which(self, ctx, term: str, operation: str, addition):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
@@ -970,7 +969,7 @@ class PadGlobal(commands.Cog):
         for w in self.settings.which():
             w %= 10000
 
-            m = (await self.get_dgcog()).get_monster(w)
+            m = self.bot.get_cog("Dadguide").get_monster(w)
             name = m.name_en.split(', ')[-1]
 
             result = self.settings.which()[w]
@@ -1210,7 +1209,7 @@ class PadGlobal(commands.Cog):
         await ctx.send(self.emojify(text))
 
     async def get_guide_text(self, term: str, ctx):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
 
         term = term.lower()
         if term in self.settings.dungeonGuide():
@@ -1241,7 +1240,7 @@ class PadGlobal(commands.Cog):
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
-            m = (await self.get_dgcog()).get_monster(monster_id)
+            m = self.bot.get_cog("Dadguide").get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(', ')[-1].title()
@@ -1326,8 +1325,8 @@ class PadGlobal(commands.Cog):
         await self._leader_add(ctx, monster_id, definition, False)
 
     async def _leader_add(self, ctx, monster_id: int, definition: str, need_confirm=True):
-        m = (await self.get_dgcog()).get_monster(monster_id)
-        base_monster = (await self.get_dgcog()).database.graph.get_base_monster(m)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
+        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -1344,9 +1343,8 @@ class PadGlobal(commands.Cog):
     @leader.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def leader_remove(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
-        dgcog = await self.get_dgcog()
-        m = dgcog.get_monster(monster_id)
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        m = self.bot.get_cog("Dadguide").get_monster(monster_id)
+        base_monster = self.bot.get_cog("Dadguide").database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -1418,11 +1416,6 @@ class PadGlobal(commands.Cog):
         msg += " in " + humanize_timedelta(timedelta=dstthresh - pst) + "."
 
         await ctx.send(msg)
-
-    async def get_dgcog(self):
-        dgcog = self.bot.get_cog("Dadguide")
-        await dgcog.wait_until_ready()
-        return dgcog
 
     def emojify(self, message):
         emojis = list()

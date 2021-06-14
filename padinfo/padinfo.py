@@ -149,7 +149,8 @@ class PadInfo(commands.Cog):
             try:
                 emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
                 emoji_cache.refresh_from_discord_bot(self.bot)
-                dgcog = await self.get_dgcog()
+                dgcog = self.bot.get_cog('Dadguide')
+                await dgcog.wait_until_ready()
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
@@ -169,6 +170,10 @@ class PadInfo(commands.Cog):
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
         }
         return data
+
+    def get_monster(self, monster_id: int):
+        dgcog = self.bot.get_cog('Dadguide')
+        return dgcog.get_monster(monster_id)
 
     @commands.command()
     async def jpname(self, ctx, *, query: str):
@@ -212,11 +217,10 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED \
-                and query[1:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
+        if query[0] in dgcog.token_maps.ID1_SUPPORTED and query[1:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED \
-                and query[2:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
+        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED and query[2:] in dgcog.indexes[
+            Server.COMBINED].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
@@ -578,9 +582,9 @@ class PadInfo(commands.Cog):
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
-
-        info = button_info.get_info(dgcog, monster)
-        info_str = button_info.to_string(dgcog, monster, info)
+        DGCOG = self.bot.get_cog("Dadguide")
+        info = button_info.get_info(DGCOG, monster)
+        info_str = button_info.to_string(DGCOG, monster, info)
         for page in pagify(info_str):
             await ctx.send(box(page))
 
@@ -1036,8 +1040,7 @@ class PadInfo(commands.Cog):
                 await ctx.send(
                     f'Please input an allowed value, either `double` or `single`.')
                 return
-        await ctx.send(
-            f"Your default `{ctx.prefix}id` lsmultiplier preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await ctx.send(f"Your default `{ctx.prefix}id` lsmultiplier preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
     async def cardplus(self, ctx, value: str):
@@ -1061,8 +1064,7 @@ class PadInfo(commands.Cog):
                 await ctx.send(
                     f'Please input an allowed value, either `297` or `0`.')
                 return
-        await ctx.send(
-            f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await ctx.send(f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @commands.group()
     @checks.is_owner()
@@ -1124,7 +1126,7 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["iddebug", "dbid", "iddb"])
     async def debugid(self, ctx, server: Optional[Server] = Server.COMBINED, *, query):
         """Get helpful id information about a monster"""
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
         mon = await dgcog.find_monster(query, ctx.author.id)
         if mon is None:
             await ctx.send(box("Your query didn't match any monsters."))
@@ -1157,7 +1159,7 @@ class PadInfo(commands.Cog):
         For name tokens, the full word goes second as name token matching is not commutitive
         """
 
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
 
         dist = dgcog.mon_finder.calc_ratio_modifier(s1, s2)
         dist2 = dgcog.mon_finder.calc_ratio_name(s1, s2)
@@ -1185,7 +1187,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def exportmodifiers(self, ctx, server: LiteralConverter["COMBINED", "NA"] = "COMBINED"):
         server = Server(server)
-        DGCOG = await self.get_dgcog()
+        DGCOG = self.bot.get_cog("Dadguide")
         maps = DGCOG.token_maps
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
@@ -1224,7 +1226,9 @@ class PadInfo(commands.Cog):
     async def idmeaning(self, ctx, token, server: Optional[Server] = Server.COMBINED):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
-        DGCOG = await self.get_dgcog()
+        DGCOG = self.bot.get_cog("Dadguide")
+
+        await DGCOG.wait_until_ready()
 
         tms = DGCOG.token_maps
         awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_SKILL_MAP.values() for aw in aws) + ")"
@@ -1266,7 +1270,8 @@ class PadInfo(commands.Cog):
                 ret += f" ({', '.join(f'{m.monster_id}' for m in creators)})" if creators else ''
                 ret += (" ( \u2014> " +
                         str(DGCOG.mon_finder.get_most_eligable_monster(
-                            DGCOG.indexes[server].all_name_tokens[''.join(t)]).monster_id)
+                            DGCOG.indexes[server].all_name_tokens[''.join(t)],
+                            DGCOG).monster_id)
                         + ")\n")
 
         def additmods(ms, om):
@@ -1320,7 +1325,7 @@ class PadInfo(commands.Cog):
                 return
             selected_monster_id = int(selected_monster_id.strip())
 
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
 
         bestmatch, matches, _, _ = await dgcog.mon_finder.find_monster_debug(query)
 
@@ -1376,7 +1381,7 @@ class PadInfo(commands.Cog):
 
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
-        dgcog = await self.get_dgcog()
+        dgcog = self.bot.get_cog("Dadguide")
 
         monster_list = await IdSearchViewState.do_query(dgcog, query, ctx.author.id)
 
