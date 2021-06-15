@@ -1,16 +1,15 @@
 import logging
 import os
+from collections import OrderedDict
 
 import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
-
-from tsutils import Menu
 from redbot.core import commands, data_manager
-from dadguide.dungeon_context import DungeonContext
-from dungeon.enemy_skills_pb2 import MonsterBehavior
-from collections import OrderedDict
+from tsutils import Menu
 
+# from dadguide.dungeon_context import DungeonContext
+from dungeon.enemy_skills_pb2 import MonsterBehavior
 # If these are unused remember to remove
 from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.menu_map import dungeon_menu_map
@@ -19,36 +18,6 @@ from dungeon.view.dungeon import DungeonViewState
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
-DungeonNickNames = {
-    'a1': 1022001,
-    'arena1': 102201,
-    'bipolar goddess 1': 1022001,
-    'bp1': 1022001,
-    'a2': 1022002,
-    'arena2': 102202,
-    'bipolar goddess 2': 1022002,
-    'bp2': 1022002,
-    'a3': 1022003,
-    'arena3': 102203,
-    'bipolar goddess 3': 1022003,
-    'bp3': 1022003,
-    'a4': 1022004,
-    'arena4': 102204,
-    'three hands of fate': 1022004,
-    'thof': 1022004,
-    'a5': 1022005,
-    'arena5': 102205,
-    'incarnation of worlds': 1022005,
-    'iow': 1022005,
-    'aa1': 2660001,
-    'aa2': 2660002,
-    'aa3': 2660003,
-    'aa4': 2660004,
-    'shura1': 4400001,
-    'shura2': 4401001,
-    'iwoc': 4400001,
-    'alt. iwoc': 4400001,
-}
 
 
 def _data_file(file_name: str) -> str:
@@ -57,11 +26,6 @@ def _data_file(file_name: str) -> str:
 
 RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
-
-# From pad-data-pipeline
-"""
-Give a condition type, output a player readable string that actually explains what it does
-"""
 
 
 class DungeonCog(commands.Cog):
@@ -112,7 +76,7 @@ class DungeonCog(commands.Cog):
         await dgcog.wait_until_ready()
         return dgcog
 
-    async def find_dungeon_from_name2(self, ctx, name: str, database: DungeonContext, difficulty: str = None):
+    async def find_dungeon_from_name2(self, ctx, name: str, database: "DungeonContext", difficulty: str = None):
         dungeon = database.get_dungeons_from_nickname(name.lower())
         if dungeon is None:
             dungeons = database.get_dungeons_from_name(name)
@@ -241,8 +205,11 @@ class DungeonCog(commands.Cog):
                                           len(pm_dungeon[0]), 0,
                                           int(dungeon.sub_dungeons[0].technical), dg_cog.database, verbose=False,
                                           reaction_list=full_reaction_list)
-            await ctx.send("EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja, dungeon.sub_dungeons[0].name_ja))
+            await ctx.send(
+                "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
+                                                dungeon.sub_dungeons[0].name_ja))
             message = await menu.create(ctx, view_state)
+
 
 '''    @commands.command()
     async def spinner_help(self, ctx, spin_time, move_time):

@@ -1,10 +1,10 @@
-import shutil
 import os
+import shutil
 
 from redbot.core import data_manager
 
-from .database_manager import DadguideDatabase
 from .database_context import DbContext
+from .database_manager import DadguideDatabase
 from .dungeon_context import DungeonContext
 from .monster_graph import MonsterGraph
 

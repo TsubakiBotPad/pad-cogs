@@ -1,8 +1,4 @@
-import logging
-from collections import OrderedDict
-'''
-A class that represents a group of skills. 
-'''
+
 class GroupedSkills(object):
     """This is a container class that holds the top level condition, and its processed children"""
     def __init__(self, condition: str, type, parent= None):
@@ -42,6 +38,3 @@ class GroupedSkills(object):
         for g in self.nested_groups:
             skill_copy.extend(await g.collect_skills())
         return skill_copy
-
-
-    # return output

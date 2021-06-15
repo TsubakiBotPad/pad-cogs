@@ -6,10 +6,10 @@ from .database_manager import DadguideDatabase
 from .dungeon_context import DungeonContext
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
+from .models.enum_types import DEFAULT_SERVER
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.series_model import SeriesModel
 from .monster_graph import MonsterGraph
-from .models.enum_types import DEFAULT_SERVER
 
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,

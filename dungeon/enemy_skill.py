@@ -1,11 +1,6 @@
-import logging
-import re
 from typing import List
 
-import discord
-
 from dungeon.grouped_skillls import GroupedSkills
-from dungeon.models.EnemySkill import EnemySkill
 
 
 # This is a representation of a processed enemy skill. It contains the name, effect,
@@ -23,10 +18,10 @@ class ProcessedSkill(object):
         self.type = self.find_type()
         self.is_passive_preempt = len(self.process_type()) != 0
 
-    '''
-    Helper function to determine whether the skill is a preempt/passive from the parent group
-    '''
     def find_type(self):
+        '''
+            Helper function to determine whether the skill is a preempt/passive from the parent group
+            '''
         up = self.parent
         while up is not None:
             if up.type is not None:
@@ -42,6 +37,7 @@ class ProcessedSkill(object):
     '''
     When called returns the strings of a skill in the following format: [emoji, effect, condition]
     '''
+
     def give_string(self, indent: str = "", verbose: bool = False):
         components = [[], None, None]  # skills (condensed), effect, condition
         # if no skills/not processed just return (N/A) as the skill

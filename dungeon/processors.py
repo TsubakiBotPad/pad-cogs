@@ -3,7 +3,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from dadguide.database_context import DbContext
 from dadguide.models.encounter_model import EncounterModel
 from dadguide.models.enemy_skill_model import EnemySkillModel
-from dungeon.SafeDict import SafeDict
+from dungeon.safe_dict import SafeDict
 from dungeon.dungeon_monster import DungeonMonster
 from dungeon.enemy_skill import ProcessedSkill
 from dungeon.enemy_skills_pb2 import Condition, MonsterBehavior, Behavior, BehaviorGroup

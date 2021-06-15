@@ -11,7 +11,6 @@ class EnemySkillModel(BaseModel):
         self.max_hits = kwargs['max_hits']
         self.atk_mult = kwargs['atk_mult']
 
-
     def to_dict(self):
         return {
             'enemy_skill_id': self.enemy_skill_id,

@@ -147,7 +147,8 @@ WHERE
 enemy_data.enemy_id = {}
 '''
 
-DungeonNickNames = {
+# TODO: Move to gdoc
+DUNGEON_NICKNAMES = {
     'a1': 1022001,
     'arena1': 102201,
     'bipolar goddess 1': 1022001,
@@ -178,6 +179,7 @@ DungeonNickNames = {
     'alt. iwoc': 4400001,
 }
 
+
 class DungeonContext(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
@@ -204,9 +206,9 @@ class DungeonContext(object):
         return dungeons
 
     def get_dungeons_from_nickname(self, name: str):
-        if name not in DungeonNickNames:
+        if name not in DUNGEON_NICKNAMES:
             return None
-        sub_id = DungeonNickNames.get(name)
+        sub_id = DUNGEON_NICKNAMES.get(name)
         mega = self.database.query_many(nickname_query.format(sub_id), ())
         ems = []
         for enc in mega:
@@ -239,8 +241,6 @@ class DungeonContext(object):
             encounter_models.append(EncounterModel(edm, **f))
         return encounter_models
 
-
-
     def get_enemy_skill(self, enemy_skill_id):
         enemy_skill_query = self.database.query_one(skill_query.format(enemy_skill_id), ())
         return EnemySkillModel(**enemy_skill_query)
@@ -261,8 +261,3 @@ class DungeonContext(object):
         elif len(sub_dungeons) > 2:
             return 1
         return sub_dungeons[0]['sub_dungeon_id']
-
-        
-
-
-

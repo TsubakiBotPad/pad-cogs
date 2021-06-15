@@ -7,7 +7,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
-from dungeon.SafeDict import SafeDict
+from dungeon.safe_dict import SafeDict
 from dungeon.enemy_skills_pb2 import MonsterBehavior
 from dungeon.processors import process_monster
 from padinfo.common.config import UserConfig
