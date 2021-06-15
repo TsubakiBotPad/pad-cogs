@@ -21,17 +21,15 @@ class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id,
-                 paginated_monsters: List[List["MonsterModel"]], current_page, rarity: int, pages_in_rarity: int,
+                 paginated_monsters: List[List["MonsterModel"]], current_page, rarity: int,
                  query_settings: QuerySettings,
                  all_rarities: List[int],
                  title, message,
                  current_index: int = None,
-                 max_len_so_far: int = None,
                  reaction_list=None, extra_state=None,
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
-        self.pages_in_rarity = pages_in_rarity
         self.current_index = current_index
         self.all_rarities = all_rarities
         self.paginated_monsters = paginated_monsters
@@ -45,8 +43,18 @@ class SeriesScrollViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
-        self.monster_list = paginated_monsters[current_page]
-        self.max_len_so_far = max(max_len_so_far or len(self.monster_list), len(self.monster_list))
+
+    @property
+    def monster_list(self) -> List["MonsterModel"]:
+        return self.paginated_monsters[self.current_page]
+
+    @property
+    def max_len_so_far(self) -> int:
+        return len(self.monster_list)
+
+    @property
+    def pages_in_rarity(self) -> int:
+        return len(self.paginated_monsters)
 
     def serialize(self):
         ret = super().serialize()
@@ -79,7 +87,6 @@ class SeriesScrollViewState(ViewStateBase):
         current_page = ims['current_page']
         title = ims['title']
 
-        pages_in_rarity = len(paginated_monsters)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
@@ -87,16 +94,13 @@ class SeriesScrollViewState(ViewStateBase):
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
-        monster_list = paginated_monsters[current_page]
-        max_len_so_far = max(ims['max_len_so_far'] or len(monster_list), len(monster_list))
         current_index = ims.get('current_index')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     paginated_monsters, current_page, rarity, pages_in_rarity, query_settings,
+                                     paginated_monsters, current_page, rarity, query_settings,
                                      all_rarities,
                                      title, message,
                                      current_index=current_index,
-                                     max_len_so_far=max_len_so_far,
                                      reaction_list=reaction_list,
                                      extra_state=ims,
                                      child_message_id=child_message_id)
@@ -137,12 +141,9 @@ class SeriesScrollViewState(ViewStateBase):
                 self.rarity = self.all_rarities[rarity_index - 1]
                 self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
                                                                                self.query_settings.server)
-                self.pages_in_rarity = len(self.paginated_monsters)
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
 
-        self.monster_list = self.paginated_monsters[self.current_page]
-        self.max_len_so_far = len(self.monster_list)
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
@@ -157,12 +158,9 @@ class SeriesScrollViewState(ViewStateBase):
                 self.rarity = self.all_rarities[(rarity_index + 1) % len(self.all_rarities)]
                 self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
                                                                                self.query_settings.server)
-                self.pages_in_rarity = len(self.paginated_monsters)
                 self.current_index = None
             self.current_page = 0
 
-        self.monster_list = self.paginated_monsters[self.current_page]
-        self.max_len_so_far = len(self.monster_list)
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
