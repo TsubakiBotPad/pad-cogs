@@ -1,23 +1,18 @@
 import logging
 import os
-from collections import OrderedDict
 
 import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands, data_manager
-from tsutils import Menu
 
-# from dadguide.dungeon_context import DungeonContext
 from dungeon.enemy_skills_pb2 import MonsterBehavior
-# If these are unused remember to remove
 from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.menu_map import dungeon_menu_map
 from dungeon.view.dungeon import DungeonViewState
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
-
 
 
 def _data_file(file_name: str) -> str:
@@ -29,24 +24,15 @@ RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
 
 class DungeonCog(commands.Cog):
-    """My custom cog"""
+    """
+    Contains commands that are display information about dungeons.
+    Right now only one command, dungeon_info which displays information such as spawns in a dungeon.
+    """
     menu_map = dungeon_menu_map
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.menu = Menu(bot)
-        self.previous_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
-        self.previous_page = '\N{BLACK LEFT-POINTING TRIANGLE}'
-        self.next_page = '\N{BLACK RIGHT-POINTING TRIANGLE}'
-        self.next_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-        self.next_page = '📖'
-        self.remove_emoji = self.menu.emoji['no']
-        self.next_floor = '\N{UPWARDS BLACK ARROW}'
-        self.previous_floor = '\N{DOWNWARDS BLACK ARROW}'
-        self.current_monster = '👹'
-        self.verbose_monster = '📜'
-        self.preempt_monster = '⚡'
 
     async def load_emojis(self):
         await self.bot.wait_until_ready()
@@ -77,6 +63,9 @@ class DungeonCog(commands.Cog):
         return dgcog
 
     async def find_dungeon_from_name2(self, ctx, name: str, database: "DungeonContext", difficulty: str = None):
+        """
+        Gets the sub_dungeon model given the name of a dungeon and its difficulty.
+        """
         dungeon = database.get_dungeons_from_nickname(name.lower())
         if dungeon is None:
             dungeons = database.get_dungeons_from_name(name)
@@ -108,26 +97,6 @@ class DungeonCog(commands.Cog):
             dungeon = dungeon[0]
         return dungeon
 
-    async def make_emoji_dictionary(self, ctx, scroll_monsters=None, scroll_floors=None, compact_page=None,
-                                    verbose_page=None, preempt_page=None, show=False):
-        if scroll_monsters is None:
-            scroll_monsters = []
-        if scroll_floors is None:
-            scroll_floors = []
-        emoji_to_embed = OrderedDict()
-        emoji_to_embed[self.current_monster] = compact_page
-        emoji_to_embed[self.verbose_monster] = verbose_page
-        emoji_to_embed[self.preempt_monster] = preempt_page
-        emoji_to_embed[self.previous_monster_emoji] = None
-        emoji_to_embed[self.next_monster_emoji] = None
-        emoji_to_embed[self.previous_floor] = None
-        emoji_to_embed[self.next_floor] = None
-        if show:
-            emoji_to_embed[self.next_page] = None
-
-        emoji_to_embed[self.menu.emoji['no']] = self.menu.reaction_delete_message
-        return emoji_to_embed
-
     async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=60):
         if starting_menu_emoji not in emoji_to_embed.emoji_dict:
             # Selected menu wasn't generated for this monster
@@ -147,22 +116,19 @@ class DungeonCog(commands.Cog):
             logger.error('Menu failure', exc_info=True)
 
     @commands.command()
-    async def dungeon_info(self, ctx, name: str, difficulty: str = None):
+    async def dgid(self, ctx, name: str, difficulty: str = None):
         '''
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
         '''
         # load dadguide cog for database access
-        start_selection = {1: self.current_monster,
-                           2: self.verbose_monster,
-                           3: self.preempt_monster}
-        dg_cog = self.bot.get_cog('Dadguide')
-        if not dg_cog:
+        dgcog = self.bot.get_cog('Dadguide')
+        if not dgcog:
             logger.warning("Cog 'Dadguide' not loaded")
             return
         logger.info('Waiting until DG is ready')
-        await dg_cog.wait_until_ready()
-        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dg_cog.database.dungeon,
+        await dgcog.wait_until_ready()
+        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dgcog.database.dungeon,
                                                      difficulty=difficulty)
 
         if dungeon is not None:
@@ -203,7 +169,7 @@ class DungeonCog(commands.Cog):
             view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0],
                                           dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                           len(pm_dungeon[0]), 0,
-                                          int(dungeon.sub_dungeons[0].technical), dg_cog.database, verbose=False,
+                                          int(dungeon.sub_dungeons[0].technical), dgcog.database, verbose=False,
                                           reaction_list=full_reaction_list)
             await ctx.send(
                 "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
