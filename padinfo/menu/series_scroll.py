@@ -78,13 +78,10 @@ class SeriesScrollMenu:
         await view_state.increment_page(dgcog, ims)
         return SeriesScrollMenu.monster_list_control(view_state)
 
-    @staticmethod
-    async def respond_with_monster_list(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
-        user_config = data['user_config']
-        view_state = await SeriesScrollViewState.deserialize(dgcog, user_config, ims)
-        control = SeriesScrollMenu.monster_list_control(view_state)
-        return control
+    @classmethod
+    async def respond_with_monster_list(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        return SeriesScrollMenu.monster_list_control(view_state)
 
     @classmethod
     async def respond_with_previous_monster(cls, message: Optional[Message], ims, **data):
