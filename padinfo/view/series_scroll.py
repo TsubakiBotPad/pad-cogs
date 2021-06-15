@@ -5,7 +5,6 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji, embed_footer_with_state
-from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
