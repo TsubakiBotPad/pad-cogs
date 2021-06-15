@@ -36,7 +36,7 @@ class SeriesScrollViewState(ViewStateBase):
         self.series_id = series_id
         self.rarity = rarity
         self.query_settings = query_settings
-        self.message = message
+        self.idle_message = message
         self.child_message_id = child_message_id
         self.title = title
         self.reaction_list = reaction_list
@@ -72,7 +72,7 @@ class SeriesScrollViewState(ViewStateBase):
             'all_rarities': self.all_rarities,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
-            'message': self.message,
+            'idle_message': self.idle_message,
             'max_len_so_far': self.max_len_so_far,
             'current_index': self.current_index,
         })
@@ -84,7 +84,8 @@ class SeriesScrollViewState(ViewStateBase):
             'reaction_list': emoji_names,
             'menu_type': menu_type,
             'resolved_monster_id': self.current_monster_id,
-            'query_settings': self.query_settings.serialize()
+            'query_settings': self.query_settings.serialize(),
+            'idle_message': self.idle_message
         }
         return extra_ims
 
@@ -108,11 +109,12 @@ class SeriesScrollViewState(ViewStateBase):
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
         current_index = ims.get('current_index')
+        idle_message = ims.get('idle_message')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
                                      paginated_monsters, current_page, rarity, query_settings,
                                      all_rarities,
-                                     title, message,
+                                     title, idle_message,
                                      current_index=current_index,
                                      reaction_list=reaction_list,
                                      extra_state=ims,
