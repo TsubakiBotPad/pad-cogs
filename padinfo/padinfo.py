@@ -672,9 +672,9 @@ class PadInfo(commands.Cog):
             # The user could delete the menu before we can do this
             pass
 
-    @commands.command(aliases=['seriesscroll', 'ss'])
+    @commands.command(aliases=['collabscroll', 'ss'])
     @checks.bot_has_permissions(embed_links=True)
-    async def collabscroll(self, ctx, *, query):
+    async def seriesscroll(self, ctx, *, query):
         dgcog = await self.get_dgcog()
         monster = await dgcog.find_monster(query, ctx.author.id)
 
