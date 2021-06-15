@@ -53,6 +53,10 @@ class SeriesScrollViewState(ViewStateBase):
         return len(self.monster_list)
 
     @property
+    def current_monster_id(self) -> int:
+        return self.monster_list[self.current_index].monster_id
+
+    @property
     def pages_in_rarity(self) -> int:
         return len(self.paginated_monsters)
 
@@ -74,6 +78,16 @@ class SeriesScrollViewState(ViewStateBase):
             'current_index': self.current_index,
         })
         return ret
+
+    def get_serialized_child_extra_ims(self, emoji_names, menu_type):
+        extra_ims = {
+            'is_child': True,
+            'reaction_list': emoji_names,
+            'menu_type': menu_type,
+            'resolved_monster_id': self.current_monster_id,
+            'query_settings': self.query_settings.serialize()
+        }
+        return extra_ims
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
@@ -183,6 +197,9 @@ class SeriesScrollViewState(ViewStateBase):
             return
         await self.increment_page(dgcog, ims)
         self.current_index = 0
+
+    def set_index(self, new_index: int):
+        self.current_index = new_index
 
 
 class SeriesScrollView:
