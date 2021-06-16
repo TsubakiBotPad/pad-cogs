@@ -109,7 +109,6 @@ class SeriesScrollViewState(ViewStateBase):
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
-        message = ims.get('message')
         current_index = ims.get('current_index')
         current_monster_list = paginated_monsters[current_page]
         max_len_so_far = max(ims['max_len_so_far'] or len(current_monster_list), len(current_monster_list))
