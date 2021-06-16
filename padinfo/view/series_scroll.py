@@ -25,6 +25,7 @@ class SeriesScrollViewState(ViewStateBase):
                  all_rarities: List[int],
                  title, message,
                  current_index: int = None,
+                 max_len_so_far: int = None,
                  reaction_list=None, extra_state=None,
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
@@ -42,14 +43,15 @@ class SeriesScrollViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
+        current_monster_list = paginated_monsters[current_page]
+        self.max_len_so_far = max(max_len_so_far or len(current_monster_list), len(self.monster_list))
+
+    def _update_max_len(self):
+        self.max_len_so_far = max(self.max_len_so_far or len(self.monster_list), len(self.monster_list))
 
     @property
     def monster_list(self) -> List["MonsterModel"]:
         return self.paginated_monsters[self.current_page]
-
-    @property
-    def max_len_so_far(self) -> int:
-        return len(self.monster_list)
 
     @property
     def current_monster_id(self) -> int:
@@ -109,6 +111,8 @@ class SeriesScrollViewState(ViewStateBase):
         child_message_id = ims.get('child_message_id')
         message = ims.get('message')
         current_index = ims.get('current_index')
+        current_monster_list = paginated_monsters[current_page]
+        max_len_so_far = max(ims['max_len_so_far'] or len(current_monster_list), len(current_monster_list))
         idle_message = ims.get('idle_message')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
@@ -116,6 +120,7 @@ class SeriesScrollViewState(ViewStateBase):
                                      all_rarities,
                                      title, idle_message,
                                      current_index=current_index,
+                                     max_len_so_far=max_len_so_far,
                                      reaction_list=reaction_list,
                                      extra_state=ims,
                                      child_message_id=child_message_id)
@@ -159,6 +164,7 @@ class SeriesScrollViewState(ViewStateBase):
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
 
+        self._update_max_len()
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
@@ -176,6 +182,7 @@ class SeriesScrollViewState(ViewStateBase):
                 self.current_index = None
             self.current_page = 0
 
+        self._update_max_len()
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
