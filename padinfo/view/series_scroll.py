@@ -206,7 +206,9 @@ class SeriesScrollViewState(ViewStateBase):
         self.current_index = 0
 
     def set_index(self, new_index: int):
-        self.current_index = new_index
+        # don't want to go out of range, which will forget current index, break next, and break prev
+        if new_index < len(self.monster_list):
+            self.current_index = new_index
 
 
 class SeriesScrollView:

@@ -101,9 +101,13 @@ class SeriesScrollMenu:
     async def respond_with_delete(message: Message, ims, **data):
         return await message.delete()
 
-    @staticmethod
-    async def respond_with_n(message: Optional[Message], ims, n, **data):
-        ims['current_index'] = n
+    @classmethod
+    async def respond_with_n(cls, message: Optional[Message], ims, n, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        current_monster_list = view_state.paginated_monsters[view_state.current_page]
+        # ims will be immediately be deserialized and shown, so don't change if n is out of range
+        if n < len(current_monster_list):
+            ims['current_index'] = n
         return await SeriesScrollMenu.respond_with_monster_list(message, ims, **data)
 
     @staticmethod
