@@ -43,15 +43,16 @@ class SeriesScrollViewState(ViewStateBase):
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
-        current_monster_list = paginated_monsters[current_page]
-        self.max_len_so_far = max(max_len_so_far or len(current_monster_list), len(self.monster_list))
-
-    def _update_max_len(self):
-        self.max_len_so_far = max(self.max_len_so_far or len(self.monster_list), len(self.monster_list))
+        self._max_len_so_far = max(max_len_so_far or len(self.monster_list), len(self.monster_list))
 
     @property
     def monster_list(self) -> List["MonsterModel"]:
         return self.paginated_monsters[self.current_page]
+
+    @property
+    def max_len_so_far(self) -> int:
+        self._max_len_so_far = max(len(self.monster_list), self._max_len_so_far)
+        return self._max_len_so_far
 
     @property
     def current_monster_id(self) -> int:
@@ -163,7 +164,6 @@ class SeriesScrollViewState(ViewStateBase):
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
 
-        self._update_max_len()
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
@@ -181,7 +181,6 @@ class SeriesScrollViewState(ViewStateBase):
                 self.current_index = None
             self.current_page = 0
 
-        self._update_max_len()
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
