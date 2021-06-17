@@ -11,7 +11,7 @@ from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
 from dungeon.menu.menu_map import dungeon_menu_map
 from dungeon.view.dungeon import DungeonViewState
 
-logger = logging.getLogger('red.padbot-cogs.padinfo')
+logger = logging.getLogger('red.padbot-cogs.dungeon')
 EMBED_NOT_GENERATED = -1
 
 

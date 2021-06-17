@@ -4,15 +4,12 @@ from typing import List
 import discord
 from discord import Embed
 from discordmenu.embed.base import Box
-from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
-from dungeon.safe_dict import SafeDict
 from dungeon.enemy_skills_pb2 import MonsterBehavior
 from dungeon.processors import process_monster
-from padinfo.common.config import UserConfig
 from padinfo.view.components.view_state_base import ViewStateBase
 
 
