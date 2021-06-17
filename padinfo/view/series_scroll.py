@@ -191,7 +191,7 @@ class SeriesScrollViewState(ViewStateBase):
         if self.current_index > 0:
             self.current_index = self.current_index - 1
             return
-        await self.decrement_page(dgcog, ims)
+        await self.decrement_page(dgcog)
         self.current_index = len(self.monster_list) - 1
 
     async def increment_index(self, dgcog):
@@ -201,7 +201,7 @@ class SeriesScrollViewState(ViewStateBase):
         if self.current_index < len(self.monster_list) - 1:
             self.current_index = self.current_index + 1
             return
-        await self.increment_page(dgcog, ims)
+        await self.increment_page(dgcog)
         self.current_index = 0
 
     def set_index(self, new_index: int):
