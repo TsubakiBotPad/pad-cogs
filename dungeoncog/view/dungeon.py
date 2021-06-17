@@ -1,27 +1,27 @@
 import random
-from typing import List
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Embed
 from discordmenu.embed.base import Box
-from discordmenu.emoji.emoji_cache import emoji_cache
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
+from discordmenu.embed.view_state import ViewState
 from tsutils import embed_footer_with_state
 
-from dungeon.safe_dict import SafeDict
-from dungeon.enemy_skills_pb2 import MonsterBehavior
-from dungeon.processors import process_monster
-from padinfo.common.config import UserConfig
-from padinfo.view.components.view_state_base import ViewStateBase
+from dungeoncog.enemy_skills_pb2 import MonsterBehavior
+from dungeoncog.processors import process_monster
+
+if TYPE_CHECKING:
+    from dadguide.models.encounter_model import EncounterModel
 
 
-class DungeonViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, color, pm,
-                 sub_dungeon_id, num_floors, floor, num_spawns, floor_index, technical, database, page=0, verbose=False,
-                 reaction_list: List[str] = None):
-        super().__init__(original_author_id, menu_type, raw_query, reaction_list=reaction_list)
-        self.pm = pm
+class DungeonViewState(ViewState):
+    def __init__(self, original_author_id, menu_type, raw_query, color, encounter: "EncounterModel",
+                 sub_dungeon_id, num_floors, floor, num_spawns, floor_index, technical, database,
+                 page=0, verbose=False):
+        super().__init__(original_author_id, menu_type, raw_query)
+        self.encounter = encounter
         self.sub_dungeon_id = sub_dungeon_id
         self.num_floors = num_floors
         self.floor = floor
@@ -88,8 +88,7 @@ class DungeonViewState(ViewStateBase):
 
         return cls(original_author_id, menu_type, raw_query, color, encounter_model, sub_dungeon_id,
                    num_floors, floor, len(floor_models), floor_index,
-                   technical, dgcog.database, verbose=verbose,
-                   reaction_list=ims.get('reaction_list'), page=page)
+                   technical, dgcog.database, verbose=verbose, page=page)
 
 
 class DungeonView:
@@ -114,8 +113,8 @@ class DungeonView:
         Helper function that indents text for the embed
         """
         ret = ""
-        for l in range(level):
-            if l == 0:
+        for lv in range(level):
+            if lv == 0:
                 ret += "> "
             else:
                 ret += "\u200b \u200b \u200b \u200b \u200b "
@@ -150,23 +149,26 @@ class DungeonView:
     def embed(state: DungeonViewState):
         fields = []
         mb = MonsterBehavior()
-        encounter_model = state.pm
-        if (encounter_model.enemy_data is not None) and (encounter_model.enemy_data.behavior is not None):
+        encounter_model = state.encounter
+        if encounter_model.enemy_data is not None and encounter_model.enemy_data.behavior is not None:
             mb.ParseFromString(encounter_model.enemy_data.behavior)
         else:
             mb = None
         monster = process_monster(mb, encounter_model, state.database)
-        monster_embed: Embed = \
-            DungeonView.make_embed(monster, verbose=state.verbose, spawn=[state.floor_index + 1, state.num_spawns],
-                               floor=[state.floor, state.num_floors], technical=state.technical)[state.page]
+
+        monster_embed: Embed = DungeonView.make_embed(
+            monster, verbose=state.verbose, spawn=[state.floor_index + 1, state.num_spawns],
+            floor=[state.floor, state.num_floors], technical=state.technical
+        )[state.page]
+
         hp = f'{monster.hp:,}'
         atk = f'{monster.atk:,}'
         defense = f'{monster.defense:,}'
         turns = f'{monster.turns:,}'
-
         title = monster_embed.title
         desc = monster_embed.description
         me_fields = monster_embed.fields
+
         for f in me_fields:
             fields.append(
                 EmbedField(f.name, Box(*[f.value]))
@@ -199,16 +201,21 @@ class DungeonView:
         # We create two pages as monsters at max will only ever require two pages of embeds
         if spawn is not None:
             embed = discord.Embed(
-                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name, dungeon_monster.level, spawn[0],
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
+                                                                                   dungeon_monster.level, spawn[0],
                                                                                    spawn[1],
                                                                                    floor[0], floor[1]),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}', f'{dungeon_monster.atk:,}', f'{dungeon_monster.defense:,}',
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                                                                   f'{dungeon_monster.atk:,}',
+                                                                   f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc)
             )
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}', f'{dungeon_monster.atk:,}', f'{dungeon_monster.defense:,}',
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                                                                   f'{dungeon_monster.atk:,}',
+                                                                   f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc)
             )
 
@@ -233,9 +240,9 @@ class DungeonView:
         current_embed = 0
         length = len(embed.title) + len(embed.description) + 1
         first = None
-        for l in lines:
-            for comp in l[1]:
-                DungeonView.embed_helper(l[0], names, values, comp)
+        for line in lines:
+            for comp in line[1]:
+                DungeonView.embed_helper(line[0], names, values, comp)
 
         # We add the name/value pairs to the actual embed. If needed we go to the second page
         if len(values[len(values) - 1]) == 0:
@@ -266,7 +273,8 @@ class DungeonView:
         return embeds
 
     @staticmethod
-    async def make_preempt_embed(dungeon_monster, spawn: "list[int]" = None, floor: "list[int]" = None, technical: int = None):
+    async def make_preempt_embed(dungeon_monster, spawn: "list[int]" = None, floor: "list[int]" = None,
+                                 technical: int = None):
         """
         Currently unused: when called it creates an embed that only contains embed information.
         """
@@ -279,13 +287,18 @@ class DungeonView:
             desc = ""
         if spawn is not None:
             embed = discord.Embed(
-                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(dungeon_monster.name, dungeon_monster.level, spawn[0], spawn[1],
+                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(dungeon_monster.name,
+                                                                             dungeon_monster.level, spawn[0], spawn[1],
                                                                              floor[0], floor[1]),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}', f'{dungeon_monster.atk:,}', f'{dungeon_monster.defense:,}',
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                                                                   f'{dungeon_monster.atk:,}',
+                                                                   f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc))
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}', f'{dungeon_monster.atk:,}', f'{dungeon_monster.defense:,}',
+                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                                                                   f'{dungeon_monster.atk:,}',
+                                                                   f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc))
         return [embed, discord.Embed(title="test", desc="test")]

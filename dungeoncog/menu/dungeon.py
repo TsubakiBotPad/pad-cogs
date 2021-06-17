@@ -1,10 +1,11 @@
 from typing import Optional
+
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.panes import MenuPanes, emoji_buttons
 
-from dungeon.view.dungeon import DungeonViewState, DungeonView
+from dungeoncog.view.dungeon import DungeonViewState, DungeonView
 
 
 class DungeonNames:
@@ -90,14 +91,10 @@ class DungeonMenu:
     def message_control(state: DungeonViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [DungeonView.embed(state)],
-            reaction_list
+            [*DungeonMenuPanes.DATA.keys()]
         )
-
-
-
 
 
 class DungeonEmoji:
@@ -106,8 +103,8 @@ class DungeonEmoji:
     next_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
     next_floor = '\N{UPWARDS BLACK ARROW}'
     previous_floor = '\N{DOWNWARDS BLACK ARROW}'
-    next_page = '📖'
-    verbose = '📜'
+    next_page = '\N{OPEN BOOK}'
+    verbose = '\N{SCROLL}'
 
 
 class DungeonMenuPanes(MenuPanes):

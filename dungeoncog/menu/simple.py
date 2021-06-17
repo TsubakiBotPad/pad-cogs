@@ -5,7 +5,7 @@ from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.panes import MenuPanes, emoji_buttons
 
-from dungeon.view.simple import SimpleViewState, SimpleView
+from dungeoncog.view.simple import SimpleViewState, SimpleView
 
 
 class SimpleNames:
@@ -26,7 +26,7 @@ class SimpleMenu:
     async def respond_with_message(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
         color = data.get('color')
-        view_state = await SimpleViewState.deserialize(dgcog, color, ims)
+        view_state = await SimpleViewState.deserialize(dgcog, color, ims, 0)
         control = SimpleMenu.message_control(view_state)
         return control
 
@@ -38,7 +38,6 @@ class SimpleMenu:
     async def respond_with_right(message: Optional[Message], ims, **data):
         dgcog = data.get('dgcog')
         color = data.get('color')
-        print("test")
         view_state = await SimpleViewState.deserialize(dgcog, color, ims, 1)
         control = SimpleMenu.message_control(view_state)
         return control

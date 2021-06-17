@@ -7,144 +7,144 @@ from dadguide.models.sub_dungeon_model import SubDungeonModel
 
 nickname_query = '''
 SELECT
-enemy_data.behavior,
-encounters.encounter_id,
-encounters.dungeon_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence,
-sub_dungeons.name_ja AS sub_name_ja,
-sub_dungeons.name_en AS sub_name_en,
-sub_dungeons.name_ko AS sub_name_ko,
-sub_dungeons.technical,
-dungeons.name_ja,
-dungeons.name_en,
-dungeons.name_ko,
-dungeons.dungeon_type
+    enemy_data.behavior,
+    encounters.encounter_id,
+    encounters.dungeon_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence,
+    sub_dungeons.name_ja AS sub_name_ja,
+    sub_dungeons.name_en AS sub_name_en,
+    sub_dungeons.name_ko AS sub_name_ko,
+    sub_dungeons.technical,
+    dungeons.name_ja,
+    dungeons.name_en,
+    dungeons.name_ko,
+    dungeons.dungeon_type
 FROM
-encounters
-LEFT OUTER JOIN dungeons on encounters.dungeon_id = dungeons.dungeon_id
-LEFT OUTER JOIN enemy_data on encounters.enemy_id = enemy_data.enemy_id
-LEFT OUTER JOIN monsters on encounters.monster_id = monsters.monster_id
-LEFT OUTER JOIN sub_dungeons on sub_dungeons.sub_dungeon_id = encounters.sub_dungeon_id
+    encounters
+    LEFT OUTER JOIN dungeons on encounters.dungeon_id = dungeons.dungeon_id
+    LEFT OUTER JOIN enemy_data on encounters.enemy_id = enemy_data.enemy_id
+    LEFT OUTER JOIN monsters on encounters.monster_id = monsters.monster_id
+    LEFT OUTER JOIN sub_dungeons on sub_dungeons.sub_dungeon_id = encounters.sub_dungeon_id
 WHERE
-encounters.sub_dungeon_id = {}
+    encounters.sub_dungeon_id = {}
 ORDER BY
-encounters.sub_dungeon_id,
-encounters.stage
+    encounters.sub_dungeon_id,
+    encounters.stage
 '''
 
 sub_dungeon_query = '''
 SELECT
-sub_dungeons.sub_dungeon_id,
-sub_dungeons.dungeon_id,
-sub_dungeons.name_ja,
-sub_dungeons.name_en,
-sub_dungeons.name_ko,
-sub_dungeons.technical
+    sub_dungeons.sub_dungeon_id,
+    sub_dungeons.dungeon_id,
+    sub_dungeons.name_ja,
+    sub_dungeons.name_en,
+    sub_dungeons.name_ko,
+    sub_dungeons.technical
 FROM
-sub_dungeons
+    sub_dungeons
 WHERE
-sub_dungeons.dungeon_id = {}
+    sub_dungeons.dungeon_id = {}
 '''
 
 dungeon_query = '''
 SELECT
-dungeons.dungeon_id,
-dungeons.name_ja,
-dungeons.name_en,
-dungeons.name_ko,
-dungeons.dungeon_type
+    dungeons.dungeon_id,
+    dungeons.name_ja,
+    dungeons.name_en,
+    dungeons.name_ko,
+    dungeons.dungeon_type
 FROM
-dungeons
+    dungeons
 WHERE
-dungeons.name_en LIKE "{}%"
+    dungeons.name_en LIKE "{}%"
 '''
 
 skill_query = '''
 SELECT
-enemy_skills.enemy_skill_id,
-enemy_skills.name_en,
-enemy_skills.desc_en,
-enemy_skills.desc_en_emoji,
-enemy_skills.min_hits,
-enemy_skills.max_hits,
-enemy_skills.atk_mult
+    enemy_skills.enemy_skill_id,
+    enemy_skills.name_en,
+    enemy_skills.desc_en,
+    enemy_skills.desc_en_emoji,
+    enemy_skills.min_hits,
+    enemy_skills.max_hits,
+    enemy_skills.atk_mult
 FROM
-enemy_skills
+    enemy_skills
 WHERE
-enemy_skill_id = {}
+    enemy_skill_id = {}
 '''
 
 sub_dungeons_query = '''
 SELECT
-sub_dungeons.*
+    *
 FROM
-sub_dungeons
+    sub_dungeons
 WHERE 
-sub_dungeons.dungeon_id = {} AND
-sub_dungeons.name_en LIKE "%{}%"
+    sub_dungeons.dungeon_id = {} AND
+    sub_dungeons.name_en LIKE "%{}%"
 ORDER BY
-sub_dungeons.sub_dungeon_id
+    sub_dungeons.sub_dungeon_id
 '''
 
 encounter_query = '''
 SELECT
-encounters.encounter_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence
+    encounters.encounter_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence
 FROM
-encounters
+    encounters
 WHERE
-encounters.sub_dungeon_id = {}
+    encounters.sub_dungeon_id = {}
 ORDER BY
-encounters.stage
+    encounters.stage
 '''
 
 specific_floor_query = '''
 SELECT
-encounters.encounter_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence
+    encounters.encounter_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence
 FROM
-encounters
+    encounters
 WHERE
-encounters.sub_dungeon_id = {}
+    encounters.sub_dungeon_id = {}
 AND
-encounters.stage = {}
+    encounters.stage = {}
 '''
 
 enemy_data_query = '''
 SELECT
-enemy_data.enemy_id,
-enemy_data.behavior
+    enemy_data.enemy_id,
+    enemy_data.behavior
 FROM
-enemy_data
+    enemy_data
 WHERE
-enemy_data.enemy_id = {}
+    enemy_data.enemy_id = {}
 '''
 
 # TODO: Move to gdoc
@@ -175,6 +175,7 @@ DUNGEON_NICKNAMES = {
     'aa4': 2660004,
     'shura1': 4400001,
     'shura2': 4401001,
+    'shura3': 4401001,
     'iwoc': 4400001,
     'alt. iwoc': 4400001,
 }

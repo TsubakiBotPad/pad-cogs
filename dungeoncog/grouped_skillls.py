@@ -1,5 +1,5 @@
 class GroupedSkills(object):
-    """This is a container class that holds the top level condition, and its processed children"""
+    """This is a container class that holds the top level condition and its processed children"""
 
     def __init__(self, condition: str, type, parent=None):
         self.nested_groups = []

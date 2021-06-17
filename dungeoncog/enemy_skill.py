@@ -1,6 +1,6 @@
 from typing import List
 
-from dungeon.grouped_skillls import GroupedSkills
+from dungeoncog.grouped_skillls import GroupedSkills
 
 
 class ProcessedSkill(object):

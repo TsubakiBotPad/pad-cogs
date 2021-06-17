@@ -1,10 +1,13 @@
+from typing import List
+
+
 class EnemySkill(object):
-    def __init__(self, raw: "List[str]"):
+    def __init__(self, raw: List[str]):
         self.enemy_skill_id = int(raw[0])
         self.name = raw[1].replace('\n', ' ')
         self.type = int(raw[2])
         self.flags = int(raw[3], 16)  # 16bitmap for params
-        self.params = [None] * 16
+        self.params: List = [None] * 16
         offset = 0
         p_idx = 4
         while offset < self.flags.bit_length():
@@ -15,11 +18,13 @@ class EnemySkill(object):
             offset += 1
 
     def process(self):
-        return "Unknown: [{},{},{},{}]".format(self.id, self.name, self.type, self.params)
+        return "Unknown: [{},{},{},{}]".format(self.enemy_skill_id, self.name, self.type, self.params)
+
 
 class ESNone(EnemySkill):
-    def __init__(self, id = None):
-        self.enemy_skill_id = id
+    def __init__(self, esid=None):
+        super().__init__([esid, "ESNone", -1, 0])
+        self.enemy_skill_id = esid
         self.name = None
         self.type = None
         self.flags = None

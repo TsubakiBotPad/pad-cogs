@@ -5,8 +5,8 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
-from padinfo.common.config import UserConfig
 from padinfo.view.components.view_state_base import ViewStateBase
+
 
 class SimpleViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query,
@@ -30,7 +30,6 @@ class SimpleViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
-        print("hi")
         return cls(original_author_id, menu_type, raw_query, color, ims.get('message_list'), ims.get('index') + inc,
                    reaction_list=ims.get('reaction_list'))
 
@@ -40,7 +39,7 @@ class SimpleView:
 
     @staticmethod
     def embed(state: SimpleViewState):
-        fields=[
+        fields = [
             EmbedField("Title", Box(*["1", '2']))
         ]
         return EmbedView(

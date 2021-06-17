@@ -1,15 +1,19 @@
 import logging
 import os
+from typing import TYPE_CHECKING
 
-import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands, data_manager
+from redbot.core.utils.chat_formatting import pagify
 
-from dungeon.enemy_skills_pb2 import MonsterBehavior
-from dungeon.menu.dungeon import DungeonMenu, DungeonMenuPanes
-from dungeon.menu.menu_map import dungeon_menu_map
-from dungeon.view.dungeon import DungeonViewState
+from dungeoncog.enemy_skills_pb2 import MonsterBehavior
+from dungeoncog.menu.dungeon import DungeonMenu
+from dungeoncog.menu.menu_map import dungeon_menu_map
+from dungeoncog.view.dungeon import DungeonViewState
+
+if TYPE_CHECKING:
+    from dadguide.dungeon_context import DungeonContext
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
@@ -71,13 +75,12 @@ class DungeonCog(commands.Cog):
             dungeons = database.get_dungeons_from_name(name)
             if len(dungeons) == 0:
                 await ctx.send("No dungeons found!")
-                return None
+                return
             if len(dungeons) > 1:
-                message = "Multiple Dungeons Found, please be more specific:"
-                for d in dungeons:
-                    message += "\n{}".format(d.name_en)
-                await ctx.send(message)
-                return None
+                header = "Multiple Dungeons Found, please be more specific:\n"
+                for page in pagify(header + '\n'.join(d.name_en for d in dungeons)):
+                    await ctx.send(page)
+                return
             dungeon = dungeons[0]
             sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
             sub_dungeon_model = None
@@ -97,42 +100,18 @@ class DungeonCog(commands.Cog):
             dungeon = dungeon[0]
         return dungeon
 
-    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed, timeout=60):
-        if starting_menu_emoji not in emoji_to_embed.emoji_dict:
-            # Selected menu wasn't generated for this monster
-            return EMBED_NOT_GENERATED
-
-        emoji_to_embed.emoji_dict[self.menu.emoji.get("no")] = self.menu.reaction_delete_message
-
-        try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx, emoji_to_embed,
-                                                                   starting_menu_emoji, timeout=timeout)
-            if result_msg and result_embed:
-                # Message is finished but not deleted, clear the footer
-                result_embed.set_footer(text=discord.Embed.Empty)
-                await result_msg.edit(embed=result_embed)
-                await result_msg.e
-        except Exception as ex:
-            logger.error('Menu failure', exc_info=True)
-
-    @commands.command()
-    async def dgid(self, ctx, name: str, difficulty: str = None):
-        '''
+    @commands.command(aliases=['dgid'])
+    async def dungeonid(self, ctx, name: str, difficulty: str = None):
+        """
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
-        '''
+        """
         # load dadguide cog for database access
-        dgcog = self.bot.get_cog('Dadguide')
-        if not dgcog:
-            logger.warning("Cog 'Dadguide' not loaded")
-            return
-        logger.info('Waiting until DG is ready')
-        await dgcog.wait_until_ready()
-        dungeon = await self.find_dungeon_from_name2(ctx=ctx, name=name, database=dgcog.database.dungeon,
-                                                     difficulty=difficulty)
+        dgcog = await self.get_dgcog()
+        dungeon = await self.find_dungeon_from_name2(ctx, name, dgcog.database.dungeon, difficulty)
 
         if dungeon is not None:
-            # await ctx.send(formatOverview(test_result))
+            # await ctx.send(format_overview(test_result))
             current_stage = 0
             pm_dungeon = []
             # check for invades:
@@ -146,7 +125,7 @@ class DungeonCog(commands.Cog):
                 else:
                     behavior_test = None
 
-                # await ctx.send(formatOverview(test_result))
+                # await ctx.send(format_overview(test_result))
                 # pm = process_monster(behavior_test, enc_model, dg_cog.database)
                 if enc_model.stage < 0:
                     # pm.am_invade = True
@@ -163,14 +142,12 @@ class DungeonCog(commands.Cog):
 
             menu = DungeonMenu.menu()
             original_author_id = ctx.message.author.id
-            full_reaction_list = [emoji_cache.get_by_name(e) for e in DungeonMenuPanes.emoji_names()]
             test_list = ['1', '2', '3', '4']
             # print(pm_dungeon[0])
             view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0],
                                           dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                           len(pm_dungeon[0]), 0,
-                                          int(dungeon.sub_dungeons[0].technical), dgcog.database, verbose=False,
-                                          reaction_list=full_reaction_list)
+                                          int(dungeon.sub_dungeons[0].technical), dgcog.database, verbose=False)
             await ctx.send(
                 "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
                                                 dungeon.sub_dungeons[0].name_ja))
