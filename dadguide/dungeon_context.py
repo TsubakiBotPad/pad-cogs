@@ -174,7 +174,8 @@ DUNGEON_NICKNAMES = {
     'aa3': 2660003,
     'aa4': 2660004,
     'shura1': 4400001,
-    'shura2': 4401001,
+    'shura2': 4400002,
+    'shura3': 4400003,
     'iwoc': 4400001,
     'alt. iwoc': 4400001,
 }
@@ -210,6 +211,7 @@ class DungeonContext(object):
             return None
         sub_id = DUNGEON_NICKNAMES.get(name)
         mega = self.database.query_many(nickname_query.format(sub_id), ())
+        print(mega)
         ems = []
         for enc in mega:
             data = self.database.query_one(enemy_data_query.format(enc["enemy_id"]), ())
