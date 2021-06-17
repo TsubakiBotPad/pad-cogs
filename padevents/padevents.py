@@ -55,6 +55,9 @@ class PadEvents(commands.Cog):
 
         self.fake_uid = -999
 
+        self._event_loop = bot.loop.create_task(self.reload_padevents())
+        self._refresh_loop = bot.loop.create_task(self.event_check_loop())
+
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
         data = "No data is stored for user with ID {}.\n".format(user_id)
@@ -71,6 +74,8 @@ class PadEvents(commands.Cog):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
         self.events = list()
         self.started_events = set()
+        self._event_loop.cancel()
+        self._refresh_loop.cancel()
 
     async def reload_padevents(self):
         await self.bot.wait_until_ready()
@@ -100,110 +105,113 @@ class PadEvents(commands.Cog):
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
         self.rolepinged_events = set()
 
-    async def check_started(self):
+    async def event_check_loop(self):
         await self.bot.wait_until_ready()
         while self == self.bot.get_cog('PadEvents'):
             try:
-                events = filter(lambda e: e.key not in self.started_events, self.events)
-                for event in events:
-                    for gid, data in (await self.config.all_guilds()).items():
-                        guild = self.bot.get_guild(gid)
-                        if guild is None:
-                            continue
-                        for key, aep in data.get('pingroles', {}).items():
-                            if event.start_from_now_sec() > aep['offset'] * 60 \
-                                    or not aep['enabled'] \
-                                    or event.server != aep['server'] \
-                                    or (key, event.key) in self.rolepinged_events:
-                                continue
-                            elif aep['regex']:
-                                matches = re.search(aep['searchstr'], event.clean_dungeon_name)
-                            else:
-                                matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
-
-                            self.rolepinged_events.add((key, event.key))
-                            if matches:
-                                index = GROUPS.index(event.group)
-                                channel = guild.get_channel(aep['channels'][index])
-                                if channel is not None:
-                                    role = guild.get_role(aep['roles'][index])
-                                    ment = role.mention if role else ""
-                                    offsetstr = ""
-                                    if aep['offset']:
-                                        offsetstr = " in {} minute(s)".format(aep['offset'])
-                                    try:
-                                        await channel.send("{}{} {}".format(event.name_and_modifier, offsetstr, ment),
-                                                           allowed_mentions=discord.AllowedMentions(roles=True))
-                                    except Exception:
-                                        logger.exception("Failed to send AEP in channel {}".format(channel.id))
-
-                    for uid, data in (await self.config.all_users()).items():
-                        user = self.bot.get_user(uid)
-                        if user is None:
-                            continue
-                        for aed in data.get('dmevents', []):
-                            if event.start_from_now_sec() > aed['offset'] * 60 \
-                                    or (event.group not in (aed['group'], None)) \
-                                    or event.server != aed['server'] \
-                                    or (aed['key'], event.key) in self.rolepinged_events:
-                                continue
-                            self.rolepinged_events.add((aed['key'], event.key))
-                            if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
-                                offsetstr = " starts now!"
-                                if aed['offset']:
-                                    offsetstr = " starts in {} minute(s)!".format(aed['offset'])
-                                try:
-                                    await user.send(event.clean_dungeon_name + offsetstr)
-                                except Exception:
-                                    logger.exception("Failed to send AED to user {}".format(user.id))
-
-                events = filter(lambda e: e.is_started() and e.key not in self.started_events, self.events)
-                daily_refresh_servers = set()
-                for event in events:
-                    self.started_events.add(event.key)
-                    if event.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek,
-                                            EventType.Week]:
-                        for gr in list(self.settings.list_guerrilla_reg()):
-                            if event.server == gr['server']:
-                                try:
-                                    channel = self.bot.get_channel(int(gr['channel_id']))
-                                    if channel is None:
-                                        continue
-
-                                    role_name = '{}_group_{}'.format(event.server, event.group_long_name())
-                                    role = channel.guild.get_role(role_name)
-                                    if role and role.mentionable:
-                                        message = "{} `: {} is starting`".format(role.mention, event.name_and_modifier)
-                                    else:
-                                        message = box(
-                                            "Server " + event.server + ", group " + event.group_long_name() +
-                                            " : " + event.name_and_modifier
-                                        )
-
-                                    await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
-                                except Exception as ex:
-                                    # self.settings.remove_guerrilla_reg(gr['channel_id'], gr['server'])
-                                    logger.exception("caught exception while sending guerrilla msg:")
-
-                    else:
-                        if event.technical not in [DungeonType.Normal]:
-                            msg = self.make_active_text(event.server)
-                            for daily_registration in list(self.settings.list_daily_reg()):
-                                try:
-                                    if event.server == daily_registration['server']:
-                                        await self.page_output(self.bot.get_channel(daily_registration['channel_id']),
-                                                               msg, channel_id=daily_registration['channel_id'])
-                                        logger.info("daily_reg server")
-                                except Exception as ex:
-                                    # self.settings.remove_daily_reg(
-                                    #   daily_registration['channel_id'], daily_registration['server'])
-                                    logger.exception("caught exception while sending daily msg:")
-
-            except Exception as ex:
+                await self.check_started()
+            except asyncio.CancelledError:
+                break
+            except Exception:
                 logger.exception("caught exception while checking guerrillas:")
-
             await asyncio.sleep(10)
         logger.info("done check_started (cog probably unloaded)")
+
+    async def check_started(self):
+        events = filter(lambda e: e.key not in self.started_events, self.events)
+        for event in events:
+            for gid, data in (await self.config.all_guilds()).items():
+                guild = self.bot.get_guild(gid)
+                if guild is None:
+                    continue
+                for key, aep in data.get('pingroles', {}).items():
+                    if event.start_from_now_sec() > aep['offset'] * 60 \
+                            or not aep['enabled'] \
+                            or event.server != aep['server'] \
+                            or (key, event.key) in self.rolepinged_events:
+                        continue
+                    elif aep['regex']:
+                        matches = re.search(aep['searchstr'], event.clean_dungeon_name)
+                    else:
+                        matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
+
+                    self.rolepinged_events.add((key, event.key))
+                    if matches:
+                        index = GROUPS.index(event.group)
+                        channel = guild.get_channel(aep['channels'][index])
+                        if channel is not None:
+                            role = guild.get_role(aep['roles'][index])
+                            ment = role.mention if role else ""
+                            offsetstr = ""
+                            if aep['offset']:
+                                offsetstr = " in {} minute(s)".format(aep['offset'])
+                            try:
+                                await channel.send("{}{} {}".format(event.name_and_modifier, offsetstr, ment),
+                                                   allowed_mentions=discord.AllowedMentions(roles=True))
+                            except Exception:
+                                logger.exception("Failed to send AEP in channel {}".format(channel.id))
+
+            for uid, data in (await self.config.all_users()).items():
+                user = self.bot.get_user(uid)
+                if user is None:
+                    continue
+                for aed in data.get('dmevents', []):
+                    if event.start_from_now_sec() > aed['offset'] * 60 \
+                            or (event.group not in (aed['group'], None)) \
+                            or event.server != aed['server'] \
+                            or (aed['key'], event.key) in self.rolepinged_events:
+                        continue
+                    self.rolepinged_events.add((aed['key'], event.key))
+                    if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
+                        offsetstr = " starts now!"
+                        if aed['offset']:
+                            offsetstr = " starts in {} minute(s)!".format(aed['offset'])
+                        try:
+                            await user.send(event.clean_dungeon_name + offsetstr)
+                        except Exception:
+                            logger.exception("Failed to send AED to user {}".format(user.id))
+
+        events = filter(lambda e: e.is_started() and e.key not in self.started_events, self.events)
+        daily_refresh_servers = set()
+        for event in events:
+            self.started_events.add(event.key)
+            if event.event_type in [EventType.Guerrilla, EventType.GuerrillaNew, EventType.SpecialWeek,
+                                    EventType.Week]:
+                for gr in list(self.settings.list_guerrilla_reg()):
+                    if event.server == gr['server']:
+                        try:
+                            channel = self.bot.get_channel(int(gr['channel_id']))
+                            if channel is None:
+                                continue
+
+                            role_name = '{}_group_{}'.format(event.server, event.group_long_name())
+                            role = channel.guild.get_role(role_name)
+                            if role and role.mentionable:
+                                message = "{} `: {} is starting`".format(role.mention, event.name_and_modifier)
+                            else:
+                                message = box(
+                                    "Server " + event.server + ", group " + event.group_long_name() +
+                                    " : " + event.name_and_modifier
+                                )
+
+                            await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
+                        except Exception as ex:
+                            # self.settings.remove_guerrilla_reg(gr['channel_id'], gr['server'])
+                            logger.exception("caught exception while sending guerrilla msg:")
+
+            else:
+                if event.dungeon_type not in [DungeonType.Normal]:
+                    msg = self.make_active_text(event.server)
+                    for daily_registration in list(self.settings.list_daily_reg()):
+                        try:
+                            if event.server == daily_registration['server']:
+                                await self.page_output(self.bot.get_channel(daily_registration['channel_id']),
+                                                       msg, channel_id=daily_registration['channel_id'])
+                                logger.info("daily_reg server")
+                        except Exception as ex:
+                            # self.settings.remove_daily_reg(
+                            #   daily_registration['channel_id'], daily_registration['server'])
+                            logger.exception("caught exception while sending daily msg:")
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
