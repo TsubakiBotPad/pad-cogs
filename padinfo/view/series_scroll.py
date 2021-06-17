@@ -149,7 +149,7 @@ class SeriesScrollViewState(ViewStateBase):
         paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
         return paginated_monsters
 
-    async def decrement_page(self, dgcog, ims: dict):
+    async def decrement_page(self, dgcog):
         if self.current_page > 0:
             self.current_page = self.current_page - 1
             self.current_index = None
@@ -167,7 +167,7 @@ class SeriesScrollViewState(ViewStateBase):
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
-    async def increment_page(self, dgcog, ims: dict):
+    async def increment_page(self, dgcog):
         if self.current_page < len(self.paginated_monsters) - 1:
             self.current_page = self.current_page + 1
             self.current_index = None
@@ -185,7 +185,7 @@ class SeriesScrollViewState(ViewStateBase):
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
-    async def decrement_index(self, dgcog, ims: dict):
+    async def decrement_index(self, dgcog):
         if self.current_index is None:
             self.current_index = len(self.monster_list) - 1
             return
@@ -195,7 +195,7 @@ class SeriesScrollViewState(ViewStateBase):
         await self.decrement_page(dgcog, ims)
         self.current_index = len(self.monster_list) - 1
 
-    async def increment_index(self, dgcog, ims: dict):
+    async def increment_index(self, dgcog):
         if self.current_index is None:
             self.current_index = 0
             return

@@ -68,14 +68,14 @@ class SeriesScrollMenu:
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        await view_state.decrement_page(dgcog, ims)
+        await view_state.decrement_page(dgcog)
         return SeriesScrollMenu.monster_list_control(view_state)
 
     @classmethod
     async def respond_with_right(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        await view_state.increment_page(dgcog, ims)
+        await view_state.increment_page(dgcog)
         return SeriesScrollMenu.monster_list_control(view_state)
 
     @classmethod
@@ -87,14 +87,14 @@ class SeriesScrollMenu:
     async def respond_with_previous_monster(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        await view_state.decrement_index(dgcog, ims)
+        await view_state.decrement_index(dgcog)
         return SeriesScrollMenu.monster_list_control(view_state)
 
     @classmethod
     async def respond_with_next_monster(cls, message: Optional[Message], ims, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        await view_state.increment_index(dgcog, ims)
+        await view_state.increment_index(dgcog)
         return SeriesScrollMenu.monster_list_control(view_state)
 
     @staticmethod
@@ -178,17 +178,17 @@ class SeriesScrollMenu:
     async def auto_scroll_child_left(cls, ims, _emoji_clicked, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        return await SeriesScrollMenu._scroll_child(view_state, view_state.decrement_index, dgcog, ims)
+        return await SeriesScrollMenu._scroll_child(view_state, view_state.decrement_index, dgcog)
 
     @classmethod
     async def auto_scroll_child_right(cls, ims, _emoji_clicked, **data):
         dgcog = data['dgcog']
         view_state = await cls._get_view_state(ims, **data)
-        return await SeriesScrollMenu._scroll_child(view_state, view_state.increment_index, dgcog, ims)
+        return await SeriesScrollMenu._scroll_child(view_state, view_state.increment_index, dgcog)
 
     @staticmethod
-    async def _scroll_child(view_state: SeriesScrollViewState, update_fn, dgcog, ims: dict):
-        await update_fn(dgcog, ims)
+    async def _scroll_child(view_state: SeriesScrollViewState, update_fn, dgcog):
+        await update_fn(dgcog)
         extra_ims = view_state.get_serialized_child_extra_ims(IdMenuPanes.emoji_names(), IdMenu.MENU_TYPE)
         return IdMenuEmoji.refresh, extra_ims
 
