@@ -668,9 +668,9 @@ class PadInfo(commands.Cog):
             # The user could delete the menu before we can do this
             pass
 
-    @commands.command(aliases=['seriesscroll', 'ss'])
+    @commands.command(aliases=['collabscroll', 'ss'])
     @checks.bot_has_permissions(embed_links=True)
-    async def collabscroll(self, ctx, *, query):
+    async def seriesscroll(self, ctx, *, query):
         dgcog = await self.get_dgcog()
         monster = await dgcog.find_monster(query, ctx.author.id)
 
@@ -697,7 +697,7 @@ class PadInfo(commands.Cog):
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
-                                      series_id, 0, paginated_monsters[0], int(rarity), len(paginated_monsters),
+                                      series_id, paginated_monsters, 0, int(rarity),
                                       query_settings,
                                       all_rarities,
                                       title, instruction_message,

@@ -5,7 +5,6 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils import char_to_emoji, embed_footer_with_state
-from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -20,8 +19,9 @@ if TYPE_CHECKING:
 class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id, current_page,
-                 monster_list: List["MonsterModel"], rarity: int, pages_in_rarity: int, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id,
+                 paginated_monsters: List[List["MonsterModel"]], current_page, rarity: int,
+                 query_settings: QuerySettings,
                  all_rarities: List[int],
                  title, message,
                  current_index: int = None,
@@ -30,21 +30,37 @@ class SeriesScrollViewState(ViewStateBase):
                  child_message_id=None):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
-        self.pages_in_rarity = pages_in_rarity
         self.current_index = current_index
         self.all_rarities = all_rarities
+        self.paginated_monsters = paginated_monsters
         self.current_page = current_page or 0
         self.series_id = series_id
         self.rarity = rarity
         self.query_settings = query_settings
-        self.message = message
+        self.idle_message = message
         self.child_message_id = child_message_id
         self.title = title
-        self.monster_list = monster_list
         self.reaction_list = reaction_list
         self.color = color
         self.query = query
-        self.max_len_so_far = max(max_len_so_far or len(monster_list), len(self.monster_list))
+        self._max_len_so_far = max(max_len_so_far or len(self.monster_list), len(self.monster_list))
+
+    @property
+    def monster_list(self) -> List["MonsterModel"]:
+        return self.paginated_monsters[self.current_page]
+
+    @property
+    def max_len_so_far(self) -> int:
+        self._max_len_so_far = max(len(self.monster_list), self._max_len_so_far)
+        return self._max_len_so_far
+
+    @property
+    def current_monster_id(self) -> int:
+        return self.monster_list[self.current_index].monster_id
+
+    @property
+    def pages_in_rarity(self) -> int:
+        return len(self.paginated_monsters)
 
     def serialize(self):
         ret = super().serialize()
@@ -59,11 +75,22 @@ class SeriesScrollViewState(ViewStateBase):
             'all_rarities': self.all_rarities,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
-            'message': self.message,
+            'idle_message': self.idle_message,
             'max_len_so_far': self.max_len_so_far,
             'current_index': self.current_index,
         })
         return ret
+
+    def get_serialized_child_extra_ims(self, emoji_names, menu_type):
+        extra_ims = {
+            'is_child': True,
+            'reaction_list': emoji_names,
+            'menu_type': menu_type,
+            'resolved_monster_id': self.current_monster_id,
+            'query_settings': self.query_settings.serialize(),
+            'idle_message': self.idle_message
+        }
+        return extra_ims
 
     @staticmethod
     async def deserialize(dgcog, user_config: UserConfig, ims: dict):
@@ -75,24 +102,23 @@ class SeriesScrollViewState(ViewStateBase):
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
         current_page = ims['current_page']
-        monster_list = paginated_monsters[current_page]
         title = ims['title']
 
-        pages_in_rarity = len(paginated_monsters)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         child_message_id = ims.get('child_message_id')
-        message = ims.get('message')
-        max_len_so_far = max(ims['max_len_so_far'] or len(monster_list), len(monster_list))
         current_index = ims.get('current_index')
+        current_monster_list = paginated_monsters[current_page]
+        max_len_so_far = max(ims['max_len_so_far'] or len(current_monster_list), len(current_monster_list))
+        idle_message = ims.get('idle_message')
 
         return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
-                                     current_page, monster_list, rarity, pages_in_rarity, query_settings,
+                                     paginated_monsters, current_page, rarity, query_settings,
                                      all_rarities,
-                                     title, message,
+                                     title, idle_message,
                                      current_index=current_index,
                                      max_len_so_far=max_len_so_far,
                                      reaction_list=reaction_list,
@@ -123,6 +149,65 @@ class SeriesScrollViewState(ViewStateBase):
         query_settings = QuerySettings.deserialize(ims['query_settings'])
         paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
         return paginated_monsters
+
+    async def decrement_page(self, dgcog):
+        if self.current_page > 0:
+            self.current_page = self.current_page - 1
+            self.current_index = None
+        else:
+            # if there are multiple rarities, decrementing first page will change rarity
+            if len(self.all_rarities) > 1:
+                rarity_index = self.all_rarities.index(self.rarity)
+                self.rarity = self.all_rarities[rarity_index - 1]
+                self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
+                                                                               self.query_settings.server)
+                self.current_index = None
+            self.current_page = len(self.paginated_monsters) - 1
+
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    async def increment_page(self, dgcog):
+        if self.current_page < len(self.paginated_monsters) - 1:
+            self.current_page = self.current_page + 1
+            self.current_index = None
+        else:
+            # if there are multiple rarities, incrementing last page will change rarity
+            if len(self.all_rarities) > 1:
+                rarity_index = self.all_rarities.index(self.rarity)
+                self.rarity = self.all_rarities[(rarity_index + 1) % len(self.all_rarities)]
+                self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
+                                                                               self.query_settings.server)
+                self.current_index = None
+            self.current_page = 0
+
+        if len(self.paginated_monsters) > 1:
+            self.current_index = None
+
+    async def decrement_index(self, dgcog):
+        if self.current_index is None:
+            self.current_index = len(self.monster_list) - 1
+            return
+        if self.current_index > 0:
+            self.current_index = self.current_index - 1
+            return
+        await self.decrement_page(dgcog, ims)
+        self.current_index = len(self.monster_list) - 1
+
+    async def increment_index(self, dgcog):
+        if self.current_index is None:
+            self.current_index = 0
+            return
+        if self.current_index < len(self.monster_list) - 1:
+            self.current_index = self.current_index + 1
+            return
+        await self.increment_page(dgcog, ims)
+        self.current_index = 0
+
+    def set_index(self, new_index: int):
+        # don't want to go out of range, which will forget current index, break next, and break prev
+        if new_index < len(self.monster_list):
+            self.current_index = new_index
 
 
 class SeriesScrollView:
