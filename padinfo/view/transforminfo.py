@@ -5,10 +5,12 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.enums import LsMultiplier
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
+from padinfo.view.common import leader_skill_header
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
@@ -32,7 +34,7 @@ class TransformInfoViewState(ViewStateBase):
         self.acquire_raw = acquire_raw
         self.monster_ids = monster_ids
         self.is_jp_buffed = is_jp_buffed
-        self.query_settings = query_settings
+        self.query_settings: QuerySettings = query_settings
         self.reaction_list = reaction_list
 
     def serialize(self):
@@ -60,7 +62,7 @@ class TransformInfoViewState(ViewStateBase):
         acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon) \
-                  or dgcog.database.graph.monster_is_discrepant(transformed_mon)
+                       or dgcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
                                       base_mon, transformed_mon, acquire_raw, monster_ids, is_jp_buffed,
@@ -139,19 +141,18 @@ def base_active_header(m: "MonsterModel"):
     )
 
 
-def leader_header(m: "MonsterModel", is_base: bool):
+def leader_header(m: "MonsterModel", is_base: bool, lsmultiplier: LsMultiplier, base_mon: "MonsterModel"):
     if is_base:
         emoji = BASE_EMOJI
         label = 'Base'
     else:
         emoji = TRANSFORM_EMOJI
         label = 'Transform'
-    leader_skill = m.leader_skill
 
     return Box(
         emoji,
         BoldText(label),
-        IdView.leader_skill_header(m).to_markdown(),
+        leader_skill_header(m, lsmultiplier, base_mon).to_markdown(),
         delimiter=' '
     )
 
@@ -163,7 +164,7 @@ class TransformInfoView:
     def embed(state: TransformInfoViewState):
         base_mon = state.base_mon
         transformed_mon = state.transformed_mon
-
+        lsmultiplier = state.query_settings.lsmultiplier
         fields = [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
@@ -198,11 +199,11 @@ class TransformInfoView:
                 )
             ),
             EmbedField(
-                transformat(leader_header(transformed_mon, False).to_markdown()),
+                transformat(leader_header(transformed_mon, False, lsmultiplier, base_mon).to_markdown()),
                 Box(
                     Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill
                          else 'None'),
-                    leader_header(base_mon, True).to_markdown(),
+                    leader_header(base_mon, True, lsmultiplier, base_mon).to_markdown(),
                     Text(base_mon.leader_skill.desc if base_mon.leader_skill else 'None')
                 )
             )
