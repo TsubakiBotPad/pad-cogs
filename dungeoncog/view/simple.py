@@ -3,16 +3,14 @@ from typing import List
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
+from discordmenu.embed.view_state import ViewState
 from tsutils import embed_footer_with_state
 
-from padinfo.view.components.view_state_base import ViewStateBase
 
-
-class SimpleViewState(ViewStateBase):
+class SimpleViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query,
-                 color, message_list, index,
-                 reaction_list: List[str] = None):
-        super().__init__(original_author_id, menu_type, raw_query, reaction_list=reaction_list)
+                 color, message_list, index):
+        super().__init__(original_author_id, menu_type, raw_query)
         self.message_list = message_list
         self.index = index
         self.color = color
@@ -30,8 +28,7 @@ class SimpleViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
-        return cls(original_author_id, menu_type, raw_query, color, ims.get('message_list'), ims.get('index') + inc,
-                   reaction_list=ims.get('reaction_list'))
+        return cls(original_author_id, menu_type, raw_query, color, ims.get('message_list'), ims.get('index') + inc)
 
 
 class SimpleView:

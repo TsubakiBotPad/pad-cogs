@@ -22,7 +22,8 @@
   },
   "requirements": [
     "tsutils>=3.4.0",
-    "discord-menu>=0.16.0"
+    "discord-menu>=0.16.0",
+    "protobuf"
   ],
   "tags": [
     "PAD"
