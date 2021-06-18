@@ -15,16 +15,8 @@ from dungeoncog.view.dungeon import DungeonViewState
 if TYPE_CHECKING:
     from dadguide.dungeon_context import DungeonContext
 
-logger = logging.getLogger('red.padbot-cogs.padinfo')
+logger = logging.getLogger('red.padbot-cogs.dungeoncog')
 EMBED_NOT_GENERATED = -1
-
-
-def _data_file(file_name: str) -> str:
-    return os.path.join(str(data_manager.cog_data_path(raw_name='dungeon')), file_name)
-
-
-RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
-RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
 
 class DungeonCog(commands.Cog):
@@ -101,11 +93,16 @@ class DungeonCog(commands.Cog):
         return dungeon
 
     @commands.command(aliases=['dgid'])
-    async def dungeonid(self, ctx, name: str, difficulty: str = None):
+    async def dungeonid(self, ctx, name, difficulty = None, *bad: str):
         """
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
         """
+        if bad:
+            await ctx.send("Too many arguments.  Make sure to surround all"
+                           " arguments with spaces in quotes.")
+            return
+
         # load dadguide cog for database access
         dgcog = await self.get_dgcog()
         dungeon = await self.find_dungeon_from_name2(ctx, name, dgcog.database.dungeon, difficulty)
