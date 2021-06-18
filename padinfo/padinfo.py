@@ -40,6 +40,7 @@ from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
+from padinfo.view.button_info import ButtonInfoView, ButtonInfoViewProps
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
@@ -581,8 +582,13 @@ class PadInfo(commands.Cog):
 
         info = button_info.get_info(dgcog, monster)
         info_str = button_info.to_string(dgcog, monster, info)
-        for page in pagify(info_str):
-            await ctx.send(box(page))
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        color = await self.get_user_embed_color(ctx)
+        props = ButtonInfoViewProps(result=info_str)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
+                                       color, ButtonInfoView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
