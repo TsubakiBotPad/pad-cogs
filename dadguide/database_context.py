@@ -3,12 +3,13 @@ from typing import Generator, List
 from tsutils.enums import Server
 
 from .database_manager import DadguideDatabase
+from .dungeon_context import DungeonContext
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
+from .models.enum_types import DEFAULT_SERVER
 from .models.scheduled_event_model import ScheduledEventModel
 from .models.series_model import SeriesModel
 from .monster_graph import MonsterGraph
-from .models.enum_types import DEFAULT_SERVER
 
 SCHEDULED_EVENT_QUERY = """SELECT
   schedule.*,
@@ -21,9 +22,10 @@ FROM
 
 
 class DbContext(object):
-    def __init__(self, database: DadguideDatabase, graph: MonsterGraph):
+    def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext):
         self.database = database
         self.graph = graph
+        self.dungeon = dungeon
 
         self.awoken_skill_map = {awsk.awoken_skill_id: awsk for awsk in self.get_all_awoken_skills()}
 
