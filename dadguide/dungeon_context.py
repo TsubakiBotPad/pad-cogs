@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from dadguide.database_manager import DadguideDatabase
 from dadguide.models.dungeon_model import DungeonModel
 from dadguide.models.encounter_model import EncounterModel
@@ -100,9 +102,8 @@ SELECT
     *
 FROM
     sub_dungeons
-WHERE 
-    sub_dungeons.dungeon_id = ? AND
-    sub_dungeons.name_en = ?
+WHERE
+    sub_dungeons.sub_dungeon_id = ?
 ORDER BY
     sub_dungeons.sub_dungeon_id
 '''
@@ -197,8 +198,8 @@ class DungeonContext(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
 
-    def get_dungeons_from_name(self, name: str):
-        dungeons_result = self.database.query_many(DUNGEON_QUERY, (name+"%"))
+    def get_dungeons_from_name(self, name: str) -> List[DungeonModel]:
+        dungeons_result = self.database.query_many(DUNGEON_QUERY, (name+"%",))
         dungeons = []
         for d in dungeons_result:
             dungeons.append(DungeonModel([], **d))
@@ -218,9 +219,9 @@ class DungeonContext(object):
                 dm.sub_dungeons.append(SubDungeonModel(ems, **s))
         return dungeons
 
-    def get_dungeons_from_nickname(self, name: str):
+    def get_dungeons_from_nickname(self, name: str) -> List[DungeonModel]:
         if name not in DUNGEON_NICKNAMES:
-            return None
+            return []
         sub_id = DUNGEON_NICKNAMES.get(name)
         mega = self.database.query_many(NICKNAME_QUERY, (sub_id,))
         ems = []
@@ -240,7 +241,7 @@ class DungeonContext(object):
                              technical=mega[0]['technical'])
         return [DungeonModel([sm], **mega[0])]
 
-    def get_floor_from_sub_dungeon(self, sub_id, floor):
+    def get_floor_from_sub_dungeon(self, sub_id: int, floor: int) -> List[EncounterModel]:
         floor_query = self.database.query_many(SPECIFIC_FLOOR_QUERY, (sub_id, floor))
         invade_query = self.database.query_many(SPECIFIC_FLOOR_QUERY, (sub_id, -1))
         encounter_models = []
@@ -254,11 +255,11 @@ class DungeonContext(object):
             encounter_models.append(EncounterModel(edm, **f))
         return encounter_models
 
-    def get_enemy_skill(self, enemy_skill_id):
+    def get_enemy_skill(self, enemy_skill_id: int) -> EnemySkillModel:
         enemy_skill_query = self.database.query_one(ES_QUERY, (enemy_skill_id,))
         return EnemySkillModel(**enemy_skill_query)
 
-    def get_sub_dungeon_id_from_name(self, dungeon_id, sub_name: str):
+    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_name: str) -> Optional[int]:
         if sub_name.isdigit():
             sub_dungeons = self.database.query_many(SUB_DUNGEON_QUERY_BY_INDEX, (dungeon_id * 1000 + int(sub_name),))
         else:

@@ -58,12 +58,12 @@ class DungeonCog(commands.Cog):
         await dgcog.wait_until_ready()
         return dgcog
 
-    async def find_dungeon_from_name2(self, ctx, name: str, database: "DungeonContext", difficulty: str = None):
+    async def find_dungeon_from_name2(self, ctx, name, database: "DungeonContext", difficulty: str = None):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
-        dungeon = database.get_dungeons_from_nickname(name.lower())
-        if dungeon is None:
+        dungeons = database.get_dungeons_from_nickname(name.lower())
+        if not dungeons:
             dungeons = database.get_dungeons_from_name(name)
             if len(dungeons) == 0:
                 await ctx.send("No dungeons found!")
@@ -73,7 +73,7 @@ class DungeonCog(commands.Cog):
                 for page in pagify(header + '\n'.join(d.name_en for d in dungeons)):
                     await ctx.send(page)
                 return
-            dungeon = dungeons[0]
+            dungeon = dungeons.pop()
             sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
             sub_dungeon_model = None
             if sub_id is None:
@@ -89,7 +89,7 @@ class DungeonCog(commands.Cog):
                         break
             dungeon.sub_dungeons = [sub_dungeon_model]
         else:
-            dungeon = dungeon[0]
+            dungeon = dungeons.pop()
         return dungeon
 
     @commands.command(aliases=['dgid'])
