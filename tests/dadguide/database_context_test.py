@@ -2,12 +2,15 @@ from tsutils.enums import Server
 
 from dadguide.database_manager import DadguideDatabase
 from dadguide.database_context import DbContext
+from dadguide.dungeon_context import DungeonContext
 from dadguide.monster_graph import MonsterGraph
 from dadguide.models.enum_types import InternalEvoType
 
 database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
-db_context = DbContext(database, graph)
+dungeon = DungeonContext(database)
+dungeon = DungeonContext(database)
+db_context = DbContext(database, graph, dungeon)
 get_monster = lambda mid, server=Server.COMBINED: graph.get_monster(mid, server=server)
 
 assert get_monster(4).is_farmable
