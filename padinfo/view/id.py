@@ -4,16 +4,15 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state, char_to_emoji
-from tsutils.enums import Server, LsMultiplier, CardPlusModifier
+from tsutils import embed_footer_with_state
+from tsutils.enums import Server, CardPlusModifier
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
 from padinfo.view.base import BaseIdView
-from padinfo.view.common import get_monster_from_ims, invalid_monster_text
+from padinfo.view.common import get_monster_from_ims, invalid_monster_text, leader_skill_header
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
@@ -300,16 +299,6 @@ class IdView(BaseIdView):
             delimiter=' '
         )
 
-    @staticmethod
-    def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
-        return Box(
-            BoldText('Leader Skill'),
-            BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
-                     else char_to_emoji(1) + ' ' + ls_single_multiplier_text(m.leader_skill)),
-            BoldText('(' + get_emoji('\N{DOWN-POINTING RED TRIANGLE}') + '7x6)') if m != transform_base and transform_base.leader_skill.is_7x6 else None,
-            delimiter=' '
-        )
-
     @classmethod
     def embed(cls, state: IdViewState):
         m = state.monster
@@ -336,7 +325,7 @@ class IdView(BaseIdView):
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
-                IdView.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
+                leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
             evos_embed_field(state)
