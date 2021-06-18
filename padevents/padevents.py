@@ -1051,10 +1051,10 @@ class EventList:
         return self.with_func(lambda e: e.event_type in event_types)
 
     def with_dungeon_type(self, dungeon_type, exclude=False):
-        return self.with_func(lambda e: e.dungeon_type == dungeon_type, exclude)
+        return self.with_func(lambda e: e.technical == dungeon_type, exclude)
 
     def in_dungeon_type(self, dungeon_types, exclude=False):
-        return self.with_func(lambda e: e.dungeon_type in dungeon_types, exclude)
+        return self.with_func(lambda e: e.technical in dungeon_types, exclude)
 
     def is_grouped(self, exclude=False):
         return self.with_func(lambda e: e.group is not None, exclude)
