@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from dadguide.database_manager import DadguideDatabase
 from dadguide.models.dungeon_model import DungeonModel
 from dadguide.models.encounter_model import EncounterModel
@@ -5,146 +7,157 @@ from dadguide.models.enemy_data_model import EnemyDataModel
 from dadguide.models.enemy_skill_model import EnemySkillModel
 from dadguide.models.sub_dungeon_model import SubDungeonModel
 
-nickname_query = '''
+NICKNAME_QUERY = '''
 SELECT
-enemy_data.behavior,
-encounters.encounter_id,
-encounters.dungeon_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence,
-sub_dungeons.name_ja AS sub_name_ja,
-sub_dungeons.name_en AS sub_name_en,
-sub_dungeons.name_ko AS sub_name_ko,
-sub_dungeons.technical,
-dungeons.name_ja,
-dungeons.name_en,
-dungeons.name_ko,
-dungeons.dungeon_type
+    enemy_data.behavior,
+    encounters.encounter_id,
+    encounters.dungeon_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence,
+    sub_dungeons.name_ja AS sub_name_ja,
+    sub_dungeons.name_en AS sub_name_en,
+    sub_dungeons.name_ko AS sub_name_ko,
+    sub_dungeons.technical,
+    dungeons.name_ja,
+    dungeons.name_en,
+    dungeons.name_ko,
+    dungeons.dungeon_type
 FROM
-encounters
-LEFT OUTER JOIN dungeons on encounters.dungeon_id = dungeons.dungeon_id
-LEFT OUTER JOIN enemy_data on encounters.enemy_id = enemy_data.enemy_id
-LEFT OUTER JOIN monsters on encounters.monster_id = monsters.monster_id
-LEFT OUTER JOIN sub_dungeons on sub_dungeons.sub_dungeon_id = encounters.sub_dungeon_id
+    encounters
+    LEFT OUTER JOIN dungeons on encounters.dungeon_id = dungeons.dungeon_id
+    LEFT OUTER JOIN enemy_data on encounters.enemy_id = enemy_data.enemy_id
+    LEFT OUTER JOIN monsters on encounters.monster_id = monsters.monster_id
+    LEFT OUTER JOIN sub_dungeons on sub_dungeons.sub_dungeon_id = encounters.sub_dungeon_id
 WHERE
-encounters.sub_dungeon_id = {}
+    encounters.sub_dungeon_id = ?
 ORDER BY
-encounters.sub_dungeon_id,
-encounters.stage
+    encounters.sub_dungeon_id,
+    encounters.stage
 '''
 
-sub_dungeon_query = '''
+SUB_DUNGEON_QUERY = '''
 SELECT
-sub_dungeons.sub_dungeon_id,
-sub_dungeons.dungeon_id,
-sub_dungeons.name_ja,
-sub_dungeons.name_en,
-sub_dungeons.name_ko,
-sub_dungeons.technical
+    sub_dungeons.sub_dungeon_id,
+    sub_dungeons.dungeon_id,
+    sub_dungeons.name_ja,
+    sub_dungeons.name_en,
+    sub_dungeons.name_ko,
+    sub_dungeons.technical
 FROM
-sub_dungeons
+    sub_dungeons
 WHERE
-sub_dungeons.dungeon_id = {}
+    sub_dungeons.dungeon_id = ?
 '''
 
-dungeon_query = '''
+DUNGEON_QUERY = '''
 SELECT
-dungeons.dungeon_id,
-dungeons.name_ja,
-dungeons.name_en,
-dungeons.name_ko,
-dungeons.dungeon_type
+    dungeons.dungeon_id,
+    dungeons.name_ja,
+    dungeons.name_en,
+    dungeons.name_ko,
+    dungeons.dungeon_type
 FROM
-dungeons
+    dungeons
 WHERE
-dungeons.name_en LIKE "{}%"
+    dungeons.name_en LIKE ?
 '''
 
-skill_query = '''
+ES_QUERY = '''
 SELECT
-enemy_skills.enemy_skill_id,
-enemy_skills.name_en,
-enemy_skills.desc_en,
-enemy_skills.desc_en_emoji,
-enemy_skills.min_hits,
-enemy_skills.max_hits,
-enemy_skills.atk_mult
+    enemy_skills.enemy_skill_id,
+    enemy_skills.name_en,
+    enemy_skills.desc_en,
+    enemy_skills.desc_en_emoji,
+    enemy_skills.min_hits,
+    enemy_skills.max_hits,
+    enemy_skills.atk_mult
 FROM
-enemy_skills
+    enemy_skills
 WHERE
-enemy_skill_id = {}
+    enemy_skill_id = ?
 '''
 
-sub_dungeons_query = '''
+SUB_DUNGEONS_QUERY_BY_NAME = '''
 SELECT
-sub_dungeons.*
+    *
 FROM
-sub_dungeons
+    sub_dungeons
 WHERE 
-sub_dungeons.dungeon_id = {} AND
-sub_dungeons.name_en LIKE "%{}%"
+    sub_dungeons.dungeon_id = ? AND
+    sub_dungeons.name_en LIKE ?
 ORDER BY
-sub_dungeons.sub_dungeon_id
+    sub_dungeons.sub_dungeon_id
 '''
 
-encounter_query = '''
+SUB_DUNGEON_QUERY_BY_INDEX = '''
 SELECT
-encounters.encounter_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence
+    *
 FROM
-encounters
+    sub_dungeons
 WHERE
-encounters.sub_dungeon_id = {}
+    sub_dungeons.sub_dungeon_id = ?
 ORDER BY
-encounters.stage
+    sub_dungeons.sub_dungeon_id
 '''
 
-specific_floor_query = '''
+ENCOUNTER_QUERY = '''
 SELECT
-encounters.encounter_id,
-encounters.sub_dungeon_id,
-encounters.enemy_id,
-encounters.monster_id,
-encounters.stage,
-encounters.amount,
-encounters.turns,
-encounters.level,
-encounters.hp,
-encounters.atk,
-encounters.defence
+    encounters.encounter_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence
 FROM
-encounters
+    encounters
 WHERE
-encounters.sub_dungeon_id = {}
+    encounters.sub_dungeon_id = ?
+ORDER BY
+    encounters.stage
+'''
+
+SPECIFIC_FLOOR_QUERY = '''
+SELECT
+    encounters.encounter_id,
+    encounters.sub_dungeon_id,
+    encounters.enemy_id,
+    encounters.monster_id,
+    encounters.stage,
+    encounters.amount,
+    encounters.turns,
+    encounters.level,
+    encounters.hp,
+    encounters.atk,
+    encounters.defence
+FROM
+    encounters
+WHERE
+    encounters.sub_dungeon_id = ?
 AND
-encounters.stage = {}
+    encounters.stage = ?
 '''
 
-enemy_data_query = '''
+ENEMY_DATA_QUERY = '''
 SELECT
-enemy_data.enemy_id,
-enemy_data.behavior
+    enemy_data.enemy_id,
+    enemy_data.behavior
 FROM
-enemy_data
+    enemy_data
 WHERE
-enemy_data.enemy_id = {}
+    enemy_data.enemy_id = ?
 '''
 
 # TODO: Move to gdoc
@@ -177,7 +190,7 @@ DUNGEON_NICKNAMES = {
     'shura2': 4400002,
     'shura3': 4400003,
     'iwoc': 4400001,
-    'alt. iwoc': 4400001,
+    'alt. iwoc': 4401001,
 }
 
 
@@ -185,19 +198,19 @@ class DungeonContext(object):
     def __init__(self, database: DadguideDatabase):
         self.database = database
 
-    def get_dungeons_from_name(self, name: str):
-        dungeons_result = self.database.query_many(dungeon_query.format(name), ())
+    def get_dungeons_from_name(self, name: str) -> List[DungeonModel]:
+        dungeons_result = self.database.query_many(DUNGEON_QUERY, (name+"%",))
         dungeons = []
         for d in dungeons_result:
             dungeons.append(DungeonModel([], **d))
 
         for dm in dungeons:
-            subs = self.database.query_many(sub_dungeon_query.format(dm.dungeon_id), ())
+            subs = self.database.query_many(SUB_DUNGEON_QUERY, (dm.dungeon_id,))
             for s in subs:
-                encounters = self.database.query_many(encounter_query.format(s['sub_dungeon_id']), ())
+                encounters = self.database.query_many(ENCOUNTER_QUERY, (s['sub_dungeon_id'],))
                 ems = []
                 for e in encounters:
-                    data = self.database.query_one(enemy_data_query.format(e["enemy_id"]), ())
+                    data = self.database.query_one(ENEMY_DATA_QUERY, (e["enemy_id"],))
                     if data is not None:
                         edm = EnemyDataModel(**data)
                     else:
@@ -206,15 +219,14 @@ class DungeonContext(object):
                 dm.sub_dungeons.append(SubDungeonModel(ems, **s))
         return dungeons
 
-    def get_dungeons_from_nickname(self, name: str):
+    def get_dungeons_from_nickname(self, name: str) -> List[DungeonModel]:
         if name not in DUNGEON_NICKNAMES:
-            return None
+            return []
         sub_id = DUNGEON_NICKNAMES.get(name)
-        mega = self.database.query_many(nickname_query.format(sub_id), ())
-        print(mega)
+        mega = self.database.query_many(NICKNAME_QUERY, (sub_id,))
         ems = []
         for enc in mega:
-            data = self.database.query_one(enemy_data_query.format(enc["enemy_id"]), ())
+            data = self.database.query_one(ENEMY_DATA_QUERY, (enc["enemy_id"],))
             if data is not None:
                 edm = EnemyDataModel(**data)
             else:
@@ -229,13 +241,13 @@ class DungeonContext(object):
                              technical=mega[0]['technical'])
         return [DungeonModel([sm], **mega[0])]
 
-    def get_floor_from_sub_dungeon(self, sub_id, floor):
-        floor_query = self.database.query_many(specific_floor_query.format(sub_id, floor), ())
-        invade_query = self.database.query_many(specific_floor_query.format(sub_id, -1), ())
+    def get_floor_from_sub_dungeon(self, sub_id: int, floor: int) -> List[EncounterModel]:
+        floor_query = self.database.query_many(SPECIFIC_FLOOR_QUERY, (sub_id, floor))
+        invade_query = self.database.query_many(SPECIFIC_FLOOR_QUERY, (sub_id, -1))
         encounter_models = []
         floor_query.extend(invade_query)
         for f in floor_query:
-            data = self.database.query_one(enemy_data_query.format(f['enemy_id']), ())
+            data = self.database.query_one(ENEMY_DATA_QUERY, (f['enemy_id'],))
             if data is not None:
                 edm = EnemyDataModel(**data)
             else:
@@ -243,12 +255,15 @@ class DungeonContext(object):
             encounter_models.append(EncounterModel(edm, **f))
         return encounter_models
 
-    def get_enemy_skill(self, enemy_skill_id):
-        enemy_skill_query = self.database.query_one(skill_query.format(enemy_skill_id), ())
+    def get_enemy_skill(self, enemy_skill_id: int) -> EnemySkillModel:
+        enemy_skill_query = self.database.query_one(ES_QUERY, (enemy_skill_id,))
         return EnemySkillModel(**enemy_skill_query)
 
-    def get_sub_dungeon_id_from_name(self, dungeon_id, sub_name: str):
-        sub_dungeons = self.database.query_many(sub_dungeons_query.format(dungeon_id, sub_name), ())
+    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_name: str) -> Optional[int]:
+        if sub_name.isdigit():
+            sub_dungeons = self.database.query_many(SUB_DUNGEON_QUERY_BY_INDEX, (dungeon_id * 1000 + int(sub_name),))
+        else:
+            sub_dungeons = self.database.query_many(SUB_DUNGEONS_QUERY_BY_NAME, (dungeon_id, f"%{sub_name}%"))
         if len(sub_dungeons) == 0:
             return None
         elif len(sub_dungeons) > 1:
