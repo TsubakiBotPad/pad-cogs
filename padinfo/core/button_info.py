@@ -118,7 +118,7 @@ class ButtonInfo:
             dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                       inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)))
             lines.append(CARD_BUTTON_FORMAT.format(
-                card.id, card.name, card.mult, (dmg * card.mult)))
+                card.id, card.name, card.mult, round(dmg * card.mult, 2)))
         return "\n".join(lines)
 
     def _get_team_btn_damage(self, team_buttons, dgcog, monster):
@@ -141,7 +141,7 @@ class ButtonInfo:
             for i in card.att:
                 colors_str += COLORS[i]
             lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name,
-                         card.mult, colors_str, (total_dmg * card.mult)))
+                         card.mult, colors_str, round(total_dmg * card.mult, 2)))
         return "\n".join(lines)
 
 
