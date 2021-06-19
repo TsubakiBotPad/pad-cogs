@@ -33,11 +33,11 @@ TEAM_BUTTONS = [
     MonsterStat("Ryuno Ume   ", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
-    MonsterStat("Satan           ", 4286, 300, []),
-    MonsterStat("Durandalf Equip ", 4723, 300, []),
-    MonsterStat("Brachydios Equip", 4152, 350, []),
-    MonsterStat("Rajang          ", 5527, 550, []),
-    MonsterStat("Balrog          ", 5108, 450, [])
+    MonsterStat("Satan        ", 4286, 300, []),
+    MonsterStat("Durandalf Eq ", 4723, 300, []),
+    MonsterStat("Brachydios Eq", 4152, 350, []),
+    MonsterStat("Rajang       ", 5527, 550, []),
+    MonsterStat("Balrog       ", 5108, 450, [])
 ]
 
 COLORS = ["R", "B", "G", "L", "D"]
