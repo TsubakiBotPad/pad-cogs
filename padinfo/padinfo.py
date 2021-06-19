@@ -581,11 +581,10 @@ class PadInfo(commands.Cog):
             return
 
         info = button_info.get_info(dgcog, monster)
-        info_str = button_info.to_string(dgcog, monster, info)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
         color = await self.get_user_embed_color(ctx)
-        props = ButtonInfoViewProps(monster=monster, result=info_str)
+        props = ButtonInfoViewProps(monster=monster, info=info)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        color, ButtonInfoView.VIEW_TYPE, props)
         await menu.create(ctx, state)
