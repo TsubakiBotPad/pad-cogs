@@ -76,6 +76,8 @@ class ButtonInfo:
             dgcog, monster_model, max_level, max_atk_latents)
         result.sub_damage_with_atk_latent = result.main_damage_with_atk_latent * sub_attr_multiplier
         result.total_damage_with_atk_latent = result.main_damage_with_atk_latent + result.sub_damage_with_atk_latent
+        result.card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, dgcog, monster_model)
+        result.team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dgcog, monster_model)
         return result
 
     def _calculate_damage(self, dgcog, monster_model, level, num_atkpp_latent=0):
