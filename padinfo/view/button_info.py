@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
-from discordmenu.embed.text import Text
+from discordmenu.embed.text import Text, BlockText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
@@ -22,18 +22,22 @@ class ButtonInfoViewProps:
 
 
 def get_stats_without_latents(info):
-    return Box(
-        Text('Base: {}'.format(int(round(info.main_damage)))),
-        Text('Subattr: {}'.format(int(round(info.sub_damage)))),
-        Text('Total: {}'.format(int(round(info.total_damage))))
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
+            Text('Total:   {}'.format(int(round(info.total_damage))))
+        )
     )
 
 
 def get_stats_with_latents(info):
-    return Box(
-        Text('Base: {}'.format(int(round(info.main_damage_with_atk_latent)))),
-        Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
-        Text('Total: {}'.format(int(round(info.total_damage_with_atk_latent))))
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
+            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
+        )
     )
 
 
