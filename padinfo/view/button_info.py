@@ -55,7 +55,8 @@ class ButtonInfoView:
             EmbedField(
                 'Common Buttons',
                 Box(
-                    Text('*Inherits are assumed to be the max possible level (up to 110) and +297*'),
+                    Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
+                    Text('*\* = on-color stat bonus applied*'),
                     Text('Card Button Damage'),
                     # done this way to not have the whitespace after code block
                     Box(

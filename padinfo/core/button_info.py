@@ -28,19 +28,20 @@ MonsterStat = namedtuple('MonsterStat', 'name id mult att')
 
 TEAM_BUTTONS = [
     # account for attributes when spacing
-    MonsterStat("Nergi Hunter", 4172, 40, [2, 4]),
-    MonsterStat("Oversoul ", 5273, 50, [0, 1, 2, 3, 4]),
-    MonsterStat("Ryuno Ume   ", 5252, 80, [2, 4])
+    MonsterStat("Nergi Hunter{}", 4172, 40, [2, 4]),
+    MonsterStat("Oversoul{} ", 5273, 50, [0, 1, 2, 3, 4]),
+    MonsterStat("Ryuno Ume{}   ", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
-    MonsterStat("Satan        ", 4286, 300, []),
-    MonsterStat("Durandalf Eq ", 4723, 300, []),
-    MonsterStat("Brachydios Eq", 4152, 350, []),
-    MonsterStat("Rajang       ", 5527, 550, []),
-    MonsterStat("Balrog       ", 5108, 450, [])
+    MonsterStat("Satan{}        ", 4286, 300, []),
+    MonsterStat("Durandalf Eq{} ", 4723, 300, []),
+    MonsterStat("Brachydios Eq{}", 4152, 350, []),
+    MonsterStat("Rajang{}       ", 5527, 550, []),
+    MonsterStat("Balrog{}       ", 5108, 450, [])
 ]
 
 COLORS = ["R", "B", "G", "L", "D"]
+NIL_ATT = 'Nil'
 
 
 class ButtonInfo:
@@ -117,12 +118,12 @@ class ButtonInfo:
             stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
             dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                       inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)))
+            oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
             lines.append(CARD_BUTTON_FORMAT.format(
-                card.id, card.name, card.mult, round(dmg * card.mult, 2)))
+                card.id, card.name.format(oncolor), card.mult, round(dmg * card.mult, 2)))
         return "\n".join(lines)
 
     def _get_team_btn_damage(self, team_buttons, dgcog, monster):
-        # TODO: calculate with oncolor assist damage and ATK+ eq (Oversoul)
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
@@ -140,7 +141,8 @@ class ButtonInfo:
             colors_str = ""
             for i in card.att:
                 colors_str += COLORS[i]
-            lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name,
+            oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
+            lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name.format(oncolor),
                          card.mult, colors_str, round(total_dmg * card.mult, 2)))
         return "\n".join(lines)
 
