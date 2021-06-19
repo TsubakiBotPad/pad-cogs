@@ -36,7 +36,7 @@ CARD_BUTTONS = [
     MonsterStat("Satan{}        ", 4286, 300, []),
     MonsterStat("Durandalf Eq{} ", 4723, 300, []),
     MonsterStat("Brachydios Eq{}", 4152, 350, []),
-    MonsterStat("Rajang{}       ", 5527, 550, []),
+    MonsterStat("Rajang Eq{}    ", 5530, 550, []),
     MonsterStat("Balrog{}       ", 5108, 450, [])
 ]
 
