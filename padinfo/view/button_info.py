@@ -53,7 +53,7 @@ class ButtonInfoView:
             EmbedField('Without Latents', get_stats_without_latents(info)),
             EmbedField('With Latents', get_stats_with_latents(info)),
             EmbedField(
-                'Damage From Common Buttons',
+                'Common Buttons',
                 Text('Inherits are assumed to be the max possible level (up to 110) and +297')
             ),
             EmbedField('Card Button Damage', BlockText(info.card_btn_str)),
