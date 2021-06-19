@@ -54,10 +54,18 @@ class ButtonInfoView:
             EmbedField('With Latents', get_stats_with_latents(info)),
             EmbedField(
                 'Common Buttons',
-                Text('Inherits are assumed to be the max possible level (up to 110) and +297')
-            ),
-            EmbedField('Card Button Damage', BlockText(info.card_btn_str)),
-            EmbedField('Team Button Contribution', BlockText(info.team_btn_str))
+                Box(
+                    Text('*Inherits are assumed to be the max possible level (up to 110) and +297*'),
+                    Text('Card Button Damage'),
+                    # done this way to not have the whitespace after code block
+                    Box(
+                        BlockText(info.card_btn_str),
+                        Text('Team Button Contribution'),
+                        delimiter=''
+                    ),
+                    BlockText(info.team_btn_str)
+                )
+            )
         ]
 
         return EmbedView(
