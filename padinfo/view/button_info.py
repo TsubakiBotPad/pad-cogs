@@ -19,13 +19,6 @@ class ButtonInfoViewProps:
     def __init__(self, monster: "MonsterModel", info):
         self.monster = monster
         self.info = info
-        # TODO: probably won't use these
-        # self.main_damage = result.main_damage
-        # self.sub_damage = result.sub_damage
-        # self.total_damage = result.total_damage
-        # self.main_damage_with_atk_latent = result.main_damage_with_atk_latent
-        # self.sub_damage_with_atk_latent = result.sub_damage_with_atk_latent
-        # self.total_damage_with_atk_latent = result.total_damage_with_atk_latent
 
 
 def get_stats_without_latents(info):
@@ -55,6 +48,12 @@ class ButtonInfoView:
         fields = [
             EmbedField('Without Latents', get_stats_without_latents(info)),
             EmbedField('With Latents', get_stats_with_latents(info)),
+            EmbedField(
+                'Damage From Common Buttons',
+                Text('Inherits are assumed to be the max possible level (up to 110) and +297')
+            ),
+            EmbedField('Card Buttons', Box(info.card_btn_str)),
+            EmbedField('Team Buttons', Box(info.team_btn_str))
         ]
 
         return EmbedView(
