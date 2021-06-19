@@ -21,8 +21,8 @@ Inherits are assumed to be the max possible level (up to 110) and +297
 {}
 """
 
-TEAM_BUTTON_FORMAT = "As [{}] {} base ({}x {}): Contributes {}"
-CARD_BUTTON_FORMAT = "As [{}] {} base ({}x): Deals {}"
+TEAM_BUTTON_FORMAT = "[{}] {} ({}x {}): {}"
+CARD_BUTTON_FORMAT = "[{}] {} ({}x): {}"
 
 MonsterStat = namedtuple('MonsterStat', 'name id mult att')
 

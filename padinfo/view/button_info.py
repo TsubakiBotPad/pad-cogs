@@ -56,8 +56,8 @@ class ButtonInfoView:
                 'Damage From Common Buttons',
                 Text('Inherits are assumed to be the max possible level (up to 110) and +297')
             ),
-            EmbedField('Card Buttons', Box(info.card_btn_str)),
-            EmbedField('Team Buttons', Box(info.team_btn_str))
+            EmbedField('Card Button Damage', Box(info.card_btn_str)),
+            EmbedField('Team Button Contribution', Box(info.team_btn_str))
         ]
 
         return EmbedView(
