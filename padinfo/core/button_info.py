@@ -21,25 +21,27 @@ Inherits are assumed to be the max possible level (up to 110) and +297
 {}
 """
 
-TEAM_BUTTON_FORMAT = "As [{}] {} base ({}x {}): Contributes {}"
-CARD_BUTTON_FORMAT = "As [{}] {} base ({}x): Deals {}"
+TEAM_BUTTON_FORMAT = "[{}] {} ({}x {}): {}"
+CARD_BUTTON_FORMAT = "[{}] {} ({}x): {}"
 
 MonsterStat = namedtuple('MonsterStat', 'name id mult att')
 
 TEAM_BUTTONS = [
-    MonsterStat("Nergi Hunter", 4172, 40, [2, 4]),
-    MonsterStat("Oversoul", 5273, 50, [0, 1, 2, 3, 4]),
-    MonsterStat("Ryuno Ume", 5252, 80, [2, 4])
+    # account for attributes when spacing
+    MonsterStat("Nergi Hunter{}", 4172, 40, [2, 4]),
+    MonsterStat("Oversoul{} ", 5273, 50, [0, 1, 2, 3, 4]),
+    MonsterStat("Ryuno Ume{}   ", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
-    MonsterStat("Satan", 4286, 300, []),
-    MonsterStat("Durandalf Equip", 4723, 300, []),
-    MonsterStat("Brachydios Equip", 4152, 350, []),
-    MonsterStat("Rajang", 5527, 550, []),
-    MonsterStat("Balrog", 5108, 450, [])
+    MonsterStat("Satan{}        ", 4286, 300, []),
+    MonsterStat("Durandalf Eq{} ", 4723, 300, []),
+    MonsterStat("Brachydios Eq{}", 4152, 350, []),
+    MonsterStat("Rajang Eq{}    ", 5530, 550, []),
+    MonsterStat("Balrog{}       ", 5108, 450, [])
 ]
 
 COLORS = ["R", "B", "G", "L", "D"]
+NIL_ATT = 'Nil'
 
 
 class ButtonInfo:
@@ -76,6 +78,8 @@ class ButtonInfo:
             dgcog, monster_model, max_level, max_atk_latents)
         result.sub_damage_with_atk_latent = result.main_damage_with_atk_latent * sub_attr_multiplier
         result.total_damage_with_atk_latent = result.main_damage_with_atk_latent + result.sub_damage_with_atk_latent
+        result.card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, dgcog, monster_model)
+        result.team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dgcog, monster_model)
         return result
 
     def _calculate_damage(self, dgcog, monster_model, level, num_atkpp_latent=0):
@@ -114,12 +118,12 @@ class ButtonInfo:
             stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
             dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                       inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)))
+            oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
             lines.append(CARD_BUTTON_FORMAT.format(
-                card.id, card.name, card.mult, (dmg * card.mult)))
+                card.id, card.name.format(oncolor), card.mult, round(dmg * card.mult, 2)))
         return "\n".join(lines)
 
     def _get_team_btn_damage(self, team_buttons, dgcog, monster):
-        # TODO: calculate with oncolor assist damage and ATK+ eq (Oversoul)
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
@@ -137,8 +141,9 @@ class ButtonInfo:
             colors_str = ""
             for i in card.att:
                 colors_str += COLORS[i]
-            lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name,
-                         card.mult, colors_str, (total_dmg * card.mult)))
+            oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
+            lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name.format(oncolor),
+                         card.mult, colors_str, round(total_dmg * card.mult, 2)))
         return "\n".join(lines)
 
 
