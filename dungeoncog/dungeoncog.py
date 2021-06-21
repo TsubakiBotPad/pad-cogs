@@ -1,10 +1,9 @@
 import logging
-import os
 from typing import TYPE_CHECKING
 
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
-from redbot.core import commands, data_manager
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
