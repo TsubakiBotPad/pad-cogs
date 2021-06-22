@@ -523,7 +523,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @aep_set.command(name="offset")
-    async def aep_s_disabled(self, ctx, key, offset: int):
+    async def aep_s_offset(self, ctx, key, offset: int):
         """Sets how many minutes before event should ping happen"""
         if offset < 0:
             await ctx.send("Offset cannot be negative.")
