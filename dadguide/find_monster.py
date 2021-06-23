@@ -73,7 +73,7 @@ class FindMonster:
                         break
                 else:
                     skip = len(mwt) - 1
-                    result.append("".join(mwt))
+                    result.append("".join(tokens[c1:c1+len(mwt)]))
                     break
             else:
                 result.append(token1)
