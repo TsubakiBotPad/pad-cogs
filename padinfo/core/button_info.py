@@ -82,8 +82,8 @@ class ButtonInfo:
         result.team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dgcog, monster_model)
         return result
 
-    def _calculate_damage(self, dgcog, monster_model, level, num_atkpp_latent=0):
-        stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=num_atkpp_latent)
+    def _calculate_damage(self, dgcog, monster_model, level, num_atkplus_latent=0):
+        stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=num_atkplus_latent)
         stat_latents.num_atk_awakening = len(
             [x for x in monster_model.awakenings if x.awoken_skill_id == 1])
 
@@ -115,7 +115,7 @@ class ButtonInfo:
             inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
             max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
-            stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
+            stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
             dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                       inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)))
             oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
@@ -131,7 +131,7 @@ class ButtonInfo:
             inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
             max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
-            stat_latents = dgcog.MonsterStatModifierInput(num_atkpp=monster.latent_slots / 2)
+            stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
             dmg = dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                                            inherited_monster=inherit_model, multiplayer=True, inherited_monster_lvl=inherit_max_level)
             if(monster.attr1.value in card.att):
