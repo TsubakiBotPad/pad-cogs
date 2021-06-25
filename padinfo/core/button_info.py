@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 LIMIT_BREAK_LEVEL = 110
+SUPER_LIMIT_BREAK_LEVEL = 120
 
 INFO_STRING = """[{}] {}
 (Co-op mode)
@@ -65,6 +66,7 @@ class ButtonInfo:
         just subattr: whatever
         """
         max_level = LIMIT_BREAK_LEVEL if monster_model.limit_mult != 0 else monster_model.level
+        slb_level = SUPER_LIMIT_BREAK_LEVEL if monster_model.limit_mult != 0 else None
         max_atk_latents = monster_model.latent_slots / 2
 
         sub_attr_multiplier = self._get_sub_attr_multiplier(monster_model)
@@ -75,15 +77,25 @@ class ButtonInfo:
         result.total_damage = result.main_damage + result.sub_damage
 
         result.main_damage_with_atk_latent = self._calculate_damage(
-            dgcog, monster_model, max_level, max_atk_latents)
+            dgcog, monster_model, max_level, num_atkplus_latent=max_atk_latents)
         result.sub_damage_with_atk_latent = result.main_damage_with_atk_latent * sub_attr_multiplier
         result.total_damage_with_atk_latent = result.main_damage_with_atk_latent + result.sub_damage_with_atk_latent
+        if slb_level is None:
+            result.main_damage_with_slb_atk_latent = None
+            result.sub_damage_with_slb_atk_latent = None
+            result.total_damage_with_slb_atk_latent = None
+        else:
+            result.main_damage_with_slb_atk_latent = self._calculate_damage(
+                dgcog, monster_model, slb_level, num_atkplus2_latent=max_atk_latents)
+            result.sub_damage_with_slb_atk_latent = result.main_damage_with_slb_atk_latent * sub_attr_multiplier
+            result.total_damage_with_slb_atk_latent = (result.main_damage_with_slb_atk_latent
+                                                        + result.sub_damage_with_slb_atk_latent)
         result.card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, dgcog, monster_model)
         result.team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dgcog, monster_model)
         return result
 
-    def _calculate_damage(self, dgcog, monster_model, level, num_atkplus_latent=0):
-        stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=num_atkplus_latent)
+    def _calculate_damage(self, dgcog, monster_model, level, num_atkplus_latent=0, num_atkplus2_latent=0):
+        stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=num_atkplus_latent, num_atkplus2=num_atkplus2_latent)
         stat_latents.num_atk_awakening = len(
             [x for x in monster_model.awakenings if x.awoken_skill_id == 1])
 
@@ -154,6 +166,9 @@ class ButtonInfoResult:
     main_damage_with_atk_latent: float
     total_damage_with_atk_latent: float
     sub_damage_with_atk_latent: float
+    main_damage_with_slb_atk_latent: float
+    total_damage_with_slb_atk_latent: float
+    sub_damage_with_slb_atk_latent: float
 
 
 button_info = ButtonInfo()
