@@ -5,14 +5,14 @@ StatType = Literal['hp', 'atk', 'rcv']
 
 
 class MonsterStatModifierInput:
-    def __init__(self, num_hp=0, num_atk=0, num_rcv=0, num_hppp=0, num_atkpp=0, num_rcvpp=0, num_all_stat=0,
+    def __init__(self, num_hp=0, num_atk=0, num_rcv=0, num_hpplus=0, num_atkplus=0, num_rcvplus=0, num_all_stat=0,
                  num_hp_awakening=0, num_atk_awakening=0, num_rcv_awakening=0, num_voice_awakening=0):
         self.num_hp = num_hp
         self.num_atk = num_atk
         self.num_rcv = num_rcv
-        self.num_hppp = num_hppp
-        self.num_atkpp = num_atkpp
-        self.num_rcvpp = num_rcvpp
+        self.num_hpplus = num_hpplus
+        self.num_atkplus = num_atkplus
+        self.num_rcvplus = num_rcvplus
         self.num_all_stat = num_all_stat
         self.num_hp_awakening = num_hp_awakening
         self.num_atk_awakening = num_atk_awakening
@@ -21,11 +21,11 @@ class MonsterStatModifierInput:
 
     def get_latent_multiplier(self, key: StatType):
         if key == 'hp':
-            return self.num_hp * 0.015 + self.num_hppp * 0.045 + self.num_all_stat * 0.03
+            return self.num_hp * 0.015 + self.num_hpplus * 0.045 + self.num_all_stat * 0.03
         elif key == 'atk':
-            return self.num_atk * 0.01 + self.num_atkpp * 0.03 + self.num_all_stat * 0.02
+            return self.num_atk * 0.01 + self.num_atkplus * 0.03 + self.num_all_stat * 0.02
         elif key == 'rcv':
-            return self.num_rcv * 0.1 + self.num_rcvpp * 0.3 + self.num_all_stat * 0.2
+            return self.num_rcv * 0.1 + self.num_rcvplus * 0.3 + self.num_all_stat * 0.2
         return 0
 
     def get_awakening_addition(self, key: StatType):
