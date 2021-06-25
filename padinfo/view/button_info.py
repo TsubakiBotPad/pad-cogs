@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text, BlockText
@@ -32,13 +33,34 @@ def get_stats_without_latents(info):
 
 
 def get_stats_with_latents(info):
-    return BlockText(
-        Box(
+    if info.main_damage_with_slb_atk_latent is None:
+        table = Box(
             Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
             Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
             Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
         )
-    )
+    else:
+        table = _slb_table(info)
+    return BlockText(table)
+
+
+def _slb_table(info):
+    main_110 = int(round(info.main_damage_with_atk_latent))
+    sub_110 = int(round(info.sub_damage_with_atk_latent))
+    total_110 = int(round(info.total_damage_with_atk_latent))
+    main_120 = int(round(info.main_damage_with_slb_atk_latent))
+    sub_120 = int(round(info.sub_damage_with_slb_atk_latent))
+    total_120 = int(round(info.total_damage_with_slb_atk_latent))
+
+    cols = ['', '110 (Atk+)', '120 (Atk++)']
+    tbl = prettytable.PrettyTable(cols)
+    tbl.hrules = prettytable.NONE
+    tbl.vrules = prettytable.NONE
+    tbl.align = "l"
+    tbl.add_row(['Base:', main_110, main_120])
+    tbl.add_row(['Subattr:', sub_110, sub_120])
+    tbl.add_row(['Total:', total_110, total_120])
+    return tbl.get_string()
 
 
 class ButtonInfoView:
