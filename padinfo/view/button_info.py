@@ -23,13 +23,15 @@ class ButtonInfoViewProps:
 
 
 def get_stats_without_latents(info):
-    return BlockText(
-        Box(
+    if info.main_damage_with_slb_atk_latent is None:
+        table = Box(
             Text('Base:    {}'.format(int(round(info.main_damage)))),
             Text('Subattr: {}'.format(int(round(info.sub_damage)))),
             Text('Total:   {}'.format(int(round(info.total_damage))))
         )
-    )
+    else:
+        table = _slb_table(info, latent=False)
+    return BlockText(table)
 
 
 def get_stats_with_latents(info):
@@ -40,19 +42,28 @@ def get_stats_with_latents(info):
             Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
         )
     else:
-        table = _slb_table(info)
+        table = _slb_table(info, latent=True)
     return BlockText(table)
 
 
-def _slb_table(info):
-    main_110 = int(round(info.main_damage_with_atk_latent))
-    sub_110 = int(round(info.sub_damage_with_atk_latent))
-    total_110 = int(round(info.total_damage_with_atk_latent))
-    main_120 = int(round(info.main_damage_with_slb_atk_latent))
-    sub_120 = int(round(info.sub_damage_with_slb_atk_latent))
-    total_120 = int(round(info.total_damage_with_slb_atk_latent))
+def _slb_table(info, latent: bool):
+    if latent:
+        cols = ['', 'Max (Atk+)', '120 (Atk++)']
+        main_110 = int(round(info.main_damage_with_atk_latent))
+        sub_110 = int(round(info.sub_damage_with_atk_latent))
+        total_110 = int(round(info.total_damage_with_atk_latent))
+        main_120 = int(round(info.main_damage_with_slb_atk_latent))
+        sub_120 = int(round(info.sub_damage_with_slb_atk_latent))
+        total_120 = int(round(info.total_damage_with_slb_atk_latent))
+    else:
+        cols = ['', 'Max Level', '120']
+        main_110 = int(round(info.main_damage))
+        sub_110 = int(round(info.sub_damage))
+        total_110 = int(round(info.total_damage))
+        main_120 = int(round(info.main_slb_damage))
+        sub_120 = int(round(info.sub_slb_damage))
+        total_120 = int(round(info.total_slb_damage))
 
-    cols = ['', '110 (Atk+)', '120 (Atk++)']
     tbl = prettytable.PrettyTable(cols)
     tbl.hrules = prettytable.NONE
     tbl.vrules = prettytable.NONE

@@ -72,9 +72,17 @@ class ButtonInfo:
         sub_attr_multiplier = self._get_sub_attr_multiplier(monster_model)
 
         result = ButtonInfoResult()
-        result.main_damage = self._calculate_damage(dgcog, monster_model, max_level, 0)
+        result.main_damage = self._calculate_damage(dgcog, monster_model, max_level)
         result.sub_damage = result.main_damage * sub_attr_multiplier
         result.total_damage = result.main_damage + result.sub_damage
+        if slb_level is None:
+            result.main_slb_damage = None
+            result.sub_slb_damage = None
+            result.total_slb_damage = None
+        else:
+            result.main_slb_damage = self._calculate_damage(dgcog, monster_model, slb_level)
+            result.sub_slb_damage = result.main_slb_damage * sub_attr_multiplier
+            result.total_slb_damage = result.main_slb_damage + result.sub_slb_damage
 
         result.main_damage_with_atk_latent = self._calculate_damage(
             dgcog, monster_model, max_level, num_atkplus_latent=max_atk_latents)
@@ -163,6 +171,9 @@ class ButtonInfoResult:
     main_damage: float
     total_damage: float
     sub_damage: float
+    main_slb_damage: float
+    total_slb_damage: float
+    sub_slb_damage: float
     main_damage_with_atk_latent: float
     total_damage_with_atk_latent: float
     sub_damage_with_atk_latent: float
