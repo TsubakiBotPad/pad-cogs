@@ -102,7 +102,7 @@ class ButtonInfoView:
                     get_120_stats_with_latents(info)
                 ),
                 inline=True
-            ) if info.main_damage_with_slb_atk_latent is not None else None,
+            ) if monster.limit_mult != 0 else None,
             EmbedField(
                 'Common Buttons - {}'.format(get_max_level(monster)),
                 Box(
