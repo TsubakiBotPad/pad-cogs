@@ -22,30 +22,6 @@ class ButtonInfoViewProps:
         self.info = info
 
 
-def get_stats_without_latents(info):
-    if info.main_damage_with_slb_atk_latent is None:
-        table = Box(
-            Text('Base:    {}'.format(int(round(info.main_damage)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
-            Text('Total:   {}'.format(int(round(info.total_damage))))
-        )
-    else:
-        table = _slb_table(info, latent=False)
-    return BlockText(table)
-
-
-def get_stats_with_latents(info):
-    if info.main_damage_with_slb_atk_latent is None:
-        table = Box(
-            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
-            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
-        )
-    else:
-        table = _slb_table(info, latent=True)
-    return BlockText(table)
-
-
 def _slb_table(info, latent: bool):
     if latent:
         cols = ['', 'Max (Atk+)', '120 (Atk++)']
@@ -74,6 +50,70 @@ def _slb_table(info, latent: bool):
     return tbl.get_string()
 
 
+def get_stats_without_latents(info):
+    if info.main_damage_with_slb_atk_latent is None:
+        table = Box(
+            Text('Base:    {}'.format(int(round(info.main_damage)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
+            Text('Total:   {}'.format(int(round(info.total_damage))))
+        )
+    else:
+        table = _slb_table(info, latent=False)
+    return BlockText(table)
+
+
+def get_stats_with_latents(info):
+    if info.main_damage_with_slb_atk_latent is None:
+        table = Box(
+            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
+            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
+        )
+    else:
+        table = _slb_table(info, latent=True)
+    return BlockText(table)
+
+
+def get_max_stats_without_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
+            Text('Total:   {}'.format(int(round(info.total_damage))))
+        )
+    )
+
+
+def get_120_stats_without_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_slb_damage)))),
+            Text('Subattr: {}'.format(int(round(info.sub_slb_damage)))),
+            Text('Total:   {}'.format(int(round(info.total_slb_damage))))
+        )
+    )
+
+
+def get_max_stats_with_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
+            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
+        )
+    )
+
+
+def get_120_stats_with_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage_with_slb_atk_latent)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage_with_slb_atk_latent)))),
+            Text('Total:   {}'.format(int(round(info.total_damage_with_slb_atk_latent))))
+        )
+    )
+
+
 class ButtonInfoView:
     VIEW_TYPE = 'ButtonInfo'
 
@@ -83,8 +123,34 @@ class ButtonInfoView:
         info = props.info
 
         fields = [
-            EmbedField('Without Latents', get_stats_without_latents(info)),
-            EmbedField('With Latents', get_stats_with_latents(info)),
+            # EmbedField('Without Latents', get_stats_without_latents(info)),
+            # EmbedField('With Latents', get_stats_with_latents(info)),
+            EmbedField(
+                'Lv. Max',
+                Box(
+                    Text('Without Latents'),
+                    Box(
+                        get_max_stats_without_latents(info),
+                        Text('With Latents (Atk+)'),
+                        delimiter=''
+                    ),
+                    get_max_stats_with_latents(info)
+                ),
+                inline=True
+            ),
+            EmbedField(
+                'Lv. 120',
+                Box(
+                    Text('Without Latents'),
+                    Box(
+                        get_120_stats_without_latents(info),
+                        Text('With Latents (Atk++)'),
+                        delimiter=''
+                    ),
+                    get_120_stats_with_latents(info)
+                ),
+                inline=True
+            ) if info.main_damage_with_slb_atk_latent is not None else None,
             EmbedField(
                 'Common Buttons',
                 Box(
