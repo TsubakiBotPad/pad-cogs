@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-import prettytable
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text, BlockText
@@ -20,58 +19,6 @@ class ButtonInfoViewProps:
     def __init__(self, monster: "MonsterModel", info):
         self.monster = monster
         self.info = info
-
-
-def _slb_table(info, latent: bool):
-    if latent:
-        cols = ['', 'Max (Atk+)', '120 (Atk++)']
-        main_110 = int(round(info.main_damage_with_atk_latent))
-        sub_110 = int(round(info.sub_damage_with_atk_latent))
-        total_110 = int(round(info.total_damage_with_atk_latent))
-        main_120 = int(round(info.main_damage_with_slb_atk_latent))
-        sub_120 = int(round(info.sub_damage_with_slb_atk_latent))
-        total_120 = int(round(info.total_damage_with_slb_atk_latent))
-    else:
-        cols = ['', 'Max Level', '120']
-        main_110 = int(round(info.main_damage))
-        sub_110 = int(round(info.sub_damage))
-        total_110 = int(round(info.total_damage))
-        main_120 = int(round(info.main_slb_damage))
-        sub_120 = int(round(info.sub_slb_damage))
-        total_120 = int(round(info.total_slb_damage))
-
-    tbl = prettytable.PrettyTable(cols)
-    tbl.hrules = prettytable.NONE
-    tbl.vrules = prettytable.NONE
-    tbl.align = "l"
-    tbl.add_row(['Base:', main_110, main_120])
-    tbl.add_row(['Subattr:', sub_110, sub_120])
-    tbl.add_row(['Total:', total_110, total_120])
-    return tbl.get_string()
-
-
-def get_stats_without_latents(info):
-    if info.main_damage_with_slb_atk_latent is None:
-        table = Box(
-            Text('Base:    {}'.format(int(round(info.main_damage)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
-            Text('Total:   {}'.format(int(round(info.total_damage))))
-        )
-    else:
-        table = _slb_table(info, latent=False)
-    return BlockText(table)
-
-
-def get_stats_with_latents(info):
-    if info.main_damage_with_slb_atk_latent is None:
-        table = Box(
-            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
-            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
-        )
-    else:
-        table = _slb_table(info, latent=True)
-    return BlockText(table)
 
 
 def get_max_stats_without_latents(info):
@@ -123,12 +70,11 @@ class ButtonInfoView:
         info = props.info
 
         fields = [
-            # EmbedField('Without Latents', get_stats_without_latents(info)),
-            # EmbedField('With Latents', get_stats_with_latents(info)),
             EmbedField(
                 'Lv. Max',
                 Box(
                     Text('Without Latents'),
+                    # avoid whitespace after code block
                     Box(
                         get_max_stats_without_latents(info),
                         Text('With Latents (Atk+)'),
@@ -142,6 +88,7 @@ class ButtonInfoView:
                 'Lv. 120',
                 Box(
                     Text('Without Latents'),
+                    # avoid whitespace after code block
                     Box(
                         get_120_stats_without_latents(info),
                         Text('With Latents (Atk++)'),
