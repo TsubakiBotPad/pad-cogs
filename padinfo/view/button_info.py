@@ -7,7 +7,7 @@ from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.button_info import button_info
+from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 
@@ -19,6 +19,11 @@ class ButtonInfoViewProps:
     def __init__(self, monster: "MonsterModel", info):
         self.monster = monster
         self.info = info
+
+
+def get_max_level(monster):
+    level_text = str(LIMIT_BREAK_LEVEL) if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
+    return 'Lv. {}'.format(level_text)
 
 
 def get_max_stats_without_latents(info):
@@ -71,7 +76,7 @@ class ButtonInfoView:
 
         fields = [
             EmbedField(
-                'Lv. Max',
+                get_max_level(monster),
                 Box(
                     Text('Without Latents'),
                     # avoid whitespace after code block
@@ -99,7 +104,7 @@ class ButtonInfoView:
                 inline=True
             ) if info.main_damage_with_slb_atk_latent is not None else None,
             EmbedField(
-                'Common Buttons',
+                'Common Buttons - {}'.format(get_max_level(monster)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
