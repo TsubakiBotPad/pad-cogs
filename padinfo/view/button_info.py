@@ -7,7 +7,7 @@ from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.button_info import button_info
+from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 
@@ -21,7 +21,12 @@ class ButtonInfoViewProps:
         self.info = info
 
 
-def get_stats_without_latents(info):
+def get_max_level(monster):
+    level_text = str(LIMIT_BREAK_LEVEL) if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
+    return 'Lv. {}'.format(level_text)
+
+
+def get_max_stats_without_latents(info):
     return BlockText(
         Box(
             Text('Base:    {}'.format(int(round(info.main_damage)))),
@@ -31,12 +36,32 @@ def get_stats_without_latents(info):
     )
 
 
-def get_stats_with_latents(info):
+def get_120_stats_without_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_slb_damage)))),
+            Text('Subattr: {}'.format(int(round(info.sub_slb_damage)))),
+            Text('Total:   {}'.format(int(round(info.total_slb_damage))))
+        )
+    )
+
+
+def get_max_stats_with_latents(info):
     return BlockText(
         Box(
             Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
             Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
             Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
+        )
+    )
+
+
+def get_120_stats_with_latents(info):
+    return BlockText(
+        Box(
+            Text('Base:    {}'.format(int(round(info.main_damage_with_slb_atk_latent)))),
+            Text('Subattr: {}'.format(int(round(info.sub_damage_with_slb_atk_latent)))),
+            Text('Total:   {}'.format(int(round(info.total_damage_with_slb_atk_latent))))
         )
     )
 
@@ -50,10 +75,36 @@ class ButtonInfoView:
         info = props.info
 
         fields = [
-            EmbedField('Without Latents', get_stats_without_latents(info)),
-            EmbedField('With Latents', get_stats_with_latents(info)),
             EmbedField(
-                'Common Buttons',
+                get_max_level(monster),
+                Box(
+                    Text('Without Latents'),
+                    # avoid whitespace after code block
+                    Box(
+                        get_max_stats_without_latents(info),
+                        Text('With Latents (Atk+)'),
+                        delimiter=''
+                    ),
+                    get_max_stats_with_latents(info)
+                ),
+                inline=True
+            ),
+            EmbedField(
+                'Lv. 120',
+                Box(
+                    Text('Without Latents'),
+                    # avoid whitespace after code block
+                    Box(
+                        get_120_stats_without_latents(info),
+                        Text('With Latents (Atk++)'),
+                        delimiter=''
+                    ),
+                    get_120_stats_with_latents(info)
+                ),
+                inline=True
+            ) if monster.limit_mult != 0 else None,
+            EmbedField(
+                'Common Buttons - {}'.format(get_max_level(monster)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
