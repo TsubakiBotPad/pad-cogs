@@ -27,7 +27,7 @@ class MonsterStatModifierInput:
         if key == 'hp':
             return self.num_hp * 0.015 + self.num_hpplus * 0.045 + self.num_hpplus2 * 0.1 + self.num_all_stat * 0.03
         elif key == 'atk':
-            return self.num_atk * 0.01 + self.num_atkplus * 0.03 + self.num_atkplus2 * 0.05 + self.num_all_stat * 0.02
+            return self.num_atk * 0.01 + self.num_atkplus * 0.03 + self.num_atkplus2 * 0.08 + self.num_all_stat * 0.02
         elif key == 'rcv':
             return self.num_rcv * 0.1 + self.num_rcvplus * 0.3 + self.num_rcvplus2 * 0.35 + self.num_all_stat * 0.2
         return 0
