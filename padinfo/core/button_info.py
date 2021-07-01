@@ -34,6 +34,7 @@ TEAM_BUTTONS = [
     MonsterStat("Ryuno Ume{}   ", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
+    MonsterStat("Assassin{}     ", 5021, 200, []),
     MonsterStat("Satan{}        ", 4286, 300, []),
     MonsterStat("Durandalf Eq{} ", 4723, 300, []),
     MonsterStat("Brachydios Eq{}", 4152, 350, []),
