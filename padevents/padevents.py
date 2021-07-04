@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 import discord
 import itertools
@@ -14,8 +14,8 @@ import prettytable
 import pytz
 from redbot.core import checks
 from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box, pagify
-from tsutils import CogSettings, confirm_message, normalize_server_name, DummyObject, is_donor
+from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
+from tsutils import CogSettings, confirm_message, normalize_server_name, DummyObject, is_donor, rmdiacritics
 
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
@@ -146,7 +146,11 @@ class PadEvents(commands.Cog):
                             if aep['offset']:
                                 offsetstr = " in {} minute(s)".format(aep['offset'])
                             try:
-                                await channel.send("{}{} {}".format(event.name_and_modifier, offsetstr, ment),
+                                timestr = humanize_timedelta(timedelta=event.close_datetime-event.open_datetime)
+                                await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
+                                                                                          offsetstr,
+                                                                                          timestr,
+                                                                                          ment),
                                                    allowed_mentions=discord.AllowedMentions(roles=True))
                             except Exception:
                                 logger.exception("Failed to send AEP in channel {}".format(channel.id))
@@ -163,11 +167,13 @@ class PadEvents(commands.Cog):
                         continue
                     self.rolepinged_events.add((aed['key'], event.key))
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
-                        offsetstr = " starts now!"
+                        offsetstr = "now"
+                        timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
                         if aed['offset']:
-                            offsetstr = " starts in {} minute(s)!".format(aed['offset'])
+                            offsetstr = "in {} minute(s)".format(aed['offset'])
                         try:
-                            await user.send(event.clean_dungeon_name + offsetstr)
+                            await user.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
+                                            f" It will be active for {timestr}.")
                         except Exception:
                             logger.exception("Failed to send AED to user {}".format(user.id))
 
@@ -324,35 +330,59 @@ class PadEvents(commands.Cog):
     async def autoeventping(self, ctx):
         """Auto Event Pings"""
 
-    @autoeventping.command(name="add")
-    async def aep_add(self, ctx, key, server=None, searchstr=None, red: discord.Role = None, blue: discord.Role = None,
-                      green: discord.Role = None):
-        """Add a new autoeventping"""
-        if green is None and server is not None:
-            await ctx.send("Multi-word keys must be in quotes.")
+    @autoeventping.command(name="add", ignore_extra=False)
+    async def aep_add(self, ctx, key, server=None, searchstr=None,
+                      red_role: Optional[discord.Role] = None, red_channel: Optional[discord.TextChannel] = None,
+                      blue_role: discord.Role = None, blue_channel: Optional[discord.TextChannel] = None,
+                      green_role: discord.Role = None, green_channel: Optional[discord.TextChannel] = None):
+        """Add a new autoeventping.
+
+        Usage:
+        `[p]autoeventping add newping NA "Extreme King Metal Dragon" @redrole @bluerole @greenrole`
+        `[p]autoeventping add onerole JP "monday dungeon" @single_role_to_ping`
+        `[p]autoeventping add channels KR "tama" @redrole #redchannel @bluerole #bluechannel @greenrole #greenchannel`
+        `[p]autoeventping add singlechan NA "wallace" @single_role_to_ping #channel_to_ping_in`
+        `[p]autoeventping add roles NA "infestation" @redrole #channel_to_ping_in @bluerole @greenrole`
+        `[p]autoeventping add noping NA "infestation" #channel_to_ping_in`
+        """
+        if " " in key:
+            await ctx.send("Multi-word keys are not allowed.")
             return
+
+        defchan = None if red_channel is None else red_channel.id
 
         default = {
             'roles': [None, None, None],
-            'channels': [None, None, None],
-            'server': 'NA',
-            'searchstr': None,
+            'channels': [defchan, defchan, defchan],
+            'server': server or 'NA',
+            'searchstr': searchstr and rmdiacritics(searchstr),
             'regex': False,
-            'enabled': False,
+            'enabled': bool(red_role or red_channel),
             'offset': 0,
         }
 
-        if green is not None:
+        if red_role is not None:
+            if red_channel is None:
+                if blue_channel is not None or green_channel is not None:
+                    await ctx.send("You must supply all three channels or just red_channel.")
+                    return
+                red_channel = blue_channel = green_channel = ctx.channel
+            elif (blue_channel is None) ^ (green_channel is None):
+                await ctx.send("You must supply all three channels or just red_channel.")
+                return
+            else:
+                blue_channel = green_channel = red_channel
+
+            if blue_role is None:
+                blue_role = green_role = red_role
+
             server = normalize_server_name(server)
             if server not in SUPPORTED_SERVERS:
-                await ctx.send("Unsupported server, pick one of NA, KR, JP")
+                await ctx.send(f"Unsupported server `{server}`, pick one of NA, KR, JP")
                 return
             default.update({
-                'roles': [red.id, blue.id, green.id],
-                'channels': [ctx.channel.id] * 3,
-                'server': server,
-                'searchstr': searchstr,
-                'enabled': True,
+                'roles': [red_role.id, blue_role.id, green_role.id],
+                'channels': [red_channel.id, blue_channel.id, green_channel.id],
             })
 
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
@@ -360,7 +390,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @autoeventping.command(name="remove", aliases=['rm', 'delete'])
-    async def aep_remove(self, ctx, *, key):
+    async def aep_remove(self, ctx, key):
         """Remove an autoeventping"""
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             if key not in pingroles:
@@ -370,7 +400,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @autoeventping.command(name="show")
-    async def aep_show(self, ctx, *, key):
+    async def aep_show(self, ctx, key):
         """Show specifics of an autoeventping"""
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
@@ -410,17 +440,17 @@ class PadEvents(commands.Cog):
     async def aep_set(self, ctx):
         """Sets specific parts of an autoeventping"""
 
-    async def aepc(self, ctx, key, k, f):
+    async def aepchange(self, ctx, key, k, f):
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             if key not in pingroles:
                 await ctx.send("That key does not exist.")
                 return
             pingroles[key][k] = f(pingroles[key][k])
 
-    async def aeps(self, ctx, key, k, v):
-        await self.aepc(ctx, key, k, lambda x: v)
+    async def aepset(self, ctx, key, k, v):
+        await self.aepchange(ctx, key, k, lambda x: v)
 
-    async def aepg(self, ctx, key):
+    async def aepget(self, ctx, key):
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
             await ctx.send("That key does not exist.")
@@ -430,49 +460,49 @@ class PadEvents(commands.Cog):
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping for all groups"""
-        await self.aeps(ctx, key, 'channels', [channel.id] * 3)
+        await self.aepset(ctx, key, 'channels', [channel.id] * 3)
         await ctx.tick()
 
     @aep_set.command(name="redchannel")
     async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping when event is red"""
-        await self.aepc(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
+        await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
         await ctx.tick()
 
     @aep_set.command(name="bluechannel")
     async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping when event is blue"""
-        await self.aepc(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
+        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
         await ctx.tick()
 
     @aep_set.command(name="greenchannel")
     async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping when event is green"""
-        await self.aepc(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
+        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
         await ctx.tick()
 
     @aep_set.command(name="roles")
     async def aep_s_roles(self, ctx, key, red: discord.Role, blue: discord.Role, green: discord.Role):
         """Sets roles to ping"""
-        await self.aeps(ctx, key, 'roles', [red.id, blue.id, green.id])
+        await self.aepset(ctx, key, 'roles', [red.id, blue.id, green.id])
         await ctx.tick()
 
     @aep_set.command(name="redrole")
     async def aep_s_redrole(self, ctx, key, role: discord.Role):
         """Sets role to ping when event is red"""
-        await self.aepc(ctx, key, 'roles', lambda x: [role.id, x[1], x[2]])
+        await self.aepchange(ctx, key, 'roles', lambda x: [role.id, x[1], x[2]])
         await ctx.tick()
 
     @aep_set.command(name="bluerole")
     async def aep_s_bluerole(self, ctx, key, role: discord.Role):
         """Sets role to ping when event is blue"""
-        await self.aepc(ctx, key, 'roles', lambda x: [x[0], role.id, x[2]])
+        await self.aepchange(ctx, key, 'roles', lambda x: [x[0], role.id, x[2]])
         await ctx.tick()
 
     @aep_set.command(name="greenrole")
     async def aep_s_greenrole(self, ctx, key, role: discord.Role):
         """Sets role to ping when event is green"""
-        await self.aepc(ctx, key, 'roles', lambda x: [x[0], x[1], role.id])
+        await self.aepchange(ctx, key, 'roles', lambda x: [x[0], x[1], role.id])
         await ctx.tick()
 
     @aep_set.command(name="server")
@@ -482,20 +512,20 @@ class PadEvents(commands.Cog):
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
-        await self.aeps(ctx, key, 'server', server)
+        await self.aepset(ctx, key, 'server', server)
         await ctx.tick()
 
     @aep_set.command(name="searchstr")
     async def aep_s_searchstr(self, ctx, key, *, searchstr):
         """Sets what string is tested against event name"""
-        searchstr = searchstr.strip('"')
-        if (await self.aepg(ctx, key))['regex']:
+        searchstr = rmdiacritics(searchstr).strip('"')
+        if (await self.aepget(ctx, key))['regex']:
             try:
                 re.compile(searchstr)
             except re.error:
                 await ctx.send("Invalid regex searchstr. (`{}`)".format(searchstr))
                 return
-        await self.aeps(ctx, key, 'searchstr', searchstr)
+        await self.aepset(ctx, key, 'searchstr', searchstr)
         await ctx.tick()
 
     @aep_set.command(name="regex")
@@ -503,23 +533,23 @@ class PadEvents(commands.Cog):
         """Sets whether searchstr is calculated via regex"""
         if regex:
             try:
-                re.compile((await self.aepg(ctx, key))['searchstr'])
+                re.compile((await self.aepget(ctx, key))['searchstr'])
             except re.error:
-                await ctx.send("Invalid regex searchstr. (`{}`)".format((await self.aepg(ctx, key))['searchstr']))
+                await ctx.send("Invalid regex searchstr. (`{}`)".format((await self.aepget(ctx, key))['searchstr']))
                 return
-        await self.aeps(ctx, key, 'regex', regex)
+        await self.aepset(ctx, key, 'regex', regex)
         await ctx.tick()
 
     @aep_set.command(name="enabled", aliases=['enable'])
     async def aep_s_enabled(self, ctx, key, enabled: bool = True):
         """Sets whether or not ping is enabled"""
-        await self.aeps(ctx, key, 'enabled', enabled)
+        await self.aepset(ctx, key, 'enabled', enabled)
         await ctx.tick()
 
     @aep_set.command(name="disabled", aliases=['disable'])
     async def aep_s_disabled(self, ctx, key, disabled: bool = True):
         """Sets whether or not ping is disabled"""
-        await self.aeps(ctx, key, 'enabled', not disabled)
+        await self.aepset(ctx, key, 'enabled', not disabled)
         await ctx.tick()
 
     @aep_set.command(name="offset")
@@ -528,7 +558,7 @@ class PadEvents(commands.Cog):
         if offset < 0:
             await ctx.send("Offset cannot be negative.")
             return
-        await self.aeps(ctx, key, 'offset', offset)
+        await self.aepset(ctx, key, 'offset', offset)
         await ctx.tick()
 
     @commands.group(aliases=['aed'])
