@@ -332,46 +332,38 @@ class PadEvents(commands.Cog):
 
     @autoeventping.command(name="add", ignore_extra=False)
     async def aep_add(self, ctx, key, server=None, searchstr=None,
-                      red_role: Optional[discord.Role] = None, red_channel: Optional[discord.TextChannel] = None,
-                      blue_role: discord.Role = None, blue_channel: Optional[discord.TextChannel] = None,
-                      green_role: discord.Role = None, green_channel: Optional[discord.TextChannel] = None):
-        """Add a new autoeventping.
+                      red_role: Optional[discord.Role] = None,
+                      blue_role: Optional[discord.Role] = None,
+                      green_role: Optional[discord.Role] = None,
+                      channel: discord.TextChannel = None):
+        """Add a new autoeventping.  Use `[p]aep set` with your chosen key to finish or update config.
 
         Usage:
-        `[p]autoeventping add newping NA "Extreme King Metal Dragon" @redrole @bluerole @greenrole`
-        `[p]autoeventping add onerole JP "monday dungeon" @single_role_to_ping`
-        `[p]autoeventping add channels KR "tama" @redrole #redchannel @bluerole #bluechannel @greenrole #greenchannel`
-        `[p]autoeventping add singlechan NA "wallace" @single_role_to_ping #channel_to_ping_in`
-        `[p]autoeventping add roles NA "infestation" @redrole #channel_to_ping_in @bluerole @greenrole`
-        `[p]autoeventping add noping NA "infestation" #channel_to_ping_in`
+        `[p]aep add diamondra`
+        `[p]aep add rubydra NA "ruby dragon"`
+        `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @green`
+        `[p]aep add monday JP "monday dungeon" @eventping`
+        `[p]aep add pluspoints NA "star treasure" @red @blue @green #channel`
+        `[p]aep add wallace KR "wallace" @eventping #channel`
+        `[p]aep add tama NA "tama" #channel`
         """
         if " " in key:
             await ctx.send("Multi-word keys are not allowed.")
             return
 
-        defchan = None if red_channel is None else red_channel.id
-
         default = {
             'roles': [None, None, None],
-            'channels': [defchan, defchan, defchan],
+            'channels': [channel and channel.id] * 3,
             'server': server or 'NA',
             'searchstr': searchstr and rmdiacritics(searchstr),
             'regex': False,
-            'enabled': bool(red_role or red_channel),
+            'enabled': bool(red_role or channel),
             'offset': 0,
         }
 
         if red_role is not None:
-            if red_channel is None:
-                if blue_channel is not None or green_channel is not None:
-                    await ctx.send("You must supply all three channels or just red_channel.")
-                    return
-                red_channel = blue_channel = green_channel = ctx.channel
-            elif (blue_channel is None) ^ (green_channel is None):
-                await ctx.send("You must supply all three channels or just red_channel.")
-                return
-            else:
-                blue_channel = green_channel = red_channel
+            if channel is None:
+                channel = ctx.channel
 
             if blue_role is None:
                 blue_role = green_role = red_role
@@ -382,7 +374,7 @@ class PadEvents(commands.Cog):
                 return
             default.update({
                 'roles': [red_role.id, blue_role.id, green_role.id],
-                'channels': [red_channel.id, blue_channel.id, green_channel.id],
+                'channels': [channel.id] * 3,
             })
 
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
