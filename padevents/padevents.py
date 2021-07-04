@@ -341,10 +341,10 @@ class PadEvents(commands.Cog):
         Usage:
         `[p]aep add diamondra`
         `[p]aep add rubydra NA "ruby dragon"`
-        `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @greenrole`
+        `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @green`
         `[p]aep add monday JP "monday dungeon" @eventping`
-        `[p]aep add wallace KR "wallace" @eventping #channel`
         `[p]aep add infest NA "infestation" @red @blue @green #channel`
+        `[p]aep add wallace KR "wallace" @eventping #channel`
         `[p]aep add tama NA "tama" #channel_to_ping_in`
         """
         if " " in key:
