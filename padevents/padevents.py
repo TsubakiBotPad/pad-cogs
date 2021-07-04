@@ -336,24 +336,32 @@ class PadEvents(commands.Cog):
                       blue_role: Optional[discord.Role] = None,
                       green_role: Optional[discord.Role] = None,
                       channel: discord.TextChannel = None):
-        """Add a new autoeventping.  Use `[p]aep set` with your chosen key to finish or update config.
+        """Add a new autoeventping.
+         Use `[p]aep set` with your chosen key to finish or update config.
+         `channel` defaults to the current channel.
 
         Usage:
         `[p]aep add diamondra`
-        `[p]aep add rubydra NA "ruby dragon"`
-        `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @green`
-        `[p]aep add monday JP "monday dungeon" @eventping`
         `[p]aep add pluspoints NA "star treasure" @red @blue @green #channel`
         `[p]aep add wallace KR "wallace" @eventping #channel`
-        `[p]aep add tama NA "tama" #channel`
         """
+
         if " " in key:
             await ctx.send("Multi-word keys are not allowed.")
             return
 
+        if server:
+            server = normalize_server_name(server)
+            if server not in SUPPORTED_SERVERS:
+                await ctx.send(f"Unsupported server `{server}`, pick one of NA, KR, JP")
+                return
+
+        if blue_role is None:
+            blue_role = green_role = red_role
+
         default = {
             'roles': [None, None, None],
-            'channels': [channel and channel.id] * 3,
+            'channels': [(channel or ctx.channel).id] * 3,
             'server': server or 'NA',
             'searchstr': searchstr and rmdiacritics(searchstr),
             'regex': False,
@@ -362,24 +370,13 @@ class PadEvents(commands.Cog):
         }
 
         if red_role is not None:
-            if channel is None:
-                channel = ctx.channel
-
-            if blue_role is None:
-                blue_role = green_role = red_role
-
-            server = normalize_server_name(server)
-            if server not in SUPPORTED_SERVERS:
-                await ctx.send(f"Unsupported server `{server}`, pick one of NA, KR, JP")
-                return
-            default.update({
-                'roles': [red_role.id, blue_role.id, green_role.id],
-                'channels': [channel.id] * 3,
-            })
+            default['roles'] = [red_role.id, blue_role.id, green_role and green_role.id]
 
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             pingroles[key] = default
-        await ctx.tick()
+
+        await ctx.send("New AEP created:")
+        await self.aep_show(ctx, key)
 
     @autoeventping.command(name="remove", aliases=['rm', 'delete'])
     async def aep_remove(self, ctx, key):
