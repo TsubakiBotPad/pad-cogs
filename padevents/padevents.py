@@ -336,7 +336,7 @@ class PadEvents(commands.Cog):
                       blue_role: Optional[discord.Role] = None,
                       green_role: Optional[discord.Role] = None,
                       channel: discord.TextChannel = None):
-        """Add a new autoeventping.  Use [p]autoeventping set to finish or update config.
+        """Add a new autoeventping.  Use `[p]aep set` with your chosen key to finish or update config.
 
         Usage:
         `[p]aep add diamondra`
