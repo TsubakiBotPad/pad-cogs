@@ -345,7 +345,7 @@ class PadEvents(commands.Cog):
         `[p]aep add monday JP "monday dungeon" @eventping`
         `[p]aep add infest NA "infestation" @red @blue @green #channel`
         `[p]aep add wallace KR "wallace" @eventping #channel`
-        `[p]aep add tama NA "tama" #channel_to_ping_in`
+        `[p]aep add tama NA "tama" #channel`
         """
         if " " in key:
             await ctx.send("Multi-word keys are not allowed.")
