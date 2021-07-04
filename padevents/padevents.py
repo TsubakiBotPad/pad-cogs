@@ -343,7 +343,7 @@ class PadEvents(commands.Cog):
         `[p]aep add rubydra NA "ruby dragon"`
         `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @green`
         `[p]aep add monday JP "monday dungeon" @eventping`
-        `[p]aep add infest NA "infestation" @red @blue @green #channel`
+        `[p]aep add pluspoints NA "star treasure" @red @blue @green #channel`
         `[p]aep add wallace KR "wallace" @eventping #channel`
         `[p]aep add tama NA "tama" #channel`
         """
