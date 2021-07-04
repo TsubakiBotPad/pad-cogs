@@ -339,7 +339,8 @@ class PadEvents(commands.Cog):
         """Add a new autoeventping.
 
         Usage:
-        `[p]aep add emptyaep`
+        `[p]aep add diamondra`
+        `[p]aep add rubydra NA "ruby dragon"`
         `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @greenrole`
         `[p]aep add monday JP "monday dungeon" @eventping`
         `[p]aep add wallace KR "wallace" @eventping #channel`
