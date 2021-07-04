@@ -343,18 +343,16 @@ class PadEvents(commands.Cog):
         `[p]aep add ekmd NA "Extreme King Metal Dragon" @red @blue @greenrole`
         `[p]aep add monday JP "monday dungeon" @eventping`
         `[p]aep add wallace KR "wallace" @eventping #channel`
-        `[p]aep add infest NA "infestation" @red @blue @greenrole #channel`
+        `[p]aep add infest NA "infestation" @red @blue @green #channel`
         `[p]aep add tama NA "tama" #channel_to_ping_in`
         """
         if " " in key:
             await ctx.send("Multi-word keys are not allowed.")
             return
 
-        defchan = None if channel is None else channel.id
-
         default = {
             'roles': [None, None, None],
-            'channels': [defchan] * 3,
+            'channels': [channel and channel.id] * 3,
             'server': server or 'NA',
             'searchstr': searchstr and rmdiacritics(searchstr),
             'regex': False,
@@ -366,7 +364,7 @@ class PadEvents(commands.Cog):
             if channel is None:
                 channel = ctx.channel
 
-            if green_role is None:
+            if blue_role is None:
                 blue_role = green_role = red_role
 
             server = normalize_server_name(server)
