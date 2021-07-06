@@ -872,7 +872,7 @@ class PadEvents(commands.Cog):
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        if group != None and group.lower() not in GROUPS:
+        if group is not None and group.lower() not in GROUPS:
             await ctx.send("Unsupported group, pick one of red, blue, green")
             return
 
@@ -884,15 +884,15 @@ class PadEvents(commands.Cog):
         active_events = events.active_only().items_by_open_time(reverse=True)
         pending_events = events.pending_only().items_by_open_time(reverse=True)
 
+        if group is not None:
+            active_events = [e for e in active_events if e.group == group.lower()]
+            pending_events = [e for e in pending_events if e.group == group.lower()]
+
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
 
         # active_events = list(group_to_active_event.values())
         # pending_events = list(group_to_pending_event.values())
-
-        if group != None:
-            active_events = [e for e in active_events if e.group == group.lower()]
-            pending_events = [e for e in pending_events if e.group == group.lower()]
 
         active_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
         pending_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
