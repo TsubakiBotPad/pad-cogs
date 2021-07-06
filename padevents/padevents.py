@@ -852,24 +852,28 @@ class PadEvents(commands.Cog):
         return header + tbl.get_string() + "\n"
 
     @commands.command(aliases=['events'])
-    async def eventsna(self, ctx):
+    async def eventsna(self, ctx, group=None):
         """Display upcoming daily events for NA."""
-        await self.do_partial(ctx, 'NA')
+        await self.do_partial(ctx, 'NA', group)
 
     @commands.command()
-    async def eventsjp(self, ctx):
+    async def eventsjp(self, ctx, group=None):
         """Display upcoming daily events for JP."""
-        await self.do_partial(ctx, 'JP')
+        await self.do_partial(ctx, 'JP', group)
 
     @commands.command()
-    async def eventskr(self, ctx):
+    async def eventskr(self, ctx, group=None):
         """Display upcoming daily events for KR."""
-        await self.do_partial(ctx, 'KR')
+        await self.do_partial(ctx, 'KR', group)
 
-    async def do_partial(self, ctx, server):
+    async def do_partial(self, ctx, server, group=None):
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
+            return
+
+        if group is not None and group.lower() not in GROUPS:
+            await ctx.send("Unsupported group, pick one of red, blue, green")
             return
 
         events = EventList(self.events)
@@ -879,6 +883,10 @@ class PadEvents(commands.Cog):
 
         active_events = events.active_only().items_by_open_time(reverse=True)
         pending_events = events.pending_only().items_by_open_time(reverse=True)
+
+        if group is not None:
+            active_events = [e for e in active_events if e.group == group.lower()]
+            pending_events = [e for e in pending_events if e.group == group.lower()]
 
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
