@@ -9,7 +9,7 @@ import discord
 import tsutils
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline, pagify, box
-from tsutils import CogSettings, auth_check, replace_emoji_names_with_code, fix_emojis_for_server
+from tsutils import CogSettings, auth_check, replace_emoji_names_with_code, fix_emojis_for_server, confirm_message
 
 logger = logging.getLogger('red.misc-cogs.channelmirror')
 
@@ -60,8 +60,14 @@ class ChannelMirror(commands.Cog):
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
             await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
             return
+        conf = await confirm_message(ctx, "Set up mirror of <#{}> to mirror to <#{}>?"
+                                     .format(source_channel_id, dest_channel_id))
+        if not conf:
+            await ctx.send(":x: Action cancelled. No action was taken.")
+            return
         self.settings.add_mirrored_channel(source_channel_id, dest_channel_id)
-        await ctx.tick()
+        await ctx.send(":white_check_mark: Okay, I set up a mirror of <#{}> to <#{}>"
+                       .format(source_channel_id, dest_channel_id))
 
     @channelmirror.command(aliases=['rmmirror', 'rm', 'delete'])
     @checks.is_owner()
