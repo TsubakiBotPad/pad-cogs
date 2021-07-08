@@ -148,9 +148,9 @@ class PadEvents(commands.Cog):
                             try:
                                 timestr = humanize_timedelta(timedelta=event.close_datetime-event.open_datetime)
                                 await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
-                                                                                          offsetstr,
-                                                                                          timestr,
-                                                                                          ment),
+                                                                                           timestr,
+                                                                                           offsetstr,
+                                                                                           ment),
                                                    allowed_mentions=discord.AllowedMentions(roles=True))
                             except Exception:
                                 logger.exception("Failed to send AEP in channel {}".format(channel.id))
@@ -408,12 +408,12 @@ class PadEvents(commands.Cog):
                  in pingroles[key]['channels']
                  ]
         pr = (f"{key} ({'enabled' if pingroles[key]['enabled'] else 'disabled'})\n"
-              f"\tSearch String: '{pingroles[key]['searchstr']}' {'(regex search)' * pingroles[key]['regex']}\n"
+              f"\tSearch string: `{pingroles[key]['searchstr']}` {'(regex search)' * pingroles[key]['regex']}\n"
               f"\tServer: {pingroles[key]['server']}\n"
               f"\tRed: {roles[0]} (In {chans[0]})\n"
               f"\tBlue: {roles[1]} (In {chans[1]})\n"
               f"\tGreen: {roles[2]} (In {chans[2]})\n"
-              f"\tOffset: {pingroles[key]['offset']} minutes")
+              f"\tOffset: `{pingroles[key]['offset']} minutes`")
         await ctx.send(pr)
 
     @autoeventping.command(name="list")
@@ -555,16 +555,26 @@ class PadEvents(commands.Cog):
         """Auto Event DMs"""
 
     @autoeventdm.command(name="add")
-    async def aed_add(self, ctx, server, searchstr, group, time_offset: int = 0):
+    async def aed_add(self, ctx, server, searchstr, group=None, time_offset: int = 0):
         """Add a new autoeventdm"""
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
-        group = group.lower()
-        if group not in GROUPS:
-            await ctx.send("Unsupported group, pick one of red, blue, green")
-            return
+
+        #work around for 2 optional parameters
+        if group is not None and group.isdigit():
+            time_offset = int(group)
+            group = None
+
+        if group is None:
+            group = "red"
+        else:
+            group = group.lower()
+            if group not in GROUPS:
+                await ctx.send("Unsupported group, pick one of red, blue, green")
+                return
+
         if time_offset and not user_is_donor(ctx):
             await ctx.send("You must be a donor to set a time offset!")
             return
@@ -580,9 +590,9 @@ class PadEvents(commands.Cog):
             'offset': time_offset,
         }
 
-        async with self.config.user(ctx.author).dmevents() as dmevents:
-            dmevents.append(default)
-        await ctx.tick()
+        index = await self._do_aed_add(ctx, default)
+        await ctx.send("New AED created:")
+        await self.aed_show(ctx, index)
 
     @autoeventdm.command(name="remove", aliases=['rm', 'delete'])
     async def aed_remove(self, ctx, index: int):
@@ -596,6 +606,20 @@ class PadEvents(commands.Cog):
                 return
             dmevents.pop(index - 1)
         await ctx.tick()
+
+    @autoeventdm.command(name="show")
+    async def aed_show(self, ctx, index: int):
+        """Show specifics of an autoeventdm"""
+        dmevents = await self.config.user(ctx.author).dmevents()
+        if not 0 < index <= len(dmevents):
+            await ctx.send("That isn't a valid index.")
+            return
+        ret = (f"Lookup number: `{index}`\n"
+               f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
+               f"\tServer: {dmevents[index - 1]['server']}\n"
+               f"\tGroup: {dmevents[index - 1]['group'].title()} \n"
+               f"\tOffset (Donor Only): `{dmevents[index - 1]['offset']} minutes`")
+        await ctx.send(ret)
 
     @autoeventdm.command(name="list")
     async def aed_list(self, ctx):
@@ -621,6 +645,12 @@ class PadEvents(commands.Cog):
     @autoeventdm.group(name="edit")
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
+        
+    async def _do_aed_add(self, ctx, item):
+        """Add autoeventdm and return its index"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            dmevents.append(item)
+        return len(dmevents)
 
     @is_donor()
     @aed_e.command(name="offset")
