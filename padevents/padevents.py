@@ -569,7 +569,6 @@ class PadEvents(commands.Cog):
 
         if group is None:
             group = "red"
-            #await ctx.send("Since you didn't set a group, it is defaulted to `Red`")
         else:
             group = group.lower()
             if group not in GROUPS:
@@ -591,11 +590,9 @@ class PadEvents(commands.Cog):
             'offset': time_offset,
         }
 
-        async with self.config.user(ctx.author).dmevents() as dmevents:
-            dmevents.append(default)
-
+        index = await self._do_add(ctx, default)
         await ctx.send("New AED created:")
-        await self.aed_show(ctx, len(dmevents))
+        await self.aed_show(ctx, index)
 
     @autoeventdm.command(name="remove", aliases=['rm', 'delete'])
     async def aed_remove(self, ctx, index: int):
@@ -617,12 +614,12 @@ class PadEvents(commands.Cog):
         if not 0 < index <= len(dmevents):
             await ctx.send("That isn't a valid index.")
             return
-        de = (f"Lookup number: `{index}`\n"
-              f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
-              f"\tServer: {dmevents[index - 1]['server']}\n"
-              f"\tGroup: {dmevents[index - 1]['group'].title()} \n"
-              f"\tOffset (Donor Only): `{dmevents[index - 1]['offset']} minutes`")
-        await ctx.send(de)
+        ret = (f"Lookup number: `{index}`\n"
+               f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
+               f"\tServer: {dmevents[index - 1]['server']}\n"
+               f"\tGroup: {dmevents[index - 1]['group'].title()} \n"
+               f"\tOffset (Donor Only): `{dmevents[index - 1]['offset']} minutes`")
+        await ctx.send(ret)
 
     @autoeventdm.command(name="list")
     async def aed_list(self, ctx):
@@ -648,6 +645,12 @@ class PadEvents(commands.Cog):
     @autoeventdm.group(name="edit")
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
+        
+    async def _do_add(self, ctx, item):
+        """Add autoeventdm and return its index"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            dmevents.append(item)
+        return len(dmevents)
 
     @is_donor()
     @aed_e.command(name="offset")
