@@ -590,7 +590,7 @@ class PadEvents(commands.Cog):
             'offset': time_offset,
         }
 
-        index = await self._do_add(ctx, default)
+        index = await self._do_aed_add(ctx, default)
         await ctx.send("New AED created:")
         await self.aed_show(ctx, index)
 
@@ -646,7 +646,7 @@ class PadEvents(commands.Cog):
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
         
-    async def _do_add(self, ctx, item):
+    async def _do_aed_add(self, ctx, item):
         """Add autoeventdm and return its index"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
             dmevents.append(item)
