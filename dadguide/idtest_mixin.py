@@ -30,7 +30,7 @@ class IdTest:
         query, *reason = query.split("|")
         query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to add to the id3 test suite?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to add to the id3 test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -45,7 +45,7 @@ class IdTest:
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_reaction(ctx, f"Added test case `{mid}: {query}`"
+            if await tsutils.get_user_reaction(ctx, f"Added test case `{mid}: {query}`"
                                                f" with ref `{sorted(suite).index(query)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
@@ -81,7 +81,7 @@ class IdTest:
     async def norf_add(self, ctx, mid: int, token, server, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx,
+                not await tsutils.get_user_confirmation(ctx,
                                                   "Are you sure you want to add to the fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
@@ -94,7 +94,7 @@ class IdTest:
             old = None
             if any(t['id'] == mid and t['token'] == token for t in suite):
                 old = [t for t in suite if t['id'] == mid and t['token'] == token][0]
-                if not await tsutils.confirm_message(ctx, f"Are you sure you want to change"
+                if not await tsutils.get_user_confirmation(ctx, f"Are you sure you want to change"
                                                           f" the type of test case #{suite.index(old)}"
                                                           f" `{mid}: {token}` from "
                                                           f" **{'fluff' if fluffy else 'name'}** to"
@@ -115,7 +115,7 @@ class IdTest:
             suite.append(case)
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
-            if await tsutils.get_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
+            if await tsutils.get_user_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
                                                f"case `{mid}: {token}` with ref `{suite.index(case)}`",
                                           "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 suite.pop()
@@ -132,7 +132,7 @@ class IdTest:
     async def idt_import(self, ctx, *, queries):
         """Import id3 tests"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -156,7 +156,7 @@ class IdTest:
 
     async def norf_import(self, ctx, queries):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -178,7 +178,7 @@ class IdTest:
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -209,7 +209,7 @@ class IdTest:
 
     async def norf_remove(self, ctx, item):
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -230,7 +230,7 @@ class IdTest:
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **query**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **query**?"):
             return
         await self.config.user(ctx.author).lastaction.set('id3')
 
@@ -257,7 +257,7 @@ class IdTest:
         if reason == '""':
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.confirm_message(ctx, "Are you sure you want to edit **name/fluff**?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **name/fluff**?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 

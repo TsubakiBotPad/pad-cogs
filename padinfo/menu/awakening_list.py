@@ -73,7 +73,7 @@ class AwakeningListMenu:
     def awakening_list_control(state: AwakeningListViewState):
         if state is None:
             return None
-        reaction_list = AwakeningListMenuPanes.get_reaction_list(state.sort_type)
+        reaction_list = AwakeningListMenuPanes.get_user_reaction_list(state.sort_type)
         return EmbedControl(
             [AwakeningListView.embed(state)],
             reaction_list
@@ -103,7 +103,7 @@ class AwakeningListMenuPanes(MenuPanes):
     ]
 
     @classmethod
-    def get_reaction_list(cls, cur_sort_type):
+    def get_user_reaction_list(cls, cur_sort_type):
         other_toggle_reaction = None
         if cur_sort_type == AwakeningListSortTypes.alphabetical:
             other_toggle_reaction = AwakeningListEmoji.numerical

@@ -9,7 +9,7 @@ import discord
 import pymysql
 from redbot.core import checks, commands, Config, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import auth_check, confirm_message
+from tsutils import auth_check, get_user_confirmation
 
 logger = logging.getLogger('red.padbot-cogs.crud')
 
@@ -126,7 +126,7 @@ class Crud(commands.Cog):
             await ctx.send("There is no monster with id: {}".format(monster_id))
             return
         old_val = old_val[0]['name_en_override']
-        if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
+        if not await get_user_confirmation(ctx, ("Are you sure you want to change monster #{}'s"
                                            " english override from `{}` to `{}`?"
                                            "").format(monster_id, old_val, name)):
             return
@@ -147,7 +147,7 @@ class Crud(commands.Cog):
             await ctx.send("There is no monster with id: {}".format(monster_id))
             return
         old_val = old_val[0]['series_id']
-        if not await confirm_message(ctx, ("Are you sure you want to change monster #{}'s"
+        if not await get_user_confirmation(ctx, ("Are you sure you want to change monster #{}'s"
                                            " series id from `{}` to `{}`?"
                                            "").format(monster_id, old_val, series_id)):
             return
