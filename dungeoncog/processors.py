@@ -1,12 +1,16 @@
+from typing import TYPE_CHECKING
+
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from dadguide.database_context import DbContext
-from dadguide.models.encounter_model import EncounterModel
 from dadguide.models.enemy_skill_model import EnemySkillModel
 from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skill import ProcessedSkill
 from dungeoncog.enemy_skills_pb2 import Condition, MonsterBehavior, Behavior, BehaviorGroup
 from dungeoncog.grouped_skillls import GroupedSkills
+
+if TYPE_CHECKING:
+    from dadguide.database_context import DbContext
+    from dadguide.models.encounter_model import EncounterModel
 
 GROUP_TYPES = {
     0: "Unspecified",
@@ -94,14 +98,15 @@ def format_overview(query):
 def behavior_for_level(mb: MonsterBehavior, num: int):
     lev = None
     for level in mb.levels:
-        if level.level == num: lev = level
+        if level.level == num:
+            lev = level
     if lev is None:
         return mb.levels[len(mb.levels) - 1]
     else:
         return lev
 
 
-def process_enemy_skill2(encounter: EncounterModel, skill: EnemySkillModel, emoji_map):
+def process_enemy_skill2(encounter: "EncounterModel", skill: EnemySkillModel, emoji_map):
     effect = skill.desc_en_emoji
     split_effects = effect.split("), ")
     non_attack_effects = []
@@ -128,7 +133,7 @@ def process_enemy_skill2(encounter: EncounterModel, skill: EnemySkillModel, emoj
     return non_attack_effects
 
 
-def process_behavior(behavior: Behavior, database, q: EncounterModel, emoji_map, parent: GroupedSkills = None):
+def process_behavior(behavior: Behavior, database, q: "EncounterModel", emoji_map, parent: GroupedSkills = None):
     skill = database.dungeon.get_enemy_skill(behavior.enemy_skill_id)
     if skill is None:
         return "Unknown"
@@ -144,7 +149,7 @@ def process_behavior(behavior: Behavior, database, q: EncounterModel, emoji_map,
     return processed_skill
 
 
-def process_behavior_group(group: BehaviorGroup, database, q: EncounterModel, emoji_map,
+def process_behavior_group(group: BehaviorGroup, database, q: "EncounterModel", emoji_map,
                            parent: GroupedSkills = None):
     condition = format_condition(group.condition)
     processed_group: GroupedSkills = GroupedSkills(condition, GROUP_TYPES[group.group_type], parent)
@@ -167,7 +172,7 @@ class SafeDgEmojiDict(dict):
 # Skill Name    Type:Preemptive/Passive/Etc
 # Skill Effect
 # Condition
-def process_monster(mb: MonsterBehavior, q: EncounterModel, database: DbContext):
+def process_monster(mb: MonsterBehavior, q: "EncounterModel", database: "DbContext"):
     # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
     """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
                           description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
