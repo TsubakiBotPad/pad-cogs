@@ -15,7 +15,7 @@ import pytz
 from redbot.core import checks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
-from tsutils import CogSettings, confirm_message, normalize_server_name, DummyObject, is_donor, rmdiacritics
+from tsutils import CogSettings, get_user_confirmation, normalize_server_name, DummyObject, is_donor, rmdiacritics
 
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
@@ -601,7 +601,7 @@ class PadEvents(commands.Cog):
             if not 0 < index <= len(dmevents):
                 await ctx.send("That isn't a valid index.")
                 return
-            if not await confirm_message(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
+            if not await get_user_confirmation(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
                                                "").format(dmevents[index - 1]['searchstr'])):
                 return
             dmevents.pop(index - 1)
@@ -637,7 +637,7 @@ class PadEvents(commands.Cog):
         if not await self.config.user(ctx.author).dmevents():
             await ctx.send("You don't have any autoeventdms.")
             return
-        if not await confirm_message(ctx, "Are you sure you want to purge your autoeventdms?"):
+        if not await get_user_confirmation(ctx, "Are you sure you want to purge your autoeventdms?"):
             return
         await self.config.user(ctx.author).dmevents.set([])
         await ctx.tick()

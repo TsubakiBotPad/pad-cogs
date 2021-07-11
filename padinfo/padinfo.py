@@ -290,7 +290,7 @@ class PadInfo(commands.Cog):
                  'entry.1787446565': str(ctx.author)})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
-            userres = await tsutils.confirm_message(ctx, "Was this the monster you were looking for?",
+            userres = await tsutils.get_user_confirmation(ctx, "Was this the monster you were looking for?",
                                                     yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
@@ -818,7 +818,7 @@ class PadInfo(commands.Cog):
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
-        reaction_list = TransformInfoMenuPanes.get_reaction_list(len(monster_ids))
+        reaction_list = TransformInfoMenuPanes.get_user_reaction_list(len(monster_ids))
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
@@ -844,7 +844,7 @@ class PadInfo(commands.Cog):
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
                                            sort_type, paginated_skills, 0,
-                                           reaction_list=AwakeningListMenuPanes.get_reaction_list(sort_type))
+                                           reaction_list=AwakeningListMenuPanes.get_user_reaction_list(sort_type))
             await menu.create(ctx, state)
             return
 
