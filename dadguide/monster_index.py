@@ -82,11 +82,11 @@ class MonsterIndex(tsutils.aobject):
                 if not monster:
                     continue
                 if data['overrides']:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.treename_overrides.add(emid)
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.treename_overrides.add(evomid)
                 if data['normal_prio']:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.monster_id_to_nametokens[evomid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
                         self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
@@ -158,8 +158,8 @@ class MonsterIndex(tsutils.aobject):
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.manual_prefixes[emid].update(aliases)
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.manual_prefixes[evomid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
