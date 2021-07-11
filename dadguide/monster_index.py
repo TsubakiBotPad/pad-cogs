@@ -3,6 +3,7 @@ import csv
 import io
 import logging
 import re
+from typing import Dict, List
 
 import aiohttp
 import tsutils
@@ -37,6 +38,7 @@ class MonsterIndex(tsutils.aobject):
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_nametokens = defaultdict(set)
+        self.monster_id_to_forcedfluff = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
         self.series_id_to_pantheon_nickname = \
             defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
@@ -54,28 +56,61 @@ class MonsterIndex(tsutils.aobject):
         self.remove_mods = defaultdict(set)
         self.treename_overrides = set()
 
-        nickname_data, treenames_data, pantheon_data, nt_alias_data, mod_data, treemod_data = await asyncio.gather(
-            sheet_to_reader(NICKNAME_OVERRIDES_SHEET, 5),
-            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET, 5),
-            sheet_to_reader(PANTHNAME_OVERRIDES_SHEET, 2),
-            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET, 2),
-            sheet_to_reader(MODIFIER_OVERRIDE_SHEET, 3),
-            sheet_to_reader(TREE_MODIFIER_OVERRIDE_SHEET, 2),
+        treenames_data, nickname_data, pantheon_data, nt_alias_data, treemod_data, mod_data = await asyncio.gather(
+            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET,
+                            ('base_id', 'new_treename', 'normal_prio', 'overrides')),
+            sheet_to_reader(NICKNAME_OVERRIDES_SHEET,
+                            ('monster_id', 'name_en', 'normal_prio', 'overrides', 'fluff')),
+            sheet_to_reader(PANTHNAME_OVERRIDES_SHEET,
+                            ('series_id', 'alias')),
+            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET,
+                            ('tokens', 'alias')),
+            sheet_to_reader(TREE_MODIFIER_OVERRIDE_SHEET,
+                            ('base_id', 'modifiers')),
+            sheet_to_reader(MODIFIER_OVERRIDE_SHEET,
+                            ('monster_id', 'modifiers', 'remove')),
         )
 
-        for m_id, name, lp, ov, i in nickname_data:
-            if m_id.isdigit() and not i:
+        for data in treenames_data:
+            if data['base_id'].isdigit():
+                mid = int(data['base_id'])
+                name = data['new_treename'].strip().lower()
                 try:
-                    monster = graph.get_monster(int(m_id), server=server)
+                    monster = graph.get_monster(mid, server=server)
                 except InvalidGraphState:
                     continue
                 if not monster:
                     continue
-                name = name.strip().lower()
-                mid = int(m_id)
-                if lp:
+                if data['overrides']:
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.treename_overrides.add(evomid)
+                if data['normal_prio']:
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.monster_id_to_nametokens[evomid].update(self._name_to_tokens(name))
+                else:
+                    if " " in name:
+                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
+                        self.multi_word_tokens.add(tuple(name.lower().split(" ")))
+                    self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
+
+        for data in nickname_data:
+            if data['monster_id'].isdigit():
+                mid = int(data['monster_id'])
+                name = data['name_en'].strip().lower()
+                try:
+                    monster = graph.get_monster(mid, server=server)
+                except InvalidGraphState:
+                    continue
+                if not monster:
+                    continue
+                if data['fluff']:
+                    self.monster_id_to_forcedfluff[mid].update(self._name_to_tokens(name))
+                    if data['normal_prio'] or data['overrides']:
+                        self.issues.append(f"Invalid sheet settings for nickname `{name}`.")
+                    continue
+                if data['normal_prio']:
                     self.monster_id_to_nametokens[mid].update(self._name_to_tokens(name))
-                if ov:
+                if data['overrides']:
                     self.treename_overrides.add(mid)
                 else:
                     if " " in name:
@@ -83,70 +118,48 @@ class MonsterIndex(tsutils.aobject):
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
-        for m_id, name, mp, ov, i in treenames_data:
-            if m_id.isdigit() and not i:
-                try:
-                    monster = graph.get_monster(int(m_id), server=server)
-                except InvalidGraphState:
-                    continue
-                if not monster:
-                    continue
-                name = name.strip().lower()
-                mid = int(m_id)
-                if ov:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.treename_overrides.add(emid)
-                if mp:
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.monster_id_to_nametokens[emid].update(self._name_to_tokens(name))
-                else:
-                    if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
-                        self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                    self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
-
-        for sid, name in pantheon_data:
-            if sid.isdigit():
-                name = name.strip().lower()
+        for data in pantheon_data:
+            if data['series_id'].isdigit():
+                sid = int(data['series_id'])
+                name = data['alias'].strip().lower()
                 if " " in name:
                     self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                self.series_id_to_pantheon_nickname[int(sid)].add(name.lower().replace(" ", ""))
+                self.series_id_to_pantheon_nickname[sid].add(name.lower().replace(" ", ""))
 
-        next(nt_alias_data)  # Skip over heading
-        for tokens, alias in nt_alias_data:
-            self.replacement_tokens[frozenset(re.split(r'[,\s]+', tokens))].add(alias)
+        for data in nt_alias_data:
+            self.replacement_tokens[frozenset(re.split(r'[,\s]+', data['tokens']))].add(data['alias'])
 
         self.manual_prefixes = defaultdict(set)
-        for mid, mods, rmv in mod_data:
-            if mid.isdigit():
+        for data in mod_data:
+            if data['monster_id'].isdigit():
+                mid = int(data['monster_id'])
                 try:
-                    monster = graph.get_monster(int(mid), server=server)
+                    monster = graph.get_monster(mid, server=server)
                 except InvalidGraphState:
                     continue
                 if not monster:
                     continue
-                mid = int(mid)
-                for mod in mods.split(","):
+                for mod in data['modifiers'].split(","):
                     mod = mod.strip().lower()
                     if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
-                    if rmv:
+                    if data['remove']:
                         self.remove_mods[mid].update(mod)
                     else:
                         self.manual_prefixes[mid].update(get_modifier_aliases(mod))
 
-        for mid, mods in treemod_data:
-            if mid.isdigit() and graph.get_monster(int(mid), server=server):
-                mid = int(mid)
-                for mod in mods.split(","):
+        for data in treemod_data:
+            if data['base_id'].isdigit() and graph.get_monster(int(data['base_id']), server=server):
+                mid = int(data['base_id'])
+                for mod in data['modifiers'].split(","):
                     mod = mod.strip().lower()
                     if " " in mod:
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for emid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
-                        self.manual_prefixes[emid].update(aliases)
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                        self.manual_prefixes[evomid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
@@ -248,7 +261,7 @@ class MonsterIndex(tsutils.aobject):
                                     self.add_name_token(self.name_tokens, token2, m)
 
             # Fluff tokens
-            for token in nametokens:
+            for token in nametokens + list(self.monster_id_to_forcedfluff[m.monster_id]):
                 if m in self.name_tokens[token.lower()]:
                     continue
                 self.add_name_token(self.fluff_tokens, token, m)
@@ -486,15 +499,12 @@ class MonsterIndex(tsutils.aobject):
             curr_mods.update(else_mods)
 
 
-# TODO: Move this to TSUtils
-async def sheet_to_reader(url, length=None):
+async def sheet_to_reader(url, headers) -> List[Dict[str, str]]:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            file = io.StringIO(await response.text())
-    if length is None:
-        return csv.reader(file, delimiter=',')
-    else:
-        return ((line + [None] * length)[:length] for line in csv.reader(file, delimiter=','))
+            reader = csv.reader(io.StringIO(await response.text()), delimiter=',')
+    next(reader)
+    return [dict(zip(headers, line[:len(headers)])) for line in reader]
 
 
 def copydict(token_dict):
