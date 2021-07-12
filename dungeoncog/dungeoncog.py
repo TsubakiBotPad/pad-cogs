@@ -92,7 +92,7 @@ class DungeonCog(commands.Cog):
         return dungeon
 
     @commands.command(aliases=['dgid'])
-    async def dungeonid(self, ctx, name, difficulty = None, *bad: str):
+    async def dungeonid(self, ctx, name, difficulty=None, *bad: str):
         """
         Name: Name of Dungeon
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")

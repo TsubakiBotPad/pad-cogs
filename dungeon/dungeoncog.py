@@ -67,7 +67,7 @@ class DungeonCog(commands.Cog):
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
         dungeon = database.get_dungeons_from_nickname(name.lower())
-        if dungeon is None:
+        if len(dungeon) == 0:
             dungeons = database.get_dungeons_from_name(name)
             if len(dungeons) == 0:
                 await ctx.send("No dungeons found!")
