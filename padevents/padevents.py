@@ -15,7 +15,8 @@ import pytz
 from redbot.core import checks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
-from tsutils import CogSettings, get_user_confirmation, normalize_server_name, DummyObject, is_donor, rmdiacritics
+from tsutils import CogSettings, get_user_confirmation, normalize_server_name, DummyObject, is_donor, rmdiacritics, \
+    YES_EMOJI, NO_EMOJI
 
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
@@ -407,7 +408,8 @@ class PadEvents(commands.Cog):
                  for c
                  in pingroles[key]['channels']
                  ]
-        pr = (f"{key} ({'enabled' if pingroles[key]['enabled'] else 'disabled'})\n"
+        pr = (f"Key: `{key}`\n"
+              f"\tStatus: {YES_EMOJI + ' enabled' if pingroles[key]['enabled'] else NO_EMOJI + ' disabled'}\n"
               f"\tSearch string: `{pingroles[key]['searchstr']}` {'(regex search)' * pingroles[key]['regex']}\n"
               f"\tServer: {pingroles[key]['server']}\n"
               f"\tRed: {roles[0]} (In {chans[0]})\n"
