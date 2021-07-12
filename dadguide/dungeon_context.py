@@ -163,15 +163,15 @@ WHERE
 # TODO: Move to gdoc
 DUNGEON_NICKNAMES = {
     'a1': 1022001,
-    'arena1': 102201,
+    'arena1': 1022001,
     'bipolar goddess 1': 1022001,
     'bp1': 1022001,
     'a2': 1022002,
-    'arena2': 102202,
+    'arena2': 1022002,
     'bipolar goddess 2': 1022002,
     'bp2': 1022002,
     'a3': 1022003,
-    'arena3': 102203,
+    'arena3': 1022003,
     'bipolar goddess 3': 1022003,
     'bp3': 1022003,
     'a4': 1022004,
@@ -260,6 +260,8 @@ class DungeonContext(object):
         return EnemySkillModel(**enemy_skill_query)
 
     def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_name: str) -> Optional[int]:
+        if sub_name is None:
+            sub_name = ""
         if sub_name.isdigit():
             sub_dungeons = self.database.query_many(SUB_DUNGEON_QUERY_BY_INDEX, (dungeon_id * 1000 + int(sub_name),))
         else:
