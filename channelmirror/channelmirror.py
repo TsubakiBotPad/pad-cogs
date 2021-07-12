@@ -302,7 +302,7 @@ class ChannelMirror(commands.Cog):
                 small = False
                 if attribution_required:
                     msg = self.makeheader(message, author)
-                    if len(fmessage) > 500:
+                    if len(fmessage) > 1000:
                         await dest_channel.send(msg)
                     else:
                         fmessage = msg + '\n' + fmessage
@@ -416,8 +416,8 @@ class ChannelMirror(commands.Cog):
                     fcontent = await self.mformat(new_message_content, channel, dest_message.channel)
                     if await self.config.custom("dest_message", dest_message.id).small():
                         fcontent = self.makeheader(message) + '\n' + fcontent
-                    if len(fcontent) > 2000:
-                        fcontent = fcontent[:1971] + "... *(Continued in original)*"
+                    if len(fcontent) > 4000:
+                        fcontent = fcontent[:3971] + "... *(Continued in original)*"
                     await dest_message.edit(content=fcontent)
                 elif new_message_reaction:
                     try:
