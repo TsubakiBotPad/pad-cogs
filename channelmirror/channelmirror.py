@@ -116,7 +116,7 @@ class ChannelMirror(commands.Cog):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
-            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 if server_id is not None and mc_id not in gchs and not channel_id not in gchs:
@@ -146,7 +146,7 @@ class ChannelMirror(commands.Cog):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
-            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 channel = self.bot.get_channel(channel_id)
@@ -161,7 +161,7 @@ class ChannelMirror(commands.Cog):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
-            multiedit = await self.config.channel(discord.Object(id=mc_id)).multiedit()
+            multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
             for channel_id in config['channels']:
                 if channel_id not in gchs:
@@ -302,7 +302,7 @@ class ChannelMirror(commands.Cog):
                 small = False
                 if attribution_required:
                     msg = self.makeheader(message, author)
-                    if len(fmessage) > 500:
+                    if len(fmessage) > 1000:
                         await dest_channel.send(msg)
                     else:
                         fmessage = msg + '\n' + fmessage
@@ -416,8 +416,8 @@ class ChannelMirror(commands.Cog):
                     fcontent = await self.mformat(new_message_content, channel, dest_message.channel)
                     if await self.config.custom("dest_message", dest_message.id).small():
                         fcontent = self.makeheader(message) + '\n' + fcontent
-                    if len(fcontent) > 2000:
-                        fcontent = fcontent[:1971] + "... *(Continued in original)*"
+                    if len(fcontent) > 4000:
+                        fcontent = fcontent[:3971] + "... *(Continued in original)*"
                     await dest_message.edit(content=fcontent)
                 elif new_message_reaction:
                     try:
