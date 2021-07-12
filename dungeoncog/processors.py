@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from dadguide.models.enemy_skill_model import EnemySkillModel
 from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skill import ProcessedSkill
 from dungeoncog.enemy_skills_pb2 import Condition, MonsterBehavior, Behavior, BehaviorGroup
 from dungeoncog.grouped_skillls import GroupedSkills
 
 if TYPE_CHECKING:
+    from dadguide.models.enemy_skill_model import EnemySkillModel
     from dadguide.database_context import DbContext
     from dadguide.models.encounter_model import EncounterModel
 
@@ -106,7 +106,7 @@ def behavior_for_level(mb: MonsterBehavior, num: int):
         return lev
 
 
-def process_enemy_skill2(encounter: "EncounterModel", skill: EnemySkillModel, emoji_map):
+def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", emoji_map):
     effect = skill.desc_en_emoji
     split_effects = effect.split("), ")
     non_attack_effects = []
