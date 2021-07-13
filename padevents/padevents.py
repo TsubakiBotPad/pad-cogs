@@ -16,7 +16,7 @@ from redbot.core import checks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
 from tsutils import CogSettings, get_user_confirmation, normalize_server_name, DummyObject, is_donor, rmdiacritics, \
-    YES_EMOJI, NO_EMOJI
+    YES_EMOJI, NO_EMOJI, send_confirmation_message, send_cancellation_message
 
 if TYPE_CHECKING:
     from dadguide.models.scheduled_event_model import ScheduledEventModel
@@ -166,7 +166,7 @@ class PadEvents(commands.Cog):
                             or event.server != aed['server'] \
                             or (aed['key'], event.key) in self.rolepinged_events:
                         continue
-                    if not aed['include3p'] and bool(re.match("^Multiplayer", event.clean_dungeon_name)):
+                    if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
                         continue
                     self.rolepinged_events.add((aed['key'], event.key))
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
@@ -604,7 +604,7 @@ class PadEvents(commands.Cog):
         """Remove an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
-                await ctx.send("That isn't a valid index.")
+                await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             if not await get_user_confirmation(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
                                                "").format(dmevents[index - 1]['searchstr'])):
@@ -617,7 +617,7 @@ class PadEvents(commands.Cog):
         """Show specifics of an autoeventdm"""
         dmevents = await self.config.user(ctx.author).dmevents()
         if not 0 < index <= len(dmevents):
-            await ctx.send("That isn't a valid index.")
+            await send_cancellation_message(ctx, "That isn't a valid index.")
             return
         ret = (f"Lookup number: `{index}`\n"
                f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
@@ -660,14 +660,14 @@ class PadEvents(commands.Cog):
 
     @is_donor()
     @aed_e.command(name="offset")
-    async def aed_e_offset(self, ctx, index: int, offset):
+    async def aed_e_offset(self, ctx, index: int, offset: int):
         """(DONOR ONLY) Set time offset to an AED to allow you to prepare for a dungeon"""
         if offset < 0:
-            await ctx.send("Offset cannot be negative")
+            await send_cancellation_message(ctx, "Offset cannot be negative")
             return
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
-                await ctx.send("That isn't a valid index.")
+                await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             dmevents[index - 1]['offset'] = offset
         await ctx.tick()
@@ -678,7 +678,7 @@ class PadEvents(commands.Cog):
         searchstr = searchstr.strip('"')
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
-                await ctx.send("That isn't a valid index.")
+                await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             dmevents[index - 1]['searchstr'] = searchstr
         await ctx.tick()
@@ -688,17 +688,17 @@ class PadEvents(commands.Cog):
         """Include/exclude 3-player dungeons in an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not 0 < index <= len(dmevents):
-                await ctx.send("That isn't a valid index.")
+                await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             event = dmevents[index - 1]['searchstr']
             if dmevents[index - 1]['include3p']:
                 dmevents[index - 1]['include3p'] = False
-                await ctx.send("I will **exclude** 3P dungeons for {}. `{}`"
-                               .format(index, event))
+                await send_confirmation_message(ctx, "I will **exclude** 3P dungeons for {}. `{}`"
+                                                .format(index, event))
                 return
             dmevents[index - 1]['include3p'] = True
-            await ctx.send("I will **include** 3P dungeons for {}. `{}`"
-                           .format(index, event))
+            await send_confirmation_message(ctx, "I will **include** 3P dungeons for {}. `{}`"
+                                            .format(index, event))
             return
 
     @padevents.command()
