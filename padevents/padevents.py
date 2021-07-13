@@ -622,7 +622,7 @@ class PadEvents(commands.Cog):
         if not 0 < index <= len(dmevents):
             await send_cancellation_message(ctx, "That isn't a valid index.")
             return
-        if dmevents.get('include3p') is None:
+        if dmevents[index - 1].get('include3p') is None:
             # case of legacy configs
             dmevents[index - 1]['include3p'] = True
         ret = (f"Lookup number: `{index}`\n"
@@ -697,7 +697,7 @@ class PadEvents(commands.Cog):
                 await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             event = dmevents[index - 1]['searchstr']
-            if dmevents.get('include3p') is None:
+            if dmevents[index - 1].get('include3p') is None:
                 # case of legacy configs
                 dmevents[index - 1]['include3p'] = True
             if dmevents[index - 1]['include3p']:
