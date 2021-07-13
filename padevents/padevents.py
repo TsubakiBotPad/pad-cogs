@@ -166,6 +166,8 @@ class PadEvents(commands.Cog):
                             or event.server != aed['server'] \
                             or (aed['key'], event.key) in self.rolepinged_events:
                         continue
+                    if not aed['include3p'] and bool(re.match("^Multiplayer", event.clean_dungeon_name)):
+                        continue
                     self.rolepinged_events.add((aed['key'], event.key))
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
                         offsetstr = "now"
@@ -589,6 +591,7 @@ class PadEvents(commands.Cog):
             'server': server,
             'group': group,
             'searchstr': searchstr,
+            'include3p': True,
             'offset': time_offset,
         }
 
@@ -618,6 +621,7 @@ class PadEvents(commands.Cog):
             return
         ret = (f"Lookup number: `{index}`\n"
                f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
+               f"\t3P: {'included' if dmevents[index - 1]['include3p'] else 'excluded'}\n"
                f"\tServer: {dmevents[index - 1]['server']}\n"
                f"\tGroup: {dmevents[index - 1]['group'].title()} \n"
                f"\tOffset (Donor Only): `{dmevents[index - 1]['offset']} minutes`")
@@ -644,7 +648,7 @@ class PadEvents(commands.Cog):
         await self.config.user(ctx.author).dmevents.set([])
         await ctx.tick()
 
-    @autoeventdm.group(name="edit")
+    @autoeventdm.group(name="edit", aliases=["set"])
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
         
@@ -656,7 +660,7 @@ class PadEvents(commands.Cog):
 
     @is_donor()
     @aed_e.command(name="offset")
-    async def aed_e_offset(self, ctx, index, offset):
+    async def aed_e_offset(self, ctx, index: int, offset):
         """(DONOR ONLY) Set time offset to an AED to allow you to prepare for a dungeon"""
         if offset < 0:
             await ctx.send("Offset cannot be negative")
@@ -669,7 +673,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @aed_e.command(name="searchstr")
-    async def aed_e_searchstr(self, ctx, index, *, searchstr):
+    async def aed_e_searchstr(self, ctx, index: int, *, searchstr):
         """Set search string of an autoeventdm"""
         searchstr = searchstr.strip('"')
         async with self.config.user(ctx.author).dmevents() as dmevents:
@@ -678,6 +682,24 @@ class PadEvents(commands.Cog):
                 return
             dmevents[index - 1]['searchstr'] = searchstr
         await ctx.tick()
+
+    @aed_e.command(name="toggle3p")
+    async def aed_e_toggle3p(self, ctx, index: int):
+        """Include/exclude 3-player dungeons in an autoeventdm"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            if not 0 < index <= len(dmevents):
+                await ctx.send("That isn't a valid index.")
+                return
+            event = dmevents[index - 1]['searchstr']
+            if dmevents[index - 1]['include3p']:
+                dmevents[index - 1]['include3p'] = False
+                await ctx.send("I will **exclude** 3P dungeons for {}. `{}`"
+                               .format(index, event))
+                return
+            dmevents[index - 1]['include3p'] = True
+            await ctx.send("I will **include** 3P dungeons for {}. `{}`"
+                           .format(index, event))
+            return
 
     @padevents.command()
     @checks.is_owner()
