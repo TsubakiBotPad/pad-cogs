@@ -166,6 +166,9 @@ class PadEvents(commands.Cog):
                             or event.server != aed['server'] \
                             or (aed['key'], event.key) in self.rolepinged_events:
                         continue
+                    if aed.get('include3p') is None:
+                        # case of legacy configs
+                        aed['include3p'] = True
                     if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
                         continue
                     self.rolepinged_events.add((aed['key'], event.key))
@@ -619,6 +622,9 @@ class PadEvents(commands.Cog):
         if not 0 < index <= len(dmevents):
             await send_cancellation_message(ctx, "That isn't a valid index.")
             return
+        if dmevents.get('include3p') is None:
+            # case of legacy configs
+            dmevents[index - 1]['include3p'] = True
         ret = (f"Lookup number: `{index}`\n"
                f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
                f"\t3P: {'included' if dmevents[index - 1]['include3p'] else 'excluded'}\n"
@@ -691,6 +697,9 @@ class PadEvents(commands.Cog):
                 await send_cancellation_message(ctx, "That isn't a valid index.")
                 return
             event = dmevents[index - 1]['searchstr']
+            if dmevents.get('include3p') is None:
+                # case of legacy configs
+                dmevents[index - 1]['include3p'] = True
             if dmevents[index - 1]['include3p']:
                 dmevents[index - 1]['include3p'] = False
                 await send_confirmation_message(ctx, "I will **exclude** 3P dungeons for {}. `{}`"
