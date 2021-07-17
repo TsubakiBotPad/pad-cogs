@@ -631,30 +631,18 @@ class PadEvents(commands.Cog):
     async def aed_show(self, ctx, index):
         """Show specifics of an autoeventdm"""
         dmevents = await self.config.user(ctx.author).dmevents()
-        if isinstance(index, int) or index.isdigit():
-            index = int(index)
-            if not 0 < index <= len(dmevents):
-                await send_cancellation_message(ctx, "That isn't a valid index.")
-                return
-        else:
-            loc = None
-            for i in range(1, len(dmevents) + 1, 1):
-                if dmevents[i - 1]['searchstr'] == index:
-                    loc = i
-                    break
-            index = loc
-            if index is None:
-                await send_cancellation_message(ctx, "That string did not match any existing patterns.")
-                return
-        if dmevents[index - 1].get('include3p') is None:
+        loc = await self._get_and_validate_aed_index(ctx, index)
+        if loc is None:
+            return
+        if dmevents[loc].get('include3p') is None:
             # case of legacy configs
-            dmevents[index - 1]['include3p'] = True
-        ret = (f"Lookup number: `{index}`\n"
-               f"\tSearch string: `{dmevents[index - 1]['searchstr']}`\n"
-               f"\t3P: {'included' if dmevents[index - 1]['include3p'] else 'excluded'}\n"
-               f"\tServer: {dmevents[index - 1]['server']}\n"
-               f"\tGroup: {dmevents[index - 1]['group'].title()} \n"
-               f"\tOffset (Donor Only): `{dmevents[index - 1]['offset']} minutes`")
+            dmevents[loc]['include3p'] = True
+        ret = (f"Lookup number: `{loc + 1}`\n"
+               f"\tSearch string: `{dmevents[loc]['searchstr']}`\n"
+               f"\t3P: {'included' if dmevents[loc]['include3p'] else 'excluded'}\n"
+               f"\tServer: {dmevents[loc]['server']}\n"
+               f"\tGroup: {dmevents[loc]['group'].title()} \n"
+               f"\tOffset (Donor Only): `{dmevents[loc]['offset']} minutes`")
         await ctx.send(ret)
 
     @autoeventdm.command(name="list")
@@ -695,86 +683,71 @@ class PadEvents(commands.Cog):
         if offset < 0:
             await send_cancellation_message(ctx, "Offset cannot be negative")
             return
+        loc = await self._get_and_validate_aed_index(ctx, index)
+        if loc is None:
+            return
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if index.isdigit():
-                index = int(index)
-                if not 0 < index <= len(dmevents):
-                    await send_cancellation_message(ctx, "That isn't a valid index.")
-                    return
-            else:
-                loc = None
-                for i in range(1, len(dmevents)+1, 1):
-                    if dmevents[i - 1]['searchstr'] == index:
-                        loc = i
-                        break
-                index = loc
-                if index is None:
-                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
-                    return
             if not await get_user_confirmation(ctx, "Modify the offset for {}. `{}` to {} minutes?"
-                                               .format(index, dmevents[index - 1]['searchstr'], offset)):
+                                               .format(loc + 1, dmevents[loc]['searchstr'], offset)):
                 return
-            dmevents[index - 1]['offset'] = offset
+            dmevents[loc]['offset'] = offset
         await ctx.tick()
 
     @aed_e.command(name="searchstr")
     async def aed_e_searchstr(self, ctx, index, *, searchstr):
         """Set search string of an autoeventdm"""
         searchstr = searchstr.strip('"')
+        loc = await self._get_and_validate_aed_index(ctx, index)
+        if loc is None:
+            return
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if index.isdigit():
-                index = int(index)
-                if not 0 < index <= len(dmevents):
-                    await send_cancellation_message(ctx, "That isn't a valid index.")
-                    return
-            else:
-                loc = None
-                for i in range(1, len(dmevents) + 1, 1):
-                    if dmevents[i - 1]['searchstr'] == index:
-                        loc = i
-                        break
-                index = loc
-                if index is None:
-                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
-                    return
             if not await get_user_confirmation(ctx, "Modify the search string for {}. `{}` to `{}`?"
-                    .format(index, dmevents[index - 1]['searchstr'], searchstr)):
+                    .format(loc + 1, dmevents[loc]['searchstr'], searchstr)):
                 return
-            dmevents[index - 1]['searchstr'] = searchstr
+            dmevents[loc]['searchstr'] = searchstr
         await ctx.tick()
 
     @aed_e.command(name="toggle3p")
     async def aed_e_toggle3p(self, ctx, index):
         """Include/exclude 3-player dungeons in an autoeventdm"""
+        loc = await self._get_and_validate_aed_index(ctx, index)
+        if loc is None:
+            return
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if index.isdigit():
-                index = int(index)
-                if not 0 < index <= len(dmevents):
-                    await send_cancellation_message(ctx, "That isn't a valid index.")
+            event = dmevents[loc]['searchstr']
+            if dmevents[loc].get('include3p') is None:
+                # case of legacy configs
+                dmevents[loc]['include3p'] = True
+            if dmevents[loc]['include3p']:
+                dmevents[loc]['include3p'] = False
+                await send_confirmation_message(ctx, "I will **exclude** 3P dungeons for {}. `{}`"
+                                                .format(loc + 1, event))
+                return
+            dmevents[loc]['include3p'] = True
+            await send_confirmation_message(ctx, "I will **include** 3P dungeons for {}. `{}`"
+                                            .format(loc + 1, event))
+            return
+
+    async def _get_and_validate_aed_index(self, ctx, user_index):
+        """Returns the location for the autoeventdm of interest, based on Python list indexing"""
+        async with self.config.user(ctx.author).dmevents() as dmevents:
+            if isinstance(user_index, int) or user_index.isdigit():
+                user_index = int(user_index)
+                if not 0 < user_index <= len(dmevents):
+                    await send_cancellation_message(ctx, "That isn't a valid numerical index.")
                     return
             else:
                 loc = None
                 for i in range(1, len(dmevents) + 1, 1):
-                    if dmevents[i - 1]['searchstr'] == index:
+                    if dmevents[i - 1]['searchstr'] == user_index:
                         loc = i
                         break
-                index = loc
-                if index is None:
-                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                user_index = loc
+                if user_index is None:
+                    await send_cancellation_message(ctx, "That string did not match any existing patterns. Printing all of your Auto Event DMs:")
+                    await self.aed_list(ctx)
                     return
-            event = dmevents[index - 1]['searchstr']
-            if dmevents[index - 1].get('include3p') is None:
-                # case of legacy configs
-                dmevents[index - 1]['include3p'] = True
-            if dmevents[index - 1]['include3p']:
-                dmevents[index - 1]['include3p'] = False
-                await send_confirmation_message(ctx, "I will **exclude** 3P dungeons for {}. `{}`"
-                                                .format(index, event))
-                return
-            dmevents[index - 1]['include3p'] = True
-            await send_confirmation_message(ctx, "I will **include** 3P dungeons for {}. `{}`"
-                                            .format(index, event))
-            return
+        return user_index - 1
 
     @padevents.command()
     @checks.is_owner()
