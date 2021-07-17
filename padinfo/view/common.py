@@ -47,7 +47,7 @@ def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform
     return Box(
         BoldText('Leader Skill'),
         BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
-                 else char_to_emoji(1) + ' ' + ls_single_multiplier_text(m.leader_skill)),
+                 else get_emoji('1x') + ' ' + ls_single_multiplier_text(m.leader_skill)),
         BoldText('(' + get_emoji(
             '\N{DOWN-POINTING RED TRIANGLE}') + '7x6)') if m != transform_base and transform_base.leader_skill.is_7x6 else None,
         delimiter=' '
