@@ -603,25 +603,49 @@ class PadEvents(commands.Cog):
         await self.aed_show(ctx, index)
 
     @autoeventdm.command(name="remove", aliases=['rm', 'delete'])
-    async def aed_remove(self, ctx, index: int):
+    async def aed_remove(self, ctx, index):
         """Remove an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 < index <= len(dmevents):
-                await send_cancellation_message(ctx, "That isn't a valid index.")
-                return
-            if not await get_user_confirmation(ctx, ("Are you sure you want to delete autoeventdm with searchstring '{}'"
-                                               "").format(dmevents[index - 1]['searchstr'])):
+            if index.isdigit():
+                index = int(index)
+                if not 0 < index <= len(dmevents):
+                    await send_cancellation_message(ctx, "That isn't a valid index.")
+                    return
+            else:
+                loc = None
+                for i in range(1, len(dmevents)+1, 1):
+                    if dmevents[i - 1]['searchstr'] == index:
+                        loc = i
+                        break
+                index = loc
+                if index is None:
+                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                    return
+            if not await get_user_confirmation(ctx, "Are you sure you want to delete autoeventdm {}. `{}`?"
+                    .format(index, dmevents[index - 1]['searchstr'])):
                 return
             dmevents.pop(index - 1)
         await ctx.tick()
 
     @autoeventdm.command(name="show")
-    async def aed_show(self, ctx, index: int):
+    async def aed_show(self, ctx, index):
         """Show specifics of an autoeventdm"""
         dmevents = await self.config.user(ctx.author).dmevents()
-        if not 0 < index <= len(dmevents):
-            await send_cancellation_message(ctx, "That isn't a valid index.")
-            return
+        if isinstance(index, int) or index.isdigit():
+            index = int(index)
+            if not 0 < index <= len(dmevents):
+                await send_cancellation_message(ctx, "That isn't a valid index.")
+                return
+        else:
+            loc = None
+            for i in range(1, len(dmevents) + 1, 1):
+                if dmevents[i - 1]['searchstr'] == index:
+                    loc = i
+                    break
+            index = loc
+            if index is None:
+                await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                return
         if dmevents[index - 1].get('include3p') is None:
             # case of legacy configs
             dmevents[index - 1]['include3p'] = True
@@ -666,36 +690,78 @@ class PadEvents(commands.Cog):
 
     @is_donor()
     @aed_e.command(name="offset")
-    async def aed_e_offset(self, ctx, index: int, offset: int):
+    async def aed_e_offset(self, ctx, index, offset: int):
         """(DONOR ONLY) Set time offset to an AED to allow you to prepare for a dungeon"""
         if offset < 0:
             await send_cancellation_message(ctx, "Offset cannot be negative")
             return
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 < index <= len(dmevents):
-                await send_cancellation_message(ctx, "That isn't a valid index.")
+            if index.isdigit():
+                index = int(index)
+                if not 0 < index <= len(dmevents):
+                    await send_cancellation_message(ctx, "That isn't a valid index.")
+                    return
+            else:
+                loc = None
+                for i in range(1, len(dmevents)+1, 1):
+                    if dmevents[i - 1]['searchstr'] == index:
+                        loc = i
+                        break
+                index = loc
+                if index is None:
+                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                    return
+            if not await get_user_confirmation(ctx, "Modify the offset for {}. `{}` to {} minutes?"
+                                               .format(index, dmevents[index - 1]['searchstr'], offset)):
                 return
             dmevents[index - 1]['offset'] = offset
         await ctx.tick()
 
     @aed_e.command(name="searchstr")
-    async def aed_e_searchstr(self, ctx, index: int, *, searchstr):
+    async def aed_e_searchstr(self, ctx, index, *, searchstr):
         """Set search string of an autoeventdm"""
         searchstr = searchstr.strip('"')
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 < index <= len(dmevents):
-                await send_cancellation_message(ctx, "That isn't a valid index.")
+            if index.isdigit():
+                index = int(index)
+                if not 0 < index <= len(dmevents):
+                    await send_cancellation_message(ctx, "That isn't a valid index.")
+                    return
+            else:
+                loc = None
+                for i in range(1, len(dmevents) + 1, 1):
+                    if dmevents[i - 1]['searchstr'] == index:
+                        loc = i
+                        break
+                index = loc
+                if index is None:
+                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                    return
+            if not await get_user_confirmation(ctx, "Modify the search string for {}. `{}` to `{}`?"
+                    .format(index, dmevents[index - 1]['searchstr'], searchstr)):
                 return
             dmevents[index - 1]['searchstr'] = searchstr
         await ctx.tick()
 
     @aed_e.command(name="toggle3p")
-    async def aed_e_toggle3p(self, ctx, index: int):
+    async def aed_e_toggle3p(self, ctx, index):
         """Include/exclude 3-player dungeons in an autoeventdm"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
-            if not 0 < index <= len(dmevents):
-                await send_cancellation_message(ctx, "That isn't a valid index.")
-                return
+            if index.isdigit():
+                index = int(index)
+                if not 0 < index <= len(dmevents):
+                    await send_cancellation_message(ctx, "That isn't a valid index.")
+                    return
+            else:
+                loc = None
+                for i in range(1, len(dmevents) + 1, 1):
+                    if dmevents[i - 1]['searchstr'] == index:
+                        loc = i
+                        break
+                index = loc
+                if index is None:
+                    await send_cancellation_message(ctx, "That string did not match any existing patterns.")
+                    return
             event = dmevents[index - 1]['searchstr']
             if dmevents[index - 1].get('include3p') is None:
                 # case of legacy configs
