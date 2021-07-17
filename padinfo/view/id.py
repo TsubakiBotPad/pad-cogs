@@ -269,7 +269,7 @@ class IdView(BaseIdView):
     def stats_header(m: "MonsterModel", cardplus: CardPlusModifier):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
         # TODO: Get a +0 emoji for the +0 setting
-        plus_297_emoji = get_emoji('plus_297') if cardplus == CardPlusModifier.plus297 else ''
+        plus_297_emoji = get_emoji('plus_297') if cardplus == CardPlusModifier.plus297 else get_emoji('plus_0')
         header = Box(
             Text(voice_emoji),
             Text(plus_297_emoji),
