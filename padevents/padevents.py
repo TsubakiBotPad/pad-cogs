@@ -453,6 +453,27 @@ class PadEvents(commands.Cog):
             return
         return pingroles[key]
 
+    async def aep_remove_channel(self, ctx, key, group):
+        if key not in await self.config.guild(ctx.guild).pingroles():
+            await ctx.send("That key does not exist.")
+            return
+
+        if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
+                .format(group, key)):
+            await send_cancellation_message(ctx, "No action was taken. You can set a channel with `{}aep set {}channel {} #channel_name`"
+                                            .format(ctx.prefix, group, key))
+            return
+        else:
+            if group == "red":
+                await self.aepchange(ctx, key, 'channels', lambda x: [None, x[1], x[2]])
+            elif group == "blue":
+                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], None, x[2]])
+            elif group == "green":
+                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], None])
+            await send_confirmation_message(ctx, "Okay, I removed the {} channel for the AEP `{}`"
+                                                .format(group, key))
+            return
+
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping for all groups"""
@@ -463,55 +484,28 @@ class PadEvents(commands.Cog):
     async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is red"""
         if channel is None:
-            if key not in await self.config.guild(ctx.guild).pingroles():
-                await ctx.send("That key does not exist.")
-                return
-            if not await get_user_confirmation(ctx, "Are you sure you want to remove the red channel for AEP `{}`?".format(key)):
-                await send_cancellation_message(ctx, "No action was taken. You can set a channel with `[p]aep set redchannel {} #channel_name`"
-                                                .format(key))
-                return
-            else:
-                await self.aepchange(ctx, key, 'channels', lambda x: [None, x[1], x[2]])
-                await send_confirmation_message(ctx, "Okay, I removed the red channel for the AEP `{}`".format(key))
-                return
-        await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
-        await ctx.tick()
+            await self.aep_remove_channel(ctx, key, "red")
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
+            await ctx.tick()
 
     @aep_set.command(name="bluechannel")
     async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is blue"""
         if channel is None:
-            if key not in await self.config.guild(ctx.guild).pingroles():
-                await ctx.send("That key does not exist.")
-                return
-            if not await get_user_confirmation(ctx, "Are you sure you want to remove the blue channel for AEP `{}`?".format(key)):
-                await send_cancellation_message(ctx, "No action was taken. You can set a channel with `[p]aep set bluechannel {} #channel_name`"
-                                                .format(key))
-                return
-            else:
-                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], None, x[2]])
-                await send_confirmation_message(ctx, "Okay, I removed the blue channel for the AEP `{}`".format(key))
-                return
-        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
-        await ctx.tick()
+            await self.aep_remove_channel(ctx, key, "blue")
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
+            await ctx.tick()
 
     @aep_set.command(name="greenchannel")
     async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is green"""
         if channel is None:
-            if key not in await self.config.guild(ctx.guild).pingroles():
-                await ctx.send("That key does not exist.")
-                return
-            if not await get_user_confirmation(ctx, "Are you sure you want to remove the green channel for AEP `{}`?".format(key)):
-                await send_cancellation_message(ctx, "No action was taken. You can set a channel with `[p]aep set greenchannel {} #channel_name`"
-                                                .format(key))
-                return
-            else:
-                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], None])
-                await send_confirmation_message(ctx, "Okay, I removed the green channel for the AEP `{}`".format(key))
-                return
-        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
-        await ctx.tick()
+            await self.aep_remove_channel(ctx, key, "green")
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
+            await ctx.tick()
 
     @aep_set.command(name="roles")
     async def aep_s_roles(self, ctx, key, red: discord.Role, blue: discord.Role, green: discord.Role):
@@ -769,7 +763,8 @@ class PadEvents(commands.Cog):
                 user_index = str_index
                 if user_index is None:
                     await send_cancellation_message(ctx, "That string did not match any existing patterns. "
-                                                         "Printing all of your Auto Event DMs (you can also see this with `^aed list`):")
+                                                         "Printing all of your Auto Event DMs (you can also see this with `{}aed list`):"
+                                                    .format(ctx.prefix))
                     await self.aed_list(ctx)
                     return None
         return user_index - 1
