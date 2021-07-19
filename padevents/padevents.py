@@ -453,7 +453,7 @@ class PadEvents(commands.Cog):
             return
         return pingroles[key]
 
-    async def aep_remove_channel(self, ctx, key, group):
+    async def aep_remove_channel(self, ctx, key, group, f):
         if key not in await self.config.guild(ctx.guild).pingroles():
             await ctx.send("That key does not exist.")
             return
@@ -464,12 +464,7 @@ class PadEvents(commands.Cog):
                                             .format(ctx.prefix, group, key))
             return
         else:
-            if group == "red":
-                await self.aepchange(ctx, key, 'channels', lambda x: [None, x[1], x[2]])
-            elif group == "blue":
-                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], None, x[2]])
-            elif group == "green":
-                await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], None])
+            await self.aepchange(ctx, key, 'channels', f)
             await send_confirmation_message(ctx, "Okay, I removed the {} channel for the AEP `{}`"
                                                 .format(group, key))
             return
@@ -484,7 +479,7 @@ class PadEvents(commands.Cog):
     async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is red"""
         if channel is None:
-            await self.aep_remove_channel(ctx, key, "red")
+            await self.aep_remove_channel(ctx, key, "red", lambda x: [None, x[1], x[2]])
         else:
             await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
             await ctx.tick()
@@ -493,7 +488,7 @@ class PadEvents(commands.Cog):
     async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is blue"""
         if channel is None:
-            await self.aep_remove_channel(ctx, key, "blue")
+            await self.aep_remove_channel(ctx, key, "blue", lambda x: [x[0], None, x[2]])
         else:
             await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
             await ctx.tick()
@@ -502,7 +497,7 @@ class PadEvents(commands.Cog):
     async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is green"""
         if channel is None:
-            await self.aep_remove_channel(ctx, key, "green")
+            await self.aep_remove_channel(ctx, key, "green", lambda x: [x[0], x[1], None])
         else:
             await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
             await ctx.tick()
