@@ -453,6 +453,22 @@ class PadEvents(commands.Cog):
             return
         return pingroles[key]
 
+    async def aep_remove_channel(self, ctx, key, group, f):
+        if key not in await self.config.guild(ctx.guild).pingroles():
+            await ctx.send("That key does not exist.")
+            return
+
+        if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
+                .format(group, key)):
+            await send_cancellation_message(ctx, "No action was taken. You can set a channel with `{}aep set {}channel {} #channel_name`"
+                                            .format(ctx.prefix, group, key))
+            return
+        else:
+            await self.aepchange(ctx, key, 'channels', f)
+            await send_confirmation_message(ctx, "Okay, I removed the {} channel for the AEP `{}`"
+                                                .format(group, key))
+            return
+
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping for all groups"""
@@ -460,22 +476,31 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @aep_set.command(name="redchannel")
-    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel):
+    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is red"""
-        await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
-        await ctx.tick()
+        if channel is None:
+            await self.aep_remove_channel(ctx, key, "red", lambda x: [None, x[1], x[2]])
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
+            await ctx.tick()
 
     @aep_set.command(name="bluechannel")
-    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel):
+    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is blue"""
-        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
-        await ctx.tick()
+        if channel is None:
+            await self.aep_remove_channel(ctx, key, "blue", lambda x: [x[0], None, x[2]])
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
+            await ctx.tick()
 
     @aep_set.command(name="greenchannel")
-    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel):
+    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel=None):
         """Sets channel to ping when event is green"""
-        await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
-        await ctx.tick()
+        if channel is None:
+            await self.aep_remove_channel(ctx, key, "green", lambda x: [x[0], x[1], None])
+        else:
+            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
+            await ctx.tick()
 
     @aep_set.command(name="roles")
     async def aep_s_roles(self, ctx, key, red: discord.Role, blue: discord.Role, green: discord.Role):
@@ -733,7 +758,8 @@ class PadEvents(commands.Cog):
                 user_index = str_index
                 if user_index is None:
                     await send_cancellation_message(ctx, "That string did not match any existing patterns. "
-                                                         "Printing all of your Auto Event DMs (you can also see this with `^aed list`):")
+                                                         "Printing all of your Auto Event DMs (you can also see this with `{}aed list`):"
+                                                    .format(ctx.prefix))
                     await self.aed_list(ctx)
                     return None
         return user_index - 1
