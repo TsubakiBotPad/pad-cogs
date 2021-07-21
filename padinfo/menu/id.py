@@ -2,7 +2,6 @@ from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils import char_to_emoji
 from tsutils.enums import ChildMenuType
 from tsutils.menu.panes import MenuPanes
@@ -132,60 +131,54 @@ class IdMenu:
     def id_control(state: IdViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [IdView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
     @staticmethod
     def evos_control(state: Optional[EvosViewState]):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [EvosView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
     @staticmethod
     def mats_control(state: Optional[MaterialsViewState]):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [MaterialsView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
     @staticmethod
     def pic_control(state: PicViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [PicView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
     @staticmethod
     def pantheon_control(state: Optional[PantheonViewState]):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [PantheonView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
     @staticmethod
     def otherinfo_control(state: OtherInfoViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [OtherInfoView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+            state.reaction_list or IdMenuPanes.emoji_names()
         )
 
 

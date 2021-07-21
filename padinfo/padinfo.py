@@ -261,7 +261,7 @@ class PadInfo(commands.Cog):
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
             await IdViewState.do_query(dgcog, monster)
-        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
         is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
