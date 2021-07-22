@@ -2,9 +2,8 @@ from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from discordmenu.emoji.emoji_cache import emoji_cache
-
 from tsutils.menu.panes import MenuPanes, emoji_buttons
+
 from padinfo.view.id import IdView, IdViewState
 from padinfo.view.leader_skill_single import LeaderSkillSingleView, LeaderSkillSingleViewState
 
@@ -33,14 +32,14 @@ class LeaderSkillSingleMenu:
     def ls_control(state: LeaderSkillSingleViewState):
         return EmbedControl(
             [LeaderSkillSingleView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in LeaderSkillSingleMenuPanes.emoji_names()]
+            LeaderSkillSingleMenuPanes.emoji_names()
         )
 
     @staticmethod
     def id_control(state: IdViewState):
         return EmbedControl(
             [IdView.embed(state)],
-            [emoji_cache.get_by_name(e) for e in LeaderSkillSingleMenuPanes.emoji_names()]
+            LeaderSkillSingleMenuPanes.emoji_names()
         )
 
 

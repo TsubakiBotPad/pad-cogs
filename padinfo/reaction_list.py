@@ -1,7 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING
 
-from discordmenu.emoji.emoji_cache import emoji_cache
-
 from padinfo.core.padinfo_settings import settings
 from padinfo.menu.id import IdMenuPanes, IdMenuEmoji
 from padinfo.view.evos import EvosViewState
@@ -16,7 +14,7 @@ async def get_id_menu_initial_reaction_list(ctx, dgcog, monster: "MonsterModel",
                                             full_reaction_list: List[Optional[str]] = None, force_evoscroll=False):
     # hide some panes if we're in evo scroll mode
     if not full_reaction_list:
-        full_reaction_list = [emoji_cache.get_by_name(e) for e in IdMenuPanes.emoji_names()]
+        full_reaction_list = IdMenuPanes.emoji_names()
     if not force_evoscroll and not settings.checkEvoID(ctx.author.id):
         return full_reaction_list
     alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
