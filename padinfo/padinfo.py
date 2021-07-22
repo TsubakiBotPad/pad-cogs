@@ -291,7 +291,7 @@ class PadInfo(commands.Cog):
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await tsutils.get_user_confirmation(ctx, "Was this the monster you were looking for?",
-                                                    yemoji=char_to_emoji('y'), nemoji=char_to_emoji('n'))
+                                                    yes_emoji=char_to_emoji('y'), no_emoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
             elif userres is False:
