@@ -6,10 +6,11 @@ from io import BytesIO
 
 import aiofiles
 import discord
+import pygit2
 import pymysql
 from redbot.core import checks, commands, Config, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import auth_check, get_user_confirmation
+from tsutils import auth_check, get_user_confirmation, send_cancellation_message
 
 logger = logging.getLogger('red.padbot-cogs.crud')
 
@@ -100,6 +101,16 @@ class Crud(commands.Cog):
             await ctx.send(inline(cursor._executed))
             for page in pagify(msg):
                 await ctx.send(box(page))
+
+    async def git_verify(self, ctx):
+        try:
+            repo = pygit2.Repository(await self.config.pipeline_base())
+        except pygit2.GitError:
+            return
+        if not repo.lookup_branch("master").is_checked_out():
+            await send_cancellation_message(ctx, f"Hey {ctx.author.mention} the pipeline branch is currently **not**"
+                                                 f" set to master! Please inform a sysadmin that this crud change"
+                                                 f" was only **temporarily** made!")
 
     @commands.group()
     @auth_check('crud')
@@ -228,6 +239,7 @@ class Crud(commands.Cog):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *elements):
@@ -266,6 +278,7 @@ class Crud(commands.Cog):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -284,6 +297,7 @@ class Crud(commands.Cog):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @crud.group(aliases=["awos"])
     async def awokenskill(self, ctx):
@@ -361,6 +375,7 @@ class Crud(commands.Cog):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @awokenskill.command(name="edit")
     async def awokenskill_edit(self, ctx, awoken_skill, *elements):
@@ -414,6 +429,7 @@ class Crud(commands.Cog):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @awokenskill.command(name="delete")
     @checks.is_owner()
@@ -432,6 +448,7 @@ class Crud(commands.Cog):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
+        await self.git_verify(ctx)
 
     @crud.command()
     @checks.is_owner()
