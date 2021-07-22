@@ -132,7 +132,7 @@ class Crud(commands.Cog):
             old_val = cursor.fetchall()
 
         if not old_val:
-            await ctx.send("There is no monster with id: {}".format(monster_id))
+            await ctx.send(f"There is no monster with id {monster_id}")
             return
         monster_name = old_val[0]['monster_name']
         old_name = old_val[0]['old_override']
@@ -167,7 +167,7 @@ class Crud(commands.Cog):
             cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
             rows = cursor.fetchall()
             if not rows:
-                await ctx.send("There is no series with id: {}".format(series_id))
+                await ctx.send(f"There is no series with id {series_id}")
                 return
             new_series = rows[0]['name_en']
 
