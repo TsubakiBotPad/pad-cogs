@@ -1171,7 +1171,7 @@ class PadGlobal(commands.Cog):
         for result in results:
             param = self.transform_parameter(result, message)
             command = command.replace("{" + result + "}", param)
-        return command
+        return self.emojify(command)
 
     def transform_parameter(self, result, message):
         """
