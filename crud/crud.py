@@ -129,43 +129,65 @@ class Crud(commands.Cog):
 
         if name.lower() in ["none", "null", ""]:
             name = None
+
         with await self.get_cursor() as cursor:
-            cursor.execute("SELECT name_en_override FROM monsters WHERE monster_id = %s", (monster_id,))
+            # Get the most recent english translation override
+            cursor.execute("""SELECT 
+                                monsters.name_en AS monster_name,
+                                monster_name_overrides.name_en AS old_override
+                              FROM monster_name_overrides
+                              RIGHT JOIN monsters
+                                ON monsters.monster_id = monster_name_overrides.monster_id
+                              WHERE monsters.monster_id = %s AND (is_translation = 1 OR is_translation IS NULL)
+                              ORDER BY monster_name_overrides.tstamp DESC LIMIT 1""", (monster_id,))
             old_val = cursor.fetchall()
 
         if not old_val:
-            await ctx.send("There is no monster with id: {}".format(monster_id))
+            await ctx.send(f"There is no monster with id {monster_id}")
             return
-        old_val = old_val[0]['name_en_override']
-        if not await get_user_confirmation(ctx, ("Are you sure you want to change monster #{}'s"
-                                           " english override from `{}` to `{}`?"
-                                           "").format(monster_id, old_val, name)):
+        monster_name = old_val[0]['monster_name']
+        old_name = old_val[0]['old_override']
+        if not await get_user_confirmation(ctx, (f"Are you sure you want to change `{monster_name} ({monster_id})`'s"
+                                                 f" english override from `{old_name}` to `{name}`?")):
             return
 
-        sql = ('UPDATE monsters'
-               ' SET name_en_override = %s'
-               ' WHERE monster_id = %s')
-        await self.execute_write(ctx, sql, (name, monster_id))
+        sql = (f'INSERT INTO monster_name_overrides (monster_id, name_en, is_translation, tstamp)'
+               f' VALUES (%s, %s, 1, UNIX_TIMESTAMP())')
+        await self.execute_write(ctx, sql, (monster_id, name))
 
     @crud.command()
-    async def editmonsseries(self, ctx, monster_id: int, *, series_id: int):
-        """Change a monster's series_id"""
+    async def editmonsseries(self, ctx, monster_id: int, series_id: int):
+        """Change a monster's main series_id"""
         with await self.get_cursor() as cursor:
-            cursor.execute("SELECT series_id FROM monsters WHERE monster_id = %s", (monster_id,))
-            old_val = cursor.fetchall()
+            cursor.execute("""SELECT
+                                COALESCE(mno.name_en, monsters.name_en) AS monster_name,
+                                series.name_en AS series_name
+                              FROM monster_series
+                              JOIN monsters ON monsters.monster_id = monster_series.monster_id
+                              JOIN series ON series.series_id = monster_series.series_id
+                              LEFT JOIN monster_name_overrides mno
+                                ON mno.monster_id = monsters.monster_id AND is_translation = 1
+                              WHERE monsters.monster_id = %s AND priority = 1""", (monster_id,))
+            rows = cursor.fetchall()
+            if not rows:
+                await ctx.send("There is no monster with id: {}".format(monster_id))
+                return
+            monster_name = rows[0]['monster_name']
+            old_series = rows[0]['series_name']
 
-        if not old_val:
-            await ctx.send("There is no monster with id: {}".format(monster_id))
-            return
-        old_val = old_val[0]['series_id']
-        if not await get_user_confirmation(ctx, ("Are you sure you want to change monster #{}'s"
-                                           " series id from `{}` to `{}`?"
-                                           "").format(monster_id, old_val, series_id)):
+            cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
+            rows = cursor.fetchall()
+            if not rows:
+                await ctx.send(f"There is no series with id {series_id}")
+                return
+            new_series = rows[0]['name_en']
+
+        if not await get_user_confirmation(ctx, (f"Are you sure you want to change `{monster_name} ({monster_id})`'s"
+                                                 f" series id from `{old_series}` to `{new_series}`?")):
             return
 
-        sql = ('UPDATE monsters'
-               ' SET series_id = %s'
-               ' WHERE monster_id = %s')
+        sql = (f'UPDATE monster_series SET series_id = %s, tstamp = UNIX_TIMESTAMP()'
+               f' WHERE monster_id = %s AND priority = 1')
         await self.execute_write(ctx, sql, (series_id, monster_id))
 
     @crud.command()

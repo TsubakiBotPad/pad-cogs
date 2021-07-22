@@ -19,7 +19,8 @@
   "requirements": [
     "tsutils",
     "pymysql",
-    "aiofiles"
+    "aiofiles",
+    "cryptography"
   ],
   "tags": [
     "PAD"
