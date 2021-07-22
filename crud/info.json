@@ -20,7 +20,8 @@
     "tsutils",
     "pymysql",
     "aiofiles",
-    "cryptography"
+    "cryptography",
+    "pygit2"
   ],
   "tags": [
     "PAD"
