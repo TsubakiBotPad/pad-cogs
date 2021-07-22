@@ -3,7 +3,6 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
-from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.enums import Server, ChildMenuType
 from tsutils.menu.panes import MenuPanes
 
@@ -71,20 +70,18 @@ class NaDiffMenu:
     def id_control(state: IdViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [IdView.embed(state)],
-            reaction_list or [emoji_cache.get_by_name(e) for e in NaDiffMenuPanes.emoji_names()]
+            state.reaction_list or NaDiffMenuPanes.emoji_names()
         )
 
     @staticmethod
     def message_control(state: SimpleTextViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
         return EmbedControl(
             [SimpleTextView.embed(state)],
-            reaction_list
+            state.reaction_list
         )
 
 
