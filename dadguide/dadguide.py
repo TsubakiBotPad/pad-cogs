@@ -171,7 +171,7 @@ class Dadguide(commands.Cog, IdTest):
             issues.extend(index.issues)
         issues.extend(await self.run_tests())
 
-        if issues and not await self.config.ts_only():
+        if issues and not self.database.graph.tsubaki_only:
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
                 channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
@@ -262,12 +262,20 @@ class Dadguide(commands.Cog, IdTest):
     async def debugmode(self, ctx, enabled: bool):
         """Sets tsubaki-only mode and reloads the index and graph"""
         await self.config.ts_only.set(enabled)
+        if enabled:
+            await tsutils.send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
+                                                         f" Only **Tsubaki** will be available in the graph and id"
+                                                         f" queries, to allow for a faster restart time. To turn"
+                                                         f" off **Tsubaki mode** run"
+                                                         f" `{ctx.prefix}dadguide debugmode false`.")
+        else:
+            await tsutils.send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
+                                                         f" normally. To return to **Tsubaki mode**, run"
+                                                         f" `{ctx.prefix}debugmode true.`")
         await self.forceindexreload(ctx)
-        await ctx.tick()
 
     async def get_fm_flags(self, author_id):
-        # noinspection PyTypeChecker
-        return {**self.fm_flags_default, **(await self.config.user(discord.Object(author_id)).fm_flags())}
+        return {**self.fm_flags_default, **(await self.config.user_from_id(author_id).fm_flags())}
 
     async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
