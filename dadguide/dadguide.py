@@ -76,7 +76,7 @@ class Dadguide(commands.Cog, IdTest):
 
         self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
-        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
+        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[], ts_only=False)
         self.config.register_user(lastaction=None, fm_flags={})
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
@@ -171,7 +171,7 @@ class Dadguide(commands.Cog, IdTest):
             issues.extend(index.issues)
         issues.extend(await self.run_tests())
 
-        if issues:
+        if issues and not await self.config.ts_only():
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
                 channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
@@ -229,7 +229,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database)
+        self.database = load_database(self.database, await self.config.ts_only())
         logger.info('Building dg monster index')
         await self.create_index()
 
@@ -255,6 +255,14 @@ class Dadguide(commands.Cog, IdTest):
     @checks.is_owner()
     async def setfailurechannel(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
+        await ctx.tick()
+
+    @dadguide.command(aliases=["debug"])
+    @checks.is_owner()
+    async def debugmode(self, ctx, enabled: bool):
+        """Sets tsubaki-only mode and reloads the index and graph"""
+        await self.config.ts_only.set(enabled)
+        await self.forceindexreload(ctx)
         await ctx.tick()
 
     async def get_fm_flags(self, author_id):

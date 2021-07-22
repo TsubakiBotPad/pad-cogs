@@ -22,10 +22,12 @@ FROM
 
 
 class DbContext(object):
-    def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext):
+    def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext, debug_mode: bool = False):
         self.database = database
         self.graph = graph
         self.dungeon = dungeon
+
+        self.tsubaki_only = debug_mode
 
         self.awoken_skill_map = {awsk.awoken_skill_id: awsk for awsk in self.get_all_awoken_skills()}
 
@@ -45,6 +47,8 @@ class DbContext(object):
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
     def get_all_monster_ids_query(self, server: Server):
+        if self.tsubaki_only:
+            return [2141]
         table = 'monsters_na' if server == Server.NA else 'monsters'
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}), (),

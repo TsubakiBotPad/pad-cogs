@@ -8,7 +8,6 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DadguideDatabase
-from .errors import InvalidGraphState
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
@@ -118,12 +117,13 @@ SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
-    def __init__(self, database: DadguideDatabase):
+    def __init__(self, database: DadguideDatabase, debug_mode: bool = False):
         self.issues = []
+        self.tsubaki_only = debug_mode
 
         self.database = database
         self.max_monster_id = -1
-        self.graph_dict: Dict[Server, MultiDiGraph] = {  # noqa
+        self.graph_dict: Dict[Server, MultiDiGraph] = {
             Server.COMBINED: self.build_graph(Server.COMBINED),
             Server.NA: self.build_graph(Server.NA),
         }
@@ -160,6 +160,8 @@ class MonsterGraph(object):
                 mtoegg[idx][e_type] = True
 
         for m in ms:
+            if self.tsubaki_only and m.monster_id != 2141:
+                continue
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
                                         name_ja=m.ls_name_ja,
                                         name_en=m.ls_name_en,
@@ -264,6 +266,9 @@ class MonsterGraph(object):
                 graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
 
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
+
+        if self.tsubaki_only:
+            return graph
 
         for e in es:
             evo_model = EvolutionModel(**e)

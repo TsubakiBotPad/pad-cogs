@@ -13,7 +13,7 @@ def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
-def load_database(existing_db):
+def load_database(existing_db, debugmode):
     DB_DUMP_FILE = _data_file('dadguide.sqlite')
     DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
     # Release the handle to the database file if it has one
@@ -24,7 +24,7 @@ def load_database(existing_db):
         shutil.copy2(DB_DUMP_FILE, DB_DUMP_WORKING_FILE)
     # Open the new working copy.
     database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
-    graph = MonsterGraph(database)
+    graph = MonsterGraph(database, debugmode)
     dungeon = DungeonContext(database)
-    db_context = DbContext(database, graph, dungeon)
+    db_context = DbContext(database, graph, dungeon, debugmode)
     return db_context
