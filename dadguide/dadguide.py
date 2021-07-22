@@ -271,7 +271,7 @@ class Dadguide(commands.Cog, IdTest):
         else:
             await tsutils.send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
                                                          f" normally. To return to **Tsubaki mode**, run"
-                                                         f" `{ctx.prefix}debugmode true.`")
+                                                         f" `{ctx.prefix}dadguide debugmode true.`")
         await self.forceindexreload(ctx)
 
     async def get_fm_flags(self, author_id):
