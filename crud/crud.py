@@ -102,15 +102,38 @@ class Crud(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    async def git_verify(self, ctx):
+    async def git_verify(self, ctx, filepath):
         try:
             repo = pygit2.Repository(await self.config.pipeline_base())
         except pygit2.GitError:
             return
         if not repo.lookup_branch("master").is_checked_out():
-            await send_cancellation_message(ctx, f"Hey {ctx.author.mention} the pipeline branch is currently **not**"
+            await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, the pipeline branch is currently **not**"
                                                  f" set to master! Please inform a sysadmin that this crud change"
                                                  f" was only **temporarily** made!")
+            return
+        if any(diff for diff in repo.diff().deltas if print(diff.old_file) == filepath):
+            await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, there are currently staged changes."
+                                                 f" Please inform a sysadmin so that your changes can be"
+                                                 f" manually committed.")
+
+        keys = await self.bot.get_shared_api_tokens("github")
+        if "username" not in keys or "password" not in keys:
+            await send_cancellation_message(ctx, f"Github credentials unset.  Add via `{ctx.prefix}set api"
+                                                 f" github username <username> password <password>`")
+
+        index = repo.index
+        index.add(filepath)
+        index.write()
+        tree = index.write_tree()
+        author = pygit2.Signature(str(ctx.author), "famiel@tsubakibot.com")
+        commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
+        parent, ref = repo.resolve_refish(refish=repo.head.name)
+        repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
+        upcred = pygit2.UserPass(keys['username'], keys['password'])
+        remote = discord.utils.get(repo.remotes, name="origin")
+        remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
+
 
     @commands.group()
     @auth_check('crud')
@@ -261,7 +284,7 @@ class Crud(commands.Cog):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *elements):
@@ -300,7 +323,7 @@ class Crud(commands.Cog):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -319,7 +342,7 @@ class Crud(commands.Cog):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
 
     @crud.group(aliases=["awos"])
     async def awokenskill(self, ctx):
@@ -397,7 +420,7 @@ class Crud(commands.Cog):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
 
     @awokenskill.command(name="edit")
     async def awokenskill_edit(self, ctx, awoken_skill, *elements):
@@ -451,7 +474,7 @@ class Crud(commands.Cog):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
 
     @awokenskill.command(name="delete")
     @checks.is_owner()
@@ -470,7 +493,7 @@ class Crud(commands.Cog):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx)
+        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
 
     @crud.command()
     @checks.is_owner()
