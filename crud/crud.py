@@ -120,9 +120,9 @@ class Crud(commands.Cog):
                                                  f" manually committed.")
 
         keys = await self.bot.get_shared_api_tokens("github")
-        if "username" not in keys or "password" not in keys:
+        if "username" not in keys or "token" not in keys:
             await send_cancellation_message(ctx, f"Github credentials unset.  Add via `{ctx.prefix}set api"
-                                                 f" github username <username> password <password>`")
+                                                 f" github username <username> token <access token>`")
 
         index = repo.index
         index.add(filepath)
@@ -132,7 +132,7 @@ class Crud(commands.Cog):
         commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
         parent, ref = repo.resolve_refish(refish=repo.head.name)
         repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
-        upcred = pygit2.UserPass(keys['username'], keys['password'])
+        upcred = pygit2.UserPass(keys['username'], keys['token'])
         remote = discord.utils.get(repo.remotes, name="origin")
         remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
 
