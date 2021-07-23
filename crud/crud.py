@@ -107,12 +107,14 @@ class Crud(commands.Cog):
             repo = pygit2.Repository(await self.config.pipeline_base())
         except pygit2.GitError:
             return
+        if not repo.diff():
+            return
         if not repo.lookup_branch("master").is_checked_out():
             await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, the pipeline branch is currently **not**"
                                                  f" set to master! Please inform a sysadmin that this crud change"
                                                  f" was only **temporarily** made!")
             return
-        if any(diff for diff in repo.diff().deltas if print(diff.old_file) == filepath):
+        if any(diff for diff in repo.diff().deltas if diff.old_file.path != filepath):
             await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, there are currently staged changes."
                                                  f" Please inform a sysadmin so that your changes can be"
                                                  f" manually committed.")
