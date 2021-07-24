@@ -86,6 +86,9 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     76: 'cc_light',
     77: 'cc_dark',
     78: 'cross_attack',
+    79: 'boost_attr3',
+    80: 'boost_attr4',
+    81: 'boost_attr5',
 }
 
 AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
