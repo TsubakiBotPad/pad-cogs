@@ -166,6 +166,9 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.LIGHTCOMBOCOUNT: ('ccl', 'cc'),
     AwokenSkills.DARKCOMBOCOUNT: ('ccd', 'cc'),
     AwokenSkills.CROSSATTACK: ('crossattack', 'crossblind'),
+    AwokenSkills.MATCH3BOOST: ('match3', '3match'),
+    AwokenSkills.MATCH4BOOST: ('match4', '4match'),
+    AwokenSkills.MATCH5BOOST: ('match5', '5match'),
 }
 
 
