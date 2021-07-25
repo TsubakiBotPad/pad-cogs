@@ -12,8 +12,8 @@ from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, Butto
 class ButtonInfoEmoji:
     delete = '\N{CROSS MARK}'
     home = emoji_buttons['home']
-    solo = '\N{STANDING PERSON}'
-    coop = '\N{ADULT}\N{ZERO WIDTH JOINER}\N{HANDSHAKE}\N{ZERO WIDTH JOINER}\N{ADULT}'
+    solo = '\N{BUST IN SILHOUETTE}'
+    coop = '\N{BUSTS IN SILHOUETTE}'
     mobile = '\N{MOBILE PHONE}'
     desktop = '\N{DESKTOP COMPUTER}'
     # temporary until I figure out the custom/fallback emoji stuff
