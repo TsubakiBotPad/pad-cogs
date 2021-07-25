@@ -5,20 +5,46 @@ from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text, BlockText
 from discordmenu.embed.view import EmbedView
 from tsutils import embed_footer_with_state
+from tsutils.query_settings import QuerySettings
 
+from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
+from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
-class ButtonInfoViewProps:
-    def __init__(self, monster: "MonsterModel", info):
+class ButtonInfoViewState(ViewStateBase):
+    def __init__(self, original_author_id, menu_type, raw_query, color, monster: "MonsterModel", info,
+                 query_settings: QuerySettings):
+        super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
+        self.color = color
         self.monster = monster
         self.info = info
+        self.query_settings = query_settings
+
+    def serialize(self):
+        ret = super().serialize()
+        ret.update({
+            'resolved_monster_id': self.monster.monster_id,
+            'query_settings': self.query_settings.serialize()
+        })
+        return ret
+
+    @staticmethod
+    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+        raw_query = ims['raw_query']
+        original_author_id = ims['original_author_id']
+        menu_type = ims['menu_type']
+        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        monster = dgcog.get_monster(ims['resolved_monster_id'])
+        info = button_info.get_info(dgcog, monster)
+        return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, monster, info,
+                                   query_settings)
 
 
 def get_max_level(monster):
@@ -70,9 +96,9 @@ class ButtonInfoView:
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod
-    def embed(state, props: ButtonInfoViewProps):
-        monster = props.monster
-        info = props.info
+    def embed(state: ButtonInfoViewState):
+        monster = state.monster
+        info = state.info
 
         fields = [
             EmbedField(
@@ -119,6 +145,24 @@ class ButtonInfoView:
                     BlockText(info.team_btn_str)
                 )
             )
+            # EmbedField(
+            #     'Common Buttons - {}'.format(get_max_level(monster)),
+            #     Box(
+            #         Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
+            #         # janky, but python gives DeprecationWarnings when using \* in a regular string
+            #         Text(r'*\* = on-color stat bonus applied*')
+            #     )
+            # ),
+            # EmbedField(
+            #     'Card Button Damage',
+            #     BlockText(info.card_btn_str),
+            #     inline=True
+            # ),
+            # EmbedField(
+            #     'Team Button Contribution',
+            #     BlockText(info.team_btn_str),
+            #     inline=True
+            # )
         ]
 
         return EmbedView(
