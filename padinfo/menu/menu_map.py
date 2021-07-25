@@ -1,4 +1,5 @@
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
+from padinfo.menu.button_info import ButtonInfoMenu, ButtonInfoMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
@@ -14,6 +15,7 @@ from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewS
 
 padinfo_menu_map = {
     AwakeningListMenu.MENU_TYPE: (AwakeningListMenu, AwakeningListMenuPanes),
+    ButtonInfoMenu.MENU_TYPE: (ButtonInfoMenu, ButtonInfoMenuPanes),
     ClosableEmbedMenu.MENU_TYPE: (ClosableEmbedMenu, ClosableEmbedMenuPanes),
     IdMenu.MENU_TYPE: (IdMenu, IdMenuPanes),
     LeaderSkillMenu.MENU_TYPE: (LeaderSkillMenu, LeaderSkillMenuPanes),
