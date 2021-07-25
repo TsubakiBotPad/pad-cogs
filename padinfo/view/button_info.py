@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
@@ -38,8 +38,8 @@ class ButtonInfoToggles:
 
 class ButtonInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, display_options: ButtonInfoToggles,
-                 monster: "MonsterModel", info, query_settings: QuerySettings):
-        super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
+                 monster: "MonsterModel", info, query_settings: QuerySettings, reaction_list: List[str] = None):
+        super().__init__(original_author_id, menu_type, raw_query, extra_state=None, reaction_list=reaction_list)
         self.color = color
         self.display_options = display_options
         self.monster = monster
@@ -67,8 +67,9 @@ class ButtonInfoViewState(ViewStateBase):
         display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
         monster = dgcog.get_monster(ims['resolved_monster_id'])
         info = button_info.get_info(dgcog, monster)
+        reaction_list = ims['reaction_list']
         return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
-                                   monster, info, query_settings)
+                                   monster, info, query_settings, reaction_list=reaction_list)
 
     def set_player_count(self, new_count):
         self.display_options.players = new_count

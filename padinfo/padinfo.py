@@ -27,7 +27,7 @@ from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
-from padinfo.menu.button_info import ButtonInfoMenu
+from padinfo.menu.button_info import ButtonInfoMenu, ButtonInfoMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
@@ -587,7 +587,8 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         display_options = ButtonInfoToggles()
         state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
-                                    monster, info, query_settings)
+                                    monster, info, query_settings,
+                                    reaction_list=ButtonInfoMenuPanes.get_user_reaction_list(display_options))
         menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)
 
