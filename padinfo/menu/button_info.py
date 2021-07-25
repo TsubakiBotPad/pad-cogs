@@ -58,6 +58,30 @@ class ButtonInfoMenu:
         view_state.set_player_count(ButtonInfoOptions.solo)
         return ButtonInfoMenu.button_info_control(view_state)
 
+    @classmethod
+    async def respond_with_desktop(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_device(ButtonInfoOptions.desktop)
+        return ButtonInfoMenu.button_info_control(view_state)
+
+    @classmethod
+    async def respond_with_mobile(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_device(ButtonInfoOptions.mobile)
+        return ButtonInfoMenu.button_info_control(view_state)
+
+    @classmethod
+    async def respond_with_limit_break(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_max_level(ButtonInfoOptions.limit_break)
+        return ButtonInfoMenu.button_info_control(view_state)
+
+    @classmethod
+    async def respond_with_super_limit_break(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_max_level(ButtonInfoOptions.super_limit_break)
+        return ButtonInfoMenu.button_info_control(view_state)
+
     @staticmethod
     def button_info_control(state: ButtonInfoViewState):
         if state is None:
@@ -77,14 +101,10 @@ class ButtonInfoMenuPanes(MenuPanes):
         ButtonInfoEmoji.home: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.coop: (ButtonInfoMenu.respond_with_coop, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.solo: (ButtonInfoMenu.respond_with_solo, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.desktop: (ButtonInfoMenu.respond_with_desktop, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_mobile, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.limit_break: (ButtonInfoMenu.respond_with_limit_break, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.super_limit_break: (ButtonInfoMenu.respond_with_super_limit_break, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.desktop: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.limit_break: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.super_limit_break: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.desktop: (ButtonInfoMenu.respond_with_desktop, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_mobile, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.limit_break: (ButtonInfoMenu.respond_with_limit_break, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.super_limit_break: (ButtonInfoMenu.respond_with_super_limit_break, ButtonInfoView.VIEW_TYPE),
     }
 
     HIDDEN_EMOJIS = [

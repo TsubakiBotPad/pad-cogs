@@ -73,6 +73,12 @@ class ButtonInfoViewState(ViewStateBase):
     def set_player_count(self, new_count):
         self.display_options.players = new_count
 
+    def set_device(self, new_device):
+        self.display_options.device = new_device
+
+    def set_max_level(self, new_max_level):
+        self.display_options.max_level = new_max_level
+
 
 def get_max_level(monster):
     level_text = str(LIMIT_BREAK_LEVEL) if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
