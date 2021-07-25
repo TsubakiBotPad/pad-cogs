@@ -18,11 +18,30 @@ if TYPE_CHECKING:
     from dadguide.models.monster_model import MonsterModel
 
 
+class ButtonInfoOptions:
+    solo = 'Singleplayer'
+    coop = 'Multiplayer'
+    mobile = 'Mobile'
+    desktop = 'Desktop'
+    limit_break = 'Level 110'
+    super_limit_break = 'Level 120'
+
+
+class ButtonInfoToggles:
+    # ???? is this how to do a class??
+    def __init__(self, players_setting=ButtonInfoOptions.coop, device_setting=ButtonInfoOptions.desktop,
+                 max_level_setting=ButtonInfoOptions.limit_break):
+        self.players = players_setting
+        self.device = device_setting
+        self.max_level = max_level_setting
+
+
 class ButtonInfoViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, color, monster: "MonsterModel", info,
-                 query_settings: QuerySettings):
+    def __init__(self, original_author_id, menu_type, raw_query, color, display_options: ButtonInfoToggles,
+                 monster: "MonsterModel", info, query_settings: QuerySettings):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
+        self.display_options = display_options
         self.monster = monster
         self.info = info
         self.query_settings = query_settings
@@ -30,6 +49,10 @@ class ButtonInfoViewState(ViewStateBase):
     def serialize(self):
         ret = super().serialize()
         ret.update({
+            # maybe serialize the object? look into how it's done for query settings
+            'players_setting': self.display_options.players,
+            'device_setting': self.display_options.device,
+            'max_level_setting': self.display_options.max_level,
             'resolved_monster_id': self.monster.monster_id,
             'query_settings': self.query_settings.serialize()
         })
@@ -41,10 +64,11 @@ class ButtonInfoViewState(ViewStateBase):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
+        display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
         monster = dgcog.get_monster(ims['resolved_monster_id'])
         info = button_info.get_info(dgcog, monster)
-        return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, monster, info,
-                                   query_settings)
+        return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
+                                   monster, info, query_settings)
 
 
 def get_max_level(monster):

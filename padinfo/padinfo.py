@@ -41,7 +41,7 @@ from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
-from padinfo.view.button_info import ButtonInfoViewState
+from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
@@ -585,8 +585,9 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         info = button_info.get_info(dgcog, monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
-        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, monster, info,
-                                    query_settings)
+        display_options = ButtonInfoToggles()
+        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
+                                    monster, info, query_settings)
         menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)
 
