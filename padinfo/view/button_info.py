@@ -19,10 +19,10 @@ if TYPE_CHECKING:
 
 
 class ButtonInfoOptions:
-    solo = 'Singleplayer'
     coop = 'Multiplayer'
-    mobile = 'Mobile'
+    solo = 'Singleplayer'
     desktop = 'Desktop'
+    mobile = 'Mobile'
     limit_break = 'Level 110'
     super_limit_break = 'Level 120'
 
@@ -69,6 +69,9 @@ class ButtonInfoViewState(ViewStateBase):
         info = button_info.get_info(dgcog, monster)
         return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
                                    monster, info, query_settings)
+
+    def set_player_count(self, new_count):
+        self.display_options.players = new_count
 
 
 def get_max_level(monster):

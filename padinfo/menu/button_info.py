@@ -12,10 +12,10 @@ from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, Butto
 class ButtonInfoEmoji:
     delete = '\N{CROSS MARK}'
     home = emoji_buttons['home']
-    solo = '\N{BUST IN SILHOUETTE}'
     coop = '\N{BUSTS IN SILHOUETTE}'
-    mobile = '\N{MOBILE PHONE}'
+    solo = '\N{BUST IN SILHOUETTE}'
     desktop = '\N{DESKTOP COMPUTER}'
+    mobile = '\N{MOBILE PHONE}'
     # temporary until I figure out the custom/fallback emoji stuff
     limit_break = char_to_emoji('1')
     super_limit_break = char_to_emoji('2')
@@ -27,6 +27,12 @@ class ButtonInfoMenu:
     @staticmethod
     def menu():
         return EmbedMenu(ButtonInfoMenuPanes.transitions(), ButtonInfoMenu.button_info_control)
+
+    @classmethod
+    async def _get_view_state(cls, ims: dict, **data) -> ButtonInfoViewState:
+        dgcog = data['dgcog']
+        user_config = data['user_config']
+        return await ButtonInfoViewState.deserialize(dgcog, user_config, ims)
 
     @staticmethod
     async def respond_with_delete(message: Message, ims, **data):
@@ -40,9 +46,17 @@ class ButtonInfoMenu:
         control = ButtonInfoMenu.button_info_control(view_state)
         return control
 
-    # @staticmethod
-    # async def respond_with_solo(message: Optional[Message], ims, **data):
-    #     # view_state.toggle_player_count?
+    @classmethod
+    async def respond_with_coop(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_player_count(ButtonInfoOptions.coop)
+        return ButtonInfoMenu.button_info_control(view_state)
+
+    @classmethod
+    async def respond_with_solo(cls, message: Optional[Message], ims, **data):
+        view_state = await cls._get_view_state(ims, **data)
+        view_state.set_player_count(ButtonInfoOptions.solo)
+        return ButtonInfoMenu.button_info_control(view_state)
 
     @staticmethod
     def button_info_control(state: ButtonInfoViewState):
@@ -61,16 +75,14 @@ class ButtonInfoMenuPanes(MenuPanes):
     DATA = {
         ButtonInfoEmoji.delete: (ButtonInfoMenu.respond_with_delete, None),
         ButtonInfoEmoji.home: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.solo: (ButtonInfoMenu.respond_with_solo, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.coop: (ButtonInfoMenu.respond_with_coop, ButtonInfoView.VIEW_TYPE),
-        # ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_mobile, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.coop: (ButtonInfoMenu.respond_with_coop, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.solo: (ButtonInfoMenu.respond_with_solo, ButtonInfoView.VIEW_TYPE),
         # ButtonInfoEmoji.desktop: (ButtonInfoMenu.respond_with_desktop, ButtonInfoView.VIEW_TYPE),
+        # ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_mobile, ButtonInfoView.VIEW_TYPE),
         # ButtonInfoEmoji.limit_break: (ButtonInfoMenu.respond_with_limit_break, ButtonInfoView.VIEW_TYPE),
         # ButtonInfoEmoji.super_limit_break: (ButtonInfoMenu.respond_with_super_limit_break, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.solo: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.coop: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
-        ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.desktop: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
+        ButtonInfoEmoji.mobile: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.limit_break: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.super_limit_break: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
     }
@@ -80,10 +92,10 @@ class ButtonInfoMenuPanes(MenuPanes):
     ]
 
     OPTIONAL_EMOJIS = [
-        ButtonInfoEmoji.solo,
         ButtonInfoEmoji.coop,
-        ButtonInfoEmoji.mobile,
+        ButtonInfoEmoji.solo,
         ButtonInfoEmoji.desktop,
+        ButtonInfoEmoji.mobile,
         ButtonInfoEmoji.limit_break,
         ButtonInfoEmoji.super_limit_break,
     ]
