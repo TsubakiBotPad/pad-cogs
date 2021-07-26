@@ -16,9 +16,8 @@ class ButtonInfoEmoji:
     solo = '\N{BUST IN SILHOUETTE}'
     desktop = '\N{DESKTOP COMPUTER}'
     mobile = '\N{MOBILE PHONE}'
-    # temporary until I figure out the custom/fallback emoji stuff
-    limit_break = char_to_emoji('1')
-    super_limit_break = char_to_emoji('2')
+    limit_break = ('lv110', char_to_emoji('1'))
+    super_limit_break = ('lv120', char_to_emoji('2'))
 
 
 class ButtonInfoMenu:
