@@ -28,7 +28,6 @@ class ButtonInfoOptions:
 
 
 class ButtonInfoToggles:
-    # ???? is this how to do a class??
     def __init__(self, players_setting=ButtonInfoOptions.coop, device_setting=ButtonInfoOptions.desktop,
                  max_level_setting=ButtonInfoOptions.limit_break):
         self.players = players_setting
@@ -81,8 +80,8 @@ class ButtonInfoViewState(ViewStateBase):
         self.display_options.max_level = new_max_level
 
 
-def get_max_level(monster, limit_break):
-    limit = str(LIMIT_BREAK_LEVEL) if limit_break else str(SUPER_LIMIT_BREAK_LEVEL)
+def get_max_level(monster, max_110):
+    limit = str(LIMIT_BREAK_LEVEL) if max_110 else str(SUPER_LIMIT_BREAK_LEVEL)
     level_text = limit if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
     return 'Lv. {}'.format(level_text)
 
@@ -97,31 +96,31 @@ def get_stat_block(main, sub, total):
     )
 
 
-def get_max_stats_without_latents(info, coop):
-    main = info.main_damage if coop else info.main_solo_damage
-    sub = info.sub_damage if coop else info.sub_solo_damage
-    total = info.total_damage if coop else info.total_solo_damage
+def get_max_stats_without_latents(info, is_coop):
+    main = info.main_damage if is_coop else info.main_solo_damage
+    sub = info.sub_damage if is_coop else info.sub_solo_damage
+    total = info.total_damage if is_coop else info.total_solo_damage
     return get_stat_block(main, sub, total)
 
 
-def get_120_stats_without_latents(info, coop):
-    main = info.main_slb_damage if coop else info.main_solo_slb_damage
-    sub = info.sub_slb_damage if coop else info.sub_solo_slb_damage
-    total = info.total_slb_damage if coop else info.total_solo_slb_damage
+def get_120_stats_without_latents(info, is_coop):
+    main = info.main_slb_damage if is_coop else info.main_solo_slb_damage
+    sub = info.sub_slb_damage if is_coop else info.sub_solo_slb_damage
+    total = info.total_slb_damage if is_coop else info.total_solo_slb_damage
     return get_stat_block(main, sub, total)
 
 
-def get_max_stats_with_latents(info, coop):
-    main = info.main_damage_with_atk_latent if coop else info.main_solo_damage_with_atk_latent
-    sub = info.sub_damage_with_atk_latent if coop else info.sub_solo_damage_with_atk_latent
-    total = info.total_damage_with_atk_latent if coop else info.total_solo_damage_with_atk_latent
+def get_max_stats_with_latents(info, is_coop):
+    main = info.main_damage_with_atk_latent if is_coop else info.main_solo_damage_with_atk_latent
+    sub = info.sub_damage_with_atk_latent if is_coop else info.sub_solo_damage_with_atk_latent
+    total = info.total_damage_with_atk_latent if is_coop else info.total_solo_damage_with_atk_latent
     return get_stat_block(main, sub, total)
 
 
-def get_120_stats_with_latents(info, coop):
-    main = info.main_damage_with_slb_atk_latent if coop else info.main_solo_damage_with_slb_atk_latent
-    sub = info.sub_damage_with_slb_atk_latent if coop else info.sub_solo_damage_with_slb_atk_latent
-    total = info.total_damage_with_slb_atk_latent if coop else info.total_solo_damage_with_slb_atk_latent
+def get_120_stats_with_latents(info, is_coop):
+    main = info.main_damage_with_slb_atk_latent if is_coop else info.main_solo_damage_with_slb_atk_latent
+    sub = info.sub_damage_with_slb_atk_latent if is_coop else info.sub_solo_damage_with_slb_atk_latent
+    total = info.total_damage_with_slb_atk_latent if is_coop else info.total_solo_damage_with_slb_atk_latent
     return get_stat_block(main, sub, total)
 
 
@@ -136,25 +135,25 @@ def get_mobile_btn_str(btn_str):
     return '\n'.join(output)
 
 
-def get_card_btn_str(info, coop, limit_break):
-    if coop and limit_break:
+def get_card_btn_str(info, is_coop, max_110):
+    if is_coop and max_110:
         return info.card_btn_str
-    elif coop and not limit_break:
+    elif is_coop and not max_110:
         return info.card_btn_slb_str
-    elif not coop and limit_break:
+    elif not is_coop and max_110:
         return info.card_btn_solo_str
-    elif not coop and not limit_break:
+    elif not is_coop and not max_110:
         return info.card_btn_solo_slb_str
 
 
-def get_team_btn_str(info, coop, limit_break):
-    if coop and limit_break:
+def get_team_btn_str(info, is_coop, max_110):
+    if is_coop and max_110:
         return info.team_btn_str
-    elif coop and not limit_break:
+    elif is_coop and not max_110:
         return info.team_btn_slb_str
-    elif not coop and limit_break:
+    elif not is_coop and max_110:
         return info.team_btn_solo_str
-    elif not coop and not limit_break:
+    elif not is_coop and not max_110:
         return info.team_btn_solo_slb_str
 
 
@@ -163,24 +162,24 @@ class ButtonInfoView:
 
     @staticmethod
     def embed(state: ButtonInfoViewState):
-        coop = state.display_options.players == ButtonInfoOptions.coop
-        desktop = state.display_options.device == ButtonInfoOptions.desktop
-        limit_break = state.display_options.max_level == ButtonInfoOptions.limit_break
+        is_coop = state.display_options.players == ButtonInfoOptions.coop
+        is_desktop = state.display_options.device == ButtonInfoOptions.desktop
+        max_110 = state.display_options.max_level == ButtonInfoOptions.limit_break
         monster = state.monster
         info = state.info
 
         fields = [
             EmbedField(
-                get_max_level(monster, limit_break),
+                get_max_level(monster, max_110),
                 Box(
                     Text('Without Latents'),
                     # avoid whitespace after code block
                     Box(
-                        get_max_stats_without_latents(info, coop),
+                        get_max_stats_without_latents(info, is_coop),
                         Text('With Latents (Atk+)'),
                         delimiter=''
                     ),
-                    get_max_stats_with_latents(info, coop)
+                    get_max_stats_with_latents(info, is_coop)
                 ),
                 inline=True
             ),
@@ -190,16 +189,16 @@ class ButtonInfoView:
                     Text('Without Latents'),
                     # avoid whitespace after code block
                     Box(
-                        get_120_stats_without_latents(info, coop),
+                        get_120_stats_without_latents(info, is_coop),
                         Text('With Latents (Atk++)'),
                         delimiter=''
                     ),
-                    get_120_stats_with_latents(info, coop)
+                    get_120_stats_with_latents(info, is_coop)
                 ),
                 inline=True
             ) if monster.limit_mult != 0 else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster, limit_break)),
+                'Common Buttons - {}'.format(get_max_level(monster, max_110)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
@@ -207,37 +206,37 @@ class ButtonInfoView:
                     Text('Card Button Damage'),
                     # done this way to not have the whitespace after code block
                     Box(
-                        BlockText(get_card_btn_str(info, coop, limit_break)),
+                        BlockText(get_card_btn_str(info, is_coop, max_110)),
                         Text('Team Button Contribution'),
                         delimiter=''
                     ),
-                    BlockText(get_team_btn_str(info, coop, limit_break))
+                    BlockText(get_team_btn_str(info, is_coop, max_110))
                 )
-            ) if desktop else None,
+            ) if is_desktop else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster, limit_break)),
+                'Common Buttons - {}'.format(get_max_level(monster, max_110)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
                     Text(r'*\* = on-color stat bonus applied*')
                 )
-            ) if not desktop else None,
+            ) if not is_desktop else None,
             EmbedField(
                 'Card Button Damage',
-                BlockText(get_mobile_btn_str(get_card_btn_str(info, coop, limit_break))),
+                BlockText(get_mobile_btn_str(get_card_btn_str(info, is_coop, max_110))),
                 inline=True
-            ) if not desktop else None,
+            ) if not is_desktop else None,
             EmbedField(
                 'Team Button Contribution',
-                BlockText(get_mobile_btn_str(get_team_btn_str(info, coop, limit_break))),
+                BlockText(get_mobile_btn_str(get_team_btn_str(info, is_coop, max_110))),
                 inline=True
-            ) if not desktop else None
+            ) if not is_desktop else None
         ]
 
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                description='(Co-op mode)' if coop else '(Singleplayer mode)'
+                description='(Co-op mode)' if is_coop else '(Singleplayer mode)'
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
