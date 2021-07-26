@@ -1,8 +1,8 @@
 import re
 
-from dadguide.models.monster_model import MonsterModel
-from dadguide.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP
-from dadguide.models.enum_types import AwokenSkills
+from dbcog.models.monster_model import MonsterModel
+from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP
+from dbcog.models.enum_types import AwokenSkills
 
 
 def regexlist(tokens):

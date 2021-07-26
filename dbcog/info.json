@@ -4,7 +4,7 @@
   ],
   "description": "No commands, but loads all the monster data stored in Tsubaki.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "Use [p]dadguide setdatafile if it's applicable to you.",
+  "install_msg": "Use [p]dbcog setdatafile if it's applicable to you.",
   "short": "Loads monster data (LOAD THIS FIRST)",
   "min_bot_version": "3.4.0",
   "max_bot_version": "0.0.0",

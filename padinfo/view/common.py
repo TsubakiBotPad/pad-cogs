@@ -11,19 +11,19 @@ from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_
 from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.awakening_model import AwokenSkillModel
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.awakening_model import AwokenSkillModel
 
 
-async def get_monster_from_ims(dgcog, ims: dict):
+async def get_monster_from_ims(dbcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
     query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
     resolved_monster_id = int(resolved_monster_id_str or 0)
     if resolved_monster_id:
-        return dgcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
-    monster = await dgcog.find_monster(query, ims['original_author_id'])
+        return dbcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
+    monster = await dbcog.find_monster(query, ims['original_author_id'])
     return monster
 
 

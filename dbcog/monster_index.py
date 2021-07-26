@@ -25,7 +25,7 @@ NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
 MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('2089525837')
 TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 
-logger = logging.getLogger('red.pad-cogs.dadguide.monster_index')
+logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
 
 class MonsterIndex(tsutils.aobject):

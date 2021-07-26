@@ -40,14 +40,14 @@ class LeaderSkillViewState(ViewStateBase):
         return ret
 
     @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         l_query_settings = QuerySettings.deserialize(ims['l_query_settings'])
         r_query_settings = QuerySettings.deserialize(ims['r_query_settings'])
 
-        l_mon, l_query, r_mon, r_query = await leaderskill_query(dgcog, raw_query, ims['original_author_id'])
+        l_mon, l_query, r_mon, r_query = await leaderskill_query(dbcog, raw_query, ims['original_author_id'])
         return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
                                     r_query, l_query_settings, r_query_settings)
 

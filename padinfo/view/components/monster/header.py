@@ -8,7 +8,7 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 from padinfo.common.external_links import puzzledragonx
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class MonsterHeader:

@@ -19,7 +19,7 @@ from tsutils import CogSettings, get_user_confirmation, normalize_server_name, D
     YES_EMOJI, NO_EMOJI, send_confirmation_message, send_cancellation_message
 
 if TYPE_CHECKING:
-    from dadguide.models.scheduled_event_model import ScheduledEventModel
+    from dbcog.models.scheduled_event_model import ScheduledEventModel
 
 
 def user_is_donor(ctx, only_patron=False):
@@ -90,14 +90,14 @@ class PadEvents(commands.Cog):
             await asyncio.sleep(60 * 60 * 1)
 
     async def refresh_data(self):
-        dgcog = self.bot.get_cog('Dadguide')
-        await dgcog.wait_until_ready()
-        scheduled_events = dgcog.database.get_all_events()
+        dbcog = self.bot.get_cog('DBCog')
+        await dbcog.wait_until_ready()
+        scheduled_events = dbcog.database.get_all_events()
 
         new_events = []
         for se in scheduled_events:
             try:
-                db_context = self.bot.get_cog("Dadguide").database
+                db_context = self.bot.get_cog("DBCog").database
                 new_events.append(Event(se, db_context))
             except Exception as ex:
                 logger.exception("Refresh error:")
@@ -238,10 +238,10 @@ class PadEvents(commands.Cog):
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        dgcog = self.bot.get_cog('Dadguide')
-        await dgcog.wait_until_ready()
+        dbcog = self.bot.get_cog('DBCog')
+        await dbcog.wait_until_ready()
         # TODO: Don't use this awful importing hack
-        dg_module = __import__('.'.join(dgcog.__module__.split('.')[:-1]) + ".models.scheduled_event_model")
+        dg_module = __import__('.'.join(dbcog.__module__.split('.')[:-1]) + ".models.scheduled_event_model")
         timestamp = int((datetime.datetime.now(pytz.utc) + timedelta(seconds=seconds)).timestamp())
         self.fake_uid -= 1
 
@@ -259,7 +259,7 @@ class PadEvents(commands.Cog):
                 dungeon_id=1,
             )
         )
-        self.events.append(Event(te, self.bot.get_cog('Dadguide').database))
+        self.events.append(Event(te, self.bot.get_cog('DBCog').database))
         await ctx.tick()
 
     @padevents.command()

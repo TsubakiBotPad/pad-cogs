@@ -7,7 +7,7 @@ from typing import Optional, List, Set, Dict, Tuple, Any
 from networkx import MultiDiGraph
 from tsutils.enums import Server
 
-from .database_manager import DadguideDatabase
+from .database_manager import DBCogDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
@@ -19,7 +19,7 @@ from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
 
-logger = logging.getLogger('red.padbot-cogs.dadguide')
+logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
@@ -117,7 +117,7 @@ SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
-    def __init__(self, database: DadguideDatabase, debug_monster_ids: Optional[List[int]] = None):
+    def __init__(self, database: DBCogDatabase, debug_monster_ids: Optional[List[int]] = None):
         self.issues = []
         self.debug_monster_ids = debug_monster_ids
 

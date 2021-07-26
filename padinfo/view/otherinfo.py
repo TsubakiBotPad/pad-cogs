@@ -16,7 +16,7 @@ from padinfo.view.id import evos_embed_field
 from padinfo.view.links import LinksView
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class OtherInfoViewState(ViewStateBaseId):

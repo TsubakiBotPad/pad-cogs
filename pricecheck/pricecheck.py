@@ -46,17 +46,17 @@ class PriceCheck(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def pricecheck(self, ctx, *, query):
         """Displays pricing data for a tradable non-collab gem."""
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query, ctx.author.id)
+        m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
-        base_id = str(dgcog.database.graph.get_base_id(m))
+        base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             if base_id not in pcs:
                 if m.sell_mp < 100:
@@ -87,17 +87,17 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['add'])
     async def set(self, ctx, stam_cost: float, *, query):
         """Adds stamina cost data to a card."""
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query, ctx.author.id)
+        m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
-        base_id = str(dgcog.database.graph.get_base_id(m))
+        base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             foot = ""
             if base_id in pcs:
@@ -108,17 +108,17 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['addfooter', 'addfoot', 'setfoot'])
     async def setfooter(self, ctx, query, *, footer=""):
         """Adds notes regarding the stamina cost of a card."""
-        dgcog = self.bot.get_cog('Dadguide')
-        if dgcog is None:
+        dbcog = self.bot.get_cog('DBCog')
+        if dbcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query, ctx.author.id)
+        m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
-        base_id = str(dgcog.database.graph.get_base_id(m))
+        base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             sc = -1
             if base_id in pcs:
@@ -129,21 +129,21 @@ class PriceCheck(commands.Cog):
     @pcadmin.command(aliases=['delete', 'del', 'rm'])
     async def remove(self, ctx, *, query):
         """Removes stamina cost data from a card."""
-        dgcog = self.bot.get_cog('Dadguide')
-        if dgcog is None:
+        dbcog = self.bot.get_cog('DBCog')
+        if dbcog is None:
             await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
             return
         if "gem" not in query.lower():
             query += " gem"
-        m = await dgcog.find_monster(query, ctx.author.id)
+        m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
             await ctx.send("Monster not found.")
             return
         async with self.config.pcs() as pcs:
-            if str(dgcog.database.graph.get_base_id(m)) not in pcs:
+            if str(dbcog.database.graph.get_base_id(m)) not in pcs:
                 await ctx.send("{} does not have PC data.".format(m.name_en))
                 return
-            del pcs[str(dgcog.database.graph.get_base_id(m))]
+            del pcs[str(dbcog.database.graph.get_base_id(m))]
         await ctx.send(inline("Removed PC data from {}.".format(m.name_en)))
 
     @pcadmin.command()

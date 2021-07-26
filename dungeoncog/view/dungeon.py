@@ -13,7 +13,7 @@ from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.processors import process_monster
 
 if TYPE_CHECKING:
-    from dadguide.models.encounter_model import EncounterModel
+    from dbcog.models.encounter_model import EncounterModel
 
 
 class DungeonViewState(ViewState):
@@ -48,7 +48,7 @@ class DungeonViewState(ViewState):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, color, ims: dict, inc_floor: int = 0, inc_index: int = 0,
+    async def deserialize(cls, dbcog, color, ims: dict, inc_floor: int = 0, inc_index: int = 0,
                           verbose_toggle: bool = False, page: int = 0, reset_spawn: bool = False):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
@@ -71,7 +71,7 @@ class DungeonViewState(ViewState):
             verbose = not verbose
 
         # get encounter models for the floor
-        floor_models = dgcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor)
+        floor_models = dbcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor)
 
         # check if we are on final monster of the floor
         if floor_index >= len(floor_models):
@@ -88,7 +88,7 @@ class DungeonViewState(ViewState):
 
         return cls(original_author_id, menu_type, raw_query, color, encounter_model, sub_dungeon_id,
                    num_floors, floor, len(floor_models), floor_index,
-                   technical, dgcog.database, verbose=verbose, page=page)
+                   technical, dbcog.database, verbose=verbose, page=page)
 
 
 class DungeonView:

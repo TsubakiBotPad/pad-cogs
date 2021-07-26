@@ -8,8 +8,8 @@ from tsutils import rmdiacritics
 from tsutils.query_settings import QuerySettings
 from tsutils.enums import Server
 
-from dadguide.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
-from dadguide.models.monster_model import MonsterModel
+from dbcog.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES
+from dbcog.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
     "regular": 4,
@@ -41,15 +41,15 @@ class FindMonster:
     MODIFIER_JW_DISTANCE = .95
     TOKEN_JW_DISTANCE = .8
 
-    def __init__(self, dgcog, flags: Dict[str, Any]):
-        self.dgcog = dgcog
+    def __init__(self, dbcog, flags: Dict[str, Any]):
+        self.dbcog = dbcog
         self.flags = flags
-        self.index = self.dgcog.indexes[Server(flags['server'])]
+        self.index = self.dbcog.indexes[Server(flags['server'])]
 
     def _process_settings(self, original_query: str) -> str:
         query_settings = QuerySettings.extract(self.flags, original_query)
 
-        self.index = self.dgcog.indexes[query_settings.server]
+        self.index = self.dbcog.indexes[query_settings.server]
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?\s*', ' ', original_query)
 
@@ -105,7 +105,7 @@ class FindMonster:
         if re.fullmatch(r'.+-.+', value):
             for special in SPECIAL_TOKEN_TYPES:
                 if re.fullmatch(special.RE_MATCH, value):
-                    return special(value, negated=negated, exact=exact, database=self.dgcog.database)
+                    return special(value, negated=negated, exact=exact, database=self.dbcog.database)
         return Token(value, negated=negated, exact=exact)
 
     def _interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[Token], Set[Token]]:
@@ -164,7 +164,7 @@ class FindMonster:
                 if matched_mons is not None:
                     matched_mons.difference_update(invalid)
                 else:
-                    matched_mons = set(self.dgcog.database.get_all_monsters(self.index.server)).difference(invalid)
+                    matched_mons = set(self.dbcog.database.get_all_monsters(self.index.server)).difference(invalid)
             else:
                 valid = self._get_valid_monsters_from_name_token(name_token, matches)
                 if matched_mons is not None:
@@ -223,7 +223,7 @@ class FindMonster:
             tokenized_query = []
 
         return (matches[monster].score,
-                not self.dgcog.database.graph.monster_is_evo_gem(monster),
+                not self.dbcog.database.graph.monster_is_evo_gem(monster),
                 # Don't deprio evos with new modifier
                 not monster.is_equip if not {m[0] for m in matches[monster].mod}.intersection(
                     {'new', 'base'}) else True,
@@ -231,10 +231,10 @@ class FindMonster:
                 bool(monster.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                 SERIES_TYPE_PRIORITY.get(monster.series.series_type),
                 monster.on_na if monster.series.series_type == "collab" else True,
-                self.dgcog.database.graph.monster_is_rem_evo(monster),
+                self.dbcog.database.graph.monster_is_rem_evo(monster),
                 not all(t.value in [0, 12, 14, 15] for t in monster.types),
                 not any(t.value in [0, 12, 14, 15] for t in monster.types),
-                -self.dgcog.database.graph.get_base_id(monster),
+                -self.dbcog.database.graph.get_base_id(monster),
                 monster.on_na if self.flags['na_prio'] else True,
                 not monster.is_equip,
                 monster.rarity,
@@ -243,7 +243,7 @@ class FindMonster:
     def _get_monster_evos(self, matched_mons: Set[MonsterModel], matches: MatchMap) -> Set[MonsterModel]:
         monster_evos = set()
         for monster in sorted(matched_mons, key=lambda m: matches[m].score, reverse=True):
-            for evo in self.dgcog.database.graph.get_alt_monsters(monster):
+            for evo in self.dbcog.database.graph.get_alt_monsters(monster):
                 monster_evos.add(evo)
                 if matches[evo].score < matches[monster].score:
                     matches[evo].name = {(t[0], t[1],
@@ -270,7 +270,7 @@ class FindMonster:
 
         for mod_token in mod_tokens:
             if mod_token.value not in self.index.all_modifiers:
-                async with self.dgcog.config.typo_mods() as typo_mods:
+                async with self.dbcog.config.typo_mods() as typo_mods:
                     typo_mods.append(mod_token.value)
 
         matches = defaultdict(MonsterMatch)
@@ -282,7 +282,7 @@ class FindMonster:
             matched_mons = self._get_monster_evos(matched_mons, matches)
         else:
             # There are no name tokens in the query
-            matched_mons = {*self.dgcog.database.get_all_monsters(self.index.server)}
+            matched_mons = {*self.dbcog.database.get_all_monsters(self.index.server)}
             monster_score = defaultdict(int)
 
         # Expand search to the evo tree
@@ -302,7 +302,7 @@ class FindMonster:
 
         This gives info that isn't necessary for non-debug functions.  Consider using
         findmonster or findmonsters instead."""
-        await self.dgcog.wait_until_ready()
+        await self.dbcog.wait_until_ready()
 
         query = rmdiacritics(query).lower().replace(",", "")
         query = re.sub(r'(\s|^)\'(\S+)\'(\s|$)', r'\1"\2"\3', query)  # Replace ' with " around tokens
@@ -317,8 +317,8 @@ class FindMonster:
             key=lambda t: t[1].get(t[0], MonsterMatch()).score
         )
 
-        self.dgcog.historic_lookups[query] = best_monster.monster_id if best_monster else -1
-        json.dump(self.dgcog.historic_lookups, open(self.dgcog.historic_lookups_file_path, "w+"))
+        self.dbcog.historic_lookups[query] = best_monster.monster_id if best_monster else -1
+        json.dump(self.dbcog.historic_lookups, open(self.dbcog.historic_lookups_file_path, "w+"))
 
         return best_monster, matches_dict, valid_monsters, 0
 

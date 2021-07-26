@@ -2,8 +2,8 @@ from enum import Enum
 from typing import Union, Optional, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.enum_types import AwakeningRestrictedLatent, MonsterType
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.enum_types import AwakeningRestrictedLatent, MonsterType
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 

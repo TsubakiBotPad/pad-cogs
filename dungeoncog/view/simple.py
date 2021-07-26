@@ -24,7 +24,7 @@ class SimpleViewState(ViewState):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, color, ims: dict, inc):
+    async def deserialize(cls, dbcog, color, ims: dict, inc):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')

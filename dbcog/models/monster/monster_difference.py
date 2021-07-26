@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class MonsterDifference:

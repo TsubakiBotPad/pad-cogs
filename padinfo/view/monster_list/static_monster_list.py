@@ -6,8 +6,8 @@ from tsutils.query_settings import QuerySettings
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.database_context import DbContext
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.database_context import DbContext
 
 
 class StaticMonsterListViewState(MonsterListViewState):
@@ -21,14 +21,14 @@ class StaticMonsterListViewState(MonsterListViewState):
         return ret
 
     @classmethod
-    async def do_query(cls, dgcog, monster_list, server) -> List["MonsterModel"]:
-        db_context: "DbContext" = dgcog.database
+    async def do_query(cls, dbcog, monster_list, server) -> List["MonsterModel"]:
+        db_context: "DbContext" = dbcog.database
         monster_list = [db_context.graph.get_monster(int(m), server=server) for m in monster_list]
         return monster_list
 
     @classmethod
-    async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
         monster_ids = ims['full_monster_list']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
-        monster_list = await cls.do_query(dgcog, monster_ids, query_settings.server)
+        monster_list = await cls.do_query(dbcog, monster_ids, query_settings.server)
         return monster_list
