@@ -126,11 +126,23 @@ def get_120_stats_with_latents(info):
     )
 
 
+def get_mobile_btn_str(btn_str):
+    output = []
+    lines = btn_str.split('\n')
+    for line in lines:
+        partition = line.find('(')
+        name = line[:partition].strip()
+        damage = line[partition:]
+        output.append('{}\n    {}'.format(name, damage))
+    return '\n'.join(output)
+
+
 class ButtonInfoView:
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod
     def embed(state: ButtonInfoViewState):
+        desktop = state.display_options.device == ButtonInfoOptions.desktop
         monster = state.monster
         info = state.info
 
@@ -178,25 +190,25 @@ class ButtonInfoView:
                     ),
                     BlockText(info.team_btn_str)
                 )
-            )
-            # EmbedField(
-            #     'Common Buttons - {}'.format(get_max_level(monster)),
-            #     Box(
-            #         Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
-            #         # janky, but python gives DeprecationWarnings when using \* in a regular string
-            #         Text(r'*\* = on-color stat bonus applied*')
-            #     )
-            # ),
-            # EmbedField(
-            #     'Card Button Damage',
-            #     BlockText(info.card_btn_str),
-            #     inline=True
-            # ),
-            # EmbedField(
-            #     'Team Button Contribution',
-            #     BlockText(info.team_btn_str),
-            #     inline=True
-            # )
+            ) if desktop else None,
+            EmbedField(
+                'Common Buttons - {}'.format(get_max_level(monster)),
+                Box(
+                    Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
+                    # janky, but python gives DeprecationWarnings when using \* in a regular string
+                    Text(r'*\* = on-color stat bonus applied*')
+                )
+            ) if not desktop else None,
+            EmbedField(
+                'Card Button Damage',
+                BlockText(get_mobile_btn_str(info.card_btn_str)),
+                inline=True
+            ) if not desktop else None,
+            EmbedField(
+                'Team Button Contribution',
+                BlockText(get_mobile_btn_str(info.team_btn_str)),
+                inline=True
+            ) if not desktop else None
         ]
 
         return EmbedView(
