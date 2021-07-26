@@ -284,7 +284,7 @@ class Dadguide(commands.Cog, IdTest):
         """Monsters allowed in Tsubaki-Only mode"""
 
     @debug_monsters.command(name="add")
-    async def debug_monster_add(self, ctx, *monsters: int):
+    async def debug_monsters_add(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster not in ts_monsters:
@@ -294,7 +294,7 @@ class Dadguide(commands.Cog, IdTest):
         await ctx.tick()
 
     @debug_monsters.command(name="remove", aliases=["rm", "del", "delete"])
-    async def debug_monster_rm(self, ctx, *monsters: int):
+    async def debug_monsters_rm(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster in ts_monsters:
@@ -304,7 +304,7 @@ class Dadguide(commands.Cog, IdTest):
         await ctx.tick()
 
     @debug_monsters.command(name="list")
-    async def debug_m_list(self, ctx):
+    async def debug_monsters_list(self, ctx):
         text = "\n".join(f'{m} {mon.name_en}' if (mon := self.get_monster(m)) else f"Invalid monster {m}"
                          for m in await self.config.debug_mode_monsters())
         for page in pagify(text):
