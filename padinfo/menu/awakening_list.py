@@ -10,7 +10,6 @@ from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListVie
 
 
 class AwakeningListEmoji:
-    delete = '\N{CROSS MARK}'
     refresh = '\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}'
     home = emoji_buttons['home']
     prev_page = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
@@ -28,10 +27,6 @@ class AwakeningListMenu:
             initial_control = AwakeningListMenu.awakening_list_control
         embed = EmbedMenu(AwakeningListMenuPanes.transitions(), initial_control)
         return embed
-
-    @staticmethod
-    async def respond_with_delete(message: Message, ims, **data):
-        return await message.delete()
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
@@ -84,7 +79,6 @@ class AwakeningListMenuPanes(MenuPanes):
     INITIAL_EMOJI = AwakeningListEmoji.home
 
     DATA = {
-        AwakeningListEmoji.delete: (AwakeningListMenu.respond_with_delete, None),
         AwakeningListEmoji.home: (AwakeningListMenu.respond_with_awakening_list, AwakeningListView.VIEW_TYPE),
         AwakeningListEmoji.prev_page: (AwakeningListMenu.respond_with_left, AwakeningListView.VIEW_TYPE),
         AwakeningListEmoji.next_page: (AwakeningListMenu.respond_with_right, AwakeningListView.VIEW_TYPE),
