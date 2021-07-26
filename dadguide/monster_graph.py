@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from collections import defaultdict
-from typing import Optional, List, Set, Dict, Tuple, Any
+from typing import Optional, List, Set, Dict
 
 from networkx import MultiDiGraph
 from tsutils.enums import Server
@@ -365,25 +365,14 @@ class MonsterGraph(object):
         if transform and (transform.monster_id > base_monster.monster_id
                           or transform.monster_id == 5802):  # I hate DMG very much
             ids += self.process_alt_monsters_from_base(transform)
-        for evo in sorted(self.get_next_evolutions(base_monster), key=self.get_id_order_key):
+        for evo in sorted(self.get_next_evolutions(base_monster), key=lambda m: m.monster_id):
             ids += self.process_alt_monsters_from_base(evo)
         return ids
 
-    def get_id_order_key(self, monster: MonsterModel) -> Tuple[Any, ...]:
-        evo_ordering = {
-            InternalEvoType.Reincarnated: -1,
-            InternalEvoType.SuperReincarnated: -1,
-            InternalEvoType.Base: 0,
-            InternalEvoType.Normal: 0,
-            InternalEvoType.Ultimate: 1,
-            InternalEvoType.Pixel: 2,
-            InternalEvoType.Assist: 3,
-        }
-        return (
-            evo_ordering[self.true_evo_type(monster)],
-            '覚醒' in monster.name_ja or 'awoken' in monster.name_en.lower(),
-        )
-    
+    def get_alt_ids_fast_by_id_and_server(self, monster_id, server: Server) -> List[int]:
+        # This is for the index. I'm too lazy to remove this, and it might have impacts on speed.
+        return self.graph_dict[server].nodes[monster_id]['alt_versions']
+
     def get_alt_ids(self, monster: MonsterModel) -> List[int]:
         return self.graph_dict[monster.server_priority].nodes[monster.monster_id]['alt_versions']
 
