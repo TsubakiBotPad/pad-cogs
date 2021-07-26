@@ -9,7 +9,7 @@ from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
-from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL
+from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
@@ -81,8 +81,9 @@ class ButtonInfoViewState(ViewStateBase):
         self.display_options.max_level = new_max_level
 
 
-def get_max_level(monster):
-    level_text = str(LIMIT_BREAK_LEVEL) if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
+def get_max_level(monster, limit_break):
+    limit = str(LIMIT_BREAK_LEVEL) if limit_break else str(SUPER_LIMIT_BREAK_LEVEL)
+    level_text = limit if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
     return 'Lv. {}'.format(level_text)
 
 
@@ -135,6 +136,28 @@ def get_mobile_btn_str(btn_str):
     return '\n'.join(output)
 
 
+def get_card_btn_str(info, coop, limit_break):
+    if coop and limit_break:
+        return info.card_btn_str
+    elif coop and not limit_break:
+        return info.card_btn_slb_str
+    elif not coop and limit_break:
+        return info.card_btn_solo_str
+    elif not coop and not limit_break:
+        return info.card_btn_solo_slb_str
+
+
+def get_team_btn_str(info, coop, limit_break):
+    if coop and limit_break:
+        return info.team_btn_str
+    elif coop and not limit_break:
+        return info.team_btn_slb_str
+    elif not coop and limit_break:
+        return info.team_btn_solo_str
+    elif not coop and not limit_break:
+        return info.team_btn_solo_slb_str
+
+
 class ButtonInfoView:
     VIEW_TYPE = 'ButtonInfo'
 
@@ -142,12 +165,13 @@ class ButtonInfoView:
     def embed(state: ButtonInfoViewState):
         coop = state.display_options.players == ButtonInfoOptions.coop
         desktop = state.display_options.device == ButtonInfoOptions.desktop
+        limit_break = state.display_options.max_level == ButtonInfoOptions.limit_break
         monster = state.monster
         info = state.info
 
         fields = [
             EmbedField(
-                get_max_level(monster),
+                get_max_level(monster, limit_break),
                 Box(
                     Text('Without Latents'),
                     # avoid whitespace after code block
@@ -175,7 +199,7 @@ class ButtonInfoView:
                 inline=True
             ) if monster.limit_mult != 0 else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster)),
+                'Common Buttons - {}'.format(get_max_level(monster, limit_break)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
@@ -183,15 +207,15 @@ class ButtonInfoView:
                     Text('Card Button Damage'),
                     # done this way to not have the whitespace after code block
                     Box(
-                        BlockText(info.card_btn_str if coop else info.card_btn_solo_str),
+                        BlockText(get_card_btn_str(info, coop, limit_break)),
                         Text('Team Button Contribution'),
                         delimiter=''
                     ),
-                    BlockText(info.team_btn_str if coop else info.team_btn_solo_str)
+                    BlockText(get_team_btn_str(info, coop, limit_break))
                 )
             ) if desktop else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster)),
+                'Common Buttons - {}'.format(get_max_level(monster, limit_break)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
@@ -200,12 +224,12 @@ class ButtonInfoView:
             ) if not desktop else None,
             EmbedField(
                 'Card Button Damage',
-                BlockText(get_mobile_btn_str(info.card_btn_str if coop else info.card_btn_solo_str)),
+                BlockText(get_mobile_btn_str(get_card_btn_str(info, coop, limit_break))),
                 inline=True
             ) if not desktop else None,
             EmbedField(
                 'Team Button Contribution',
-                BlockText(get_mobile_btn_str(info.team_btn_str if coop else info.team_btn_solo_str)),
+                BlockText(get_mobile_btn_str(get_team_btn_str(info, coop, limit_break))),
                 inline=True
             ) if not desktop else None
         ]

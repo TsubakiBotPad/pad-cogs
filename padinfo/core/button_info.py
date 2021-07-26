@@ -131,8 +131,12 @@ class ButtonInfo:
 
         result.card_btn_str = self._get_card_coop_damage(CARD_BUTTONS, dgcog, monster_model)
         result.card_btn_solo_str = self._get_card_solo_damage(CARD_BUTTONS, dgcog, monster_model)
+        result.card_btn_slb_str = self._get_card_coop_slb_damage(CARD_BUTTONS, dgcog, monster_model)
+        result.card_btn_solo_slb_str = self._get_card_solo_slb_damage(CARD_BUTTONS, dgcog, monster_model)
         result.team_btn_str = self._get_team_coop_damage(TEAM_BUTTONS, dgcog, monster_model)
         result.team_btn_solo_str = self._get_team_solo_damage(TEAM_BUTTONS, dgcog, monster_model)
+        result.team_btn_slb_str = self._get_team_coop_slb_damage(TEAM_BUTTONS, dgcog, monster_model)
+        result.team_btn_solo_slb_str = self._get_team_solo_slb_damage(TEAM_BUTTONS, dgcog, monster_model)
         return result
 
     def _calculate_coop_damage(self, dgcog, monster_model, level, num_atkplus_latent=0, num_atkplus2_latent=0):
@@ -168,17 +172,23 @@ class ButtonInfo:
                                   int(round(info.total_damage_with_atk_latent)), card_btn_str, team_btn_str)
 
     def _get_card_coop_damage(self, card_buttons, dgcog, monster):
-        return self._get_card_btn_damage(card_buttons, dgcog, monster, True)
+        return self._get_card_btn_damage(card_buttons, dgcog, monster, True, LIMIT_BREAK_LEVEL)
 
     def _get_card_solo_damage(self, card_buttons, dgcog, monster):
-        return self._get_card_btn_damage(card_buttons, dgcog, monster, False)
+        return self._get_card_btn_damage(card_buttons, dgcog, monster, False, LIMIT_BREAK_LEVEL)
 
-    def _get_card_btn_damage(self, card_buttons, dgcog, monster, multiplayer):
+    def _get_card_coop_slb_damage(self, card_buttons, dgcog, monster):
+        return self._get_card_btn_damage(card_buttons, dgcog, monster, True, SUPER_LIMIT_BREAK_LEVEL)
+
+    def _get_card_solo_slb_damage(self, card_buttons, dgcog, monster):
+        return self._get_card_btn_damage(card_buttons, dgcog, monster, False, SUPER_LIMIT_BREAK_LEVEL)
+
+    def _get_card_btn_damage(self, card_buttons, dgcog, monster, multiplayer, limit_break):
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
         for card in card_buttons:
             inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
-            max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+            max_level = limit_break if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
             dmg = int(round(dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
@@ -190,18 +200,24 @@ class ButtonInfo:
         return "\n".join(lines)
 
     def _get_team_coop_damage(self, team_buttons, dgcog, monster):
-        return self._get_team_btn_damage(team_buttons, dgcog, monster, True)
+        return self._get_team_btn_damage(team_buttons, dgcog, monster, True, LIMIT_BREAK_LEVEL)
 
     def _get_team_solo_damage(self, team_buttons, dgcog, monster):
-        return self._get_team_btn_damage(team_buttons, dgcog, monster, False)
+        return self._get_team_btn_damage(team_buttons, dgcog, monster, False, LIMIT_BREAK_LEVEL)
 
-    def _get_team_btn_damage(self, team_buttons, dgcog, monster, multiplayer):
+    def _get_team_coop_slb_damage(self, team_buttons, dgcog, monster):
+        return self._get_team_btn_damage(team_buttons, dgcog, monster, True, SUPER_LIMIT_BREAK_LEVEL)
+
+    def _get_team_solo_slb_damage(self, team_buttons, dgcog, monster):
+        return self._get_team_btn_damage(team_buttons, dgcog, monster, False, SUPER_LIMIT_BREAK_LEVEL)
+
+    def _get_team_btn_damage(self, team_buttons, dgcog, monster, multiplayer, limit_break):
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
             total_dmg = 0
             inherit_model = dgcog.get_monster(card.id, server=monster.server_priority)
-            max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+            max_level = limit_break if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dgcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
             dmg = dgcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
