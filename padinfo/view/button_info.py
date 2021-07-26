@@ -86,42 +86,54 @@ def get_max_level(monster):
     return 'Lv. {}'.format(level_text)
 
 
-def get_max_stats_without_latents(info):
+def get_max_stats_without_latents(info, coop):
+    main = info.main_damage if coop else info.main_solo_damage
+    sub = info.sub_damage if coop else info.sub_solo_damage
+    total = info.total_damage if coop else info.total_solo_damage
     return BlockText(
         Box(
-            Text('Base:    {}'.format(int(round(info.main_damage)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage)))),
-            Text('Total:   {}'.format(int(round(info.total_damage))))
+            Text('Base:    {}'.format(int(round(main)))),
+            Text('Subattr: {}'.format(int(round(sub)))),
+            Text('Total:   {}'.format(int(round(total))))
         )
     )
 
 
-def get_120_stats_without_latents(info):
+def get_120_stats_without_latents(info, coop):
+    main = info.main_slb_damage if coop else info.main_solo_slb_damage
+    sub = info.sub_slb_damage if coop else info.sub_solo_slb_damage
+    total = info.total_slb_damage if coop else info.total_solo_slb_damage
     return BlockText(
         Box(
-            Text('Base:    {}'.format(int(round(info.main_slb_damage)))),
-            Text('Subattr: {}'.format(int(round(info.sub_slb_damage)))),
-            Text('Total:   {}'.format(int(round(info.total_slb_damage))))
+            Text('Base:    {}'.format(int(round(main)))),
+            Text('Subattr: {}'.format(int(round(sub)))),
+            Text('Total:   {}'.format(int(round(total))))
         )
     )
 
 
-def get_max_stats_with_latents(info):
+def get_max_stats_with_latents(info, coop):
+    main = info.main_damage_with_atk_latent if coop else info.main_solo_damage_with_atk_latent
+    sub = info.sub_damage_with_atk_latent if coop else info.sub_solo_damage_with_atk_latent
+    total = info.total_damage_with_atk_latent if coop else info.total_solo_damage_with_atk_latent
     return BlockText(
         Box(
-            Text('Base:    {}'.format(int(round(info.main_damage_with_atk_latent)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage_with_atk_latent)))),
-            Text('Total:   {}'.format(int(round(info.total_damage_with_atk_latent))))
+            Text('Base:    {}'.format(int(round(main)))),
+            Text('Subattr: {}'.format(int(round(sub)))),
+            Text('Total:   {}'.format(int(round(total))))
         )
     )
 
 
-def get_120_stats_with_latents(info):
+def get_120_stats_with_latents(info, coop):
+    main = info.main_damage_with_slb_atk_latent if coop else info.main_solo_damage_with_slb_atk_latent
+    sub = info.sub_damage_with_slb_atk_latent if coop else info.sub_solo_damage_with_slb_atk_latent
+    total = info.total_damage_with_slb_atk_latent if coop else info.total_solo_damage_with_slb_atk_latent
     return BlockText(
         Box(
-            Text('Base:    {}'.format(int(round(info.main_damage_with_slb_atk_latent)))),
-            Text('Subattr: {}'.format(int(round(info.sub_damage_with_slb_atk_latent)))),
-            Text('Total:   {}'.format(int(round(info.total_damage_with_slb_atk_latent))))
+            Text('Base:    {}'.format(int(round(main)))),
+            Text('Subattr: {}'.format(int(round(sub)))),
+            Text('Total:   {}'.format(int(round(total))))
         )
     )
 
@@ -133,7 +145,7 @@ def get_mobile_btn_str(btn_str):
         partition = line.find('(')
         name = line[:partition].strip()
         damage = line[partition:]
-        output.append('{}\n    {}'.format(name, damage))
+        output.append('{}\n   {}'.format(name, damage))
     return '\n'.join(output)
 
 
@@ -142,6 +154,7 @@ class ButtonInfoView:
 
     @staticmethod
     def embed(state: ButtonInfoViewState):
+        coop = state.display_options.players == ButtonInfoOptions.coop
         desktop = state.display_options.device == ButtonInfoOptions.desktop
         monster = state.monster
         info = state.info
@@ -153,11 +166,11 @@ class ButtonInfoView:
                     Text('Without Latents'),
                     # avoid whitespace after code block
                     Box(
-                        get_max_stats_without_latents(info),
+                        get_max_stats_without_latents(info, coop),
                         Text('With Latents (Atk+)'),
                         delimiter=''
                     ),
-                    get_max_stats_with_latents(info)
+                    get_max_stats_with_latents(info, coop)
                 ),
                 inline=True
             ),
@@ -167,11 +180,11 @@ class ButtonInfoView:
                     Text('Without Latents'),
                     # avoid whitespace after code block
                     Box(
-                        get_120_stats_without_latents(info),
+                        get_120_stats_without_latents(info, coop),
                         Text('With Latents (Atk++)'),
                         delimiter=''
                     ),
-                    get_120_stats_with_latents(info)
+                    get_120_stats_with_latents(info, coop)
                 ),
                 inline=True
             ) if monster.limit_mult != 0 else None,
@@ -184,11 +197,11 @@ class ButtonInfoView:
                     Text('Card Button Damage'),
                     # done this way to not have the whitespace after code block
                     Box(
-                        BlockText(info.card_btn_str),
+                        BlockText(info.card_btn_str if coop else info.card_btn_solo_str),
                         Text('Team Button Contribution'),
                         delimiter=''
                     ),
-                    BlockText(info.team_btn_str)
+                    BlockText(info.team_btn_str if coop else info.team_btn_solo_str)
                 )
             ) if desktop else None,
             EmbedField(
@@ -201,12 +214,12 @@ class ButtonInfoView:
             ) if not desktop else None,
             EmbedField(
                 'Card Button Damage',
-                BlockText(get_mobile_btn_str(info.card_btn_str)),
+                BlockText(get_mobile_btn_str(info.card_btn_str if coop else info.card_btn_solo_str)),
                 inline=True
             ) if not desktop else None,
             EmbedField(
                 'Team Button Contribution',
-                BlockText(get_mobile_btn_str(info.team_btn_str)),
+                BlockText(get_mobile_btn_str(info.team_btn_str if coop else info.team_btn_solo_str)),
                 inline=True
             ) if not desktop else None
         ]
@@ -214,7 +227,7 @@ class ButtonInfoView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                description='(Co-op mode)'
+                description='(Co-op mode)' if coop else '(Singleplayer mode)'
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
