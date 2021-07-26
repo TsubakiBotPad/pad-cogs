@@ -230,7 +230,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database, await self.get_ts_only_monsters())
+        self.database = load_database(self.database, await self.get_debug_monsters())
         logger.info('Building dg monster index')
         await self.create_index()
 
@@ -284,7 +284,7 @@ class Dadguide(commands.Cog, IdTest):
         """Monsters allowed in Tsubaki-Only mode"""
 
     @debug_monsters.command(name="add")
-    async def debug_m_add(self, ctx, *monsters: int):
+    async def debug_monster_add(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster not in ts_monsters:
@@ -294,7 +294,7 @@ class Dadguide(commands.Cog, IdTest):
         await ctx.tick()
 
     @debug_monsters.command(name="remove", aliases=["rm", "del", "delete"])
-    async def debug_m_rm(self, ctx, *monsters: int):
+    async def debug_monster_rm(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster in ts_monsters:
@@ -310,7 +310,7 @@ class Dadguide(commands.Cog, IdTest):
         for page in pagify(text):
             await ctx.send(box(page))
 
-    async def get_ts_only_monsters(self) -> Optional[List[int]]:
+    async def get_debug_monsters(self) -> Optional[List[int]]:
         if await self.config.debug_mode():
             return await self.config.debug_mode_monsters()
         return None
