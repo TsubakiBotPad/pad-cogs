@@ -12,8 +12,8 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.database_context import DbContext
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.database_context import DbContext
 
 
 class SeriesScrollViewState(ViewStateBase):
@@ -93,14 +93,14 @@ class SeriesScrollViewState(ViewStateBase):
         return extra_ims
 
     @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
-        paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
+        paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, query_settings.server)
         current_page = ims['current_page']
         title = ims['title']
 
@@ -126,8 +126,8 @@ class SeriesScrollViewState(ViewStateBase):
                                      child_message_id=child_message_id)
 
     @staticmethod
-    async def do_query(dgcog, series_id, rarity, server):
-        db_context: "DbContext" = dgcog.database
+    async def do_query(dbcog, series_id, rarity, server):
+        db_context: "DbContext" = dbcog.database
         all_series_monsters = db_context.get_monsters_by_series(series_id, server=server)
         base_monsters_of_rarity = list(filter(
             lambda m: db_context.graph.monster_is_base(m) and m.rarity == rarity, all_series_monsters))
@@ -137,20 +137,20 @@ class SeriesScrollViewState(ViewStateBase):
         return paginated_monsters
 
     @staticmethod
-    def query_all_rarities(dgcog, series_id, server):
-        db_context: "DbContext" = dgcog.database
+    def query_all_rarities(dbcog, series_id, server):
+        db_context: "DbContext" = dbcog.database
         return sorted({m.rarity for m in db_context.get_all_monsters(server) if
                        m.series_id == series_id and db_context.graph.monster_is_base(m)})
 
     @staticmethod
-    async def query_from_ims(dgcog, ims) -> List[List["MonsterModel"]]:
+    async def query_from_ims(dbcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
-        paginated_monsters = await SeriesScrollViewState.do_query(dgcog, series_id, rarity, query_settings.server)
+        paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, query_settings.server)
         return paginated_monsters
 
-    async def decrement_page(self, dgcog):
+    async def decrement_page(self, dbcog):
         if self.current_page > 0:
             self.current_page = self.current_page - 1
             self.current_index = None
@@ -159,7 +159,7 @@ class SeriesScrollViewState(ViewStateBase):
             if len(self.all_rarities) > 1:
                 rarity_index = self.all_rarities.index(self.rarity)
                 self.rarity = self.all_rarities[rarity_index - 1]
-                self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
+                self.paginated_monsters = await SeriesScrollViewState.do_query(dbcog, self.series_id, self.rarity,
                                                                                self.query_settings.server)
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
@@ -167,7 +167,7 @@ class SeriesScrollViewState(ViewStateBase):
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
-    async def increment_page(self, dgcog):
+    async def increment_page(self, dbcog):
         if self.current_page < len(self.paginated_monsters) - 1:
             self.current_page = self.current_page + 1
             self.current_index = None
@@ -176,7 +176,7 @@ class SeriesScrollViewState(ViewStateBase):
             if len(self.all_rarities) > 1:
                 rarity_index = self.all_rarities.index(self.rarity)
                 self.rarity = self.all_rarities[(rarity_index + 1) % len(self.all_rarities)]
-                self.paginated_monsters = await SeriesScrollViewState.do_query(dgcog, self.series_id, self.rarity,
+                self.paginated_monsters = await SeriesScrollViewState.do_query(dbcog, self.series_id, self.rarity,
                                                                                self.query_settings.server)
                 self.current_index = None
             self.current_page = 0
@@ -184,24 +184,24 @@ class SeriesScrollViewState(ViewStateBase):
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
-    async def decrement_index(self, dgcog):
+    async def decrement_index(self, dbcog):
         if self.current_index is None:
             self.current_index = len(self.monster_list) - 1
             return
         if self.current_index > 0:
             self.current_index = self.current_index - 1
             return
-        await self.decrement_page(dgcog)
+        await self.decrement_page(dbcog)
         self.current_index = len(self.monster_list) - 1
 
-    async def increment_index(self, dgcog):
+    async def increment_index(self, dbcog):
         if self.current_index is None:
             self.current_index = 0
             return
         if self.current_index < len(self.monster_list) - 1:
             self.current_index = self.current_index + 1
             return
-        await self.increment_page(dgcog)
+        await self.increment_page(dbcog)
         self.current_index = 0
 
     def set_index(self, new_index: int):

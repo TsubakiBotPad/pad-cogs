@@ -18,8 +18,8 @@ from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.awakening_model import AwakeningModel
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.awakening_model import AwakeningModel
 
 
 def alt_fmt(monsterevo, state):
@@ -64,14 +64,14 @@ class IdViewState(ViewStateBaseId):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         # for numberscroll getting to a gap in monster book, or 1, or last monster
         if ims.get('unsupported_transition'):
             return None
-        monster = await get_monster_from_ims(dgcog, ims)
-        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
+        monster = await get_monster_from_ims(dbcog, ims)
+        alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.do_query(dgcog, monster)
+            await IdViewState.do_query(dbcog, monster)
 
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
@@ -83,7 +83,7 @@ class IdViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
@@ -94,19 +94,19 @@ class IdViewState(ViewStateBaseId):
                    is_child=is_child,
                    extra_state=ims)
 
-    async def set_server(self, dgcog, server: Server):
+    async def set_server(self, dbcog, server: Server):
         self.query_settings.server = server
-        self.monster = dgcog.database.graph.get_monster(self.monster.monster_id, server=server)
-        self.alt_monsters = self.get_alt_monsters_and_evos(dgcog, self.monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dgcog, self.monster)
+        self.monster = dbcog.database.graph.get_monster(self.monster.monster_id, server=server)
+        self.alt_monsters = self.get_alt_monsters_and_evos(dbcog, self.monster)
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dbcog, self.monster)
         self.transform_base = transform_base
         self.true_evo_type_raw = true_evo_type_raw
         self.acquire_raw = acquire_raw
         self.base_rarity = base_rarity
 
     @classmethod
-    async def do_query(cls, dgcog, monster):
-        db_context = dgcog.database
+    async def do_query(cls, dbcog, monster):
+        db_context = dbcog.database
         acquire_raw, base_rarity, transform_base, true_evo_type_raw = \
             await IdViewState._get_monster_misc_info(db_context, monster)
 

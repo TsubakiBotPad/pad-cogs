@@ -18,31 +18,31 @@ class TransformInfoMenu:
 
     @staticmethod
     async def respond_with_base(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
         # base is always first
         ims['resolved_monster_id'] = ims['resolved_monster_ids'][0]
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
         return id_control
 
     @staticmethod
     async def respond_with_transform(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
         # transform is always second
         ims['resolved_monster_id'] = ims['resolved_monster_ids'][1]
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
         return id_control
 
     @staticmethod
     async def respond_with_n(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
         n = TransformInfoMenuPanes.get_n_from_reaction(data['reaction'])
         # does this work? is this check necessary? is reaction guaranteed to resolve?
@@ -50,16 +50,16 @@ class TransformInfoMenu:
             return None
 
         ims['resolved_monster_id'] = ims['resolved_monster_ids'][n]
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         reaction_list = ims['reaction_list']
         id_control = TransformInfoMenu.id_control(id_view_state, reaction_list)
         return id_control
 
     @staticmethod
     async def respond_with_overview(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        tf_view_state = await TransformInfoViewState.deserialize(dgcog, user_config, ims)
+        tf_view_state = await TransformInfoViewState.deserialize(dbcog, user_config, ims)
         tf_control = TransformInfoMenu.tf_control(tf_view_state)
         return tf_control
 

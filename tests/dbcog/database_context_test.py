@@ -1,12 +1,12 @@
 from tsutils.enums import Server
 
-from dadguide.database_manager import DadguideDatabase
-from dadguide.database_context import DbContext
-from dadguide.dungeon_context import DungeonContext
-from dadguide.monster_graph import MonsterGraph
-from dadguide.models.enum_types import InternalEvoType
+from dbcog.database_manager import DBCogDatabase
+from dbcog.database_context import DbContext
+from dbcog.dungeon_context import DungeonContext
+from dbcog.monster_graph import MonsterGraph
+from dbcog.models.enum_types import InternalEvoType
 
-database = DadguideDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
+database = DBCogDatabase('S:\\Documents\\Games\\PAD\\dadguide.sqlite')
 graph = MonsterGraph(database)
 dungeon = DungeonContext(database)
 dungeon = DungeonContext(database)

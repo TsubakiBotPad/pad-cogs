@@ -15,7 +15,7 @@ from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class EvosViewState(ViewStateBaseId):
@@ -41,15 +41,15 @@ class EvosViewState(ViewStateBaseId):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
-        monster = await get_monster_from_ims(dgcog, ims)
-        alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
+        monster = await get_monster_from_ims(dbcog, ims)
+        alt_versions, gem_versions = await EvosViewState.do_query(dbcog, monster)
 
         if alt_versions is None:
             return None
-        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
@@ -57,7 +57,7 @@ class EvosViewState(ViewStateBaseId):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
@@ -67,8 +67,8 @@ class EvosViewState(ViewStateBaseId):
                    extra_state=ims)
 
     @staticmethod
-    async def do_query(dgcog, monster):
-        db_context = dgcog.database
+    async def do_query(dbcog, monster):
+        db_context = dbcog.database
         alt_versions = sorted(db_context.graph.get_alt_monsters(monster),
                               key=lambda x: x.monster_id)
         gem_versions = list(filter(None, map(db_context.graph.evo_gem_monster, alt_versions)))

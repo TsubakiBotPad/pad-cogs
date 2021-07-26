@@ -8,7 +8,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class LookupView:

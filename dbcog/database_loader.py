@@ -4,13 +4,13 @@ import shutil
 from redbot.core import data_manager
 
 from .database_context import DbContext
-from .database_manager import DadguideDatabase
+from .database_manager import DBCogDatabase
 from .dungeon_context import DungeonContext
 from .monster_graph import MonsterGraph
 
 
 def _data_file(file_name: str) -> str:
-    return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
+    return os.path.join(str(data_manager.cog_data_path(raw_name='dbcog')), file_name)
 
 
 def load_database(existing_db, debug_monster_ids):
@@ -23,7 +23,7 @@ def load_database(existing_db, debug_monster_ids):
     if os.path.exists(DB_DUMP_FILE):
         shutil.copy2(DB_DUMP_FILE, DB_DUMP_WORKING_FILE)
     # Open the new working copy.
-    database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
+    database = DBCogDatabase(data_file=DB_DUMP_WORKING_FILE)
     graph = MonsterGraph(database, debug_monster_ids)
     dungeon = DungeonContext(database)
     db_context = DbContext(database, graph, dungeon, debug_monster_ids)

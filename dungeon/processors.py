@@ -1,8 +1,8 @@
 from discordmenu.emoji.emoji_cache import emoji_cache
 
-from dadguide.database_context import DbContext
-from dadguide.models.encounter_model import EncounterModel
-from dadguide.models.enemy_skill_model import EnemySkillModel
+from dbcog.database_context import DbContext
+from dbcog.models.encounter_model import EncounterModel
+from dbcog.models.enemy_skill_model import EnemySkillModel
 from dungeon.safe_dict import SafeDict
 from dungeon.dungeon_monster import DungeonMonster
 from dungeon.enemy_skill import ProcessedSkill

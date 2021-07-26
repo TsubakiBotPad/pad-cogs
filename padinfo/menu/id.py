@@ -30,12 +30,12 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
         # Figure out the new monster before doing all of the queries necessary for
         # The specific pane type. For now just deserialize as the base Id ViewState.
-        view_state = await ViewStateBaseId.deserialize(dgcog, user_config, ims)
-        view_state.decrement_monster(dgcog, ims)
+        view_state = await ViewStateBaseId.deserialize(dbcog, user_config, ims)
+        view_state.decrement_monster(dbcog, ims)
 
         pane_type = ims['pane_type']
         pane_type_to_func_map = IdMenuPanes.pane_types()
@@ -44,10 +44,10 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state = await ViewStateBaseId.deserialize(dgcog, user_config, ims)
-        view_state.increment_monster(dgcog, ims)
+        view_state = await ViewStateBaseId.deserialize(dbcog, user_config, ims)
+        view_state.increment_monster(dbcog, ims)
 
         pane_type = ims.get('pane_type')
         pane_type_to_func_map = IdMenuPanes.pane_types()
@@ -75,55 +75,55 @@ class IdMenu:
 
     @staticmethod
     async def respond_with_current_id(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.id_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_evos(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await EvosViewState.deserialize(dgcog, user_config, ims)
+        view_state = await EvosViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.evos_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_mats(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await MaterialsViewState.deserialize(dgcog, user_config, ims)
+        view_state = await MaterialsViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.mats_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_picture(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await PicViewState.deserialize(dgcog, user_config, ims)
+        view_state = await PicViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.pic_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_pantheon(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await PantheonViewState.deserialize(dgcog, user_config, ims)
+        view_state = await PantheonViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.pantheon_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_otherinfo(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await OtherInfoViewState.deserialize(dgcog, user_config, ims)
+        view_state = await OtherInfoViewState.deserialize(dbcog, user_config, ims)
         control = IdMenu.otherinfo_control(view_state)
         return control
 
