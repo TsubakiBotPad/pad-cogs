@@ -382,6 +382,7 @@ class MonsterGraph(object):
         return (
             evo_ordering[self.true_evo_type(monster)],
             '覚醒' in monster.name_ja or 'awoken' in monster.name_en.lower(),
+            monster.monster_id,
         )
     
     def get_alt_ids(self, monster: MonsterModel) -> List[int]:
