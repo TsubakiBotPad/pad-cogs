@@ -86,10 +86,7 @@ def get_max_level(monster):
     return 'Lv. {}'.format(level_text)
 
 
-def get_max_stats_without_latents(info, coop):
-    main = info.main_damage if coop else info.main_solo_damage
-    sub = info.sub_damage if coop else info.sub_solo_damage
-    total = info.total_damage if coop else info.total_solo_damage
+def get_stat_block(main, sub, total):
     return BlockText(
         Box(
             Text('Base:    {}'.format(int(round(main)))),
@@ -97,45 +94,34 @@ def get_max_stats_without_latents(info, coop):
             Text('Total:   {}'.format(int(round(total))))
         )
     )
+
+
+def get_max_stats_without_latents(info, coop):
+    main = info.main_damage if coop else info.main_solo_damage
+    sub = info.sub_damage if coop else info.sub_solo_damage
+    total = info.total_damage if coop else info.total_solo_damage
+    return get_stat_block(main, sub, total)
 
 
 def get_120_stats_without_latents(info, coop):
     main = info.main_slb_damage if coop else info.main_solo_slb_damage
     sub = info.sub_slb_damage if coop else info.sub_solo_slb_damage
     total = info.total_slb_damage if coop else info.total_solo_slb_damage
-    return BlockText(
-        Box(
-            Text('Base:    {}'.format(int(round(main)))),
-            Text('Subattr: {}'.format(int(round(sub)))),
-            Text('Total:   {}'.format(int(round(total))))
-        )
-    )
+    return get_stat_block(main, sub, total)
 
 
 def get_max_stats_with_latents(info, coop):
     main = info.main_damage_with_atk_latent if coop else info.main_solo_damage_with_atk_latent
     sub = info.sub_damage_with_atk_latent if coop else info.sub_solo_damage_with_atk_latent
     total = info.total_damage_with_atk_latent if coop else info.total_solo_damage_with_atk_latent
-    return BlockText(
-        Box(
-            Text('Base:    {}'.format(int(round(main)))),
-            Text('Subattr: {}'.format(int(round(sub)))),
-            Text('Total:   {}'.format(int(round(total))))
-        )
-    )
+    return get_stat_block(main, sub, total)
 
 
 def get_120_stats_with_latents(info, coop):
     main = info.main_damage_with_slb_atk_latent if coop else info.main_solo_damage_with_slb_atk_latent
     sub = info.sub_damage_with_slb_atk_latent if coop else info.sub_solo_damage_with_slb_atk_latent
     total = info.total_damage_with_slb_atk_latent if coop else info.total_solo_damage_with_slb_atk_latent
-    return BlockText(
-        Box(
-            Text('Base:    {}'.format(int(round(main)))),
-            Text('Subattr: {}'.format(int(round(sub)))),
-            Text('Total:   {}'.format(int(round(total))))
-        )
-    )
+    return get_stat_block(main, sub, total)
 
 
 def get_mobile_btn_str(btn_str):
