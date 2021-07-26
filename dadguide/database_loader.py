@@ -24,7 +24,7 @@ def load_database(existing_db, debug_monster_ids):
         shutil.copy2(DB_DUMP_FILE, DB_DUMP_WORKING_FILE)
     # Open the new working copy.
     database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
-    graph = MonsterGraph(database, debug_mons)
+    graph = MonsterGraph(database, debug_monster_ids)
     dungeon = DungeonContext(database)
     db_context = DbContext(database, graph, dungeon, debug_monster_ids)
     return db_context
