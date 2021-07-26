@@ -230,7 +230,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database, await self.get_ters())
+        self.database = load_database(self.database, await self.get_ts_only_monsters())
         logger.info('Building dg monster index')
         await self.create_index()
 

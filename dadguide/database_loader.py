@@ -13,7 +13,7 @@ def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
 
 
-def load_database(existing_db, debug_mons):
+def load_database(existing_db, debug_monster_ids):
     DB_DUMP_FILE = _data_file('dadguide.sqlite')
     DB_DUMP_WORKING_FILE = _data_file('dadguide_working.sqlite')
     # Release the handle to the database file if it has one
@@ -26,5 +26,5 @@ def load_database(existing_db, debug_mons):
     database = DadguideDatabase(data_file=DB_DUMP_WORKING_FILE)
     graph = MonsterGraph(database, debug_mons)
     dungeon = DungeonContext(database)
-    db_context = DbContext(database, graph, dungeon, debug_mons)
+    db_context = DbContext(database, graph, dungeon, debug_monster_ids)
     return db_context
