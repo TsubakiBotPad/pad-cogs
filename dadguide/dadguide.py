@@ -264,7 +264,7 @@ class Dadguide(commands.Cog, IdTest):
         """Tsubaki-Only Mode settings"""
 
     @debugmode.command(name="enable", aliases=["enabled"])
-    async def dm_enable(self, ctx, enabled: bool):
+    async def tsmode_enable(self, ctx, enabled: bool):
         """Sets tsubaki-only mode and reloads the index and graph"""
         await self.config.debug_mode.set(enabled)
         if enabled:
@@ -280,11 +280,11 @@ class Dadguide(commands.Cog, IdTest):
         await self.forceindexreload(ctx)
 
     @debugmode.group(name="monsters")
-    async def dm_monsters(self, ctx):
+    async def tsmode_monsters(self, ctx):
         """Monsters allowed in Tsubaki-Only mode"""
 
-    @dm_monsters.command(name="add")
-    async def dm_m_add(self, ctx, *monsters: int):
+    @tsmode_monsters.command(name="add")
+    async def tsmode_m_add(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster not in ts_monsters:
@@ -293,8 +293,8 @@ class Dadguide(commands.Cog, IdTest):
             await self.forceindexreload(ctx)
         await ctx.tick()
 
-    @dm_monsters.command(name="remove", aliases=["rm", "del", "delete"])
-    async def dm_m_rm(self, ctx, *monsters: int):
+    @tsmode_monsters.command(name="remove", aliases=["rm", "del", "delete"])
+    async def tsmode_m_rm(self, ctx, *monsters: int):
         async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster in ts_monsters:
@@ -303,8 +303,8 @@ class Dadguide(commands.Cog, IdTest):
             await self.forceindexreload(ctx)
         await ctx.tick()
 
-    @dm_monsters.command(name="list")
-    async def dm_m_list(self, ctx):
+    @tsmode_monsters.command(name="list")
+    async def tsmode_m_list(self, ctx):
         text = "\n".join(f'{m} {mon.name_en}' if (mon := self.get_monster(m)) else f"Invalid monster {m}"
                          for m in await self.config.debug_mode_monsters())
         for page in pagify(text):
