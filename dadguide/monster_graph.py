@@ -117,9 +117,9 @@ SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
-    def __init__(self, database: DadguideDatabase, debug_mons: Optional[List[int]] = None):
+    def __init__(self, database: DadguideDatabase, debug_monster_ids: Optional[List[int]] = None):
         self.issues = []
-        self.debug_mons = debug_mons
+        self.debug_monster_ids = debug_monster_ids
 
         self.database = database
         self.max_monster_id = -1
@@ -160,7 +160,7 @@ class MonsterGraph(object):
                 mtoegg[idx][e_type] = True
 
         for m in ms:
-            if self.debug_mons is not None and m.monster_id not in self.debug_mons:
+            if self.debug_monster_ids is not None and m.monster_id not in self.debug_monster_ids:
                 continue
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
                                         name_ja=m.ls_name_ja,
@@ -261,12 +261,12 @@ class MonsterGraph(object):
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
             if m.linked_monster_id:
-                if self.debug_mons is None or m.linked_monster_id in self.debug_mons:
+                if self.debug_monster_ids is None or m.linked_monster_id in self.debug_monster_ids:
                     graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
                     graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
 
             if m.evo_gem_id:
-                if self.debug_mons is None or m.evo_gem_id in self.debug_mons:
+                if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
                     graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
                     graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
 
@@ -283,8 +283,8 @@ class MonsterGraph(object):
                 mat_5_id=self.debug_validate_id(e.mat_5_id),
                 tstamp=e.tstamp,
             )
-            if self.debug_mons is not None:
-                if evo_model.from_id not in self.debug_mons or evo_model.to_id not in self.debug_mons:
+            if self.debug_monster_ids is not None:
+                if evo_model.from_id not in self.debug_monster_ids or evo_model.to_id not in self.debug_monster_ids:
                     continue
 
             graph.add_edge(
@@ -303,8 +303,8 @@ class MonsterGraph(object):
 
         for ex in exs:
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
-                if self.debug_mons is not None:
-                    if ex.target_monster_id not in self.debug_mons or int(vendor_id) not in self.debug_mons:
+                if self.debug_monster_ids is not None:
+                    if ex.target_monster_id not in self.debug_monster_ids or int(vendor_id) not in self.debug_monster_ids:
                         continue
                 graph.add_edge(
                     ex.target_monster_id, int(vendor_id), type='exchange_from')
@@ -319,7 +319,7 @@ class MonsterGraph(object):
                 if 'model' in self.graph_dict[server].nodes[mid]:
                     alt_ids = self.process_alt_ids(self.get_monster(mid, server=server))
                     self.graph_dict[server].nodes[mid]['alt_versions'] = alt_ids
-                    if self.debug_mons is not None:
+                    if self.debug_monster_ids is not None:
                         self.graph_dict[server].nodes[mid]['model'].base_evo_id = alt_ids[0]
                 else:
                     self.issues.append(f"{mid} has no model in the {server.name} graph.")
@@ -412,7 +412,7 @@ class MonsterGraph(object):
                 and list(prevs)[0].monster_id < monster.monster_id:
             monster = prevs.pop()
 
-        if self.debug_mons is not None:
+        if self.debug_monster_ids is not None:
             while (prev := self.get_prev_evolution(monster)):
                 monster = prev
             return monster.monster_id
@@ -628,5 +628,5 @@ class MonsterGraph(object):
                    for server in SERVERS)
 
     def debug_validate_id(self, monster_id: int) -> Optional[int]:
-        if self.debug_mons is None or monster_id in self.debug_mons:
+        if self.debug_monster_ids is None or monster_id in self.debug_monster_ids:
             return monster_id

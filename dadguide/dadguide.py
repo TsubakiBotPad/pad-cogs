@@ -77,7 +77,7 @@ class Dadguide(commands.Cog, IdTest):
         self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
         self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[],
-                                    ts_only=False, ts_only_mons = [3260])
+                                    debug_mode=False, debug_mode_monsters = [3260])
         self.config.register_user(lastaction=None, fm_flags={})
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
@@ -172,7 +172,7 @@ class Dadguide(commands.Cog, IdTest):
             issues.extend(index.issues)
         issues.extend(await self.run_tests())
 
-        if issues and self.database.graph.debug_mons is None:
+        if issues and self.database.graph.debug_monster_ids is None:
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
                 channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
@@ -230,7 +230,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database, await self.get_ts_only_monsters())
+        self.database = load_database(self.database, await self.get_ters())
         logger.info('Building dg monster index')
         await self.create_index()
 
@@ -266,7 +266,7 @@ class Dadguide(commands.Cog, IdTest):
     @debugmode.command(name="enable", aliases=["enabled"])
     async def dm_enable(self, ctx, enabled: bool):
         """Sets tsubaki-only mode and reloads the index and graph"""
-        await self.config.ts_only.set(enabled)
+        await self.config.debug_mode.set(enabled)
         if enabled:
             await tsutils.send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
                                                          f" Only **Tsubaki** will be available in the graph and id"
@@ -285,34 +285,34 @@ class Dadguide(commands.Cog, IdTest):
 
     @dm_monsters.command(name="add")
     async def dm_m_add(self, ctx, *monsters: int):
-        async with self.config.ts_only_mons() as ts_monsters:
+        async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster not in ts_monsters:
                     ts_monsters.append(monster)
-        if await self.config.ts_only():
+        if await self.config.debug_mode():
             await self.forceindexreload(ctx)
         await ctx.tick()
 
     @dm_monsters.command(name="remove", aliases=["rm", "del", "delete"])
     async def dm_m_rm(self, ctx, *monsters: int):
-        async with self.config.ts_only_mons() as ts_monsters:
+        async with self.config.debug_mode_monsters() as ts_monsters:
             for monster in monsters:
                 if monster in ts_monsters:
                     ts_monsters.remove(monster)
-        if await self.config.ts_only():
+        if await self.config.debug_mode():
             await self.forceindexreload(ctx)
         await ctx.tick()
 
     @dm_monsters.command(name="list")
     async def dm_m_list(self, ctx):
         text = "\n".join(f'{m} {mon.name_en}' if (mon := self.get_monster(m)) else f"Invalid monster {m}"
-                         for m in await self.config.ts_only_mons())
+                         for m in await self.config.debug_mode_monsters())
         for page in pagify(text):
             await ctx.send(box(page))
 
     async def get_ts_only_monsters(self) -> Optional[List[int]]:
-        if await self.config.ts_only():
-            return await self.config.ts_only_mons()
+        if await self.config.debug_mode():
+            return await self.config.debug_mode_monsters()
         return None
 
     async def get_fm_flags(self, author_id):

@@ -23,12 +23,12 @@ FROM
 
 class DbContext(object):
     def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext,
-                 debug_mons: Optional[List[int]] = False):
+                 debug_monster_ids: Optional[List[int]] = None):
         self.database = database
         self.graph = graph
         self.dungeon = dungeon
 
-        self.debug_mons = debug_mons
+        self.debug_monster_ids = debug_monster_ids
 
         self.awoken_skill_map = {awsk.awoken_skill_id: awsk for awsk in self.get_all_awoken_skills()}
 
@@ -48,8 +48,10 @@ class DbContext(object):
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
     def get_all_monster_ids_query(self, server: Server):
-        if self.debug_mons is not None:
-            return self.debug_mons
+        # We don't need to query if we're in debug mode.  We already know exactly which monsters we're working with
+        if self.debug_monster_ids is not None:
+            return self.debug_monster_ids
+
         table = 'monsters_na' if server == Server.NA else 'monsters'
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}), (),
