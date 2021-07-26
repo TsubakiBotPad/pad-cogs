@@ -69,7 +69,7 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 
 * Some cogs will have cross dependencies on each other.  Use `^traceback 1` if you encounter any errors to see your traceback.
 * Common dependencies include:
-    * dadguide
+    * dbcog
     * padinfo
 
 ### Emoji
@@ -85,7 +85,7 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 | azurelane     | **DISCONTINUED** Azur Lane card lookup                          |
 | channelmirror | A better version of the built-in discord announcement channel   |
 | crud          | Database editor.  Not useful for bots other than prod Tsubaki   |
-| dadguide      | Central cog to host all PAD data                                |
+| dbcog         | Central cog to host all PAD data                                |
 | damagecalc    | Simple attack damage calculator                                 |
 | feedback      | A specialized feedback cog for Tsubaki specifically             |
 | padboard      | Converts board images to dawnglare board/solved board links     |

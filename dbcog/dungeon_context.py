@@ -1,11 +1,11 @@
 from typing import Optional, List
 
-from dadguide.database_manager import DadguideDatabase
-from dadguide.models.dungeon_model import DungeonModel
-from dadguide.models.encounter_model import EncounterModel
-from dadguide.models.enemy_data_model import EnemyDataModel
-from dadguide.models.enemy_skill_model import EnemySkillModel
-from dadguide.models.sub_dungeon_model import SubDungeonModel
+from dbcog.database_manager import DBCogDatabase
+from dbcog.models.dungeon_model import DungeonModel
+from dbcog.models.encounter_model import EncounterModel
+from dbcog.models.enemy_data_model import EnemyDataModel
+from dbcog.models.enemy_skill_model import EnemySkillModel
+from dbcog.models.sub_dungeon_model import SubDungeonModel
 
 NICKNAME_QUERY = '''
 SELECT
@@ -195,7 +195,7 @@ DUNGEON_NICKNAMES = {
 
 
 class DungeonContext(object):
-    def __init__(self, database: DadguideDatabase):
+    def __init__(self, database: DBCogDatabase):
         self.database = database
 
     def get_dungeons_from_name(self, name: str) -> List[DungeonModel]:

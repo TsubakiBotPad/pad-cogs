@@ -24,9 +24,9 @@ class SimpleTextMenu:
 
     @staticmethod
     async def respond_with_message(message: Optional[Message], ims, **data):
-        dgcog = data.get('dgcog')
+        dbcog = data.get('dbcog')
         user_config = data.get('user_config')
-        view_state = await SimpleTextViewState.deserialize(dgcog, user_config, ims)
+        view_state = await SimpleTextViewState.deserialize(dbcog, user_config, ims)
         control = SimpleTextMenu.message_control(view_state)
         return control
 

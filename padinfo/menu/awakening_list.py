@@ -58,9 +58,9 @@ class AwakeningListMenu:
 
     @staticmethod
     async def respond_with_awakening_list(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state = await AwakeningListViewState.deserialize(dgcog, user_config, ims)
+        view_state = await AwakeningListViewState.deserialize(dbcog, user_config, ims)
         control = AwakeningListMenu.awakening_list_control(view_state)
         return control
 

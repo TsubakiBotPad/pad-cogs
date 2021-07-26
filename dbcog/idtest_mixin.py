@@ -7,8 +7,8 @@ from tsutils.enums import Server
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import box, pagify
 
-from dadguide.models.enum_types import DEFAULT_SERVER
-from dadguide.monster_index import MonsterIndex
+from dbcog.models.enum_types import DEFAULT_SERVER
+from dbcog.monster_index import MonsterIndex
 
 
 class IdTest:

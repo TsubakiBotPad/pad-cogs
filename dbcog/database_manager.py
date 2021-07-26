@@ -2,15 +2,15 @@ import sqlite3 as lite
 
 import logging
 
-logger = logging.getLogger('red.padbot-cogs.dadguide.database_manager')
+logger = logging.getLogger('red.padbot-cogs.dbcog.database_manager')
 
 
-class DadguideTableNotFound(Exception):
+class DBCogTableNotFound(Exception):
     def __init__(self, table_name):
         self.message = '{} not found'.format(table_name)
 
 
-class DadguideDatabase(object):
+class DBCogDatabase(object):
     def __init__(self, data_file):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
@@ -99,7 +99,7 @@ class DadguideDatabase(object):
                 pk = c['name']
             fields.append(c['name'])
         if len(fields) == 0:
-            raise DadguideTableNotFound(table_name)
+            raise DBCogTableNotFound(table_name)
         return fields, pk
 
 

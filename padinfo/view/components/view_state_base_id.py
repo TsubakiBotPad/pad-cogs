@@ -8,9 +8,9 @@ from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.evolution_model import EvolutionModel
-    from dadguide.database_context import DbContext
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.evolution_model import EvolutionModel
+    from dbcog.database_context import DbContext
 
 
 class MonsterEvolution(NamedTuple):
@@ -54,12 +54,12 @@ class ViewStateBaseId(ViewState):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
-        monster = await get_monster_from_ims(dgcog, ims)
+        monster = await get_monster_from_ims(dbcog, ims)
 
-        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
@@ -68,7 +68,7 @@ class ViewStateBaseId(ViewState):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
@@ -77,13 +77,13 @@ class ViewStateBaseId(ViewState):
                    extra_state=ims)
 
     @classmethod
-    def get_alt_monsters_and_evos(cls, dgcog, monster) -> List[MonsterEvolution]:
-        graph = dgcog.database.graph
+    def get_alt_monsters_and_evos(cls, dbcog, monster) -> List[MonsterEvolution]:
+        graph = dbcog.database.graph
         alt_monsters = graph.get_alt_monsters(monster)
         return [MonsterEvolution(m, graph.get_evolution(m)) for m in alt_monsters]
 
-    def decrement_monster(self, dgcog, ims: dict):
-        db_context: "DbContext" = dgcog.database
+    def decrement_monster(self, dbcog, ims: dict):
+        db_context: "DbContext" = dbcog.database
         if self.use_evo_scroll:
             index = self.alt_monster_ids.index(self.monster.monster_id)
             prev_monster_id = self.alt_monster_ids[index - 1]
@@ -94,8 +94,8 @@ class ViewStateBaseId(ViewState):
                 ims['unsupported_transition'] = True
         ims['resolved_monster_id'] = str(prev_monster_id)
 
-    def increment_monster(self, dgcog, ims: dict):
-        db_context: "DbContext" = dgcog.database
+    def increment_monster(self, dbcog, ims: dict):
+        db_context: "DbContext" = dbcog.database
         if self.use_evo_scroll:
             index = self.alt_monster_ids.index(self.monster.monster_id)
             if index == len(self.alt_monster_ids) - 1:

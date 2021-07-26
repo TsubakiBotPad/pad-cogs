@@ -30,11 +30,11 @@ class NaDiffMenu:
 
     @staticmethod
     async def respond_with_home(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         if view_state.set_na_diff_invalid_message(ims):
-            new_view_state = await SimpleTextViewState.deserialize(dgcog, user_config, ims)
+            new_view_state = await SimpleTextViewState.deserialize(dbcog, user_config, ims)
             return NaDiffMenu.message_control(new_view_state)
         return await NaDiffMenu.respond_with_na(message, ims, **data)
 
@@ -48,11 +48,11 @@ class NaDiffMenu:
 
     @staticmethod
     async def respond_with_id(message: Optional[Message], ims, server: Server, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
-        view_state = await IdViewState.deserialize(dgcog, user_config, ims)
-        await view_state.set_server(dgcog, server)
+        view_state = await IdViewState.deserialize(dbcog, user_config, ims)
+        await view_state.set_server(dbcog, server)
         control = NaDiffMenu.id_control(view_state)
         return control
 

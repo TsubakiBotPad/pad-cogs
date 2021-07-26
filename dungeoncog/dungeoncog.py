@@ -12,7 +12,7 @@ from dungeoncog.menu.menu_map import dungeon_menu_map
 from dungeoncog.view.dungeon import DungeonViewState
 
 if TYPE_CHECKING:
-    from dadguide.dungeon_context import DungeonContext
+    from dbcog.dungeon_context import DungeonContext
 
 logger = logging.getLogger('red.padbot-cogs.dungeoncog')
 EMBED_NOT_GENERATED = -1
@@ -45,17 +45,17 @@ class DungeonCog(commands.Cog):
 
     async def get_menu_default_data(self, ims):
         data = {
-            'dgcog': await self.get_dgcog(),
+            'dbcog': await self.get_dbcog(),
             'color': Color.default()
         }
         return data
 
-    async def get_dgcog(self):
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
-            raise ValueError("Dadguide cog is not loaded")
-        await dgcog.wait_until_ready()
-        return dgcog
+    async def get_dbcog(self):
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            raise ValueError("DBCog cog is not loaded")
+        await dbcog.wait_until_ready()
+        return dbcog
 
     async def find_dungeon_from_name2(self, ctx, name, database: "DungeonContext", difficulty: str = None):
         """
@@ -102,9 +102,9 @@ class DungeonCog(commands.Cog):
                            " arguments with spaces in quotes.")
             return
 
-        # load dadguide cog for database access
-        dgcog = await self.get_dgcog()
-        dungeon = await self.find_dungeon_from_name2(ctx, name, dgcog.database.dungeon, difficulty)
+        # load dbcog cog for database access
+        dbcog = await self.get_dbcog()
+        dungeon = await self.find_dungeon_from_name2(ctx, name, dbcog.database.dungeon, difficulty)
 
         if dungeon is not None:
             # await ctx.send(format_overview(test_result))
@@ -122,7 +122,7 @@ class DungeonCog(commands.Cog):
                     behavior_test = None
 
                 # await ctx.send(format_overview(test_result))
-                # pm = process_monster(behavior_test, enc_model, dg_cog.database)
+                # pm = process_monster(behavior_test, enc_model, db_cog.database)
                 if enc_model.stage < 0:
                     # pm.am_invade = True
                     invades.append(enc_model)
@@ -143,7 +143,7 @@ class DungeonCog(commands.Cog):
             view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0],
                                           dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                           len(pm_dungeon[0]), 0,
-                                          int(dungeon.sub_dungeons[0].technical), dgcog.database, verbose=False)
+                                          int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)
             await ctx.send(
                 "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
                                                 dungeon.sub_dungeons[0].name_ja))

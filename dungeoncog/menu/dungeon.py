@@ -24,17 +24,17 @@ class DungeonMenu:
 
     @staticmethod
     async def respond_with_message(message: Optional[Message], ims, **data):
-        dgcog = data.get('dgcog')
+        dbcog = data.get('dbcog')
         color = data.get('color')
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_verbose(message: Optional[Message], ims, **data):
-        dgcog = data.get('dgcog')
+        dbcog = data.get('dbcog')
         color = data.get('color')
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, verbose_toggle=True)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, verbose_toggle=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
@@ -44,46 +44,46 @@ class DungeonMenu:
 
     @staticmethod
     async def respond_with_previous_monster(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 0, -1)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, 0, -1)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_next_monster(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 0, 1)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, 0, 1)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_previous_floor(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, -1, 0, reset_spawn=True)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, -1, 0, reset_spawn=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_next_floor(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         color = data['color']
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, 1, 0, reset_spawn=True)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, 1, 0, reset_spawn=True)
         control = DungeonMenu.message_control(view_state)
         return control
 
     @staticmethod
     async def respond_with_next_page(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         color = data['color']
         page = ims.get('page')
         if page == 0:
             page = 1
         else:
             page = 0
-        view_state = await DungeonViewState.deserialize(dgcog, color, ims, page=page)
+        view_state = await DungeonViewState.deserialize(dbcog, color, ims, page=page)
         control = DungeonMenu.message_control(view_state)
         return control
 

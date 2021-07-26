@@ -2,7 +2,7 @@ from typing import Generator, List, Optional
 
 from tsutils.enums import Server
 
-from .database_manager import DadguideDatabase
+from .database_manager import DBCogDatabase
 from .dungeon_context import DungeonContext
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.dungeon_model import DungeonModel
@@ -22,7 +22,7 @@ FROM
 
 
 class DbContext(object):
-    def __init__(self, database: DadguideDatabase, graph: MonsterGraph, dungeon: DungeonContext,
+    def __init__(self, database: DBCogDatabase, graph: MonsterGraph, dungeon: DungeonContext,
                  debug_monster_ids: Optional[List[int]] = None):
         self.database = database
         self.graph = graph

@@ -17,14 +17,14 @@ class LeaderSkillSingleMenu:
                          LeaderSkillSingleMenu.ls_control)
 
     @staticmethod
-    async def respond_with_ls(message: Optional[Message], ims, *, dgcog, user_config, **data):
-        ls_view_state = await LeaderSkillSingleViewState.deserialize(dgcog, user_config, ims)
+    async def respond_with_ls(message: Optional[Message], ims, *, dbcog, user_config, **data):
+        ls_view_state = await LeaderSkillSingleViewState.deserialize(dbcog, user_config, ims)
         ls_control = LeaderSkillSingleMenu.ls_control(ls_view_state)
         return ls_control
 
     @staticmethod
-    async def respond_with_id(message: Optional[Message], ims, *, dgcog, user_config, **data):
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+    async def respond_with_id(message: Optional[Message], ims, *, dbcog, user_config, **data):
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         id_control = LeaderSkillSingleMenu.id_control(id_view_state)
         return id_control
 
