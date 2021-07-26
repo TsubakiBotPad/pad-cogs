@@ -76,7 +76,8 @@ class Dadguide(commands.Cog, IdTest):
 
         self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
-        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
+        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[],
+                                    debug_mode=False, debug_mode_monsters = [3260])
         self.config.register_user(lastaction=None, fm_flags={})
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
@@ -171,7 +172,7 @@ class Dadguide(commands.Cog, IdTest):
             issues.extend(index.issues)
         issues.extend(await self.run_tests())
 
-        if issues:
+        if issues and self.database.graph.debug_monster_ids is None:
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
                 channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
@@ -229,7 +230,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database)
+        self.database = load_database(self.database, await self.get_debug_monsters())
         logger.info('Building dg monster index')
         await self.create_index()
 
@@ -257,9 +258,65 @@ class Dadguide(commands.Cog, IdTest):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
 
+    @dadguide.group(aliases=["debug"])
+    @checks.is_owner()
+    async def debugmode(self, ctx):
+        """Tsubaki-Only Mode settings"""
+
+    @debugmode.command(name="enable", aliases=["enabled"])
+    async def debug_enable(self, ctx, enabled: bool):
+        """Sets tsubaki-only mode and reloads the index and graph"""
+        await self.config.debug_mode.set(enabled)
+        if enabled:
+            await tsutils.send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
+                                                         f" Only **Tsubaki** will be available in the graph and id"
+                                                         f" queries, to allow for a faster restart time. To turn"
+                                                         f" off **Tsubaki mode** run"
+                                                         f" `{ctx.prefix}dadguide debugmode false`.")
+        else:
+            await tsutils.send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
+                                                         f" normally. To return to **Tsubaki mode**, run"
+                                                         f" `{ctx.prefix}dadguide debugmode true.`")
+        await self.forceindexreload(ctx)
+
+    @debugmode.group(name="monsters")
+    async def debug_monsters(self, ctx):
+        """Monsters allowed in Tsubaki-Only mode"""
+
+    @debug_monsters.command(name="add")
+    async def debug_monsters_add(self, ctx, *monsters: int):
+        async with self.config.debug_mode_monsters() as ts_monsters:
+            for monster in monsters:
+                if monster not in ts_monsters:
+                    ts_monsters.append(monster)
+        if await self.config.debug_mode():
+            await self.forceindexreload(ctx)
+        await ctx.tick()
+
+    @debug_monsters.command(name="remove", aliases=["rm", "del", "delete"])
+    async def debug_monsters_rm(self, ctx, *monsters: int):
+        async with self.config.debug_mode_monsters() as ts_monsters:
+            for monster in monsters:
+                if monster in ts_monsters:
+                    ts_monsters.remove(monster)
+        if await self.config.debug_mode():
+            await self.forceindexreload(ctx)
+        await ctx.tick()
+
+    @debug_monsters.command(name="list")
+    async def debug_monsters_list(self, ctx):
+        text = "\n".join(f'{m} {mon.name_en}' if (mon := self.get_monster(m)) else f"Invalid monster {m}"
+                         for m in await self.config.debug_mode_monsters())
+        for page in pagify(text):
+            await ctx.send(box(page))
+
+    async def get_debug_monsters(self) -> Optional[List[int]]:
+        if await self.config.debug_mode():
+            return await self.config.debug_mode_monsters()
+        return None
+
     async def get_fm_flags(self, author_id):
-        # noinspection PyTypeChecker
-        return {**self.fm_flags_default, **(await self.config.user(discord.Object(author_id)).fm_flags())}
+        return {**self.fm_flags_default, **(await self.config.user_from_id(author_id).fm_flags())}
 
     async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
