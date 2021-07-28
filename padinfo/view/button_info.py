@@ -170,7 +170,8 @@ class ButtonInfoView:
 
         fields = [
             EmbedField(
-                get_max_level(monster, max_110),
+                # this block does not change if the lv110/lv120 toggle is clicked
+                get_max_level(monster, ButtonInfoOptions.limit_break),
                 Box(
                     Text('Without Latents'),
                     # avoid whitespace after code block
