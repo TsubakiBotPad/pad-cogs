@@ -27,6 +27,7 @@ from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
 from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
+from padinfo.menu.button_info import ButtonInfoMenu, ButtonInfoMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
@@ -40,7 +41,7 @@ from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
-from padinfo.view.button_info import ButtonInfoView, ButtonInfoViewProps
+from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
@@ -580,13 +581,15 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        info = button_info.get_info(dbcog, monster)
-        original_author_id = ctx.message.author.id
-        menu = ClosableEmbedMenu.menu()
         color = await self.get_user_embed_color(ctx)
-        props = ButtonInfoViewProps(monster=monster, info=info)
-        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       color, ButtonInfoView.VIEW_TYPE, props)
+        original_author_id = ctx.message.author.id
+        info = button_info.get_info(dbcog, monster)
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        display_options = ButtonInfoToggles()
+        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
+                                    monster, info, query_settings,
+                                    reaction_list=ButtonInfoMenuPanes.get_user_reaction_list(display_options))
+        menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)
 
     @commands.command()
