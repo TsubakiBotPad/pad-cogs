@@ -58,14 +58,14 @@ class ButtonInfoViewState(ViewStateBase):
         return ret
 
     @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
         display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
-        monster = dgcog.get_monster(ims['resolved_monster_id'])
-        info = button_info.get_info(dgcog, monster)
+        monster = dbcog.get_monster(ims['resolved_monster_id'])
+        info = button_info.get_info(dbcog, monster)
         reaction_list = ims['reaction_list']
         return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
                                    monster, info, query_settings, reaction_list=reaction_list)

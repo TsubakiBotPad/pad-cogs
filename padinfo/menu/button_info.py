@@ -29,9 +29,9 @@ class ButtonInfoMenu:
 
     @classmethod
     async def _get_view_state(cls, ims: dict, **data) -> ButtonInfoViewState:
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        return await ButtonInfoViewState.deserialize(dgcog, user_config, ims)
+        return await ButtonInfoViewState.deserialize(dbcog, user_config, ims)
 
     @staticmethod
     async def respond_with_delete(message: Message, ims, **data):
@@ -39,9 +39,9 @@ class ButtonInfoMenu:
 
     @staticmethod
     async def respond_with_button_info(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state = await ButtonInfoViewState.deserialize(dgcog, user_config, ims)
+        view_state = await ButtonInfoViewState.deserialize(dbcog, user_config, ims)
         control = ButtonInfoMenu.button_info_control(view_state)
         return control
 
