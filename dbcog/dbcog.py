@@ -30,11 +30,11 @@ from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .monster_index import MonsterIndex
 
-logger = logging.getLogger('red.padbot-cogs.dadguide')
+logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 
 def _data_file(file_name: str) -> str:
-    return os.path.join(str(data_manager.cog_data_path(raw_name='dadguide')), file_name)
+    return os.path.join(str(data_manager.cog_data_path(raw_name='dbcog')), file_name)
 
 
 try:
@@ -60,8 +60,8 @@ except RuntimeError:
     pass
 
 
-class Dadguide(commands.Cog, IdTest):
-    """Dadguide database manager"""
+class DBCog(commands.Cog, IdTest):
+    """Database manager"""
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,7 +76,8 @@ class Dadguide(commands.Cog, IdTest):
 
         self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
         self.config = Config.get_conf(self, identifier=64667103)
-        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[])
+        self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[],
+                                    debug_mode=False, debug_mode_monsters=[3260])
         self.config.register_user(lastaction=None, fm_flags={})
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
@@ -94,17 +95,17 @@ class Dadguide(commands.Cog, IdTest):
             GADMIN_COG.register_perm("contentadmin")
 
     async def wait_until_ready(self) -> None:
-        """Wait until the Dadguide cog is ready.
+        """Wait until the DBCog cog is ready.
 
-        Call this from other cogs to wait until Dadguide finishes refreshing its database
+        Call this from other cogs to wait until DBCog finishes refreshing its database
         for the first time.
         """
         await self._is_ready.wait()
 
     async def wait_until_ready_verbose(self, ctx) -> None:
-        """Wait until the Dadguide cog is ready but loudly.
+        """Wait until the DBCog cog is ready but loudly.
 
-        Call this from other cogs to wait until Dadguide finishes refreshing its database
+        Call this from other cogs to wait until DBCog finishes refreshing its database
         for the first time.
         """
         if self._is_ready.is_set():
@@ -171,12 +172,12 @@ class Dadguide(commands.Cog, IdTest):
             issues.extend(index.issues)
         issues.extend(await self.run_tests())
 
-        if issues:
+        if issues and self.database.graph.debug_monster_ids is None:
             channels = [self.bot.get_channel(await self.config.indexlog())]
             if not any(channels):
                 channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
                 for channel in channels:
-                    await channel.send("Use `{}dadguide setfailurechannel <channel>`"
+                    await channel.send("Use `{}dbcog setfailurechannel <channel>`"
                                        " to move these out of your DMs!"
                                        "".format((await self.bot.get_valid_prefixes())[0]))
             for page in pagify(f"Load Warnings:\n" + "\n".join(issues[:100])):
@@ -189,7 +190,7 @@ class Dadguide(commands.Cog, IdTest):
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
-        logger.info('Unloading Dadguide')
+        logger.info('Unloading DBCog')
         if self.database:
             self.database.close()
         self.database = None
@@ -202,22 +203,22 @@ class Dadguide(commands.Cog, IdTest):
         if self.database and self.database.has_database():
             logger.info('Using stored database at load')
 
-        while self == self.bot.get_cog('Dadguide'):
+        while self == self.bot.get_cog('DBCog'):
             short_wait = False
             try:
                 async with tsutils.StatusManager(self.bot):
                     await self.download_and_refresh_nicknames()
-                logger.info('Done refreshing Dadguide, triggering ready')
+                logger.info('Done refreshing DBCog, triggering ready')
                 self._is_ready.set()
             except Exception as ex:
                 short_wait = True
-                logger.exception("dadguide data download/refresh failed: %s", ex)
+                logger.exception("dbcog data download/refresh failed: %s", ex)
 
             try:
                 wait_time = 60 if short_wait else 60 * 60 * 4
                 await asyncio.sleep(wait_time)
             except Exception as ex:
-                logger.exception("dadguide data wait loop failed: %s", ex)
+                logger.exception("dbcog data wait loop failed: %s", ex)
                 raise
 
     async def download_and_refresh_nicknames(self):
@@ -229,7 +230,7 @@ class Dadguide(commands.Cog, IdTest):
             await self._download_files()
 
         logger.info('Loading dg database')
-        self.database = load_database(self.database)
+        self.database = load_database(self.database, await self.get_debug_monsters())
         logger.info('Building dg monster index')
         await self.create_index()
 
@@ -241,25 +242,81 @@ class Dadguide(commands.Cog, IdTest):
 
     @commands.group()
     @checks.is_owner()
-    async def dadguide(self, ctx):
-        """Dadguide database settings"""
+    async def dbcog(self, ctx):
+        """DBCog database settings"""
 
-    @dadguide.command()
+    @dbcog.command()
     @checks.is_owner()
     async def setdatafile(self, ctx, data_file):
-        """Set a local path to dadguide data instead of downloading it."""
+        """Set a local path to dbcog data instead of downloading it."""
         await self.config.datafile.set(data_file)
         await ctx.tick()
 
-    @dadguide.command()
+    @dbcog.command()
     @checks.is_owner()
     async def setfailurechannel(self, ctx, channel: discord.TextChannel):
         await self.config.indexlog.set(channel.id)
         await ctx.tick()
 
+    @dbcog.group(aliases=["debug"])
+    @checks.is_owner()
+    async def debugmode(self, ctx):
+        """Tsubaki-Only Mode settings"""
+
+    @debugmode.command(name="enable", aliases=["enabled"])
+    async def debug_enable(self, ctx, enabled: bool):
+        """Sets tsubaki-only mode and reloads the index and graph"""
+        await self.config.debug_mode.set(enabled)
+        if enabled:
+            await tsutils.send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
+                                                         f" Only **Tsubaki** will be available in the graph and id"
+                                                         f" queries, to allow for a faster restart time. To turn"
+                                                         f" off **Tsubaki mode** run"
+                                                         f" `{ctx.prefix}dbcog debugmode false`.")
+        else:
+            await tsutils.send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
+                                                         f" normally. To return to **Tsubaki mode**, run"
+                                                         f" `{ctx.prefix}dbcog debugmode true.`")
+        await self.forceindexreload(ctx)
+
+    @debugmode.group(name="monsters")
+    async def debug_monsters(self, ctx):
+        """Monsters allowed in Tsubaki-Only mode"""
+
+    @debug_monsters.command(name="add")
+    async def debug_monsters_add(self, ctx, *monsters: int):
+        async with self.config.debug_mode_monsters() as ts_monsters:
+            for monster in monsters:
+                if monster not in ts_monsters:
+                    ts_monsters.append(monster)
+        if await self.config.debug_mode():
+            await self.forceindexreload(ctx)
+        await ctx.tick()
+
+    @debug_monsters.command(name="remove", aliases=["rm", "del", "delete"])
+    async def debug_monsters_rm(self, ctx, *monsters: int):
+        async with self.config.debug_mode_monsters() as ts_monsters:
+            for monster in monsters:
+                if monster in ts_monsters:
+                    ts_monsters.remove(monster)
+        if await self.config.debug_mode():
+            await self.forceindexreload(ctx)
+        await ctx.tick()
+
+    @debug_monsters.command(name="list")
+    async def debug_monsters_list(self, ctx):
+        text = "\n".join(f'{m} {mon.name_en}' if (mon := self.get_monster(m)) else f"Invalid monster {m}"
+                         for m in await self.config.debug_mode_monsters())
+        for page in pagify(text):
+            await ctx.send(box(page))
+
+    async def get_debug_monsters(self) -> Optional[List[int]]:
+        if await self.config.debug_mode():
+            return await self.config.debug_mode_monsters()
+        return None
+
     async def get_fm_flags(self, author_id):
-        # noinspection PyTypeChecker
-        return {**self.fm_flags_default, **(await self.config.user(discord.Object(author_id)).fm_flags())}
+        return {**self.fm_flags_default, **(await self.config.user_from_id(author_id).fm_flags())}
 
     async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)

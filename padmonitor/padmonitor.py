@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 logger = logging.getLogger('red.padbot-cogs.padmonitor')
 if TYPE_CHECKING:
-    from dadguide.database_context import DbContext
+    from dbcog.database_context import DbContext
 
 
 class PadMonitor(commands.Cog):
@@ -44,7 +44,7 @@ class PadMonitor(commands.Cog):
 
     async def check_seen(self):
         """Refresh the monster indexes."""
-        DGCOG = self.bot.get_cog('Dadguide')
+        DGCOG = self.bot.get_cog('DBCog')
         await DGCOG.wait_until_ready()
         db_context: "DbContext" = DGCOG.database
         all_monsters = [*db_context.get_all_monsters()]

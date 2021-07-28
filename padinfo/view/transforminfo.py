@@ -17,7 +17,7 @@ from padinfo.view.components.view_state_base import ViewStateBase
 from padinfo.view.id import IdView
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
 TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
@@ -47,7 +47,7 @@ class TransformInfoViewState(ViewStateBase):
         return ret
 
     @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
@@ -56,13 +56,13 @@ class TransformInfoViewState(ViewStateBase):
         transformed_mon_id = monster_ids[1]
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
 
-        base_mon = dgcog.get_monster(base_mon_id, server=query_settings.server)
-        transformed_mon = dgcog.get_monster(transformed_mon_id, server=query_settings.server)
+        base_mon = dbcog.get_monster(base_mon_id, server=query_settings.server)
+        transformed_mon = dbcog.get_monster(transformed_mon_id, server=query_settings.server)
 
-        acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.do_query(dbcog, base_mon, transformed_mon)
         reaction_list = ims['reaction_list']
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon) \
-                       or dgcog.database.graph.monster_is_discrepant(transformed_mon)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon) \
+                       or dbcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
                                       base_mon, transformed_mon, acquire_raw, monster_ids, is_jp_buffed,
@@ -70,8 +70,8 @@ class TransformInfoViewState(ViewStateBase):
                                       reaction_list=reaction_list)
 
     @staticmethod
-    async def do_query(dgcog, base_mon, transformed_mon):
-        db_context = dgcog.database
+    async def do_query(dbcog, base_mon, transformed_mon):
+        db_context = dbcog.database
         acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
         return acquire_raw
 

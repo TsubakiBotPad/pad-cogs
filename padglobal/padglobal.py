@@ -595,15 +595,15 @@ class PadGlobal(commands.Cog):
             await ctx.author.send(page)
 
     async def lookup_boss(self, term, ctx):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             return None, None
 
-        m = dgcog.database.graph.get_base_monster(m)
+        m = dbcog.database.graph.get_base_monster(m)
         name = pdicog.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.boss().get(monster_id, None)
@@ -612,11 +612,11 @@ class PadGlobal(commands.Cog):
 
     async def boss_to_text(self, ctx):
         bosses = self.settings.boss()
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         msg = '__**Available PAD Boss Mechanics (also check out {0}pad / {0}padfaq / {0}boards / {0}which / {0}glossary)**__'.format(
             ctx.prefix)
         for term in sorted(bosses.keys()):
-            m = await dgcog.find_monster(str(term), ctx.author.id)
+            m = await dbcog.find_monster(str(term), ctx.author.id)
             if not m:  # monster not found
                 continue
             msg += '\n[{}] {}'.format(term, m.name_en)
@@ -648,16 +648,16 @@ class PadGlobal(commands.Cog):
         await self._pboss_add(ctx, term, definition, False)
 
     async def _pboss_add(self, ctx, term, definition, need_confirm=True):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`")
             return
 
-        base = dgcog.database.graph.get_base_monster(m)
+        base = dbcog.database.graph.get_base_monster(m)
 
         op = 'edited' if base.monster_id in self.settings.boss() else 'added'
         if op == 'edited' and need_confirm:
@@ -673,16 +673,16 @@ class PadGlobal(commands.Cog):
     @pboss.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pboss_remove(self, ctx, *, term):
         """Removes a set of boss mechanics."""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`.  Make sure you didn't use quotes.")
             return
 
-        base = dgcog.database.graph.get_base_monster(m)
+        base = dbcog.database.graph.get_base_monster(m)
 
         if base.monster_id not in self.settings.boss():
             await ctx.send("Boss mechanics item doesn't exist.")
@@ -722,12 +722,12 @@ class PadGlobal(commands.Cog):
         await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
-        dgcog = await self.get_dgcog()
-        db_context = dgcog.database
+        dbcog = await self.get_dbcog()
+        db_context = dbcog.database
         padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(inline('No monster matched that query'))
             return None, None, None, None
@@ -745,7 +745,7 @@ class PadGlobal(commands.Cog):
         if definition is not None:
             return name, definition, timestamp, True
 
-        monster = dgcog.get_monster(monster_id)
+        monster = dbcog.get_monster(monster_id)
 
         if db_context.graph.monster_is_mp_evo(monster) and not monster.in_rem:
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
@@ -777,7 +777,7 @@ class PadGlobal(commands.Cog):
     async def which_to_text(self):
         monsters = defaultdict(list)
         for monster_id in self.settings.which():
-            m = (await self.get_dgcog()).get_monster(monster_id)
+            m = (await self.get_dbcog()).get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(", ")[-1]
@@ -824,16 +824,16 @@ class PadGlobal(commands.Cog):
         await self._pwhich_add(ctx, term, definition, False)
 
     async def _pwhich_add(self, ctx, term, definition, need_confirm=True):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`")
             return
 
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -859,9 +859,9 @@ class PadGlobal(commands.Cog):
     @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pwhich_remove(self, ctx, *, monster_id: int):
         """Removes an entry from the which monster evo list."""
-        dgcog = await self.get_dgcog()
-        m = dgcog.get_monster(monster_id)
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        dbcog = await self.get_dbcog()
+        m = dbcog.get_monster(monster_id)
+        base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -888,16 +888,16 @@ class PadGlobal(commands.Cog):
         await self._concatenate_which(ctx, term, 'append', addition)
 
     async def _concatenate_which(self, ctx, term: str, operation: str, addition):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             await ctx.send(f"No monster found for `{term}`")
             return
 
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -970,7 +970,7 @@ class PadGlobal(commands.Cog):
         for w in self.settings.which():
             w %= 10000
 
-            m = (await self.get_dgcog()).get_monster(w)
+            m = (await self.get_dbcog()).get_monster(w)
             name = m.name_en.split(', ')[-1]
 
             result = self.settings.which()[w]
@@ -1210,16 +1210,16 @@ class PadGlobal(commands.Cog):
         await ctx.send(self.emojify(text))
 
     async def get_guide_text(self, term: str, ctx):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
 
         term = term.lower()
         if term in self.settings.dungeonGuide():
             return term, self.settings.dungeonGuide()[term], None
 
-        m = await dgcog.find_monster(term, ctx.author.id)
+        m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
             return None, None, 'No dungeon or monster matched that query'
-        m = dgcog.database.graph.get_base_monster(m)
+        m = dbcog.database.graph.get_base_monster(m)
 
         name = m.name_en
         definition = self.settings.leaderGuide().get(m.monster_id, None)
@@ -1241,7 +1241,7 @@ class PadGlobal(commands.Cog):
 
         msg += '\n\n__**Leader Guides**__'
         for monster_id, definition in self.settings.leaderGuide().items():
-            m = (await self.get_dgcog()).get_monster(monster_id)
+            m = (await self.get_dbcog()).get_monster(monster_id)
             if m is None:
                 continue
             name = m.name_en.split(', ')[-1].title()
@@ -1326,8 +1326,8 @@ class PadGlobal(commands.Cog):
         await self._leader_add(ctx, monster_id, definition, False)
 
     async def _leader_add(self, ctx, monster_id: int, definition: str, need_confirm=True):
-        m = (await self.get_dgcog()).get_monster(monster_id)
-        base_monster = (await self.get_dgcog()).database.graph.get_base_monster(m)
+        m = (await self.get_dbcog()).get_monster(monster_id)
+        base_monster = (await self.get_dbcog()).database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -1344,9 +1344,9 @@ class PadGlobal(commands.Cog):
     @leader.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def leader_remove(self, ctx, monster_id: int):
         """Removes a leader guide from the [p]guide command"""
-        dgcog = await self.get_dgcog()
-        m = dgcog.get_monster(monster_id)
-        base_monster = dgcog.database.graph.get_base_monster(m)
+        dbcog = await self.get_dbcog()
+        m = dbcog.get_monster(monster_id)
+        base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
@@ -1419,10 +1419,10 @@ class PadGlobal(commands.Cog):
 
         await ctx.send(msg)
 
-    async def get_dgcog(self):
-        dgcog = self.bot.get_cog("Dadguide")
-        await dgcog.wait_until_ready()
-        return dgcog
+    async def get_dbcog(self):
+        dbcog = self.bot.get_cog("DBCog")
+        await dbcog.wait_until_ready()
+        return dbcog
 
     def emojify(self, message):
         emojis = list()

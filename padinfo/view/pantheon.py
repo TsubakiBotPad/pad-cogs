@@ -18,7 +18,7 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterE
 from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 MAX_MONS_TO_SHOW = 20
 MAT_TYPES = ['Evolve', 'Awoken', 'Enhance', 'Vendor']
@@ -49,16 +49,16 @@ class PantheonViewState(ViewStateBaseId):
         return ret
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
-        monster = await get_monster_from_ims(dgcog, ims)
-        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dgcog, monster)
+        monster = await get_monster_from_ims(dbcog, ims)
+        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dbcog, monster)
 
         if pantheon_list is None:
             return None
 
-        alt_monsters = cls.get_alt_monsters_and_evos(dgcog, monster)
+        alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
@@ -66,7 +66,7 @@ class PantheonViewState(ViewStateBaseId):
         use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
@@ -80,7 +80,7 @@ class PantheonViewState(ViewStateBaseId):
         return '{} [Filters: {}]'.format(series_name, ' '.join(filter_strings))
 
     @classmethod
-    async def do_query(cls, dgcog, monster):
+    async def do_query(cls, dbcog, monster):
         # filtering rules:
         # 1. don't show monsters that only have mat types (or show only mats if monster is a mat)
         # 2. if still too many, show only monsters with the same base rarity
@@ -89,7 +89,7 @@ class PantheonViewState(ViewStateBaseId):
         # 4. if still too many, show only monsters that match both base attributes
         # 5. if still too many, truncate (and probably redefine pantheon)
 
-        db_context = dgcog.database
+        db_context = dbcog.database
         series_name = monster.series.name_en
         full_pantheon = db_context.get_monsters_by_series(monster.series_id, server=monster.server_priority)
         if not full_pantheon:

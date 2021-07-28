@@ -59,10 +59,10 @@ class MonsterListMenu:
 
     @classmethod
     async def _get_view_state(cls, ims: dict, **data) -> MonsterListViewState:
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
         view_state_class = cls.view_state_types.get(ims['menu_type']) or MonsterListMenu.MENU_TYPE
-        return await view_state_class.deserialize(dgcog, user_config, ims)
+        return await view_state_class.deserialize(dbcog, user_config, ims)
 
     @staticmethod
     async def respond_with_refresh(message: Optional[Message], ims, **data):

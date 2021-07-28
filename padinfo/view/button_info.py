@@ -15,7 +15,7 @@ from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class ButtonInfoOptions:

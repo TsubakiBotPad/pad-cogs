@@ -1,7 +1,7 @@
-async def perform_transforminfo_query(dgcog, raw_query, author_id):
-    db_context = dgcog.database
-    mgraph = dgcog.database.graph
-    found_monster = await dgcog.find_monster(raw_query, author_id)
+async def perform_transforminfo_query(dbcog, raw_query, author_id):
+    db_context = dbcog.database
+    mgraph = dbcog.database.graph
+    found_monster = await dbcog.find_monster(raw_query, author_id)
 
     if not found_monster:
         return None, None, None

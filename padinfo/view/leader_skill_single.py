@@ -32,13 +32,13 @@ class LeaderSkillSingleViewState(ViewStateBase):
         return ret
 
     @staticmethod
-    async def deserialize(dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
 
-        mon = await get_monster_from_ims(dgcog, ims)
+        mon = await get_monster_from_ims(dbcog, ims)
         return LeaderSkillSingleViewState(original_author_id, menu_type, raw_query, query_settings, user_config.color, mon)
 
 

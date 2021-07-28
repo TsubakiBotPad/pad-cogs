@@ -12,7 +12,7 @@ from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 
 class MonsterListViewState(ViewStateBase):
@@ -85,12 +85,12 @@ class MonsterListViewState(ViewStateBase):
         return extra_ims
 
     @classmethod
-    async def deserialize(cls, dgcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         if ims.get('unsupported_transition'):
             return None
         title = ims['title']
 
-        monster_list = await cls.query_from_ims(dgcog, ims)
+        monster_list = await cls.query_from_ims(dbcog, ims)
         current_page = ims['current_page']
         current_index = ims.get('current_index')
 
@@ -117,7 +117,7 @@ class MonsterListViewState(ViewStateBase):
                                     )
 
     @classmethod
-    async def query_from_ims(cls, dgcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
         ...
 
     @staticmethod
@@ -127,8 +127,8 @@ class MonsterListViewState(ViewStateBase):
         return paginated_monsters
 
     @classmethod
-    async def query_paginated_from_ims(cls, dgcog, ims) -> List[List["MonsterModel"]]:
-        return cls.paginate(await cls.query_from_ims(dgcog, ims))
+    async def query_paginated_from_ims(cls, dbcog, ims) -> List[List["MonsterModel"]]:
+        return cls.paginate(await cls.query_from_ims(dbcog, ims))
 
     def increment_page(self):
         if self.current_page < len(self.paginated_monsters) - 1:

@@ -65,9 +65,9 @@ from padinfo.view.simple_text import SimpleTextViewState
 from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
-    from dadguide.dadguide import Dadguide
-    from dadguide.models.monster_model import MonsterModel
-    from dadguide.models.series_model import SeriesModel
+    from dbcog.dbcog import DBCog
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.series_model import SeriesModel
 
 logger = logging.getLogger('red.padbot-cogs.padinfo')
 
@@ -151,23 +151,23 @@ class PadInfo(commands.Cog):
             try:
                 emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
                 emoji_cache.refresh_from_discord_bot(self.bot)
-                dgcog = await self.get_dgcog()
+                dbcog = await self.get_dbcog()
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
 
             await asyncio.sleep(wait_time)
 
-    async def get_dgcog(self) -> "Dadguide":
-        dgcog = self.bot.get_cog("Dadguide")
-        if dgcog is None:
-            raise ValueError("Dadguide cog is not loaded")
-        await dgcog.wait_until_ready()
-        return dgcog
+    async def get_dbcog(self) -> "DBCog":
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            raise ValueError("DBCog cog is not loaded")
+        await dbcog.wait_until_ready()
+        return dbcog
 
     async def get_menu_default_data(self, ims):
         data = {
-            'dgcog': await self.get_dgcog(),
+            'dbcog': await self.get_dbcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id'])
         }
         return data
@@ -175,8 +175,8 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def jpname(self, ctx, *, query: str):
         """Show the Japanese name of a monster"""
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is not None:
             await ctx.send(MonsterHeader.short(monster))
             await ctx.send(box(monster.name_ja))
@@ -208,28 +208,28 @@ class PadInfo(commands.Cog):
         await self._do_id(ctx, query)
 
     async def _do_id(self, ctx, query: str):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         goodquery = None
-        if query[0] in dgcog.token_maps.ID1_SUPPORTED \
-                and query[1:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
+        if query[0] in dbcog.token_maps.ID1_SUPPORTED \
+                and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dgcog.token_maps.ID1_SUPPORTED \
-                and query[2:] in dgcog.indexes[Server.COMBINED].all_name_tokens:
+        elif query[:2] in dbcog.token_maps.ID1_SUPPORTED \
+                and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
             bad = False
-            for monster in dgcog.indexes[Server.COMBINED].all_name_tokens[goodquery[1]]:
-                for modifier in dgcog.indexes[Server.COMBINED].modifiers[monster]:
+            for monster in dbcog.indexes[Server.COMBINED].all_name_tokens[goodquery[1]]:
+                for modifier in dbcog.indexes[Server.COMBINED].modifiers[monster]:
                     if modifier == 'xm' and goodquery[0] == 'x':
                         goodquery[0] = 'xm'
                     if modifier == goodquery[0]:
                         bad = True
-            if bad and query not in dgcog.indexes[Server.COMBINED].all_name_tokens:
+            if bad and query not in dbcog.indexes[Server.COMBINED].all_name_tokens:
                 async def send_message():
                     await asyncio.sleep(1)
                     await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
@@ -241,7 +241,7 @@ class PadInfo(commands.Cog):
                 async with self.config.bad_queries() as bad_queries:
                     bad_queries.append((raw_query, ctx.author.id))
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -259,12 +259,12 @@ class PadInfo(commands.Cog):
         if await self.config.do_survey():
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
-        alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.do_query(dgcog, monster)
+            await IdViewState.do_query(dbcog, monster)
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
@@ -275,12 +275,12 @@ class PadInfo(commands.Cog):
         await menu.create(ctx, state)
 
     async def send_survey_after(self, ctx, query, result_monster):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         survey_mode = await self.config.user(ctx.author).survey_mode()
         survey_chance = (1, await self.config.sometimes_perc() / 100, 0)[survey_mode]
         if random.random() < survey_chance:
             mid1 = self.historic_lookups.get(query)
-            m1 = mid1 and dgcog.get_monster(mid1)
+            m1 = mid1 and dbcog.get_monster(mid1)
             id1res = "Not Historic" if mid1 is None else f"{m1.name_en} ({m1.monster_id})" if mid1 > 0 else "None"
             id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
             params = urllib.parse.urlencode(
@@ -334,22 +334,22 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def nadiff(self, ctx, *, query: str):
         """Show differences between NA & JP versions of a card"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
         await self.log_id_result(ctx, monster.monster_id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
 
-        alt_monsters = IdViewState.get_alt_monsters_and_evos(dgcog, monster)
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
         transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.do_query(dgcog, monster)
+            await IdViewState.do_query(dbcog, monster)
 
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
@@ -368,12 +368,12 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evos(self, ctx, *, query: str):
         """Monster info (evolutions tab)"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -381,9 +381,9 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        alt_monsters = EvosViewState.get_alt_monsters_and_evos(dgcog, monster)
-        alt_versions, gem_versions = await EvosViewState.do_query(dgcog, monster)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        alt_monsters = EvosViewState.get_alt_monsters_and_evos(dbcog, monster)
+        alt_versions, gem_versions = await EvosViewState.do_query(dbcog, monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         if alt_versions is None:
@@ -391,7 +391,7 @@ class PadInfo(commands.Cog):
             return
 
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                               alt_monsters, is_jp_buffed, query_settings,
@@ -405,11 +405,11 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def evomats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -418,17 +418,17 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
-            await MaterialsViewState.do_query(dgcog, monster)
+            await MaterialsViewState.do_query(dbcog, monster)
 
         if mats is None:
             await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
             return
 
-        alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dgcog, monster)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dbcog, monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
         state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
@@ -442,12 +442,12 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pantheon(self, ctx, *, query: str):
         """Monster info (pantheon tab)"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -455,16 +455,16 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dgcog, monster)
+        pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dbcog, monster)
         if pantheon_list is None:
             await ctx.send('Unable to find a pantheon for the result of your query,'
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
-        alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dgcog, monster)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dbcog, monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                   alt_monsters, is_jp_buffed, query_settings,
@@ -478,12 +478,12 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def pic(self, ctx, *, query: str):
         """Monster info (full image tab)"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -491,11 +491,11 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
         state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                              alt_monsters, is_jp_buffed, query_settings,
@@ -508,12 +508,12 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def otherinfo(self, ctx, *, query: str):
         """Monster info (misc info tab)"""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         raw_query = query
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
-        monster = await dgcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -521,11 +521,11 @@ class PadInfo(commands.Cog):
 
         await self.log_id_result(ctx, monster.monster_id)
 
-        alt_monsters = PicViewState.get_alt_monsters_and_evos(dgcog, monster)
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(monster)
+        alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         full_reaction_list = IdMenuPanes.emoji_names()
-        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dgcog, monster, full_reaction_list)
+        initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
         state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
@@ -538,8 +538,8 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def links(self, ctx, *, query: str):
         """Monster links"""
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -552,8 +552,8 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
@@ -575,15 +575,15 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def buttoninfo(self, ctx, *, query: str):
         """Button farming theorycrafting info"""
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        info = button_info.get_info(dgcog, monster)
+        info = button_info.get_info(dbcog, monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         display_options = ButtonInfoToggles()
         state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
@@ -596,39 +596,39 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def allmats(self, ctx, *, query: str):
         """Monster info (evo materials tab)"""
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
-        monster_list = await AllMatsViewState.do_query(dgcog, monster)
+        monster_list = await AllMatsViewState.do_query(dbcog, monster)
         if monster_list is None:
             await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
             return
 
-        _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dgcog, monster)
+        _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dbcog, monster)
 
         title = 'Material For' if usedin else 'Gem is Material For'
-        await self._do_monster_list(ctx, dgcog, query, monster_list, title, AllMatsViewState)
+        await self._do_monster_list(ctx, dbcog, query, monster_list, title, AllMatsViewState)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
             return
 
-        monster_list, _ = await EvosViewState.do_query(dgcog, monster)
+        monster_list, _ = await EvosViewState.do_query(dbcog, monster)
         if monster_list is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos')
             return
-        await self._do_monster_list(ctx, dgcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
+        await self._do_monster_list(ctx, dbcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
 
-    async def _do_monster_list(self, ctx, dgcog, query, monster_list: List["MonsterModel"],
+    async def _do_monster_list(self, ctx, dbcog, query, monster_list: List["MonsterModel"],
                                title, view_state_type: Type[MonsterListViewState],
                                child_menu_type: Optional[str] = None,
                                child_reaction_list: Optional[List] = None
@@ -658,7 +658,7 @@ class PadInfo(commands.Cog):
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {
-            'dgcog': dgcog,
+            'dbcog': dbcog,
             'user_config': user_config,
         }
         child_state = SimpleTextViewState(original_author_id, view_state_type.VIEW_STATE_TYPE, raw_query, color,
@@ -679,8 +679,8 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['collabscroll', 'ss'])
     @checks.bot_has_permissions(embed_links=True)
     async def seriesscroll(self, ctx, *, query):
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -692,11 +692,11 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
-            paginated_monsters = await SeriesScrollViewState.do_query(dgcog, monster.series_id,
+            paginated_monsters = await SeriesScrollViewState.do_query(dbcog, monster.series_id,
                                                                       rarity, monster.server_priority)
             if paginated_monsters:
                 break
-        all_rarities = SeriesScrollViewState.query_all_rarities(dgcog, series_id, monster.server_priority)
+        all_rarities = SeriesScrollViewState.query_all_rarities(dbcog, series_id, monster.server_priority)
 
         raw_query = query
         original_author_id = ctx.message.author.id
@@ -716,7 +716,7 @@ class PadInfo(commands.Cog):
         ims = state.serialize()
         user_config = await BotConfig.get_user(self.config, ctx.author.id)
         data = {
-            'dgcog': dgcog,
+            'dbcog': dbcog,
             'user_config': user_config,
         }
         child_state = SimpleTextViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, color,
@@ -745,8 +745,8 @@ class PadInfo(commands.Cog):
         [p]ls r sonia "revo lu bu"
         [p]ls sonia lubu
         """
-        dgcog = await self.get_dgcog()
-        l_mon, l_query, r_mon, r_query = await leaderskill_query(dgcog, raw_query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        l_mon, l_query, r_mon, r_query = await leaderskill_query(dbcog, raw_query, ctx.author.id)
 
         err_msg = ('{} query failed to match a monster: [ {} ]. If your query is multiple words,'
                    ' try separating the queries with / or wrap with quotes.')
@@ -788,8 +788,8 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
@@ -807,8 +807,8 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
-        dgcog = await self.get_dgcog()
-        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dgcog, query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dbcog, query, ctx.author.id)
 
         if not base_mon:
             await self.send_id_failure_message(ctx, query)
@@ -820,9 +820,9 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        acquire_raw = await TransformInfoViewState.do_query(dgcog, base_mon, transformed_mon)
+        acquire_raw = await TransformInfoViewState.do_query(dbcog, base_mon, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_user_reaction_list(len(monster_ids))
-        is_jp_buffed = dgcog.database.graph.monster_is_discrepant(base_mon)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
@@ -838,12 +838,12 @@ class PadInfo(commands.Cog):
         """Describe a monster's regular and super awakenings in detail.
 
         Leave <query> blank to see a list of every awakening in the game."""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         color = await self.get_user_embed_color(ctx)
 
         if not query:
             sort_type = AwakeningListSortTypes.numerical
-            paginated_skills = await AwakeningListViewState.do_query(dgcog, sort_type)
+            paginated_skills = await AwakeningListViewState.do_query(dbcog, sort_type)
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
                                            sort_type, paginated_skills, 0,
@@ -851,7 +851,7 @@ class PadInfo(commands.Cog):
             await menu.create(ctx, state)
             return
 
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        monster = await dbcog.find_monster(query, ctx.author.id)
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
@@ -868,15 +868,15 @@ class PadInfo(commands.Cog):
     @checks.bot_has_permissions(embed_links=True)
     async def idhistory(self, ctx):
         """Show a list of the 11 most recent monsters that the user looked up."""
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
         history = await self.config.user(ctx.author).id_history()
 
-        monster_list = [dgcog.get_monster(m) for m in history]
+        monster_list = [dbcog.get_monster(m) for m in history]
 
         if not monster_list:
             await ctx.send('Did not find any recent queries in history.')
             return
-        await self._do_monster_list(ctx, dgcog, '', monster_list, 'Result History', StaticMonsterListViewState)
+        await self._do_monster_list(ctx, dbcog, '', monster_list, 'Result History', StaticMonsterListViewState)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -897,8 +897,8 @@ class PadInfo(commands.Cog):
             server = 'na'
         query = query.strip().lower()
 
-        dgcog = await self.get_dgcog()
-        monster = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is not None:
             voice_id = monster.voice_id_jp if server == 'jp' else monster.voice_id_na
             if voice_id is None:
@@ -976,7 +976,7 @@ class PadInfo(commands.Cog):
     @idset.command(usage="<on/off>")
     async def naprio(self, ctx, value: bool):
         """Change whether [p]id will default away from new evos of monsters that aren't in NA yet"""
-        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             # The current na_prio enum has 0 and 1 instead of False and True as its values
             fm_flags['na_prio'] = int(value)
         await ctx.send(f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
@@ -988,14 +988,14 @@ class PadInfo(commands.Cog):
         `[p]idset server default`: Include both NA & JP cards. You can still use `--na` as needed.
         `[p]idset server na`: Include only NA cards. You can still use `--allservers` as needed.
         """
-        dgcog = await self.get_dgcog()
-        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+        dbcog = await self.get_dbcog()
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             if server.upper() == "DEFAULT":
-                fm_flags['server'] = dgcog.DEFAULT_SERVER.value
-            elif server.upper() in [s.value for s in dgcog.SERVERS]:
+                fm_flags['server'] = dbcog.DEFAULT_SERVER.value
+            elif server.upper() in [s.value for s in dbcog.SERVERS]:
                 fm_flags['server'] = server.upper()
             else:
-                if dgcog.DEFAULT_SERVER == Server.COMBINED:
+                if dbcog.DEFAULT_SERVER == Server.COMBINED:
                     await ctx.send("Server must be `default` or `na`")
                 else:
                     await ctx.send("Server must be `na` or `combined`")
@@ -1009,8 +1009,8 @@ class PadInfo(commands.Cog):
         `[p]idset evosort numerical`: Show alt evos sorted by card ID number.
         `[p]idset evosort dfs`: Show alt evos in a depth-first-sort order, starting with the base of the tree.
         """
-        dgcog = await self.get_dgcog()
-        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+        dbcog = await self.get_dbcog()
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "dfs":
                 fm_flags['evosort'] = AltEvoSort.dfs.value
@@ -1029,8 +1029,8 @@ class PadInfo(commands.Cog):
         `[p]idset lsmultiplier double`: [Default] Show leader skill multipliers assuming the card is paired with itself.
         `[p]idset lsmultiplier single`: Show leader skill multipliers of just the single card.
         """
-        dgcog = await self.get_dgcog()
-        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+        dbcog = await self.get_dbcog()
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "double":
                 fm_flags['lsmultiplier'] = LsMultiplier.lsdouble.value
@@ -1054,8 +1054,8 @@ class PadInfo(commands.Cog):
         `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
         `[p]idset cardplus 0`: Show cards with +0 stats.
         """
-        dgcog = await self.get_dgcog()
-        async with self.bot.get_cog("Dadguide").config.user(ctx.author).fm_flags() as fm_flags:
+        dbcog = await self.get_dbcog()
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "297":
                 fm_flags['cardplus'] = CardPlusModifier.plus297.value
@@ -1132,28 +1132,28 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["iddebug", "dbid", "iddb"])
     async def debugid(self, ctx, server: Optional[Server] = Server.COMBINED, *, query):
         """Get helpful id information about a monster"""
-        dgcog = await self.get_dgcog()
-        mon = await dgcog.find_monster(query, ctx.author.id)
+        dbcog = await self.get_dbcog()
+        mon = await dbcog.find_monster(query, ctx.author.id)
         if mon is None:
             await ctx.send(box("Your query didn't match any monsters."))
             return
-        base_monster = dgcog.database.graph.get_base_monster(mon)
-        mods = dgcog.indexes[server].modifiers[mon]
-        manual_modifiers = dgcog.indexes[server].manual_prefixes[mon.monster_id]
-        EVOANDTYPE = dgcog.token_maps.EVO_TOKENS.union(dgcog.token_maps.TYPE_TOKENS)
+        base_monster = dbcog.database.graph.get_base_monster(mon)
+        mods = dbcog.indexes[server].modifiers[mon]
+        manual_modifiers = dbcog.indexes[server].manual_prefixes[mon.monster_id]
+        EVOANDTYPE = dbcog.token_maps.EVO_TOKENS.union(dbcog.token_maps.TYPE_TOKENS)
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
                f"Series: {mon.series.name_en} ({mon.series_id}, {mon.series.series_type})\n\n"
-               f"[Name Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].name_tokens.items() if mon in ms))}\n"
-               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dgcog.indexes[server].fluff_tokens.items() if mon in ms))}\n\n"
+               f"[Name Tokens] {' '.join(sorted(t for t, ms in dbcog.indexes[server].name_tokens.items() if mon in ms))}\n"
+               f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dbcog.indexes[server].fluff_tokens.items() if mon in ms))}\n\n"
                f"[Manual Tokens]\n"
-               f"     Treenames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_tree.items() if mon in ms))}\n"
-               f"     Nicknames: {' '.join(sorted(t for t, ms in dgcog.indexes[server].manual_nick.items() if mon in ms))}\n\n"
+               f"     Treenames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_tree.items() if mon in ms))}\n"
+               f"     Nicknames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_nick.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
-               f"     Attribute: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.COLOR_TOKENS))}\n"
-               f"     Awakening: {' '.join(sorted(t for t in mods if t in dgcog.token_maps.AWAKENING_TOKENS))}\n"
+               f"     Attribute: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.COLOR_TOKENS))}\n"
+               f"     Awakening: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.AWAKENING_TOKENS))}\n"
                f"    Evo & Type: {' '.join(sorted(t for t in mods if t in EVOANDTYPE))}\n"
-               f"         Other: {' '.join(sorted(t for t in mods if t not in dgcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
+               f"         Other: {' '.join(sorted(t for t in mods if t not in dbcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
                f"Manually Added: {' '.join(sorted(manual_modifiers))}\n")
         for page in pagify(ret):
             await ctx.send(box(page))
@@ -1165,19 +1165,19 @@ class PadInfo(commands.Cog):
         For name tokens, the full word goes second as name token matching is not commutitive
         """
 
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
 
-        dist = dgcog.mon_finder.calc_ratio_modifier(s1, s2)
-        dist2 = dgcog.mon_finder.calc_ratio_name(s1, s2)
+        dist = dbcog.mon_finder.calc_ratio_modifier(s1, s2)
+        dist2 = dbcog.mon_finder.calc_ratio_name(s1, s2)
         yes = '\N{WHITE HEAVY CHECK MARK}'
         no = '\N{CROSS MARK}'
         await ctx.send(f"Printing info for {inline(s1)}, {inline(s2)}\n" +
                        box(f"Jaro-Winkler Distance:    {round(dist, 4)}\n"
                            f"Name Matching Distance:   {round(dist2, 4)}\n"
-                           f"Modifier token threshold: {dgcog.mon_finder.MODIFIER_JW_DISTANCE}  "
-                           f"{yes if dist >= dgcog.mon_finder.MODIFIER_JW_DISTANCE else no}\n"
-                           f"Name token threshold:     {dgcog.mon_finder.TOKEN_JW_DISTANCE}   "
-                           f"{yes if dist2 >= dgcog.mon_finder.TOKEN_JW_DISTANCE else no}"))
+                           f"Modifier token threshold: {dbcog.mon_finder.MODIFIER_JW_DISTANCE}  "
+                           f"{yes if dist >= dbcog.mon_finder.MODIFIER_JW_DISTANCE else no}\n"
+                           f"Name token threshold:     {dbcog.mon_finder.TOKEN_JW_DISTANCE}   "
+                           f"{yes if dist2 >= dbcog.mon_finder.TOKEN_JW_DISTANCE else no}"))
 
     @commands.command(aliases=['helpid'])
     async def idhelp(self, ctx, *, query=""):
@@ -1193,7 +1193,7 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def exportmodifiers(self, ctx, server: LiteralConverter["COMBINED", "NA"] = "COMBINED"):
         server = Server(server)
-        DGCOG = await self.get_dgcog()
+        DGCOG = await self.get_dbcog()
         maps = DGCOG.token_maps
         awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
         series = {s.series_id: s for s in DGCOG.database.get_all_series()}
@@ -1232,7 +1232,7 @@ class PadInfo(commands.Cog):
     async def idmeaning(self, ctx, token, server: Optional[Server] = Server.COMBINED):
         """Get all the meanings of a token (bold signifies base of a tree)"""
         token = token.replace(" ", "")
-        DGCOG = await self.get_dgcog()
+        DGCOG = await self.get_dbcog()
 
         tms = DGCOG.token_maps
         awokengroup = "(" + "|".join(re.escape(aw) for aws in tms.AWOKEN_SKILL_MAP.values() for aw in aws) + ")"
@@ -1328,9 +1328,9 @@ class PadInfo(commands.Cog):
                 return
             selected_monster_id = int(selected_monster_id.strip())
 
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
 
-        bestmatch, matches, _, _ = await dgcog.mon_finder.find_monster_debug(query)
+        bestmatch, matches, _, _ = await dbcog.mon_finder.find_monster_debug(query)
 
         if bestmatch is None:
             await ctx.send("No monster matched.")
@@ -1355,10 +1355,10 @@ class PadInfo(commands.Cog):
             lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
 
         mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
-                              f" ({round(dgcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
+                              f" ({round(dbcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
                               for t in sorted(mtokens))
         ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
-                              f" ({round(dgcog.mon_finder.calc_ratio_name(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
+                              f" ({round(dbcog.mon_finder.calc_ratio_name(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
                               f" {t[2]}"
                               for t in sorted(ntokens))
 
@@ -1384,18 +1384,18 @@ class PadInfo(commands.Cog):
 
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
-        dgcog = await self.get_dgcog()
+        dbcog = await self.get_dbcog()
 
-        monster_list = await IdSearchViewState.do_query(dgcog, query, ctx.author.id)
+        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id)
 
         if monster_list is None:
             await ctx.send("No monster matched.")
             return
 
-        await self._do_monster_list(ctx, dgcog, query, monster_list, 'ID Search Results',
+        await self._do_monster_list(ctx, dbcog, query, monster_list, 'ID Search Results',
                                     IdSearchViewState,
                                     child_menu_type=child_menu_type,
                                     child_reaction_list=child_reaction_list)
 
     async def get_fm_flags(self, user: discord.User):
-        return await self.bot.get_cog("Dadguide").config.user(user).fm_flags()
+        return await self.bot.get_cog("DBCog").config.user(user).fm_flags()

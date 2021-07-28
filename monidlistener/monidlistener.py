@@ -42,9 +42,9 @@ class MonIdListener(commands.Cog):
                 return
             if await self.is_command(message):  # skip commands
                 return
-            dgcog = self.bot.get_cog("Dadguide")
-            if dgcog is None:
-                await channel.send("Error: Dadguide Cog not loaded.  Please alert a bot owner.")
+            dbcog = self.bot.get_cog("DBCog")
+            if dbcog is None:
+                await channel.send("Error: DBCog Cog not loaded.  Please alert a bot owner.")
                 return
             if re.search(r'\b\d{3}[ -,]{0,2}\d{3}[ -,]{0,2}\d{3}\b', content):  # friend code
                 return
@@ -56,7 +56,7 @@ class MonIdListener(commands.Cog):
                 for i in matches:
                     if(i=="100"): # skip when people say "is 100 mp or over" ~~and ryan's posts~~
                         continue
-                    m = await dgcog.find_monster(i, message.author.id)
+                    m = await dbcog.find_monster(i, message.author.id)
                     if not m:  # monster not found
                         continue
                     ret += "[{}] {}\n".format(i, m.name_en)

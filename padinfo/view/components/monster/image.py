@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.components import EmbedThumbnail
 
 if TYPE_CHECKING:
-    from dadguide.models.monster_model import MonsterModel
+    from dbcog.models.monster_model import MonsterModel
 
 MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
 ICON_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'

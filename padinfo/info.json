@@ -16,7 +16,7 @@
   "hidden": false,
   "disabled": false,
   "required_cogs": {
-    "dadguide": "https://github.com/TsubakiBotPad/padbot-cogs",
+    "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs",
     "speech": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [

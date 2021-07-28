@@ -441,7 +441,7 @@ class PadBuildImageGenerator(object):
     def __init__(self, params, ctx, build_name='pad_build'):
         self.params = params
         self.ctx = ctx
-        self.dgcog = ctx.bot.get_cog("Dadguide")
+        self.dbcog = ctx.bot.get_cog("DBCog")
         self.lexer = PaDTeamLexer().build()
         self.build = {
             'NAME': build_name,
@@ -512,7 +512,7 @@ class PadBuildImageGenerator(object):
         for tok in iter(self.lexer.token, None):
             if tok.type == 'ASSIST':
                 assist_str = tok.value
-                ass_card = await self.dgcog.find_monster(tok.value, self.ctx.author.id)
+                ass_card = await self.dbcog.find_monster(tok.value, self.ctx.author.id)
                 if ass_card is None:
                     raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
             elif tok.type == 'REPEAT':
@@ -522,7 +522,7 @@ class PadBuildImageGenerator(object):
                     result_card['ID'] = DELAY_BUFFER
                     card = DELAY_BUFFER
                 else:
-                    card = await self.dgcog.find_monster(tok.value, self.ctx.author.id)
+                    card = await self.dbcog.find_monster(tok.value, self.ctx.author.id)
                     if card is None:
                         raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
                     if not card.is_inheritable:
@@ -853,7 +853,7 @@ class PadBuildImage(commands.Cog):
         Refresh assets folder
         """
         await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
-        awk_ids = self.bot.get_cog('Dadguide').database.get_awoken_skill_ids()
+        awk_ids = self.bot.get_cog('DBCog').database.get_awoken_skill_ids()
         await self.settings.downloadAllAssets(awk_ids)
         await ctx.tick()
 

@@ -18,35 +18,35 @@ class LeaderSkillMenu:
 
     @staticmethod
     async def respond_with_right(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
         # Extract the query from the ls state
         ims['query'] = ims['r_query']
         ims['query_settings'] = ims['r_query_settings']
         ims['resolved_monster_id'] = None
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
         return id_control
 
     @staticmethod
     async def respond_with_left(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
 
         # Extract the query from the ls state
         ims['query'] = ims['l_query']
         ims['query_settings'] = ims['l_query_settings']
         ims['resolved_monster_id'] = None
-        id_view_state = await IdViewState.deserialize(dgcog, user_config, ims)
+        id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
         return id_control
 
     @staticmethod
     async def respond_with_house(message: Optional[Message], ims, **data):
-        dgcog = data['dgcog']
+        dbcog = data['dbcog']
         user_config = data['user_config']
-        ls_view_state = await LeaderSkillViewState.deserialize(dgcog, user_config, ims)
+        ls_view_state = await LeaderSkillViewState.deserialize(dbcog, user_config, ims)
         ls_control = LeaderSkillMenu.ls_control(ls_view_state)
         return ls_control
 

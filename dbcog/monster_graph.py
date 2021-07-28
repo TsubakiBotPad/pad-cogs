@@ -2,13 +2,12 @@ import json
 import logging
 import re
 from collections import defaultdict
-from typing import Optional, List, Set, Dict
+from typing import Optional, List, Set, Dict, Tuple, Any
 
 from networkx import MultiDiGraph
 from tsutils.enums import Server
 
-from .database_manager import DadguideDatabase
-from .errors import InvalidGraphState
+from .database_manager import DBCogDatabase
 from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
@@ -20,7 +19,7 @@ from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
 
-logger = logging.getLogger('red.padbot-cogs.dadguide')
+logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
@@ -118,12 +117,13 @@ SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
 class MonsterGraph(object):
-    def __init__(self, database: DadguideDatabase):
+    def __init__(self, database: DBCogDatabase, debug_monster_ids: Optional[List[int]] = None):
         self.issues = []
+        self.debug_monster_ids = debug_monster_ids
 
         self.database = database
         self.max_monster_id = -1
-        self.graph_dict: Dict[Server, MultiDiGraph] = {  # noqa
+        self.graph_dict: Dict[Server, MultiDiGraph] = {
             Server.COMBINED: self.build_graph(Server.COMBINED),
             Server.NA: self.build_graph(Server.NA),
         }
@@ -160,6 +160,8 @@ class MonsterGraph(object):
                 mtoegg[idx][e_type] = True
 
         for m in ms:
+            if self.debug_monster_ids is not None and m.monster_id not in self.debug_monster_ids:
+                continue
             ls_model = LeaderSkillModel(leader_skill_id=m.leader_skill_id,
                                         name_ja=m.ls_name_ja,
                                         name_en=m.ls_name_en,
@@ -254,19 +256,36 @@ class MonsterGraph(object):
                                    )
             if not m_model:
                 continue
+
             graph.add_node(m.monster_id, model=m_model)
-            if m.linked_monster_id:
-                graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
-                graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
-
-            if m.evo_gem_id:
-                graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
-                graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
-
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
+            if m.linked_monster_id:
+                if self.debug_monster_ids is None or m.linked_monster_id in self.debug_monster_ids:
+                    graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
+                    graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+
+            if m.evo_gem_id:
+                if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
+                    graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
+                    graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
+
         for e in es:
-            evo_model = EvolutionModel(**e)
+            evo_model = EvolutionModel(
+                evolution_type=e.evolution_type,
+                reversible=e.reversible,
+                from_id=e.from_id,
+                to_id=e.to_id,
+                mat_1_id=self.debug_validate_id(e.mat_1_id),
+                mat_2_id=self.debug_validate_id(e.mat_2_id),
+                mat_3_id=self.debug_validate_id(e.mat_3_id),
+                mat_4_id=self.debug_validate_id(e.mat_4_id),
+                mat_5_id=self.debug_validate_id(e.mat_5_id),
+                tstamp=e.tstamp,
+            )
+            if self.debug_monster_ids is not None:
+                if evo_model.from_id not in self.debug_monster_ids or evo_model.to_id not in self.debug_monster_ids:
+                    continue
 
             graph.add_edge(
                 evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
@@ -284,6 +303,9 @@ class MonsterGraph(object):
 
         for ex in exs:
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
+                if self.debug_monster_ids is not None:
+                    if ex.target_monster_id not in self.debug_monster_ids or int(vendor_id) not in self.debug_monster_ids:
+                        continue
                 graph.add_edge(
                     ex.target_monster_id, int(vendor_id), type='exchange_from')
                 graph.add_edge(
@@ -295,8 +317,10 @@ class MonsterGraph(object):
         for server in self.graph_dict:
             for mid in self.graph_dict[server].nodes:
                 if 'model' in self.graph_dict[server].nodes[mid]:
-                    self.graph_dict[server].nodes[mid]['alt_versions'] = self.process_alt_ids(
-                        self.get_monster(mid, server=server))
+                    alt_ids = self.process_alt_ids(self.get_monster(mid, server=server))
+                    self.graph_dict[server].nodes[mid]['alt_versions'] = alt_ids
+                    if self.debug_monster_ids is not None:
+                        self.graph_dict[server].nodes[mid]['model'].base_evo_id = alt_ids[0]
                 else:
                     self.issues.append(f"{mid} has no model in the {server.name} graph.")
 
@@ -365,14 +389,26 @@ class MonsterGraph(object):
         if transform and (transform.monster_id > base_monster.monster_id
                           or transform.monster_id == 5802):  # I hate DMG very much
             ids += self.process_alt_monsters_from_base(transform)
-        for evo in sorted(self.get_next_evolutions(base_monster), key=lambda m: m.monster_id):
+        for evo in sorted(self.get_next_evolutions(base_monster), key=self.get_id_order_key):
             ids += self.process_alt_monsters_from_base(evo)
         return ids
 
-    def get_alt_ids_fast_by_id_and_server(self, monster_id, server: Server) -> List[int]:
-        # This is for the index. I'm too lazy to remove this, and it might have impacts on speed.
-        return self.graph_dict[server].nodes[monster_id]['alt_versions']
-
+    def get_id_order_key(self, monster: MonsterModel) -> Tuple[Any, ...]:
+        evo_ordering = {
+            InternalEvoType.Reincarnated: -1,
+            InternalEvoType.SuperReincarnated: -1,
+            InternalEvoType.Base: 0,
+            InternalEvoType.Normal: 0,
+            InternalEvoType.Ultimate: 1,
+            InternalEvoType.Pixel: 2,
+            InternalEvoType.Assist: 3,
+        }
+        return (
+            evo_ordering[self.true_evo_type(monster)],
+            '覚醒' in monster.name_ja or 'awoken' in monster.name_en.lower(),
+            monster.monster_id,
+        )
+    
     def get_alt_ids(self, monster: MonsterModel) -> List[int]:
         return self.graph_dict[monster.server_priority].nodes[monster.monster_id]['alt_versions']
 
@@ -388,7 +424,12 @@ class MonsterGraph(object):
                 and list(prevs)[0].monster_id < monster.monster_id:
             monster = prevs.pop()
 
-        return monster.base_evo_id
+        if self.debug_monster_ids is not None:
+            while (prev := self.get_prev_evolution(monster)):
+                monster = prev
+            return monster.monster_id
+        else:
+            return monster.base_evo_id
 
     def get_base_monster(self, monster: MonsterModel) -> MonsterModel:
         return self.get_monster(self.get_base_id(monster), server=monster.server_priority)
@@ -597,3 +638,7 @@ class MonsterGraph(object):
     def monster_is_discrepant(self, monster: MonsterModel) -> bool:
         return any((md := self.monster_difference(monster, server)) and not md.existance
                    for server in SERVERS)
+
+    def debug_validate_id(self, monster_id: int) -> Optional[int]:
+        if self.debug_monster_ids is None or monster_id in self.debug_monster_ids:
+            return monster_id

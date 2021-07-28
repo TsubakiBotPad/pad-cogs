@@ -8,9 +8,9 @@ from dungeoncog.enemy_skills_pb2 import Condition, MonsterBehavior, Behavior, Be
 from dungeoncog.grouped_skillls import GroupedSkills
 
 if TYPE_CHECKING:
-    from dadguide.models.enemy_skill_model import EnemySkillModel
-    from dadguide.database_context import DbContext
-    from dadguide.models.encounter_model import EncounterModel
+    from dbcog.models.enemy_skill_model import EnemySkillModel
+    from dbcog.database_context import DbContext
+    from dbcog.models.encounter_model import EncounterModel
 
 GROUP_TYPES = {
     0: "Unspecified",
