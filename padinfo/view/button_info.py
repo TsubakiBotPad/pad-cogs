@@ -199,7 +199,7 @@ class ButtonInfoView:
                 inline=True
             ) if monster.limit_mult != 0 else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster, max_110)),
+                'Common Buttons - Base Card {}'.format(get_max_level(monster, max_110)),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
