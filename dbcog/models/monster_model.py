@@ -42,7 +42,11 @@ class MonsterModel(BaseModel):
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
             self.name_en = tsutils.rmdiacritics(self.name_en)
-        self.name_en_override = m['name_en_override']
+
+        self.name_en_override = None
+        if not m['name_is_translation'] or self.name_en == self.name_ja:
+            self.name_en_override = m['name_en_override']
+
         self.name_en = self.name_en_override or self.name_en
 
         self.type1 = enum_or_none(MonsterType, m['type_1_id'])

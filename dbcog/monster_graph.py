@@ -23,7 +23,8 @@ logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
-  COALESCE(monster_name_overrides.name_en, monsters{0}.name_en_override) AS name_en_override,
+  monster_name_overrides.name_en AS name_override,
+  monster_name_overrides.is_translation,
   leader_skills{0}.name_ja AS ls_name_ja,
   leader_skills{0}.name_en AS ls_name_en,
   leader_skills{0}.name_ko AS ls_name_ko,
@@ -48,17 +49,19 @@ MONSTER_QUERY = """SELECT
   active_skills{0}.desc_ko AS as_desc_ko,
   active_skills{0}.turn_max,
   active_skills{0}.turn_min,
-  series.name_ja AS s_name_ja,
-  series.name_en AS s_name_en,
-  series.name_ko AS s_name_ko,
-  series.series_type AS s_series_type,
+  COALESCE(series.series_id, 0) AS s_series_id,
+  COALESCE(series.name_ja, 'Unsorted') AS s_name_ja,
+  COALESCE(series.name_en, 'Unsorted') AS s_name_en,
+  COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
+  COALESCE(series.series_type, NULL) AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
   monsters{0}
   LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
   LEFT OUTER JOIN active_skills{0} ON monsters{0}.active_skill_id = active_skills{0}.active_skill_id
-  LEFT OUTER JOIN series ON monsters{0}.series_id = series.series_id
+  LEFT OUTER JOIN monster_series ON monsters{0}.monster_id = monster_series.monster_id AND priority = 1
+  LEFT OUTER JOIN series ON monster_series.series_id = series.series_id
   LEFT OUTER JOIN monsters{0} AS target_monsters ON monsters{0}.name_ja || 'の希石' = target_monsters.name_ja
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
@@ -191,7 +194,7 @@ class MonsterGraph(object):
                                         turn_min=m.turn_min
                                         ) if m.active_skill_id != 0 else None
 
-            s_model = SeriesModel(series_id=m.series_id,
+            s_model = SeriesModel(series_id=m.s_series_id,
                                   name_ja=m.s_name_ja,
                                   name_en=m.s_name_en,
                                   name_ko=m.s_name_ko,
@@ -203,17 +206,18 @@ class MonsterGraph(object):
                                    monster_no_jp=m.monster_no_jp,
                                    monster_no_na=m.monster_no_na,
                                    monster_no_kr=m.monster_no_kr,
+                                   name_is_translation=m.is_translation,
                                    awakenings=mtoawo[m.monster_id],
                                    leader_skill=ls_model,
                                    active_skill=as_model,
                                    series=s_model,
-                                   series_id=m.series_id,
+                                   series_id=m.s_series_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
                                    name_en=m.name_en,
                                    name_ko=m.name_ko,
-                                   name_en_override=m.name_en_override,
+                                   name_en_override=m.name_override,
                                    rarity=m.rarity,
                                    is_farmable=m.drop_id is not None,
                                    in_pem=mtoegg[m.monster_id]['pem'],
