@@ -44,7 +44,10 @@ class MonsterModel(BaseModel):
             self.name_en = tsutils.rmdiacritics(self.name_en)
 
         self.name_en_override = None
-        if self.name_en == self.name_ja:
+        # If the NA and JP names are the same, chances are the card isn't released in both reigions, and 
+        # if we have an override, chances are it's JP only because we wouldn't need one for an NA only card.
+        # We aren't using the on_na flag here because that flag sucks and has false positives all the time
+        if self.name_en == self.name_ja:  
             self.name_en_override = m['name_en_override']
         if not m['name_is_translation']:
             self.name_en_override = m['name_en_override']
