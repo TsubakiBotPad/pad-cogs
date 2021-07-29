@@ -44,7 +44,9 @@ class MonsterModel(BaseModel):
             self.name_en = tsutils.rmdiacritics(self.name_en)
 
         self.name_en_override = None
-        if not m['name_is_translation'] or self.name_en == self.name_ja:
+        if self.name_en == self.name_ja:
+            self.name_en_override = m['name_en_override']
+        if not m['name_is_translation']:
             self.name_en_override = m['name_en_override']
 
         self.name_en = self.name_en_override or self.name_en
