@@ -53,7 +53,7 @@ MONSTER_QUERY = """SELECT
   COALESCE(series.name_ja, 'Unsorted') AS s_name_ja,
   COALESCE(series.name_en, 'Unsorted') AS s_name_en,
   COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
-  COALESCE(series.series_type, NULL) AS s_series_type,
+  series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
