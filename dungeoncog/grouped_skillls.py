@@ -1,11 +1,11 @@
 class GroupedSkills(object):
     """This is a container class that holds the top level condition and its processed children"""
 
-    def __init__(self, condition: str, type, parent=None):
+    def __init__(self, condition: str, skill_type, parent=None):
         self.nested_groups = []
         self.skills = []
         self.condition = condition
-        self.type = type
+        self.type = skill_type
         self.parent = parent
 
     def add_group(self, group):
