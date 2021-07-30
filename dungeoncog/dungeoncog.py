@@ -31,7 +31,6 @@ class DungeonCog(commands.Cog):
 
     async def load_emojis(self):
         await self.bot.wait_until_ready()
-        logging.debug('load_emojis, dungeon')
         emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
         emoji_cache.refresh_from_discord_bot(self.bot)
 
@@ -57,7 +56,7 @@ class DungeonCog(commands.Cog):
         await dbcog.wait_until_ready()
         return dbcog
 
-    async def find_dungeon_from_name2(self, ctx, name, database: "DungeonContext", difficulty: str = None):
+    async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
@@ -104,7 +103,7 @@ class DungeonCog(commands.Cog):
 
         # load dbcog cog for database access
         dbcog = await self.get_dbcog()
-        dungeon = await self.find_dungeon_from_name2(ctx, name, dbcog.database.dungeon, difficulty)
+        dungeon = await self.find_dungeon_from_name(ctx, name, dbcog.database.dungeon, difficulty)
 
         if dungeon is not None:
             # await ctx.send(format_overview(test_result))

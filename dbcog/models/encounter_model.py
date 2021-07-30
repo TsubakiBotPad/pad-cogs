@@ -14,7 +14,7 @@ class EncounterModel(BaseModel):
         self.level = kwargs['level']
         self.hp = kwargs['hp']
         self.atk = kwargs['atk']
-        self.defence = kwargs['defence']
+        self.defense = kwargs['defence']  # We aren't Brittish
         self.enemy_data = enemy_data_model
 
     def to_dict(self):
@@ -29,5 +29,5 @@ class EncounterModel(BaseModel):
             'level': self.level,
             'hp': self.hp,
             'atk': self.atk,
-            'defence': self.defence
+            'defense': self.defense
         }
