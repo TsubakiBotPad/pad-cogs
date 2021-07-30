@@ -54,7 +54,7 @@ try:
     TREENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('treenames'))
     PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
 
-    DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
+    DB_DUMP_URL = 'https://d30r6ivozz8w2a.cloudfront.net/db/dadguide.sqlite'
     DB_DUMP_FILE = _data_file('dadguide.sqlite')
 except RuntimeError:
     pass

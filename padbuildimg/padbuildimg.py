@@ -152,7 +152,7 @@ AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
 REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/padbuildimg/assets/'
-REMOTE_AWK_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/media/awakenings/{0:03d}.png'
+REMOTE_AWK_URL = 'https://d30r6ivozz8w2a.cloudfront.net/media/awakenings/{0:03d}.png'
 
 
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
@@ -169,7 +169,7 @@ class PadBuildImgSettings(CogSettings):
     def make_default_build_img_params(self):
         build_img_params = DictWithAttributeAccess({
             'ASSETS_DIR': './assets/',
-            'PORTRAIT_DIR': 'https://d1kpnpud0qoyxf.cloudfront.net/media/icons/{monster_id:05d}.png',
+            'PORTRAIT_DIR': 'https://d30r6ivozz8w2a.cloudfront.net/media/icons/{monster_id:05d}.png',
             # 'OUTPUT_DIR': './data/padbuildimg/output/',
             'PORTRAIT_WIDTH': 100,
             'PADDING': 10,
