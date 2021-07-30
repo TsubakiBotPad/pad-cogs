@@ -32,7 +32,7 @@ class ProcessedSkill(object):
 
     def process_type(self):
         if "Passive" in self.type or "Preemptive" in self.type:
-            return "({})".format(self.type)
+            return "({}".format(self.type)
         return ""
 
     def give_string(self, indent: str = "", verbose: bool = False):

@@ -1,14 +1,15 @@
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
-from discord import Embed
+from discord import Color, Embed
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.view_state import ViewState
 from tsutils import embed_footer_with_state
 
+from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.processors import process_monster
 
@@ -17,9 +18,10 @@ if TYPE_CHECKING:
 
 
 class DungeonViewState(ViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, color, encounter: "EncounterModel",
-                 sub_dungeon_id, num_floors, floor, num_spawns, floor_index, technical, database,
-                 page=0, verbose=False):
+    def __init__(self, original_author_id: int, menu_type: str, raw_query: str, color: Color,
+                 encounter: "EncounterModel", sub_dungeon_id: int, num_floors: int, floor: int, num_spawns: int,
+                 floor_index: int, technical: int, database,
+                 page: int = 0, verbose: bool = False):
         super().__init__(original_author_id, menu_type, raw_query)
         self.encounter = encounter
         self.sub_dungeon_id = sub_dungeon_id
@@ -27,8 +29,8 @@ class DungeonViewState(ViewState):
         self.floor = floor
         self.floor_index = floor_index
         self.technical = technical
-        self.color = color
         self.database = database
+        self.color = color
         self.num_spawns = num_spawns
         self.page = page
         self.verbose = verbose
@@ -183,8 +185,8 @@ class DungeonView:
         )
 
     @staticmethod
-    def make_embed(dungeon_monster, verbose: bool = False, spawn: "list[int]" = None, floor: "list[int]" = None,
-                   technical: int = None):
+    def make_embed(dungeon_monster: DungeonMonster, verbose: bool = False, spawn: List[int] = None,
+                   floor: List[int] = None, technical: int = None) -> List[discord.Embed]:
         """
         When called this generates an embed that displays the encounter (what is seen in dungeon_info).
         @param dungeon_monster: the processed monster to make an embed for
@@ -201,10 +203,9 @@ class DungeonView:
         # We create two pages as monsters at max will only ever require two pages of embeds
         if spawn is not None:
             embed = discord.Embed(
-                title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
-                                                                                   dungeon_monster.level, spawn[0],
-                                                                                   spawn[1],
-                                                                                   floor[0], floor[1]),
+                title="{} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
+                                                                spawn[0], spawn[1],
+                                                                floor[0], floor[1]),
                 description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
                                                                    f'{dungeon_monster.atk:,}',
                                                                    f'{dungeon_monster.defense:,}',
