@@ -93,31 +93,33 @@ class DungeonMenu:
             return None
         return EmbedControl(
             [DungeonView.embed(state)],
-            [*DungeonMenuPanes.DATA.keys()]
+            DungeonMenuPanes.emoji_names()
         )
 
 
 class DungeonEmoji:
     home = emoji_buttons['home']
-    previous_monster_emoji = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
-    next_monster_emoji = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    next_floor = '\N{UPWARDS BLACK ARROW}'
-    previous_floor = '\N{DOWNWARDS BLACK ARROW}'
-    next_page = '\N{OPEN BOOK}'
     verbose = '\N{SCROLL}'
+    previous_monster = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
+    next_monster = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
+    previous_floor = '\N{DOWNWARDS BLACK ARROW}'
+    next_floor = '\N{UPWARDS BLACK ARROW}'
+    next_page = '\N{OPEN BOOK}'
 
 
 class DungeonMenuPanes(MenuPanes):
     INITIAL_EMOJI = DungeonEmoji.home
+
     DATA = {
         DungeonEmoji.home: (DungeonMenu.respond_with_message, DungeonView.VIEW_TYPE),
         DungeonEmoji.verbose: (DungeonMenu.respond_with_verbose, DungeonView.VIEW_TYPE),
-        DungeonEmoji.previous_monster_emoji: (DungeonMenu.respond_with_previous_monster, DungeonView.VIEW_TYPE),
-        DungeonEmoji.next_monster_emoji: (DungeonMenu.respond_with_next_monster, DungeonView.VIEW_TYPE),
+        DungeonEmoji.previous_monster: (DungeonMenu.respond_with_previous_monster, DungeonView.VIEW_TYPE),
+        DungeonEmoji.next_monster: (DungeonMenu.respond_with_next_monster, DungeonView.VIEW_TYPE),
         DungeonEmoji.previous_floor: (DungeonMenu.respond_with_previous_floor, DungeonView.VIEW_TYPE),
         DungeonEmoji.next_floor: (DungeonMenu.respond_with_next_floor, DungeonView.VIEW_TYPE),
         DungeonEmoji.next_page: (DungeonMenu.respond_with_next_page, DungeonView.VIEW_TYPE)
     }
+
     HIDDEN_EMOJIS = [
         DungeonEmoji.home
     ]
