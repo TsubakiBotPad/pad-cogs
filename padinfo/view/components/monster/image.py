@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING
 
+import tsutils
 from discordmenu.embed.components import EmbedThumbnail
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
 
-MEDIA_PATH = 'https://d1kpnpud0qoyxf.cloudfront.net/media/'
+MEDIA_PATH = tsutils.CLOUDFRONT_URL + '/media/'
 ICON_TEMPLATE = MEDIA_PATH + 'icons/{0:05d}.png'
 RPAD_PIC_TEMPLATE = MEDIA_PATH + 'portraits/{0:05d}.png?cachebuster=2'
 VIDEO_TEMPLATE = MEDIA_PATH + 'animated_portraits/{0:05d}.mp4'

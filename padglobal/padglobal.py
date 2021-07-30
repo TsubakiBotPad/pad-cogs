@@ -46,7 +46,7 @@ PAD Global Commands
 
 BLACKLISTED_CHARACTERS = '^[]*`~_'
 
-PORTRAIT_TEMPLATE = 'https://d1kpnpud0qoyxf.cloudfront.net/media/portraits/{0:05d}.png'
+PORTRAIT_TEMPLATE = tsutils.CLOUDFRONT_URL + '/media/portraits/{0:05d}.png'
 
 DISABLED_MSG = 'PAD Global info disabled on this server'
 
