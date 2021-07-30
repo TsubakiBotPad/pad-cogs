@@ -19,7 +19,7 @@ def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dungeon')), file_name)
 
 
-RAW_ENEMY_SKILLS_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/ilmina/download_enemy_skill_data.json'
+RAW_ENEMY_SKILLS_URL = 'https://d30r6ivozz8w2a.cloudfront.net/ilmina/download_enemy_skill_data.json'
 RAW_ENEMY_SKILLS_DUMP = _data_file('enemy_skills.json')
 
 
