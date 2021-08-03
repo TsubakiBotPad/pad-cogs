@@ -84,7 +84,7 @@ class MonsterStats:
         if multiplayer:
             num_multiboost = monster_model.awakening_count(AwokenSkills.MULTIBOOST.value)
             num_multiboost += inherited_monster.awakening_count(
-                AwokenSkills.MULTIBOOST.value) if inherited_monster.is_equip else 0
+                AwokenSkills.MULTIBOOST.value) if inherited_monster and inherited_monster.is_equip else 0
             s_val = round(round(s_val) * (1.5 ** num_multiboost))
 
         return s_val
