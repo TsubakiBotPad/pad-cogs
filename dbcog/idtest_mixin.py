@@ -1,23 +1,24 @@
 import re
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Callable, Coroutine, List, Mapping, Optional
 
 import tsutils
-from tsutils.enums import Server
-from redbot.core import commands, Config, checks
+from redbot.core import Config, checks, commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, pagify
+from tsutils.enums import Server
 
 from dbcog.models.enum_types import DEFAULT_SERVER
+from dbcog.models.monster_model import MonsterModel
 from dbcog.monster_index import MonsterIndex
 
 
 class IdTest:
-    bot = None
-    indexes: Dict[Server, MonsterIndex]
-    find_monster = None
-
-    def __init__(self):
-        self.config = Config.get_conf(self, identifier=-1)
+    bot: Red
+    config: Config
+    indexes: Mapping[Server, MonsterIndex]
+    find_monster: Callable[[int], Coroutine[None, None, MonsterModel]]
+    wait_until_ready: Callable[[], Coroutine[None, None, None]]
 
     @commands.group()
     async def idtest(self, ctx):
@@ -26,7 +27,7 @@ class IdTest:
     @idtest.command(name="add")
     @checks.is_owner()
     async def idt_add(self, ctx, mid: int, *, query):
-        """Add a test for the id3 test suite (Append `| reason` to add a reason)"""
+        """Add a test for the id3 test suite (Append `| <reason>` to add a reason)"""
         query, *reason = query.split("|")
         query = query.strip()
         if await self.config.user(ctx.author).lastaction() != 'id3' and \
@@ -41,21 +42,31 @@ class IdTest:
                 return
             suite[query] = {
                 'result': mid,
-                'ts': datetime.now().timestamp(),
+                'timestamp': datetime.now().timestamp(),
                 'reason': reason[0].strip() if reason else ''
             }
 
-            if await tsutils.get_user_reaction(ctx, f"Added test case `{mid}: {query}`"
-                                               f" with ref `{sorted(suite).index(query)}`",
-                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
+            try:
+                monster = await self.find_monster(query)
+            except Exception:
+                actual_mid = -2
+            else:
+                actual_mid = -1 if monster is None else monster.monster_id
+            passing = actual_mid == mid
+
+            if await tsutils.get_user_reaction(ctx, f"Added {'passing' if passing else 'failing'}"
+                                                    f" test case `{mid}: {query}`"
+                                                    f" with ref `{sorted(suite).index(query)}`",
+                                               "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
                 if oldd:
                     suite[query] = oldd
                 else:
                     del suite[query]
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                await ctx.send(
-                    f"Successfully added test case `{mid}: {query}` with ref `{sorted(suite).index(query)}`")
+                await ctx.send(f"Successfully added {'passing' if passing else 'failing'}"
+                               f" test case `{mid}: {query}`"
+                               f" with ref `{sorted(suite).index(query)}`")
                 await ctx.tick()
 
     @idtest.group(name="name")
@@ -68,7 +79,7 @@ class IdTest:
 
     @idt_name.command(name="add")
     @checks.is_owner()
-    async def idtf_add(self, ctx, mid: int, token, server: Optional[Server] = DEFAULT_SERVER, *, reason=""):
+    async def idtn_add(self, ctx, mid: int, token, server: Optional[Server] = DEFAULT_SERVER, *, reason=""):
         """Add a name token test to the id3 test suite"""
         await self.norf_add(ctx, mid, token, server, reason, False)
 
@@ -81,8 +92,8 @@ class IdTest:
     async def norf_add(self, ctx, mid: int, token, server, reason, fluffy):
         reason = reason.lstrip("| ")
         if await self.config.user(ctx.author).lastaction() != 'name' and \
-                not await tsutils.get_user_confirmation(ctx,
-                                                  "Are you sure you want to add to the fluff/name test suite?"):
+                not await tsutils.get_user_confirmation(ctx, "Are you sure you want to add to the"
+                                                             " fluff/name test suite?"):
             return
         await self.config.user(ctx.author).lastaction.set('name')
 
@@ -95,10 +106,10 @@ class IdTest:
             if any(t['id'] == mid and t['token'] == token for t in suite):
                 old = [t for t in suite if t['id'] == mid and t['token'] == token][0]
                 if not await tsutils.get_user_confirmation(ctx, f"Are you sure you want to change"
-                                                          f" the type of test case #{suite.index(old)}"
-                                                          f" `{mid}: {token}` from "
-                                                          f" **{'fluff' if fluffy else 'name'}** to"
-                                                          f" **{'name' if fluffy else 'fluff'}**?"):
+                                                                f" the type of test case #{suite.index(old)}"
+                                                                f" `{mid}: {token}` from "
+                                                                f" **{'fluff' if fluffy else 'name'}** to"
+                                                                f" **{'name' if fluffy else 'fluff'}**?"):
                     await ctx.react_quietly("\N{CROSS MARK}")
                     return
                 suite.remove(old)
@@ -108,22 +119,30 @@ class IdTest:
                 'token': token,
                 'fluff': fluffy,
                 'reason': reason,
-                'server': server,
-                'ts': datetime.now().timestamp()
+                'server': server.name,
+                'timestamp': datetime.now().timestamp()
             }
 
             suite.append(case)
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
-            if await tsutils.get_user_reaction(ctx, f"Added {'fluff' if fluffy else 'name'} "
-                                               f"case `{mid}: {token}` with ref `{suite.index(case)}`",
-                                          "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
-                suite.pop()
+            await self.wait_until_ready()
+            fluff = mid in [m.monster_id for m in self.indexes[server].fluff_tokens[token]]
+            name = mid in [m.monster_id for m in self.indexes[server].name_tokens[token]]
+            passing = (fluffy and fluff) or (not fluffy and name)
+
+            if await tsutils.get_user_reaction(ctx, f"Added {'passing' if passing else 'failing'}"
+                                                    f" {'fluff' if fluffy else 'name'} "
+                                                    f"case `{mid}: {token}` with ref `{suite.index(case)}`",
+                                               "\N{LEFTWARDS ARROW WITH HOOK}", timeout=5):
+                suite.remove(case)
                 if old:
                     suite.append(old)
+                suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
                 await ctx.react_quietly("\N{CROSS MARK}")
             else:
-                m = await ctx.send(f"Successfully added {'fluff' if fluffy else 'name'} "
+                m = await ctx.send(f"Successfully added {'passing' if passing else 'failing'}"
+                                   f" {'fluff' if fluffy else 'name'} "
                                    f"case `{mid}: {token}` with ref `{suite.index(case)}`")
                 await m.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
@@ -139,7 +158,7 @@ class IdTest:
         cases = re.findall(r'\s*(?:\d+. )?(.+?) +- (-?\d+) *(.*)', queries)
         async with self.config.test_suite() as suite:
             for query, result, reason in cases:
-                suite[query] = {'result': int(result), 'reason': reason, 'ts': datetime.now().timestamp()}
+                suite[query] = {'result': int(result), 'reason': reason, 'timestamp': datetime.now().timestamp()}
         await ctx.tick()
 
     @idt_name.command(name="import")
@@ -170,10 +189,10 @@ class IdTest:
                         'fluff': fluff == 'fluff',
                         'reason': reason,
                         'server': "COMBINED",
-                        'ts': datetime.now().timestamp()})
+                        'timestamp': datetime.now().timestamp()})
         await ctx.tick()
 
-    @idtest.command(name="remove", aliases=["delete", "rm"])
+    @idtest.command(name="remove", aliases=["rm", "delete", "del"])
     @checks.is_owner()
     async def idt_remove(self, ctx, *, item):
         """Remove an id3 test"""
@@ -192,16 +211,15 @@ class IdTest:
                 return
             res = suite[case]['result']
             del suite[case]
-        await ctx.send(
-            f"Removed test case `{case}: {res}` with ref")
+        await ctx.send(f"Removed test case `{case}: {res}` with ref")
 
-    @idt_name.command(name="remove")
+    @idt_name.command(name="remove", aliases=["rm", "delete", "del"])
     @checks.is_owner()
     async def idtn_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
         await self.norf_remove(ctx, item)
 
-    @idt_fluff.command(name="remove")
+    @idt_fluff.command(name="remove", aliases=["rm", "delete", "del"])
     @checks.is_owner()
     async def idtf_remove(self, ctx, *, item: int):
         """Remove a name/fluff test"""
@@ -254,7 +272,7 @@ class IdTest:
         await self.norf_setreason(ctx, number, reason)
 
     async def norf_setreason(self, ctx, number, reason):
-        if reason == '""':
+        if reason == '""' or reason == "''":
             reason = ""
         if await self.config.user(ctx.author).lastaction() != 'name' and \
                 not await tsutils.get_user_confirmation(ctx, "Are you sure you want to edit **name/fluff**?"):
@@ -356,7 +374,9 @@ class IdTest:
             count = len(suite)
         o = ""
         ml = len(max(suite, key=len))
-        for c, kv_tuple in enumerate(sorted(suite.items(), key=lambda kv: kv[1].get('ts', 0), reverse=True)[:count]):
+        for c, kv_tuple in enumerate(sorted(suite.items(),
+                                            key=lambda kv: kv[1].get('timestamp', 0),
+                                            reverse=True)[:count]):
             key, val = kv_tuple
             o += f"{key.ljust(ml)}: {str(val['result']).ljust(4)}\t{val.get('reason') or ''}\n"
         if not o:
@@ -380,10 +400,11 @@ class IdTest:
             for i, qr in enumerate(sorted(suite.items())):
                 q, r = qr
                 try:
-                    m = await self.find_monster(q) or -1
+                    monster = await self.find_monster(q)
                 except Exception:
-                    m = -2
-                mid = getattr(m, "monster_id", m)
+                    mid = -2
+                else:
+                    mid = -1 if monster is None else monster.monster_id
 
                 if mid != r['result']:
                     reason = '   Reason: ' + r.get('reason') if 'reason' in r else ''
@@ -450,10 +471,11 @@ class IdTest:
         async with ctx.typing():
             for c, q in enumerate(sorted(qsuite)):
                 try:
-                    m = await self.find_monster(q) or -1
+                    monster = await self.find_monster(q)
                 except Exception:
-                    m = -2
-                mid = getattr(m, "monster_id", m)
+                    mid = -2
+                else:
+                    mid = -1 if monster is None else monster.monster_id
 
                 if mid != qsuite[q]['result']:
                     reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
@@ -501,10 +523,11 @@ class IdTest:
         ml = len(max(qsuite or [''], key=len)) + 2
         for c, q in enumerate(sorted(qsuite)):
             try:
-                m = await self.find_monster(q) or -1
+                monster = await self.find_monster(q)
             except Exception:
-                m = -2
-            mid = getattr(m, "monster_id", m)
+                mid = -2
+            else:
+                mid = -1 if monster is None else monster.monster_id
 
             if mid != qsuite[q]['result']:
                 reason = '   Reason: ' + qsuite[q].get('reason') if qsuite[q].get('reason') else ''
