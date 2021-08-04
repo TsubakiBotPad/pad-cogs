@@ -223,9 +223,11 @@ class ButtonInfo:
             dmg = dbcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                                            inherited_monster=inherit_model, multiplayer=multiplayer,
                                            inherited_monster_lvl=inherit_max_level)
-            if(monster.attr1.value in card.att):
+            # do count null main att monster damage as if it were the main att
+            if(monster.attr1.value in card.att or monster.attr1.name == NIL_ATT):
                 total_dmg += dmg
-            if(monster.attr2.value in card.att):
+            # do not double-count null main att
+            if(monster.attr2.value in card.att and monster.attr1.name != NIL_ATT):
                 total_dmg += dmg * self._get_sub_attr_multiplier(monster)
             colors_str = ""
             for i in card.att:
