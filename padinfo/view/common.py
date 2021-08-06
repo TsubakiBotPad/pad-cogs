@@ -38,9 +38,9 @@ def get_awoken_skill_description(awoken_skill: "AwokenSkillModel"):
     )
 
 
-def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str, link=False):
-    base_text = 'Your query `{}` found {}{}.'
-    return base_text.format(query, MonsterHeader.short_with_emoji(monster, link=link).to_markdown(), append_text)
+def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str, link: bool = False):
+    monster_name = MonsterHeader.short_with_emoji(monster, link=link).to_markdown()
+    return f'Your query `{query}` found {monster_name}{append_text}.'
 
 
 def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):

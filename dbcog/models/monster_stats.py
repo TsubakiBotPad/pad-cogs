@@ -72,18 +72,19 @@ class MonsterStats:
                 # inherit=True to calculate inherit stats and multiplayer=False in case the inherit has a multiboost awakening
                 s_val += round(self.stat(inherited_monster, key, inherited_monster_lvl,
                                    inherit=True, multiplayer=False))
-            # add bonus atk, hp, or rcv awakenings
-            inherit_bonus = MonsterStatModifierInput(
-                num_hp_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDHP.value),
-                num_atk_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDATK.value),
-                num_rcv_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDRCV.value)
-            )
-            s_val += inherit_bonus.get_awakening_addition(key)
+            # add bonus atk, hp, or rcv awakenings iff the inherit has awoken assist
+            if inherited_monster.is_equip:
+                inherit_bonus = MonsterStatModifierInput(
+                    num_hp_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDHP.value),
+                    num_atk_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDATK.value),
+                    num_rcv_awakening=inherited_monster.awakening_count(AwokenSkills.ENHANCEDRCV.value)
+                )
+                s_val += inherit_bonus.get_awakening_addition(key)
 
         if multiplayer:
             num_multiboost = monster_model.awakening_count(AwokenSkills.MULTIBOOST.value)
             num_multiboost += inherited_monster.awakening_count(
-                AwokenSkills.MULTIBOOST.value) if inherited_monster else 0
+                AwokenSkills.MULTIBOOST.value) if inherited_monster and inherited_monster.is_equip else 0
             s_val = round(round(s_val) * (1.5 ** num_multiboost))
 
         return s_val

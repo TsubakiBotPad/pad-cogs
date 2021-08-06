@@ -89,18 +89,18 @@ def format_overview(query):
     return output
 
 
-def behavior_for_level(mb: MonsterBehavior, num: int):
+def behavior_for_level(behavior: MonsterBehavior, num: int):
     lev = None
-    for level in mb.levels:
+    for level in behavior.levels:
         if level.level == num:
             lev = level
     if lev is None:
-        return mb.levels[len(mb.levels) - 1]
+        return behavior.levels[len(behavior.levels) - 1]
     else:
         return lev
 
 
-def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", emoji_map):
+def process_enemy_skill(encounter: "EncounterModel", skill: "EnemySkillModel", emoji_map):
     non_attack_effects = []
     for e in re.split(r'(?<=\)), ', skill.desc_en_emoji):
         if "Attack:" not in e:
@@ -112,7 +112,7 @@ def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", 
         emoji = emoji_map['attack']
         if skill.min_hits > 1:
             emoji = emoji_map['multi_attack']
-        damage_per_hit = (int)(atk * (skill.atk_mult / 100.0))
+        damage_per_hit = int(atk * (skill.atk_mult / 100))
         min_damage = skill.min_hits * damage_per_hit
         max_damage = skill.max_hits * damage_per_hit
         if min_damage != max_damage:
@@ -123,31 +123,29 @@ def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", 
     return non_attack_effects
 
 
-def process_behavior(behavior: Behavior, database, q: "EncounterModel", emoji_map, parent: GroupedSkills = None):
+def process_behavior(behavior: Behavior, database, encounter: "EncounterModel", emoji_map, parent: GroupedSkills = None):
     skill = database.dungeon.get_enemy_skill(behavior.enemy_skill_id)
     if skill is None:
         return "Unknown"
     skill_name = skill.name_en
     skill_effect = skill.desc_en
-    # skill_processed_text = process_enemy_skill(skill_effect, q, skill)
-    skill_processed_texts = process_enemy_skill2(q, skill, emoji_map)
+    skill_processed_texts = process_enemy_skill(encounter, skill, emoji_map)
 
     condition = format_condition(behavior.condition)
     processed_skill: ProcessedSkill = ProcessedSkill(skill_name, skill_effect, skill_processed_texts, condition,
                                                      parent)
-    # embed.add_field(name="{}Skill Name: {}{}".format(group_type, skill_name, process_enemy_skill(skill_effect, q, skill)), value="{}Effect: {}\n{}".format(indent, skill_effect, condition), inline=False)
     return processed_skill
 
 
-def process_behavior_group(group: BehaviorGroup, database, q: "EncounterModel", emoji_map,
+def process_behavior_group(group: BehaviorGroup, database, encounter: "EncounterModel", emoji_map,
                            parent: GroupedSkills = None):
     condition = format_condition(group.condition)
     processed_group: GroupedSkills = GroupedSkills(condition, GROUP_TYPES[group.group_type], parent)
     for child in group.children:
         if child.HasField('group'):
-            processed_group.add_group(process_behavior_group(child.group, database, q, emoji_map, processed_group))
+            processed_group.add_group(process_behavior_group(child.group, database, encounter, emoji_map, processed_group))
         elif child.HasField('behavior'):
-            processed_group.add_skill(process_behavior(child.behavior, database, q, emoji_map, processed_group))
+            processed_group.add_skill(process_behavior(child.behavior, database, encounter, emoji_map, processed_group))
     return processed_group
 
 
@@ -156,16 +154,7 @@ class SafeDgEmojiDict(dict):
         return '<' + key + '>'
 
 
-# return output
-
-# Format:
-# Skill Name    Type:Preemptive/Passive/Etc
-# Skill Effect
-# Condition
-def process_monster(mb: MonsterBehavior, q: "EncounterModel", database: "DbContext"):
-    # output = "Behavior for: {} at Level: {}".format(q["name_en"], q["level"])  # TODO: Delete later after testing
-    """embed = discord.Embed(title="Behavior for: {} at Level: {}".format(q["name_en"], q["level"]),
-                          description="HP:{} ATK:{} DEF:{} TURN:{}".format(q["hp"], q["atk"], q["defence"], q['turns']))"""
+def process_monster(behavior: MonsterBehavior, encounter: "EncounterModel", database: "DbContext") -> DungeonMonster:
     emoji_map = SafeDgEmojiDict(resolve_status=emoji_cache.get_by_name('resolve'),
                                 fire_orb=emoji_cache.get_by_name('orb_fire'),
                                 recover_health=emoji_cache.get_by_name('misc_autoheal'),
@@ -244,21 +233,21 @@ def process_monster(mb: MonsterBehavior, q: "EncounterModel", database: "DbConte
                                 recover_debuff_status=emoji_cache.get_by_name('recover_debuff_status'),
                                 attack_debuff_status='\N{CROSSED SWORDS}\N{DOWNWARDS BLACK ARROW}️'
                                 )
-    monster_model = database.graph.get_monster(q.monster_id)
-    monster: DungeonMonster = DungeonMonster(
+    monster_model = database.graph.get_monster(encounter.monster_id)
+    monster = DungeonMonster(
         name=monster_model.name_en,
-        hp=q.hp,
-        atk=q.atk,
-        defense=q.defence,
-        turns=q.turns,
-        level=q.level
+        hp=encounter.hp,
+        atk=encounter.atk,
+        defense=encounter.defense,
+        turns=encounter.turns,
+        level=encounter.level
     )
-    if mb is None:
+    if behavior is None:
         return monster
-    level_behavior = behavior_for_level(mb, q.level)
+    level_behavior = behavior_for_level(behavior, encounter.level)
     if level_behavior is None:
         return monster
     for group in level_behavior.groups:
-        monster.add_group(process_behavior_group(group, database, q, emoji_map))
+        monster.add_group(process_behavior_group(group, database, encounter, emoji_map))
 
     return monster

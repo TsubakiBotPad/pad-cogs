@@ -10,24 +10,24 @@ import asyncio
 import logging
 import os
 import shutil
+import time
 from io import BytesIO
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 import discord
-import time
 import tsutils
-from redbot.core import checks, data_manager, commands, Config
-from redbot.core.utils.chat_formatting import pagify, box
+from redbot.core import Config, checks, commands, data_manager
+from redbot.core.utils.chat_formatting import box, pagify
 from tsutils import auth_check, safe_read_json
 from tsutils.enums import Server
 
 from . import token_mappings
-from .find_monster import FindMonster
 from .database_loader import load_database
+from .find_monster import FindMonster
 from .idtest_mixin import IdTest
-from .models.monster_model import MonsterModel
-from .models.monster_stats import monster_stats, MonsterStatModifierInput
 from .models.enum_types import DEFAULT_SERVER, SERVERS
+from .models.monster_model import MonsterModel
+from .models.monster_stats import MonsterStatModifierInput, monster_stats
 from .monster_index import MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
@@ -35,29 +35,6 @@ logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dbcog')), file_name)
-
-
-try:
-    # allow to run the tests locally without being inside a bot instance, which won't
-    # have any cog data path loaded
-    CSV_FILE_PATTERN = '{}.csv'
-    NAMES_EXPORT_PATH = _data_file('computed_names.json')
-    TREENAMES_EXPORT_PATH = _data_file('base_names.json')
-    TRANSLATEDNAMES_EXPORT_PATH = _data_file('translated_names.json')
-
-    SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY/pub?gid={}&single=true&output=csv'
-    NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-    GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
-    PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
-
-    NICKNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('nicknames'))
-    TREENAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('treenames'))
-    PANTHNAME_FILE_PATTERN = _data_file(CSV_FILE_PATTERN.format('panthnames'))
-
-    DB_DUMP_URL = 'https://d1kpnpud0qoyxf.cloudfront.net/db/dadguide.sqlite'
-    DB_DUMP_FILE = _data_file('dadguide.sqlite')
-except RuntimeError:
-    pass
 
 
 class DBCog(commands.Cog, IdTest):
@@ -80,6 +57,7 @@ class DBCog(commands.Cog, IdTest):
                                     debug_mode=False, debug_mode_monsters=[3260])
         self.config.register_user(lastaction=None, fm_flags={})
 
+        self.db_file_path = _data_file('dadguide.sqlite')
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
         self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
         self.monster_stats = monster_stats
@@ -88,11 +66,11 @@ class DBCog(commands.Cog, IdTest):
         self.token_maps = token_mappings
         self.DEFAULT_SERVER = DEFAULT_SERVER
         self.SERVERS = SERVERS
+
         self.mon_finder = None  # type: Optional[FindMonster]
 
-        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
-        if GADMIN_COG:
-            GADMIN_COG.register_perm("contentadmin")
+        if (gadmin := self.bot.get_cog("GlobalAdmin")):
+            gadmin.register_perm("contentadmin")
 
     async def wait_until_ready(self) -> None:
         """Wait until the DBCog cog is ready.
@@ -224,10 +202,12 @@ class DBCog(commands.Cog, IdTest):
     async def download_and_refresh_nicknames(self):
         if await self.config.datafile():
             logger.info('Copying dg data file')
-            shutil.copy2(await self.config.datafile(), DB_DUMP_FILE)
+            shutil.copy2(await self.config.datafile(), self.db_file_path)
         else:
             logger.info('Downloading dg data files')
-            await self._download_files()
+            await tsutils.async_cached_dadguide_request(self.db_file_path,
+                                                        tsutils.CLOUDFRONT_URL + '/db/dadguide.sqlite',
+                                                        1 * 60 * 60)
 
         logger.info('Loading dg database')
         self.database = load_database(self.database, await self.get_debug_monsters())
@@ -235,10 +215,6 @@ class DBCog(commands.Cog, IdTest):
         await self.create_index()
 
         logger.info('Done refreshing dg data')
-
-    async def _download_files(self):
-        one_hour_secs = 1 * 60 * 60
-        await tsutils.async_cached_dadguide_request(DB_DUMP_FILE, DB_DUMP_URL, one_hour_secs)
 
     @commands.group()
     @checks.is_owner()
