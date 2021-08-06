@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+import re
+from typing import Optional, TYPE_CHECKING
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 
@@ -26,52 +27,50 @@ GROUP_TYPES = {
 }
 
 
-def format_condition(cond: Condition):
+def format_condition(cond: Condition) -> Optional[str]:
     parts = []
     if cond.skill_set:
-        parts.append('SkillSet {}'.format(cond.skill_set))
+        parts.append(f"SkillSet {cond.skill_set}")
     if cond.use_chance not in [0, 100]:
-        parts.append('{}% chance'.format(cond.use_chance))
+        parts.append(f"{cond.use_chance}% chance")
     if cond.global_one_time:
-        parts.append('one time only')
+        parts.append(f"one time only")
     if cond.limited_execution:
-        parts.append('at most {} times'.format(cond.limited_execution))
+        parts.append(f"at most {cond.limited_execution} times")
     if cond.trigger_enemies_remaining:
-        parts.append('when {} enemies remain'.format(cond.trigger_enemies_remaining))
+        parts.append(f"when {cond.trigger_enemies_remaining} enemies remain")
     if cond.if_defeated:
-        parts.append('when defeated')
+        parts.append(f"when defeated")
     if cond.if_attributes_available:
-        parts.append('when required attributes on board')
+        parts.append(f"when required attributes on board")
     if cond.trigger_monsters:
-        parts.append('when {} on team'.format(', '.join(map(str, cond.trigger_monsters))))
+        parts.append(f"when {', '.join(map(str, cond.trigger_monsters))} on team")
     if cond.trigger_combos:
-        parts.append('when {} combos last turn'.format(cond.trigger_combos))
+        parts.append(f"when {cond.trigger_combos} combos last turn")
     if cond.if_nothing_matched:
-        parts.append('if no other skills matched')
+        parts.append(f"if no other skills matched")
     if cond.repeats_every:
         if cond.trigger_turn:
             if cond.trigger_turn_end:
-                parts.append('execute repeatedly, turn {}-{} of {}'.format(cond.trigger_turn,
-                                                                           cond.trigger_turn_end,
-                                                                           cond.repeats_every))
+                parts.append(f"turns {cond.trigger_turn}-{cond.trigger_turn_end} of every {cond.repeats_every} turns")
             else:
-                parts.append('execute repeatedly, turn {} of {}'.format(cond.trigger_turn, cond.repeats_every))
+                parts.append(f"turn {cond.trigger_turn} of every {cond.repeats_every} turns")
         else:
-            parts.append('repeats every {} turns'.format(cond.repeats_every))
+            parts.append(f"repeats every {cond.repeats_every} turns")
     elif cond.trigger_turn_end:
-        turn_text = 'turns {}-{}'.format(cond.trigger_turn, cond.trigger_turn_end)
+        turn_text = f"turns {cond.trigger_turn}-{cond.trigger_turn_end}"
         parts.append(_cond_hp_timed_text(cond.always_trigger_above, turn_text))
     elif cond.trigger_turn:
-        turn_text = 'turn {}'.format(cond.trigger_turn)
+        turn_text = f"turn {cond.trigger_turn}"
         parts.append(_cond_hp_timed_text(cond.always_trigger_above, turn_text))
 
     if not parts and cond.hp_threshold in [100, 0]:
         return None
 
     if cond.hp_threshold == 101:
-        parts.append('when hp is full')
-    elif cond.hp_threshold:
-        parts.append('hp <= {}'.format(cond.hp_threshold))
+        parts.append(f"when HP is full")
+    elif cond.hp_threshold != 100:
+        parts.append(f"HP <= {cond.hp_threshold}")
 
     return ', '.join(parts)
 
@@ -80,18 +79,16 @@ def format_condition(cond: Condition):
 def _cond_hp_timed_text(always_trigger_above: int, turn_text: str) -> str:
     text = turn_text
     if always_trigger_above == 1:
-        text = 'always {}'.format(turn_text)
+        text = f"always {turn_text}"
     elif always_trigger_above:
-        text = '{} while HP > {}'.format(turn_text, always_trigger_above)
+        text = f"{turn_text} while HP > {always_trigger_above}"
     return text
 
 
 def format_overview(query):
-    output = "Dungeon Name: {}".format(query[0]["dungeon_name_en"])
+    output = f"Dungeon Name: {query[0]['dungeon_name_en']}"
     for q in query:
-        output += "\nEncounter ID: {}   Stage: {}   Monster Name: {}    Level: {}".format(q["encounter_id"], q["stage"],
-                                                                                          q["name_en"], q["level"])
-
+        output += f"\nEncounter ID: {q['encounter_id']}   Stage: {q['stage']}   Monster Name: {q['name_en']}"
     return output
 
 
@@ -107,12 +104,8 @@ def behavior_for_level(mb: MonsterBehavior, num: int):
 
 
 def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", emoji_map):
-    effect = skill.desc_en_emoji
-    split_effects = effect.split("), ")
     non_attack_effects = []
-    for e in split_effects:
-        # print(encounter.monster_id)
-        e += ")"
+    for e in re.split(r'(?<=\)), ', skill.desc_en_emoji):
         if "Attack:" not in e:
             non_attack_effects.append(e.format_map(emoji_map))
 
@@ -126,9 +119,9 @@ def process_enemy_skill2(encounter: "EncounterModel", skill: "EnemySkillModel", 
         min_damage = skill.min_hits * damage_per_hit
         max_damage = skill.max_hits * damage_per_hit
         if min_damage != max_damage:
-            non_attack_effects.append("({}:{}~{})".format(emoji, f'{min_damage:,}', f'{max_damage:,}'))
+            non_attack_effects.append(f"({emoji}:{min_damage:,}~{max_damage:,})")
         else:
-            non_attack_effects.append("({}:{})".format(emoji, f'{min_damage:,}'))
+            non_attack_effects.append(f"({emoji}:{min_damage:,})")
 
     return non_attack_effects
 
@@ -211,7 +204,7 @@ def process_monster(mb: MonsterBehavior, q: "EncounterModel", database: "DbConte
                                 no_skyfall_status=emoji_cache.get_by_name('no_skyfall'),
                                 bind=emoji_cache.get_by_name('res_bind'),
                                 skyfall_status='\N{CLOUD WITH RAIN}',
-                                blind='\N{MEDIUM BLACK CIRCLE}',
+                                blind=emoji_cache.get_by_name('black_circle_real'),
                                 super_blind=emoji_cache.get_by_name('blind_orb'),
                                 to='\N{BLACK RIGHTWARDS ARROW}️',
                                 attack=emoji_cache.get_by_name('single_hit'),
