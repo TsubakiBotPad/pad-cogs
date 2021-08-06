@@ -64,15 +64,12 @@ def format_condition(cond: Condition) -> Optional[str]:
         turn_text = f"turn {cond.trigger_turn}"
         parts.append(_cond_hp_timed_text(cond.always_trigger_above, turn_text))
 
-    if not parts and cond.hp_threshold in [100, 0]:
-        return None
-
     if cond.hp_threshold == 101:
         parts.append(f"when HP is full")
-    elif cond.hp_threshold != 100:
+    elif cond.hp_threshold not in (100, 0):
         parts.append(f"HP <= {cond.hp_threshold}")
 
-    return ', '.join(parts)
+    return ', '.join(parts) or None
 
 
 # From pad-data-pipeline
