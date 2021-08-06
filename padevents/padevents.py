@@ -1,22 +1,21 @@
 import asyncio
 import datetime
+import itertools
 import logging
 import re
 from collections import defaultdict
 from datetime import timedelta
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, TYPE_CHECKING, Union
 
 import discord
-import itertools
 import prettytable
 import pytz
-from redbot.core import checks
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
-from tsutils import CogSettings, get_user_confirmation, normalize_server_name, DummyObject, is_donor, rmdiacritics, \
-    YES_EMOJI, NO_EMOJI, send_confirmation_message, send_cancellation_message
+from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
+from tsutils import CogSettings, DummyObject, NO_EMOJI, YES_EMOJI, get_user_confirmation, is_donor, \
+    normalize_server_name, rmdiacritics, send_cancellation_message, send_confirmation_message
 
 if TYPE_CHECKING:
     from dbcog.models.scheduled_event_model import ScheduledEventModel
@@ -147,7 +146,7 @@ class PadEvents(commands.Cog):
                             if aep['offset']:
                                 offsetstr = " in {} minute(s)".format(aep['offset'])
                             try:
-                                timestr = humanize_timedelta(timedelta=event.close_datetime-event.open_datetime)
+                                timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
                                 await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
                                                                                            timestr,
                                                                                            offsetstr,
@@ -460,13 +459,14 @@ class PadEvents(commands.Cog):
 
         if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
                 .format(group, key)):
-            await send_cancellation_message(ctx, "No action was taken. You can set a channel with `{}aep set {}channel {} #channel_name`"
+            await send_cancellation_message(ctx,
+                                            "No action was taken. You can set a channel with `{}aep set {}channel {} #channel_name`"
                                             .format(ctx.prefix, group, key))
             return
         else:
             await self.aepchange(ctx, key, 'channels', f)
             await send_confirmation_message(ctx, "Okay, I removed the {} channel for the AEP `{}`"
-                                                .format(group, key))
+                                            .format(group, key))
             return
 
     @aep_set.command(name="channel")
@@ -476,7 +476,7 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @aep_set.command(name="redchannel")
-    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel=None):
+    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel = None):
         """Sets channel to ping when event is red"""
         if channel is None:
             await self.aep_remove_channel(ctx, key, "red", lambda x: [None, x[1], x[2]])
@@ -485,7 +485,7 @@ class PadEvents(commands.Cog):
             await ctx.tick()
 
     @aep_set.command(name="bluechannel")
-    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel=None):
+    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel = None):
         """Sets channel to ping when event is blue"""
         if channel is None:
             await self.aep_remove_channel(ctx, key, "blue", lambda x: [x[0], None, x[2]])
@@ -494,7 +494,7 @@ class PadEvents(commands.Cog):
             await ctx.tick()
 
     @aep_set.command(name="greenchannel")
-    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel=None):
+    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel = None):
         """Sets channel to ping when event is green"""
         if channel is None:
             await self.aep_remove_channel(ctx, key, "green", lambda x: [x[0], x[1], None])
@@ -594,7 +594,7 @@ class PadEvents(commands.Cog):
             await ctx.send("Unsupported server, pick one of NA, KR, JP")
             return
 
-        #work around for 2 optional parameters
+        # work around for 2 optional parameters
         if group is not None and group.isdigit():
             time_offset = int(group)
             group = None
@@ -682,7 +682,7 @@ class PadEvents(commands.Cog):
     @autoeventdm.group(name="edit", aliases=["set"])
     async def aed_e(self, ctx):
         """Edit a property of the autoeventdm"""
-        
+
     async def _do_aed_add(self, ctx, item):
         """Add autoeventdm and return its index"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
@@ -701,7 +701,7 @@ class PadEvents(commands.Cog):
             return
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if not await get_user_confirmation(ctx, "Modify the offset for {}. `{}` to {} minutes?"
-                                               .format(corrected_index + 1, dmevents[corrected_index]['searchstr'], offset)):
+                    .format(corrected_index + 1, dmevents[corrected_index]['searchstr'], offset)):
                 return
             dmevents[corrected_index]['offset'] = offset
         await ctx.tick()
@@ -741,7 +741,7 @@ class PadEvents(commands.Cog):
                                             .format(corrected_index + 1, event))
             return
 
-    async def _get_and_validate_aed_index(self, ctx, user_index):
+    async def _get_and_validate_aed_index(self, ctx, user_index: Union[str, int]):
         """Returns the corrected index for the autoeventdm of interest, based on Python list indexing"""
         async with self.config.user(ctx.author).dmevents() as dmevents:
             if isinstance(user_index, int) or user_index.isdigit():
@@ -1252,6 +1252,7 @@ class DungeonType(Enum):
     Unknown4 = 4
     Unknown7 = 7
     Unknown9 = 9
+    Unknown10 = 10
 
 
 def fmt_time(dt):
