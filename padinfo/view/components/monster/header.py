@@ -68,10 +68,11 @@ class MonsterHeader:
     @classmethod
     def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None):
         msg = f"{m.monster_no_na} - {m.name_en}"
+        suffix = cls.jp_suffix(m, False, False)
         return Box(
             prefix,
             Text(get_attribute_emoji_by_monster(m)),
             LinkedText(msg, puzzledragonx(m)) if link else Text(msg),
-            Text(cls.jp_suffix(m, False, False)),
+            Text(suffix) if suffix else None,
             delimiter=' '
         )
