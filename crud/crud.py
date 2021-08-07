@@ -528,7 +528,7 @@ class Crud(commands.Cog):
         await ctx.tick()
 
     @crud.command()
-    async def setemail(self, ctx, email=None):
+    async def setmyemail(self, ctx, email=None):
         """Sets your email so GitHub commits can be properly attributed"""
         if email is not None and \
                 not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
