@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime
 from io import BytesIO
 
@@ -8,7 +9,7 @@ import aiofiles
 import discord
 import pygit2
 import pymysql
-from redbot.core import checks, commands, Config, errors
+from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils import auth_check, get_user_confirmation, send_cancellation_message
 
@@ -54,6 +55,7 @@ class Crud(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=3270)
         self.config.register_global(config_file=None, pipeline_base=None, chan=None)
+        self.config.register_user(email=None)
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
@@ -124,18 +126,22 @@ class Crud(commands.Cog):
             await send_cancellation_message(ctx, f"Github credentials unset.  Add via `{ctx.prefix}set api"
                                                  f" github username <username> token <access token>`")
 
-        index = repo.index
-        index.add(filepath)
-        index.write()
-        tree = index.write_tree()
-        author = pygit2.Signature(str(ctx.author), "famiel@tsubakibot.com")
-        commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
-        parent, ref = repo.resolve_refish(refish=repo.head.name)
-        repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
-        upcred = pygit2.UserPass(keys['username'], keys['token'])
-        remote = discord.utils.get(repo.remotes, name="origin")
-        remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
-
+        try:
+            index = repo.index
+            index.add(filepath)
+            index.write()
+            tree = index.write_tree()
+            email = await self.bot.config.user(ctx.author).email()
+            author = pygit2.Signature(str(ctx.author), email or "famiel@tsubakibot.com")
+            commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
+            parent, ref = repo.resolve_refish(refish=repo.head.name)
+            repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
+            upcred = pygit2.UserPass(keys['username'], keys['token'])
+            remote = discord.utils.get(repo.remotes, name="origin")
+            remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
+        except Exception as e:
+            logger.exception("Failed to push.")
+            await send_cancellation_message(ctx, f"Failed to push to github.  Please alert a sysadmin.")
 
     @commands.group()
     @auth_check('crud')
@@ -519,4 +525,14 @@ class Crud(commands.Cog):
     @checks.is_owner()
     async def rmchan(self, ctx):
         await self.config.chan.set(None)
+        await ctx.tick()
+
+    @crud.command()
+    async def setmyemail(self, ctx, email=None):
+        """Sets your email so GitHub commits can be properly attributed"""
+        if email is not None and \
+                not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
+            await ctx.send("Invalid email.")
+            return
+        await self.config.user(ctx.author).email.set(email)
         await ctx.tick()
