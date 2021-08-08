@@ -135,7 +135,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.FUA: ('fua',),
     AwokenSkills.ENHTEAMHP: ('teamhp', 'thp'),
     AwokenSkills.ENHTEAMRCV: ('teamrcv', 'trcv'),
-    AwokenSkills.VDP: ('vdp',),
+    AwokenSkills.VDP: ('vdp', 'box'),
     AwokenSkills.EQUIP: ('equip', 'assist', 'eq'),
     AwokenSkills.SUPERFUA: ('sfua',),
     AwokenSkills.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
