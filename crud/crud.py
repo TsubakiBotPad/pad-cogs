@@ -117,21 +117,21 @@ class Crud(commands.Cog):
                                                  f" was only **temporarily** made!")
             return
         if any(diff for diff in repo.diff().deltas if diff.old_file.path != filepath):
-            await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, there are currently staged changes."
-                                                 f" Please inform a sysadmin so that your changes can be"
-                                                 f" manually committed.")
+            return await send_cancellation_message(ctx, f"Hey {ctx.author.mention}, there are currently staged changes."
+                                                        f" Please inform a sysadmin so that your changes can be"
+                                                        f" manually committed.")
 
         keys = await self.bot.get_shared_api_tokens("github")
         if "username" not in keys or "token" not in keys:
-            await send_cancellation_message(ctx, f"Github credentials unset.  Add via `{ctx.prefix}set api"
-                                                 f" github username <username> token <access token>`")
+            return await send_cancellation_message(ctx, f"Github credentials unset.  Add via `{ctx.prefix}set api"
+                                                        f" github username <username> token <access token>`")
 
         try:
             index = repo.index
             index.add(filepath)
             index.write()
             tree = index.write_tree()
-            email = await self.bot.config.user(ctx.author).email()
+            email = await self.config.user(ctx.author).email()
             author = pygit2.Signature(str(ctx.author), email or "famiel@tsubakibot.com")
             commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
             parent, ref = repo.resolve_refish(refish=repo.head.name)
