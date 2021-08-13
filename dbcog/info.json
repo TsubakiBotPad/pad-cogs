@@ -15,7 +15,9 @@
   ],
   "hidden": false,
   "disabled": false,
-  "required_cogs": {},
+  "required_cogs": {
+    "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs"
+  },
   "requirements": [
     "tsutils>=4.0.0",
     "pytz",
