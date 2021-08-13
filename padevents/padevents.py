@@ -16,6 +16,7 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 from tsutils import CogSettings, DummyObject, NO_EMOJI, YES_EMOJI, get_user_confirmation, is_donor, \
     normalize_server_name, rmdiacritics, send_cancellation_message, send_confirmation_message
+from tsutils.enums import Server, StarterGroup
 
 if TYPE_CHECKING:
     from dbcog.models.scheduled_event_model import ScheduledEventModel
@@ -231,11 +232,8 @@ class PadEvents(commands.Cog):
 
     @padevents.command()
     @checks.is_owner()
-    async def testevent(self, ctx, server, seconds: int = 0):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def testevent(self, ctx, server: Server, seconds: int = 0):
+        server = server.value
 
         dbcog = self.bot.get_cog('DBCog')
         await dbcog.wait_until_ready()
@@ -264,11 +262,8 @@ class PadEvents(commands.Cog):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addchannel(self, ctx, server):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def addchannel(self, ctx, server: Server):
+        server = server.value
 
         channel_id = ctx.channel.id
         if self.settings.check_guerrilla_reg(channel_id, server):
@@ -281,11 +276,8 @@ class PadEvents(commands.Cog):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmchannel(self, ctx, server):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def rmchannel(self, ctx, server: Server):
+        server = server.value
 
         channel_id = ctx.channel.id
         if not self.settings.check_guerrilla_reg(channel_id, server):
@@ -298,11 +290,8 @@ class PadEvents(commands.Cog):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addchanneldaily(self, ctx, server):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def addchanneldaily(self, ctx, server: Server):
+        server = server.value
 
         channel_id = ctx.channel.id
         if self.settings.check_daily_reg(channel_id, server):
@@ -315,11 +304,8 @@ class PadEvents(commands.Cog):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmchanneldaily(self, ctx, server):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def rmchanneldaily(self, ctx, server: Server):
+        server = server.value
 
         channel_id = ctx.channel.id
         if not self.settings.check_daily_reg(channel_id, server):
@@ -336,7 +322,7 @@ class PadEvents(commands.Cog):
         """Auto Event Pings"""
 
     @autoeventping.command(name="add", ignore_extra=False)
-    async def aep_add(self, ctx, key, server=None, searchstr=None,
+    async def aep_add(self, ctx, key, server: Server = None, searchstr=None,
                       red_role: Optional[discord.Role] = None,
                       blue_role: Optional[discord.Role] = None,
                       green_role: Optional[discord.Role] = None,
@@ -356,10 +342,7 @@ class PadEvents(commands.Cog):
             return
 
         if server:
-            server = normalize_server_name(server)
-            if server not in SUPPORTED_SERVERS:
-                await ctx.send(f"Unsupported server `{server}`, pick one of NA, KR, JP")
-                return
+            server = server.value
 
         if blue_role is None:
             blue_role = green_role = red_role
@@ -527,12 +510,9 @@ class PadEvents(commands.Cog):
         await ctx.tick()
 
     @aep_set.command(name="server")
-    async def aep_s_server(self, ctx, key, server):
+    async def aep_s_server(self, ctx, key, server: Server):
         """Sets which server to listen to events in"""
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+        server = server.value
         await self.aepset(ctx, key, 'server', server)
         await ctx.tick()
 
@@ -587,25 +567,14 @@ class PadEvents(commands.Cog):
         """Auto Event DMs"""
 
     @autoeventdm.command(name="add")
-    async def aed_add(self, ctx, server, searchstr, group=None, time_offset: int = 0):
+    async def aed_add(self, ctx, server: Server, searchstr, group: Optional[StarterGroup] = None, time_offset: int = 0):
         """Add a new autoeventdm"""
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
-
-        # work around for 2 optional parameters
-        if group is not None and group.isdigit():
-            time_offset = int(group)
-            group = None
+        server = server.value
 
         if group is None:
-            group = "red"
+            group = 'red'
         else:
-            group = group.lower()
-            if group not in GROUPS:
-                await ctx.send("Unsupported group, pick one of red, blue, green")
-                return
+            group = GROUPS[group.value]
 
         if time_offset and not user_is_donor(ctx):
             await ctx.send("You must be a donor to set a time offset!")
@@ -800,11 +769,8 @@ class PadEvents(commands.Cog):
 
     @padevents.command()
     @checks.mod_or_permissions(manage_guild=True)
-    async def active(self, ctx, server):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def active(self, ctx, server: Server):
+        server = server.value
 
         msg = self.make_active_text(server)
         await self.page_output(ctx, msg)
@@ -969,29 +935,25 @@ class PadEvents(commands.Cog):
         return header + tbl.get_string() + "\n"
 
     @commands.command(aliases=['events'])
-    async def eventsna(self, ctx, group=None):
+    async def eventsna(self, ctx, group: StarterGroup = None):
         """Display upcoming daily events for NA."""
-        await self.do_partial(ctx, 'NA', group)
+        await self.do_partial(ctx, Server.NA, group)
 
     @commands.command()
-    async def eventsjp(self, ctx, group=None):
+    async def eventsjp(self, ctx, group: StarterGroup = None):
         """Display upcoming daily events for JP."""
-        await self.do_partial(ctx, 'JP', group)
+        await self.do_partial(ctx, Server.JP, group)
 
     @commands.command()
-    async def eventskr(self, ctx, group=None):
+    async def eventskr(self, ctx, group: StarterGroup = None):
         """Display upcoming daily events for KR."""
-        await self.do_partial(ctx, 'KR', group)
+        await self.do_partial(ctx, Server.KR, group)
 
-    async def do_partial(self, ctx, server, group=None):
-        server = normalize_server_name(server)
-        if server not in SUPPORTED_SERVERS:
-            await ctx.send("Unsupported server, pick one of NA, KR, JP")
-            return
+    async def do_partial(self, ctx, server: Server, group: StarterGroup = None):
+        server = server.value
 
-        if group is not None and group.lower() not in GROUPS:
-            await ctx.send("Unsupported group, pick one of red, blue, green")
-            return
+        if group is not None:
+            group = GROUPS[group.value]
 
         events = EventList(self.events)
         events = events.with_server(server)
