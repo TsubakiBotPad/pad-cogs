@@ -4,7 +4,9 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
-from tsutils import char_to_emoji, embed_footer_with_state
+from tsutils.emoji import char_to_emoji
+from tsutils.menu.footers import embed_footer_with_state
+
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -257,7 +259,7 @@ class SeriesScrollView:
             MonsterHeader.short_with_emoji(
                 mon,
                 link=SeriesScrollView._is_linked(i, current_index),
-                prefix=char_to_emoji(i)
+                prefix=char_to_emoji(str(i))
             )
             for i, mon in enumerate(monsters)
         ]

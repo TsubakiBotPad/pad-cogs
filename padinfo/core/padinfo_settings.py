@@ -1,4 +1,4 @@
-from tsutils import CogSettings
+from tsutils.cog_settings import CogSettings
 
 
 class PadInfoSettings(CogSettings):

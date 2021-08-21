@@ -113,7 +113,7 @@ def get_attribute_emoji_by_monster(monster: "MonsterModel"):
     return get_emoji(emoji)
 
 
-def get_attribute_emoji_by_enum(type1: Union[Enum, Literal[False]], type2: Optional[Union[Enum, Literal[bool]]] = None):
+def get_attribute_emoji_by_enum(type1: Union[Enum, Literal[False]], type2: Optional[Union[Enum, Literal[False]]] = None):
     attr1 = 'nil' if type1 is False else type1.name.lower()
     attr2 = 'nil' if type2 is False else type2.name.lower() if type2 else attr1
     emoji = "{}_{}".format(attr1, attr2) if attr1 != attr2 else 'orb_{}'.format(attr1)

@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
-from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
 
 from padinfo.view.monster_list.monster_list import MonsterListViewState

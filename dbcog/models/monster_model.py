@@ -1,4 +1,5 @@
 from tsutils.enums import Server
+from tsutils.formatting import contains_ja, rmdiacritics
 
 from .base_model import BaseModel
 from .enum_types import Attribute
@@ -7,7 +8,6 @@ from .enum_types import AwakeningRestrictedLatent
 from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
 from .leader_skill_model import LeaderSkillModel
-import tsutils
 import re
 from collections import defaultdict
 import romkan
@@ -41,7 +41,7 @@ class MonsterModel(BaseModel):
             self.roma_subname = self.make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
-            self.name_en = tsutils.rmdiacritics(self.name_en)
+            self.name_en = rmdiacritics(self.name_en)
 
         self.name_en_override = None
         # If the NA and JP names are the same, chances are the card isn't released in both reigions, and 
@@ -165,7 +165,7 @@ class MonsterModel(BaseModel):
         adjusted_subname = ''
         for part in subname.split('・'):
             roma_part = romkan.to_roma(part)
-            if part != roma_part and not tsutils.contains_ja(roma_part):
+            if part != roma_part and not contains_ja(roma_part):
                 adjusted_subname += ' ' + roma_part.strip('-')
         return adjusted_subname.strip()
 

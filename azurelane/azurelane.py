@@ -7,7 +7,8 @@ from io import BytesIO
 from collections import OrderedDict
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import inline
-from tsutils import EmojiUpdater, Menu, char_to_emoji
+from tsutils.emoji import char_to_emoji
+from tsutils.old_menu import EmojiUpdater, Menu
 
 logger = logging.getLogger('red.padbot-cogs.azurelane')
 
@@ -23,6 +24,9 @@ class AzureLane(commands.Cog):
         self.bot = bot
         self.card_data = []
         self.menu = Menu(bot)
+
+        self.id_to_card = None
+        self.names_to_card = None
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""

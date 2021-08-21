@@ -14,8 +14,14 @@ import prettytable
 import pytz
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
-from tsutils import CogSettings, DummyObject, NO_EMOJI, YES_EMOJI, get_user_confirmation, is_donor, \
-    normalize_server_name, rmdiacritics, send_cancellation_message, send_confirmation_message
+from tsutils.cog_settings import CogSettings
+from tsutils.cogs.donations import is_donor
+from tsutils.emoji import NO_EMOJI, YES_EMOJI
+from tsutils.formatting import normalize_server_name, rmdiacritics
+from tsutils.helper_classes import DummyObject
+from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
+
+normalize_server_name, rmdiacritics, send_cancellation_message, send_confirmation_message
 from tsutils.enums import Server, StarterGroup
 
 if TYPE_CHECKING:

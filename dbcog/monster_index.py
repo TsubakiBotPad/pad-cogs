@@ -6,9 +6,10 @@ import re
 from typing import Dict, List
 
 import aiohttp
-import tsutils
 from redbot.core.utils import AsyncIter
 from tsutils.enums import Server
+from tsutils.formatting import contains_ja
+from tsutils.helper_classes import aobject
 
 from .errors import InvalidGraphState
 from .models.monster_model import MonsterModel
@@ -28,7 +29,7 @@ TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
 
-class MonsterIndex(tsutils.aobject):
+class MonsterIndex(aobject):
     async def __ainit__(self, graph: MonsterGraph, server: Server = DEFAULT_SERVER):
         self.graph = graph
         self.server = server
@@ -206,7 +207,7 @@ class MonsterIndex(tsutils.aobject):
                 for t in self.monster_id_to_nametokens[me.monster_id]:
                     if t in nametokens:
                         self.add_name_token(self.name_tokens, t, m)
-                if me.is_equip or tsutils.contains_ja(me.name_en):
+                if me.is_equip or contains_ja(me.name_en):
                     continue
                 if last_token != me.name_en.split(',')[-1].strip():
                     autotoken = False
@@ -303,7 +304,7 @@ class MonsterIndex(tsutils.aobject):
         if treenames is None:
             treenames = set()
 
-        if tsutils.contains_ja(oname):
+        if contains_ja(oname):
             return list(treenames)
 
         name = oname.split(", ")
@@ -319,7 +320,7 @@ class MonsterIndex(tsutils.aobject):
             return cls._name_to_tokens(min(n1, n2, key=token_count))
 
     async def get_modifiers(self, monster: MonsterModel):
-        modifiers = self.manual_prefixes[monster.monster_id].copy()
+        modifiers = self.manual_prefixes[monster.monster_id].union({'monster'})
 
         basemon = self.graph.get_base_monster(monster)
 

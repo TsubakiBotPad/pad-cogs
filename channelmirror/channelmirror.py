@@ -6,11 +6,14 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-import tsutils
-from redbot.core import checks, commands, Config
-from redbot.core.utils.chat_formatting import inline, pagify, box
-from tsutils import CogSettings, auth_check, replace_emoji_names_with_code, fix_emojis_for_server, \
-    get_user_confirmation, send_confirmation_message, send_cancellation_message
+from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import box, inline, pagify
+from tsutils.cog_settings import CogSettings
+from tsutils.cogs.globaladmin import auth_check
+from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
+from tsutils.helper_classes import DummyObject
+from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message, \
+    send_repeated_consecutive_messages
 
 logger = logging.getLogger('red.misc-cogs.channelmirror')
 
@@ -347,7 +350,7 @@ class ChannelMirror(commands.Cog):
                         fctx = await self.bot.get_context(message)
                         fctx.send = dest_channel.guild.owner.send
                         fctx.history = dest_channel.guild.owner.history
-                        await tsutils.send_repeated_consecutive_messages(fctx, notify)
+                        await send_repeated_consecutive_messages(fctx, notify)
                     except Exception:
                         logger.exception("Owner message failed.")
             except Exception as ex:
@@ -370,7 +373,7 @@ class ChannelMirror(commands.Cog):
         if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
             return
         if not await self.config.channel(self.bot.get_channel(payload.channel_id)).nodeletion():
-            fmessage = tsutils.DummyObject(id=payload.message_id, channel=self.bot.get_channel(payload.channel_id))
+            fmessage = DummyObject(id=payload.message_id, channel=self.bot.get_channel(payload.channel_id))
             await self.mirror_msg_mod(fmessage, delete_message_content=True)
 
     @commands.Cog.listener('on_raw_reaction_add')

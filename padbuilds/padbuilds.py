@@ -4,7 +4,7 @@ from io import BytesIO
 from redbot.core import checks
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils import CogSettings
+from tsutils.cog_settings import CogSettings
 
 
 class PadBuilds(commands.Cog):
@@ -160,7 +160,7 @@ class PadBuilds(commands.Cog):
                 await message.channel.send(cmd)
 
     def format_cc(self, command, message):
-        results = re.findall(r"\{([^}]+)\}", command)
+        results = re.findall(r"{([^}]+)}", command)
         for result in results:
             param = self.transform_parameter(result, message)
             command = command.replace("{" + result + "}", param)

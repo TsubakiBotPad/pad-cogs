@@ -17,8 +17,8 @@
   "disabled": false,
   "required_cogs": {},
   "requirements": [
-    "tsutils",
-    "aiohttp"
+    "aiohttp",
+    "tsutils>=5.0.0"
   ],
   "tags": [
     "azurlane",

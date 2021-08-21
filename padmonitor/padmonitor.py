@@ -1,12 +1,16 @@
 import asyncio
 import logging
-import tsutils
+
 import discord
 from io import BytesIO
+
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from typing import TYPE_CHECKING
+
+from tsutils.cog_settings import CogSettings
+from tsutils.formatting import contains_ja
 
 logger = logging.getLogger('red.padbot-cogs.padmonitor')
 if TYPE_CHECKING:
@@ -69,7 +73,7 @@ class PadMonitor(commands.Cog):
                 msg = 'New monsters added to {}:'.format(name)
                 for m in [new_map[x] for x in delta_set]:
                     msg += '\n\t[{}] {}'.format(m.monster_id, m.unoverridden_name_en)
-                    if tsutils.contains_ja(m.name_en) and m.name_en_override is not None:
+                    if contains_ja(m.name_en) and m.name_en_override is not None:
                         msg += ' ({})'.format(m.name_en_override)
                 return msg
             else:
@@ -126,7 +130,7 @@ class PadMonitor(commands.Cog):
         await ctx.tick()
 
 
-class PadMonitorSettings(tsutils.CogSettings):
+class PadMonitorSettings(CogSettings):
     def make_default_settings(self):
         config = {
             'jp_seen_ids': [],

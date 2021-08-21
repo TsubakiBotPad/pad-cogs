@@ -1,7 +1,7 @@
 import urllib.parse
 from typing import TYPE_CHECKING
 
-import tsutils
+from tsutils.pad import get_pdx_id
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -13,7 +13,7 @@ ILMINA_TEMPLATE = 'https://ilmina.com/#/CARD/{}'
 
 
 def puzzledragonx(m: "MonsterModel"):
-    return INFO_PDX_TEMPLATE.format(tsutils.get_pdx_id(m))
+    return INFO_PDX_TEMPLATE.format(get_pdx_id(m))
 
 
 def youtube_search(m: "MonsterModel"):

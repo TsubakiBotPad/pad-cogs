@@ -7,7 +7,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.view_state import ViewState
-from tsutils import embed_footer_with_state
+from tsutils.menu.footers import embed_footer_with_state
 
 from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior

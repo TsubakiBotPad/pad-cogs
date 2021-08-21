@@ -1,16 +1,14 @@
 import asyncio
-import csv
-import discord
 import json
 import logging
-import pymysql
 from io import BytesIO
-from datetime import datetime
-from redbot.core import checks
-from redbot.core import commands
+
+import discord
+import pymysql
+from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings
-import tsutils
+from tsutils.cog_settings import CogSettings
+from tsutils.user_interaction import send_repeated_consecutive_messages
 
 logger = logging.getLogger('red.padbot-cogs.padguidedb')
 
@@ -156,10 +154,10 @@ class PadGuideDb(commands.Cog):
 
             if stderr:
                 logger.error("Dungeon Load Error:\n{}\n\n{}".format(stdout.decode(), stderr.decode()))
-                await tsutils.send_repeated_consecutive_messages(ctx, inline(
+                await send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
-                await tsutils.send_repeated_consecutive_messages(ctx, inline(
+                await send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
 

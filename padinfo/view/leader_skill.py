@@ -4,7 +4,8 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state
+from tsutils.menu.footers import embed_footer_with_state
+
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
