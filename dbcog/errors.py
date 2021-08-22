@@ -1,6 +1,7 @@
 class InvalidGraphState(KeyError):
     pass
 
+
 class InvalidMonsterId(KeyError):
     def __init__(self, monster_id: int):
         self.monster_id = monster_id

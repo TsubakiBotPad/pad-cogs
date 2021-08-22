@@ -1,13 +1,7 @@
-import asyncio
-import os
 import re
-import urllib.parse
 from io import BytesIO
 
-from redbot.core import checks, commands, Config
-
-import discord
-import tsutils
+from redbot.core import Config, checks, commands
 
 
 class MonIdListener(commands.Cog):

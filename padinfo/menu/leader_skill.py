@@ -2,7 +2,8 @@ from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
-from tsutils import char_to_emoji
+from tsutils.emoji import char_to_emoji
+
 from tsutils.menu.panes import MenuPanes, emoji_buttons
 
 from padinfo.view.id import IdView, IdViewState

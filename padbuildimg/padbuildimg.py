@@ -8,15 +8,12 @@ from shutil import rmtree
 
 import aiohttp
 import discord
-import tsutils
-from PIL import Image
-from PIL import ImageChops
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 from ply import lex
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
-from tsutils import CogSettings
+from tsutils.cog_settings import CogSettings
+from tsutils.tsubaki import CLOUDFRONT_URL
 
 HELP_MSG = """
 ^buildimg <build_shorthand>
@@ -153,7 +150,7 @@ AWK_CIRCLE = 'circle'
 AWK_STAR = 'star'
 DELAY_BUFFER = 'delay_buffer'
 REMOTE_ASSET_URL = 'https://raw.githubusercontent.com/TsubakiBotPad/padbot-cogs/master/padbuildimg/assets/'
-REMOTE_AWK_URL = tsutils.CLOUDFRONT_URL + '/media/awakenings/{0:03d}.png'
+REMOTE_AWK_URL = CLOUDFRONT_URL + '/media/awakenings/{0:03d}.png'
 
 
 # REMOTE_LAT_URL = 'https://pad.protic.site/wp-content/uploads/pad-latents/'
@@ -170,7 +167,7 @@ class PadBuildImgSettings(CogSettings):
     def make_default_build_img_params(self):
         build_img_params = DictWithAttributeAccess({
             'ASSETS_DIR': './assets/',
-            'PORTRAIT_DIR': tsutils.CLOUDFRONT_URL + '/media/icons/{monster_id:05d}.png',
+            'PORTRAIT_DIR': CLOUDFRONT_URL + '/media/icons/{monster_id:05d}.png',
             # 'OUTPUT_DIR': './data/padbuildimg/output/',
             'PORTRAIT_WIDTH': 100,
             'PADDING': 10,

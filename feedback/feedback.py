@@ -3,7 +3,7 @@ from io import BytesIO
 import discord
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
-from tsutils import CogSettings
+from tsutils.cog_settings import CogSettings
 
 
 class Feedback(commands.Cog):

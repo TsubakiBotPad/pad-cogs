@@ -12,14 +12,16 @@ import os
 import shutil
 import time
 from io import BytesIO
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import discord
-import tsutils
 from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils import auth_check, safe_read_json
+from tsutils.cogs.globaladmin import auth_check
 from tsutils.enums import Server
+from tsutils.json_utils import async_cached_dadguide_request, safe_read_json
+from tsutils.tsubaki import CLOUDFRONT_URL
+from tsutils.user_interaction import StatusManager, send_confirmation_message
 
 from . import token_mappings
 from .database_loader import load_database
@@ -69,7 +71,8 @@ class DBCog(commands.Cog, IdTest):
 
         self.mon_finder = None  # type: Optional[FindMonster]
 
-        if (gadmin := self.bot.get_cog("GlobalAdmin")):
+        gadmin: Any = self.bot.get_cog("GlobalAdmin")
+        if gadmin:
             gadmin.register_perm("contentadmin")
 
     async def wait_until_ready(self) -> None:
@@ -184,7 +187,7 @@ class DBCog(commands.Cog, IdTest):
         while self == self.bot.get_cog('DBCog'):
             short_wait = False
             try:
-                async with tsutils.StatusManager(self.bot):
+                async with StatusManager(self.bot):
                     await self.download_and_refresh_nicknames()
                 logger.info('Done refreshing DBCog, triggering ready')
                 self._is_ready.set()
@@ -205,9 +208,9 @@ class DBCog(commands.Cog, IdTest):
             shutil.copy2(await self.config.datafile(), self.db_file_path)
         else:
             logger.info('Downloading dg data files')
-            await tsutils.async_cached_dadguide_request(self.db_file_path,
-                                                        tsutils.CLOUDFRONT_URL + '/db/dadguide.sqlite',
-                                                        1 * 60 * 60)
+            await async_cached_dadguide_request(self.db_file_path,
+                                                CLOUDFRONT_URL + '/db/dadguide.sqlite',
+                                                1 * 60 * 60)
 
         logger.info('Loading dg database')
         self.database = load_database(self.database, await self.get_debug_monsters())
@@ -244,15 +247,15 @@ class DBCog(commands.Cog, IdTest):
         """Sets tsubaki-only mode and reloads the index and graph"""
         await self.config.debug_mode.set(enabled)
         if enabled:
-            await tsutils.send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
-                                                         f" Only **Tsubaki** will be available in the graph and id"
-                                                         f" queries, to allow for a faster restart time. To turn"
-                                                         f" off **Tsubaki mode** run"
-                                                         f" `{ctx.prefix}dbcog debugmode false`.")
+            await send_confirmation_message(ctx, f"You have set your bot to **Tsubaki mode** (aka debug mode)."
+                                                 f" Only **Tsubaki** will be available in the graph and id"
+                                                 f" queries, to allow for a faster restart time. To turn"
+                                                 f" off **Tsubaki mode** run"
+                                                 f" `{ctx.prefix}dbcog debugmode false`.")
         else:
-            await tsutils.send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
-                                                         f" normally. To return to **Tsubaki mode**, run"
-                                                         f" `{ctx.prefix}dbcog debugmode true.`")
+            await send_confirmation_message(ctx, f"You have turned off **Tsubaki mode**. Your bot will behave"
+                                                 f" normally. To return to **Tsubaki mode**, run"
+                                                 f" `{ctx.prefix}dbcog debugmode true.`")
         await self.forceindexreload(ctx)
 
     @debugmode.group(name="monsters")

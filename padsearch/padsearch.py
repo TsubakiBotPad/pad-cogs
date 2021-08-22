@@ -6,7 +6,9 @@ from io import BytesIO
 from ply import lex
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils import timeout_after
+from tsutils.helper_functions import timeout_after
+
+from dbcog.database_context import DbContext
 
 logger = logging.getLogger('red.padbot-cogs.padsearch')
 

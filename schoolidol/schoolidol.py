@@ -7,7 +7,8 @@ from io import BytesIO
 from collections import OrderedDict
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import inline
-from tsutils import EmojiUpdater, Menu, char_to_emoji
+from tsutils.emoji import char_to_emoji
+from tsutils.old_menu import EmojiUpdater, Menu
 
 logger = logging.getLogger('red.padbot-cogs.schoolidol')
 

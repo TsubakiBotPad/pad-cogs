@@ -5,23 +5,25 @@ import random
 import re
 import urllib.parse
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import List, Optional, TYPE_CHECKING, Type
 
 import discord
-import tsutils
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
-from redbot.core import checks, commands, data_manager, Config
+from redbot.core import Config, checks, commands, data_manager
 from redbot.core.commands import Literal as LiteralConverter
-from redbot.core.utils.chat_formatting import box, inline, bold, pagify, text_to_file
+from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to_file
 from tabulate import tabulate
-from tsutils import char_to_emoji, is_donor, safe_read_json
-from tsutils.enums import Server, AltEvoSort, LsMultiplier, CardPlusModifier
+from tsutils.cogs.donations import is_donor
+from tsutils.emoji import char_to_emoji
+from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server
+from tsutils.json_utils import safe_read_json
 from tsutils.query_settings import QuerySettings
+from tsutils.user_interaction import get_user_confirmation
 
 from padinfo.common.config import BotConfig
-from padinfo.common.emoji_map import get_attribute_emoji_by_enum, get_awakening_emoji, get_type_emoji, \
-    get_attribute_emoji_by_monster, AWAKENING_ID_TO_EMOJI_NAME_MAP
+from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
+    get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -33,14 +35,14 @@ from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_map import padinfo_menu_map
-from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes, MonsterListEmoji
+from padinfo.menu.monster_list import MonsterListEmoji, MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
-from padinfo.menu.series_scroll import SeriesScrollMenuPanes, SeriesScrollMenu, SeriesScrollEmoji
+from padinfo.menu.series_scroll import SeriesScrollEmoji, SeriesScrollMenu, SeriesScrollMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
-from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListSortTypes
+from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListViewState
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
@@ -291,7 +293,7 @@ class PadInfo(commands.Cog):
                  'entry.1787446565': str(ctx.author)})
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
-            userres = await tsutils.get_user_confirmation(ctx, "Was this the monster you were looking for?",
+            userres = await get_user_confirmation(ctx, "Was this the monster you were looking for?",
                                                     yes_emoji=char_to_emoji('y'), no_emoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)

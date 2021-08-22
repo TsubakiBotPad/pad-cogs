@@ -19,7 +19,7 @@
     "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs"
   },
   "requirements": [
-    "tsutils>=4.0.0",
+    "tsutils>=5.0.0",
     "pytz",
     "romkan",
     "networkx"

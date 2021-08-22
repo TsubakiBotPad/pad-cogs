@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any, Dict
 
 from Levenshtein import jaro_winkler
-from tsutils import rmdiacritics
+from tsutils.formatting import rmdiacritics
 from tsutils.query_settings import QuerySettings
 from tsutils.enums import Server
 
@@ -102,10 +102,9 @@ class FindMonster:
             value = value.lstrip('-')
         if (exact := bool(re.fullmatch(r'".+"', value))):
             value = value[1:-1]
-        if re.fullmatch(r'.+-.+', value):
-            for special in SPECIAL_TOKEN_TYPES:
-                if re.fullmatch(special.RE_MATCH, value):
-                    return special(value, negated=negated, exact=exact, database=self.dbcog.database)
+        for special in SPECIAL_TOKEN_TYPES:
+            if re.fullmatch(special.RE_MATCH, value):
+                return special(value, negated=negated, exact=exact, database=self.dbcog.database)
         return Token(value, negated=negated, exact=exact)
 
     def _interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[Token], Set[Token]]:

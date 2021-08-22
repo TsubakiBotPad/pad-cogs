@@ -6,7 +6,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
-from tsutils import embed_footer_with_state
+from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
