@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import Text, BoldText
-from tsutils import char_to_emoji
+
 from tsutils.enums import LsMultiplier
 from tsutils.query_settings import QuerySettings
 

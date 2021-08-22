@@ -4,7 +4,8 @@ import re
 from io import BytesIO
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import CogSettings, normalize_server_name
+from tsutils.cog_settings import CogSettings
+from tsutils.formatting import normalize_server_name
 
 logger = logging.getLogger('red.padbot-cogs.profile')
 
@@ -12,10 +13,10 @@ logger = logging.getLogger('red.padbot-cogs.profile')
 SUPPORTED_SERVERS = ["NA", "KR", "JP", "EU"]
 
 
-def validate_and_clean_id(id):
-    id = id.replace('-', '').replace(' ', '').replace(',', '').replace('.', '').strip()
-    if re.match(r'^\d{9}$', id):
-        return id
+def validate_and_clean_id(pad_id):
+    pad_id = pad_id.replace('-', '').replace(' ', '').replace(',', '').replace('.', '').strip()
+    if re.match(r'^\d{9}$', pad_id):
+        return pad_id
     else:
         return None
 
@@ -25,8 +26,8 @@ def format_name_line(server, pad_name, pad_id):
     return "[{}]: '{}' : {} (Group {})".format(server, pad_name, format_id(pad_id), group)
 
 
-def format_id(id):
-    return id[0:3] + "," + id[3:6] + "," + id[6:9]
+def format_id(pad_id):
+    return pad_id[0:3] + "," + pad_id[3:6] + "," + pad_id[6:9]
 
 
 def compute_old_group(str_id):
@@ -77,7 +78,7 @@ class Profile(commands.Cog):
         await ctx.send(profile_msg)
 
     @commands.command()
-    async def idto(self, ctx, user: discord.Member, server=None):
+    async def idto(self, ctx, user: discord.User, server=None):
         """Whispers your profile to specified user
 
         If you do not provide a server, your default is used
@@ -93,7 +94,7 @@ class Profile(commands.Cog):
         await ctx.author.send(inline("Sent your profile to " + user.name))
 
     @commands.command()
-    async def idfor(self, ctx, user: discord.Member, server=None):
+    async def idfor(self, ctx, user: discord.User, server=None):
         """Displays the profile of the specified user
 
         If you do not provide a server, your default is used.
@@ -148,7 +149,7 @@ class Profile(commands.Cog):
         await ctx.send(inline('Set your default server to: ' + server))
 
     @profile.command(name="id")
-    async def _id(self, ctx, server, *id):
+    async def _id(self, ctx, server, *, pad_id):
         """Sets your ID for a server
 
         ID must be 9 digits, can be space/comma/dash delimited.
@@ -157,8 +158,7 @@ class Profile(commands.Cog):
         if server is None:
             return None
 
-        id = " ".join(id)
-        clean_id = validate_and_clean_id(id)
+        clean_id = validate_and_clean_id(pad_id)
         if clean_id is None:
             await ctx.send(inline('Your ID looks invalid, expected a 9 digit code, got: {}'.format(id)))
             return
@@ -295,8 +295,8 @@ class ProfileSettings(CogSettings):
             profile[server] = {}
         return profile[server]
 
-    def setId(self, user, server, id):
-        self.getProfile(user, server)['id'] = int(id)
+    def setId(self, user, server, pad_id):
+        self.getProfile(user, server)['id'] = int(pad_id)
         self.save_settings()
 
     def getId(self, user, server):

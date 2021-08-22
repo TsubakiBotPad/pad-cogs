@@ -19,7 +19,7 @@
     "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs"
   },
   "requirements": [
-    "tsutils",
+    "tsutils>=5.0.0",
     "pymysql",
     "aiofiles",
     "cryptography",

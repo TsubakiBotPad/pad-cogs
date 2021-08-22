@@ -2,7 +2,7 @@ from io import BytesIO
 
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import auth_check
+from tsutils.cogs.globaladmin import auth_check
 
 DISCLAIMER = "**Disclaimer**: This is Lumon's data. Use at your own discretion."
 

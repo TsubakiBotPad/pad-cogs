@@ -1,5 +1,8 @@
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 from dbcog.models.enum_types import AwokenSkills
+
+if TYPE_CHECKING:
+    from dbcog.models.monster_model import MonsterModel
 
 StatType = Literal['hp', 'atk', 'rcv']
 
@@ -47,7 +50,8 @@ class MonsterStats:
     LV_120_MULT_DICT = {'hp': 10, 'atk': 5, 'rcv': 5}
 
     def stat(self, monster_model, key: StatType, lv, *, plus=99, inherit=False, is_plus_297=True,
-             stat_latents: MonsterStatModifierInput = None, multiplayer=False, inherited_monster: "MonsterModel" = None, inherited_monster_lvl=99):
+             stat_latents: MonsterStatModifierInput = None, multiplayer=False, inherited_monster: "MonsterModel" = None,
+             inherited_monster_lvl=99):
         # TODO: deal with atk-, rcv-, and hp- awakenings
         # PAD rounds stats from the start before any calculations
         s_val = round(self.base_stat(key, lv, monster_model))

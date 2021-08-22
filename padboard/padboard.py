@@ -2,13 +2,15 @@ import aiohttp
 import cv2
 import discord
 import numpy as np
+from tsutils.formatting import extract_image_url
+
 from .padvision import NeuralClassifierBoardExtractor
 from io import BytesIO
 from collections import defaultdict
 from collections import deque
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import inline
-from tsutils import extract_image_url
+
 
 DAWNGLARE_BOARD_TEMPLATE = "https://pad.dawnglare.com/?patt={}"
 CNINJA_BOARD_TEMPLATE = "https://candyninja001.github.io/Puzzled/?patt={}"

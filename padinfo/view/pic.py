@@ -2,7 +2,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
 from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state
+from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView

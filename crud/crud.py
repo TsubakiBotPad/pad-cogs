@@ -11,7 +11,8 @@ import pygit2
 import pymysql
 from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
-from tsutils import auth_check, get_user_confirmation, send_cancellation_message
+from tsutils.cogs.globaladmin import auth_check
+from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
 logger = logging.getLogger('red.padbot-cogs.crud')
 

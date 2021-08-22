@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedAuthor
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
-from tsutils import embed_footer_with_state
+from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.emoji_map import get_awakening_emoji
 from padinfo.common.external_links import puzzledragonx

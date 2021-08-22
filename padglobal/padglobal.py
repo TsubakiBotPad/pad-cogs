@@ -11,12 +11,19 @@ from io import BytesIO
 import discord
 import prettytable
 import pytz
-import tsutils
+
 from discord import Color
 from redbot.core import checks, data_manager, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta, bold
-from tsutils import CogSettings, clean_global_mentions, get_user_confirmation, replace_emoji_names_with_code, safe_read_json, \
-    auth_check, get_user_reaction
+from tsutils.cog_settings import CogSettings
+from tsutils.cogs.globaladmin import auth_check
+from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
+from tsutils.formatting import clean_global_mentions, strip_right_multiline
+from tsutils.json_utils import safe_read_json
+from tsutils.tsubaki import CLOUDFRONT_URL
+from tsutils.user_interaction import get_user_confirmation, get_user_reaction
+
+auth_check, get_user_reaction
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
@@ -46,7 +53,7 @@ PAD Global Commands
 
 BLACKLISTED_CHARACTERS = '^[]*`~_'
 
-PORTRAIT_TEMPLATE = tsutils.CLOUDFRONT_URL + '/media/portraits/{0:05d}.png'
+PORTRAIT_TEMPLATE = CLOUDFRONT_URL + '/media/portraits/{0:05d}.png'
 
 DISABLED_MSG = 'PAD Global info disabled on this server'
 
@@ -791,7 +798,7 @@ class PadGlobal(commands.Cog):
         for grp in sorted(monsters.keys()):
             tbl.add_row([grp, ', '.join(sorted(monsters[grp]))])
 
-        tbl_string = tsutils.strip_right_multiline(tbl.get_string())
+        tbl_string = strip_right_multiline(tbl.get_string())
         return tbl_string
 
     async def _do_send_which(self, ctx, to_user: discord.Member, name, definition, timestamp):
@@ -986,7 +993,7 @@ class PadGlobal(commands.Cog):
         for mon in sorted(sorted(monsters), key=lambda x: x[1]):
             tbl.add_row(mon)
 
-        msg = tsutils.strip_right_multiline(tbl.get_string())
+        msg = strip_right_multiline(tbl.get_string())
 
         for page in pagify(msg):
             if destination == channel:
@@ -1434,8 +1441,8 @@ class PadGlobal(commands.Cog):
             if guild.id in emoteservers:
                 continue
             emojis.extend(guild.emojis)
-        message = tsutils.replace_emoji_names_with_code(emojis, message)
-        return tsutils.fix_emojis_for_server(emojis, message)
+        message = replace_emoji_names_with_code(emojis, message)
+        return fix_emojis_for_server(emojis, message)
 
 
 def check_simple_tree(monster, db_context):
