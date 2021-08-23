@@ -460,6 +460,11 @@ class MonsterIndex(aobject):
                     modifiers.update(MISC_MAP[MiscModifiers.MEDAL_EXC])
                     if self.graph.monster_is_black_medal_exchange_evo(monster):
                         modifiers.update(MISC_MAP[MiscModifiers.BLACK_MEDAL])
+                    if self.graph.monster_is_currently_exchangable_evo(monster):
+                        modifiers.update(MISC_MAP[MiscModifiers.CURRENT_EXCHANGE])
+                    if self.graph.monster_is_permanent_exchange_evo(monster):
+                        modifiers.update(MISC_MAP[MiscModifiers.PERMANENT_EXCHANGE])
+
             except InvalidGraphState:
                 pass
             if self.graph.monster_is_mp_evo(monster):
