@@ -191,6 +191,7 @@ class MiscModifiers(Enum):
     ORBSKIN = 'Grants an orb skin'
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
+    BLACK_MEDAL = 'Exchangable for black medals'
 
 
 MISC_MAP = {
@@ -211,13 +212,15 @@ MISC_MAP = {
     MiscModifiers.NEW: ('new',),
     MiscModifiers.ORBSKIN: ('orbskin',),
     MiscModifiers.ANIMATED: ('animated',),
-    MiscModifiers.MEDAL_EXC: ('medal', 'shop')
+    MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
+    MiscModifiers.BLACK_MEDAL: ('blackmetal',),
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
     'super reincarnated',
     'mega awoken',
     'orb skin',
+    'black metal',
 }}
 
 ALL_TOKEN_DICTS = {

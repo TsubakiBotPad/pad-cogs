@@ -584,6 +584,12 @@ class MonsterGraph(object):
         ids = self.get_monster_exchange_mats(monster)
         return bool(ids) and all(15 in [t.value for t in m.types] for m in ids)
 
+    def monster_is_black_medal_exchange(self, monster: MonsterModel) -> bool:
+        return 5155 in [m.monster_id for m in self.get_monster_exchange_mats(monster)]
+
+    def monster_is_black_medal_exchange_evo(self, monster: MonsterModel) -> bool:
+        return any(self.monster_is_black_medal_exchange(alt) for alt in self.get_alt_monsters(monster))
+
     def monster_is_new(self, monster: MonsterModel) -> bool:
         latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
         return monster.reg_date == latest_time
