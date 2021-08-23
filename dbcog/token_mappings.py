@@ -194,6 +194,7 @@ class MiscModifiers(Enum):
     BLACK_MEDAL = 'Exchangable for black medals'
     CURRENT_EXCHANGE = 'Currently exchangable'
     PERMANENT_EXCHANGE = 'Permanently exchangable'
+    TEMP_EXCHANGE = 'Temporarily exchangable'
 
 
 MISC_MAP = {
@@ -217,7 +218,8 @@ MISC_MAP = {
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),
     MiscModifiers.CURRENT_EXCHANGE: ('nowshop',),
-    MiscModifiers.PERMANENT_EXCHANGE: ('permshop',),
+    MiscModifiers.PERMANENT_EXCHANGE: ('permshop', 'shopperm'),
+    MiscModifiers.TEMP_EXCHANGE: ('tempshop', 'shoptemp'),
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {

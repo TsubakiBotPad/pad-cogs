@@ -464,6 +464,8 @@ class MonsterIndex(aobject):
                         modifiers.update(MISC_MAP[MiscModifiers.CURRENT_EXCHANGE])
                     if self.graph.monster_is_permanent_exchange_evo(monster):
                         modifiers.update(MISC_MAP[MiscModifiers.PERMANENT_EXCHANGE])
+                    if self.graph.monster_is_temporary_exchange_evo(monster):
+                        modifiers.update(MISC_MAP[MiscModifiers.TEMP_EXCHANGE])
 
             except InvalidGraphState:
                 pass

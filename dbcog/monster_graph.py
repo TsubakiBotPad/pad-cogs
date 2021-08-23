@@ -626,6 +626,13 @@ class MonsterGraph(object):
     def monster_is_permanent_exchange_evo(self, monster: MonsterModel) -> bool:
         return any(self.monster_is_permanent_exchange(alt) for alt in self.get_alt_monsters(monster))
 
+    def monster_is_temporary_exchange(self, monster: MonsterModel) -> bool:
+        return any(not (model.permanent and model.end_timestamp.year < 2030)
+                   for model in self.get_monster_exchange_models(monster))
+
+    def monster_is_temporary_exchange_evo(self, monster: MonsterModel) -> bool:
+        return any(self.monster_is_temporary_exchange(alt) for alt in self.get_alt_monsters(monster))
+
     def monster_is_new(self, monster: MonsterModel) -> bool:
         latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
         return monster.reg_date == latest_time
