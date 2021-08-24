@@ -608,16 +608,17 @@ class MonsterGraph(object):
     def monster_is_black_medal_exchange_evo(self, monster: MonsterModel) -> bool:
         return any(self.monster_is_black_medal_exchange(alt) for alt in self.get_alt_monsters(monster))
 
-    def monster_is_currently_exchangable(self, monster: MonsterModel) -> bool:
+    def monster_is_currently_exchangable(self, monster: MonsterModel, server: Optional[Server] = None) -> bool:
         models = self.get_monster_exchange_models(monster)
         now = datetime.now()
         for model in models:
-            if model.start_timestamp < now < model.end_timestamp:
+            if model.start_timestamp < now < model.end_timestamp \
+                    and (server is None or server == model.server):
                 return True
         return False
 
-    def monster_is_currently_exchangable_evo(self, monster: MonsterModel) -> bool:
-        return any(self.monster_is_currently_exchangable(alt) for alt in self.get_alt_monsters(monster))
+    def monster_is_currently_exchangable_evo(self, monster: MonsterModel, server: Optional[Server] = None) -> bool:
+        return any(self.monster_is_currently_exchangable(alt, server) for alt in self.get_alt_monsters(monster))
 
     def monster_is_permanent_exchange(self, monster: MonsterModel) -> bool:
         return any(model.permanent or model.end_timestamp.year > 2030
