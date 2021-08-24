@@ -52,7 +52,7 @@ class MonsterModel(BaseModel):
         if not m['name_is_translation']:
             self.name_en_override = m['name_en_override']
 
-        self.name_en = self.name_en_override or self.name_en
+        self.name_en = (self.name_en_override or self.name_en).strip()
 
         self.type1 = enum_or_none(MonsterType, m['type_1_id'])
         self.type2 = enum_or_none(MonsterType, m['type_2_id'])

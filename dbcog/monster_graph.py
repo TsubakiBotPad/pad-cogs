@@ -2,7 +2,8 @@ import json
 import logging
 import re
 from collections import defaultdict
-from typing import Optional, List, Set, Dict, Tuple, Any
+from datetime import datetime
+from typing import Optional, List, Set, Dict, Tuple, Any, Type, TypeVar
 
 from networkx import MultiDiGraph
 from tsutils.enums import Server
@@ -14,12 +15,15 @@ from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel
 from .models.enum_types import InternalEvoType, DEFAULT_SERVER, SERVERS
 from .models.evolution_model import EvolutionModel
+from .models.exchange_model import ExchangeModel
 from .models.leader_skill_model import LeaderSkillModel
 from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
 from .models.series_model import SeriesModel
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
+
+M = TypeVar('M', bound=BaseModel)
 
 MONSTER_QUERY = """SELECT
   monsters{0}.*,
@@ -305,15 +309,18 @@ class MonsterGraph(object):
                     mat, evo_model.to_id, type="material_of", model=evo_model)
                 already_used_in_this_evo.append(mat)
 
+        exchanges = defaultdict(set)
         for ex in exs:
+            model = ExchangeModel(**ex)
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
                 if self.debug_monster_ids is not None:
-                    if ex.target_monster_id not in self.debug_monster_ids or int(vendor_id) not in self.debug_monster_ids:
+                    if ex.target_monster_id not in self.debug_monster_ids \
+                            or int(vendor_id) not in self.debug_monster_ids:
                         continue
-                graph.add_edge(
-                    ex.target_monster_id, int(vendor_id), type='exchange_from')
-                graph.add_edge(
-                    int(vendor_id), ex.target_monster_id, type='exchange_for')
+                exchanges[(int(vendor_id), ex.target_monster_id)].add(model)
+        for (sell_id, buy_id), models in exchanges.items():
+            graph.add_edge(buy_id, sell_id, type='exchange_from', models=models)
+            graph.add_edge(sell_id, buy_id, type='exchange_for', models=models)
 
         return graph
 
@@ -346,6 +353,14 @@ class MonsterGraph(object):
         if len(possible_results) == 0:
             return None
         return sorted(possible_results, key=lambda x: x.tstamp)[-1]
+
+    def _get_edge_model_set(self, monster: MonsterModel, etype, model_type: Type[M] = BaseModel) -> Set[M]:
+        possible_results = set()
+        for atlas in self.graph_dict[monster.server_priority][monster.monster_id].values():
+            for edge in atlas.values():
+                if edge.get('type') == etype:
+                    possible_results.update(edge['models'])
+        return {model for model in possible_results}
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
             -> Optional[MonsterModel]:
@@ -576,6 +591,9 @@ class MonsterGraph(object):
     def get_monster_exchange_mat_ids(self, monster: MonsterModel) -> Set[int]:
         return self._get_edges(monster, 'exchange_from')
 
+    def get_monster_exchange_models(self, monster: MonsterModel) -> Set[ExchangeModel]:
+        return self._get_edge_model_set(monster, 'exchange_from')
+
     def get_monster_exchange_mats(self, monster: MonsterModel) -> Set[MonsterModel]:
         return {self.get_monster(mid, server=monster.server_priority)
                 for mid in self.get_monster_exchange_mat_ids(monster)}
@@ -589,6 +607,33 @@ class MonsterGraph(object):
 
     def monster_is_black_medal_exchange_evo(self, monster: MonsterModel) -> bool:
         return any(self.monster_is_black_medal_exchange(alt) for alt in self.get_alt_monsters(monster))
+
+    def monster_is_currently_exchangable(self, monster: MonsterModel) -> bool:
+        models = self.get_monster_exchange_models(monster)
+        now = datetime.now()
+        for model in models:
+            if model.start_timestamp < now < model.end_timestamp:
+                return True
+        return False
+
+    def monster_is_currently_exchangable_evo(self, monster: MonsterModel) -> bool:
+        return any(self.monster_is_currently_exchangable(alt) for alt in self.get_alt_monsters(monster))
+
+    def monster_is_permanent_exchange(self, monster: MonsterModel) -> bool:
+        return any(model.permanent or model.end_timestamp.year > 2030
+                   for model in self.get_monster_exchange_models(monster))
+
+    def monster_is_permanent_exchange_evo(self, monster: MonsterModel) -> bool:
+        return any(self.monster_is_permanent_exchange(alt) for alt in self.get_alt_monsters(monster))
+
+    def monster_is_temporary_exchange(self, monster: MonsterModel) -> bool:
+        """Not necessarily a current exchange"""
+        return any(not (model.permanent and model.end_timestamp.year < 2030)
+                   for model in self.get_monster_exchange_models(monster))
+
+    def monster_is_temporary_exchange_evo(self, monster: MonsterModel) -> bool:
+        """Not necessarily a current exchange"""
+        return any(self.monster_is_temporary_exchange(alt) for alt in self.get_alt_monsters(monster))
 
     def monster_is_new(self, monster: MonsterModel) -> bool:
         latest_time = max(am.reg_date for am in self.get_alt_monsters(monster))
