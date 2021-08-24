@@ -192,7 +192,9 @@ class MiscModifiers(Enum):
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
     BLACK_MEDAL = 'Exchangable for black medals'
-    CURRENT_EXCHANGE = 'Currently exchangable'
+    CURRENT_EXCHANGE_JP = 'Currently exchangable in JP'
+    CURRENT_EXCHANGE_NA = 'Currently exchangable in NA'
+    CURRENT_EXCHANGE_KR = 'Currently exchangable in KR'
     PERMANENT_EXCHANGE = 'Permanently exchangable'
     TEMP_EXCHANGE = 'Temporarily exchangable at some point in time'
 
@@ -217,7 +219,9 @@ MISC_MAP = {
     MiscModifiers.ANIMATED: ('animated',),
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),
-    MiscModifiers.CURRENT_EXCHANGE: ('nowshop', 'shopnow'),
+    MiscModifiers.CURRENT_EXCHANGE_JP: ('nowshopjp', 'shopnowjp'),
+    MiscModifiers.CURRENT_EXCHANGE_NA: ('nowshopna', 'shopnowna'),
+    MiscModifiers.CURRENT_EXCHANGE_KR: ('nowshopkr', 'shopnowkr'),
     MiscModifiers.PERMANENT_EXCHANGE: ('permshop', 'shopperm'),
     MiscModifiers.TEMP_EXCHANGE: ('tempshop', 'shoptemp'),
 }
