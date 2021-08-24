@@ -632,6 +632,7 @@ class MonsterGraph(object):
                    for model in self.get_monster_exchange_models(monster))
 
     def monster_is_temporary_exchange_evo(self, monster: MonsterModel) -> bool:
+        """Not necessarily a current exchange"""
         return any(self.monster_is_temporary_exchange(alt) for alt in self.get_alt_monsters(monster))
 
     def monster_is_new(self, monster: MonsterModel) -> bool:
