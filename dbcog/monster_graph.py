@@ -3,7 +3,7 @@ import logging
 import re
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, List, Set, Dict, Tuple, Any, Type, TypeVar
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar
 
 from networkx import MultiDiGraph
 from tsutils.enums import Server
@@ -13,12 +13,12 @@ from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel
-from .models.enum_types import InternalEvoType, DEFAULT_SERVER, SERVERS
+from .models.enum_types import DEFAULT_SERVER, InternalEvoType, SERVERS
 from .models.evolution_model import EvolutionModel
 from .models.exchange_model import ExchangeModel
 from .models.leader_skill_model import LeaderSkillModel
-from .models.monster_model import MonsterModel
 from .models.monster.monster_difference import MonsterDifference
+from .models.monster_model import MonsterModel
 from .models.series_model import SeriesModel
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
@@ -427,7 +427,7 @@ class MonsterGraph(object):
             '覚醒' in monster.name_ja or 'awoken' in monster.name_en.lower(),
             monster.monster_id,
         )
-    
+
     def get_alt_ids(self, monster: MonsterModel) -> List[int]:
         return self.graph_dict[monster.server_priority].nodes[monster.monster_id]['alt_versions']
 
@@ -628,8 +628,8 @@ class MonsterGraph(object):
 
     def monster_is_temporary_exchange(self, monster: MonsterModel) -> bool:
         """Not necessarily a current exchange"""
-        return any(not (model.permanent and model.end_timestamp.year < 2030)
-                   for model in self.get_monster_exchange_models(monster))
+        return not all(model.permanent and model.end_timestamp.year > 2030
+                       for model in self.get_monster_exchange_models(monster))
 
     def monster_is_temporary_exchange_evo(self, monster: MonsterModel) -> bool:
         """Not necessarily a current exchange"""
