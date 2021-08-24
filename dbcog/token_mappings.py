@@ -194,7 +194,7 @@ class MiscModifiers(Enum):
     BLACK_MEDAL = 'Exchangable for black medals'
     CURRENT_EXCHANGE = 'Currently exchangable'
     PERMANENT_EXCHANGE = 'Permanently exchangable'
-    TEMP_EXCHANGE = 'Temporarily exchangable'
+    TEMP_EXCHANGE = 'Temporarily exchangable at some point in time'
 
 
 MISC_MAP = {
@@ -217,7 +217,7 @@ MISC_MAP = {
     MiscModifiers.ANIMATED: ('animated',),
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),
-    MiscModifiers.CURRENT_EXCHANGE: ('nowshop',),
+    MiscModifiers.CURRENT_EXCHANGE: ('nowshop', 'shopnow'),
     MiscModifiers.PERMANENT_EXCHANGE: ('permshop', 'shopperm'),
     MiscModifiers.TEMP_EXCHANGE: ('tempshop', 'shoptemp'),
 }

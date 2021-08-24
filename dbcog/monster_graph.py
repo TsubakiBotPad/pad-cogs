@@ -627,6 +627,7 @@ class MonsterGraph(object):
         return any(self.monster_is_permanent_exchange(alt) for alt in self.get_alt_monsters(monster))
 
     def monster_is_temporary_exchange(self, monster: MonsterModel) -> bool:
+        """Not necessarily a current exchange"""
         return any(not (model.permanent and model.end_timestamp.year < 2030)
                    for model in self.get_monster_exchange_models(monster))
 
