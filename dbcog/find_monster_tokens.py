@@ -1,8 +1,13 @@
 import re
+from fnmatch import fnmatch
 
 from dbcog.models.enum_types import AwokenSkills
 from dbcog.models.monster_model import MonsterModel
-from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, PLUS_AWOKENSKILL_MAP
+from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, BOOL_MONSTER_ATTRIBUTE_ALIASES, \
+    BOOL_MONSTER_ATTRIBUTE_NAMES, \
+    NUMERIC_MONSTER_ATTRIBUTE_ALIASES, \
+    NUMERIC_MONSTER_ATTRIBUTE_NAMES, \
+    PLUS_AWOKENSKILL_MAP, STRING_MONSTER_ATTRIBUTE_ALIASES, STRING_MONSTER_ATTRIBUTE_NAMES
 
 
 def regexlist(tokens):
@@ -85,59 +90,84 @@ class MultipleAwakeningToken(SpecialToken):
         return False
 
 
-NUMERICAL_MONSTER_TOKENS = ['sell_mp']
-
-
 class MonsterAttributeNumeric(SpecialToken):
-    RE_MATCH = rf"({regexlist(NUMERICAL_MONSTER_TOKENS)}):([<>=]=?)?(\d+)"
+    RE_MATCH = rf"({regexlist(NUMERIC_MONSTER_ATTRIBUTE_NAMES)}):([<>=])?(\d+)([kmb])?"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        name, ineq, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
-        self.monster_attribute = name
+        attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.monster_attribute = {at for at, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
+                                  if attr in aliases}.pop()
         self.operator = ineq or "="
-        self.rhs = int(value)
+        self.rhs = int(value) * (1e9 if mult == 'b' else 1e6 if mult == 'm' else 1e3 if mult == 'k' else 1)
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
 
     def matches(self, monster):
-        attr = getattr(monster, self.monster_attribute)
-        print(attr)
-        if "<" in self.operator and attr < self.rhs:
+        val: MonsterModel = monster
+        for attr in self.monster_attribute:
+            val: int = getattr(val, attr, None)
+        if val is None:
+            return False
+        if "<" in self.operator and val < self.rhs:
             return True
-        if ">" in self.operator and attr > self.rhs:
+        if ">" in self.operator and val > self.rhs:
             return True
-        if "=" in self.operator and attr == self.rhs:
+        if "=" in self.operator and val == self.rhs:
             return True
         return False
-
-
-STRING_MONSTER_TOKENS = {'asname': ('active_skill', 'name_en')}
 
 
 class MonsterAttributeString(SpecialToken):
-    RE_MATCH = rf"({regexlist(STRING_MONSTER_TOKENS)}):\"(+)\""
+    RE_MATCH = rf"({regexlist(STRING_MONSTER_ATTRIBUTE_NAMES)}):([=rg]?)([\"']?)(.+)\3"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        name, ineq, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
-        self.monster_attribute = name
-        self.operator = ineq or "="
-        self.rhs = int(value)
+        attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.monster_attribute = {at for at, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
+                                  if attr in aliases}.pop()
+        self.match = match
+        self.string = string
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
 
     def matches(self, monster):
-        attr = getattr(monster, self.monster_attribute)
-        print(attr)
-        if "<" in self.operator and attr < self.rhs:
-            return True
-        if ">" in self.operator and attr > self.rhs:
-            return True
-        if "=" in self.operator and attr == self.rhs:
-            return True
-        return False
+        val: MonsterModel = monster
+        for attr in self.monster_attribute:
+            val: str = getattr(val, attr, None)
+        if val is None:
+            return False
+        val: str = val.lower()
+        if self.match == "=":  # Exact match
+            return val == self.string
+        elif self.match == "r":  # Regex match
+            return bool(re.match(self.string, val))
+        elif self.match == "g":  # Glob match
+            return fnmatch(val, '*' + self.string + '*')
+        return self.string in val
+
+
+class MonsterAttributeBool(SpecialToken):
+    RE_MATCH = rf"({regexlist(BOOL_MONSTER_ATTRIBUTE_NAMES)}):(.+)"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+        attr, inp = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.monster_attribute = {at for at, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
+                                  if attr in aliases}.pop()
+        self.inp = inp not in ('0', 'false', 'no')
+        super().__init__('monster', negated=negated, exact=exact, database=database)
+        self.full_value = fullvalue
+
+    def matches(self, monster):
+        val: MonsterModel = monster
+        for attr in self.monster_attribute:
+            val: bool = getattr(val, attr, None)
+        if val is None:
+            return False
+        return val == self.inp
 
 
 SPECIAL_TOKEN_TYPES = [
     MultipleAwakeningToken,
     MonsterAttributeNumeric,
+    MonsterAttributeString,
+    MonsterAttributeBool,
 ]

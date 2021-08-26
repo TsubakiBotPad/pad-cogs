@@ -2,7 +2,7 @@ from collections import defaultdict, namedtuple
 from enum import Enum
 from typing import Mapping, Tuple, TypeVar
 
-from .models.enum_types import Attribute, MonsterType, AwokenSkills
+from .models.enum_types import Attribute, AwokenSkills, MonsterType
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -294,3 +294,40 @@ PLUS_AWOKENSKILL_MAP = {
     AwokenSkills.EXTMOVEPLUS: PlusAwakeningData(AwokenSkills.EXTMOVE, 2),
     AwokenSkills.SKILLBOOSTPLUS: PlusAwakeningData(AwokenSkills.SKILLBOOST, 2),
 }
+
+NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
+    ('monster_no_na',): ('monsterid', 'monsterno'),
+    ('base_evo_id',): ('baseid',),
+    ('superawakening_count',): ('sacount',),
+    ('leader_skill', 'id'): ('lsid',),
+    ('active_skill', 'id'): ('asid',),
+    ('series', 'id'): ('sid', 'seriesid'),
+    ('rarity',): ('rarity',),
+    ('buy_mp',): ('buymp',),
+    ('sell_mp',): ('sellmp',),
+    ('sell_gold',): ('gold',),
+    ('cost',): ('cost',),
+    ('exp',): ('exp',),
+    ('fodder_exp',): ('fodderexp',),
+    ('level',): ('maxlvl', 'maxlevel'),
+    ('latent_slots',): ('latentslots',),
+    ('hp_max',): ('hp', 'maxhp'),
+    ('atk_max',): ('atk', 'maxatk'),
+    ('rcv_max',): ('rcv', 'maxrcv'),
+    ('hp_min',): ('minhp',),
+    ('atk_min',): ('minatk',),
+    ('rcv_min',): ('minrcv',),
+}
+NUMERIC_MONSTER_ATTRIBUTE_NAMES = {*sum(NUMERIC_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
+
+STRING_MONSTER_ATTRIBUTE_ALIASES = {
+    ('leader_skill', 'name_en'): ('lsname',),
+    ('leader_skill', 'desc_en'): ('lsdesc',),
+    ('active_skill', 'name_en'): ('asname',),
+    ('active_skill', 'desc_en'): ('asdesc',),
+    ('series', 'name_en'): ('seriesname',),
+}
+STRING_MONSTER_ATTRIBUTE_NAMES = {*sum(STRING_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
+
+BOOL_MONSTER_ATTRIBUTE_ALIASES = {}
+BOOL_MONSTER_ATTRIBUTE_NAMES = {*sum(BOOL_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
