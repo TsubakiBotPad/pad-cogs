@@ -154,10 +154,10 @@ class MonsterAttributeBool(SpecialToken):
     RE_MATCH = rf"({regexlist(BOOL_MONSTER_ATTRIBUTE_NAMES)}):(.+)"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        attr, inp = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        attr, bool_val = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
                                   if attr in aliases}.pop()
-        self.inp = inp not in ('0', 'false', 'no')
+        self.bool_val = bool_val not in ('0', 'false', 'no')
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
 
@@ -168,7 +168,7 @@ class MonsterAttributeBool(SpecialToken):
                 val: str = getattr(val, attr, None)
             if val is None:
                 continue
-            if val == self.inp:
+            if val == self.bool_val:
                 return True
         return False
 
