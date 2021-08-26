@@ -109,6 +109,7 @@ class MonsterAttributeNumeric(SpecialToken):
                 val: int = getattr(val, attr, None)
             if val is None:
                 continue
+            # Test each character of the equality operator because I don't want to use the eval function here
             if "<" in self.operator and val < self.rhs:
                 return True
             if ">" in self.operator and val > self.rhs:
