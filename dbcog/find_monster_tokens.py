@@ -141,7 +141,7 @@ class MonsterAttributeString(SpecialToken):
             val: str = val.lower()
             if self.match == "=" and val == self.string:  # Exact match
                 return True
-            elif self.match == "r" and bool(re.match(self.string, val)):  # Regex match
+            elif self.match == "r" and bool(re.search(self.string, val)):  # Regex match
                 return True
             elif self.match == "g" and fnmatch(val, '*' + self.string + '*'):  # Glob match
                 return True
