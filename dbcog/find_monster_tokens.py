@@ -95,7 +95,7 @@ class MonsterAttributeNumeric(SpecialToken):
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
-        self.monster_attributes = {ats for ats, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
+        self.monster_class_attributes = {ats for ats, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
                                   if attr in aliases}.pop()
         self.operator = ineq or "="
         self.rhs = int(value) * (1e9 if mult == 'b' else 1e6 if mult == 'm' else 1e3 if mult == 'k' else 1)
@@ -103,10 +103,10 @@ class MonsterAttributeNumeric(SpecialToken):
         self.full_value = fullvalue
 
     def matches(self, monster):
-        for attrs in self.monster_attributes:
+        for class_attrs in self.monster_class_attributes:
             val: MonsterModel = monster
-            for attr in attrs:
-                val: int = getattr(val, attr, None)
+            for class_attr in class_attrs:
+                val: int = getattr(val, class_attr, None)
             if val is None:
                 continue
             # Test each character of the equality operator because I don't want to use the eval function here
@@ -124,7 +124,7 @@ class MonsterAttributeString(SpecialToken):
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
-        self.monster_attributes = {ats for ats, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
+        self.monster_class_attributes = {ats for ats, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
                                   if attr in aliases}.pop()
         self.match = match
         self.string = string
@@ -132,10 +132,10 @@ class MonsterAttributeString(SpecialToken):
         self.full_value = fullvalue
 
     def matches(self, monster):
-        for attrs in self.monster_attributes:
+        for class_attrs in self.monster_class_attributes:
             val: MonsterModel = monster
-            for attr in attrs:
-                val: str = getattr(val, attr, None)
+            for class_attr in class_attrs:
+                val: str = getattr(val, class_attr, None)
             if val is None:
                 continue
             val: str = val.lower()
@@ -154,21 +154,21 @@ class MonsterAttributeBool(SpecialToken):
     RE_MATCH = rf"({regexlist(BOOL_MONSTER_ATTRIBUTE_NAMES)}):(.+)"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        attr, inp = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
-        self.monster_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
+        attr, raw_bool_value = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.monster_class_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
                                   if attr in aliases}.pop()
-        self.inp = inp not in ('0', 'false', 'no')
+        self.bool_value = raw_bool_value not in ('0', 'false', 'no')
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
 
     def matches(self, monster):
-        for attrs in self.monster_attributes:
+        for class_attrs in self.monster_class_attributes:
             val: MonsterModel = monster
-            for attr in attrs:
-                val: str = getattr(val, attr, None)
+            for class_attr in class_attrs:
+                val: str = getattr(val, class_attr, None)
             if val is None:
                 continue
-            if val == self.inp:
+            if val == self.bool_value:
                 return True
         return False
 
