@@ -92,7 +92,7 @@ class MultipleAwakeningToken(SpecialToken):
 
 
 class MonsterAttributeNumeric(SpecialToken):
-    RE_MATCH = rf"({regexlist(NUMERIC_MONSTER_ATTRIBUTE_NAMES)}):([<>=])?(\d+)([kmb])?"
+    RE_MATCH = rf"({regexlist(NUMERIC_MONSTER_ATTRIBUTE_NAMES)}):([<>=]+)?(\d+)([kmb])?"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         c_attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
