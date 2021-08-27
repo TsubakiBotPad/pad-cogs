@@ -102,8 +102,8 @@ class DungeonEmoji:
     verbose = '\N{SCROLL}'
     previous_monster = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
     next_monster = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    previous_floor = '\N{DOWNWARDS BLACK ARROW}'
-    next_floor = '\N{UPWARDS BLACK ARROW}'
+    previous_floor = ('minus', '\N{DOWNWARDS BLACK ARROW}')
+    next_floor = ('plus', '\N{UPWARDS BLACK ARROW}')
     next_page = '\N{OPEN BOOK}'
 
 
