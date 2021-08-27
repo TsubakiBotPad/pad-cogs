@@ -13,8 +13,8 @@ from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, Butto
 class ButtonInfoEmoji:
     delete = '\N{CROSS MARK}'
     home = emoji_buttons['home']
-    coop = '\N{BUSTS IN SILHOUETTE}'
-    solo = '\N{BUST IN SILHOUETTE}'
+    coop = ('coop_2p', '\N{BUSTS IN SILHOUETTE}')
+    solo = ('solo_1p', '\N{BUST IN SILHOUETTE}')
     desktop = '\N{DESKTOP COMPUTER}'
     mobile = '\N{MOBILE PHONE}'
     limit_break = ('lv110', char_to_emoji('1'))
