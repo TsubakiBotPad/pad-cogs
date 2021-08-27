@@ -299,9 +299,9 @@ NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
     (('monster_no_na',),): ('monsterid', 'monsterno'),
     (('base_evo_id',),): ('baseid',),
     (('superawakening_count',),): ('sacount',),
-    (('leader_skill', 'id'),): ('lsid',),
-    (('active_skill', 'id'),): ('asid',),
-    (('series', 'id'),): ('sid', 'seriesid'),
+    (('leader_skill', 'leader_skill_id'),): ('lsid',),
+    (('active_skill', 'active_skill_id'),): ('asid',),
+    (('series', 'series_id'),): ('sid', 'seriesid'),
     (('rarity',),): ('rarity',),
     (('buy_mp',),): ('buymp',),
     (('sell_mp',),): ('sellmp',),
@@ -331,3 +331,9 @@ STRING_MONSTER_ATTRIBUTE_NAMES = {*sum(STRING_MONSTER_ATTRIBUTE_ALIASES.values()
 
 BOOL_MONSTER_ATTRIBUTE_ALIASES = {}
 BOOL_MONSTER_ATTRIBUTE_NAMES = {*sum(BOOL_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
+
+MONSTER_CLASS_ATTRIBUTES = {
+    *sum(NUMERIC_MONSTER_ATTRIBUTE_ALIASES, ()),
+    *sum(STRING_MONSTER_ATTRIBUTE_ALIASES, ()),
+    *sum(BOOL_MONSTER_ATTRIBUTE_NAMES, ()),
+}
