@@ -152,6 +152,7 @@ class DBCog(commands.Cog, IdTest):
         for index in self.indexes.values():
             issues.extend(index.issues)
         for class_attributes in MONSTER_CLASS_ATTRIBUTES:
+            good = False
             for monster in self.database.get_all_monsters():
                 val: Any = monster
                 for ca in class_attributes:
@@ -159,10 +160,10 @@ class DBCog(commands.Cog, IdTest):
                         break
                     val = getattr(val, ca)
                 else:
-                    continue
-                break
+                    break
             else:
                 issues.append(f"Invalid class attribute: {'.'.join(class_attributes)}")
+
         issues.extend(await self.run_tests())
 
         if issues and self.database.graph.debug_monster_ids is None:
