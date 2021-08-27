@@ -95,9 +95,9 @@ class MonsterAttributeNumeric(SpecialToken):
     RE_MATCH = rf"({regexlist(NUMERIC_MONSTER_ATTRIBUTE_NAMES)}):([<>=])?(\d+)([kmb])?"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        c_attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
-                                         if attr in aliases}.pop()
+                                         if c_attr in aliases}.pop()
         self.operator = ineq or "="
         self.rhs = int(value) * (1e9 if mult == 'b' else 1e6 if mult == 'm' else 1e3 if mult == 'k' else 1)
         super().__init__('monster', negated=negated, exact=exact, database=database)
@@ -124,9 +124,9 @@ class MonsterAttributeString(SpecialToken):
     RE_MATCH = rf"({regexlist(STRING_MONSTER_ATTRIBUTE_NAMES)}):([=rg]?)([\"']?)(.+)\3"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        c_attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
-                                         if attr in aliases}.pop()
+                                         if c_attr in aliases}.pop()
         self.match = match
         self.string = string
         super().__init__('monster', negated=negated, exact=exact, database=database)
@@ -155,9 +155,9 @@ class MonsterAttributeBool(SpecialToken):
     RE_MATCH = rf"({regexlist(BOOL_MONSTER_ATTRIBUTE_NAMES)}):(.+)"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
-        attr, raw_bool_value = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        c_attr, raw_bool_value = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
-                                         if attr in aliases}.pop()
+                                         if c_attr in aliases}.pop()
         self.bool_value = raw_bool_value not in ('0', 'false', 'no')
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
