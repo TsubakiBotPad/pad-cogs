@@ -21,6 +21,7 @@
   "requirements": [
     "tsutils>=5.0.0",
     "pytz",
+    "regex",
     "romkan",
     "networkx"
   ],

@@ -1,5 +1,6 @@
-import re
 from fnmatch import fnmatch
+
+import regex as re
 
 from dbcog.models.enum_types import AwokenSkills
 from dbcog.models.monster_model import MonsterModel
@@ -96,7 +97,7 @@ class MonsterAttributeNumeric(SpecialToken):
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
-                                  if attr in aliases}.pop()
+                                         if attr in aliases}.pop()
         self.operator = ineq or "="
         self.rhs = int(value) * (1e9 if mult == 'b' else 1e6 if mult == 'm' else 1e3 if mult == 'k' else 1)
         super().__init__('monster', negated=negated, exact=exact, database=database)
@@ -125,7 +126,7 @@ class MonsterAttributeString(SpecialToken):
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
-                                  if attr in aliases}.pop()
+                                         if attr in aliases}.pop()
         self.match = match
         self.string = string
         super().__init__('monster', negated=negated, exact=exact, database=database)
@@ -156,7 +157,7 @@ class MonsterAttributeBool(SpecialToken):
     def __init__(self, fullvalue, *, negated=False, exact=False, database):
         attr, raw_bool_value = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
-                                  if attr in aliases}.pop()
+                                         if attr in aliases}.pop()
         self.bool_value = raw_bool_value not in ('0', 'false', 'no')
         super().__init__('monster', negated=negated, exact=exact, database=database)
         self.full_value = fullvalue
