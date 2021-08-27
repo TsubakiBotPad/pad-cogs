@@ -30,7 +30,7 @@ from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
-from .monster_index import MonsterIndex
+from .monster_index import MONSTER_CLASS_ATTRIBUTES, MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
 
@@ -151,6 +151,18 @@ class DBCog(commands.Cog, IdTest):
         issues.extend(self.database.graph.issues)
         for index in self.indexes.values():
             issues.extend(index.issues)
+        for class_attributes in MONSTER_CLASS_ATTRIBUTES:
+            for monster in self.database.get_all_monsters():
+                val: Any = monster
+                for ca in class_attributes:
+                    if not hasattr(val, ca):
+                        break
+                    val = getattr(val, ca)
+                else:
+                    continue
+                break
+            else:
+                issues.append(f"Invalid class attribute: {'.'.join(class_attributes)}")
         issues.extend(await self.run_tests())
 
         if issues and self.database.graph.debug_monster_ids is None:
