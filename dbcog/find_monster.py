@@ -305,7 +305,9 @@ class FindMonster:
 
         query = rmdiacritics(query).lower().replace(",", "")
         query = re.sub(r'(\s|^)\'(\S+)\'(\s|$)', r'\1"\2"\3', query)  # Replace ' with " around tokens
+        query = re.sub(r':=?r?([\'"])[^\1]+\1', lambda m: m.group(0).replace(' ', '\0'), query)  # Keep modded spaces
         tokenized_query = self._process_settings(query).split()
+        tokenized_query = [token.replace('\0', ' ') for token in tokenized_query]
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
 
         best_monster, matches_dict, valid_monsters = max(
