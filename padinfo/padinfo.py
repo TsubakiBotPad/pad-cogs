@@ -185,7 +185,7 @@ class PadInfo(commands.Cog):
         else:
             await self.send_id_failure_message(ctx, query)
 
-    @commands.command(name="id")
+    @commands.command(name="id", aliases=['I\'d'])
     @checks.bot_has_permissions(embed_links=True)
     async def _id(self, ctx, *, query: str):
         """Monster info (main tab)"""
