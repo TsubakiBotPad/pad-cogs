@@ -1,11 +1,10 @@
 import logging
 import re
-import time
-from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import List, Optional
 
 import discord
+import time
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cog_settings import CogSettings
@@ -19,9 +18,10 @@ logger = logging.getLogger('red.misc-cogs.channelmirror')
 
 # Three hour cooldown
 ATTRIBUTION_TIME_SECONDS = 60 * 60 * 3
+MAX_MIRRORED_MESSAGES = 100
 
-frMESSAGE_LINK = r'(https://discordapp\.com/channels/{0.guild.id}/{0.id}/(\d+)/?)'
-MESSAGE_LINK = 'https://discordapp.com/channels/{0.guild.id}/{0.channel.id}/{0.id}'
+frMESSAGE_LINK = r'(https://discord\.com/channels/{0.guild.id}/{0.id}/(\d+)/?)'
+MESSAGE_LINK = 'https://discord.com/channels/{0.guild.id}/{0.channel.id}/{0.id}'
 
 
 class ChannelMirror(commands.Cog):
@@ -33,9 +33,10 @@ class ChannelMirror(commands.Cog):
         self.settings = ChannelMirrorSettings("channelmirror")
 
         self.config = Config.get_conf(self, identifier=3747737700)
-        self.config.register_channel(multiedit=False, mirroredit_target=None, nodeletion=False)
-        self.config.init_custom("dest_message", 1)
-        self.config.register_custom("dest_message", small=False)
+        self.config.register_channel(last_spoke=0, last_spoke_timestamp=0, mirrored_channels=[], mirrored_messages={},
+                                     multiedit=False, mirroredit_target=None, nodeletion=False)
+        self.config.init_custom("message", 1)
+        self.config.register_custom("message", attribute=False)
 
         GACOG = self.bot.get_cog("GlobalAdmin")
         if GACOG:
@@ -62,25 +63,26 @@ class ChannelMirror(commands.Cog):
     async def add(self, ctx, source_channel_id: int, dest_channel_id: int, docheck: bool = True):
         """Set mirroring between two channels."""
         if docheck and (not self.bot.get_channel(source_channel_id) or not self.bot.get_channel(dest_channel_id)):
-            await ctx.send(inline('Check your channel IDs, or maybe the bot is not in those servers'))
+            await ctx.send('Check your channel IDs, or maybe the bot is not in those servers')
             return
-        conf = await get_user_confirmation(ctx, "Set up mirror of <#{}> to mirror to <#{}>?"
-                                           .format(source_channel_id, dest_channel_id))
-        if not conf:
+        if not await get_user_confirmation(ctx, f"Set <#{dest_channel_id}> to mirror message from "
+                                                f"<#{source_channel_id}>?"):
             await send_cancellation_message(ctx, "Action cancelled. No action was taken.")
             return
-        self.settings.add_mirrored_channel(source_channel_id, dest_channel_id)
-        await send_confirmation_message(ctx, "Okay, I set up a mirror of <#{}> to <#{}>"
-                                        .format(source_channel_id, dest_channel_id))
+        async with self.config.channel_from_id(source_channel_id).mirrored_channels() as mirrored_channels:
+            if dest_channel_id not in mirrored_channels:
+                mirrored_channels.append(dest_channel_id)
+        await send_confirmation_message(ctx, f"Mirror from <#{source_channel_id}> to <#{dest_channel_id}> successful")
 
     @channelmirror.command(aliases=['rmmirror', 'rm', 'delete'])
     @checks.is_owner()
     async def remove(self, ctx, source_channel_id: int, dest_channel_id: int):
         """Remove mirroring between two channels."""
-        success = self.settings.rm_mirrored_channel(source_channel_id, dest_channel_id)
-        if not success:
-            await ctx.send("That isn't an existing mirror.")
-            return
+        async with self.config.channel_from_id(source_channel_id).mirrored_channels() as mirrored_channels:
+            if dest_channel_id in mirrored_channels:
+                mirrored_channels.remove(dest_channel_id)
+            else:
+                return await ctx.send("That isn't an existing mirror.")
         await ctx.tick()
 
     @channelmirror.command()
@@ -105,7 +107,6 @@ class ChannelMirror(commands.Cog):
     @checks.is_owner()
     async def config(self, ctx, server_id: int = None):
         """List mirror config."""
-        mirrored_channels = self.settings.mirrored_channels()
         gchs = set()
         if server_id:
             guild = self.bot.get_guild(server_id)
@@ -114,14 +115,14 @@ class ChannelMirror(commands.Cog):
                 return
             gchs = {c.id for c in self.bot.get_guild(server_id).channels}
         msg = 'Mirrored channels\n'
-        for mc_id, config in mirrored_channels.items():
-            if server_id is not None and mc_id not in gchs and not gchs.intersection(config['channels']):
+        for mc_id, config in (await self.config.all_channels()).items():
+            if server_id is not None and mc_id not in gchs and not gchs.intersection(config['mirrored_channels']):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
             multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
-            for channel_id in config['channels']:
+            for channel_id in config['mirrored_channels']:
                 if server_id is not None and mc_id not in gchs and not channel_id not in gchs:
                     continue
                 channel = self.bot.get_channel(channel_id)
@@ -135,7 +136,6 @@ class ChannelMirror(commands.Cog):
     @checks.is_owner()
     async def guildconfig(self, ctx, server_id: int):
         """List mirror config for a guild."""
-        mirrored_channels = self.settings.mirrored_channels()
         gchs = set()
         if server_id:
             guild = self.bot.get_guild(server_id)
@@ -143,15 +143,16 @@ class ChannelMirror(commands.Cog):
                 await ctx.send("Invalid server id.")
                 return
             gchs = {c.id for c in self.bot.get_guild(server_id).channels}
+
         msg = 'From:'
-        for mc_id, config in mirrored_channels.items():
+        for mc_id, config in (await self.config.all_channels()).items():
             if mc_id not in gchs:
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
             multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
-            for channel_id in config['channels']:
+            for channel_id in config['mirrored_channels']:
                 channel = self.bot.get_channel(channel_id)
                 channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
                 msg += '\n\t{} ({})'.format(channel_id, channel_name)
@@ -159,14 +160,14 @@ class ChannelMirror(commands.Cog):
             await ctx.send(box(page))
 
         msg = 'To:'
-        for mc_id, config in mirrored_channels.items():
-            if not gchs.intersection(config['channels']):
+        for mc_id, config in (await self.config.all_channels()).items():
+            if not gchs.intersection(config['mirrored_channels']):
                 continue
             channel = self.bot.get_channel(mc_id)
             channel_name = f"{channel.guild.name}/{channel.name}" if channel else 'unknown'
             multiedit = await self.config.channel_from_id(mc_id).multiedit()
             msg += '\n{}{} ({})'.format(mc_id, '*' if multiedit else '', channel_name)
-            for channel_id in config['channels']:
+            for channel_id in config['mirrored_channels']:
                 if channel_id not in gchs:
                     continue
                 channel = self.bot.get_channel(channel_id)
@@ -184,26 +185,27 @@ class ChannelMirror(commands.Cog):
         The message can be a link, a message id (if used in the same
         channel as the message), or the channel_id and message_id
         separated by a dash (channel_id-message-id)"""
-        mirrored_messages = self.settings.get_mirrored_messages(message.channel.id, message.id)
+        mirrored_messages = (await self.config.channel(message.channel).mirrored_messages())[str(message.id)]
         if not mirrored_messages:
             await ctx.send("This message isn't mirrored!")
         reacts = {}
         for react in message.reactions:
             reacts[str(react)] = react.count - 1
-            for (chid, mid) in mirrored_messages:
+            for (chid, mids) in mirrored_messages:
                 dest_channel = self.bot.get_channel(chid)
                 if not dest_channel:
                     logger.warning('could not locate channel {}'.format(chid))
                     continue
-                dest_message = await dest_channel.fetch_message(mid)
-                if not dest_message:
-                    logger.warning('could not locate message {}'.format(mid))
+                dest_messages = [await dest_channel.fetch_message(mid) for mid in mids]
+                if not all(dest_messages):
+                    logger.warning('could not locate messages {}'.format(mids))
                     continue
-                dest_reaction = discord.utils.find(lambda r: r == react, dest_message.reactions)
-                if not dest_reaction:
-                    logger.warning('could not locate reaction {}'.format(react))
-                    continue
-                reacts[str(react)] += dest_reaction.count - 1
+                for dest_message in dest_messages:
+                    dest_reaction = discord.utils.find(lambda r: r == react, dest_message.reactions)
+                    if not dest_reaction:
+                        logger.warning('could not locate reaction {}'.format(react))
+                        continue
+                    reacts[str(react)] += dest_reaction.count - 1
         o = ""
         maxlen = len(str(max(reacts.values(), key=lambda x: len(str(x)))))
         for reaction, count in reacts.items():
@@ -239,7 +241,7 @@ class ChannelMirror(commands.Cog):
                 await self.mirror_msg(to_message)
         await ctx.tick()
 
-    @commands.Cog.listener('on_message_without_command')
+    @commands.Cog.listener('on_message')
     async def mirror_msg(self, message):
         author = message.author
 
@@ -250,32 +252,29 @@ class ChannelMirror(commands.Cog):
             return
 
         channel = message.channel
-        mirrored_channels = self.settings.get_mirrored_channels(channel.id)
+        mirrored_channels = await self.config.channel(channel).mirrored_channels()
+        multiedit = await self.config.channel(channel).multiedit()
 
         if not mirrored_channels:
             return
 
-        last_spoke, last_spoke_timestamp = self.settings.get_last_spoke(channel.id)
-        now_time = datetime.utcnow()
-        last_spoke_time = datetime.utcfromtimestamp(
-            last_spoke_timestamp) if last_spoke_timestamp else now_time
+        if multiedit and len(message.content) > 2000:
+            return await message.channel.send("I can't send this message as it's longer than 2000 characters.")
+
+        last_spoke = await self.config.channel(channel).last_spoke()
+        last_spoke_timestamp = await self.config.channel(channel).last_spoke_timestamp()
         attribution_required = last_spoke != author.id
-        attribution_required |= (now_time - last_spoke_time).total_seconds() > ATTRIBUTION_TIME_SECONDS
-        attribution_required &= not await self.config.channel(message.channel).multiedit()
+        attribution_required |= time.time() - last_spoke_timestamp > ATTRIBUTION_TIME_SECONDS
+        attribution_required &= not multiedit
 
-        self.settings.set_last_spoke(channel.id, author.id)
+        await self.config.custom('message', message.id).attribute.set(attribution_required)
+        await self.config.channel(channel).last_spoke.set(author.id)
+        await self.config.channel(channel).last_spoke_timestamp.set(time.time())
 
-        attachment_bytes = None
-        filename = None
+        attachment_bytes = [(BytesIO(await attachment.read()), attachment.filename)
+                            for attachment in message.attachments]
 
-        if message.attachments:
-            # If we know we're copying a message and that message has an attachment,
-            # pre download it and reuse it for every upload.
-            attachment_bytes = [(BytesIO(await attachment.read()), attachment.filename)
-                                for attachment in message.attachments
-                                if hasattr(attachment, 'url') and hasattr(attachment, 'filename')]
-
-        if await self.config.channel(message.channel).multiedit():
+        if multiedit:
             await message.delete()
             idmess = await channel.send("Pending...")
             attachments = message.attachments
@@ -295,46 +294,35 @@ class ChannelMirror(commands.Cog):
 
             await idmess.edit(content=str(message.id))
 
+        linked_messages = []
+
         for dest_channel_id in mirrored_channels:
             dest_channel = self.bot.get_channel(dest_channel_id)
             if not dest_channel:
                 continue
             try:
-                fmessage = await self.mformat(message.content, message.channel, dest_channel)
-
-                small = False
-                if attribution_required:
-                    msg = self.makeheader(message, author)
-                    if len(fmessage) > 1000:
-                        await dest_channel.send(msg)
-                    else:
-                        fmessage = msg + '\n' + fmessage
-                        small = True
-
-                if attachment_bytes:
-                    try:
-                        [b.seek(0) for b, fn in attachment_bytes]
-                        dest_message = await dest_channel.send(
-                            files=[discord.File(b, fn) for b, fn in attachment_bytes],
-                            content=fmessage)
-                    except discord.HTTPException:
-                        try:
-                            [b.seek(0) for b, fn in attachment_bytes]
-                            dest_message = await dest_channel.send(file=discord.File(*attachment_bytes[0]),
-                                                                   content=fmessage)
-                            for b, fn in attachment_bytes[1:]:
-                                await dest_channel.send(file=discord.File(b, fn))
-                        except discord.HTTPException:
-                            dest_message = await dest_channel.send(fmessage)
-                            await dest_channel.send("<File too large to attach>")
-                elif message.content:
-                    dest_message = await dest_channel.send(fmessage)
-                else:
+                if not (attachment_bytes or message.content):
                     logger.warning('Failed to mirror message from {} no action to take'.format(channel.id))
                     continue
 
-                self.settings.add_mirrored_message(channel.id, message.id, dest_channel.id, dest_message.id)
-                await self.config.custom("dest_message", dest_message.id).small.set(small)
+                message.content = await self.mformat(message.content, message.channel, dest_channel)
+                fmessages = await self.split_message(message)
+
+                [b.seek(0) for b, fn in attachment_bytes]
+                try:
+                    dest_messages = [await dest_channel.send(
+                        files=[discord.File(b, fn) for b, fn in attachment_bytes],
+                        content=fmessage) for fmessage in fmessages]
+                except discord.HTTPException:
+                    dest_messages = [await dest_channel.send(fmessage) for fmessage in fmessages]
+                    try:
+                        for b, fn in attachment_bytes:
+                            await dest_channel.send(file=discord.File(b, fn))
+                    except discord.HTTPException:
+                        await dest_channel.send("<File too large to attach>")
+
+                linked_messages.append((dest_channel.id, [m.id for m in dest_messages]))
+
             except discord.Forbidden:
                 if dest_channel.guild.owner:
                     try:
@@ -357,12 +345,15 @@ class ChannelMirror(commands.Cog):
                 logger.exception(
                     'Failed to mirror message from {} to {}: {}'.format(channel.id, dest_channel_id, str(ex)))
 
-        if attachment_bytes:
-            [b.close() for b, fn in attachment_bytes]
+        async with self.config.channel(channel).mirrored_messages() as mirrored_messages:
+            mirrored_messages[str(message.id)] = linked_messages
+            if len(mirrored_messages) > MAX_MIRRORED_MESSAGES:
+                mirrored_messages.pop(min(mirrored_messages))  # This works because snowflakes sort by time
+        [b.close() for b, fn in attachment_bytes]
 
     @commands.Cog.listener('on_raw_message_edit')
     async def mirror_msg_edit(self, payload):
-        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+        if str(payload.message_id) not in await self.config.channel_from_id(payload.channel_id).mirrored_messages():
             return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if 'content' in payload.data:
@@ -370,7 +361,7 @@ class ChannelMirror(commands.Cog):
 
     @commands.Cog.listener('on_raw_message_delete')
     async def mirror_msg_delete(self, payload):
-        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+        if str(payload.message_id) not in await self.config.channel_from_id(payload.channel_id).mirrored_messages():
             return
         if not await self.config.channel(self.bot.get_channel(payload.channel_id)).nodeletion():
             fmessage = DummyObject(id=payload.message_id, channel=self.bot.get_channel(payload.channel_id))
@@ -378,7 +369,7 @@ class ChannelMirror(commands.Cog):
 
     @commands.Cog.listener('on_raw_reaction_add')
     async def mirror_reaction_add(self, payload):
-        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+        if str(payload.message_id) not in await self.config.channel_from_id(payload.channel_id).mirrored_messages():
             return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
@@ -387,12 +378,26 @@ class ChannelMirror(commands.Cog):
 
     @commands.Cog.listener('on_raw_reaction_remove')
     async def mirror_reaction_remove(self, payload):
-        if not self.settings.get_mirrored_messages(payload.channel_id, payload.message_id):
+        if str(payload.message_id) not in await self.config.channel_from_id(payload.channel_id).mirrored_messages():
             return
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         if message.author.id != payload.user_id and not await self.config.channel(message.channel).multiedit():
             return
         await self.mirror_msg_mod(message, delete_message_reaction=payload.emoji)
+
+    async def split_message(self, message: discord.Message, fit_in: Optional[int] = None) -> List[str]:
+        attribute = await self.config.custom('message', message.id).attribute()
+        content = (self.makeheader(message) if attribute else '') + message.content
+        if fit_in is None:
+            return list(pagify(content, delims=['\n\n', '\n'], shorten_by=0, page_length=1750))
+
+        messages = list(pagify(content, delims=['\n\n', '\n'], shorten_by=0, page_length=2000))
+        if len(messages) > fit_in:
+            messages = messages[:fit_in]
+            messages[-1] = messages[-1][:1971] + "... *(Continued in original)*"
+        elif len(messages) < fit_in:
+            messages += ["[Placeholder - This message used to be longer!]"] * (fit_in - len(messages))
+        return messages
 
     async def mirror_msg_mod(self, message,
                              new_message_content: str = None,
@@ -403,45 +408,44 @@ class ChannelMirror(commands.Cog):
             return
 
         channel = message.channel
-        mirrored_messages = self.settings.get_mirrored_messages(channel.id, message.id)
-        for (dest_channel_id, dest_message_id) in mirrored_messages:
+        mirrored_messages = (await self.config.channel(channel).mirrored_messages())[str(message.id)]
+        for (dest_channel_id, dest_message_ids) in mirrored_messages:
             try:
                 dest_channel = self.bot.get_channel(dest_channel_id)
                 if not dest_channel:
                     logger.warning('could not locate channel to mod')
                     continue
-                dest_message = await dest_channel.fetch_message(dest_message_id)
-                if not dest_message:
+                dest_messages = [await dest_channel.fetch_message(m_id) for m_id in dest_message_ids]
+                if not all(dest_messages):
                     logger.warning('could not locate message to mod')
                     continue
 
                 if new_message_content:
-                    fcontent = await self.mformat(new_message_content, channel, dest_message.channel)
-                    if await self.config.custom("dest_message", dest_message.id).small():
-                        fcontent = self.makeheader(message) + '\n' + fcontent
-                    if len(fcontent) > 4000:
-                        fcontent = fcontent[:3971] + "... *(Continued in original)*"
-                    await dest_message.edit(content=fcontent)
+                    message.content = await self.mformat(new_message_content, channel, dest_channel)
+                    fcontents = await self.split_message(message, fit_in=len(dest_message_ids))
+                    for dest_message, content in zip(dest_messages, fcontents):
+                        await dest_message.edit(content=content)
                 elif new_message_reaction:
                     try:
-                        await dest_message.add_reaction(new_message_reaction)
+                        await dest_messages[-1].add_reaction(new_message_reaction)
                     except discord.HTTPException:
                         pass
                 elif delete_message_content:
-                    await dest_message.delete()
+                    for dest_message in dest_messages:
+                        await dest_message.delete()
                 elif delete_message_reaction:
                     try:
-                        await dest_message.remove_reaction(delete_message_reaction, dest_message.guild.me)
+                        await dest_messages[-1].remove_reaction(delete_message_reaction, dest_channel.me)
                     except discord.HTTPException:
                         pass
             except Exception as ex:
                 logger.exception('Failed to mirror message edit from {} to {}:'.format(channel.id, dest_channel_id))
 
-    def makeheader(self, message, author=None):
-        return 'Posted by **{}** in *{} - #{}*:\n{}'.format(message.author.name if author is None else author.name,
-                                                            message.guild.name,
-                                                            message.channel.name,
-                                                            message.jump_url)
+    def makeheader(self, message):
+        return 'Posted by **{}** in *{} - #{}*:\n{}\n'.format(message.author.name,
+                                                                message.guild.name,
+                                                                message.channel.name,
+                                                                message.jump_url)
 
     async def mformat(self, text, from_channel, dest_channel):
         # LINKS
@@ -450,16 +454,17 @@ class ChannelMirror(commands.Cog):
             if not from_link:
                 logger.warning('could not locate link to copy')
                 continue
-            mirrored_messages = self.settings.get_mirrored_messages(from_link.channel.id, from_link.id)
-            to_link_id = [dmid for dcid, dmid in mirrored_messages if dcid == dest_channel.id]
-            if not to_link_id:
+            mirrored_messages = (await self.config.channel(from_channel).mirrored_messages())[str(from_link.id)]
+            to_link_ids = [dmids for dcid, dmids in mirrored_messages if dcid == dest_channel.id]
+            if not to_link_ids:
                 logger.warning('could not locate link to mod')
                 continue
-            to_link_id = to_link_id[0]
+            to_link_id = to_link_ids[0][0]
             dest_link = await dest_channel.fetch_message(to_link_id)
 
             newlink = MESSAGE_LINK.format(dest_link)
             text = text.replace(link, newlink)
+
         # ROLES
         for rtext, rid in re.findall(r'(<@&(\d+)>)', text):
             target = from_channel.guild.get_role(int(rid))
@@ -472,6 +477,7 @@ class ChannelMirror(commands.Cog):
             else:
                 repl = "<@&{}>".format(dest.id)
             text = text.replace(rtext, repl)
+
         # MENTIONS
         for utext, uid in re.findall(r'(<@!(\d+)>)', text):
             target = from_channel.guild.get_member(int(uid))
@@ -479,6 +485,7 @@ class ChannelMirror(commands.Cog):
                 logger.warning('could not locate user to mod')
                 continue
             text = text.replace(utext, target.name)
+
         # CHANNELS
         for ctext, cid in re.findall(r'(<#(\d+)>)', text):
             target = from_channel.guild.get_channel(int(cid))
@@ -486,9 +493,11 @@ class ChannelMirror(commands.Cog):
                 logger.warning('could not locate channel to mod')
                 continue
             text = text.replace(ctext, "\\#" + target.name)
+
         # EVERYONE
         text = re.sub(r"@everyone\b", "@\u200beveryone", text)
         text = re.sub(r"@here\b", "@\u200bhere", text)
+
         # EMOJI
         text = self.emojify(text)
         return text
@@ -554,92 +563,3 @@ class ChannelMirrorSettings(CogSettings):
             'max_mirrored_messages': 20,
         }
         return config
-
-    def servers(self):
-        return self.bot_settings['servers']
-
-    def get_server(self, server_id: int):
-        servers = self.servers()
-        if server_id not in servers:
-            servers[server_id] = {}
-        return servers[server_id]
-
-    def max_mirrored_messages(self):
-        return self.bot_settings['max_mirrored_messages']
-
-    def mirrored_channels(self):
-        # Mirrored channels looks like:
-        #  <source_channel_id>: {
-        #    'last_spoke: '<user_id>',
-        #    'channels': [dest_channel_id_1, dest_channel_id2],
-        #    'messages': {
-        #      <source_msg_id>: [
-        #         (dest_channel_id, dest_channel_msg],
-        #      ]
-        #    }
-        #  }
-        return self.bot_settings['mirrored_channels']
-
-    def get_mirrored_channels(self, source_channel: str):
-        return self.mirrored_channels().get(source_channel, {}).get('channels', [])
-
-    def get_last_spoke(self, source_channel: str):
-        spoke_values = self.mirrored_channels().get(source_channel, {})
-        return spoke_values.get('last_spoke', None), spoke_values.get('last_spoke_timestamp', None)
-
-    def set_last_spoke(self, source_channel: str, last_spoke: str):
-        spoke_values = self.mirrored_channels().get(source_channel)
-        spoke_values['last_spoke'] = last_spoke
-        spoke_values['last_spoke_timestamp'] = time.time()
-        self.save_settings()
-
-    def add_mirrored_channel(self, source_channel: int, dest_channel: int):
-        channels = self.mirrored_channels()
-        if source_channel == dest_channel:
-            raise commands.UserFeedbackCheckFailure('Cannot mirror a channel to itself')
-        if dest_channel in channels:
-            raise commands.UserFeedbackCheckFailure('Destination channel is already a source channel')
-        if source_channel not in channels:
-            channels[source_channel] = {
-                'channels': [],
-                'messages': {},
-            }
-        if dest_channel in channels[source_channel]['channels']:
-            raise commands.UserFeedbackCheckFailure('This mirror already exists')
-        channels[source_channel]['channels'].append(dest_channel)
-        self.save_settings()
-
-    def rm_mirrored_channel(self, source_channel: int, dest_channel: int):
-        channels = self.mirrored_channels()
-        config = channels.get(source_channel)
-        if config and dest_channel in config['channels']:
-            dest_channel_config = config['channels']
-            dest_channel_config.remove(dest_channel)
-            if not dest_channel_config:
-                channels.pop(source_channel)
-            self.save_settings()
-            return True
-        else:
-            return False
-
-    def add_mirrored_message(self, source_channel: int, source_message: str, dest_channel: int, dest_message: str):
-        channel_config = self.mirrored_channels()[source_channel]
-        messages = channel_config['messages']
-        if source_message not in messages:
-            messages[source_message] = []
-
-        targets = messages[source_message]
-        new_entry = [dest_channel, dest_message]
-        if new_entry not in targets:
-            targets.append(new_entry)
-            self.save_settings()
-
-        if len(messages) > self.max_mirrored_messages():
-            oldest_msg = min(messages.keys())
-            messages.pop(oldest_msg)
-            self.save_settings()
-
-    def get_mirrored_messages(self, source_channel: int, source_message: str):
-        """Returns [(channel_id, message_id), ...]"""
-        channel_config = self.mirrored_channels().get(source_channel, {})
-        return channel_config.get('messages', {}).get(source_message, [])
