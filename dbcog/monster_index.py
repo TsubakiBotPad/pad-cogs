@@ -425,7 +425,7 @@ class MonsterIndex(aobject):
             modifiers.update(MISC_MAP[MiscModifiers.EVENT])
         if monster.series.series_type == 'seasonal':
             modifiers.update(MISC_MAP[MiscModifiers.SEASONAL])
-        if monster.series.series_type == 'collab':
+        if monster.series.series_type in ('collab', 'ghcollab'):
             modifiers.update(MISC_MAP[MiscModifiers.COLLAB])
 
         # Story
