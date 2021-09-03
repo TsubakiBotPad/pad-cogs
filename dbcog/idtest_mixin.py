@@ -210,8 +210,9 @@ class IdTest:
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
             res = suite[case]['result']
+            ref = suite.index(case)
             del suite[case]
-        await ctx.send(f"Removed test case `{case}: {res}` with ref")
+        await ctx.send(f"Removed test case `{case}: {res}` with ref {ref}")
 
     @idt_name.command(name="remove", aliases=["rm", "delete", "del"])
     @checks.is_owner()
