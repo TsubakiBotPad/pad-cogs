@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import itertools
 import logging
 import re
 from collections import defaultdict
@@ -10,19 +9,19 @@ from io import BytesIO
 from typing import List, Optional, TYPE_CHECKING, Union
 
 import discord
+import itertools
 import prettytable
 import pytz
 from redbot.core import Config, checks, commands
-from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, inline, pagify
 from tsutils.cog_settings import CogSettings
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
+from tsutils.enums import Server, StarterGroup
+from tsutils.errors import ClientInlineTextException
 from tsutils.formatting import normalize_server_name, rmdiacritics
 from tsutils.helper_classes import DummyObject
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
-
-normalize_server_name, rmdiacritics, send_cancellation_message, send_confirmation_message
-from tsutils.enums import Server, StarterGroup
 
 if TYPE_CHECKING:
     from dbcog.models.scheduled_event_model import ScheduledEventModel
@@ -437,14 +436,15 @@ class PadEvents(commands.Cog):
     async def aepget(self, ctx, key):
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
-            await ctx.send("That key does not exist.")
-            return
+            raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
+                                            f" {', '.join(map(inline, pingroles))}")
         return pingroles[key]
 
     async def aep_remove_channel(self, ctx, key, group, f):
-        if key not in await self.config.guild(ctx.guild).pingroles():
-            await ctx.send("That key does not exist.")
-            return
+        pingroles = await self.config.guild(ctx.guild).pingroles()
+        if key not in pingroles:
+            raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
+                                            f" {', '.join(map(inline, pingroles))}")
 
         if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
                 .format(group, key)):
