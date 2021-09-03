@@ -1,10 +1,10 @@
 import logging
 import re
+import time
 from io import BytesIO
 from typing import List, Optional
 
 import discord
-import time
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cog_settings import CogSettings
@@ -443,9 +443,9 @@ class ChannelMirror(commands.Cog):
 
     def makeheader(self, message):
         return 'Posted by **{}** in *{} - #{}*:\n{}\n'.format(message.author.name,
-                                                                message.guild.name,
-                                                                message.channel.name,
-                                                                message.jump_url)
+                                                              message.guild.name,
+                                                              message.channel.name,
+                                                              message.jump_url)
 
     async def mformat(self, text, from_channel, dest_channel):
         # LINKS
