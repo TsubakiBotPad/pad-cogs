@@ -437,14 +437,14 @@ class PadEvents(commands.Cog):
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
             raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
-                                            f" {' '.join(map(inline, pingroles))}")
+                                            f" {', '.join(map(inline, pingroles))}")
         return pingroles[key]
 
     async def aep_remove_channel(self, ctx, key, group, f):
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
             raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
-                                            f" {' '.join(map(inline, pingroles))}")
+                                            f" {', '.join(map(inline, pingroles))}")
 
         if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
                 .format(group, key)):
