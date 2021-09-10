@@ -4,6 +4,7 @@ from typing import Callable, Coroutine, List, Mapping, Optional
 
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, pagify
 from tsutils.enums import Server
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
@@ -398,7 +399,7 @@ class IdTest:
         ml = len(max(suite, key=len)) + 2
         rcircle = '\N{LARGE RED CIRCLE}'
         async with ctx.typing():
-            for i, qr in enumerate(sorted(suite.items())):
+            async for i, qr in AsyncIter(enumerate(sorted(suite.items()))):
                 q, r = qr
                 try:
                     monster = await self.find_monster(q)
@@ -441,7 +442,10 @@ class IdTest:
         o = ""
         rcircle, ycircle = '\N{LARGE RED CIRCLE}', '\N{LARGE YELLOW CIRCLE}'
         async with ctx.typing():
-            for i, case in enumerate(sorted(suite, key=lambda v: (v['id'], v['token'], v['fluff'], v['server']))):
+            async for i, case in AsyncIter(enumerate(sorted(suite, key=lambda v: (v['id'],
+                                                                                  v['token'],
+                                                                                  v['fluff'],
+                                                                                  v['server'])))):
                 fluff = case['id'] in [m.monster_id for m in
                                        self.indexes[Server(case['server'])].fluff_tokens[case['token']]]
                 name = case['id'] in [m.monster_id for m in
@@ -469,8 +473,12 @@ class IdTest:
         qo = ""
         qc = 0
         ml = len(max(qsuite or [''], key=len)) + 2
+
+        fsuite = await self.config.fluff_suite()
+        fo = ""
+        fc = 0
         async with ctx.typing():
-            for c, q in enumerate(sorted(qsuite)):
+            async for c, q in AsyncIter(enumerate(sorted(qsuite))):
                 try:
                     monster = await self.find_monster(q)
                 except Exception:
@@ -486,11 +494,7 @@ class IdTest:
                 else:
                     qc += 1
 
-        fsuite = await self.config.fluff_suite()
-        fo = ""
-        fc = 0
-        async with ctx.typing():
-            for c, v in enumerate(fsuite):
+            async for c, v in AsyncIter(enumerate(fsuite)):
                 fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
                 name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
 
@@ -522,7 +526,7 @@ class IdTest:
 
         qsuite = await self.config.test_suite()
         ml = len(max(qsuite or [''], key=len)) + 2
-        for c, q in enumerate(sorted(qsuite)):
+        async for c, q in AsyncIter(enumerate(sorted(qsuite))):
             try:
                 monster = await self.find_monster(q)
             except Exception:
@@ -537,7 +541,7 @@ class IdTest:
                                 f"Ex: {qsuite[q]['result']}, Ac: {mid}{reason}")
 
         fsuite = await self.config.fluff_suite()
-        for c, v in enumerate(fsuite):
+        async for c, v in AsyncIter(enumerate(fsuite)):
             fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
             name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
 
