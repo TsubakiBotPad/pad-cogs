@@ -19,7 +19,7 @@ from tsutils.emoji import char_to_emoji
 from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server
 from tsutils.json_utils import safe_read_json
 from tsutils.query_settings import QuerySettings
-from tsutils.user_interaction import get_user_confirmation
+from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
 from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
@@ -48,6 +48,7 @@ from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
+from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
 from padinfo.view.id import IdViewState
 from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.leader_skill import LeaderSkillViewState
@@ -118,13 +119,9 @@ class PadInfo(commands.Cog):
 
         self.historic_lookups = safe_read_json(_data_file('historic_lookups_id3.json'))
 
-        self.id_menu = IdMenu  # TODO: Support multi-menus for real
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
         self.settings = settings
-
-    def cog_unload(self):
-        """Manually nulling out database because the GC for cogs seems to be pretty shitty"""
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -209,11 +206,9 @@ class PadInfo(commands.Cog):
         """Monster info (main tab)"""
         await self._do_id(ctx, query)
 
-    async def _do_id(self, ctx, query: str):
+    async def _get_monster(self, ctx, query: str) -> Optional["MonsterModel"]:
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
-        original_author_id = ctx.message.author.id
 
         goodquery = None
         if query[0] in dbcog.token_maps.ID1_SUPPORTED \
@@ -245,8 +240,17 @@ class PadInfo(commands.Cog):
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
-        if not monster:
+        if monster is None:
             await self.send_id_failure_message(ctx, query)
+        return monster
+
+    async def _do_id(self, ctx, query: str):
+        dbcog = await self.get_dbcog()
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        raw_query = query
+
+        if (monster := await self._get_monster(ctx, query)) is None:
             return
 
         await self.log_id_result(ctx, monster.monster_id)
@@ -294,7 +298,7 @@ class PadInfo(commands.Cog):
             url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
             await asyncio.sleep(1)
             userres = await get_user_confirmation(ctx, "Was this the monster you were looking for?",
-                                                    yes_emoji=char_to_emoji('y'), no_emoji=char_to_emoji('n'))
+                                                  yes_emoji=char_to_emoji('y'), no_emoji=char_to_emoji('n'))
             if userres is True:
                 await self.config.good.set(await self.config.good() + 1)
             elif userres is False:
@@ -784,8 +788,7 @@ class PadInfo(commands.Cog):
 
     async def get_user_friends(self, original_author_id):
         friend_cog = self.bot.get_cog("Friend")
-        friends = (await friend_cog.get_friends(original_author_id)) if friend_cog else []
-        return friends
+        return (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
@@ -1383,6 +1386,48 @@ class PadInfo(commands.Cog):
     async def nadiffs(self, ctx, *, query):
         await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
                                 child_reaction_list=NaDiffMenuPanes.emoji_names())
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def expcurve(self, ctx, start, end: Optional[int], *, query=''):
+        if start.isdigit() and end is None and not query:
+            start, end, query = '', None, start
+
+        if start.isdigit() and end is not None:
+            start, offset = int(start), 0
+        elif (match := re.fullmatch(r'(\d+)\[(\d*\.?\d*)]', start)) and end is not None:
+            start, offset = int(match.group(1)), float(match.group(2) or '0')
+        elif (end is None and not start.isdigit()) or (query and not start and not end):
+            start, offset, query = 1, 0, start + ' ' + query
+        else:
+            return await ctx.send("Invalid syntax for argument `start`.")
+
+        if (monster := await self._get_monster(ctx, query)) is None:
+            return
+
+        if end is None:
+            end = monster.level
+
+        if monster.exp_to_level(start + 1) - monster.exp_to_level(start) > offset and start <= 99 \
+                or offset > 5e6 and start <= 110 or offset > 20e6:
+            return await send_cancellation_message(ctx, "Offset too large.")
+        if start <= 0 or end > 120 or end < start or (start == end and offset) or offset < 0:
+            return await send_cancellation_message(ctx, f"Invalid bounds ({start}[{offset}] - {end}).")
+
+        header = MonsterHeader.fmt_id_header(monster, use_emoji=True).to_markdown()
+        if not monster.limit_mult and end > 99:
+            return await send_cancellation_message(ctx, f"{header} cannot limit break.")
+        if monster.level < end <= 99:
+            return await send_cancellation_message(ctx, f"{header} cannot get to level {end} "
+                                                        f"(max level {monster.level}).")
+
+        color = await self.get_user_embed_color(ctx)
+        original_author_id = ctx.message.author.id
+        menu = ClosableEmbedMenu.menu()
+        props = ExperienceCurveViewProps(monster=monster, low=start, high=end, offset=offset)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
+                                       ExperienceCurveView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
