@@ -1,11 +1,10 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.text import Text, BoldText, LabeledText, HighlightableLinks, LinkedText
+from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
+from discordmenu.embed.text import BoldText, HighlightableLinks, LabeledText, LinkedText, Text
 from discordmenu.embed.view import EmbedView
-
-from tsutils.enums import Server, CardPlusModifier
+from tsutils.enums import CardPlusModifier, Server
 from tsutils.menu.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
@@ -16,7 +15,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text, leader_skill_header
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
+from padinfo.view.components.view_state_base_id import MonsterEvolution, ViewStateBaseId
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

@@ -60,8 +60,9 @@ class MonsterHeader:
             cls.jp_suffix(m, is_jp_buffed))
 
     @classmethod
-    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki, is_jp_buffed):
-        return Text('{} {}'.strip().format(
+    def fmt_id_header(cls, m: "MonsterModel", is_tsubaki=False, is_jp_buffed=False, use_emoji=False):
+        return Text('{}{} {}'.strip().format(
+            get_attribute_emoji_by_monster(m) if use_emoji else '',
             '\N{EARTH GLOBE AMERICAS}' if m.server_priority == Server.NA else '',
             cls.long_maybe_tsubaki(m, is_tsubaki, bool(is_jp_buffed))))
 

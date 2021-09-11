@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.components import EmbedField, EmbedMain
 from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
+from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -40,16 +41,16 @@ class IdTracebackView:
 
     @staticmethod
     def embed(state, props: IdTracebackViewProps):
-        fields = [
-            EmbedField('Matched Name Tokens', Box(props.name_tokens)),
-            EmbedField('Matched Modifier Tokens', Box(props.modifier_tokens)),
-            EmbedField('Equally-scoring matches', Box(props.lower_priority_monsters)),
-        ]
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=get_title(props.monster),
+                title=MonsterHeader.fmt_id_header(props.monster, use_emoji=True),
                 description=get_description(props.score)
             ),
+            embed_fields=[
+                EmbedField('Matched Name Tokens', Box(props.name_tokens)),
+                EmbedField('Matched Modifier Tokens', Box(props.modifier_tokens)),
+                EmbedField('Equally-scoring matches', Box(props.lower_priority_monsters)),
+            ],
             embed_footer=embed_footer_with_state(state),
-            embed_fields=fields)
+        )
