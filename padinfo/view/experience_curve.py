@@ -46,7 +46,7 @@ class ExperienceCurveViewProps:
 
 
 def get_normal_exp_difference(monster: "MonsterModel", low: int, high: int, offset: int) -> int:
-    if low <= 99:
+    if low >= 99:
         return 0
     total_low = monster.exp_to_level(low)
     total_high = monster.exp_to_level(min(high, 99))
