@@ -1408,10 +1408,10 @@ class PadInfo(commands.Cog):
         if end is None:
             end = monster.level
 
-        if monster.exp_to_level(start + 1) - monster.exp_to_level(start) > offset and start <= 99 \
+        if monster.exp_to_level(start + 1) - monster.exp_to_level(start) < offset and start <= 99 \
                 or offset > 5e6 and start <= 110 or offset > 20e6:
             return await send_cancellation_message(ctx, "Offset too large.")
-        if start <= 0 or end > 120 or end < start or (start == end and offset) or offset < 0:
+        if start <= 0 or end > 120 or end < start or (start == end and offset):
             return await send_cancellation_message(ctx, f"Invalid bounds ({start}[{offset}] - {end}).")
 
         header = MonsterHeader.fmt_id_header(monster, use_emoji=True).to_markdown()
