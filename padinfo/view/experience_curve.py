@@ -16,7 +16,18 @@ from padinfo.view.components.monster.image import MonsterImage
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
 
-
+SSG_EXP = 4_000_000
+GLOBE_EXP = {
+    0: 2_600_000,
+    1: 2_900_000,
+    2: 3_250_000,
+    3: 3_000_000,
+    4: 3_000_000,
+}
+TA2_EXP = 12_000_000
+TA3_EXP = 50_000_000
+    
+    
 class ExperienceCurveViewProps:
     def __init__(self, monster: "MonsterModel", low: int, high: int, offset: Union[float, int]):
         self.monster = monster
@@ -74,18 +85,6 @@ def trunc_humanize(n: int) -> str:
     if n < 1e12:
         return strip_float(round(n / 1e9, 1)) + 'b'
     return str(n)
-
-
-SSG_EXP = 4_000_000
-GLOBE_EXP = {
-    0: 2_600_000,
-    1: 2_900_000,
-    2: 3_250_000,
-    3: 3_000_000,
-    4: 3_000_000,
-}
-TA2_EXP = 12_000_000
-TA3_EXP = 50_000_000
 
 
 def get_total_needed(monster: "MonsterModel", low: int, high: int, offset: int, amount: int, is_light: bool) -> int:
