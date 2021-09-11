@@ -149,6 +149,21 @@ class MonsterModel(BaseModel):
     def history_us(self):
         return '[{}] New Added'.format(self.reg_date)
 
+    @property
+    def full_damage_attr(self) -> Attribute:
+        if self.attr1 == Attribute.Nil:
+            return self.attr2
+        return self.attr1
+
+    @property
+    def exp_curve(self) -> int:
+        if self.level == 1:
+            return 0
+        return int(round(self.exp / ((self.level - 1) / 98) ** 2.5))
+
+    def exp_to_level(self, target_level: int) -> int:
+        return int(self.exp_curve * ((target_level - 1) / 98) ** 2.5)
+
     def awakening_count(self, awid):
         return len([x for x in self.awakenings if x.awoken_skill_id == awid])
 

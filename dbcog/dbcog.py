@@ -310,7 +310,7 @@ class DBCog(commands.Cog, IdTest):
     async def get_fm_flags(self, author_id):
         return {**self.fm_flags_default, **(await self.config.user_from_id(author_id).fm_flags())}
 
-    async def find_monster(self, query: str, author_id: int = 0) -> MonsterModel:
+    async def find_monster(self, query: str, author_id: int = 0) -> Optional[MonsterModel]:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
 
     async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
