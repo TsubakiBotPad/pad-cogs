@@ -273,7 +273,7 @@ class IdView(BaseIdView):
     def get_plus_status(previous_monsters: List["MonsterModel"], cardplus: CardPlusModifier):
         if cardplus == CardPlusModifier.plus0:
             return 0
-        if all([m.level == 1 and m.is_mat for m in previous_monsters]):
+        if all([m.level == 1 and m.is_material for m in previous_monsters]):
             return 0
         return 297 if cardplus == CardPlusModifier.plus297 else 0
 

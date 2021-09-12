@@ -130,7 +130,7 @@ class MonsterModel(BaseModel):
         return sorted(killers)
 
     @property
-    def is_mat(self):
+    def is_material(self):
         return MonsterType.Evolve in self.types or MonsterType.Vendor in self.types or \
                MonsterType.Enhance in self.types or MonsterType.Awoken in self.types
 
