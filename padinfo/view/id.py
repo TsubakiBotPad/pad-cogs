@@ -20,6 +20,7 @@ from padinfo.view.components.view_state_base_id import MonsterEvolution, ViewSta
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.awakening_model import AwakeningModel
+    from dbcog.database_context import DbContext
 
 
 def alt_fmt(monsterevo, state):
@@ -39,7 +40,7 @@ class IdViewState(ViewStateBaseId):
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
-                 transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                 transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
@@ -51,6 +52,7 @@ class IdViewState(ViewStateBaseId):
         self.is_child = is_child
         self.acquire_raw = acquire_raw
         self.base_rarity = base_rarity
+        self.previous_monsters = previous_monsters
         self.transform_base: "MonsterModel" = transform_base
         self.true_evo_type_raw = true_evo_type_raw
 
@@ -70,7 +72,7 @@ class IdViewState(ViewStateBaseId):
             return None
         monster = await get_monster_from_ims(dbcog, ims)
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters = \
             await IdViewState.do_query(dbcog, monster)
 
         raw_query = ims['raw_query']
@@ -88,6 +90,7 @@ class IdViewState(ViewStateBaseId):
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                   previous_monsters,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -107,18 +110,19 @@ class IdViewState(ViewStateBaseId):
     @classmethod
     async def do_query(cls, dbcog, monster):
         db_context = dbcog.database
-        acquire_raw, base_rarity, transform_base, true_evo_type_raw = \
+        acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_monsters = \
             await IdViewState._get_monster_misc_info(db_context, monster)
 
-        return transform_base, true_evo_type_raw, acquire_raw, base_rarity
+        return transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters
 
     @classmethod
-    async def _get_monster_misc_info(cls, db_context, monster):
+    async def _get_monster_misc_info(cls, db_context: "DbContext", monster):
         transform_base = db_context.graph.get_transform_base(monster)
         true_evo_type_raw = db_context.graph.true_evo_type(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
         base_rarity = db_context.graph.get_base_monster(monster).rarity
-        return acquire_raw, base_rarity, transform_base, true_evo_type_raw
+        previous_monsters = db_context.graph.get_all_prev_evolutions(monster, include_self=True)
+        return acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_monsters
 
     def set_na_diff_invalid_message(self, ims: dict) -> bool:
         message = self.get_na_diff_invalid_message()
@@ -253,11 +257,11 @@ class IdView(BaseIdView):
 
         return Box(rarity, cost, series, acquire, true_evo_type)
 
-    @staticmethod
-    def stats(m: "MonsterModel", cardplus: CardPlusModifier):
-        plus = 297 if cardplus == CardPlusModifier.plus297 else 0
+    @classmethod
+    def stats(cls, m: "MonsterModel", previous_monsters, cardplus: CardPlusModifier):
+        plus = cls.get_plus_status(previous_monsters, cardplus)
         hp, atk, rcv, weighted = m.stats(plus=plus)
-        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=297, lv=110) if m.limit_mult > 0 else (None, None, None, None)
+        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=plus, lv=110) if m.limit_mult > 0 else (None, None, None, None)
         return Box(
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
             LabeledText('ATK', _get_stat_text(atk, lb_atk, _get_awakening_emoji_for_stats(m, 2))),
@@ -266,10 +270,17 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def stats_header(m: "MonsterModel", cardplus: CardPlusModifier):
+    def get_plus_status(previous_monsters: List["MonsterModel"], cardplus: CardPlusModifier):
+        if cardplus == CardPlusModifier.plus0:
+            return 0
+        if all([m.level == 1 and m.is_material for m in previous_monsters]):
+            return 0
+        return 297 if cardplus == CardPlusModifier.plus297 else 0
+
+    @classmethod
+    def stats_header(cls, m: "MonsterModel", previous_monsters, cardplus: CardPlusModifier):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
-        # TODO: Get a +0 emoji for the +0 setting
-        plus_297_emoji = get_emoji('plus_297') if cardplus == CardPlusModifier.plus297 else get_emoji('plus_0')
+        plus_297_emoji = get_emoji('plus_297') if cls.get_plus_status(previous_monsters, cardplus) == 297 else get_emoji('plus_0')
         header = Box(
             Text(voice_emoji),
             Text(plus_297_emoji),
@@ -316,8 +327,8 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m, state.query_settings.cardplus).to_markdown(),
-                IdView.stats(m, state.query_settings.cardplus),
+                IdView.stats_header(m, state.previous_monsters, state.query_settings.cardplus).to_markdown(),
+                IdView.stats(m, state.previous_monsters, state.query_settings.cardplus),
                 inline=True
             ),
             EmbedField(
