@@ -266,7 +266,7 @@ class PadInfo(commands.Cog):
             asyncio.create_task(self.send_survey_after(ctx, query, monster))
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
+        transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters = \
             await IdViewState.do_query(dbcog, monster)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
@@ -275,7 +275,7 @@ class PadInfo(commands.Cog):
 
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                             alt_monsters, is_jp_buffed, query_settings,
-                            transform_base, true_evo_type_raw, acquire_raw, base_rarity,
+                            transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters,
                             use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
         await menu.create(ctx, state)

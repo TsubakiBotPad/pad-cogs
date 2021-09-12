@@ -13,6 +13,7 @@ pymysql
 python-levenshtein
 pytz
 Red-DiscordBot[postgres]
+regex
 setuptools
 tabulate
 tsutils

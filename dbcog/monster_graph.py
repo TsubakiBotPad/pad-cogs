@@ -543,6 +543,19 @@ class MonsterGraph(object):
         pe = self.get_prev_evolution_id(monster)
         return pe and self.get_monster(pe, server=monster.server_priority)
 
+    def get_all_prev_evolutions(self, monster: MonsterModel, *, include_self: bool = True) -> List[MonsterModel]:
+        ret = []
+        if include_self:
+            ret.append(monster)
+        cur_mon = monster
+        while True:
+            pe = self.get_prev_evolution(cur_mon)
+            if pe is None:
+                break
+            ret.append(pe)
+            cur_mon = pe
+        return ret
+
     def get_next_evolution_ids(self, monster: MonsterModel) -> Set[int]:
         return self._get_edges(monster, 'evolution')
 

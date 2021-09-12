@@ -130,6 +130,11 @@ class MonsterModel(BaseModel):
         return sorted(killers)
 
     @property
+    def is_mat(self):
+        return MonsterType.Evolve in self.types or MonsterType.Vendor in self.types or \
+               MonsterType.Enhance in self.types or MonsterType.Awoken in self.types
+
+    @property
     def awakening_restricted_latents(self):
         monster_awakening_to_allowed_latent_map = [
             {27: AwakeningRestrictedLatent.UnmatchableClear},  # TPA
