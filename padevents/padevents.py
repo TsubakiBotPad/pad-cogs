@@ -1068,7 +1068,11 @@ class Event:
         if self.clean_event_name != '':
             self.name_and_modifier += ', ' + self.clean_event_name
 
-        self.event_type = EventType(scheduled_event.event_type_id)
+        self.event_type_id = scheduled_event.event_type_id
+        try:
+            self.event_type = EventType(self.event_type_id)
+        except ValueError:
+            self.event_type = EventType.Unknown
 
         self.dungeon_type = DungeonType(self.dungeon.dungeon_type) if self.dungeon else DungeonType.Unknown
 
@@ -1203,6 +1207,7 @@ class EventList:
 
 
 class EventType(Enum):
+    Unknown = -1
     Week = 0
     Special = 1
     SpecialWeek = 2
