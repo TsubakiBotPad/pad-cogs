@@ -3,10 +3,11 @@ import datetime
 import logging
 import re
 from collections import defaultdict
+from contextlib import suppress
 from datetime import timedelta
 from enum import Enum
 from io import BytesIO
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, NoReturn, Optional, TYPE_CHECKING, Union
 
 import discord
 import itertools
@@ -21,6 +22,7 @@ from tsutils.enums import Server, StarterGroup
 from tsutils.errors import ClientInlineTextException
 from tsutils.formatting import normalize_server_name, rmdiacritics
 from tsutils.helper_classes import DummyObject
+from tsutils.helper_functions import repeating_timer
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
 
 if TYPE_CHECKING:
@@ -62,7 +64,7 @@ class PadEvents(commands.Cog):
         self.fake_uid = -999
 
         self._event_loop = bot.loop.create_task(self.reload_padevents())
-        self._refresh_loop = bot.loop.create_task(self.event_check_loop())
+        self._refresh_loop = bot.loop.create_task(self.do_loop())
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -83,16 +85,28 @@ class PadEvents(commands.Cog):
         self._event_loop.cancel()
         self._refresh_loop.cancel()
 
-    async def reload_padevents(self):
+    async def reload_padevents(self) -> NoReturn:
         await self.bot.wait_until_ready()
-        while self == self.bot.get_cog('PadEvents'):
-            try:
-                await self.refresh_data()
-                logger.info('Done refreshing PadEvents')
-            except Exception as ex:
-                logger.exception("reload padevents loop caught exception " + str(ex))
+        with suppress(asyncio.CancelledError):
+            async for _ in repeating_timer(60 * 60):
+                try:
+                    await self.refresh_data()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.exception("Error in loop:")
 
-            await asyncio.sleep(60 * 60 * 1)
+    async def do_loop(self) -> NoReturn:
+        await self.bot.wait_until_ready()
+        with suppress(asyncio.CancelledError):
+            async for _ in repeating_timer(10):
+                try:
+                    await self.do_autoevents()
+                    await self.do_eventloop()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.exception("Error in loop:")
 
     async def refresh_data(self):
         dbcog = self.bot.get_cog('DBCog')
@@ -102,8 +116,7 @@ class PadEvents(commands.Cog):
         new_events = []
         for se in scheduled_events:
             try:
-                db_context = self.bot.get_cog("DBCog").database
-                new_events.append(Event(se, db_context))
+                new_events.append(Event(se))
             except Exception as ex:
                 logger.exception("Refresh error:")
 
@@ -111,19 +124,7 @@ class PadEvents(commands.Cog):
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
         self.rolepinged_events = set()
 
-    async def event_check_loop(self):
-        await self.bot.wait_until_ready()
-        while self == self.bot.get_cog('PadEvents'):
-            try:
-                await self.check_started()
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                logger.exception("caught exception while checking guerrillas:")
-            await asyncio.sleep(10)
-        logger.info("done check_started (cog probably unloaded)")
-
-    async def check_started(self):
+    async def do_autoevents(self):
         events = filter(lambda e: e.key not in self.started_events, self.events)
         for event in events:
             for gid, data in (await self.config.all_guilds()).items():
@@ -142,24 +143,27 @@ class PadEvents(commands.Cog):
                         matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
 
                     self.rolepinged_events.add((key, event.key))
-                    if matches:
-                        index = GROUPS.index(event.group)
-                        channel = guild.get_channel(aep['channels'][index])
-                        if channel is not None:
-                            role = guild.get_role(aep['roles'][index])
-                            ment = role.mention if role else ""
-                            offsetstr = ""
-                            if aep['offset']:
-                                offsetstr = " in {} minute(s)".format(aep['offset'])
-                            try:
-                                timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
-                                await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
-                                                                                           timestr,
-                                                                                           offsetstr,
-                                                                                           ment),
-                                                   allowed_mentions=discord.AllowedMentions(roles=True))
-                            except Exception:
-                                logger.exception("Failed to send AEP in channel {}".format(channel.id))
+                    if not matches:
+                        continue
+
+                    index = GROUPS.index(event.group)
+                    channel = guild.get_channel(aep['channels'][index])
+                    if channel is None:
+                        continue
+                    role = guild.get_role(aep['roles'][index])
+                    ment = role.mention if role else ""
+                    offsetstr = ""
+                    if aep['offset']:
+                        offsetstr = " in {} minute(s)".format(aep['offset'])
+                    try:
+                        timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
+                        await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
+                                                                                   timestr,
+                                                                                   offsetstr,
+                                                                                   ment),
+                                           allowed_mentions=discord.AllowedMentions(roles=True))
+                    except Exception:
+                        logger.exception("Failed to send AEP in channel {}".format(channel.id))
 
             for uid, data in (await self.config.all_users()).items():
                 user = self.bot.get_user(uid)
@@ -181,13 +185,14 @@ class PadEvents(commands.Cog):
                         offsetstr = "now"
                         timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
                         if aed['offset']:
-                            offsetstr = "in {} minute(s)".format(aed['offset'])
+                            offsetstr = f"<t:{event.open_datetime.timestamp()}:R>"
                         try:
                             await user.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
                                             f" It will be active for {timestr}.")
                         except Exception:
                             logger.exception("Failed to send AED to user {}".format(user.id))
 
+    async def do_eventloop(self):
         events = filter(lambda e: e.is_started() and e.key not in self.started_events, self.events)
         daily_refresh_servers = set()
         for event in events:
@@ -226,8 +231,6 @@ class PadEvents(commands.Cog):
                                                        msg, channel_id=daily_registration['channel_id'])
                                 logger.info("daily_reg server")
                         except Exception as ex:
-                            # self.settings.remove_daily_reg(
-                            #   daily_registration['channel_id'], daily_registration['server'])
                             logger.exception("caught exception while sending daily msg:")
 
     @commands.group(aliases=['pde'])
@@ -261,7 +264,7 @@ class PadEvents(commands.Cog):
                 dungeon_id=1,
             )
         )
-        self.events.append(Event(te, self.bot.get_cog('DBCog').database))
+        self.events.append(Event(te))
         await ctx.tick()
 
     @padevents.command()
@@ -1050,8 +1053,7 @@ class PadEventSettings(CogSettings):
 
 
 class Event:
-    def __init__(self, scheduled_event: "ScheduledEventModel", db_context):
-        self.db_context = db_context
+    def __init__(self, scheduled_event: "ScheduledEventModel"):
         self.key = scheduled_event.event_id
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
         self.open_datetime = scheduled_event.open_datetime
