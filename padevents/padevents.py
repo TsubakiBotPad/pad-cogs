@@ -13,6 +13,7 @@ import discord
 import itertools
 import prettytable
 import pytz
+import time
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, inline, pagify
 from tsutils.cog_settings import CogSettings
@@ -53,13 +54,13 @@ class PadEvents(commands.Cog):
 
         self.settings = PadEventSettings("padevents")
         self.config = Config.get_conf(self, identifier=940373775)
+        self.config.register_global(sent={})
         self.config.register_guild(pingroles={})
         self.config.register_user(dmevents=[])
 
         # Load event data
         self.events = list()
         self.started_events = set()
-        self.rolepinged_events = set()
 
         self.fake_uid = -999
 
@@ -122,7 +123,10 @@ class PadEvents(commands.Cog):
 
         self.events = new_events
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
-        self.rolepinged_events = set()
+        async with self.config.sent() as seen:
+            for key, value in [*seen.items()]:
+                if value < time.time() + 60 * 60:
+                    del seen[key]
 
     async def do_autoevents(self):
         events = filter(lambda e: e.key not in self.started_events, self.events)
@@ -135,14 +139,15 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aep['offset'] * 60 \
                             or not aep['enabled'] \
                             or event.server != aep['server'] \
-                            or (key, event.key) in self.rolepinged_events:
+                            or (key, event.key, gid) in await self.config.sent():
                         continue
                     elif aep['regex']:
                         matches = re.search(aep['searchstr'], event.clean_dungeon_name)
                     else:
                         matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
 
-                    self.rolepinged_events.add((key, event.key))
+                    async with self.config.sent() as sent:
+                        sent[(key, event.key, gid)] = time.time()
                     if not matches:
                         continue
 
@@ -152,15 +157,13 @@ class PadEvents(commands.Cog):
                         continue
                     role = guild.get_role(aep['roles'][index])
                     ment = role.mention if role else ""
-                    offsetstr = ""
+                    offsetstr = "now"
                     if aep['offset']:
-                        offsetstr = " in {} minute(s)".format(aep['offset'])
+                        offsetstr = f"<t:{int(event.open_datetime.timestamp())}:R>"
                     try:
                         timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
-                        await channel.send("{} will be active for {}{}. {}".format(event.name_and_modifier,
-                                                                                   timestr,
-                                                                                   offsetstr,
-                                                                                   ment),
+                        await channel.send(f"{event.name_and_modifier} starts {offsetstr}!"
+                                           f" It will be active for {timestr}.  {ment}",
                                            allowed_mentions=discord.AllowedMentions(roles=True))
                     except Exception:
                         logger.exception("Failed to send AEP in channel {}".format(channel.id))
@@ -173,19 +176,20 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aed['offset'] * 60 \
                             or (event.group not in (aed['group'], None)) \
                             or event.server != aed['server'] \
-                            or (aed['key'], event.key) in self.rolepinged_events:
+                            or (aed['key'], event.key, uid) in await self.config.sent():
                         continue
                     if aed.get('include3p') is None:
                         # case of legacy configs
                         aed['include3p'] = True
                     if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
                         continue
-                    self.rolepinged_events.add((aed['key'], event.key))
+                    async with self.config.sent() as sent:
+                        sent[(aed['key'], event.key, uid)] = time.time()
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
                         offsetstr = "now"
-                        timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
                         if aed['offset']:
-                            offsetstr = f"<t:{event.open_datetime.timestamp()}:R>"
+                            offsetstr = f"<t:{int(event.open_datetime.timestamp())}:R>"
+                        timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
                         try:
                             await user.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
                                             f" It will be active for {timestr}.")
@@ -209,12 +213,10 @@ class PadEvents(commands.Cog):
                             role_name = '{}_group_{}'.format(event.server, event.group_long_name())
                             role = channel.guild.get_role(role_name)
                             if role and role.mentionable:
-                                message = "{} `: {} is starting`".format(role.mention, event.name_and_modifier)
+                                message = "{}`: {} is starting`".format(role.mention, event.name_and_modifier)
                             else:
-                                message = box(
-                                    "Server " + event.server + ", group " + event.group_long_name() +
-                                    " : " + event.name_and_modifier
-                                )
+                                message = box(f"Server {event.server}, group {event.group_long_name()}:"
+                                              f" {event.name_and_modifier}")
 
                             await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
                         except Exception as ex:
@@ -593,7 +595,7 @@ class PadEvents(commands.Cog):
             return
 
         default = {
-            'key': datetime.datetime.now().timestamp(),
+            'key': time.time(),
             'server': server,
             'group': group,
             'searchstr': searchstr,
@@ -1070,7 +1072,8 @@ class Event:
         if self.clean_event_name != '':
             self.name_and_modifier += ', ' + self.clean_event_name
 
-        self.event_type = EventType(scheduled_event.event_type_id)
+        self.event_type_id = scheduled_event.event_type_id
+        self.event_type = None
 
         self.dungeon_type = DungeonType(self.dungeon.dungeon_type) if self.dungeon else DungeonType.Unknown
 
