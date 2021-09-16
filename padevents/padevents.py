@@ -1208,6 +1208,7 @@ class EventList:
 
 
 class EventType(Enum):
+    Unknown = -1
     Week = 0
     Special = 1
     SpecialWeek = 2
