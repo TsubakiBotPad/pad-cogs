@@ -451,6 +451,10 @@ class MonsterIndex(aobject):
         # Method of Obtaining
         if self.graph.monster_is_farmable_evo(monster) or self.graph.monster_is_mp_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.FARMABLE])
+        if self.graph.monster_is_pem_evo(monster):
+            modifiers.update(MISC_MAP[MiscModifiers.PEM])
+        if self.graph.monster_is_vem_evo(monster):
+            modifiers.update(MISC_MAP[MiscModifiers.VEM])
 
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])
