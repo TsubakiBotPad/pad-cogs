@@ -63,6 +63,7 @@ class MonsterModel(BaseModel):
         self.is_farmable = m['is_farmable']
         self.in_rem = m['in_rem']
         self.in_pem = m['in_pem']
+        self.in_vem = m['in_vem']
         self.in_mpshop = m['buy_mp'] is not None
         self.buy_mp = m['buy_mp']
         self.sell_gold = m['sell_gold']
