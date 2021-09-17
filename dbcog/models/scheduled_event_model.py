@@ -12,9 +12,12 @@ class ScheduledEventModel(BaseModel):
         self.start_timestamp = kwargs.get("start_timestamp")
         self.end_timestamp = kwargs.get("end_timestamp")
         self.group_name = kwargs.get("group_name")
+        self.url = kwargs.get("message")
+        self.url = kwargs.get("url")
 
         self.dungeon: DungeonModel = kwargs.get("dungeon_model")
-        self.dungeon_id = self.dungeon.dungeon_id if self.dungeon else None
+        self.dungeon_id = kwargs.get("dungeon_id")
+        self.sub_dungeon_id = kwargs.get("sub_dungeon_id")
 
     @property
     def open_datetime(self):
@@ -34,5 +37,5 @@ class ScheduledEventModel(BaseModel):
 
     def to_dict(self):
         return {
-            'dungeon_id': self.event_id,
+            'dungeon_id': self.dungeon_id,
         }
