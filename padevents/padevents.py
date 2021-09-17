@@ -139,7 +139,7 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aep['offset'] * 60 \
                             or not aep['enabled'] \
                             or event.server != aep['server'] \
-                            or (key, event.key, gid) in await self.config.sent():
+                            or [key, event.key, gid] in await self.config.sent():
                         continue
                     elif aep['regex']:
                         matches = re.search(aep['searchstr'], event.clean_dungeon_name)
@@ -147,7 +147,7 @@ class PadEvents(commands.Cog):
                         matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
 
                     async with self.config.sent() as sent:
-                        sent[(key, event.key, gid)] = time.time()
+                        sent[[key, event.key, gid]] = time.time()
                     if not matches:
                         continue
 
@@ -176,7 +176,7 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aed['offset'] * 60 \
                             or (event.group not in (aed['group'], None)) \
                             or event.server != aed['server'] \
-                            or (aed['key'], event.key, uid) in await self.config.sent():
+                            or [aed['key'], event.key, uid] in await self.config.sent():
                         continue
                     if aed.get('include3p') is None:
                         # case of legacy configs
@@ -184,7 +184,7 @@ class PadEvents(commands.Cog):
                     if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
                         continue
                     async with self.config.sent() as sent:
-                        sent[(aed['key'], event.key, uid)] = time.time()
+                        sent[[aed['key'], event.key, uid]] = time.time()
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
                         offsetstr = "now"
                         if aed['offset']:
