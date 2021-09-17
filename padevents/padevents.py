@@ -62,7 +62,7 @@ class PadEvents(commands.Cog):
         self.events = list()
         self.started_events = set()
 
-        self.fake_uid = -999
+        self.fake_uid = -time.time()
 
         self._event_loop = bot.loop.create_task(self.reload_padevents())
         self._refresh_loop = bot.loop.create_task(self.do_loop())
@@ -139,17 +139,18 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aep['offset'] * 60 \
                             or not aep['enabled'] \
                             or event.server != aep['server'] \
-                            or (key, event.key, gid) in await self.config.sent():
+                            or str((key, event.key, gid)) in await self.config.sent():
                         continue
                     elif aep['regex']:
                         matches = re.search(aep['searchstr'], event.clean_dungeon_name)
                     else:
                         matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
 
-                    async with self.config.sent() as sent:
-                        sent[(key, event.key, gid)] = time.time()
                     if not matches:
                         continue
+
+                    async with self.config.sent() as sent:
+                        sent[str((key, event.key, gid))] = time.time()
 
                     index = GROUPS.index(event.group)
                     channel = guild.get_channel(aep['channels'][index])
@@ -176,7 +177,7 @@ class PadEvents(commands.Cog):
                     if event.start_from_now_sec() > aed['offset'] * 60 \
                             or (event.group not in (aed['group'], None)) \
                             or event.server != aed['server'] \
-                            or (aed['key'], event.key, uid) in await self.config.sent():
+                            or str((aed['key'], event.key, uid)) in await self.config.sent():
                         continue
                     if aed.get('include3p') is None:
                         # case of legacy configs
@@ -184,7 +185,7 @@ class PadEvents(commands.Cog):
                     if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
                         continue
                     async with self.config.sent() as sent:
-                        sent[(aed['key'], event.key, uid)] = time.time()
+                        sent[str((aed['key'], event.key, uid))] = time.time()
                     if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
                         offsetstr = "now"
                         if aed['offset']:
