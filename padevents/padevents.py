@@ -7,6 +7,7 @@ from contextlib import suppress
 from datetime import timedelta
 from enum import Enum
 from io import BytesIO
+import random
 from typing import List, NoReturn, Optional, TYPE_CHECKING, Union
 
 import discord
@@ -62,7 +63,7 @@ class PadEvents(commands.Cog):
         self.events = list()
         self.started_events = set()
 
-        self.fake_uid = -999
+        self.fake_uid = -random.randint(0, 9999999999)
 
         self._event_loop = bot.loop.create_task(self.reload_padevents())
         self._refresh_loop = bot.loop.create_task(self.do_loop())
