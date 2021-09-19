@@ -187,7 +187,8 @@ class VEM(CogMixin):
                                                 f" rolls and make us sad. {emoji_cache.get_by_name('blobsad')}"
                                                 f"\n\nSo report all rolls and give us nice,"
                                                 f" unbiased data! {emoji_cache.get_by_name('blobcheer')}"
-                                                f"\n\nDo you agree?", force_delete=False, show_feedback=True):
+                                                f"\n\nDo you agree?",
+                                           force_delete=False, show_feedback=True, timeout=30):
             return
         await self.config.user(ctx.author).opted_in.set(True)
 
