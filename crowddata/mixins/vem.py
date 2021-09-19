@@ -27,7 +27,7 @@ class VEM(CogMixin):
 
     def setup_self(self):
         self.config.register_global(pulls=[])
-        self.config.register_user(opted_in=False, accounts=1, skipconfirm=False)
+        self.config.register_user(opted_in=False, accounts=1, skipconf=False)
 
     async def red_get_data_for_user(self, *, user_id):
         num = len([p for p in await self.config.pulls() if p[0] == user_id])
