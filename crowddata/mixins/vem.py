@@ -202,7 +202,7 @@ class VEM(CogMixin):
     @report.command()
     @opted_in(True)
     async def toggleskipconfirm(self, ctx):
-        """Force you to confirm when skipping or forgetting a days rolls."""
+        """Toggle if you want to confirm on skip/forgot"""
         await self.config.user(ctx.author).skipconf.set(not await self.config.user(ctx.author).skipconf())
         await ctx.send(f"You have {'dis' if await self.config.user(ctx.author).skipconf() else 'en'}abled confirmation"
                        f" for `skip` and `forgot`.")
@@ -210,7 +210,7 @@ class VEM(CogMixin):
     @reportyesterday.command(name="toggleskipconfirm")
     @opted_in(True)
     async def y_toggleskipconfirm(self, ctx):
-        """Force you to confirm when skipping or forgetting a days rolls."""
+        """Toggle if you want to confirm on skip/forgot"""
         await self.toggleskipconfirm(ctx)
 
     async def assert_ready(self, ctx, midnight: float) -> bool:
