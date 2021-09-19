@@ -13,7 +13,11 @@ if TYPE_CHECKING:
 
 def opted_in(is_opted):
     async def check(ctx):
-        return is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in()
+        if is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in():
+            return True
+        if is_opted:
+            await ctx.send(f"Use `{ctx.prefix}{ctx.invoked_parents[0]} optin` to opt in.")
+        return False
 
     return commands.check(check)
 
@@ -23,7 +27,7 @@ class VEM(CogMixin):
 
     def setup_self(self):
         self.config.register_global(pulls=[])
-        self.config.register_user(opted_in=False, accounts=1)
+        self.config.register_user(opted_in=False, accounts=1, skipconf=False)
 
     async def red_get_data_for_user(self, *, user_id):
         num = len([p for p in await self.config.pulls() if p[0] == user_id])
@@ -93,43 +97,34 @@ class VEM(CogMixin):
     @report.command()
     async def skip(self, ctx):
         """Mark that you skipped your pulls today"""
-        if not await self.assert_ready(ctx, self.midnight()):
-            return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped today's"
-                                                f" pulls on an account?", force_delete=False, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Skipped", self.midnight())
+        await self.skipforgot(ctx, 'Skipped', 0)
 
     @report.command()
     async def forgot(self, ctx):
         """Mark that you forgot your pulls today"""
-        if not await self.assert_ready(ctx, self.midnight()):
-            return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot today's"
-                                                f" pulls on an account?", force_delete=False, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Forgot", self.midnight())
+        await self.skipforgot(ctx, 'Forgot', 0)
 
     @reportyesterday.command(name="skip")
     async def y_skip(self, ctx):
         """Mark that you skipped your pulls yesterday"""
-        if not await self.assert_ready(ctx, time.time() - (24 * 60 * 60)):
-            return
-
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped yesterday's"
-                                                f" pulls on an account?", force_delete=True, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Skipped", time.time() - (24 * 60 * 60))
+        await self.skipforgot(ctx, 'Skipped', 24 * 60 * 60)
 
     @reportyesterday.command(name="forgot")
     async def y_forgot(self, ctx):
         """Mark that you forgot your pulls yesterday"""
-        if not await self.assert_ready(ctx, time.time() - (24 * 60 * 60)):
+        await self.skipforgot(ctx, 'Forgot', 24 * 60 * 60)
+
+    async def skipforgot(self, ctx, ptype: str, offset: int):
+        if not await self.assert_ready(ctx, time.time() - offset):
             return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot yesterday's"
-                                                f" pulls on an account?", force_delete=False, show_feedback=True):
+        if await self.config.user(ctx.author).skipconf() or \
+                not await get_user_confirmation(ctx, f"Are you sure you want to report that you {ptype.lower()}"
+                                                     f" {'yesterday' if offset else 'today'}'s pulls on an account?"
+                                                     f"", force_delete=False, show_feedback=True):
             return
-        await self.add_roll(ctx, "Forgot", time.time() - (24 * 60 * 60))
+        await self.add_roll(ctx, ptype, time.time() - offset)
+        if await self.config.user(ctx.author).skipconf():
+            await ctx.tick()
 
     @adpem.command()
     @opted_in(True)
@@ -203,6 +198,20 @@ class VEM(CogMixin):
             await ctx.send("You must have at most 10 accounts.")
         await self.config.user(ctx.author).accounts.set(number_of_accounts)
         await ctx.tick()
+
+    @report.command()
+    @opted_in(True)
+    async def toggleskipconfirm(self, ctx):
+        """Force you to confirm when skipping or forgetting a days rolls."""
+        await self.config.user(ctx.author).skipconf.set(not await self.config.user(ctx.author).skipconf())
+        await ctx.send(f"You have {'dis' if await self.config.user(ctx.author).skipconf() else 'en'}abled confirmation"
+                       f" for `skip` and `forgot`.")
+
+    @reportyesterday.command(name="toggleskipconfirm")
+    @opted_in(True)
+    async def y_toggleskipconfirm(self, ctx):
+        """Force you to confirm when skipping or forgetting a days rolls."""
+        await self.toggleskipconfirm(ctx)
 
     async def assert_ready(self, ctx, midnight: float) -> bool:
         pulls = await self.config.pulls()
