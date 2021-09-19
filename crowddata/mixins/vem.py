@@ -40,13 +40,13 @@ class VEM(CogMixin):
     async def adpem(self, ctx):
         """Log data for data from the Video Egg Machine"""
 
-    @adpem.group(usage="<pull1>, <pull2>, <pull3>, <pull4>", invoke_without_command=True)
+    @adpem.group(usage="pull1, pull2, pull3, pull4", invoke_without_command=True)
     @opted_in(True)
     async def report(self, ctx, *, pulls):
         """Report a command or opt-in. """
         await self.report_at_time(ctx, pulls, 0)
 
-    @adpem.group(usage="<pull1>, <pull2>, <pull3>, <pull4>", invoke_without_command=True)
+    @adpem.group(usage="pull1, pull2, pull3, pull4", invoke_without_command=True)
     @opted_in(True)
     async def reportyesterday(self, ctx, *, pulls):
         """Report yesterday's rolls"""
@@ -57,7 +57,10 @@ class VEM(CogMixin):
             return await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
 
         if len(pulls := pulls.split(',')) != 4:
-            return await ctx.send("Make sure to supply all 4 rolls, and make sure not to put commas in their names.")
+            return await ctx.send(f"Please supply all 4 rolls with commas in between them. You can use names or"
+                                  f" numbers.\n\t"
+                                  f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013`\n\t"
+                                  f"Valid input: `{ctx.prefix}adpem report Enoch, Facet, D Globe, B Super King`")
 
         dbcog: Any = ctx.bot.get_cog("DBCog")
         pdicog: Any = ctx.bot.get_cog("PadInfo")
@@ -72,7 +75,7 @@ class VEM(CogMixin):
                     for pull in pulls]
         if not all(monsters):
             unknown = '\n\t'.join(s for s, m in zip(pulls, monsters) if m is None)
-            return await ctx.send(f"Not all monsters were valid.  The following could not be processed:\n\t{unknown}")
+            return await ctx.send(f"Not all monsters were valid. The following could not be processed:\n\t{unknown}")
 
         def get_vem_evo(mon: "MonsterModel") -> "MonsterModel":
             return {m for m in dbcog.database.graph.get_alt_monsters(mon) if m.in_vem}.pop()
@@ -220,6 +223,7 @@ class VEM(CogMixin):
         async with self.config.pulls() as pulls:
             pulls.append((ctx.author.id, values, at_time))
 
-    def midnight(self) -> float:
+    @staticmethod
+    def midnight() -> float:
         return datetime.now(timezone(timedelta(hours=-8))).replace(hour=0, minute=0, second=0, microsecond=0) \
             .astimezone(timezone.utc).timestamp()
