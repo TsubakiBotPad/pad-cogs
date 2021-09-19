@@ -167,7 +167,7 @@ class VEM(CogMixin):
                     pulls.remove(pull)
         await ctx.send("Your pulls have been deleted.")
 
-    @adpem.command()
+    @adpem.command(aliases=['option'])
     @opted_in(False)
     async def optin(self, ctx):
         """Opt in to the data collection system"""
