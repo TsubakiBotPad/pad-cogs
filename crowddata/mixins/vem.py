@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, TYPE_CHECKING
 
+from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
 from tsutils.user_interaction import get_user_confirmation
@@ -163,16 +164,17 @@ class VEM(CogMixin):
     @opted_in(False)
     async def optin(self, ctx):
         """Opt in to the data collection system"""
-        if not await get_user_confirmation(ctx, "Thanks for participating in our data collection! We take selection"
-                                                " bias VERY seriously."
-                                                " (See: <https://en.wikipedia.org/wiki/Selection_bias>)"
-                                                " By participating, you are agreeing to report **every single roll that"
-                                                " you make, every single day**. If you only report SOME rolls, then"
-                                                " you are likely to forget your worse rolls and report only the better"
-                                                " rolls, which would bias our statistics towards the better rolls"
-                                                " and make us sad.  So report all rolls and give"
-                                                " us nice, unbiased data!"
-                                                "\n\nDo you agree?", force_delete=False, show_feedback=True):
+        if not await get_user_confirmation(ctx, f"Thanks for participating in our data collection! We take selection"
+                                                f" bias VERY seriously."
+                                                f" (See: <https://en.wikipedia.org/wiki/Selection_bias>)"
+                                                f" By participating, you are agreeing to report **every single roll"
+                                                f" that you make, every single day**. If you only report SOME rolls,"
+                                                f" then you are likely to forget your worse rolls and report only the"
+                                                f" better rolls, which would bias our statistics towards the better"
+                                                f" rolls and make us sad. {emoji_cache.get_by_name('blobsad')}"
+                                                f"\n\nSo report all rolls and give us nice,"
+                                                f" unbiased data! {emoji_cache.get_by_name('blobcheer')}"
+                                                f"\n\nDo you agree?", force_delete=False, show_feedback=True):
             return
         await self.config.user(ctx.author).opted_in.set(True)
 
