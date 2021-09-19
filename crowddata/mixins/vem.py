@@ -92,12 +92,18 @@ class VEM(CogMixin):
         """Mark that you skipped your pulls today"""
         if not await self.assert_ready(ctx, self.midnight()):
             return
+        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped today's"
+                                                f" pulls on an account", force_delete=False, show_feedback=True):
+            return
         await self.add_roll(ctx, "Skipped")
 
     @report.command()
     async def forgot(self, ctx):
         """Mark that you forgot your pulls today"""
         if not await self.assert_ready(ctx, self.midnight()):
+            return
+        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot today's"
+                                                f" pulls on an account", force_delete=False, show_feedback=True):
             return
         await self.add_roll(ctx, "Forgot")
 
@@ -106,12 +112,19 @@ class VEM(CogMixin):
         """Mark that you skipped your pulls yesterday"""
         if not await self.assert_ready(ctx, self.midnight() - (24 * 60 * 60)):
             return
+
+        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped yesterday's"
+                                                f" pulls on an account", force_delete=True, show_feedback=True):
+            return
         await self.add_roll(ctx, "Skipped")
 
     @reportyesterday.command(name="forgot")
     async def y_forgot(self, ctx):
         """Mark that you forgot your pulls yesterday"""
         if not await self.assert_ready(ctx, self.midnight() - (24 * 60 * 60)):
+            return
+        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot yesterday's"
+                                                f" pulls on an account", force_delete=False, show_feedback=True):
             return
         await self.add_roll(ctx, "Forgot")
 
