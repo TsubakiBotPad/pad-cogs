@@ -121,6 +121,7 @@ class PadInfo(commands.Cog):
 
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
+        self.monster_header = MonsterHeader
         self.settings = settings
 
     async def red_get_data_for_user(self, *, user_id):
