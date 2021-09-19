@@ -13,11 +13,7 @@ if TYPE_CHECKING:
 
 def opted_in(is_opted):
     async def check(ctx):
-        if is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in():
-            return True
-        if is_opted:
-            await ctx.send(f"Use `{ctx.prefix}{ctx.invoked_parents[0]} optin` to opt in.")
-        return False
+        return is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in()
 
     return commands.check(check)
 
