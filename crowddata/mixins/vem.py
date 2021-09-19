@@ -163,9 +163,16 @@ class VEM(CogMixin):
     @opted_in(False)
     async def optin(self, ctx):
         """Opt in to the data collection system"""
-        if not await get_user_confirmation(ctx, "We take data integrity very seriously! Please remember to:"
-                                                "\n\t\N{BULLET} write this text later!\n"
-                                                "Do you agree?", show_feedback=True):
+        if not await get_user_confirmation(ctx, "Thanks for participating in our data collection! We take selection"
+                                                " bias VERY seriously."
+                                                " (See: <https://en.wikipedia.org/wiki/Selection_bias>)"
+                                                " By participating, you are agreeing to report **every single roll that"
+                                                " you make, every single day**. If you only report SOME rolls, then"
+                                                " you are likely to forget your worse rolls and report only the better"
+                                                " rolls, which would bias our statistics towards the better rolls"
+                                                " and make us sad.  So report all rolls and give"
+                                                " us nice, unbiased data!"
+                                                "\n\nDo you agree?", force_delete=False, show_feedback=True):
             return
         await self.config.user(ctx.author).opted_in.set(True)
 
