@@ -13,7 +13,11 @@ if TYPE_CHECKING:
 
 def opted_in(is_opted):
     async def check(ctx):
-        return is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in()
+        if is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in():
+            return True
+        if is_opted:
+            await ctx.send(f"Use `{ctx.prefix}{ctx.invoked_parents[0]} optin` to opt in.")
+        return False
 
     return commands.check(check)
 
@@ -23,7 +27,7 @@ class VEM(CogMixin):
 
     def setup_self(self):
         self.config.register_global(pulls=[])
-        self.config.register_user(opted_in=False, accounts=1)
+        self.config.register_user(opted_in=False, accounts=1, skipconfirm=False)
 
     async def red_get_data_for_user(self, *, user_id):
         num = len([p for p in await self.config.pulls() if p[0] == user_id])
@@ -44,15 +48,15 @@ class VEM(CogMixin):
     @opted_in(True)
     async def report(self, ctx, *, pulls):
         """Report a command or opt-in. """
-        await self.report_at_time(ctx, pulls, self.midnight())
+        await self.report_at_time(ctx, pulls, 0)
 
     @adpem.group(usage="<pull1>, <pull2>, <pull3>, <pull4>", invoke_without_command=True)
     @opted_in(True)
     async def reportyesterday(self, ctx, *, pulls):
         """Report yesterday's rolls"""
-        await self.report_at_time(ctx, pulls, self.midnight() - (24 * 60 * 60))
+        await self.report_at_time(ctx, pulls, 24 * 60 * 60)
 
-    async def report_at_time(self, ctx, pulls, midnight):
+    async def report_at_time(self, ctx, pulls, offset):
         if not await self.config.user(ctx.author).opted_in():
             return await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
 
@@ -65,7 +69,7 @@ class VEM(CogMixin):
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
-        if not await self.assert_ready(ctx, midnight):
+        if not await self.assert_ready(ctx, self.midnight() - offset):
             return
 
         monsters = [await dbcog.find_monster('vem ' + pull.strip())
@@ -85,48 +89,39 @@ class VEM(CogMixin):
                                            timeout=30, force_delete=False, show_feedback=True):
             return
 
-        await self.add_roll(ctx, [m.monster_id for m in correct_evos])
+        await self.add_roll(ctx, [m.monster_id for m in correct_evos], time.time() - offset)
 
     @report.command()
     async def skip(self, ctx):
         """Mark that you skipped your pulls today"""
-        if not await self.assert_ready(ctx, self.midnight()):
-            return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped today's"
-                                                f" pulls on an account", force_delete=False, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Skipped")
+        await self.skipforgot(ctx, 'Skipped', 0)
 
     @report.command()
     async def forgot(self, ctx):
         """Mark that you forgot your pulls today"""
-        if not await self.assert_ready(ctx, self.midnight()):
-            return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot today's"
-                                                f" pulls on an account", force_delete=False, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Forgot")
+        await self.skipforgot(ctx, 'Forgot', 0)
 
     @reportyesterday.command(name="skip")
     async def y_skip(self, ctx):
         """Mark that you skipped your pulls yesterday"""
-        if not await self.assert_ready(ctx, self.midnight() - (24 * 60 * 60)):
-            return
-
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you skipped yesterday's"
-                                                f" pulls on an account", force_delete=True, show_feedback=True):
-            return
-        await self.add_roll(ctx, "Skipped")
+        await self.skipforgot(ctx, 'Skipped', 24 * 60 * 60)
 
     @reportyesterday.command(name="forgot")
     async def y_forgot(self, ctx):
         """Mark that you forgot your pulls yesterday"""
-        if not await self.assert_ready(ctx, self.midnight() - (24 * 60 * 60)):
+        await self.skipforgot(ctx, 'Forgot', 24 * 60 * 60)
+
+    async def skipforgot(self, ctx, ptype: str, offset: int):
+        if not await self.assert_ready(ctx, time.time() - offset):
             return
-        if not await get_user_confirmation(ctx, f"Are you sure you want to report that you forgot yesterday's"
-                                                f" pulls on an account", force_delete=False, show_feedback=True):
+        if await self.config.user(ctx.author).skipconf() or \
+                not await get_user_confirmation(ctx, f"Are you sure you want to report that you {ptype.lower()}"
+                                                     f" {'yesterday' if offset else 'today'}'s pulls on an account?"
+                                                     f"", force_delete=False, show_feedback=True):
             return
-        await self.add_roll(ctx, "Forgot")
+        await self.add_roll(ctx, ptype, time.time() - offset)
+        if await self.config.user(ctx.author).skipconf():
+            await ctx.tick()
 
     @adpem.command()
     @opted_in(True)
@@ -148,7 +143,7 @@ class VEM(CogMixin):
         await dbcog.wait_until_ready()
 
         pulls = [v for uid, v, ts in await self.config.pulls()
-                 if midnight < ts < midnight + (24 * 60 * 60) and uid == ctx.author.id]
+                 if midnight <= ts < midnight + (24 * 60 * 60) and uid == ctx.author.id]
         if not pulls:
             return await ctx.send("There are no logged pulls during the given time period.")
 
@@ -168,8 +163,8 @@ class VEM(CogMixin):
             return
 
         async with self.config.pulls() as pulls:
-            for pull in pulls:
-                if midnight < pull[2] < midnight + (24 * 60 * 60) and pull[0] == ctx.author.id:
+            for pull in pulls[:]:
+                if midnight <= pull[2] < midnight + (24 * 60 * 60) and pull[0] == ctx.author.id:
                     pulls.remove(pull)
         await ctx.send("Your pulls have been deleted.")
 
@@ -200,23 +195,38 @@ class VEM(CogMixin):
         await self.config.user(ctx.author).accounts.set(number_of_accounts)
         await ctx.tick()
 
+    @report.command()
+    @opted_in(True)
+    async def toggleskipconfirm(self, ctx):
+        """Force you to confirm when skipping or forgetting a days rolls."""
+        await self.config.user(ctx.author).skipconf.set(not await self.config.user(ctx.author).skipconf())
+        await ctx.send(f"You have {'dis' if await self.config.user(ctx.author).skipconf() else 'en'}abled confirmation"
+                       f" for `skip` and `forgot`.")
+
+    @reportyesterday.command(name="toggleskipconfirm")
+    @opted_in(True)
+    async def y_toggleskipconfirm(self, ctx):
+        """Force you to confirm when skipping or forgetting a days rolls."""
+        await self.toggleskipconfirm(ctx)
+
     async def assert_ready(self, ctx, midnight: float) -> bool:
         pulls = await self.config.pulls()
         numtoday = len([1 for uid, v, ts in pulls
-                        if midnight < ts < midnight + (24 * 60 * 60) and uid == ctx.author.id])
+                        if midnight <= ts < midnight + (24 * 60 * 60) and uid == ctx.author.id])
         if numtoday >= await self.config.user(ctx.author).accounts():
-            await ctx.send(f"You already reported {numtoday} times today, which is your current number of"
-                           f" accounts for reporting. If you're rolling daily on more accounts than this,"
-                           f" you may increase your number of accounts via"
+            await ctx.send(f"You already reported {numtoday} times"
+                           f" {'today' if midnight > time.time() - 24 * 60 * 60 else 'yesterday'}, which "
+                           f"is your current number of accounts for reporting. If you're rolling daily on more"
+                           f" accounts than this, you may increase your number of accounts via"
                            f" `{ctx.prefix}{ctx.invoked_parents[0]} setaccounts`, however please keep in"
                            f" mind we're very worried about selection bias, so please only do this if you"
                            f" are actually going to report daily!")
             return False
         return True
 
-    async def add_roll(self, ctx, values: Any):
+    async def add_roll(self, ctx, values: Any, at_time: float):
         async with self.config.pulls() as pulls:
-            pulls.append((ctx.author.id, values, time.time()))
+            pulls.append((ctx.author.id, values, at_time))
 
     def midnight(self) -> float:
         return datetime.now(timezone(timedelta(hours=-8))).replace(hour=0, minute=0, second=0, microsecond=0) \
