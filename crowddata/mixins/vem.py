@@ -5,7 +5,8 @@ from typing import Any, TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
-from tsutils.user_interaction import get_user_confirmation
+from tsutils.emoji import NO_EMOJI, char_to_emoji
+from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -113,7 +114,7 @@ class VEM(CogMixin):
     async def skipforgot(self, ctx, ptype: str, offset: int):
         if not await self.assert_ready(ctx, time.time() - offset):
             return
-        if await self.config.user(ctx.author).skipconf() or \
+        if not await self.config.user(ctx.author).skipconf() and \
                 not await get_user_confirmation(ctx, f"Are you sure you want to report that you {ptype.lower()}"
                                                      f" {'yesterday' if offset else 'today'}'s pulls on an account?"
                                                      f"", force_delete=False, show_feedback=True):
@@ -141,31 +142,32 @@ class VEM(CogMixin):
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
-        pulls = [v for uid, v, ts in await self.config.pulls()
+        pulls = [[uid, v, ts] for uid, v, ts in await self.config.pulls()
                  if midnight <= ts < midnight + (24 * 60 * 60) and uid == ctx.author.id]
+        pulls = {char_to_emoji(str(c)): vs for c, vs in enumerate(pulls, 1)}
         if not pulls:
             return await ctx.send("There are no logged pulls during the given time period.")
 
         pulltext = []
-        for pull in pulls:
+        for c, (uid, pull, ts) in pulls.items():
             if isinstance(pull, str):
-                pulltext.append(pull)
+                pulltext.append(c + ': ' + pull)
             else:
-                pulltext.append('\t' + '\n\t'.join(
+                pulltext.append(c + '\n\t' + '\n\t'.join(
                     pdicog.monster_header.fmt_id_header(dbcog.get_monster(mid), use_emoji=True).to_markdown()
                     for mid in pull)
                                 )
         pulltext = '\n\n'.join(pulltext)
 
-        if not await get_user_confirmation(ctx, f"Are you sure you want to remove the following pulls:\n\n{pulltext}",
-                                           force_delete=False, show_feedback=True):
+        chosen = await get_user_reaction(ctx, f"Which pull would you like to remove?\n\n{pulltext}",
+                                         *pulls.keys(), NO_EMOJI, force_delete=False, show_feedback=True)
+
+        if chosen is None or chosen == NO_EMOJI:
             return
 
-        async with self.config.pulls() as pulls:
-            for pull in pulls[:]:
-                if midnight <= pull[2] < midnight + (24 * 60 * 60) and pull[0] == ctx.author.id:
-                    pulls.remove(pull)
-        await ctx.send("Your pulls have been deleted.")
+        async with self.config.pulls() as c_pulls:
+            c_pulls.remove(pulls[chosen])
+        await ctx.send("Your pull have been deleted.")
 
     @adpem.command(aliases=['option'])
     @opted_in(False)
