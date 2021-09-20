@@ -442,8 +442,12 @@ class MonsterGraph(object):
         if monster.base_evo_id == 5802:
             return 5810
 
-        prev = self.get_prev_transform(monster)
-        if prev is not None and prev.monster_id < monster.monster_id:
+        while True:
+            prev = self.get_prev_transform(monster)
+            if prev is None:
+                break
+            if prev.monster_id >= monster.monster_id:
+                break
             monster = prev
 
         if self.debug_monster_ids is not None:
@@ -581,6 +585,7 @@ class MonsterGraph(object):
             for i, mon in enumerate(ret):
                 if mon.monster_id > monster.monster_id:
                     to_pop.append(i)
+            to_pop.reverse()
             for i in to_pop:
                 ret.pop(i)
         return ret

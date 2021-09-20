@@ -320,19 +320,27 @@ class IdView(BaseIdView):
         return header
 
     @staticmethod
-    def active_skill_header(m: "MonsterModel", transform_base):
+    def active_skill_header(m: "MonsterModel", previous_transforms: List["MonsterModel"]):
+        transform_emoji = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
+                           get_emoji('downb'), get_emoji('downp')]
+        up_emoji = get_emoji('upgr')
+
         active_skill = m.active_skill
-        if m == transform_base:
+        if len(previous_transforms) == 0:
             active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
                 if active_skill else 'None'
         else:
-            base_skill = transform_base.active_skill
-            base_cd = ' (\N{DOWN-POINTING RED TRIANGLE} {} -> {})'.format(base_skill.turn_max,
-                                                                          base_skill.turn_min) \
-                if base_skill else 'None'
-
-            active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
-            active_cd += base_cd
+            skill_texts = []
+            previous_transforms.reverse()
+            for i, mon in enumerate(previous_transforms):
+                skill = mon.active_skill
+                # we can assume skill is not None because the monster transforms
+                cooldown_text = '({}cd)'.format(str(skill.turn_max))
+                if skill.turn_min != skill.turn_max:
+                    cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
+                skill_texts.append('{}{}'.format(transform_emoji[i % len(transform_emoji)], cooldown_text))
+            skill_texts.append('{} ({} cd)'.format(up_emoji, m.active_skill.turn_max))
+            active_cd = ' '.join(skill_texts)
         return Box(
             BoldText('Active Skill'),
             BoldText(active_cd),
@@ -361,7 +369,7 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(m, state.transform_base).to_markdown(),
+                IdView.active_skill_header(m, state.previous_transforms).to_markdown(),
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
