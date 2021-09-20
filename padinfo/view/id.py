@@ -131,7 +131,8 @@ class IdViewState(ViewStateBaseId):
         base_rarity = db_context.graph.get_base_monster(monster).rarity
         previous_evolutions = db_context.graph.get_all_prev_evolutions(monster, include_self=True)
         previous_transforms = db_context.graph.get_all_prev_transforms(monster, include_self=False)
-        return IdQueriedProps(acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions, previous_transforms)
+        return IdQueriedProps(acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions,
+                              previous_transforms)
 
     def set_na_diff_invalid_message(self, ims: dict) -> bool:
         message = self.get_na_diff_invalid_message()
