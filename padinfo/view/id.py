@@ -11,8 +11,8 @@ from tsutils.query_settings import QuerySettings
 from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.base import BaseIdView
-from padinfo.view.common import get_monster_from_ims, invalid_monster_text, leader_skill_header
+from padinfo.view.common import get_monster_from_ims, invalid_monster_text
+from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import MonsterEvolution, ViewStateBaseId
@@ -156,10 +156,6 @@ def _get_awakening_text(awakening: "AwakeningModel"):
     return get_awakening_emoji(awakening.awoken_skill_id, awakening.name)
 
 
-def _killer_latent_emoji(latent_name: str):
-    return get_emoji('latent_killer_{}'.format(latent_name.lower()))
-
-
 def _get_awakening_emoji_for_stats(m: "MonsterModel", i: int):
     return get_awakening_emoji(i) if m.awakening_count(i) and not m.is_equip else ''
 
@@ -181,7 +177,7 @@ def evos_embed_field(state: ViewStateBaseId):
     field_text = "**Evos**"
     help_text = ""
     # this isn't used right now, but maybe later if discord changes the api for embed titles...?
-    help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
+    _help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
     legend_parts = []
     if any(not alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution):
         legend_parts.append("⌊Irreversible⌋")
@@ -199,26 +195,8 @@ def evos_embed_field(state: ViewStateBaseId):
     )
 
 
-class IdView(BaseIdView):
+class IdView(BaseIdMainView):
     VIEW_TYPE = 'Id'
-    transform_emojis = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
-                        get_emoji('downb'), get_emoji('downp')]
-    up_emoji = get_emoji('upgr')
-
-    @staticmethod
-    def normal_awakenings_row(m: "MonsterModel"):
-        normal_awakenings = len(m.awakenings) - m.superawakening_count
-        normal_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[:normal_awakenings]]
-        return Box(*[Text(e) for e in normal_awakenings_emojis], delimiter=' ')
-
-    @staticmethod
-    def super_awakenings_row(m: "MonsterModel"):
-        normal_awakenings = len(m.awakenings) - m.superawakening_count
-        super_awakenings_emojis = [_get_awakening_text(a) for a in m.awakenings[normal_awakenings:]]
-        return Box(
-            Text(get_emoji('sa_questionmark')),
-            *[Text(e) for e in super_awakenings_emojis],
-            delimiter=' ') if len(super_awakenings_emojis) > 0 else None
 
     @classmethod
     def all_awakenings_row(cls, m: "MonsterModel", transform_base):
@@ -228,7 +206,7 @@ class IdView(BaseIdView):
         return Box(
             Box(
                 cls.up_emoji if m != transform_base else '',
-                IdView.normal_awakenings_row(m),
+                cls.normal_awakenings_row(m),
                 delimiter=' '
             ),
             Box(
@@ -236,21 +214,7 @@ class IdView(BaseIdView):
                 IdView.all_awakenings_row(transform_base, transform_base),
                 delimiter=' '
             ) if m != transform_base else None,
-            IdView.super_awakenings_row(m),
-        )
-
-    @staticmethod
-    def killers_row(m: "MonsterModel", transform_base):
-        killers = m.killers if m == transform_base else transform_base.killers
-        killers_text = 'Any' if 'Any' in killers else \
-            ' '.join(_killer_latent_emoji(k) for k in killers)
-        return Box(
-            BoldText('Available killers:'),
-            Text('\N{DOWN-POINTING RED TRIANGLE}' if m != transform_base else ''),
-            Text('[{} slots]'.format(m.latent_slots if m == transform_base
-                                     else transform_base.latent_slots)),
-            Text(killers_text),
-            delimiter=' '
+            cls.super_awakenings_row(m),
         )
 
     @staticmethod
@@ -323,31 +287,6 @@ class IdView(BaseIdView):
         return header
 
     @classmethod
-    def active_skill_header(cls, m: "MonsterModel", previous_transforms: List["MonsterModel"]):
-
-        active_skill = m.active_skill
-        if len(previous_transforms) == 0:
-            active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
-                if active_skill else 'None'
-        else:
-            skill_texts = []
-            previous_transforms.reverse()
-            for i, mon in enumerate(previous_transforms):
-                skill = mon.active_skill
-                # we can assume skill is not None because the monster transforms
-                cooldown_text = '({}cd)'.format(str(skill.turn_max))
-                if skill.turn_min != skill.turn_max:
-                    cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
-                skill_texts.append('{}{}'.format(cls.transform_emojis[i % len(cls.transform_emojis)], cooldown_text))
-            skill_texts.append('{} ({} cd)'.format(cls.up_emoji, m.active_skill.turn_max))
-            active_cd = ' '.join(skill_texts)
-        return Box(
-            BoldText('Active Skill'),
-            BoldText(active_cd),
-            delimiter=' '
-        )
-
-    @classmethod
     def embed(cls, state: IdViewState):
         m = state.monster
         fields = [
@@ -355,7 +294,7 @@ class IdView(BaseIdView):
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
                     IdView.all_awakenings_row(m, state.transform_base),
-                    IdView.killers_row(m, state.transform_base)
+                    cls.killers_row(m, state.transform_base)
                 )
             ),
             EmbedField(
@@ -369,11 +308,11 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(m, state.previous_transforms).to_markdown(),
+                cls.active_skill_header(m, state.previous_transforms).to_markdown(),
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
-                leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
+                cls.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
             evos_embed_field(state)
