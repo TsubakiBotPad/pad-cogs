@@ -25,7 +25,7 @@ def _killer_latent_emoji(latent_name: str):
 
 
 class BaseIdMainView(BaseIdView):
-    transform_emojis = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
+    transform_emojis = [get_emoji('downr'), get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
                         get_emoji('downb'), get_emoji('downp')]
     up_emoji = get_emoji('upgr')
     down_emoji = transform_emojis[0]

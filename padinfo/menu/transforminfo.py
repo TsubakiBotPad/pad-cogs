@@ -81,7 +81,7 @@ class TransformInfoMenu:
 
 class TransformInfoEmoji:
     home = emoji_buttons['home']
-    down = '\N{DOWN-POINTING RED TRIANGLE}'
+    down = ('downr', '\N{DOWN-POINTING RED TRIANGLE}')
     up = ('upgr', '\N{UP-POINTING RED TRIANGLE}')
     one = char_to_emoji('1')
     two = char_to_emoji('2')
