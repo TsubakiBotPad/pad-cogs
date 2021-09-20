@@ -201,6 +201,9 @@ def evos_embed_field(state: ViewStateBaseId):
 
 class IdView(BaseIdView):
     VIEW_TYPE = 'Id'
+    transform_emojis = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
+                        get_emoji('downb'), get_emoji('downp')]
+    up_emoji = get_emoji('upgr')
 
     @staticmethod
     def normal_awakenings_row(m: "MonsterModel"):
@@ -217,14 +220,14 @@ class IdView(BaseIdView):
             *[Text(e) for e in super_awakenings_emojis],
             delimiter=' ') if len(super_awakenings_emojis) > 0 else None
 
-    @staticmethod
-    def all_awakenings_row(m: "MonsterModel", transform_base):
+    @classmethod
+    def all_awakenings_row(cls, m: "MonsterModel", transform_base):
         if len(m.awakenings) == 0:
             return Box(Text('No Awakenings'))
 
         return Box(
             Box(
-                '\N{UP-POINTING RED TRIANGLE}' if m != transform_base else '',
+                cls.up_emoji if m != transform_base else '',
                 IdView.normal_awakenings_row(m),
                 delimiter=' '
             ),
@@ -319,11 +322,8 @@ class IdView(BaseIdView):
         )
         return header
 
-    @staticmethod
-    def active_skill_header(m: "MonsterModel", previous_transforms: List["MonsterModel"]):
-        transform_emoji = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
-                           get_emoji('downb'), get_emoji('downp')]
-        up_emoji = get_emoji('upgr')
+    @classmethod
+    def active_skill_header(cls, m: "MonsterModel", previous_transforms: List["MonsterModel"]):
 
         active_skill = m.active_skill
         if len(previous_transforms) == 0:
@@ -338,8 +338,8 @@ class IdView(BaseIdView):
                 cooldown_text = '({}cd)'.format(str(skill.turn_max))
                 if skill.turn_min != skill.turn_max:
                     cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
-                skill_texts.append('{}{}'.format(transform_emoji[i % len(transform_emoji)], cooldown_text))
-            skill_texts.append('{} ({} cd)'.format(up_emoji, m.active_skill.turn_max))
+                skill_texts.append('{}{}'.format(cls.transform_emojis[i % len(cls.transform_emojis)], cooldown_text))
+            skill_texts.append('{} ({} cd)'.format(cls.up_emoji, m.active_skill.turn_max))
             active_cd = ' '.join(skill_texts)
         return Box(
             BoldText('Active Skill'),
