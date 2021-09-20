@@ -316,7 +316,7 @@ class MonsterGraph(object):
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
                 if self.debug_monster_ids is not None:
                     if ex.target_monster_id not in self.debug_monster_ids \
-                            or int(vendor_id) not in self.debug_monster_ids:
+                                    or int(vendor_id) not in self.debug_monster_ids:
                         continue
                 exchanges[(int(vendor_id), ex.target_monster_id)].add(model)
         for (sell_id, buy_id), models in exchanges.items():
@@ -364,7 +364,7 @@ class MonsterGraph(object):
         return {model for model in possible_results}
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
-            -> Optional[MonsterModel]:
+                    -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
         if 'model' not in self.graph_dict[server].nodes[monster_id]:
@@ -396,7 +396,9 @@ class MonsterGraph(object):
                 continue
             if (next_transform := self.get_next_transform(mon)):
                 to_check.add(next_transform)
-            to_check.update(self.get_prev_transforms(mon))
+            prev = self.get_prev_transform(mon)
+            if prev is not None:
+                to_check.add(prev)
             mons.add(mon)
         return mons
 
@@ -440,9 +442,13 @@ class MonsterGraph(object):
         if monster.base_evo_id == 5802:
             return 5810
 
-        while (prevs := self.get_prev_transforms(monster)) \
-                and list(prevs)[0].monster_id < monster.monster_id:
-            monster = prevs.pop()
+        while True:
+            prev = self.get_prev_transform(monster)
+            if prev is None:
+                break
+            if prev.monster_id >= monster.monster_id:
+                break
+            monster = prev
 
         if self.debug_monster_ids is not None:
             while (prev := self.get_prev_evolution(monster)):
@@ -466,9 +472,9 @@ class MonsterGraph(object):
         curr = monster
         while curr not in seen:
             seen.add(curr)
-            next_mons = self.get_prev_transforms(curr)
-            if next_mons:
-                curr = next_mons.pop()
+            prev_mon = self.get_prev_transform(curr)
+            if prev_mon is not None:
+                curr = prev_mon
             else:
                 break
         else:
@@ -557,6 +563,33 @@ class MonsterGraph(object):
             cur_mon = pe
         return ret
 
+    def get_all_prev_transforms(self, monster: MonsterModel, *, include_self: bool = True,
+                                cyclical_wrap: bool = False) -> List[MonsterModel]:
+        ret = []
+        if include_self:
+            ret.append(monster)
+        cur_mon = monster
+        is_cycle = False
+        while True:
+            pt = self.get_prev_transform(cur_mon)
+            if pt is None:
+                break
+            if pt.monster_id == monster.monster_id:
+                is_cycle = True
+                break
+            ret.append(pt)
+            cur_mon = pt
+        if is_cycle and not cyclical_wrap:
+            # remove everything that comes "after" monster in the cycle (i.e. has a higher monster id)
+            to_pop = []
+            for i, mon in enumerate(ret):
+                if mon.monster_id > monster.monster_id:
+                    to_pop.append(i)
+            to_pop.reverse()
+            for i in to_pop:
+                ret.pop(i)
+        return ret
+
     def get_next_evolution_ids(self, monster: MonsterModel) -> Set[int]:
         return self._get_edges(monster, 'evolution')
 
@@ -564,12 +597,17 @@ class MonsterGraph(object):
         return {self.get_monster(mid, server=monster.server_priority)
                 for mid in self.get_next_evolution_ids(monster)}
 
-    def get_prev_transform_ids(self, monster: MonsterModel) -> Set[int]:
-        return self._get_edges(monster, 'back_transformation')
+    def get_prev_transform_id(self, monster: MonsterModel) -> Optional[int]:
+        transforms = list(self._get_edges(monster, 'back_transformation'))
+        if len(transforms) > 0:
+            return transforms[0]
+        return None
 
-    def get_prev_transforms(self, monster: MonsterModel) -> Set[MonsterModel]:
-        return {self.get_monster(mid, server=monster.server_priority)
-                for mid in self.get_prev_transform_ids(monster)}
+    def get_prev_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        prev = self.get_prev_transform_id(monster)
+        if prev is None:
+            return None
+        return self.get_monster(prev, server=monster.server_priority)
 
     def get_next_transform_id(self, monster: MonsterModel) -> Optional[int]:
         return self._get_edge_or_none(monster, 'transformation')
@@ -630,7 +668,7 @@ class MonsterGraph(object):
         now = datetime.now()
         for model in models:
             if model.start_timestamp < now < model.end_timestamp \
-                    and (server is None or server == model.server):
+                            and (server is None or server == model.server):
                 return True
         return False
 

@@ -33,6 +33,17 @@ def alt_fmt(monsterevo, state):
     return fmt.format(monsterevo.monster.monster_no_na)
 
 
+class IdQueriedProps:
+    def __init__(self, acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions,
+                 previous_transforms):
+        self.previous_evolutions = previous_evolutions
+        self.true_evo_type_raw = true_evo_type_raw
+        self.transform_base = transform_base
+        self.previous_transforms = previous_transforms
+        self.base_rarity = base_rarity
+        self.acquire_raw = acquire_raw
+
+
 class IdViewState(ViewStateBaseId):
     nadiff_na_only_text = ', which is only in NA'
     nadiff_jp_only_text = ', which is only in JP'
@@ -40,7 +51,7 @@ class IdViewState(ViewStateBaseId):
 
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
-                 transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters,
+                 id_queried_props: IdQueriedProps,
                  fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
@@ -50,11 +61,12 @@ class IdViewState(ViewStateBaseId):
                          extra_state=extra_state)
         self.fallback_message = fallback_message
         self.is_child = is_child
-        self.acquire_raw = acquire_raw
-        self.base_rarity = base_rarity
-        self.previous_monsters = previous_monsters
-        self.transform_base: "MonsterModel" = transform_base
-        self.true_evo_type_raw = true_evo_type_raw
+        self.acquire_raw = id_queried_props.acquire_raw
+        self.base_rarity = id_queried_props.base_rarity
+        self.previous_evolutions = id_queried_props.previous_evolutions
+        self.previous_transforms = id_queried_props.previous_transforms
+        self.transform_base: "MonsterModel" = id_queried_props.transform_base
+        self.true_evo_type_raw = id_queried_props.true_evo_type_raw
 
     def serialize(self):
         ret = super().serialize()
@@ -72,8 +84,7 @@ class IdViewState(ViewStateBaseId):
             return None
         monster = await get_monster_from_ims(dbcog, ims)
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters = \
-            await IdViewState.do_query(dbcog, monster)
+        id_queried_props = await IdViewState.do_query(dbcog, monster)
 
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
@@ -89,8 +100,7 @@ class IdViewState(ViewStateBaseId):
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
-                   transform_base, true_evo_type_raw, acquire_raw, base_rarity,
-                   previous_monsters,
+                   id_queried_props,
                    fallback_message=fallback_message,
                    use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
@@ -101,28 +111,28 @@ class IdViewState(ViewStateBaseId):
         self.query_settings.server = server
         self.monster = dbcog.database.graph.get_monster(self.monster.monster_id, server=server)
         self.alt_monsters = self.get_alt_monsters_and_evos(dbcog, self.monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = await self.do_query(dbcog, self.monster)
-        self.transform_base = transform_base
-        self.true_evo_type_raw = true_evo_type_raw
-        self.acquire_raw = acquire_raw
-        self.base_rarity = base_rarity
+        id_queried_props = await self.do_query(dbcog, self.monster)
+        self.transform_base = id_queried_props.transform_base
+        self.true_evo_type_raw = id_queried_props.true_evo_type_raw
+        self.acquire_raw = id_queried_props.acquire_raw
+        self.base_rarity = id_queried_props.base_rarity
 
     @classmethod
-    async def do_query(cls, dbcog, monster):
+    async def do_query(cls, dbcog, monster) -> IdQueriedProps:
         db_context = dbcog.database
-        acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_monsters = \
-            await IdViewState._get_monster_misc_info(db_context, monster)
-
-        return transform_base, true_evo_type_raw, acquire_raw, base_rarity, previous_monsters
+        id_queried_props = await IdViewState._get_monster_misc_info(db_context, monster)
+        return id_queried_props
 
     @classmethod
-    async def _get_monster_misc_info(cls, db_context: "DbContext", monster):
+    async def _get_monster_misc_info(cls, db_context: "DbContext", monster) -> IdQueriedProps:
         transform_base = db_context.graph.get_transform_base(monster)
         true_evo_type_raw = db_context.graph.true_evo_type(monster).value
         acquire_raw = db_context.graph.monster_acquisition(monster)
         base_rarity = db_context.graph.get_base_monster(monster).rarity
-        previous_monsters = db_context.graph.get_all_prev_evolutions(monster, include_self=True)
-        return acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_monsters
+        previous_evolutions = db_context.graph.get_all_prev_evolutions(monster, include_self=True)
+        previous_transforms = db_context.graph.get_all_prev_transforms(monster, include_self=False)
+        return IdQueriedProps(acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions,
+                              previous_transforms)
 
     def set_na_diff_invalid_message(self, ims: dict) -> bool:
         message = self.get_na_diff_invalid_message()
@@ -258,8 +268,8 @@ class IdView(BaseIdView):
         return Box(rarity, cost, series, acquire, true_evo_type)
 
     @classmethod
-    def stats(cls, m: "MonsterModel", previous_monsters, query_settings: QuerySettings):
-        plus = cls.get_plus_status(previous_monsters, query_settings.cardplus)
+    def stats(cls, m: "MonsterModel", previous_evolutions, query_settings: QuerySettings):
+        plus = cls.get_plus_status(previous_evolutions, query_settings.cardplus)
         multiplayer = query_settings.cardmode == CardModeModifier.coop
         lb_level = 110 if query_settings.cardlevel == CardLevelModifier.lv110 else 120
         hp, atk, rcv, weighted = m.stats(plus=plus, multiplayer=multiplayer)
@@ -276,15 +286,15 @@ class IdView(BaseIdView):
         )
 
     @staticmethod
-    def get_plus_status(previous_monsters: List["MonsterModel"], cardplus: CardPlusModifier):
+    def get_plus_status(previous_evolutions: List["MonsterModel"], cardplus: CardPlusModifier):
         if cardplus == CardPlusModifier.plus0:
             return 0
-        if all([m.level == 1 and m.is_material for m in previous_monsters]):
+        if all([m.level == 1 and m.is_material for m in previous_evolutions]):
             return 0
         return 297 if cardplus == CardPlusModifier.plus297 else 0
 
     @classmethod
-    def stats_header(cls, m: "MonsterModel", previous_monsters, query_settings: QuerySettings):
+    def stats_header(cls, m: "MonsterModel", previous_evolutions, query_settings: QuerySettings):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
 
         multiboost_emoji = None
@@ -292,7 +302,7 @@ class IdView(BaseIdView):
             multiboost_emoji = get_emoji('misc_multiboost')
 
         plus_emoji = get_emoji('plus_297')
-        if cls.get_plus_status(previous_monsters, query_settings.cardplus) != 297:
+        if cls.get_plus_status(previous_evolutions, query_settings.cardplus) != 297:
             plus_emoji = get_emoji('plus_0')
 
         lb_emoji = get_emoji('lv110')
@@ -310,19 +320,27 @@ class IdView(BaseIdView):
         return header
 
     @staticmethod
-    def active_skill_header(m: "MonsterModel", transform_base):
+    def active_skill_header(m: "MonsterModel", previous_transforms: List["MonsterModel"]):
+        transform_emoji = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
+                           get_emoji('downb'), get_emoji('downp')]
+        up_emoji = get_emoji('upgr')
+
         active_skill = m.active_skill
-        if m == transform_base:
+        if len(previous_transforms) == 0:
             active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
                 if active_skill else 'None'
         else:
-            base_skill = transform_base.active_skill
-            base_cd = ' (\N{DOWN-POINTING RED TRIANGLE} {} -> {})'.format(base_skill.turn_max,
-                                                                          base_skill.turn_min) \
-                if base_skill else 'None'
-
-            active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
-            active_cd += base_cd
+            skill_texts = []
+            previous_transforms.reverse()
+            for i, mon in enumerate(previous_transforms):
+                skill = mon.active_skill
+                # we can assume skill is not None because the monster transforms
+                cooldown_text = '({}cd)'.format(str(skill.turn_max))
+                if skill.turn_min != skill.turn_max:
+                    cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
+                skill_texts.append('{}{}'.format(transform_emoji[i % len(transform_emoji)], cooldown_text))
+            skill_texts.append('{} ({} cd)'.format(up_emoji, m.active_skill.turn_max))
+            active_cd = ' '.join(skill_texts)
         return Box(
             BoldText('Active Skill'),
             BoldText(active_cd),
@@ -346,12 +364,12 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m, state.previous_monsters, state.query_settings).to_markdown(),
-                IdView.stats(m, state.previous_monsters, state.query_settings),
+                IdView.stats_header(m, state.previous_evolutions, state.query_settings).to_markdown(),
+                IdView.stats(m, state.previous_evolutions, state.query_settings),
                 inline=True
             ),
             EmbedField(
-                IdView.active_skill_header(m, state.transform_base).to_markdown(),
+                IdView.active_skill_header(m, state.previous_transforms).to_markdown(),
                 Text(m.active_skill.desc if m.active_skill else 'None')
             ),
             EmbedField(
