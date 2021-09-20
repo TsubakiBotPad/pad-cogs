@@ -5,7 +5,8 @@ from typing import Any, TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
-from tsutils.user_interaction import get_user_confirmation
+from tsutils.emoji import NO_EMOJI, char_to_emoji
+from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -43,13 +44,13 @@ class VEM(CogMixin):
     @adpem.group(usage="pull1, pull2, pull3, pull4", invoke_without_command=True)
     @opted_in(True)
     async def report(self, ctx, *, pulls):
-        """Report a command or opt-in. """
+        """Report a set of pulls or opt-in."""
         await self.report_at_time(ctx, pulls, 0)
 
     @adpem.group(usage="pull1, pull2, pull3, pull4", invoke_without_command=True)
     @opted_in(True)
     async def reportyesterday(self, ctx, *, pulls):
-        """Report yesterday's rolls"""
+        """Report yesterday's pulls"""
         await self.report_at_time(ctx, pulls, 24 * 60 * 60)
 
     async def report_at_time(self, ctx, pulls, offset):
@@ -57,7 +58,7 @@ class VEM(CogMixin):
             return await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
 
         if len(pulls := pulls.split(',')) != 4:
-            return await ctx.send(f"Please supply all 4 rolls with commas in between them. You can use names or"
+            return await ctx.send(f"Please supply all 4 pulls with commas in between them. You can use names or"
                                   f" numbers.\n\t"
                                   f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013`\n\t"
                                   f"Valid input: `{ctx.prefix}adpem report Enoch, Facet, D Globe, B Super King`")
@@ -88,7 +89,7 @@ class VEM(CogMixin):
                                            timeout=30, force_delete=False, show_feedback=True):
             return
 
-        await self.add_roll(ctx, [m.monster_id for m in correct_evos], time.time() - offset)
+        await self.add_pull(ctx, [m.monster_id for m in correct_evos], time.time() - offset)
 
     @report.command()
     async def skip(self, ctx):
@@ -111,14 +112,14 @@ class VEM(CogMixin):
         await self.skipforgot(ctx, 'Forgot', 24 * 60 * 60)
 
     async def skipforgot(self, ctx, ptype: str, offset: int):
-        if not await self.assert_ready(ctx, time.time() - offset):
+        if not await self.assert_ready(ctx, self.midnight() - offset):
             return
-        if await self.config.user(ctx.author).skipconf() or \
+        if not await self.config.user(ctx.author).skipconf() and \
                 not await get_user_confirmation(ctx, f"Are you sure you want to report that you {ptype.lower()}"
                                                      f" {'yesterday' if offset else 'today'}'s pulls on an account?"
                                                      f"", force_delete=False, show_feedback=True):
             return
-        await self.add_roll(ctx, ptype, time.time() - offset)
+        await self.add_pull(ctx, ptype, time.time() - offset)
         if await self.config.user(ctx.author).skipconf():
             await ctx.tick()
 
@@ -141,31 +142,32 @@ class VEM(CogMixin):
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
-        pulls = [v for uid, v, ts in await self.config.pulls()
+        pulls = [[uid, v, ts] for uid, v, ts in await self.config.pulls()
                  if midnight <= ts < midnight + (24 * 60 * 60) and uid == ctx.author.id]
+        pulls = {char_to_emoji(str(c)): vs for c, vs in enumerate(pulls, 1)}
         if not pulls:
             return await ctx.send("There are no logged pulls during the given time period.")
 
         pulltext = []
-        for pull in pulls:
+        for c, (uid, pull, ts) in pulls.items():
             if isinstance(pull, str):
-                pulltext.append(pull)
+                pulltext.append(c + ' ' + pull)
             else:
-                pulltext.append('\t' + '\n\t'.join(
+                pulltext.append(c + '\n\t' + '\n\t'.join(
                     pdicog.monster_header.fmt_id_header(dbcog.get_monster(mid), use_emoji=True).to_markdown()
                     for mid in pull)
                                 )
         pulltext = '\n\n'.join(pulltext)
 
-        if not await get_user_confirmation(ctx, f"Are you sure you want to remove the following pulls:\n\n{pulltext}",
-                                           force_delete=False, show_feedback=True):
+        chosen = await get_user_reaction(ctx, f"Which set of pulls would you like to remove?\n\n{pulltext}",
+                                         *pulls.keys(), NO_EMOJI, force_delete=False, show_feedback=True)
+
+        if chosen is None or chosen == NO_EMOJI:
             return
 
-        async with self.config.pulls() as pulls:
-            for pull in pulls[:]:
-                if midnight <= pull[2] < midnight + (24 * 60 * 60) and pull[0] == ctx.author.id:
-                    pulls.remove(pull)
-        await ctx.send("Your pulls have been deleted.")
+        async with self.config.pulls() as c_pulls:
+            c_pulls.remove(pulls[chosen])
+        await ctx.send("Your pulls have been removed.")
 
     @adpem.command(aliases=['option'])
     @opted_in(False)
@@ -174,12 +176,12 @@ class VEM(CogMixin):
         if not await get_user_confirmation(ctx, f"Thanks for participating in our data collection! We take selection"
                                                 f" bias VERY seriously."
                                                 f" (See: <https://en.wikipedia.org/wiki/Selection_bias>)"
-                                                f" By participating, you are agreeing to report **every single roll"
-                                                f" that you make, every single day**. If you only report SOME rolls,"
-                                                f" then you are likely to forget your worse rolls and report only the"
-                                                f" better rolls, which would bias our statistics towards the better"
-                                                f" rolls and make us sad. {emoji_cache.get_by_name('blobsad')}"
-                                                f"\n\nSo report all rolls and give us nice,"
+                                                f" By participating, you are agreeing to report **every single pull"
+                                                f" that you make, every single day**. If you only report SOME pulls,"
+                                                f" then you are likely to forget your worse pulls and report only the"
+                                                f" better pulls, which would bias our statistics towards the better"
+                                                f" pulls and make us sad. {emoji_cache.get_by_name('blobsad')}"
+                                                f"\n\nSo report all pulls and give us nice,"
                                                 f" unbiased data! {emoji_cache.get_by_name('blobcheer')}"
                                                 f"\n\nDo you agree?",
                                            force_delete=False, show_feedback=True, timeout=30):
@@ -216,7 +218,7 @@ class VEM(CogMixin):
         if numtoday >= await self.config.user(ctx.author).accounts():
             await ctx.send(f"You already reported {numtoday} times"
                            f" {'today' if midnight > time.time() - 24 * 60 * 60 else 'yesterday'}, which "
-                           f"is your current number of accounts for reporting. If you're rolling daily on more"
+                           f"is your current number of accounts for reporting. If you're pulling daily on more"
                            f" accounts than this, you may increase your number of accounts via"
                            f" `{ctx.prefix}{ctx.invoked_parents[0]} setaccounts`, however please keep in"
                            f" mind we're very worried about selection bias, so please only do this if you"
@@ -224,7 +226,7 @@ class VEM(CogMixin):
             return False
         return True
 
-    async def add_roll(self, ctx, values: Any, at_time: float):
+    async def add_pull(self, ctx, values: Any, at_time: float):
         async with self.config.pulls() as pulls:
             pulls.append((ctx.author.id, values, at_time))
 
