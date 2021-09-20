@@ -116,7 +116,7 @@ class TransformInfoMenuPanes(MenuPanes):
     @classmethod
     def get_user_reaction_list(cls, number_of_monsters: int):
         if number_of_monsters > 2:
-            cls.HIDDEN_EMOJIS = list(TransformInfoEmoji.up)
+            cls.HIDDEN_EMOJIS = [TransformInfoEmoji.up]
         else:
             cls.HIDDEN_EMOJIS = [TransformInfoEmoji.one]
 
