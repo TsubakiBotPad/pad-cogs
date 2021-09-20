@@ -16,7 +16,8 @@ from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to
 from tabulate import tabulate
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
-from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server, CardLevelModifier, CardModeModifier
+from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server, CardLevelModifier, CardModeModifier, \
+    EvoGrouping
 from tsutils.json_utils import safe_read_json
 from tsutils.query_settings import QuerySettings
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
@@ -151,7 +152,6 @@ class PadInfo(commands.Cog):
             try:
                 emoji_cache.set_guild_ids([g.id for g in self.bot.guilds])
                 emoji_cache.refresh_from_discord_bot(self.bot)
-                dbcog = await self.get_dbcog()
             except Exception as ex:
                 wait_time = 5
                 logger.exception("reload padinfo loop caught exception " + str(ex))
@@ -212,11 +212,10 @@ class PadInfo(commands.Cog):
         raw_query = query
 
         goodquery = None
-        if query[0] in dbcog.token_maps.ID1_SUPPORTED \
-                        and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
+        ID1_SUPPORTED = dbcog.token_maps.ID1_SUPPORTED
+        if query[0] in ID1_SUPPORTED and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[0], query[1:]]
-        elif query[:2] in dbcog.token_maps.ID1_SUPPORTED \
-                        and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
+        elif query[:2] in ID1_SUPPORTED and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
@@ -830,7 +829,8 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
+                                       color, base_mon, transformed_mon, tfinfo_queried_props, monster_ids,
+                                       is_jp_buffed,
                                        query_settings,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
@@ -925,7 +925,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def scroll(self, ctx, value):
-        """Switch between number scroll and evo scroll
+        """Switch between number scroll & evo scroll
 
         [p]idset scroll number
         [p]idset scroll evo"""
@@ -944,7 +944,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def survey(self, ctx, value):
-        """Change how often you see the id survey
+        """How often you see the id survey
 
         [p]idset survey always     (Always see survey after using id)
         [p]idset survey sometimes  (See survey some of the time after using id)
@@ -959,7 +959,7 @@ class PadInfo(commands.Cog):
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
-        """(DONOR ONLY) Change the color of all your `[p]id` embeds!
+        """(DONOR ONLY) The color of all your `[p]id` embeds!
 
         Examples:
         [p]idset embedcolor green
@@ -979,7 +979,7 @@ class PadInfo(commands.Cog):
 
     @idset.command(usage="<on/off>")
     async def naprio(self, ctx, value: bool):
-        """Change whether [p]id will default away from new evos of monsters that aren't in NA yet"""
+        """Whether `[p]id` will default away from new evos of monsters that aren't in NA yet"""
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             # The current na_prio enum has 0 and 1 instead of False and True as its values
             fm_flags['na_prio'] = int(value)
@@ -987,7 +987,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def server(self, ctx, server: str):
-        """Change the server to be used for your `[p]id` queries
+        """The server used for your `[p]id` queries
 
         `[p]idset server default`: Include both NA & JP cards. You can still use `--na` as needed.
         `[p]idset server na`: Include only NA cards. You can still use `--allservers` as needed.
@@ -1008,12 +1008,11 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def evosort(self, ctx, value: str):
-        """Change the order for scrolling alt evos in your `[p]id` queries
+        """The order for scrolling alt evos in your `[p]id` queries
 
         `[p]idset evosort numerical`: Show alt evos sorted by card ID number.
         `[p]idset evosort dfs`: Show alt evos in a depth-first-sort order, starting with the base of the tree.
         """
-        dbcog = await self.get_dbcog()
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "dfs":
@@ -1028,12 +1027,11 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def lsmultiplier(self, ctx, value: str):
-        """Change the display of leader skill multipliers in your `[p]id` queries
+        """The display of LS multipliers in your `[p]id` queries
 
         `[p]idset lsmultiplier double`: [Default] Show leader skill multipliers assuming the card is paired with itself.
         `[p]idset lsmultiplier single`: Show leader skill multipliers of just the single card.
         """
-        dbcog = await self.get_dbcog()
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "double":
@@ -1053,12 +1051,11 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def cardplus(self, ctx, value: str):
-        """Change the monster stat plus points amount in your your `[p]id` queries
+        """The monster stat plus points amount in your `[p]id` queries
 
         `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
         `[p]idset cardplus 0`: Show cards with +0 stats.
         """
-        dbcog = await self.get_dbcog()
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == "297":
@@ -1078,7 +1075,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def cardmode(self, ctx, value: str):
-        """Change mode between solo and coop in your `[p]id` queries
+        """Switch between solo and coop
 
         `[p]idset mode solo`: [Default] Show cards with stats in solo
         `[p]idset mode coop`: Show cards with stats in coop (i.e. multiboost)
@@ -1102,7 +1099,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def cardlevel(self, ctx, value: str):
-        """Change the limitbreak level in your your `[p]id` queries
+        """The limitbreak level in your `[p]id` queries
 
         `[p]idset cardlevel 110`: [Default] Show LB stats at 110.
         `[p]idset cardlevel 120`: Show LB stats at 120.
@@ -1119,7 +1116,31 @@ class PadInfo(commands.Cog):
                 not_value_flag = 'lv120'
             else:
                 await ctx.send(
-                    f'Please input an allowed value, either `297` or `0`.')
+                    f'Please input an allowed value, either `110` or `120`.')
+                return
+        await ctx.send(
+            f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+
+    @idset.command()
+    async def evogrouping(self, ctx, value: str):
+        """If trees are combined in your `[p]ids` queries
+
+        `[p]idset evogrouping grouped`: [Default] Show trees grouped.
+        `[p]idset evogrouping split`: Show individual evos of trees split apart.
+        """
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "split":
+                fm_flags['evogrouping'] = EvoGrouping.splitevos.value
+                not_value = 'grouped'
+                not_value_flag = 'groupevos'
+            elif value == "grouped":
+                fm_flags['evogrouping'] = EvoGrouping.groupevos.value
+                not_value = 'split'
+                not_value_flag = 'splitevos'
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `grouped` or `split`.')
                 return
         await ctx.send(
             f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
@@ -1456,7 +1477,7 @@ class PadInfo(commands.Cog):
             end = monster.level
 
         if monster.exp_to_level(start + 1) - monster.exp_to_level(start) < offset and start <= 99 \
-                        or offset > 5e6 and start <= 110 or offset > 20e6:
+                or offset > 5e6 and start <= 110 or offset > 20e6:
             return await send_cancellation_message(ctx, "Offset too large.")
         if start <= 0 or end > 120 or end < start or (start == end and offset):
             return await send_cancellation_message(ctx, f"Invalid bounds ({start}[{offset}] - {end}).")
@@ -1479,8 +1500,8 @@ class PadInfo(commands.Cog):
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
         dbcog = await self.get_dbcog()
-
-        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id)
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
         if monster_list is None:
             await ctx.send("No monster matched.")
