@@ -14,7 +14,6 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.awakening_model import AwakeningModel
-    from dbcog.database_context import DbContext
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
@@ -29,6 +28,7 @@ class BaseIdMainView(BaseIdView):
     transform_emojis = ['\N{DOWN-POINTING RED TRIANGLE}', get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
                         get_emoji('downb'), get_emoji('downp')]
     up_emoji = get_emoji('upgr')
+    down_emoji = transform_emojis[0]
 
     @staticmethod
     def normal_awakenings_row(m: "MonsterModel"):

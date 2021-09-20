@@ -19,9 +19,6 @@ if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.database_context import DbContext
 
-BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
-TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
-
 
 class TransformInfoQueriedProps:
     def __init__(self, acquire_raw, previous_transforms):
@@ -68,8 +65,8 @@ class TransformInfoViewState(ViewStateBase):
 
         tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = ims['reaction_list']
-        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon) \
-                       or dbcog.database.graph.monster_is_discrepant(transformed_mon)
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(
+            base_mon) or dbcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
                                       base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
@@ -104,7 +101,7 @@ class TransformInfoView(BaseIdMainView):
     def base_info(cls, m: "MonsterModel"):
         return Box(
             Box(
-                BASE_EMOJI,
+                cls.down_emoji,
                 cls.normal_awakenings_row(m) if len(m.awakenings) != 0
                 else Box(Text('No Awakenings')),
                 delimiter=' '
@@ -134,12 +131,12 @@ class TransformInfoView(BaseIdMainView):
             LabeledText('RCV', _get_tf_stat_diff_text(base_rcv, tf_rcv))
         )
 
-    @staticmethod
-    def transform_active_header(m: "MonsterModel"):
+    @classmethod
+    def transform_active_header(cls, m: "MonsterModel"):
         active_skill = m.active_skill
         active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
         return Box(
-            TRANSFORM_EMOJI,
+            cls.up_emoji,
             BoldText('Transform Active Skill {}'.format(active_cd)),
             delimiter=' '
         )
@@ -147,7 +144,7 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def base_active_header(cls, m: "MonsterModel"):
         return Box(
-            BASE_EMOJI,
+            cls.down_emoji,
             BoldText('Base'),
             cls.active_skill_header(m, []),
             delimiter=' '
@@ -156,10 +153,10 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def leader_header(cls, m: "MonsterModel", is_base: bool, lsmultiplier: LsMultiplier, base_mon: "MonsterModel"):
         if is_base:
-            emoji = BASE_EMOJI
+            emoji = cls.down_emoji
             label = 'Base'
         else:
-            emoji = TRANSFORM_EMOJI
+            emoji = cls.up_emoji
             label = 'Transform'
 
         return Box(
@@ -179,7 +176,7 @@ class TransformInfoView(BaseIdMainView):
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
                     Box(
-                        TRANSFORM_EMOJI,
+                        cls.up_emoji,
                         cls.normal_awakenings_row(transformed_mon)
                         if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                         delimiter=' '
