@@ -16,7 +16,7 @@ from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to
 from tabulate import tabulate
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
-from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server
+from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server, CardLevelModifier, CardModeModifier
 from tsutils.json_utils import safe_read_json
 from tsutils.query_settings import QuerySettings
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
@@ -1077,6 +1077,54 @@ class PadInfo(commands.Cog):
                 return
         await ctx.send(
             f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+
+    @idset.command()
+    async def cardmode(self, ctx, value: str):
+        """Change mode between solo and coop in your `[p]id queries
+
+        `[p]idset mode solo`: [Default] Show cards with stats in solo
+        `[p]idset mode coop`: Show cards with stats in coop (i.e. multiboost)
+        """
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "solo":
+                fm_flags['cardmode'] = CardModeModifier.solo.value
+                not_value = 'coop'
+                not_value_flag = 'coop'
+            elif value == "coop":
+                fm_flags['cardmode'] = CardModeModifier.coop.value
+                not_value = 'solo'
+                not_value_flag = 'solo'
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `coop` or `solo`.')
+                return
+        await ctx.send(
+            f"Your default `{ctx.prefix}id` cardmode preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+
+    @idset.command()
+    async def cardlevel(self, ctx, value: str):
+        """Change the monster stat plus points amount in your your `[p]id` queries
+
+        `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
+        `[p]idset cardplus 0`: Show cards with +0 stats.
+        """
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == "120":
+                fm_flags['cardlevel'] = CardLevelModifier.lv120.value
+                not_value = '110'
+                not_value_flag = 'lv110'
+            elif value == "110":
+                fm_flags['cardlevel'] = CardLevelModifier.lv110.value
+                not_value = '120'
+                not_value_flag = 'lv120'
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `297` or `0`.')
+                return
+        await ctx.send(
+            f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @commands.group()
     @checks.is_owner()
