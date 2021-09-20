@@ -961,7 +961,7 @@ class PadInfo(commands.Cog):
     @is_donor()
     @idset.command()
     async def embedcolor(self, ctx, *, color):
-        """(DONOR ONLY) Change the color of all your ID embeds!
+        """(DONOR ONLY) Change the color of all your `[p]id` embeds!
 
         Examples:
         [p]idset embedcolor green
@@ -1080,7 +1080,7 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def cardmode(self, ctx, value: str):
-        """Change mode between solo and coop in your `[p]id queries
+        """Change mode between solo and coop in your `[p]id` queries
 
         `[p]idset mode solo`: [Default] Show cards with stats in solo
         `[p]idset mode coop`: Show cards with stats in coop (i.e. multiboost)
@@ -1104,10 +1104,10 @@ class PadInfo(commands.Cog):
 
     @idset.command()
     async def cardlevel(self, ctx, value: str):
-        """Change the monster stat plus points amount in your your `[p]id` queries
+        """Change the limitbreak level in your your `[p]id` queries
 
-        `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
-        `[p]idset cardplus 0`: Show cards with +0 stats.
+        `[p]idset cardlevel 110`: [Default] Show LB stats at 110.
+        `[p]idset cardlevel 120`: Show LB stats at 120.
         """
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
