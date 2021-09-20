@@ -923,7 +923,7 @@ class PadInfo(commands.Cog):
 
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
-        """id settings configuration"""
+        """`[p]id` settings configuration"""
 
     @idset.command()
     async def scroll(self, ctx, value):
