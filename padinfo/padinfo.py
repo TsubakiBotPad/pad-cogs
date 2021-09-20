@@ -213,10 +213,10 @@ class PadInfo(commands.Cog):
 
         goodquery = None
         if query[0] in dbcog.token_maps.ID1_SUPPORTED \
-                and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
+                        and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[0], query[1:]]
         elif query[:2] in dbcog.token_maps.ID1_SUPPORTED \
-                and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
+                        and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
             goodquery = [query[:2], query[2:]]
 
         if goodquery:
@@ -1458,7 +1458,7 @@ class PadInfo(commands.Cog):
             end = monster.level
 
         if monster.exp_to_level(start + 1) - monster.exp_to_level(start) < offset and start <= 99 \
-                or offset > 5e6 and start <= 110 or offset > 20e6:
+                        or offset > 5e6 and start <= 110 or offset > 20e6:
             return await send_cancellation_message(ctx, "Offset too large.")
         if start <= 0 or end > 120 or end < start or (start == end and offset):
             return await send_cancellation_message(ctx, f"Invalid bounds ({start}[{offset}] - {end}).")
