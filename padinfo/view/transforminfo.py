@@ -4,18 +4,16 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import Text, BoldText, LabeledText
 from discordmenu.embed.view import EmbedView
-
 from tsutils.enums import LsMultiplier
 from tsutils.menu.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
-from padinfo.view.common import leader_skill_header
+from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
-from padinfo.view.id import IdView
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -89,80 +87,80 @@ def transformat(text: str):
     return '__{}__'.format(text)
 
 
-def base_info(m: "MonsterModel"):
-    return Box(
-        Box(
-            BASE_EMOJI,
-            IdView.normal_awakenings_row(m) if len(m.awakenings) != 0
-            else Box(Text('No Awakenings')),
-            delimiter=' '
-        ),
-        IdView.super_awakenings_row(m)
-    )
-
-
-def card_info(base_mon: "MonsterModel", transformed_mon: "MonsterModel", acquire_raw):
-    rarity = Box(
-        LabeledText('Rarity', '{} -> {}'.format(base_mon.rarity, transformed_mon.rarity)),
-        Text("" if base_mon.orb_skin_id is None else "(Orb Skin)"),
-        delimiter=' '
-    )
-    cost = LabeledText('Cost', '{} -> {}'.format(base_mon.cost, transformed_mon.cost))
-    acquire = BoldText(acquire_raw) if acquire_raw else None
-
-    return Box(rarity, cost, acquire)
-
-
-def stats(base_mon: "MonsterModel", transformed_mon: "MonsterModel"):
-    base_hp, base_atk, base_rcv, base_weighted = base_mon.stats()
-    tf_hp, tf_atk, tf_rcv, tf_weighed = transformed_mon.stats()
-    return Box(
-        LabeledText('HP', _get_tf_stat_diff_text(base_hp, tf_hp)),
-        LabeledText('ATK', _get_tf_stat_diff_text(base_atk, tf_atk)),
-        LabeledText('RCV', _get_tf_stat_diff_text(base_rcv, tf_rcv))
-    )
-
-
-def transform_active_header(m: "MonsterModel"):
-    active_skill = m.active_skill
-    active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
-    return Box(
-        TRANSFORM_EMOJI,
-        BoldText('Transform Active Skill {}'.format(active_cd)),
-        delimiter=' '
-    )
-
-
-def base_active_header(m: "MonsterModel"):
-    return Box(
-        BASE_EMOJI,
-        BoldText('Base'),
-        IdView.active_skill_header(m, m),
-        delimiter=' '
-    )
-
-
-def leader_header(m: "MonsterModel", is_base: bool, lsmultiplier: LsMultiplier, base_mon: "MonsterModel"):
-    if is_base:
-        emoji = BASE_EMOJI
-        label = 'Base'
-    else:
-        emoji = TRANSFORM_EMOJI
-        label = 'Transform'
-
-    return Box(
-        emoji,
-        BoldText(label),
-        leader_skill_header(m, lsmultiplier, base_mon).to_markdown(),
-        delimiter=' '
-    )
-
-
-class TransformInfoView:
+class TransformInfoView(BaseIdMainView):
     VIEW_TYPE = 'TransformInfo'
 
+    @classmethod
+    def base_info(cls, m: "MonsterModel"):
+        return Box(
+            Box(
+                BASE_EMOJI,
+                cls.normal_awakenings_row(m) if len(m.awakenings) != 0
+                else Box(Text('No Awakenings')),
+                delimiter=' '
+            ),
+            cls.super_awakenings_row(m)
+        )
+
+    @classmethod
+    def card_info(cls, base_mon: "MonsterModel", transformed_mon: "MonsterModel", acquire_raw):
+        rarity = Box(
+            LabeledText('Rarity', '{} -> {}'.format(base_mon.rarity, transformed_mon.rarity)),
+            Text("" if base_mon.orb_skin_id is None else "(Orb Skin)"),
+            delimiter=' '
+        )
+        cost = LabeledText('Cost', '{} -> {}'.format(base_mon.cost, transformed_mon.cost))
+        acquire = BoldText(acquire_raw) if acquire_raw else None
+
+        return Box(rarity, cost, acquire)
+
+    @classmethod
+    def stats(cls, base_mon: "MonsterModel", transformed_mon: "MonsterModel"):
+        base_hp, base_atk, base_rcv, base_weighted = base_mon.stats()
+        tf_hp, tf_atk, tf_rcv, tf_weighed = transformed_mon.stats()
+        return Box(
+            LabeledText('HP', _get_tf_stat_diff_text(base_hp, tf_hp)),
+            LabeledText('ATK', _get_tf_stat_diff_text(base_atk, tf_atk)),
+            LabeledText('RCV', _get_tf_stat_diff_text(base_rcv, tf_rcv))
+        )
+
     @staticmethod
-    def embed(state: TransformInfoViewState):
+    def transform_active_header(m: "MonsterModel"):
+        active_skill = m.active_skill
+        active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
+        return Box(
+            TRANSFORM_EMOJI,
+            BoldText('Transform Active Skill {}'.format(active_cd)),
+            delimiter=' '
+        )
+
+    @classmethod
+    def base_active_header(cls, m: "MonsterModel"):
+        return Box(
+            BASE_EMOJI,
+            BoldText('Base'),
+            cls.active_skill_header(m, m),
+            delimiter=' '
+        )
+
+    @classmethod
+    def leader_header(cls, m: "MonsterModel", is_base: bool, lsmultiplier: LsMultiplier, base_mon: "MonsterModel"):
+        if is_base:
+            emoji = BASE_EMOJI
+            label = 'Base'
+        else:
+            emoji = TRANSFORM_EMOJI
+            label = 'Transform'
+
+        return Box(
+            emoji,
+            BoldText(label),
+            cls.leader_skill_header(m, lsmultiplier, base_mon).to_markdown(),
+            delimiter=' '
+        )
+
+    @classmethod
+    def embed(cls, state: TransformInfoViewState):
         base_mon = state.base_mon
         transformed_mon = state.transformed_mon
         lsmultiplier = state.query_settings.lsmultiplier
@@ -172,39 +170,40 @@ class TransformInfoView:
                 Box(
                     Box(
                         TRANSFORM_EMOJI,
-                        IdView.normal_awakenings_row(transformed_mon)
+                        cls.normal_awakenings_row(transformed_mon)
                         if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                         delimiter=' '
                     ),
-                    base_info(base_mon),
-                    IdView.killers_row(base_mon, base_mon)
+                    TransformInfoView.base_info(base_mon),
+                    cls.killers_row(base_mon, base_mon)
                 ),
             ),
             EmbedField(
                 BoldText(transformat('Card info')),
-                card_info(base_mon, transformed_mon, state.acquire_raw),
+                TransformInfoView.card_info(base_mon, transformed_mon, state.acquire_raw),
                 inline=True
             ),
             EmbedField(
                 BoldText('Stats -> ' + transformat('Transform')),
-                stats(base_mon, transformed_mon),
+                TransformInfoView.stats(base_mon, transformed_mon),
                 inline=True
             ),
             EmbedField(
-                transformat(transform_active_header(transformed_mon).to_markdown()),
+                transformat(TransformInfoView.transform_active_header(transformed_mon).to_markdown()),
                 Box(
                     Text(transformed_mon.active_skill.desc if transformed_mon.active_skill
                          else 'None'),
-                    base_active_header(base_mon).to_markdown(),
+                    TransformInfoView.base_active_header(base_mon).to_markdown(),
                     Text(base_mon.active_skill.desc if base_mon.active_skill else 'None')
                 )
             ),
             EmbedField(
-                transformat(leader_header(transformed_mon, False, lsmultiplier, base_mon).to_markdown()),
+                transformat(
+                    TransformInfoView.leader_header(transformed_mon, False, lsmultiplier, base_mon).to_markdown()),
                 Box(
                     Text(transformed_mon.leader_skill.desc if transformed_mon.leader_skill
                          else 'None'),
-                    leader_header(base_mon, True, lsmultiplier, base_mon).to_markdown(),
+                    TransformInfoView.leader_header(base_mon, True, lsmultiplier, base_mon).to_markdown(),
                     Text(base_mon.leader_skill.desc if base_mon.leader_skill else 'None')
                 )
             )
