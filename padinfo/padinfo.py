@@ -16,8 +16,8 @@ from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to
 from tabulate import tabulate
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
-from tsutils.enums import AltEvoSort, CardPlusModifier, LsMultiplier, Server, CardLevelModifier, CardModeModifier, \
-    EvoGrouping
+from tsutils.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, LsMultiplier, \
+    Server
 from tsutils.json_utils import safe_read_json
 from tsutils.query_settings import QuerySettings
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
@@ -350,16 +350,13 @@ class PadInfo(commands.Cog):
             return
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
-        transform_base, true_evo_type_raw, acquire_raw, base_rarity = \
-            await IdViewState.do_query(dbcog, monster)
+        id_queried_props = await IdViewState.do_query(dbcog, monster)
 
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
-                            alt_monsters, is_jp_buffed, query_settings,
-                            transform_base, true_evo_type_raw, acquire_raw, base_rarity,
-                            )
+                            alt_monsters, is_jp_buffed, query_settings, id_queried_props)
         menu = NaDiffMenu.menu()
         message = state.get_na_diff_invalid_message()
         if message:
