@@ -151,7 +151,7 @@ class VEM(CogMixin):
         pulltext = []
         for c, (uid, pull, ts) in pulls.items():
             if isinstance(pull, str):
-                pulltext.append(c + ': ' + pull)
+                pulltext.append(c + ' ' + pull)
             else:
                 pulltext.append(c + '\n\t' + '\n\t'.join(
                     pdicog.monster_header.fmt_id_header(dbcog.get_monster(mid), use_emoji=True).to_markdown()
