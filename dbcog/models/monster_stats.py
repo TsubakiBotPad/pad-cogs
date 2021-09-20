@@ -75,7 +75,7 @@ class MonsterStats:
                 # recursion is not possible because inherits do not have inherits on top of them
                 # inherit=True to calculate inherit stats and multiplayer=False in case the inherit has a multiboost awakening
                 s_val += round(self.stat(inherited_monster, key, inherited_monster_lvl,
-                                   inherit=True, multiplayer=False))
+                                         inherit=True, multiplayer=False))
             # add bonus atk, hp, or rcv awakenings iff the inherit has awoken assist
             if inherited_monster.is_equip:
                 inherit_bonus = MonsterStatModifierInput(
@@ -106,11 +106,12 @@ class MonsterStats:
         if 99 < lv:
             s_val *= 1 + (monster_model.limit_mult / 11 * (min(lv, 110) - 99)) / 100
         if 110 < lv:
-            slb_bonus = self.LV_120_MULT_DICT[key] * val_at_99 * (lv-110) / 1000
+            slb_bonus = self.LV_120_MULT_DICT[key] * val_at_99 * (lv - 110) / 1000
             s_val += slb_bonus
         return s_val
 
-    def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatModifierInput = None):
+    def stats(self, monster_model, lv=99, plus=0, inherit=False, stat_latents: MonsterStatModifierInput = None,
+              multiplayer: bool = False):
         is_plus_297 = False
         if plus == 297:
             plus = (99, 99, 99)
@@ -127,11 +128,14 @@ class MonsterStats:
             )
         # TODO: Fix rounding
         hp = int(round(self.stat(monster_model, 'hp', lv,
-                 plus=plus[0], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+                                 plus=plus[0], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents,
+                                 multiplayer=multiplayer)))
         atk = int(round(self.stat(monster_model, 'atk', lv,
-                  plus=plus[1], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+                                  plus=plus[1], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents,
+                                  multiplayer=multiplayer)))
         rcv = int(round(self.stat(monster_model, 'rcv', lv,
-                  plus=plus[2], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents)))
+                                  plus=plus[2], inherit=inherit, is_plus_297=is_plus_297, stat_latents=stat_latents,
+                                  multiplayer=multiplayer)))
         weighted = int(round(hp / 10 + atk / 5 + rcv / 3))
         return hp, atk, rcv, weighted
 

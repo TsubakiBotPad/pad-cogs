@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, HighlightableLinks, LabeledText, LinkedText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.enums import CardPlusModifier, Server
+from tsutils.enums import CardPlusModifier, Server, CardModeModifier, CardLevelModifier
 from tsutils.menu.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
@@ -258,10 +258,16 @@ class IdView(BaseIdView):
         return Box(rarity, cost, series, acquire, true_evo_type)
 
     @classmethod
-    def stats(cls, m: "MonsterModel", previous_monsters, cardplus: CardPlusModifier):
-        plus = cls.get_plus_status(previous_monsters, cardplus)
-        hp, atk, rcv, weighted = m.stats(plus=plus)
-        lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=plus, lv=110) if m.limit_mult > 0 else (None, None, None, None)
+    def stats(cls, m: "MonsterModel", previous_monsters, query_settings: QuerySettings):
+        plus = cls.get_plus_status(previous_monsters, query_settings.cardplus)
+        multiplayer = query_settings.cardmode == CardModeModifier.coop
+        lb_level = 110 if query_settings.cardlevel == CardLevelModifier.lv110 else 120
+        hp, atk, rcv, weighted = m.stats(plus=plus, multiplayer=multiplayer)
+
+        lb_hp, lb_atk, lb_rcv, lb_weighted = (None, None, None, None)
+        if m.limit_mult > 0:
+            lb_hp, lb_atk, lb_rcv, lb_weighted = m.stats(plus=plus, lv=lb_level, multiplayer=multiplayer)
+
         return Box(
             LabeledText('HP', _get_stat_text(hp, lb_hp, _get_awakening_emoji_for_stats(m, 1))),
             LabeledText('ATK', _get_stat_text(atk, lb_atk, _get_awakening_emoji_for_stats(m, 2))),
@@ -278,14 +284,27 @@ class IdView(BaseIdView):
         return 297 if cardplus == CardPlusModifier.plus297 else 0
 
     @classmethod
-    def stats_header(cls, m: "MonsterModel", previous_monsters, cardplus: CardPlusModifier):
+    def stats_header(cls, m: "MonsterModel", previous_monsters, query_settings: QuerySettings):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
-        plus_297_emoji = get_emoji('plus_297') if cls.get_plus_status(previous_monsters, cardplus) == 297 else get_emoji('plus_0')
+
+        multiboost_emoji = None
+        if m.awakening_count(30) and query_settings.cardmode == CardModeModifier.coop:
+            multiboost_emoji = get_emoji('misc_multiboost')
+
+        plus_emoji = get_emoji('plus_297')
+        if cls.get_plus_status(previous_monsters, query_settings.cardplus) != 297:
+            plus_emoji = get_emoji('plus_0')
+
+        lb_emoji = get_emoji('lv110')
+        if m.limit_mult > 0 and query_settings.cardlevel == CardLevelModifier.lv120:
+            lb_emoji = get_emoji('lv120')
+
         header = Box(
             Text(voice_emoji),
-            Text(plus_297_emoji),
+            Text(plus_emoji),
+            Text(multiboost_emoji) if multiboost_emoji else None,
             Text('Stats'),
-            Text('(LB, +{}%)'.format(m.limit_mult)) if m.limit_mult else None,
+            Text('({}, +{}%)'.format(lb_emoji, m.limit_mult)) if m.limit_mult else None,
             delimiter=' '
         )
         return header
@@ -327,8 +346,8 @@ class IdView(BaseIdView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m, state.previous_monsters, state.query_settings.cardplus).to_markdown(),
-                IdView.stats(m, state.previous_monsters, state.query_settings.cardplus),
+                IdView.stats_header(m, state.previous_monsters, state.query_settings).to_markdown(),
+                IdView.stats(m, state.previous_monsters, state.query_settings),
                 inline=True
             ),
             EmbedField(

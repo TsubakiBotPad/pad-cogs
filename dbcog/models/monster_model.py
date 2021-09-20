@@ -176,8 +176,8 @@ class MonsterModel(BaseModel):
     def stat(self, key, lv, plus=99, inherit=False, is_plus_297=True):
         return monster_stats.stat(self, key, lv, plus=plus, inherit=inherit, is_plus_297=is_plus_297)
 
-    def stats(self, lv=99, plus=0, inherit=False):
-        return monster_stats.stats(self, lv, plus=plus, inherit=inherit)
+    def stats(self, lv=99, plus=0, inherit=False, multiplayer: bool = False):
+        return monster_stats.stats(self, lv, plus=plus, inherit=inherit, multiplayer=multiplayer)
 
     @staticmethod
     def make_roma_subname(name_ja):
