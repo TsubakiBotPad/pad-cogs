@@ -17,20 +17,28 @@ from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
+    from dbcog.database_context import DbContext
 
 BASE_EMOJI = '\N{DOWN-POINTING RED TRIANGLE}'
 TRANSFORM_EMOJI = '\N{UP-POINTING RED TRIANGLE}'
 
 
+class TransformInfoQueriedProps:
+    def __init__(self, acquire_raw, previous_transforms):
+        self.acquire_raw = acquire_raw
+        self.previous_transforms = previous_transforms
+
+
 class TransformInfoViewState(ViewStateBase):
     def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
-                 acquire_raw, monster_ids, is_jp_buffed, query_settings,
+                 tfinfo_queried_props: TransformInfoQueriedProps, monster_ids, is_jp_buffed, query_settings,
                  reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
         self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
-        self.acquire_raw = acquire_raw
+        self.acquire_raw = tfinfo_queried_props.acquire_raw
+        self.previous_transforms = tfinfo_queried_props.previous_transforms
         self.monster_ids = monster_ids
         self.is_jp_buffed = is_jp_buffed
         self.query_settings: QuerySettings = query_settings
@@ -58,21 +66,23 @@ class TransformInfoViewState(ViewStateBase):
         base_mon = dbcog.get_monster(base_mon_id, server=query_settings.server)
         transformed_mon = dbcog.get_monster(transformed_mon_id, server=query_settings.server)
 
-        acquire_raw = await TransformInfoViewState.do_query(dbcog, base_mon, transformed_mon)
+        tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = ims['reaction_list']
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon) \
                        or dbcog.database.graph.monster_is_discrepant(transformed_mon)
 
         return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
-                                      base_mon, transformed_mon, acquire_raw, monster_ids, is_jp_buffed,
+                                      base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
                                       query_settings,
                                       reaction_list=reaction_list)
 
     @staticmethod
-    async def do_query(dbcog, base_mon, transformed_mon):
+    async def do_query(dbcog, transformed_mon) -> TransformInfoQueriedProps:
         db_context = dbcog.database
+        db_context: "DbContext"
         acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
-        return acquire_raw
+        previous_transforms = db_context.graph.get_all_prev_transforms(transformed_mon)
+        return TransformInfoQueriedProps(acquire_raw, previous_transforms)
 
 
 def _get_tf_stat_diff_text(stat, tf_stat):
@@ -139,7 +149,7 @@ class TransformInfoView(BaseIdMainView):
         return Box(
             BASE_EMOJI,
             BoldText('Base'),
-            cls.active_skill_header(m, m),
+            cls.active_skill_header(m, []),
             delimiter=' '
         )
 

@@ -824,13 +824,13 @@ class PadInfo(commands.Cog):
 
         color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        acquire_raw = await TransformInfoViewState.do_query(dbcog, base_mon, transformed_mon)
+        tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_user_reaction_list(len(monster_ids))
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, acquire_raw, monster_ids, is_jp_buffed,
+                                       color, base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
                                        query_settings,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
