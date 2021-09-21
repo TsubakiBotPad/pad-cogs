@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -50,6 +50,14 @@ COLORS = ["R", "B", "G", "L", "D"]
 NIL_ATT = 'Nil'
 
 
+def _get_sub_attr_multiplier(monster: "MonsterModel"):
+    if monster.attr2.value == 6 or monster.attr1.value == 6:
+        return 0
+    if monster.attr2.value == monster.attr1.value:
+        return 1 / 10
+    return 1 / 3
+
+
 class ButtonInfo:
     def get_info(self, dbcog, monster):
         """
@@ -74,63 +82,26 @@ class ButtonInfo:
         slb_level = SUPER_LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else None
         max_atk_latents = monster.latent_slots / 2
 
-        sub_attr_multiplier = self._get_sub_attr_multiplier(monster)
-
         result = ButtonInfoResult()
-        result.main = self._calculate_coop_damage(dbcog, monster, max_level)
-        result.sub = result.main * sub_attr_multiplier
-        result.total = result.main + result.sub
+        result.coop = ButtonInfoStatSet(monster, self._calculate_coop_damage(dbcog, monster, max_level))
+        result.solo = ButtonInfoStatSet(monster, self._calculate_solo_damage(dbcog, monster, max_level))
+        result.coop_latent = ButtonInfoStatSet(
+            monster, self._calculate_coop_damage(dbcog, monster, max_level, num_atkplus_latent=max_atk_latents))
+        result.solo_latent = ButtonInfoStatSet(
+            monster, self._calculate_solo_damage(dbcog, monster, max_level, num_atkplus_latent=max_atk_latents))
 
         if slb_level is None:
-            result.main_slb = None
-            result.sub_slb = None
-            result.total_slb = None
+            result.coop_slb = ButtonInfoStatSet(monster)
+            result.solo_slb = ButtonInfoStatSet(monster)
+            result.coop_slb_latent = ButtonInfoStatSet(monster)
+            result.solo_slb_latent = ButtonInfoStatSet(monster)
         else:
-            result.main_slb = self._calculate_coop_damage(dbcog, monster, slb_level)
-            result.sub_slb = result.main_slb * sub_attr_multiplier
-            result.total_slb = result.main_slb + result.sub_slb
-
-        result.main_solo = self._calculate_solo_damage(dbcog, monster, max_level)
-        result.sub_solo = result.main_solo * sub_attr_multiplier
-        result.total_solo = result.main_solo + result.sub_solo
-
-        if slb_level is None:
-            result.main_solo_slb = None
-            result.sub_solo_slb = None
-            result.total_solo_slb = None
-        else:
-            result.main_solo_slb = self._calculate_solo_damage(dbcog, monster, slb_level)
-            result.sub_solo_slb = result.main_solo_slb * sub_attr_multiplier
-            result.total_solo_slb = result.main_solo_slb + result.sub_solo_slb
-
-        result.main_latent = self._calculate_coop_damage(dbcog, monster, max_level, num_atkplus_latent=max_atk_latents)
-        result.sub_latent = result.main_latent * sub_attr_multiplier
-        result.total_latent = result.main_latent + result.sub_latent
-
-        if slb_level is None:
-            result.main_slb_latent = None
-            result.sub_slb_latent = None
-            result.total_slb_latent = None
-        else:
-            result.main_slb_latent = self._calculate_coop_damage(dbcog, monster, slb_level,
-                                                                 num_atkplus2_latent=max_atk_latents)
-            result.sub_slb_latent = result.main_slb_latent * sub_attr_multiplier
-            result.total_slb_latent = (result.main_slb_latent + result.sub_slb_latent)
-
-        result.main_solo_latent = self._calculate_solo_damage(dbcog, monster, max_level,
-                                                              num_atkplus_latent=max_atk_latents)
-        result.sub_solo_latent = result.main_solo_latent * sub_attr_multiplier
-        result.total_solo_latent = (result.main_solo_latent + result.sub_solo_latent)
-
-        if slb_level is None:
-            result.main_solo_slb_latent = None
-            result.sub_solo_slb_latent = None
-            result.total_solo_slb_latent = None
-        else:
-            result.main_solo_slb_latent = self._calculate_solo_damage(dbcog, monster, slb_level,
-                                                                      num_atkplus2_latent=max_atk_latents)
-            result.sub_solo_slb_latent = (result.main_solo_slb_latent * sub_attr_multiplier)
-            result.total_solo_slb_latent = (result.main_solo_slb_latent + result.sub_solo_slb_latent)
+            result.coop_slb = ButtonInfoStatSet(monster, self._calculate_coop_damage(dbcog, monster, slb_level))
+            result.solo_slb = ButtonInfoStatSet(monster, self._calculate_solo_damage(dbcog, monster, slb_level))
+            result.coop_slb_latent = ButtonInfoStatSet(
+                monster, self._calculate_coop_damage(dbcog, monster, slb_level, num_atkplus2_latent=max_atk_latents))
+            result.solo_slb_latent = ButtonInfoStatSet(
+                monster, self._calculate_solo_damage(dbcog, monster, slb_level, num_atkplus2_latent=max_atk_latents))
 
         result.card_btn_str = self._get_card_text(CARD_BUTTONS, dbcog, monster,
                                                   multiplayer=True, limit_break=LIMIT_BREAK_LEVEL)
@@ -167,14 +138,6 @@ class ButtonInfo:
         return int(round(dmg))
 
     @staticmethod
-    def _get_sub_attr_multiplier(monster):
-        if monster.attr2.value == 6 or monster.attr1.value == 6:
-            return 0
-        if monster.attr2.value == monster.attr1.value:
-            return 1 / 10
-        return 1 / 3
-
-    @staticmethod
     def _get_card_text(card_buttons, dbcog, monster: "MonsterModel", multiplayer, limit_break):
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
@@ -199,7 +162,8 @@ class ButtonInfo:
                 card.id, card.name.format(oncolor), card.mult, round(dmg * card.mult, 2)))
         return "\n".join(lines)
 
-    def _get_team_text(self, team_buttons, dbcog, monster, *, multiplayer, limit_break):
+    @staticmethod
+    def _get_team_text(team_buttons, dbcog, monster, *, multiplayer, limit_break):
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
@@ -216,7 +180,7 @@ class ButtonInfo:
                 total_dmg += dmg
             # do not double-count null main att
             if monster.attr2.value in card.att and monster.attr1.name != NIL_ATT:
-                total_dmg += dmg * self._get_sub_attr_multiplier(monster)
+                total_dmg += dmg * _get_sub_attr_multiplier(monster)
             colors_str = ""
             for i in card.att:
                 colors_str += COLORS[i]
@@ -226,32 +190,28 @@ class ButtonInfo:
         return "\n".join(lines)
 
 
-class ButtonInfoResult:
-    main: float
-    total: float
-    sub: float
-    main_solo: float
-    total_solo: float
-    sub_solo: float
-    main_slb: float
-    total_slb: float
-    sub_slb: float
-    main_solo_slb: float
-    total_solo_slb: float
-    sub_solo_slb: float
+class ButtonInfoStatSet:
+    def __init__(self, monster: "MonsterModel", main: Optional[float] = None):
+        self.main = main
+        if main is None:
+            self.sub = None
+            self.total = None
+            return
+        sub_attr_multiplier = _get_sub_attr_multiplier(monster)
+        self.sub = main * sub_attr_multiplier
+        self.total = self.main + self.sub
 
-    main_latent: float
-    total_latent: float
-    sub_latent: float
-    main_solo_latent: float
-    total_solo_latent: float
-    sub_solo_latent: float
-    main_slb_latent: float
-    total_slb_latent: float
-    sub_slb_latent: float
-    main_solo_slb_latent: float
-    total_solo_slb_latent: float
-    sub_solo_slb_latent: float
+
+class ButtonInfoResult:
+    coop: ButtonInfoStatSet
+    solo: ButtonInfoStatSet
+    coop_slb: ButtonInfoStatSet
+    solo_slb: ButtonInfoStatSet
+
+    coop_latent: ButtonInfoStatSet
+    solo_latent: ButtonInfoStatSet
+    coop_slb_latent: ButtonInfoStatSet
+    solo_slb_latent: ButtonInfoStatSet
 
     card_btn_str: str
     card_btn_solo_str: str
