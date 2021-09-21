@@ -5,7 +5,6 @@ from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text, BlockText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.footers import embed_footer_with_state
-
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -79,12 +78,6 @@ class ButtonInfoViewState(ViewStateBase):
 
     def set_max_level(self, new_max_level):
         self.display_options.max_level = new_max_level
-
-
-def get_max_level(monster, max_110):
-    limit = str(LIMIT_BREAK_LEVEL) if max_110 else str(SUPER_LIMIT_BREAK_LEVEL)
-    level_text = limit if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
-    return 'Lv. {}'.format(level_text)
 
 
 def get_stat_block(main, sub, total):
@@ -162,6 +155,19 @@ class ButtonInfoView:
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod
+    def get_max_level_text(monster, is_max_110):
+        limit = str(LIMIT_BREAK_LEVEL) if is_max_110 else str(SUPER_LIMIT_BREAK_LEVEL)
+        level_text = limit if monster.limit_mult != 0 else 'Max ({})'.format(monster.level)
+        return 'Lv. {}'.format(level_text)
+
+    @staticmethod
+    def get_common_buttons_title_text(monster, is_max_110):
+        return 'Common Buttons - Base Card {} {}'.format(
+            ButtonInfoView.get_max_level_text(monster, is_max_110),
+            '(Atk+ Latents)' if is_max_110 or monster.limit_mult == 0 else '(Atk++ Latents)'
+        )
+
+    @staticmethod
     def embed(state: ButtonInfoViewState):
         is_coop = state.display_options.players == ButtonInfoOptions.coop
         is_desktop = state.display_options.device == ButtonInfoOptions.desktop
@@ -172,7 +178,7 @@ class ButtonInfoView:
         fields = [
             EmbedField(
                 # this block does not change if the lv110/lv120 toggle is clicked
-                get_max_level(monster, True),
+                ButtonInfoView.get_max_level_text(monster, True),
                 Box(
                     Text('Without Latents'),
                     # avoid whitespace after code block
@@ -200,7 +206,7 @@ class ButtonInfoView:
                 inline=True
             ) if monster.limit_mult != 0 else None,
             EmbedField(
-                'Common Buttons - Base Card {}'.format(get_max_level(monster, max_110)),
+                ButtonInfoView.get_common_buttons_title_text(monster, max_110),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
@@ -216,7 +222,7 @@ class ButtonInfoView:
                 )
             ) if is_desktop else None,
             EmbedField(
-                'Common Buttons - {}'.format(get_max_level(monster, max_110)),
+                ButtonInfoView.get_common_buttons_title_text(monster, max_110),
                 Box(
                     Text('*Inherits are assumed to be the max possible level (up to 110) and +297.*'),
                     # janky, but python gives DeprecationWarnings when using \* in a regular string
