@@ -1,4 +1,8 @@
 from collections import namedtuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dbcog.models.monster_model import MonsterModel
 
 LIMIT_BREAK_LEVEL = 110
 SUPER_LIMIT_BREAK_LEVEL = 120
@@ -179,14 +183,22 @@ class ButtonInfo:
         return 1 / 3
 
     @staticmethod
-    def _get_card_btn_damage_text(card_buttons, dbcog, monster, multiplayer, limit_break):
+    def _get_card_btn_damage_text(card_buttons, dbcog, monster: "MonsterModel", multiplayer, limit_break):
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
         for card in card_buttons:
             inherit_model = dbcog.get_monster(card.id, server=monster.server_priority)
             max_level = limit_break if monster.limit_mult != 0 else monster.level
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
-            stat_latents = dbcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
+
+            num_latent_slots = monster.latent_slots / 2
+            num_atkplus = num_latent_slots
+            num_atkplus2 = 0
+            if limit_break == SUPER_LIMIT_BREAK_LEVEL and monster.limit_mult != 0:
+                num_atkplus = 0
+                num_atkplus2 = num_latent_slots
+
+            stat_latents = dbcog.MonsterStatModifierInput(num_atkplus=num_atkplus, num_atkplus2=num_atkplus2)
             dmg = int(round(dbcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
                                                      inherited_monster=inherit_model, multiplayer=multiplayer,
                                                      inherited_monster_lvl=inherit_max_level)))
