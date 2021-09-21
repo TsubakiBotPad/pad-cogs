@@ -47,7 +47,7 @@ NIL_ATT = 'Nil'
 
 
 class ButtonInfo:
-    def get_info(self, dbcog, monster_model):
+    def get_info(self, dbcog, monster):
         """
         Usage: ^buttoninfo Vajrayasaka
 
@@ -66,54 +66,57 @@ class ButtonInfo:
         with subattr: 10990.863
         just subattr: whatever
         """
-        max_level = LIMIT_BREAK_LEVEL if monster_model.limit_mult != 0 else monster_model.level
-        slb_level = SUPER_LIMIT_BREAK_LEVEL if monster_model.limit_mult != 0 else None
-        max_atk_latents = monster_model.latent_slots / 2
+        max_level = LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else monster.level
+        slb_level = SUPER_LIMIT_BREAK_LEVEL if monster.limit_mult != 0 else None
+        max_atk_latents = monster.latent_slots / 2
 
-        sub_attr_multiplier = self._get_sub_attr_multiplier(monster_model)
+        sub_attr_multiplier = self._get_sub_attr_multiplier(monster)
 
         result = ButtonInfoResult()
-        result.main_damage = self._calculate_coop_damage(dbcog, monster_model, max_level)
+        result.main_damage = self._calculate_coop_damage(dbcog, monster, max_level)
         result.sub_damage = result.main_damage * sub_attr_multiplier
         result.total_damage = result.main_damage + result.sub_damage
+
         if slb_level is None:
             result.main_slb_damage = None
             result.sub_slb_damage = None
             result.total_slb_damage = None
         else:
-            result.main_slb_damage = self._calculate_coop_damage(dbcog, monster_model, slb_level)
+            result.main_slb_damage = self._calculate_coop_damage(dbcog, monster, slb_level)
             result.sub_slb_damage = result.main_slb_damage * sub_attr_multiplier
             result.total_slb_damage = result.main_slb_damage + result.sub_slb_damage
 
-        result.main_solo_damage = self._calculate_solo_damage(dbcog, monster_model, max_level)
+        result.main_solo_damage = self._calculate_solo_damage(dbcog, monster, max_level)
         result.sub_solo_damage = result.main_solo_damage * sub_attr_multiplier
         result.total_solo_damage = result.main_solo_damage + result.sub_solo_damage
+
         if slb_level is None:
             result.main_solo_slb_damage = None
             result.sub_solo_slb_damage = None
             result.total_solo_slb_damage = None
         else:
-            result.main_solo_slb_damage = self._calculate_solo_damage(dbcog, monster_model, slb_level)
+            result.main_solo_slb_damage = self._calculate_solo_damage(dbcog, monster, slb_level)
             result.sub_solo_slb_damage = result.main_solo_slb_damage * sub_attr_multiplier
             result.total_solo_slb_damage = result.main_solo_slb_damage + result.sub_solo_slb_damage
 
         result.main_damage_with_atk_latent = self._calculate_coop_damage(
-            dbcog, monster_model, max_level, num_atkplus_latent=max_atk_latents)
+            dbcog, monster, max_level, num_atkplus_latent=max_atk_latents)
         result.sub_damage_with_atk_latent = result.main_damage_with_atk_latent * sub_attr_multiplier
         result.total_damage_with_atk_latent = result.main_damage_with_atk_latent + result.sub_damage_with_atk_latent
+
         if slb_level is None:
             result.main_damage_with_slb_atk_latent = None
             result.sub_damage_with_slb_atk_latent = None
             result.total_damage_with_slb_atk_latent = None
         else:
             result.main_damage_with_slb_atk_latent = self._calculate_coop_damage(
-                dbcog, monster_model, slb_level, num_atkplus2_latent=max_atk_latents)
+                dbcog, monster, slb_level, num_atkplus2_latent=max_atk_latents)
             result.sub_damage_with_slb_atk_latent = result.main_damage_with_slb_atk_latent * sub_attr_multiplier
             result.total_damage_with_slb_atk_latent = (result.main_damage_with_slb_atk_latent
-                                                        + result.sub_damage_with_slb_atk_latent)
+                                                       + result.sub_damage_with_slb_atk_latent)
 
         result.main_solo_damage_with_atk_latent = self._calculate_solo_damage(
-            dbcog, monster_model, max_level, num_atkplus_latent=max_atk_latents)
+            dbcog, monster, max_level, num_atkplus_latent=max_atk_latents)
         result.sub_solo_damage_with_atk_latent = result.main_solo_damage_with_atk_latent * sub_attr_multiplier
         result.total_solo_damage_with_atk_latent = (result.main_solo_damage_with_atk_latent
                                                     + result.sub_solo_damage_with_atk_latent)
@@ -123,67 +126,60 @@ class ButtonInfo:
             result.total_solo_damage_with_slb_atk_latent = None
         else:
             result.main_solo_damage_with_slb_atk_latent = self._calculate_solo_damage(
-                dbcog, monster_model, slb_level, num_atkplus2_latent=max_atk_latents)
+                dbcog, monster, slb_level, num_atkplus2_latent=max_atk_latents)
             result.sub_solo_damage_with_slb_atk_latent = (result.main_solo_damage_with_slb_atk_latent
                                                           * sub_attr_multiplier)
             result.total_solo_damage_with_slb_atk_latent = (result.main_solo_damage_with_slb_atk_latent
                                                             + result.sub_solo_damage_with_slb_atk_latent)
 
-        result.card_btn_str = self._get_card_coop_damage(CARD_BUTTONS, dbcog, monster_model)
-        result.card_btn_solo_str = self._get_card_solo_damage(CARD_BUTTONS, dbcog, monster_model)
-        result.card_btn_slb_str = self._get_card_coop_slb_damage(CARD_BUTTONS, dbcog, monster_model)
-        result.card_btn_solo_slb_str = self._get_card_solo_slb_damage(CARD_BUTTONS, dbcog, monster_model)
-        result.team_btn_str = self._get_team_coop_damage(TEAM_BUTTONS, dbcog, monster_model)
-        result.team_btn_solo_str = self._get_team_solo_damage(TEAM_BUTTONS, dbcog, monster_model)
-        result.team_btn_slb_str = self._get_team_coop_slb_damage(TEAM_BUTTONS, dbcog, monster_model)
-        result.team_btn_solo_slb_str = self._get_team_solo_slb_damage(TEAM_BUTTONS, dbcog, monster_model)
+        result.card_btn_str = self._get_card_btn_damage_text(CARD_BUTTONS, dbcog, monster,
+                                                             multiplayer=True, limit_break=LIMIT_BREAK_LEVEL)
+        result.card_btn_solo_str = self._get_card_btn_damage_text(CARD_BUTTONS, dbcog, monster,
+                                                                  multiplayer=False, limit_break=LIMIT_BREAK_LEVEL)
+        result.card_btn_slb_str = self._get_card_btn_damage_text(CARD_BUTTONS, dbcog, monster,
+                                                                 multiplayer=True, limit_break=SUPER_LIMIT_BREAK_LEVEL)
+        result.card_btn_solo_slb_str = self._get_card_btn_damage_text(CARD_BUTTONS, dbcog, monster,
+                                                                      multiplayer=False,
+                                                                      limit_break=SUPER_LIMIT_BREAK_LEVEL)
+
+        result.team_btn_str = self._get_team_btn_damage_text(TEAM_BUTTONS, dbcog, monster,
+                                                             multiplayer=True, limit_break=LIMIT_BREAK_LEVEL)
+        result.team_btn_solo_str = self._get_team_btn_damage_text(TEAM_BUTTONS, dbcog, monster,
+                                                                  multiplayer=False, limit_break=LIMIT_BREAK_LEVEL)
+        result.team_btn_slb_str = self._get_team_btn_damage_text(TEAM_BUTTONS, dbcog, monster,
+                                                                 multiplayer=True, limit_break=SUPER_LIMIT_BREAK_LEVEL)
+        result.team_btn_solo_slb_str = self._get_team_btn_damage_text(TEAM_BUTTONS, dbcog, monster,
+                                                                      multiplayer=False,
+                                                                      limit_break=SUPER_LIMIT_BREAK_LEVEL)
         return result
 
-    def _calculate_coop_damage(self, dbcog, monster_model, level, num_atkplus_latent=0, num_atkplus2_latent=0):
-        return self._calculate_damage(dbcog, monster_model, level, True, num_atkplus_latent, num_atkplus2_latent)
+    def _calculate_coop_damage(self, dbcog, monster, level, num_atkplus_latent=0, num_atkplus2_latent=0):
+        return self._calculate_damage(dbcog, monster, level, True, num_atkplus_latent, num_atkplus2_latent)
 
-    def _calculate_solo_damage(self, dbcog, monster_model, level, num_atkplus_latent=0, num_atkplus2_latent=0):
-        return self._calculate_damage(dbcog, monster_model, level, False, num_atkplus_latent, num_atkplus2_latent)
+    def _calculate_solo_damage(self, dbcog, monster, level, num_atkplus_latent=0, num_atkplus2_latent=0):
+        return self._calculate_damage(dbcog, monster, level, False, num_atkplus_latent, num_atkplus2_latent)
 
-    def _calculate_damage(self, dbcog, monster_model, level, multiplayer, num_atkplus_latent=0, num_atkplus2_latent=0):
+    @staticmethod
+    def _calculate_damage(dbcog, monster, level, multiplayer, num_atkplus_latent=0, num_atkplus2_latent=0):
         stat_latents = dbcog.MonsterStatModifierInput(num_atkplus=num_atkplus_latent, num_atkplus2=num_atkplus2_latent)
         stat_latents.num_atk_awakening = len(
-            [x for x in monster_model.awakenings if x.awoken_skill_id == 1])
+            [x for x in monster.awakenings if x.awoken_skill_id == 1])
 
-        dmg = dbcog.monster_stats.stat(monster_model, 'atk', level,
+        dmg = dbcog.monster_stats.stat(monster, 'atk', level,
                                        stat_latents=stat_latents, multiplayer=multiplayer)
 
         return int(round(dmg))
 
-    def _get_sub_attr_multiplier(self, monster_model):
-        if monster_model.attr2.value == 6 or monster_model.attr1.value == 6:
+    @staticmethod
+    def _get_sub_attr_multiplier(monster):
+        if monster.attr2.value == 6 or monster.attr1.value == 6:
             return 0
-        if monster_model.attr2.value == monster_model.attr1.value:
+        if monster.attr2.value == monster.attr1.value:
             return 1 / 10
         return 1 / 3
 
-    def to_string(self, dbcog, monster, info):
-        card_btn_str = self._get_card_btn_damage(CARD_BUTTONS, dbcog, monster)
-        team_btn_str = self._get_team_btn_damage(TEAM_BUTTONS, dbcog, monster)
-        return INFO_STRING.format(monster.monster_id, monster.name_en, int(round(info.main_damage)), int(round(info.sub_damage)),
-                                  int(round(info.total_damage)),
-                                  int(round(info.main_damage_with_atk_latent)), int(
-                                      round(info.sub_damage_with_atk_latent)),
-                                  int(round(info.total_damage_with_atk_latent)), card_btn_str, team_btn_str)
-
-    def _get_card_coop_damage(self, card_buttons, dbcog, monster):
-        return self._get_card_btn_damage(card_buttons, dbcog, monster, True, LIMIT_BREAK_LEVEL)
-
-    def _get_card_solo_damage(self, card_buttons, dbcog, monster):
-        return self._get_card_btn_damage(card_buttons, dbcog, monster, False, LIMIT_BREAK_LEVEL)
-
-    def _get_card_coop_slb_damage(self, card_buttons, dbcog, monster):
-        return self._get_card_btn_damage(card_buttons, dbcog, monster, True, SUPER_LIMIT_BREAK_LEVEL)
-
-    def _get_card_solo_slb_damage(self, card_buttons, dbcog, monster):
-        return self._get_card_btn_damage(card_buttons, dbcog, monster, False, SUPER_LIMIT_BREAK_LEVEL)
-
-    def _get_card_btn_damage(self, card_buttons, dbcog, monster, multiplayer, limit_break):
+    @staticmethod
+    def _get_card_btn_damage_text(card_buttons, dbcog, monster, multiplayer, limit_break):
         lines = []
         card_buttons.sort(key=lambda x: x.mult)
         for card in card_buttons:
@@ -192,26 +188,14 @@ class ButtonInfo:
             inherit_max_level = LIMIT_BREAK_LEVEL if inherit_model.limit_mult != 0 else inherit_model.level
             stat_latents = dbcog.MonsterStatModifierInput(num_atkplus=monster.latent_slots / 2)
             dmg = int(round(dbcog.monster_stats.stat(monster, 'atk', max_level, stat_latents=stat_latents,
-                      inherited_monster=inherit_model, multiplayer=multiplayer,
-                      inherited_monster_lvl=inherit_max_level)))
+                                                     inherited_monster=inherit_model, multiplayer=multiplayer,
+                                                     inherited_monster_lvl=inherit_max_level)))
             oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
             lines.append(CARD_BUTTON_FORMAT.format(
                 card.id, card.name.format(oncolor), card.mult, round(dmg * card.mult, 2)))
         return "\n".join(lines)
 
-    def _get_team_coop_damage(self, team_buttons, dbcog, monster):
-        return self._get_team_btn_damage(team_buttons, dbcog, monster, True, LIMIT_BREAK_LEVEL)
-
-    def _get_team_solo_damage(self, team_buttons, dbcog, monster):
-        return self._get_team_btn_damage(team_buttons, dbcog, monster, False, LIMIT_BREAK_LEVEL)
-
-    def _get_team_coop_slb_damage(self, team_buttons, dbcog, monster):
-        return self._get_team_btn_damage(team_buttons, dbcog, monster, True, SUPER_LIMIT_BREAK_LEVEL)
-
-    def _get_team_solo_slb_damage(self, team_buttons, dbcog, monster):
-        return self._get_team_btn_damage(team_buttons, dbcog, monster, False, SUPER_LIMIT_BREAK_LEVEL)
-
-    def _get_team_btn_damage(self, team_buttons, dbcog, monster, multiplayer, limit_break):
+    def _get_team_btn_damage_text(self, team_buttons, dbcog, monster, multiplayer, limit_break):
         lines = []
         team_buttons.sort(key=lambda x: x.mult)
         for card in team_buttons:
@@ -224,17 +208,17 @@ class ButtonInfo:
                                            inherited_monster=inherit_model, multiplayer=multiplayer,
                                            inherited_monster_lvl=inherit_max_level)
             # do count null main att monster damage as if it were the main att
-            if(monster.attr1.value in card.att or monster.attr1.name == NIL_ATT):
+            if monster.attr1.value in card.att or monster.attr1.name == NIL_ATT:
                 total_dmg += dmg
             # do not double-count null main att
-            if(monster.attr2.value in card.att and monster.attr1.name != NIL_ATT):
+            if monster.attr2.value in card.att and monster.attr1.name != NIL_ATT:
                 total_dmg += dmg * self._get_sub_attr_multiplier(monster)
             colors_str = ""
             for i in card.att:
                 colors_str += COLORS[i]
             oncolor = '*' if monster.attr1.value == inherit_model.attr1.value or monster.attr1.name == NIL_ATT else ' '
             lines.append(TEAM_BUTTON_FORMAT.format(card.id, card.name.format(oncolor),
-                         card.mult, colors_str, round(total_dmg * card.mult, 2)))
+                                                   card.mult, colors_str, round(total_dmg * card.mult, 2)))
         return "\n".join(lines)
 
 
