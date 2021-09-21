@@ -91,30 +91,30 @@ def get_stat_block(main, sub, total):
 
 
 def get_max_stats_without_latents(info, is_coop):
-    main = info.main_damage if is_coop else info.main_solo_damage
-    sub = info.sub_damage if is_coop else info.sub_solo_damage
-    total = info.total_damage if is_coop else info.total_solo_damage
+    main = info.main if is_coop else info.main_solo
+    sub = info.sub if is_coop else info.sub_solo
+    total = info.total if is_coop else info.total_solo
     return get_stat_block(main, sub, total)
 
 
 def get_120_stats_without_latents(info, is_coop):
-    main = info.main_slb_damage if is_coop else info.main_solo_slb_damage
-    sub = info.sub_slb_damage if is_coop else info.sub_solo_slb_damage
-    total = info.total_slb_damage if is_coop else info.total_solo_slb_damage
+    main = info.main_slb if is_coop else info.main_solo_slb
+    sub = info.sub_slb if is_coop else info.sub_solo_slb
+    total = info.total_slb if is_coop else info.total_solo_slb
     return get_stat_block(main, sub, total)
 
 
 def get_max_stats_with_latents(info, is_coop):
-    main = info.main_damage_with_atk_latent if is_coop else info.main_solo_damage_with_atk_latent
-    sub = info.sub_damage_with_atk_latent if is_coop else info.sub_solo_damage_with_atk_latent
-    total = info.total_damage_with_atk_latent if is_coop else info.total_solo_damage_with_atk_latent
+    main = info.main_latent if is_coop else info.main_solo_latent
+    sub = info.sub_latent if is_coop else info.sub_solo_latent
+    total = info.total_latent if is_coop else info.total_solo_latent
     return get_stat_block(main, sub, total)
 
 
 def get_120_stats_with_latents(info, is_coop):
-    main = info.main_damage_with_slb_atk_latent if is_coop else info.main_solo_damage_with_slb_atk_latent
-    sub = info.sub_damage_with_slb_atk_latent if is_coop else info.sub_solo_damage_with_slb_atk_latent
-    total = info.total_damage_with_slb_atk_latent if is_coop else info.total_solo_damage_with_slb_atk_latent
+    main = info.main_slb_latent if is_coop else info.main_solo_slb_latent
+    sub = info.sub_slb_latent if is_coop else info.sub_solo_slb_latent
+    total = info.total_slb_latent if is_coop else info.total_solo_slb_latent
     return get_stat_block(main, sub, total)
 
 
@@ -127,28 +127,6 @@ def get_mobile_btn_str(btn_str):
         damage = line[partition:]
         output.append('{}\n   {}'.format(name, damage))
     return '\n'.join(output)
-
-
-def get_card_btn_str(info, is_coop, max_110):
-    if is_coop and max_110:
-        return info.card_btn_str
-    elif is_coop and not max_110:
-        return info.card_btn_slb_str
-    elif not is_coop and max_110:
-        return info.card_btn_solo_str
-    elif not is_coop and not max_110:
-        return info.card_btn_solo_slb_str
-
-
-def get_team_btn_str(info, is_coop, max_110):
-    if is_coop and max_110:
-        return info.team_btn_str
-    elif is_coop and not max_110:
-        return info.team_btn_slb_str
-    elif not is_coop and max_110:
-        return info.team_btn_solo_str
-    elif not is_coop and not max_110:
-        return info.team_btn_solo_slb_str
 
 
 class ButtonInfoView:
@@ -214,11 +192,11 @@ class ButtonInfoView:
                     Text('Card Button Damage'),
                     # done this way to not have the whitespace after code block
                     Box(
-                        BlockText(get_card_btn_str(info, is_coop, max_110)),
+                        BlockText(info.get_card_btn_str(is_coop, max_110)),
                         Text('Team Button Contribution'),
                         delimiter=''
                     ),
-                    BlockText(get_team_btn_str(info, is_coop, max_110))
+                    BlockText(info.get_team_btn_str(is_coop, max_110))
                 )
             ) if is_desktop else None,
             EmbedField(
@@ -231,12 +209,12 @@ class ButtonInfoView:
             ) if not is_desktop else None,
             EmbedField(
                 'Card Button Damage',
-                BlockText(get_mobile_btn_str(get_card_btn_str(info, is_coop, max_110))),
+                BlockText(get_mobile_btn_str(info.get_card_btn_str(is_coop, max_110))),
                 inline=True
             ) if not is_desktop else None,
             EmbedField(
                 'Team Button Contribution',
-                BlockText(get_mobile_btn_str(get_team_btn_str(info, is_coop, max_110))),
+                BlockText(get_mobile_btn_str(info.get_team_btn_str(is_coop, max_110))),
                 inline=True
             ) if not is_desktop else None
         ]
