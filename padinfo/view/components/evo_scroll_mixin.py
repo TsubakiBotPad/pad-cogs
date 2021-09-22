@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
 
 
-class EvoListViewState:
+class EvoScrollViewState:
     use_evo_scroll: bool
     alt_monster_ids: List[int]
     monster: "MonsterModel"

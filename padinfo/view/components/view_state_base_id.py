@@ -6,7 +6,7 @@ from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.evo_list_mixin import EvoListViewState
+from padinfo.view.components.evo_scroll_mixin import EvoScrollViewState
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -18,7 +18,7 @@ class MonsterEvolution(NamedTuple):
     evolution: Optional["EvolutionModel"]
 
 
-class ViewStateBaseId(ViewState, EvoListViewState):
+class ViewStateBaseId(ViewState, EvoScrollViewState):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  use_evo_scroll: bool = True,
