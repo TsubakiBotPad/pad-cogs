@@ -3,7 +3,6 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils.emoji import char_to_emoji
-
 from tsutils.enums import ChildMenuType
 from tsutils.menu.panes import MenuPanes
 
