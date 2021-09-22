@@ -12,10 +12,10 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribu
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.evo_scroll_mixin import EvoScrollView
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

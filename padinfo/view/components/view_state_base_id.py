@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, NamedTuple, Optional
+from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.view_state import ViewState
 from tsutils.enums import AltEvoSort
@@ -6,16 +6,10 @@ from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.evo_scroll_mixin import EvoScrollViewState
+from padinfo.view.components.evo_scroll_mixin import EvoScrollViewState, MonsterEvolution
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
-    from dbcog.models.evolution_model import EvolutionModel
-
-
-class MonsterEvolution(NamedTuple):
-    monster: "MonsterModel"
-    evolution: Optional["EvolutionModel"]
 
 
 class ViewStateBaseId(ViewState, EvoScrollViewState):

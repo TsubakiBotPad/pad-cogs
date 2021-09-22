@@ -1,4 +1,5 @@
-from typing import List, TYPE_CHECKING
+from abc import abstractmethod
+from typing import List, TYPE_CHECKING, NamedTuple, Optional
 
 from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import HighlightableLinks, LinkedText
@@ -8,7 +9,12 @@ from padinfo.common.external_links import puzzledragonx
 if TYPE_CHECKING:
     from dbcog.database_context import DbContext
     from dbcog.models.monster_model import MonsterModel
-    from view_state_base_id import MonsterEvolution
+    from dbcog.models.evolution_model import EvolutionModel
+
+
+class MonsterEvolution(NamedTuple):
+    monster: "MonsterModel"
+    evolution: Optional["EvolutionModel"]
 
 
 class EvoScrollViewState:
@@ -51,6 +57,10 @@ class EvoScrollViewState:
         alt_monsters = graph.get_alt_monsters(monster)
         return [MonsterEvolution(m, graph.get_evolution(m)) for m in alt_monsters]
 
+    @abstractmethod
+    def deserialize(self, dbcog, user_config, ims):
+        ...
+
 
 class EvoScrollView:
     @staticmethod
@@ -69,14 +79,15 @@ class EvoScrollView:
         return EmbedField(
             field_text + help_text,
             HighlightableLinks(
-                links=[LinkedText(EvoScrollView.alt_fmt(evo), puzzledragonx(evo.monster)) for evo in state.alt_monsters],
+                links=[LinkedText(EvoScrollView.alt_fmt(evo), puzzledragonx(evo.monster)) for evo in
+                       state.alt_monsters],
                 highlighted=next(i for i, me in enumerate(state.alt_monsters)
                                  if state.monster.monster_id == me.monster.monster_id)
             )
         )
 
     @staticmethod
-    def alt_fmt(evo: "MonsterEvolution"):
+    def alt_fmt(evo: MonsterEvolution):
         if evo.monster.is_equip:
             fmt = "⌈{}⌉"
         elif not evo.evolution or evo.evolution.reversible:

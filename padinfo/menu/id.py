@@ -7,6 +7,7 @@ from tsutils.emoji import char_to_emoji
 from tsutils.enums import ChildMenuType
 from tsutils.menu.panes import MenuPanes
 
+from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.evos import EvosView, EvosViewState
@@ -17,8 +18,14 @@ from padinfo.view.pantheon import PantheonView, PantheonViewState
 from padinfo.view.pic import PicView, PicViewState
 
 
-class IdMenu:
+class IdMenu(EvoScrollMenu):
     MENU_TYPE = ChildMenuType.IdMenu.name
+    VIEW_STATE_TYPE = ViewStateBaseId
+
+    @staticmethod
+    def get_panes_type():
+        #  TODO: change this to a property & classmethod once we update to Python 3.9
+        return IdMenuPanes
 
     @staticmethod
     def menu(initial_control=None):
@@ -28,32 +35,6 @@ class IdMenu:
         embed = EmbedMenu(IdMenuPanes.transitions(), initial_control,
                           delete_func=IdMenu.respond_with_delete)
         return embed
-
-    @staticmethod
-    async def respond_with_left(message: Optional[Message], ims, **data):
-        dbcog = data['dbcog']
-        user_config = data['user_config']
-        # Figure out the new monster before doing all of the queries necessary for
-        # The specific pane type. For now just deserialize as the base Id ViewState.
-        view_state = await ViewStateBaseId.deserialize(dbcog, user_config, ims)
-        view_state.decrement_monster(dbcog, ims)
-
-        pane_type = ims['pane_type']
-        pane_type_to_func_map = IdMenuPanes.pane_types()
-        response_func = pane_type_to_func_map[pane_type]
-        return await response_func(message, ims, **data)
-
-    @staticmethod
-    async def respond_with_right(message: Optional[Message], ims, **data):
-        dbcog = data['dbcog']
-        user_config = data['user_config']
-        view_state = await ViewStateBaseId.deserialize(dbcog, user_config, ims)
-        view_state.increment_monster(dbcog, ims)
-
-        pane_type = ims.get('pane_type')
-        pane_type_to_func_map = IdMenuPanes.pane_types()
-        response_func = pane_type_to_func_map[pane_type]
-        return await response_func(message, ims, **data)
 
     @staticmethod
     async def respond_with_refresh(message: Optional[Message], ims, **data):
