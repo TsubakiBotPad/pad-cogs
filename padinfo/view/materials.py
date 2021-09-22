@@ -5,18 +5,17 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.footers import embed_footer_with_state
-
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
 from padinfo.common.external_links import ilmina_skill
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
+from padinfo.view.common import get_monster_from_ims
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
-from padinfo.view.common import get_monster_from_ims
-from padinfo.view.id import evos_embed_field
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -152,7 +151,7 @@ def skillup_field(mons, sec, link):
         Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
 
 
-class MaterialsView(BaseIdView):
+class MaterialsView(BaseIdView, EvoScrollView):
     VIEW_TYPE = 'Materials'
 
     @classmethod
@@ -178,5 +177,5 @@ class MaterialsView(BaseIdView):
                 if state.gemusedin else None,
                 skillup_field(state.skillups, state.skillup_evo_count, state.link)
                 if not (state.monster.is_stackable or state.gem_override) else None
-            ] if f is not None] + [evos_embed_field(state)]
+            ] if f is not None] + [cls.evos_embed_field(state)]
         )

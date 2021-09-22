@@ -2,7 +2,7 @@ from typing import List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
-from discordmenu.embed.text import BoldText, HighlightableLinks, LabeledText, LinkedText, Text
+from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.enums import CardPlusModifier, Server, CardModeModifier, CardLevelModifier
 from tsutils.menu.footers import embed_footer_with_state
@@ -13,6 +13,7 @@ from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.base_id_main_view import BaseIdMainView
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import MonsterEvolution, ViewStateBaseId
@@ -21,16 +22,6 @@ if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.awakening_model import AwakeningModel
     from dbcog.database_context import DbContext
-
-
-def alt_fmt(monsterevo, state):
-    if monsterevo.monster.is_equip:
-        fmt = "⌈{}⌉"
-    elif not monsterevo.evolution or monsterevo.evolution.reversible:
-        fmt = "{}"
-    else:
-        fmt = "⌊{}⌋"
-    return fmt.format(monsterevo.monster.monster_no_na)
 
 
 class IdQueriedProps:
@@ -173,29 +164,7 @@ def _monster_is_enhance(m: "MonsterModel"):
     return any(x if x.name == 'Enhance' else None for x in m.types)
 
 
-def evos_embed_field(state: ViewStateBaseId):
-    field_text = "**Evos**"
-    help_text = ""
-    # this isn't used right now, but maybe later if discord changes the api for embed titles...?
-    _help_link = "https://github.com/TsubakiBotPad/pad-cogs/wiki/Evolutions-mini-view"
-    legend_parts = []
-    if any(not alt_evo.evolution.reversible for alt_evo in state.alt_monsters if alt_evo.evolution):
-        legend_parts.append("⌊Irreversible⌋")
-    if any(alt_evo.monster.is_equip for alt_evo in state.alt_monsters):
-        legend_parts.append("⌈Equip⌉")
-    if legend_parts:
-        help_text = ' – Help: {}'.format(" ".join(legend_parts))
-    return EmbedField(
-        field_text + help_text,
-        HighlightableLinks(
-            links=[LinkedText(alt_fmt(me, state), puzzledragonx(me.monster)) for me in state.alt_monsters],
-            highlighted=next(i for i, me in enumerate(state.alt_monsters)
-                             if state.monster.monster_id == me.monster.monster_id)
-        )
-    )
-
-
-class IdView(BaseIdMainView):
+class IdView(BaseIdMainView, EvoScrollView):
     VIEW_TYPE = 'Id'
 
     @classmethod
@@ -315,7 +284,7 @@ class IdView(BaseIdMainView):
                 cls.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
                 Text(m.leader_skill.desc if m.leader_skill else 'None')
             ),
-            evos_embed_field(state)
+            cls.evos_embed_field(state)
         ]
 
         return EmbedView(
