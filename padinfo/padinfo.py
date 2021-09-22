@@ -587,8 +587,9 @@ class PadInfo(commands.Cog):
         info = button_info.get_info(dbcog, monster)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         display_options = ButtonInfoToggles()
+        alt_monsters = ButtonInfoViewState.get_alt_monsters_and_evos(dbcog, monster)
         state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
-                                    monster, info, query_settings,
+                                    monster, alt_monsters, info, query_settings,
                                     reaction_list=ButtonInfoMenuPanes.get_user_reaction_list(display_options))
         menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)

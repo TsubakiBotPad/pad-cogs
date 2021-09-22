@@ -11,9 +11,11 @@ from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL, ButtonInfoStatSet, \
     ButtonInfoResult
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
+from padinfo.view.components.view_state_base_id import MonsterEvolution
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -36,9 +38,10 @@ class ButtonInfoToggles:
         self.max_level = max_level_setting
 
 
-class ButtonInfoViewState(ViewStateBase):
+class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
     def __init__(self, original_author_id, menu_type, raw_query, color, display_options: ButtonInfoToggles,
-                 monster: "MonsterModel", info: ButtonInfoResult, query_settings: QuerySettings,
+                 monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
+                 info: ButtonInfoResult, query_settings: QuerySettings,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None, reaction_list=reaction_list)
         self.color = color
@@ -46,6 +49,12 @@ class ButtonInfoViewState(ViewStateBase):
         self.monster = monster
         self.info = info
         self.query_settings = query_settings
+
+        self.alt_monsters = alt_monsters
+        self.alt_monster_ids = [m.monster.monster_id for m in self.alt_monsters]
+
+        # numerical scroll makes no sense for ButtonInfo
+        self.use_evo_scroll = True
 
     def serialize(self):
         ret = super().serialize()
@@ -103,7 +112,7 @@ def get_mobile_btn_str(btn_str):
     return '\n'.join(output)
 
 
-class ButtonInfoView:
+class ButtonInfoView(EvoScrollView):
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod

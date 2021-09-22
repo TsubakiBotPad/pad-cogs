@@ -45,6 +45,12 @@ class EvoScrollViewState:
                 ims['unsupported_transition'] = True
         ims['resolved_monster_id'] = str(next_monster_id)
 
+    @classmethod
+    def get_alt_monsters_and_evos(cls, dbcog, monster) -> List[MonsterEvolution]:
+        graph = dbcog.database.graph
+        alt_monsters = graph.get_alt_monsters(monster)
+        return [MonsterEvolution(m, graph.get_evolution(m)) for m in alt_monsters]
+
 
 class EvoScrollView:
     @staticmethod
