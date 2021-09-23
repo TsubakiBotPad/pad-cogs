@@ -1,17 +1,14 @@
+import re
+from collections import defaultdict
+
+import romkan
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja, rmdiacritics
 
-from .base_model import BaseModel
-from .enum_types import Attribute
-from .enum_types import MonsterType
-from .enum_types import AwakeningRestrictedLatent
-from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
+from .base_model import BaseModel
+from .enum_types import Attribute, AwakeningRestrictedLatent, MonsterType, enum_or_none
 from .leader_skill_model import LeaderSkillModel
-import re
-from collections import defaultdict
-import romkan
-
 from .monster.monster_difference import MonsterDifference
 from .monster_stats import monster_stats
 
@@ -51,7 +48,7 @@ class MonsterModel(BaseModel):
         # If the NA and JP names are the same, chances are the card isn't released in both reigions, and 
         # if we have an override, chances are it's JP only because we wouldn't need one for an NA only card.
         # We aren't using the on_na flag here because that flag sucks and has false positives all the time
-        if self.name_en == self.name_ja:  
+        if self.name_en == self.name_ja:
             self.name_en_override = m['name_en_override']
         if not m['name_is_translation']:
             self.name_en_override = m['name_en_override']
