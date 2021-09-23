@@ -1,17 +1,14 @@
+import re
+from collections import defaultdict
+
+import romkan
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja, rmdiacritics
 
-from .base_model import BaseModel
-from .enum_types import Attribute
-from .enum_types import MonsterType
-from .enum_types import AwakeningRestrictedLatent
-from .enum_types import enum_or_none
 from .active_skill_model import ActiveSkillModel
+from .base_model import BaseModel
+from .enum_types import Attribute, AwakeningRestrictedLatent, MonsterType, enum_or_none
 from .leader_skill_model import LeaderSkillModel
-import re
-from collections import defaultdict
-import romkan
-
 from .monster.monster_difference import MonsterDifference
 from .monster_stats import monster_stats
 
@@ -23,6 +20,10 @@ class MonsterModel(BaseModel):
         self.monster_no_na = m['monster_no_na']
         self.monster_no_kr = m['monster_no_kr']
         self.base_evo_id = m['base_evo_id']
+
+        self.on_jp = m['on_jp']
+        self.on_na = m['on_na']
+        self.on_kr = m['on_kr']
 
         self.awakenings = sorted(m['awakenings'], key=lambda a: a.order_idx)
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
@@ -37,7 +38,7 @@ class MonsterModel(BaseModel):
         self.name_ko = m['name_ko']
         self.name_en = self.unoverridden_name_en = m['name_en']
         self.roma_subname = None
-        if self.name_en == self.name_ja:
+        if self.name_en == self.name_ja and not self.on_na:
             self.roma_subname = self.make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
@@ -47,7 +48,7 @@ class MonsterModel(BaseModel):
         # If the NA and JP names are the same, chances are the card isn't released in both reigions, and 
         # if we have an override, chances are it's JP only because we wouldn't need one for an NA only card.
         # We aren't using the on_na flag here because that flag sucks and has false positives all the time
-        if self.name_en == self.name_ja:  
+        if self.name_en == self.name_ja:
             self.name_en_override = m['name_en_override']
         if not m['name_is_translation']:
             self.name_en_override = m['name_en_override']
@@ -69,9 +70,6 @@ class MonsterModel(BaseModel):
         self.sell_gold = m['sell_gold']
         self.sell_mp = m['sell_mp']
         self.reg_date = m['reg_date']
-        self.on_jp = m['on_jp']
-        self.on_na = m['on_na']
-        self.on_kr = m['on_kr']
         self.attr1 = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
         self.attr2 = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
