@@ -24,6 +24,9 @@ class EvoScrollViewState:
     alt_monsters: List["MonsterEvolution"]
 
     def decrement_monster(self, dbcog, ims: dict):
+
+        # if this ever has a side effect in the actual class, it cannot remain as a mixin!
+
         db_context: "DbContext" = dbcog.database
         if self.use_evo_scroll:
             index = self.alt_monster_ids.index(self.monster.monster_id)
