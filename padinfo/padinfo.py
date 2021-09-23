@@ -38,6 +38,7 @@ from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_map import padinfo_menu_map
 from padinfo.menu.monster_list import MonsterListEmoji, MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
+from padinfo.menu.scroll import ScrollMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollEmoji, SeriesScrollMenu, SeriesScrollMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -720,7 +721,7 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
         color = await self.get_user_embed_color(ctx)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
-        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query, color,

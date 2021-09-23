@@ -6,6 +6,7 @@ from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
 from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
+from padinfo.menu.scroll import ScrollMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollMenu, SeriesScrollMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -24,7 +25,7 @@ padinfo_menu_map = {
     MonsterListMenu.MENU_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     AllMatsViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     IdSearchViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
-    ScrollViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
+    ScrollViewState.VIEW_STATE_TYPE: (MonsterListMenu, ScrollMenuPanes),
     StaticMonsterListViewState.VIEW_STATE_TYPE: (MonsterListMenu, MonsterListMenuPanes),
     SeriesScrollMenu.MENU_TYPE: (SeriesScrollMenu, SeriesScrollMenuPanes),
     SimpleTextMenu.MENU_TYPE: (SimpleTextMenu, SimpleTextMenuPanes),
