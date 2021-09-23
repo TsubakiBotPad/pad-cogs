@@ -24,6 +24,10 @@ class MonsterModel(BaseModel):
         self.monster_no_kr = m['monster_no_kr']
         self.base_evo_id = m['base_evo_id']
 
+        self.on_jp = m['on_jp']
+        self.on_na = m['on_na']
+        self.on_kr = m['on_kr']
+
         self.awakenings = sorted(m['awakenings'], key=lambda a: a.order_idx)
         self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
         self.leader_skill: LeaderSkillModel = m['leader_skill']
@@ -37,7 +41,7 @@ class MonsterModel(BaseModel):
         self.name_ko = m['name_ko']
         self.name_en = self.unoverridden_name_en = m['name_en']
         self.roma_subname = None
-        if self.name_en == self.name_ja:
+        if self.name_en == self.name_ja and not self.on_na:
             self.roma_subname = self.make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
@@ -69,9 +73,6 @@ class MonsterModel(BaseModel):
         self.sell_gold = m['sell_gold']
         self.sell_mp = m['sell_mp']
         self.reg_date = m['reg_date']
-        self.on_jp = m['on_jp']
-        self.on_na = m['on_na']
-        self.on_kr = m['on_kr']
         self.attr1 = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
         self.attr2 = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
         self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
