@@ -6,7 +6,6 @@ from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.footers import embed_footer_with_state
-
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -106,17 +105,17 @@ class MonsterListViewState(ViewStateBase):
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
-        return MonsterListViewState(original_author_id, menu_type, query, user_config.color,
-                                    monster_list, query_settings,
-                                    title, idle_message,
-                                    current_page=current_page,
-                                    current_index=current_index,
-                                    child_menu_type=child_menu_type,
-                                    child_reaction_list=child_reaction_list,
-                                    reaction_list=reaction_list,
-                                    extra_state=ims,
-                                    child_message_id=child_message_id
-                                    )
+        return cls(original_author_id, menu_type, query, user_config.color,
+                   monster_list, query_settings,
+                   title, idle_message,
+                   current_page=current_page,
+                   current_index=current_index,
+                   child_menu_type=child_menu_type,
+                   child_reaction_list=child_reaction_list,
+                   reaction_list=reaction_list,
+                   extra_state=ims,
+                   child_message_id=child_message_id
+                   )
 
     @classmethod
     async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
@@ -150,7 +149,7 @@ class MonsterListViewState(ViewStateBase):
         if len(self.paginated_monsters) > 1:
             self.current_index = None
 
-    def increment_index(self):
+    async def increment_index(self, _dbcog):
         max_index = len(self.paginated_monsters[self.current_page]) - 1
         if self.current_index is None:
             self.current_index = 0
@@ -166,7 +165,7 @@ class MonsterListViewState(ViewStateBase):
             self.current_page = 0
             self.current_index = 0
 
-    def decrement_index(self):
+    async def decrement_index(self, _dbcog):
         max_index = len(self.paginated_monsters[self.current_page]) - 1
         if self.current_index is None:
             self.current_index = max_index

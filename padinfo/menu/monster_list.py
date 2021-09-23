@@ -11,6 +11,7 @@ from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
+from padinfo.view.monster_list.scroll import ScrollViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 
 
@@ -43,6 +44,7 @@ class MonsterListMenu:
         AllMatsViewState.VIEW_STATE_TYPE: AllMatsViewState,
         IdSearchViewState.VIEW_STATE_TYPE: IdSearchViewState,
         StaticMonsterListViewState.VIEW_STATE_TYPE: StaticMonsterListViewState,
+        ScrollViewState.VIEW_STATE_TYPE: ScrollViewState,
     }
 
     child_menu_type_to_emoji_response_map = {
@@ -61,7 +63,7 @@ class MonsterListMenu:
     async def _get_view_state(cls, ims: dict, **data) -> MonsterListViewState:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state_class = cls.view_state_types.get(ims['menu_type']) or MonsterListMenu.MENU_TYPE
+        view_state_class = cls.view_state_types[ims['menu_type']]
         return await view_state_class.deserialize(dbcog, user_config, ims)
 
     @staticmethod
@@ -96,13 +98,13 @@ class MonsterListMenu:
     @classmethod
     async def respond_with_previous_monster(cls, message: Optional[Message], ims, **data):
         view_state = await cls._get_view_state(ims, **data)
-        view_state.decrement_index()
+        await view_state.decrement_index(data['dbcog'])
         return MonsterListMenu.monster_list_control(view_state)
 
     @classmethod
     async def respond_with_next_monster(cls, message: Optional[Message], ims, **data):
         view_state = await cls._get_view_state(ims, **data)
-        view_state.increment_index()
+        await view_state.increment_index(data['dbcog'])
         return MonsterListMenu.monster_list_control(view_state)
 
     @staticmethod
@@ -182,18 +184,18 @@ class MonsterListMenu:
     @classmethod
     async def auto_scroll_child_left(cls, ims, _emoji_clicked, **data):
         view_state = await cls._get_view_state(ims, **data)
-        return await MonsterListMenu._scroll_child(view_state, view_state.decrement_index)
+        return await MonsterListMenu._scroll_child(view_state, view_state.decrement_index, data['dbcog'])
 
     @classmethod
     async def auto_scroll_child_right(cls, ims, _emoji_clicked, **data):
         view_state = await cls._get_view_state(ims, **data)
-        return await MonsterListMenu._scroll_child(view_state, view_state.increment_index)
+        return await MonsterListMenu._scroll_child(view_state, view_state.increment_index, data['dbcog'])
 
     @classmethod
-    async def _scroll_child(cls, view_state: MonsterListViewState, update_function):
+    async def _scroll_child(cls, view_state: MonsterListViewState, update_function, dbcog):
         # when the parent ims updated, it was a deepcopy of the ims / view_state we have now,
         # so we have to redo the update function that we did before
-        update_function()
+        await update_function(dbcog)
         extra_ims = view_state.get_serialized_child_extra_ims()
         emoji_response = cls.child_menu_type_to_emoji_response_map[view_state.child_menu_type]
         return emoji_response, extra_ims
