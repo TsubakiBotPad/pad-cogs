@@ -63,7 +63,7 @@ class MonsterListMenu:
     async def _get_view_state(cls, ims: dict, **data) -> MonsterListViewState:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state_class = cls.view_state_types[ims.get('parent_menu_type') or ims['menu_type']]
+        view_state_class = cls.view_state_types[ims['menu_type']]
         return await view_state_class.deserialize(dbcog, user_config, ims)
 
     @staticmethod

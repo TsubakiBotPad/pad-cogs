@@ -82,7 +82,6 @@ class MonsterListViewState(ViewStateBase):
             'resolved_monster_id': self.current_monster_id,
             'query_settings': self.query_settings.serialize(),
             'idle_message': self.idle_message,
-            'parent_menu_type': self.menu_type,
         }
         return extra_ims
 
