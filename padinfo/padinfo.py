@@ -276,7 +276,7 @@ class PadInfo(commands.Cog):
 
         state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                             alt_monsters, is_jp_buffed, query_settings, id_queried_props,
-                            use_evo_scroll=settings.checkEvoID(ctx.author.id), reaction_list=initial_reaction_list)
+                            reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
         await menu.create(ctx, state)
 
@@ -399,8 +399,8 @@ class PadInfo(commands.Cog):
         state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                               alt_monsters, is_jp_buffed, query_settings,
                               alt_versions, gem_versions,
-                              reaction_list=initial_reaction_list,
-                              use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                              reaction_list=initial_reaction_list
+                              )
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
         await menu.create(ctx, state)
 
@@ -436,8 +436,8 @@ class PadInfo(commands.Cog):
         state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
-                                   reaction_list=initial_reaction_list,
-                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                                   reaction_list=initial_reaction_list
+                                   )
         menu = IdMenu.menu(initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
 
@@ -472,8 +472,8 @@ class PadInfo(commands.Cog):
         state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                   alt_monsters, is_jp_buffed, query_settings,
                                   pantheon_list, series_name, base_monster,
-                                  reaction_list=initial_reaction_list,
-                                  use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                                  reaction_list=initial_reaction_list
+                                  )
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
 
@@ -502,8 +502,8 @@ class PadInfo(commands.Cog):
 
         state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                              alt_monsters, is_jp_buffed, query_settings,
-                             reaction_list=initial_reaction_list,
-                             use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                             reaction_list=initial_reaction_list
+                             )
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)
         await menu.create(ctx, state)
 
@@ -532,8 +532,8 @@ class PadInfo(commands.Cog):
 
         state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
-                                   reaction_list=initial_reaction_list,
-                                   use_evo_scroll=settings.checkEvoID(ctx.author.id))
+                                   reaction_list=initial_reaction_list
+                                   )
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
         await menu.create(ctx, state)
 
@@ -749,7 +749,7 @@ class PadInfo(commands.Cog):
 
         child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
                                   alt_monsters, is_jp_buffed, query_settings, id_queried_props,
-                                  use_evo_scroll=True, reaction_list=full_reaction_list)
+                                  reaction_list=full_reaction_list)
         child_menu = IdMenu.menu()
         child_message = await child_menu.create(ctx, child_state)
 
@@ -1005,23 +1005,9 @@ class PadInfo(commands.Cog):
         """`[p]id` settings configuration"""
 
     @idset.command(name="scroll")
-    async def idset_scroll(self, ctx, value):
-        """Switch between number scroll & evo scroll
-
-        [p]idset scroll number
-        [p]idset scroll evo"""
-        if value in ['evo', 'default']:
-            if settings.setEvoID(ctx.author.id):
-                await ctx.tick()
-            else:
-                await ctx.send(inline("You're already using evo mode"))
-        elif value in ['number']:
-            if settings.rmEvoID(ctx.author.id):
-                await ctx.tick()
-            else:
-                await ctx.send(inline("You're already using number mode"))
-        else:
-            await ctx.send("id_type must be `number` or `evo`")
+    async def idset_scroll(self, ctx):
+        await ctx.send(f"We no longer support number scroll as a preference. "
+                       f"Please use the `{ctx.prefix}scroll` command for numberscroll!")
 
     @idset.command()
     async def survey(self, ctx, value):

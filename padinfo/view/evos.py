@@ -25,11 +25,9 @@ class EvosViewState(ViewStateBaseId):
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
-                 use_evo_scroll: bool = True,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
                          alt_monsters, is_jp_buffed, query_settings,
-                         use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.alt_versions = alt_versions
@@ -56,7 +54,6 @@ class EvosViewState(ViewStateBaseId):
         query = ims.get('query') or raw_query
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         original_author_id = ims['original_author_id']
-        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
@@ -65,7 +62,6 @@ class EvosViewState(ViewStateBaseId):
                    alt_monsters, is_jp_buffed, query_settings,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
-                   use_evo_scroll=use_evo_scroll,
                    extra_state=ims)
 
     @staticmethod

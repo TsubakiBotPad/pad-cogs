@@ -43,11 +43,10 @@ class IdViewState(ViewStateBaseId):
     def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  id_queried_props: IdQueriedProps,
-                 fallback_message: str = None, use_evo_scroll: bool = True, reaction_list: List[str] = None,
+                 fallback_message: str = None, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
                          alt_monsters, is_jp_buffed, query_settings,
-                         use_evo_scroll=use_evo_scroll,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.fallback_message = fallback_message
@@ -83,7 +82,6 @@ class IdViewState(ViewStateBaseId):
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
-        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
         fallback_message = ims.get('message')
         is_child = ims.get('is_child')
@@ -93,7 +91,6 @@ class IdViewState(ViewStateBaseId):
                    alt_monsters, is_jp_buffed, query_settings,
                    id_queried_props,
                    fallback_message=fallback_message,
-                   use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    is_child=is_child,
                    extra_state=ims)
