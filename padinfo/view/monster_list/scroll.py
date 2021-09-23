@@ -91,7 +91,7 @@ class ScrollViewState(MonsterListViewState):
 
     async def decrement_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
-        monster = db_context.graph.get_monster(self.current_monster_id)
+        monster = db_context.graph.get_monster(self.current_monster_id, server=self.query_settings.server)
 
         prev_monster: "MonsterModel" = dbcog.database.graph.numeric_prev_monster(monster)
         if prev_monster is None:
@@ -104,7 +104,7 @@ class ScrollViewState(MonsterListViewState):
 
     async def increment_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
-        monster = db_context.graph.get_monster(self.current_monster_id)
+        monster = db_context.graph.get_monster(self.current_monster_id, server=self.query_settings.server)
         next_monster = dbcog.database.graph.numeric_next_monster(monster)
         if next_monster is None:
             # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
