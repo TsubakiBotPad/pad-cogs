@@ -52,9 +52,6 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
         self.alt_monsters = alt_monsters
         self.alt_monster_ids = [m.monster.monster_id for m in self.alt_monsters]
 
-        # numerical scroll makes no sense for ButtonInfo
-        self.use_evo_scroll = True
-
     def serialize(self):
         ret = super().serialize()
         ret.update({

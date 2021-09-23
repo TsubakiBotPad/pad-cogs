@@ -29,13 +29,11 @@ class MaterialsViewState(ViewStateBaseId):
                  mats: List["MonsterModel"], usedin: List["MonsterModel"], gemid: Optional[str],
                  gemusedin: List["MonsterModel"], skillups: List["MonsterModel"], skillup_evo_count: int, link: str,
                  gem_override: bool,
-                 use_evo_scroll: bool = True,
                  reaction_list: List[str] = None,
                  extra_state=None):
         super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
                          alt_monsters, is_jp_buffed, query_settings,
                          reaction_list=reaction_list,
-                         use_evo_scroll=use_evo_scroll,
                          extra_state=extra_state)
         self.reaction_list = reaction_list
         self.link = link
@@ -71,14 +69,12 @@ class MaterialsViewState(ViewStateBaseId):
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
-        use_evo_scroll = ims.get('use_evo_scroll') != 'False'
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
         return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
-                   use_evo_scroll=use_evo_scroll,
                    reaction_list=reaction_list,
                    extra_state=ims)
 
