@@ -3,7 +3,6 @@ from typing import Optional, List
 from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils.emoji import char_to_emoji
-
 from tsutils.menu.panes import MenuPanes, emoji_buttons
 
 from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
@@ -164,7 +163,6 @@ class SeriesScrollMenu:
 
     @classmethod
     async def click_child_number(cls, ims, emoji_clicked, **data):
-        dbcog = data['dbcog']
         emoji_response = IdMenuEmoji.refresh \
             if SeriesScrollMenuPanes.respond_to_emoji_with_child(emoji_clicked) else None
         if emoji_response is None:

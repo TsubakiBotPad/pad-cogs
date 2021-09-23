@@ -6,7 +6,6 @@ from discordmenu.embed.text import BoldText
 from discordmenu.embed.view import EmbedView
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.footers import embed_footer_with_state
-
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
