@@ -50,7 +50,9 @@ class MonsterListViewState(ViewStateBase):
         self.query_settings = query_settings
 
     @property
-    def current_monster_id(self) -> int:
+    def current_monster_id(self) -> Optional[int]:
+        if self.current_index is None:
+            return None
         return self.monster_list[self.current_index].monster_id
 
     @property
@@ -186,23 +188,25 @@ class MonsterListViewState(ViewStateBase):
         self.current_index = new_index
 
 
-def _monster_list(monsters):
-    if not len(monsters):
-        return []
-    return [
-        MonsterHeader.short_with_emoji(mon, link=True, prefix=char_to_emoji(str(i)))
-        for i, mon in enumerate(monsters)
-    ]
-
-
 class MonsterListView:
     VIEW_TYPE = 'MonsterList'
 
-    @staticmethod
-    def embed(state: MonsterListViewState):
+    @classmethod
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int):
+        if not len(monsters):
+            return []
+        return [MonsterHeader.short_with_emoji(
+            mon, link=True, prefix=cls.get_emoji(i, current_monster_id)) for i, mon in enumerate(monsters)]
+
+    @classmethod
+    def get_emoji(cls, i: int, _current_monster_id: int):
+        return char_to_emoji(str(i))
+
+    @classmethod
+    def embed(cls, state: MonsterListViewState):
         fields = [
             EmbedField(state.title,
-                       Box(*_monster_list(state.monster_list))),
+                       Box(*cls.monster_list(state.monster_list, state.current_monster_id))),
             EmbedField(BoldText('Page'),
                        Box('{} of {}'.format(state.current_page + 1, state.page_count)),
                        inline=True

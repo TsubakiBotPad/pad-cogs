@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from discord import Message
 from discordmenu.embed.menu import EmbedControl, EmbedMenu
@@ -11,7 +11,7 @@ from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
-from padinfo.view.monster_list.scroll import ScrollViewState
+from padinfo.view.monster_list.scroll import ScrollViewState, ScrollView
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 
 
@@ -47,6 +47,10 @@ class MonsterListMenu:
         ScrollViewState.VIEW_STATE_TYPE: ScrollViewState,
     }
 
+    view_types = {
+        ScrollViewState.VIEW_STATE_TYPE: ScrollView
+    }
+
     child_menu_type_to_emoji_response_map = {
         IdMenu.MENU_TYPE: IdMenuEmoji.refresh,
         NaDiffMenu.MENU_TYPE: NaDiffEmoji.home
@@ -65,6 +69,10 @@ class MonsterListMenu:
         user_config = data['user_config']
         view_state_class = cls.view_state_types[ims['menu_type']]
         return await view_state_class.deserialize(dbcog, user_config, ims)
+
+    @classmethod
+    def _get_view(cls, state: MonsterListViewState) -> Type[MonsterListView]:
+        return cls.view_types.get(state.VIEW_STATE_TYPE) or MonsterListView
 
     @staticmethod
     async def respond_with_refresh(message: Optional[Message], ims, **data):
@@ -160,13 +168,14 @@ class MonsterListMenu:
     async def respond_with_10(message: Optional[Message], ims, **data):
         return await MonsterListMenu.respond_with_n(message, ims, 10, **data)
 
-    @staticmethod
-    def monster_list_control(state: MonsterListViewState):
+    @classmethod
+    def monster_list_control(cls, state: MonsterListViewState):
         if state is None:
             return None
         reaction_list = state.reaction_list
+        view_type = cls._get_view(state)
         return EmbedControl(
-            [MonsterListView.embed(state)],
+            [view_type.embed(state)],
             reaction_list
         )
 
