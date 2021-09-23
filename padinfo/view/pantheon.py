@@ -4,7 +4,6 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.footers import embed_footer_with_state
-
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
@@ -13,10 +12,10 @@ from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribu
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
-from padinfo.view.id import evos_embed_field
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -163,7 +162,7 @@ def _pantheon_lines(monsters, base_monster):
     ]
 
 
-class PantheonView(BaseIdView):
+class PantheonView(BaseIdView, EvoScrollView):
     VIEW_TYPE = 'Pantheon'
 
     @classmethod
@@ -172,7 +171,7 @@ class PantheonView(BaseIdView):
             'Pantheon: {}'.format(state.series_name),
             Box(*_pantheon_lines(state.pantheon_list, state.base_monster))
         ),
-            evos_embed_field(state)]
+            cls.evos_embed_field(state)]
 
         return EmbedView(
             EmbedMain(

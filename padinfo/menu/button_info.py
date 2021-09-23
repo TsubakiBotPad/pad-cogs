@@ -4,14 +4,15 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.emoji import char_to_emoji
-
 from tsutils.menu.panes import emoji_buttons, MenuPanes
 
+from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
 from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, ButtonInfoViewState, ButtonInfoView
 
 
 class ButtonInfoEmoji:
-    delete = '\N{CROSS MARK}'
+    left = '\N{BLACK LEFT-POINTING TRIANGLE}'
+    right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
     home = emoji_buttons['home']
     coop = ('coop_2p', '\N{BUSTS IN SILHOUETTE}')
     solo = ('solo_1p', '\N{BUST IN SILHOUETTE}')
@@ -21,8 +22,14 @@ class ButtonInfoEmoji:
     super_limit_break = ('lv120', char_to_emoji('2'))
 
 
-class ButtonInfoMenu:
+class ButtonInfoMenu(EvoScrollMenu):
     MENU_TYPE = 'ButtonInfo'
+    VIEW_STATE_TYPE = ButtonInfoViewState
+
+    @staticmethod
+    def get_panes_type():
+        #  TODO: change this to a property & classmethod once we update to Python 3.9
+        return ButtonInfoMenuPanes
 
     @staticmethod
     def menu():
@@ -33,10 +40,6 @@ class ButtonInfoMenu:
         dbcog = data['dbcog']
         user_config = data['user_config']
         return await ButtonInfoViewState.deserialize(dbcog, user_config, ims)
-
-    @staticmethod
-    async def respond_with_delete(message: Message, ims, **data):
-        return await message.delete()
 
     @staticmethod
     async def respond_with_button_info(message: Optional[Message], ims, **data):
@@ -97,7 +100,8 @@ class ButtonInfoMenuPanes(MenuPanes):
     INITIAL_EMOJI = ButtonInfoEmoji.home
 
     DATA = {
-        ButtonInfoEmoji.delete: (ButtonInfoMenu.respond_with_delete, None),
+        ButtonInfoEmoji.left: (ButtonInfoMenu.respond_with_left, None),
+        ButtonInfoEmoji.right: (ButtonInfoMenu.respond_with_right, None),
         ButtonInfoEmoji.home: (ButtonInfoMenu.respond_with_button_info, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.coop: (ButtonInfoMenu.respond_with_coop, ButtonInfoView.VIEW_TYPE),
         ButtonInfoEmoji.solo: (ButtonInfoMenu.respond_with_solo, ButtonInfoView.VIEW_TYPE),

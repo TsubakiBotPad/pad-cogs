@@ -10,9 +10,9 @@ from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.id import evos_embed_field
 from padinfo.view.links import LinksView
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ def statsbox(m, plus: int):
     return box(tbl.get_string())
 
 
-class OtherInfoView(BaseIdView):
+class OtherInfoView(BaseIdView, EvoScrollView):
     VIEW_TYPE = 'OtherInfo'
 
     @classmethod
@@ -91,4 +91,4 @@ class OtherInfoView(BaseIdView):
                             LabeledText("Rarity", str(m.rarity)),
                             LabeledText("Cost", str(m.cost)),
                             delimiter=' '))),
-                evos_embed_field(state)])
+                cls.evos_embed_field(state)])
