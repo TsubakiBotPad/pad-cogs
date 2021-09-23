@@ -94,6 +94,9 @@ class ScrollViewState(MonsterListViewState):
         monster = db_context.graph.get_monster(self.current_monster_id)
 
         prev_monster: "MonsterModel" = dbcog.database.graph.numeric_prev_monster(monster)
+        if prev_monster is None:
+            # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
+            return
         monster_list = await self.do_query(dbcog, prev_monster)
 
         self._current_monster_id = prev_monster.monster_id
@@ -103,6 +106,9 @@ class ScrollViewState(MonsterListViewState):
         db_context: "DbContext" = dbcog.database
         monster = db_context.graph.get_monster(self.current_monster_id)
         next_monster = dbcog.database.graph.numeric_next_monster(monster)
+        if next_monster is None:
+            # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
+            return
         monster_list = await self.do_query(dbcog, next_monster)
 
         self._current_monster_id = next_monster.monster_id
