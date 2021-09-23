@@ -38,6 +38,7 @@ from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
 from padinfo.menu.menu_map import padinfo_menu_map
 from padinfo.menu.monster_list import MonsterListEmoji, MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
+from padinfo.menu.scroll import ScrollMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollEmoji, SeriesScrollMenu, SeriesScrollMenuPanes
 from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
@@ -60,6 +61,7 @@ from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.scroll import ScrollViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
 from padinfo.view.pantheon import PantheonViewState
@@ -594,6 +596,32 @@ class PadInfo(commands.Cog):
         menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)
 
+    @commands.command(aliases=["ids"])
+    @checks.bot_has_permissions(embed_links=True)
+    async def idsearch(self, ctx, *, query):
+        await self._do_idsearch(ctx, query)
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def nadiffs(self, ctx, *, query):
+        await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
+                                child_reaction_list=NaDiffMenuPanes.emoji_names())
+
+    async def _do_idsearch(self, ctx, query, child_menu_type=None,
+                           child_reaction_list=None):
+        dbcog = await self.get_dbcog()
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
+
+        if monster_list is None:
+            await ctx.send("No monster matched.")
+            return
+
+        await self._do_monster_list(ctx, dbcog, query, monster_list, 'ID Search Results',
+                                    IdSearchViewState,
+                                    child_menu_type=child_menu_type,
+                                    child_reaction_list=child_reaction_list)
+
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def allmats(self, ctx, *, query: str):
@@ -668,6 +696,61 @@ class PadInfo(commands.Cog):
                                           reaction_list=[]
                                           )
         child_menu = SimpleTextMenu.menu()
+        child_message = await child_menu.create(ctx, child_state)
+
+        data['child_message_id'] = child_message.id
+        try:
+            await parent_menu.transition(message, ims, MonsterListEmoji.refresh, ctx.author, **data)
+            await message.edit(content=None)
+        except discord.errors.NotFound:
+            # The user could delete the menu before we can do this
+            pass
+
+    @commands.command()
+    @checks.bot_has_permissions(embed_links=True)
+    async def scroll(self, ctx, *, query: str):
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
+
+        if not monster:
+            await self.send_id_failure_message(ctx, query)
+            return
+        monster_list = await ScrollViewState.do_query(dbcog, monster)
+        title = 'Monster Book Scroll'
+        raw_query = query
+        original_author_id = ctx.message.author.id
+        color = await self.get_user_embed_color(ctx)
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(monster_list))
+        instruction_message = 'Click a reaction to see monster details!'
+
+        state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query, color,
+                                monster_list, query_settings,
+                                title, instruction_message, monster.monster_id,
+                                child_menu_type=IdMenu.MENU_TYPE,
+                                child_reaction_list=IdMenuPanes.emoji_names(),
+                                reaction_list=initial_reaction_list
+                                )
+        parent_menu = MonsterListMenu.menu()
+        message = await ctx.send('Setting up!')
+
+        ims = state.serialize()
+        user_config = await BotConfig.get_user(self.config, ctx.author.id)
+        data = {
+            'dbcog': dbcog,
+            'user_config': user_config,
+        }
+
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
+        id_queried_props = await IdViewState.do_query(dbcog, monster)
+        full_reaction_list = IdMenuPanes.emoji_names()
+        is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+
+        child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+                                  alt_monsters, is_jp_buffed, query_settings, id_queried_props,
+                                  use_evo_scroll=True, reaction_list=full_reaction_list)
+        child_menu = IdMenu.menu()
         child_message = await child_menu.create(ctx, child_state)
 
         data['child_message_id'] = child_message.id
@@ -921,8 +1004,8 @@ class PadInfo(commands.Cog):
     async def idset(self, ctx):
         """`[p]id` settings configuration"""
 
-    @idset.command()
-    async def scroll(self, ctx, value):
+    @idset.command(name="scroll")
+    async def idset_scroll(self, ctx, value):
         """Switch between number scroll & evo scroll
 
         [p]idset scroll number
@@ -1442,17 +1525,6 @@ class PadInfo(commands.Cog):
                                        IdTracebackView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
-    @commands.command(aliases=["ids"])
-    @checks.bot_has_permissions(embed_links=True)
-    async def idsearch(self, ctx, *, query):
-        await self._do_idsearch(ctx, query)
-
-    @commands.command()
-    @checks.bot_has_permissions(embed_links=True)
-    async def nadiffs(self, ctx, *, query):
-        await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
-                                child_reaction_list=NaDiffMenuPanes.emoji_names())
-
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def expcurve(self, ctx, start, end: Optional[int], *, query=''):
@@ -1494,21 +1566,6 @@ class PadInfo(commands.Cog):
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
                                        ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)
-
-    async def _do_idsearch(self, ctx, query, child_menu_type=None,
-                           child_reaction_list=None):
-        dbcog = await self.get_dbcog()
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
-        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
-
-        if monster_list is None:
-            await ctx.send("No monster matched.")
-            return
-
-        await self._do_monster_list(ctx, dbcog, query, monster_list, 'ID Search Results',
-                                    IdSearchViewState,
-                                    child_menu_type=child_menu_type,
-                                    child_reaction_list=child_reaction_list)
 
     async def get_fm_flags(self, user: discord.User):
         return await self.bot.get_cog("DBCog").config.user(user).fm_flags()
