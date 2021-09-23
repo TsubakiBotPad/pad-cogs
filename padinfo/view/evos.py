@@ -13,7 +13,8 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base_id import ViewStateBaseId, MonsterEvolution
+from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.evo_scroll_mixin import MonsterEvolution
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

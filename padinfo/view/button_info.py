@@ -11,6 +11,7 @@ from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL, ButtonInfoStatSet, \
     ButtonInfoResult
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base import ViewStateBase
@@ -36,9 +37,10 @@ class ButtonInfoToggles:
         self.max_level = max_level_setting
 
 
-class ButtonInfoViewState(ViewStateBase):
+class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
     def __init__(self, original_author_id, menu_type, raw_query, color, display_options: ButtonInfoToggles,
-                 monster: "MonsterModel", info: ButtonInfoResult, query_settings: QuerySettings,
+                 monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
+                 info: ButtonInfoResult, query_settings: QuerySettings,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None, reaction_list=reaction_list)
         self.color = color
@@ -46,6 +48,12 @@ class ButtonInfoViewState(ViewStateBase):
         self.monster = monster
         self.info = info
         self.query_settings = query_settings
+
+        self.alt_monsters = alt_monsters
+        self.alt_monster_ids = [m.monster.monster_id for m in self.alt_monsters]
+
+        # numerical scroll makes no sense for ButtonInfo
+        self.use_evo_scroll = True
 
     def serialize(self):
         ret = super().serialize()
@@ -59,18 +67,19 @@ class ButtonInfoViewState(ViewStateBase):
         })
         return ret
 
-    @staticmethod
-    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
+    @classmethod
+    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         query_settings = QuerySettings.deserialize(ims['query_settings'])
         display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
-        monster = dbcog.get_monster(ims['resolved_monster_id'])
+        monster = dbcog.get_monster(int(ims['resolved_monster_id']))
+        alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         info = button_info.get_info(dbcog, monster)
         reaction_list = ims['reaction_list']
         return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
-                                   monster, info, query_settings, reaction_list=reaction_list)
+                                   monster, alt_monsters, info, query_settings, reaction_list=reaction_list)
 
     def set_player_count(self, new_count):
         self.display_options.players = new_count
@@ -103,7 +112,7 @@ def get_mobile_btn_str(btn_str):
     return '\n'.join(output)
 
 
-class ButtonInfoView:
+class ButtonInfoView(EvoScrollView):
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod
@@ -119,8 +128,8 @@ class ButtonInfoView:
             '(Atk+ Latents)' if is_max_110 or monster.limit_mult == 0 else '(Atk++ Latents)'
         )
 
-    @staticmethod
-    def embed(state: ButtonInfoViewState):
+    @classmethod
+    def embed(cls, state: ButtonInfoViewState):
         is_coop = state.display_options.players == ButtonInfoOptions.coop
         is_desktop = state.display_options.device == ButtonInfoOptions.desktop
         max_110 = state.display_options.max_level == ButtonInfoOptions.limit_break
@@ -190,7 +199,8 @@ class ButtonInfoView:
                 'Team Button Contribution',
                 BlockText(get_mobile_btn_str(info.get_team_btn_str(is_coop, max_110))),
                 inline=True
-            ) if not is_desktop else None
+            ) if not is_desktop else None,
+            cls.evos_embed_field(state)
         ]
 
         return EmbedView(

@@ -6,10 +6,10 @@ from tsutils.menu.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
+from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.id import evos_embed_field
 
 
 class PicViewState(ViewStateBaseId):
@@ -22,7 +22,7 @@ class PicViewState(ViewStateBaseId):
         return ret
 
 
-class PicView(BaseIdView):
+class PicView(BaseIdView, EvoScrollView):
     VIEW_TYPE = 'Pic'
 
     @classmethod
@@ -48,7 +48,7 @@ class PicView(BaseIdView):
                 ) if state.monster.orb_skin_id else None,
             )
         ),
-            evos_embed_field(state)
+            cls.evos_embed_field(state)
         ]
 
         return EmbedView(
