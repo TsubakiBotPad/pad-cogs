@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
-from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListView
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -119,3 +119,13 @@ class ScrollViewState(MonsterListViewState):
         monster = await dbcog.find_monster(ims['raw_query'], ims['original_author_id'])
         monster_list = await cls.do_query(dbcog, monster)
         return monster_list
+
+
+class ScrollView(MonsterListView):
+    emojis = ['\N{BLACK LEFT-POINTING TRIANGLE}', '\N{BLACK RIGHT-POINTING TRIANGLE}']
+
+    @classmethod
+    def get_emoji(cls, i: int, current_monster_id: int):
+        if current_monster_id == 1:
+            return cls.emojis[1]
+        return cls.emojis[i]
