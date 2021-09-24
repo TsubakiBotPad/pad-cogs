@@ -318,7 +318,7 @@ class MonsterGraph(object):
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
                 if self.debug_monster_ids is not None:
                     if ex.target_monster_id not in self.debug_monster_ids \
-                                    or int(vendor_id) not in self.debug_monster_ids:
+                            or int(vendor_id) not in self.debug_monster_ids:
                         continue
                 exchanges[(int(vendor_id), ex.target_monster_id)].add(model)
         for (sell_id, buy_id), models in exchanges.items():
@@ -366,7 +366,7 @@ class MonsterGraph(object):
         return {model for model in possible_results}
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
-                    -> Optional[MonsterModel]:
+            -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
         if 'model' not in self.graph_dict[server].nodes[monster_id]:
@@ -670,7 +670,7 @@ class MonsterGraph(object):
         now = datetime.now()
         for model in models:
             if model.start_timestamp < now < model.end_timestamp \
-                            and (server is None or server == model.server):
+                    and (server is None or server == model.server):
                 return True
         return False
 
