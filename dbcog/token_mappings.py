@@ -325,7 +325,7 @@ NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
 NUMERIC_MONSTER_ATTRIBUTE_NAMES = {*sum(NUMERIC_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
 
 STRING_MONSTER_ATTRIBUTE_ALIASES = {
-    (('name_en',), ('name_ja',)): ('monstername',),
+    (('name_en',), ('name_ja',)): ('monstername', 'cardname'),
     (('leader_skill', 'name_en'), ('active_skill', 'name_en'),): ('skillname',),
     (('leader_skill', 'desc_en'), ('active_skill', 'desc_en'),): ('skilltext',),
     (('leader_skill', 'name_en'),): ('lsname',),
