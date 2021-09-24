@@ -32,7 +32,7 @@ from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
-from .monster_index import ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, MonsterIndex
+from .monster_index import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
 
@@ -320,13 +320,13 @@ class DBCog(commands.Cog, IdTest):
 
     @staticmethod
     def get_aliased_attribute(monster: MonsterModel, alias: str) -> Union[Dict[str, Any], Any]:
-        if alias not in ATTR_ALIAS_TO_ATTR_MAP:
+        if alias not in MONSTER_ATTR_ALIAS_TO_ATTR_MAP:
             raise ValueError(f"Invalid alias {alias}")
 
         ret = {}
-        keys = [ks for ks in zip(*ATTR_ALIAS_TO_ATTR_MAP[alias])
+        keys = [ks for ks in zip(*MONSTER_ATTR_ALIAS_TO_ATTR_MAP[alias])
                 if len(ks) == 1 or not reduce(lambda x, y: x == y, ks)].pop()
-        for key, attrs in zip(keys, ATTR_ALIAS_TO_ATTR_MAP[alias]):
+        for key, attrs in zip(keys, MONSTER_ATTR_ALIAS_TO_ATTR_MAP[alias]):
             value: Any = monster
             for attr in attrs:
                 value = getattr(value, attr)
