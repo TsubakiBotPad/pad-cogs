@@ -340,10 +340,8 @@ class DBCog(commands.Cog, IdTest):
         await self.wait_until_ready()
         data = self.get_aliased_attribute(await self.find_monster(query, ctx.author.id), attr)
         if not isinstance(data, dict):
-            await ctx.send(data)
-            return
+            return await ctx.send(data)
         for k, v in data.items():
             if k.endswith('_en'):
-                await ctx.send(v)
-                return
-        await ctx.send('\n'.join([f"**{k}**: {v}" for k, v in data.items()]))
+                return await ctx.send(v)
+        return await ctx.send('\n'.join([f"**{k}**: {v}" for k, v in data.items()]))
