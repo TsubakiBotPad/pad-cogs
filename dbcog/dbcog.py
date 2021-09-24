@@ -338,7 +338,7 @@ class DBCog(commands.Cog, IdTest):
     @commands.command()
     async def attr(self, ctx, attr, *, query):
         await self.wait_until_ready()
-        data = self.get_aliased_attribute(await self.find_monster(query), attr)
+        data = self.get_aliased_attribute(await self.find_monster(query, ctx.author.id), attr)
         if not isinstance(data, dict):
             await ctx.send(data)
             return
