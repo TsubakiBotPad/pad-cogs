@@ -338,7 +338,15 @@ class DBCog(commands.Cog, IdTest):
     @commands.command()
     async def attr(self, ctx, attr, *, query):
         await self.wait_until_ready()
-        data = self.get_aliased_attribute(await self.find_monster(query, ctx.author.id), attr)
+        monster = await self.find_monster(query, ctx.author.id)
+        if monster is None:
+            return await ctx.send("Sorry, we could not locate this monster")
+        try:
+            data = self.get_aliased_attribute(monster, attr)
+        except ValueError:
+            return await ctx.send("Sorry, this attribute is not recognized")
+        except AttributeError:
+            return await ctx.send("Sorry, {} doesn't have this attribute".format(monster.name_en))
         if not isinstance(data, dict):
             return await ctx.send(data)
         for k, v in data.items():
