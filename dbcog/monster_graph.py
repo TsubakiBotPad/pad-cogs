@@ -59,7 +59,8 @@ MONSTER_QUERY = """SELECT
   COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
   series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id
+  drops.drop_id,
+  transformations{0}.to_monster_id AS transform_to_id
 FROM
   monsters{0}
   LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
@@ -70,6 +71,7 @@ FROM
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
   LEFT OUTER JOIN monster_name_overrides ON monsters{0}.monster_id = monster_name_overrides.monster_id
+  LEFT OUTER JOIN transformations{0} ON monsters{0}.monster_id = transformations{0}.from_monster_id
 GROUP BY
   monsters{0}.monster_id"""
 
@@ -269,10 +271,10 @@ class MonsterGraph(object):
             graph.add_node(m.monster_id, model=m_model)
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
-            if m.linked_monster_id:
-                if self.debug_monster_ids is None or m.linked_monster_id in self.debug_monster_ids:
-                    graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
-                    graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+            if m.transform_to_id:
+                if self.debug_monster_ids is None or m.transform_to_id in self.debug_monster_ids:
+                    graph.add_edge(m.monster_id, m.transform_to_id, type='transformation')
+                    graph.add_edge(m.transform_to_id, m.monster_id, type='back_transformation')
 
             if m.evo_gem_id:
                 if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
