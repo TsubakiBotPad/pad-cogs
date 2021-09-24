@@ -59,7 +59,8 @@ MONSTER_QUERY = """SELECT
   COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
   series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id
+  drops.drop_id,
+  transformations{0}.to_monster_id AS transform_to_id
 FROM
   monsters{0}
   LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
@@ -70,6 +71,7 @@ FROM
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
   LEFT OUTER JOIN monster_name_overrides ON monsters{0}.monster_id = monster_name_overrides.monster_id
+  LEFT OUTER JOIN transformations{0} ON monsters{0}.monster_id = transformations{0}.from_monster_id
 GROUP BY
   monsters{0}.monster_id"""
 
@@ -269,10 +271,10 @@ class MonsterGraph(object):
             graph.add_node(m.monster_id, model=m_model)
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
-            if m.linked_monster_id:
-                if self.debug_monster_ids is None or m.linked_monster_id in self.debug_monster_ids:
-                    graph.add_edge(m.monster_id, m.linked_monster_id, type='transformation')
-                    graph.add_edge(m.linked_monster_id, m.monster_id, type='back_transformation')
+            if m.transform_to_id:
+                if self.debug_monster_ids is None or m.transform_to_id in self.debug_monster_ids:
+                    graph.add_edge(m.monster_id, m.transform_to_id, type='transformation')
+                    graph.add_edge(m.transform_to_id, m.monster_id, type='back_transformation')
 
             if m.evo_gem_id:
                 if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
@@ -316,7 +318,7 @@ class MonsterGraph(object):
             for vendor_id in re.findall(r'\d+', ex.required_monster_ids):
                 if self.debug_monster_ids is not None:
                     if ex.target_monster_id not in self.debug_monster_ids \
-                                    or int(vendor_id) not in self.debug_monster_ids:
+                            or int(vendor_id) not in self.debug_monster_ids:
                         continue
                 exchanges[(int(vendor_id), ex.target_monster_id)].add(model)
         for (sell_id, buy_id), models in exchanges.items():
@@ -364,7 +366,7 @@ class MonsterGraph(object):
         return {model for model in possible_results}
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
-                    -> Optional[MonsterModel]:
+            -> Optional[MonsterModel]:
         if monster_id not in self.graph_dict[server].nodes:
             return None
         if 'model' not in self.graph_dict[server].nodes[monster_id]:
@@ -668,7 +670,7 @@ class MonsterGraph(object):
         now = datetime.now()
         for model in models:
             if model.start_timestamp < now < model.end_timestamp \
-                            and (server is None or server == model.server):
+                    and (server is None or server == model.server):
                 return True
         return False
 
