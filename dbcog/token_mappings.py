@@ -325,6 +325,7 @@ NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
 NUMERIC_MONSTER_ATTRIBUTE_NAMES = {*sum(NUMERIC_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
 
 STRING_MONSTER_ATTRIBUTE_ALIASES = {
+    (('name_en',), ('name_ja',)): ('monstername',),
     (('leader_skill', 'name_en'),): ('lsname',),
     (('leader_skill', 'desc_en'),): ('lsdesc',),
     (('active_skill', 'name_en'),): ('asname',),
@@ -341,3 +342,8 @@ MONSTER_CLASS_ATTRIBUTES = {
     *sum(STRING_MONSTER_ATTRIBUTE_ALIASES, ()),
     *sum(BOOL_MONSTER_ATTRIBUTE_NAMES, ()),
 }
+MONSTER_CLASS_ALIAS_DICT = {v: k for k, vs in {
+    **NUMERIC_MONSTER_ATTRIBUTE_ALIASES,
+    **STRING_MONSTER_ATTRIBUTE_ALIASES,
+    **BOOL_MONSTER_ATTRIBUTE_ALIASES,
+}.items() for v in vs}

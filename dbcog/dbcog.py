@@ -10,9 +10,11 @@ import asyncio
 import logging
 import os
 import shutil
+from functools import reduce
+
 import time
 from io import BytesIO
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import discord
 from redbot.core import Config, checks, commands, data_manager
@@ -30,7 +32,7 @@ from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
-from .monster_index import MONSTER_CLASS_ATTRIBUTES, MonsterIndex
+from .monster_index import MONSTER_CLASS_ALIAS_DICT, MONSTER_CLASS_ATTRIBUTES, MonsterIndex
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
 
@@ -178,7 +180,7 @@ class DBCog(commands.Cog, IdTest):
                 for channel in channels:
                     await channel.send(box(page))
 
-    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> MonsterModel:
+    def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
         return self.database.graph.get_monster(monster_id, server=server)
 
@@ -315,3 +317,20 @@ class DBCog(commands.Cog, IdTest):
 
     async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
+
+    @staticmethod
+    def get_aliased_attribute(monster: MonsterModel, alias: str) -> Union[Dict[str, Any], Any]:
+        if alias not in MONSTER_CLASS_ALIAS_DICT:
+            raise ValueError(f"Invalid alias {alias}")
+
+        ret = {}
+        keys = [ks for ks in zip(*MONSTER_CLASS_ALIAS_DICT[alias])
+                if len(ks) == 1 or not reduce(lambda x, y: x == y, ks)].pop()
+        for key, attrs in zip(keys, MONSTER_CLASS_ALIAS_DICT[alias]):
+            value: Any = monster
+            for attr in attrs:
+                value = getattr(value, attr)
+            ret[key] = value
+        if len(ret) == 1:
+            return set(ret.values()).pop()
+        return ret
