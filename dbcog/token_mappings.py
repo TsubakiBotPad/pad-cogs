@@ -306,12 +306,12 @@ NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
     (('leader_skill', 'leader_skill_id'),): ('lsid',),
     (('active_skill', 'active_skill_id'),): ('asid',),
     (('series', 'series_id'),): ('sid', 'seriesid'),
-    (('rarity',),): ('rarity',),
+    (('rarity',),): ('rarity', 'rare'),
     (('buy_mp',),): ('buymp',),
     (('sell_mp',),): ('sellmp',),
-    (('sell_gold',),): ('gold',),
-    (('cost',),): ('cost',),
-    (('exp',),): ('exp',),
+    (('sell_gold',),): ('gold', 'coins'),
+    (('cost',),): ('cost', 'teamcost'),
+    (('exp',),): ('exp', 'exptomax', 'xptomax'),
     (('fodder_exp',),): ('fodderexp',),
     (('level',),): ('maxlvl', 'maxlevel'),
     (('latent_slots',),): ('latentslots',),
@@ -325,7 +325,7 @@ NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
 NUMERIC_MONSTER_ATTRIBUTE_NAMES = {*sum(NUMERIC_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
 
 STRING_MONSTER_ATTRIBUTE_ALIASES = {
-    (('name_en',), ('name_ja',)): ('monstername',),
+    (('name_en',), ('name_ja',)): ('monstername', 'cardname'),
     (('leader_skill', 'name_en'), ('active_skill', 'name_en'),): ('skillname',),
     (('leader_skill', 'desc_en'), ('active_skill', 'desc_en'),): ('skilltext',),
     (('leader_skill', 'name_en'),): ('lsname',),
