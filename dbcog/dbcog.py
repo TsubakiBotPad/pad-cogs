@@ -343,7 +343,7 @@ class DBCog(commands.Cog, IdTest):
             return await ctx.send("Sorry, we could not locate this monster")
         try:
             data = self.get_aliased_attribute(monster, attr)
-        except KeyError:
+        except ValueError:
             return await ctx.send("Sorry, this attribute is not recognized")
         except AttributeError:
             return await ctx.send("Sorry, {} doesn't have this attribute".format(monster.name_en))
