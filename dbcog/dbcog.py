@@ -334,3 +334,16 @@ class DBCog(commands.Cog, IdTest):
         if len(ret) == 1:
             return set(ret.values()).pop()
         return ret
+
+    @commands.command()
+    async def attr(self, ctx, attr, *, query):
+        await self.wait_until_ready()
+        data = self.get_aliased_attribute(await self.find_monster(query), attr)
+        if not isinstance(data, dict):
+            await ctx.send(data)
+            return
+        for k, v in data.items():
+            if k.endswith('_en'):
+                await ctx.send(v)
+                return
+        await ctx.send('\n'.join([f"**{k}**: {v}" for k, v in data.items()]))
