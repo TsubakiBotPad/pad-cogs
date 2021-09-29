@@ -6,14 +6,13 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import timedelta
 from io import BytesIO
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Optional
 
 import discord
 import prettytable
 import pytz
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils.cog_settings import CogSettings
 from tsutils.enums import Server, StarterGroup
 from tsutils.formatting import normalize_server_name
 from tsutils.helper_classes import DummyObject
@@ -35,11 +34,10 @@ class PadEvents(commands.Cog, AutoEvent):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
-        self.settings = PadEventSettings("padevents")
         self.config = Config.get_conf(self, identifier=940373775)
-        self.config.register_global(sent={}, last_daychange=None,
-                                    guerrilla_regs=[], daily_reqs=[])
+        self.config.register_global(sent={}, last_daychange=None)
         self.config.register_guild(pingroles={})
+        self.config.register_channel(guerrilla_servers=[], daily_servers=[])
         self.config.register_user(dmevents=[])
 
         # Load event data
@@ -136,39 +134,31 @@ class PadEvents(commands.Cog, AutoEvent):
         daily_refresh_servers = set()
         for event in events:
             self.started_events.add(event.key)
-            if event.event_length == EventLength.limited:
-                for gr in list(self.settings.list_guerrilla_reg()):
-                    if event.server == gr['server']:
-                        try:
-                            channel = self.bot.get_channel(int(gr['channel_id']))
-                            if channel is None:
-                                continue
-
-                            role_name = '{}_group_{}'.format(event.server, event.group_long_name())
-                            role = channel.guild.get_role(role_name)
-                            if role and role.mentionable:
-                                message = "{}`: {} is starting`".format(role.mention, event.name_and_modifier)
-                            else:
-                                message = box(f"Server {event.server}, group {event.group_long_name()}:"
-                                              f" {event.name_and_modifier}")
-
-                            await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
-                        except Exception as ex:
-                            logger.exception("caught exception while sending guerrilla msg:")
-
-            else:
-                pass
+            if event.event_length != EventLength.limited:
+                continue
+            for cid, data in (await self.config.all_channels()).items():
+                if (channel := self.bot.get_channel(cid)) is None \
+                        or event.server not in data['guerrilla_servers']:
+                    continue
+                role_name = f'{event.server}_group_{event.group_long_name()}'
+                role = channel.guild.get_role(role_name)
+                if role and role.mentionable:
+                    message = f"{role.mention} {event.name_and_modifier} is starting"
+                else:
+                    message = box(f"Server {event.server}, group {event.group_long_name()}:"
+                                  f" {event.name_and_modifier}")
+                with suppress(discord.Forbidden):
+                    await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
 
     async def do_daily_post(self, server):
-        events = filter(lambda e: e.is_started(), self.events)
         msg = self.make_active_text(server)
-        for daily_registration in self.settings.list_daily_reg():
-            if daily_registration['server'] == server:
-                try:
-                    for page in pagify(msg, delims=['\n\n']):
-                        await self.bot.get_channel(daily_registration['channel_id']).send(box(page))
-                except discord.Forbidden:
-                    pass
+        for cid, data in (await self.config.all_channels()).items():
+            if (channel := self.bot.get_channel(cid)) is None \
+                    or server not in data['daily_servers']:
+                continue
+            for page in pagify(msg, delims=['\n\n']):
+                with suppress(discord.Forbidden):
+                    await channel.send(box(page))
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -207,94 +197,50 @@ class PadEvents(commands.Cog, AutoEvent):
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addchannel(self, ctx, server: Server):
+    async def addchannel(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        channel_id = ctx.channel.id
-        if self.settings.check_guerrilla_reg(channel_id, server):
-            await ctx.send("Channel already active.")
-            return
-
-        self.settings.add_guerrilla_reg(channel_id, server)
+        async with self.config.channel(channel or ctx.channel).guerrilla_servers as guerillas:
+            if server in guerillas:
+                return await ctx.send("Channel already active.")
+            guerillas.append(server)
         await ctx.send("Channel now active.")
 
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmchannel(self, ctx, server: Server):
+    async def rmchannel(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        channel_id = ctx.channel.id
-        if not self.settings.check_guerrilla_reg(channel_id, server):
-            await ctx.send("Channel is not active.")
-            return
-
-        self.settings.remove_guerrilla_reg(channel_id, server)
-        await ctx.send("Channel deactivated.")
+        async with self.config.channel(channel or ctx.channel).guerrilla_servers as guerillas:
+            if server not in guerillas:
+                return await ctx.send("Channel already inactive.")
+            guerillas.remove(server)
+        await ctx.send("Channel now inactive.")
 
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def addchanneldaily(self, ctx, server: Server):
+    async def addchanneldaily(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        channel_id = ctx.channel.id
-        if self.settings.check_daily_reg(channel_id, server):
-            await ctx.send("Channel already active.")
-            return
-
-        self.settings.add_daily_reg(channel_id, server)
+        async with self.config.channel(channel or ctx.channel).daily_servers as dailies:
+            if server in dailies:
+                return await ctx.send("Channel already active.")
+            dailies.append(server)
         await ctx.send("Channel now active.")
 
     @padevents.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
-    async def rmchanneldaily(self, ctx, server: Server):
+    async def rmchanneldaily(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        channel_id = ctx.channel.id
-        if not self.settings.check_daily_reg(channel_id, server):
-            await ctx.send("Channel is not active.")
-            return
-
-        self.settings.remove_daily_reg(channel_id, server)
-        await ctx.send("Channel deactivated.")
-
-    @padevents.command()
-    @checks.is_owner()
-    async def listallchannels(self, ctx):
-        msg = 'Following daily channels are registered:\n'
-        msg += self.make_channel_list(self.settings.list_daily_reg())
-        msg += "\n"
-        msg += 'Following guerilla channels are registered:\n'
-        msg += self.make_channel_list(self.settings.list_guerrilla_reg())
-        for page in pagify(msg):
-            await ctx.send(box(page))
-
-    @padevents.command()
-    @checks.mod_or_permissions(manage_guild=True)
-    async def listchannels(self, ctx):
-        msg = 'Following daily channels are registered:\n'
-        msg += self.make_channel_list(self.settings.list_daily_reg(), lambda c: c in ctx.guild.channels)
-        msg += "\n"
-        msg += 'Following guerilla channels are registered:\n'
-        msg += self.make_channel_list(self.settings.list_guerrilla_reg(), lambda c: c in ctx.guild.channels)
-        for page in pagify(msg):
-            await ctx.send(box(page))
-
-    def make_channel_list(self, reg_list, filt=None):
-        if filt is None:
-            def filt(x):
-                return x
-        msg = ""
-        for cr in reg_list:
-            reg_channel_id = cr['channel_id']
-            channel = self.bot.get_channel(int(reg_channel_id))
-            if filt(channel):
-                channel_name = channel.name if channel else 'Unknown(' + reg_channel_id + ')'
-                server_name = channel.guild.name if channel else 'Unknown server'
-                msg += "   " + cr['server'] + " : " + server_name + '(' + channel_name + ')\n'
-        return msg
+        async with self.config.channel(channel or ctx.channel).daily_servers as dailies:
+            if server not in dailies:
+                return await ctx.send("Channel already inactive.")
+            dailies.remove(server)
+        await ctx.send("Channel now inactive.")
 
     @padevents.command()
     @checks.mod_or_permissions(manage_guild=True)
@@ -481,42 +427,3 @@ def make_channel_reg(channel_id, server):
         "channel_id": channel_id,
         "server": server
     }
-
-
-class PadEventSettings(CogSettings):
-    def make_default_settings(self):
-        config = {
-            'guerrilla_regs': [],
-            'daily_regs': [],
-        }
-        return config
-
-    def list_guerrilla_reg(self):
-        return self.bot_settings['guerrilla_regs']
-
-    def add_guerrilla_reg(self, channel_id, server):
-        self.list_guerrilla_reg().append(make_channel_reg(channel_id, server))
-        self.save_settings()
-
-    def check_guerrilla_reg(self, channel_id, server):
-        return make_channel_reg(channel_id, server) in self.list_guerrilla_reg()
-
-    def remove_guerrilla_reg(self, channel_id, server):
-        if self.check_guerrilla_reg(channel_id, server):
-            self.list_guerrilla_reg().remove(make_channel_reg(channel_id, server))
-            self.save_settings()
-
-    def list_daily_reg(self):
-        return self.bot_settings['daily_regs']
-
-    def add_daily_reg(self, channel_id, server):
-        self.list_daily_reg().append(make_channel_reg(channel_id, server))
-        self.save_settings()
-
-    def check_daily_reg(self, channel_id, server):
-        return make_channel_reg(channel_id, server) in self.list_daily_reg()
-
-    def remove_daily_reg(self, channel_id, server):
-        if self.check_daily_reg(channel_id, server):
-            self.list_daily_reg().remove(make_channel_reg(channel_id, server))
-            self.save_settings()
