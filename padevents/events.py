@@ -1,12 +1,13 @@
 import datetime
 from datetime import timedelta
-from enum import Enum, auto
 from typing import Callable, List, TYPE_CHECKING
 
 import itertools
 import pytz
 from tsutils.formatting import normalize_server_name
 from tsutils.time import JP_TIMEZONE, NA_TIMEZONE, KR_TIMEZONE
+
+from padevents.enums import DungeonType, EventLength
 
 if TYPE_CHECKING:
     from dbcog.models.scheduled_event_model import ScheduledEventModel
@@ -17,25 +18,6 @@ SERVER_TIMEZONES = {
     "NA": NA_TIMEZONE,
     "KR": KR_TIMEZONE,
 }
-
-
-class EventLength(Enum):
-    limited = auto()
-    daily = auto()
-    weekly = auto()
-    special = auto()
-
-
-class DungeonType(Enum):
-    Unknown = -1
-    Normal = 0
-    Special = 1
-    Technical = 2
-    SoloSpecial = 3
-    Tournament = 4
-    ThreePlayer = 7
-    Story = 9
-    EightPlayer = 10
 
 
 class Event:

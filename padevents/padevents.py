@@ -19,7 +19,8 @@ from tsutils.helper_classes import DummyObject
 from tsutils.helper_functions import conditional_iterator, repeating_timer
 
 from padevents.autoevent_mixin import AutoEvent
-from padevents.events import DungeonType, Event, EventLength, EventList, SERVER_TIMEZONES
+from padevents.events import Event, EventList, SERVER_TIMEZONES
+from padevents.enums import DungeonType, EventLength
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
