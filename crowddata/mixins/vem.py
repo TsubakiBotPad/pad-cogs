@@ -232,5 +232,5 @@ class VEM(CogMixin):
 
     @staticmethod
     def midnight() -> float:
-        return datetime.now(timezone(timedelta(hours=-8))).replace(hour=0, minute=0, second=0, microsecond=0) \
+        return datetime.now(timezone(timedelta(hours=-8))).replace(hour=4, minute=0, second=0, microsecond=0) \
             .astimezone(timezone.utc).timestamp()
