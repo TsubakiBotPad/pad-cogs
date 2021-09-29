@@ -68,6 +68,7 @@ class PadEvents(commands.Cog, AutoEvent):
         self.started_events = set()
         self._event_loop.cancel()
         self._refresh_loop.cancel()
+        self._daily_event_loop.cancel()
 
     async def reload_padevents(self) -> NoReturn:
         await self.bot.wait_until_ready()
@@ -200,7 +201,7 @@ class PadEvents(commands.Cog, AutoEvent):
     async def addchannel(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        async with self.config.channel(channel or ctx.channel).guerrilla_servers as guerillas:
+        async with self.config.channel(channel or ctx.channel).guerrilla_servers() as guerillas:
             if server in guerillas:
                 return await ctx.send("Channel already active.")
             guerillas.append(server)
@@ -212,7 +213,7 @@ class PadEvents(commands.Cog, AutoEvent):
     async def rmchannel(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        async with self.config.channel(channel or ctx.channel).guerrilla_servers as guerillas:
+        async with self.config.channel(channel or ctx.channel).guerrilla_servers() as guerillas:
             if server not in guerillas:
                 return await ctx.send("Channel already inactive.")
             guerillas.remove(server)
@@ -224,7 +225,7 @@ class PadEvents(commands.Cog, AutoEvent):
     async def addchanneldaily(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        async with self.config.channel(channel or ctx.channel).daily_servers as dailies:
+        async with self.config.channel(channel or ctx.channel).daily_servers() as dailies:
             if server in dailies:
                 return await ctx.send("Channel already active.")
             dailies.append(server)
@@ -236,7 +237,7 @@ class PadEvents(commands.Cog, AutoEvent):
     async def rmchanneldaily(self, ctx, channel: Optional[discord.TextChannel], server: Server):
         server = server.value
 
-        async with self.config.channel(channel or ctx.channel).daily_servers as dailies:
+        async with self.config.channel(channel or ctx.channel).daily_servers() as dailies:
             if server not in dailies:
                 return await ctx.send("Channel already inactive.")
             dailies.remove(server)
