@@ -20,19 +20,19 @@ class ScheduledEventModel(BaseModel):
         self.sub_dungeon_id = kwargs.get("sub_dungeon_id")
 
     @property
-    def open_datetime(self):
+    def open_datetime(self) -> datetime:
         return datetime.utcfromtimestamp(self.start_timestamp).replace(tzinfo=pytz.UTC)
 
     @open_datetime.setter
-    def open_datetime(self, value):
+    def open_datetime(self, value: datetime):
         self.start_timestamp = int(value.timestamp())
 
     @property
-    def close_datetime(self):
+    def close_datetime(self) -> datetime:
         return datetime.utcfromtimestamp(self.end_timestamp).replace(tzinfo=pytz.UTC)
 
     @close_datetime.setter
-    def close_datetime(self, value):
+    def close_datetime(self, value: datetime):
         self.end_timestamp = int(value.timestamp())
 
     def to_dict(self):
