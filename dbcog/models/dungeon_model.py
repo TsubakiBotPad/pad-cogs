@@ -48,6 +48,8 @@ class DungeonModel(BaseModel):
             "Star Treasure Thieves' Den": 'STTD',
             'Ruins of the Star Vault': 'Star Vault',
             '-★6 or lower Enhanced': '',
+            'Revenge of the ': '',
+            'A Gathering of ': '',
         }
         for find, replace in clean_name_map.items():
             name = name.replace(find, replace)
