@@ -1,7 +1,7 @@
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import timezone
 from typing import Any, TYPE_CHECKING
 
+import time
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
