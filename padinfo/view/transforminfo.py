@@ -1,14 +1,15 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
-from discordmenu.embed.text import Text, BoldText, LabeledText
+from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
+from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.enums import LsMultiplier
 from tsutils.menu.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
 from padinfo.common.config import UserConfig
+from padinfo.common.emoji_map import get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.monster.header import MonsterHeader
@@ -101,7 +102,7 @@ class TransformInfoView(BaseIdMainView):
     def base_info(cls, m: "MonsterModel"):
         return Box(
             Box(
-                cls.down_emoji,
+                get_emoji(cls.down_emoji_name),
                 cls.normal_awakenings_row(m) if len(m.awakenings) != 0
                 else Box(Text('No Awakenings')),
                 delimiter=' '
@@ -136,7 +137,7 @@ class TransformInfoView(BaseIdMainView):
         active_skill = m.active_skill
         active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
         return Box(
-            cls.up_emoji,
+            get_emoji(cls.up_emoji_name),
             BoldText('Transform Active Skill {}'.format(active_cd)),
             delimiter=' '
         )
@@ -144,7 +145,7 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def base_active_header(cls, m: "MonsterModel"):
         return Box(
-            cls.down_emoji,
+            get_emoji(cls.down_emoji_name),
             BoldText('Base'),
             cls.active_skill_header(m, []),
             delimiter=' '
@@ -153,10 +154,10 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def leader_header(cls, m: "MonsterModel", is_base: bool, lsmultiplier: LsMultiplier, base_mon: "MonsterModel"):
         if is_base:
-            emoji = cls.down_emoji
+            emoji = get_emoji(cls.down_emoji_name)
             label = 'Base'
         else:
-            emoji = cls.up_emoji
+            emoji = get_emoji(cls.up_emoji_name)
             label = 'Transform'
 
         return Box(
@@ -176,7 +177,7 @@ class TransformInfoView(BaseIdMainView):
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
                 Box(
                     Box(
-                        cls.up_emoji,
+                        get_emoji(cls.up_emoji_name),
                         cls.normal_awakenings_row(transformed_mon)
                         if len(transformed_mon.awakenings) != 0 else Box(Text('No Awakenings')),
                         delimiter=' '

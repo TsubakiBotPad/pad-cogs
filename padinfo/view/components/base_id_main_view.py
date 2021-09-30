@@ -1,8 +1,8 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.text import Text, BoldText
+from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.enums import LsMultiplier
 
@@ -25,10 +25,9 @@ def _killer_latent_emoji(latent_name: str):
 
 
 class BaseIdMainView(BaseIdView):
-    transform_emojis = [get_emoji('downr'), get_emoji('downo'), get_emoji('downy'), get_emoji('downg'),
-                        get_emoji('downb'), get_emoji('downp')]
-    up_emoji = get_emoji('upgr')
-    down_emoji = transform_emojis[0]
+    transform_emoji_names = ['downr', 'downo', 'downy', 'downg', 'downb', 'downp']
+    up_emoji_name = 'upgr'
+    down_emoji_name = transform_emoji_names[0]
 
     @staticmethod
     def normal_awakenings_row(m: "MonsterModel"):
@@ -75,8 +74,10 @@ class BaseIdMainView(BaseIdView):
                 cooldown_text = '({}cd)'.format(str(skill.turn_max))
                 if skill.turn_min != skill.turn_max:
                     cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
-                skill_texts.append('{}{}'.format(cls.transform_emojis[i % len(cls.transform_emojis)], cooldown_text))
-            skill_texts.append('{} ({} cd)'.format(cls.up_emoji, m.active_skill.turn_max))
+                skill_texts.append(
+                    '{}{}'.format(get_emoji(cls.transform_emoji_names[i % len(cls.transform_emoji_names)]),
+                                  cooldown_text))
+            skill_texts.append('{} ({} cd)'.format(get_emoji(cls.up_emoji_name), m.active_skill.turn_max))
             active_cd = ' '.join(skill_texts)
         return Box(
             BoldText('Active Skill'),

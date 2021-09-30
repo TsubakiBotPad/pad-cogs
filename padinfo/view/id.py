@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.enums import CardPlusModifier, Server, CardModeModifier, CardLevelModifier
+from tsutils.enums import CardLevelModifier, CardModeModifier, CardPlusModifier, Server
 from tsutils.menu.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
@@ -171,7 +171,7 @@ class IdView(BaseIdMainView, EvoScrollView):
 
         return Box(
             Box(
-                cls.up_emoji if m != transform_base else '',
+                get_emoji(cls.up_emoji_name) if m != transform_base else '',
                 cls.normal_awakenings_row(m),
                 delimiter=' '
             ),
