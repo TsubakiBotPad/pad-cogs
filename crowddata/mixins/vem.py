@@ -1,11 +1,12 @@
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import timezone
 from typing import Any, TYPE_CHECKING
 
+import time
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
+from tsutils.time import NA_TIMEZONE, ROLLOVER, get_last_time
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 if TYPE_CHECKING:
@@ -232,5 +233,4 @@ class VEM(CogMixin):
 
     @staticmethod
     def midnight() -> float:
-        return datetime.now(timezone(timedelta(hours=-8))).replace(hour=4, minute=0, second=0, microsecond=0) \
-            .astimezone(timezone.utc).timestamp()
+        return get_last_time(ROLLOVER, NA_TIMEZONE).astimezone(timezone.utc).timestamp()
