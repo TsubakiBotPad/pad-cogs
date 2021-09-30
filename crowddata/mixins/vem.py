@@ -6,7 +6,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
-from tsutils.time import NA_TIMEZONE, ROLLOVER, get_last_time
+from tsutils.time import DAY_CHANGE, NA_TIMEZONE, get_last_time
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 if TYPE_CHECKING:
@@ -233,4 +233,4 @@ class VEM(CogMixin):
 
     @staticmethod
     def midnight() -> float:
-        return get_last_time(ROLLOVER, NA_TIMEZONE).astimezone(timezone.utc).timestamp()
+        return get_last_time(DAY_CHANGE, NA_TIMEZONE).astimezone(timezone.utc).timestamp()
