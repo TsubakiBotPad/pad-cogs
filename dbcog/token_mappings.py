@@ -333,7 +333,7 @@ STRING_MONSTER_ATTRIBUTE_ALIASES = {
     (('active_skill', 'name_en'),): ('asname',),
     (('active_skill', 'desc_en'),): ('asdesc',),
     (('series', 'name_en'),): ('seriesname',),
-    (('history_us',),): ('regdate',),
+    (('history_us',),): ('regdate', 'dateadded'),
 }
 STRING_MONSTER_ATTRIBUTE_NAMES = {*sum(STRING_MONSTER_ATTRIBUTE_ALIASES.values(), ())}
 
