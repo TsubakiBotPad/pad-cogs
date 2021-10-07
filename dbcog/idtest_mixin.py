@@ -211,7 +211,7 @@ class IdTest:
                 await ctx.react_quietly("\N{CROSS MARK}")
                 return
             res = suite[case]['result']
-            ref = suite.index(case)
+            ref = sorted(suite).index(case)
             del suite[case]
         await ctx.send(f"Removed test case `{case}: {res}` with ref {ref}")
 
