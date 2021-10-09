@@ -350,7 +350,7 @@ class PadEvents(commands.Cog, AutoEvent):
         for r in rows:
             tbl.add_row(r)
 
-        header = "Times are PT below\n= means same time for all groups\n"
+        header = "Times are shown in Pacific Time\n= means same for all groups\n"
         return header + tbl.get_string() + "\n"
 
     @commands.command(aliases=['events'])
