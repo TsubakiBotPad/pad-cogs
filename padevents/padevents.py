@@ -262,7 +262,7 @@ class PadEvents(commands.Cog, AutoEvent):
 
         active_special = active_events.in_dungeon_type([DungeonType.Special])
 
-        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B %e')
+        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B%e')
 
         ongoing_events = active_events.in_length([EventLength.weekly, EventLength.special])
         if ongoing_events:
@@ -350,7 +350,7 @@ class PadEvents(commands.Cog, AutoEvent):
         for r in rows:
             tbl.add_row(r)
 
-        header = "Times are PT below\n"
+        header = "Times are shown in Pacific Time\n= means same for all groups\n"
         return header + tbl.get_string() + "\n"
 
     @commands.command(aliases=['events'])
