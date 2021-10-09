@@ -262,7 +262,7 @@ class PadEvents(commands.Cog, AutoEvent):
 
         active_special = active_events.in_dungeon_type([DungeonType.Special])
 
-        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B %e')
+        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B%e')
 
         ongoing_events = active_events.in_length([EventLength.weekly, EventLength.special])
         if ongoing_events:
