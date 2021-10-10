@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
 
 import discord
 import time
@@ -17,6 +17,7 @@ from tsutils.user_interaction import get_user_confirmation, send_cancellation_me
 from padevents.events import Event
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
+T = TypeVar("T")
 
 GROUPS = ['red', 'blue', 'green']
 
@@ -45,17 +46,9 @@ class AutoEvent:
                     continue
                 for key, aep in data.get('pingroles', {}).items():
                     if event.start_from_now_sec() > aep['offset'] * 60 \
-                            or not aep['enabled'] \
-                            or event.server != aep['server'] \
-                            or aep['searchstr'] is None \
                             or str((key, event.key, gid)) in await self.config.sent():
                         continue
-                    elif aep['regex']:
-                        matches = re.search(aep['searchstr'], event.clean_dungeon_name)
-                    else:
-                        matches = aep['searchstr'].lower() in event.clean_dungeon_name.lower()
-
-                    if not matches:
+                    if not self.event_matches_autoevent(event, aep):
                         continue
 
                     async with self.config.sent() as sent:
@@ -84,28 +77,33 @@ class AutoEvent:
                     continue
                 for aed in data.get('dmevents', []):
                     if event.start_from_now_sec() > aed['offset'] * 60 \
-                            or (event.group not in (aed['group'], None)) \
-                            or event.server != aed['server'] \
-                            or aed['searchstr'] is None \
                             or str((aed['key'], event.key, uid)) in await self.config.sent():
                         continue
-                    if aed.get('include3p') is None:
-                        # case of legacy configs
-                        aed['include3p'] = True
-                    if not aed['include3p'] and event.clean_dungeon_name.startswith("Multiplayer"):
+                    if not self.event_matches_autoevent(event, aed):
                         continue
                     async with self.config.sent() as sent:
                         sent[str((aed['key'], event.key, uid))] = time.time()
-                    if aed['searchstr'].lower() in event.clean_dungeon_name.lower():
-                        offsetstr = "now"
-                        if aed['offset']:
-                            offsetstr = f"<t:{int(event.open_datetime.timestamp())}:R>"
-                        timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
-                        try:
-                            await user.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
-                                            f" It will be active for {timestr}.")
-                        except Exception:
-                            logger.exception("Failed to send AED to user {}".format(user.id))
+                    offsetstr = "now"
+                    if aed['offset']:
+                        offsetstr = f"<t:{int(event.open_datetime.timestamp())}:R>"
+                    timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
+                    try:
+                        await user.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
+                                        f" It will be active for {timestr}.")
+                    except Exception:
+                        logger.exception("Failed to send AED to user {}".format(user.id))
+
+    def event_matches_autoevent(self, event: Event, autoevent: Dict[str, Any]):
+        if not autoevent.get('enabled', True) \
+                or event.server != autoevent['server'] \
+                or autoevent['searchstr'] is None:
+            return False
+        if not autoevent.get('include3p', True) and event.clean_dungeon_name.startswith("Multiplayer"):
+            return False
+        elif autoevent.get('regex'):
+            return re.search(autoevent['searchstr'], event.clean_dungeon_name)
+        else:
+            return autoevent['searchstr'].lower() in event.clean_dungeon_name.lower()
 
     @commands.group(aliases=['aep'])
     @commands.guild_only()
@@ -210,17 +208,17 @@ class AutoEvent:
     async def aep_set(self, ctx):
         """Sets specific parts of an autoeventping"""
 
-    async def aepchange(self, ctx, key, k, f):
+    async def aepchange(self, ctx, key: str, k: str, f: Callable[[T], T]):
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             if key not in pingroles:
                 await ctx.send("That key does not exist.")
                 return
             pingroles[key][k] = f(pingroles[key][k])
 
-    async def aepset(self, ctx, key, k, v):
+    async def aepset(self, ctx, key: str, k: str, v: Any):
         await self.aepchange(ctx, key, k, lambda x: v)
 
-    async def aepget(self, ctx, key):
+    async def aepget(self, ctx, key: str):
         pingroles = await self.config.guild(ctx.guild).pingroles()
         if key not in pingroles:
             raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
@@ -353,6 +351,12 @@ class AutoEvent:
             await ctx.send("Offset cannot be negative.")
             return
         await self.aepset(ctx, key, 'offset', offset)
+        await ctx.tick()
+
+    @autoeventping.command(name="channelmessage")
+    async def aep_channelmessage(self, ctx, channel: Optional[discord.TextChannel], enable: bool):
+        """Whether to show daily AEP summaries"""
+        await self.config.channel(channel or ctx.channel).do_aep_post.set(enable)
         await ctx.tick()
 
     @commands.group(aliases=['aed'])

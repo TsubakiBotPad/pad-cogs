@@ -38,7 +38,7 @@ class PadEvents(commands.Cog, AutoEvent):
         self.config = Config.get_conf(self, identifier=940373775)
         self.config.register_global(sent={}, last_daychange=None)
         self.config.register_guild(pingroles={})
-        self.config.register_channel(guerrilla_servers=[], daily_servers=[])
+        self.config.register_channel(guerrilla_servers=[], daily_servers=[], do_aep_post=True)
         self.config.register_user(dmevents=[])
 
         # Load event data
@@ -107,6 +107,7 @@ class PadEvents(commands.Cog, AutoEvent):
             async for server in conditional_iterator(is_day_change, poll_interval=10):
                 try:
                     await self.do_daily_post(server)
+                    await self.do_autoevent_summary(server)
                 except asyncio.CancelledError:
                     raise
                 except Exception:
@@ -161,6 +162,29 @@ class PadEvents(commands.Cog, AutoEvent):
             for page in pagify(msg, delims=['\n\n']):
                 with suppress(discord.Forbidden):
                     await channel.send(box(page))
+
+    async def do_autoevent_summary(self, server):
+        events = EventList(self.events).with_server(server).today_only('NA')
+        for gid, data in (await self.config.all_guilds()).items():
+            if (guild := self.bot.get_guild(gid)) is None:
+                continue
+            channels = defaultdict(list)
+            for key, aep in data.get('pingroles', {}).items():
+                for channel in aep['channels']:
+                    if channel is not None:
+                        channels[channel].append(aep)
+            for cid, aeps in channels.items():
+                if (channel := self.bot.get_channel(cid)) is None:
+                    continue
+                if not await self.config.channel(channel).do_aep_post():
+                    continue
+                aepevents = events.with_func(lambda e: any(self.event_matches_autoevent(e, ae) for ae in aeps))
+                if not aepevents:
+                    continue
+                msg = self.make_full_guerrilla_output('AEP Event', aepevents)
+                for page in pagify(msg, delims=['\n\n']):
+                    with suppress(discord.Forbidden):
+                        await channel.send(box(page))
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -318,7 +342,11 @@ class PadEvents(commands.Cog, AutoEvent):
             events = sorted(events, key=lambda e: e.open_datetime)
             events_by_group = defaultdict(list)
             for event in events:
-                events_by_group[event.group.upper()].append(event)
+                if event.group is not None:
+                    events_by_group[event.group.upper()].append(event)
+                else:
+                    for group in grps:
+                        events_by_group[group].append(event)
 
             done = False
             while not done:
@@ -341,7 +369,7 @@ class PadEvents(commands.Cog, AutoEvent):
                 else:
                     done = True
 
-        col1 = "Limited"
+        col1 = table_name
         tbl = prettytable.PrettyTable([col1] + grps)
         tbl.align[col1] = "l"
         tbl.hrules = prettytable.HEADER
