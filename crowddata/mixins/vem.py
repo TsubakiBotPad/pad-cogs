@@ -86,8 +86,11 @@ class VEM(CogMixin):
 
         check = '\n\t'.join(pdicog.monster_header.fmt_id_header(m, use_emoji=True).to_markdown()
                             for m in correct_evos)
-        if not await get_user_confirmation(ctx, f"Are these monsters correct?\n\t{check}",
-                                           timeout=30, force_delete=False, show_feedback=True):
+        confirmation = await get_user_confirmation(ctx, f"Are these monsters correct?\n\t{check}",
+                                           timeout=30, force_delete=False, show_feedback=True)
+        if not confirmation:
+            if confirmation is None:
+                await ctx.send(ctx.author.mention + " Submission timed out. Please resubmit and verify.")
             return
 
         await self.add_pull(ctx, [m.monster_id for m in correct_evos], time.time() - offset)
