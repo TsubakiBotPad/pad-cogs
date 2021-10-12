@@ -471,6 +471,10 @@ class PadGlobal(commands.Cog):
         """
         corrected_term = self._lookup_command(term)
         result = self.c_commands.get(corrected_term, None)
+        # go a layer deeper if this is an alias
+        if result in self.c_commands:
+            result = self.c_commands[result]
+
         await self._do_send_term(ctx, to_user, term, corrected_term, result)
 
     async def _do_send_term(self, ctx, to_user: discord.Member, term, corrected_term, result):
