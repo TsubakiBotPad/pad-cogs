@@ -471,7 +471,7 @@ class PadGlobal(commands.Cog):
         """
         corrected_term = self._lookup_command(term)
         result = self.c_commands.get(corrected_term, None)
-        # go a layer deeper if this is an alias
+        # go a level deeper if this is an alias
         if result in self.c_commands:
             result = self.c_commands[result]
 
