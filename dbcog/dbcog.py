@@ -50,7 +50,10 @@ class DBCog(commands.Cog, IdTest):
         self._is_ready = asyncio.Event()
 
         self.database = None
-        self.indexes = {}  # type: Dict[Server, MonsterIndex]
+        self.indexes = {
+            Server.COMBINED: MonsterIndex(Server.COMBINED),
+            Server.NA: MonsterIndex(Server.NA),
+        }
 
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
@@ -142,8 +145,8 @@ class DBCog(commands.Cog, IdTest):
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         for server in SERVERS:
-            index = await MonsterIndex(self.database.graph, server)  # noqa
-            self.indexes[server] = index
+            self.indexes[server] = MonsterIndex(server)
+            await self.indexes[server].setup(self.database.graph)
 
         self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())
@@ -208,13 +211,13 @@ class DBCog(commands.Cog, IdTest):
                 self._is_ready.set()
             except Exception as ex:
                 short_wait = True
-                logger.exception("dbcog data download/refresh failed: %s", ex)
+                logger.exception("DBCog data download/refresh failed: %s", ex)
 
             try:
                 wait_time = 60 if short_wait else 60 * 60 * 4
                 await asyncio.sleep(wait_time)
             except Exception as ex:
-                logger.exception("dbcog data wait loop failed: %s", ex)
+                logger.exception("DBCog data wait loop failed: %s", ex)
                 raise
 
     async def download_and_refresh_nicknames(self):
