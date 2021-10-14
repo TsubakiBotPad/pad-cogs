@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Callable, Coroutine, List, Mapping, Optional
+from typing import Callable, Coroutine, Dict, List, Optional
 
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
@@ -17,7 +17,7 @@ from dbcog.monster_index import MonsterIndex
 class IdTest:
     bot: Red
     config: Config
-    indexes: Mapping[Server, MonsterIndex]
+    indexes: Dict[Server, MonsterIndex]
     find_monster: Callable[[int], Coroutine[None, None, MonsterModel]]
     wait_until_ready: Callable[[], Coroutine[None, None, None]]
 
