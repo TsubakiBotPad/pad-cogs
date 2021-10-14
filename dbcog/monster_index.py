@@ -3,13 +3,12 @@ import csv
 import io
 import logging
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import aiohttp
 from redbot.core.utils import AsyncIter
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja
-from tsutils.helper_classes import aobject
 
 from .errors import InvalidGraphState
 from .models.monster_model import MonsterModel
@@ -29,33 +28,50 @@ TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
 logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
 
-class MonsterIndex(aobject):
-    async def __ainit__(self, graph: MonsterGraph, server: Server = DEFAULT_SERVER):
-        self.graph = graph
+class MonsterIndex:
+    def __init__(self, server: Server = DEFAULT_SERVER):
+        self.is_ready = asyncio.Event()
         self.server = server
-        monsters = graph.get_all_monsters(server)
-
         self.issues = []
+
+        self.graph: Optional[MonsterGraph] = None
 
         self.monster_id_to_nickname = defaultdict(set)
         self.monster_id_to_nametokens = defaultdict(set)
         self.monster_id_to_forcedfluff = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
+        self.series_id_to_pantheon_nickname = defaultdict(set)
+        self.mwtoken_creators = defaultdict(set)
+        self.replacement_tokens = defaultdict(set)
+        self.remove_mods = defaultdict(set)
+        self.manual_prefixes = defaultdict(set)
+        self.manual_nick = defaultdict(set)
+        self.manual_tree = defaultdict(set)
+        self.name_tokens = defaultdict(set)
+        self.fluff_tokens = defaultdict(set)
+        self.modifiers = defaultdict(set)
+        self.treename_overrides = set()
+        self.multi_word_tokens = {}
+        self._known_mods = {}
+        self.manual = {}
+        self.all_name_tokens = {}
+        self.all_modifiers = set()
+        self.suffixes = set()
+        self.mwt_to_len = defaultdict(lambda: 1)
+
+    async def setup(self, graph: MonsterGraph):
+        self.graph = graph
+        monsters = graph.get_all_monsters(self.server)
+
         self.series_id_to_pantheon_nickname = \
             defaultdict(set, {m.series_id: {m.series.name_en.lower().replace(" ", "")}
                               for m in monsters
                               if m.series.name_en.lower() not in PROBLEMATIC_SERIES_TOKENS})
 
-        self.mwtoken_creators = defaultdict(set)
-
         self.multi_word_tokens = {tuple(m.series.name_en.lower().split())
                                   for m
                                   in monsters
                                   if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
-
-        self.replacement_tokens = defaultdict(set)
-        self.remove_mods = defaultdict(set)
-        self.treename_overrides = set()
 
         treenames_data, nickname_data, pantheon_data, nt_alias_data, treemod_data, mod_data = await asyncio.gather(
             sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET,
@@ -77,20 +93,21 @@ class MonsterIndex(aobject):
                 mid = int(data['base_id'])
                 name = data['new_treename'].strip().lower()
                 try:
-                    monster = graph.get_monster(mid, server=server)
+                    monster = graph.get_monster(mid, server=self.server)
                 except InvalidGraphState:
                     continue
                 if not monster:
                     continue
                 if data['overrides']:
-                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=self.server)):
                         self.treename_overrides.add(evomid)
                 if data['normal_prio']:
-                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=self.server)):
                         self.monster_id_to_nametokens[evomid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
+                        self.mwtoken_creators[name.lower().replace(" ", "")]\
+                            .add(graph.get_monster(mid, server=self.server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
 
@@ -99,7 +116,7 @@ class MonsterIndex(aobject):
                 mid = int(data['monster_id'])
                 name = data['name_en'].strip().lower()
                 try:
-                    monster = graph.get_monster(mid, server=server)
+                    monster = graph.get_monster(mid, server=self.server)
                 except InvalidGraphState:
                     continue
                 if not monster:
@@ -115,7 +132,8 @@ class MonsterIndex(aobject):
                     self.treename_overrides.add(mid)
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")].add(graph.get_monster(mid, server=server))
+                        self.mwtoken_creators[name.lower().replace(" ", "")]\
+                            .add(graph.get_monster(mid, server=self.server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
 
@@ -130,12 +148,11 @@ class MonsterIndex(aobject):
         for data in nt_alias_data:
             self.replacement_tokens[frozenset(re.split(r'[,\s]+', data['tokens']))].add(data['alias'])
 
-        self.manual_prefixes = defaultdict(set)
         for data in mod_data:
             if data['monster_id'].isdigit():
                 mid = int(data['monster_id'])
                 try:
-                    monster = graph.get_monster(mid, server=server)
+                    monster = graph.get_monster(mid, server=self.server)
                 except InvalidGraphState:
                     continue
                 if not monster:
@@ -151,7 +168,7 @@ class MonsterIndex(aobject):
                         self.manual_prefixes[mid].update(get_modifier_aliases(mod))
 
         for data in treemod_data:
-            if data['base_id'].isdigit() and graph.get_monster(int(data['base_id']), server=server):
+            if data['base_id'].isdigit() and graph.get_monster(int(data['base_id']), server=self.server):
                 mid = int(data['base_id'])
                 for mod in data['modifiers'].split(","):
                     mod = mod.strip().lower()
@@ -159,17 +176,11 @@ class MonsterIndex(aobject):
                         self.multi_word_tokens.add(tuple(mod.split(" ")))
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
-                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=server)):
+                    for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=self.server)):
                         self.manual_prefixes[evomid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
-
-        self.manual_nick = defaultdict(set)
-        self.manual_tree = defaultdict(set)
-        self.name_tokens = defaultdict(set)
-        self.fluff_tokens = defaultdict(set)
-        self.modifiers = defaultdict(set)
 
         await self._build_monster_index(monsters)
 
@@ -179,7 +190,7 @@ class MonsterIndex(aobject):
         self.suffixes = LEGAL_END_TOKENS
         self.mwt_to_len = defaultdict(lambda: 1, {"".join(mw): len(mw) for mw in self.multi_word_tokens})
 
-    __init__ = __ainit__
+        self.is_ready.set()
 
     async def _build_monster_index(self, monsters):
         async for m in AsyncIter(monsters):
