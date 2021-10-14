@@ -129,7 +129,7 @@ class PadEvents(commands.Cog, AutoEvent):
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
         async with self.config.sent() as seen:
             for key, value in [*seen.items()]:
-                if value < time.time() + 60 * 60:
+                if value < time.time() - 60 * 60:
                     del seen[key]
 
     async def do_eventloop(self):
