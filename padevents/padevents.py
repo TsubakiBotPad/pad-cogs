@@ -441,11 +441,11 @@ class PadEvents(commands.Cog, AutoEvent):
 
     def get_most_recent_day_change(self):
         now = datetime.datetime.utcnow().time()
-        if now < datetime.time(8):
+        if now < datetime.time(12):
             return "JP"
-        elif now < datetime.time(15):
+        elif now < datetime.time(19):
             return "NA"
-        elif now < datetime.time(16):
+        elif now < datetime.time(20):
             return "KR"
         else:
             return "JP"
