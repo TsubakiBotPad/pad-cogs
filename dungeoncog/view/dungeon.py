@@ -147,6 +147,13 @@ class DungeonView:
             DungeonView.embed_helper(level, names, values, line)
 
     @staticmethod
+    def make_embed_description(dungeon_monster, desc=""):
+        return "HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
+                                                    f'{dungeon_monster.atk:,}',
+                                                    f'{dungeon_monster.defense:,}',
+                                                    f'{dungeon_monster.turns:,}', desc)
+
+    @staticmethod
     def embed(state: DungeonViewState):
         fields = []
         mb = MonsterBehavior()
@@ -205,12 +212,12 @@ class DungeonView:
                 title="{} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
                                                                 spawn[0], spawn[1],
                                                                 floor[0], floor[1]),
-                description=make_embed_description(dungeon_monster, desc)
+                description=DungeonView.make_embed_description(dungeon_monster, desc)
             )
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
-                description=make_embed_description(dungeon_monster, desc)
+                description=DungeonView.make_embed_description(dungeon_monster, desc)
             )
 
         embeds.append(embed)
@@ -265,11 +272,3 @@ class DungeonView:
             embeds[0].title += '2'
             embeds[1].title += '2'
         return embeds
-
-
-@staticmethod
-def make_embed_description(dungeon_monster, desc=""):
-    return "HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
-                                                f'{dungeon_monster.atk:,}',
-                                                f'{dungeon_monster.defense:,}',
-                                                f'{dungeon_monster.turns:,}', desc)
