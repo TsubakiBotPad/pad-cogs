@@ -206,7 +206,7 @@ class DungeonView:
                 title="{} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
                                                                 spawn[0], spawn[1],
                                                                 floor[0], floor[1]),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                description="HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
                                                                    f'{dungeon_monster.atk:,}',
                                                                    f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc)
@@ -214,7 +214,7 @@ class DungeonView:
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                description="HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
                                                                    f'{dungeon_monster.atk:,}',
                                                                    f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc)
@@ -291,14 +291,14 @@ class DungeonView:
                 title="Enemy:{} at Level: {} Spawn:{}/{} Floor:{}/{}".format(dungeon_monster.name,
                                                                              dungeon_monster.level, spawn[0], spawn[1],
                                                                              floor[0], floor[1]),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                description="HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
                                                                    f'{dungeon_monster.atk:,}',
                                                                    f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc))
         else:
             embed = discord.Embed(
                 title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
-                description="HP:{} ATK:{} DEF:{} TURN:{}{}".format(f'{dungeon_monster.hp:,}',
+                description="HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
                                                                    f'{dungeon_monster.atk:,}',
                                                                    f'{dungeon_monster.defense:,}',
                                                                    f'{dungeon_monster.turns:,}', desc))
