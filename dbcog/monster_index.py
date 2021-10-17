@@ -514,6 +514,10 @@ class MonsterIndex:
         if monster.monster_id > 10000:
             modifiers.add("idna")
 
+        # Has Gem
+        if self.graph.evo_gem_monster(monster) is not None:
+            modifiers.update(MISC_MAP[MiscModifiers.HAS_GEM])
+
         modifiers.difference_update(self.remove_mods[monster.monster_id])
 
         return modifiers
