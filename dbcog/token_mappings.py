@@ -199,6 +199,7 @@ class MiscModifiers(Enum):
     CURRENT_EXCHANGE_KR = 'Currently exchangable in KR'
     PERMANENT_EXCHANGE = 'Permanently exchangable'
     TEMP_EXCHANGE = 'Temporarily exchangable at some point in time'
+    HAS_GEM = 'Has an evo gem'
 
 
 MISC_MAP = {
@@ -228,6 +229,7 @@ MISC_MAP = {
     MiscModifiers.CURRENT_EXCHANGE_KR: ('nowshopkr', 'shopnowkr'),
     MiscModifiers.PERMANENT_EXCHANGE: ('permshop', 'shopperm'),
     MiscModifiers.TEMP_EXCHANGE: ('tempshop', 'shoptemp'),
+    MiscModifiers.HAS_GEM: ('hasgem',),
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
