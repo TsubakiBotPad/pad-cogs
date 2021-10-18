@@ -3,7 +3,7 @@
     "The Tsubaki Bot Team"
   ],
   "description": "Stay up to date on PAD dungeons.",
-  "end_user_data_statement": "No personal data is stored.",
+  "end_user_data_statement": "Auto Event DMs are stored with your user ID.",
   "install_msg": "Use [p]padevents to get started.",
   "short": "PAD Event tracker",
   "min_bot_version": "3.4.0",

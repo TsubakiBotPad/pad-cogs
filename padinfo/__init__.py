@@ -1,6 +1,10 @@
+import json
+from pathlib import Path
+
 from .padinfo import PadInfo
 
-__red_end_user_data_statement__ = "No personal data is stored."
+with open(Path(__file__).parent / "info.json") as file:
+    __red_end_user_data_statement__ = json.load(file)['end_user_data_statement']
 
 
 def setup(bot):

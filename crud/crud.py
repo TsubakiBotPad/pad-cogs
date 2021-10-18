@@ -67,15 +67,16 @@ class Crud(commands.Cog):
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
-        data = "No data is stored for user with ID {}.\n".format(user_id)
+        email = self.config.user_from_id(user_id)
+        if email:
+            data = f"You have a stored email ({email})"
+        else:
+            data = "No data is stored for user with ID {}.\n".format(user_id)
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
-        """Delete a user's personal data.
-
-        No personal data is stored in this cog.
-        """
-        return
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
 
     async def get_cursor(self):
         async with aiofiles.open(await self.config.config_file(), 'r') as db_config:

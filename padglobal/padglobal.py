@@ -11,10 +11,9 @@ from io import BytesIO
 import discord
 import prettytable
 import pytz
-
 from discord import Color
-from redbot.core import checks, data_manager, commands, errors
-from redbot.core.utils.chat_formatting import box, inline, pagify, humanize_timedelta, bold
+from redbot.core import checks, commands, data_manager, errors
+from redbot.core.utils.chat_formatting import bold, box, humanize_timedelta, inline, pagify
 from tsutils.cog_settings import CogSettings
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
@@ -23,16 +22,12 @@ from tsutils.json_utils import safe_read_json
 from tsutils.tsubaki import CLOUDFRONT_URL
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
-auth_check, get_user_reaction
-
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
 from padglobal.view.closable_embed import ClosableEmbedViewState
-from padglobal.view.which import WhichView, WhichViewProps, UNKNOWN_EDIT_TIMESTAMP
+from padglobal.view.which import UNKNOWN_EDIT_TIMESTAMP, WhichView, WhichViewProps
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
-
-global PADGLOBAL_COG
 
 
 def _data_file(file_name: str) -> str:
@@ -76,7 +71,7 @@ commands.Command.format_shortdoc_for_context = lambda s, c: mod_help(s, c, "shor
 
 async def check_enabled(ctx):
     """If the server is disabled, raise a warning and return False"""
-    if PADGLOBAL_COG.settings.checkDisabled(ctx.message):
+    if ctx.bot.get_cog("PadGlobal").settings.checkDisabled(ctx.message):
         msg = await ctx.send(inline(DISABLED_MSG))
         await asyncio.sleep(3)
         await msg.delete()
@@ -91,8 +86,6 @@ class PadGlobal(commands.Cog):
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        global PADGLOBAL_COG
-        PADGLOBAL_COG = self
         self.bot = bot
 
         GADMIN_COG = self.bot.get_cog("GlobalAdmin")
@@ -244,9 +237,9 @@ class PadGlobal(commands.Cog):
                 return
             if self.c_commands[text] in self.c_commands:
                 source = self.c_commands[text]
-                if await get_user_confirmation(ctx, '{} is already an alias for {}, and you can\'t alias to an alias.'
-                                         .format(inline(text), inline(source))
-                                         + ' Would you like to alias to {} instead?'.format(inline(source))):
+                if await get_user_confirmation(ctx, f'{inline(text)} is already an alias for {inline(source)},'
+                                                    f' and you can\'t alias to an alias. Would you like to'
+                                                    f' alias to {inline(source)} instead?'):
                     # change target
                     text = source
                 else:
@@ -260,7 +253,7 @@ class PadGlobal(commands.Cog):
                 alias = True
             if confirm:
                 conf = await get_user_confirmation(ctx, "Are you sure you want to edit the {}command {}?"
-                                             .format("alias to " if alias else "", ted))
+                                                        "".format("alias to " if alias else "", ted))
                 if not conf:
                     return
         else:
@@ -281,8 +274,8 @@ class PadGlobal(commands.Cog):
         aliases = await self._find_aliases(command)
         if aliases:
             if not await get_user_confirmation(ctx,
-                                         'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
-                                         .format(command, bold(str(len(aliases))), '`, `'.join(aliases))):
+                                               'Are you sure? `{}` has {} alias(es): `{}` which will also be deleted.'
+                                               ''.format(command, bold(str(len(aliases))), '`, `'.join(aliases))):
                 await ctx.send('Cancelling delete of `{}`.'.format(command))
                 return
 
@@ -564,7 +557,8 @@ class PadGlobal(commands.Cog):
 
         op = 'edited' if term in self.settings.glossary() else 'added'
         if op == 'edited' and need_confirm:
-            if not await get_user_confirmation(ctx, "Are you sure you want to edit the glossary info for {}?".format(term)):
+            if not await get_user_confirmation(ctx,
+                                               "Are you sure you want to edit the glossary info for {}?".format(term)):
                 return
         self.settings.addGlossary(term, definition)
         await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
@@ -577,7 +571,8 @@ class PadGlobal(commands.Cog):
             await ctx.send("Glossary item doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
-                                     "Are you sure you want to globally remove the glossary data for {}?".format(term)):
+                                           "Are you sure you want to globally remove the glossary data for {}?".format(
+                                               term)):
             return
         self.settings.rmGlossary(term)
         await ctx.tick()
@@ -673,7 +668,8 @@ class PadGlobal(commands.Cog):
         op = 'edited' if base.monster_id in self.settings.boss() else 'added'
         if op == 'edited' and need_confirm:
             if not await get_user_confirmation(ctx,
-                                         "Are you sure you want to edit the boss info for {}?".format(base.name_en)):
+                                               "Are you sure you want to edit the boss info for {}?".format(
+                                                   base.name_en)):
                 return
         definition = clean_global_mentions(definition)
         definition = definition.replace(u'\u200b', '')
@@ -699,8 +695,8 @@ class PadGlobal(commands.Cog):
             await ctx.send("Boss mechanics item doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
-                                     "Are you sure you want to globally remove the boss data for {}?".format(
-                                         base.name_en)):
+                                           "Are you sure you want to globally remove the boss data for {}?".format(
+                                               base.name_en)):
             return
 
         self.settings.rmBoss(base.monster_id)
@@ -876,8 +872,9 @@ class PadGlobal(commands.Cog):
         if m != base_monster:
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
-        if not await get_user_confirmation(ctx, "Are you sure you want to globally remove the which data for {}?".format(
-                m.name_en)):
+        if not await get_user_confirmation(ctx,
+                                           "Are you sure you want to globally remove the which data for {}?".format(
+                                               m.name_en)):
             return
         name = m.monster_id
 
@@ -916,16 +913,18 @@ class PadGlobal(commands.Cog):
 
         # ask for extra confirmation if the term was not an id
         if not re.fullmatch(r'\d+', term):
-            if not await get_user_confirmation(ctx, 'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
-                    operation,
-                    pdicog.get_attribute_emoji_by_monster(m),
-                    m.monster_no_na,
-                    m.name_en)):
+            if not await get_user_confirmation(ctx,
+                                               'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
+                                                   operation,
+                                                   pdicog.get_attribute_emoji_by_monster(m),
+                                                   m.monster_no_na,
+                                                   m.name_en)):
                 return
 
         if mon_id not in self.settings.which():
-            if await get_user_confirmation(ctx, "No which info exists for {}. Would you like to add a new entry?".format(
-                    m.name_en)):
+            if await get_user_confirmation(ctx,
+                                           "No which info exists for {}. Would you like to add a new entry?".format(
+                                               m.name_en)):
                 self.settings.addWhich(mon_id, addition)
                 await ctx.send("PAD which info successfully {}.".format(bold('added')))
             return
@@ -968,11 +967,11 @@ class PadGlobal(commands.Cog):
         destination = channel
         if len(self.settings.which()) > MAX_WHICH_LIST_BEFORE_DM_PROMPT:
             destination = await get_user_reaction(ctx,
-                                             'This will send a lot of messages. Are you sure? '
-                                             + '(Yes / DM me instead / Cancel)',
-                                             channel,
-                                             send_as_dm,
-                                             cancel)
+                                                  'This will send a lot of messages. Are you sure? '
+                                                  + '(Yes / DM me instead / Cancel)',
+                                                  channel,
+                                                  send_as_dm,
+                                                  cancel)
         if destination == cancel or destination is None:
             return
 
@@ -1303,7 +1302,8 @@ class PadGlobal(commands.Cog):
         op = 'edited' if term in self.settings.dungeonGuide() else 'added'
         if op == 'edited' and need_confirm:
             if not await get_user_confirmation(ctx,
-                                         "Are you sure you want to edit the dungeon guide info for {}?".format(term)):
+                                               "Are you sure you want to edit the dungeon guide info for {}?".format(
+                                                   term)):
                 return
         self.settings.addDungeonGuide(term, definition)
         await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
@@ -1316,8 +1316,8 @@ class PadGlobal(commands.Cog):
             await ctx.send("DungeonGuide doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
-                                     "Are you sure you want to globally remove the dungeonguide data for {}?".format(
-                                         term)):
+                                           "Are you sure you want to globally remove the dungeonguide data for {}?".format(
+                                               term)):
             return
         self.settings.rmDungeonGuide(term)
         await ctx.tick()
@@ -1347,7 +1347,8 @@ class PadGlobal(commands.Cog):
         op = 'edited' if name in self.settings.leaderGuide() else 'added'
         if op == 'edited' and need_confirm:
             if not await get_user_confirmation(ctx,
-                                         "Are you sure you want to edit the leader guide for {}?".format(m.name_en)):
+                                               "Are you sure you want to edit the leader guide for {}?".format(
+                                                   m.name_en)):
                 return
         self.settings.addLeaderGuide(name, definition)
         await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
@@ -1362,8 +1363,8 @@ class PadGlobal(commands.Cog):
             m = base_monster
             await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
         if not await get_user_confirmation(ctx,
-                                     "Are you sure you want to globally remove the leaderguide data for {}?".format(
-                                         m.name_en)):
+                                           "Are you sure you want to globally remove the leaderguide data for {}?".format(
+                                               m.name_en)):
             return
         name = m.monster_id
 

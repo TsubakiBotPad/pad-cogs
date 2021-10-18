@@ -3,7 +3,7 @@
     "The Tsubaki Bot Team"
   ],
   "description": "Contains the bulk of PAD commands, allowing users to get data for monsters.",
-  "end_user_data_statement": "No personal data is stored.",
+  "end_user_data_statement": "Previous ID queries are stored for easy reuse.",
   "install_msg": "Use [p]helpid for help",
   "short": "Serves monster data (LOAD THIS SECOND)",
   "min_bot_version": "3.4.0",

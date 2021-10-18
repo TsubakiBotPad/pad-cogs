@@ -7,8 +7,10 @@ from redbot.core import Config, checks, commands
 class MonIdListener(commands.Cog):
     """Monster Name from ID"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
+
         self.config = Config.get_conf(self, identifier=10100779)
         self.config.register_channel(enabled=False)
         
