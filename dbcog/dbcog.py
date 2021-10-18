@@ -105,15 +105,19 @@ class DBCog(commands.Cog, IdTest):
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
-        data = "No data is stored for user with ID {}.\n".format(user_id)
+        udata = await self.config.user_from_id(user_id).ans()
+
+        data = "Your stored query flags are: " + "\n".join(udata['fm_flags'].keys())
+        data += f"\nUse '{(await self.bot.get_valid_prefixes())[0]}idset list' to see what they're set to."
+
+        if not udata:
+            data = "No data is stored for user with ID {}.\n".format(user_id)
+
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
-        """Delete a user's personal data.
-
-        No personal data is stored in this cog.
-        """
-        return
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
 
     @commands.command(aliases=['fir'])
     @auth_check('contentadmin')

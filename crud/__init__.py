@@ -1,6 +1,6 @@
 from .crud import Crud
 
-__red_end_user_data_statement__ = "No personal data is stored."
+__red_end_user_data_statement__ = "User email addresses are stored persistently."
 
 
 def setup(bot):

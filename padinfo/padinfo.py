@@ -129,7 +129,12 @@ class PadInfo(commands.Cog):
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
-        data = "No data is stored for user with ID {}.\n".format(user_id)
+        idhist = await self.config.user_from_id(user_id).id_history()
+        if idhist:
+            data = f"You have {len(idhist)} past queries stored.  Use" \
+                   f" {(await self.bot.get_valid_prefixes())[0]}idhistory to see what they are.\n"
+        else:
+            data = f"No data is stored for user with ID {user_id}."
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
@@ -137,7 +142,7 @@ class PadInfo(commands.Cog):
 
         No personal data is stored in this cog.
         """
-        return
+        await self.config.user_from_id(user_id).clear()
 
     async def register_menu(self):
         await self.bot.wait_until_ready()
@@ -1003,6 +1008,11 @@ class PadInfo(commands.Cog):
     @commands.group(aliases=['idmode'])
     async def idset(self, ctx):
         """`[p]id` settings configuration"""
+
+    @idset.command(name="list")
+    async def idset_list(self, ctx):
+        """`[p]id` settings list"""
+        await ctx.send("This command is still in progress!")
 
     @idset.command(name="scroll")
     async def idset_scroll(self, ctx):
