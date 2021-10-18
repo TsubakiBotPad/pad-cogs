@@ -53,15 +53,17 @@ class PadEvents(commands.Cog, AutoEvent):
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
-        data = "No data is stored for user with ID {}.\n".format(user_id)
+        aeds = await self.config.user_from_id(user_id).dmevents()
+        if aeds:
+            data = f"You have {len(aeds)} AEDs stored.  Use" \
+                   f" {(await self.bot.get_valid_prefixes())[0]}aed list to see what they are.\n"
+        else:
+            data = f"No data is stored for user with ID {user_id}."
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
-        """Delete a user's personal data.
-
-        No personal data is stored in this cog.
-        """
-        return
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty

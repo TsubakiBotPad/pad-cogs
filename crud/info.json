@@ -3,7 +3,7 @@
     "Aradia Megido#2552"
   ],
   "description": "Crud for the Pipeline Database.",
-  "end_user_data_statement": "No personal data is stored.",
+  "end_user_data_statement": "User email addresses are stored persistently",
   "install_msg": "Use [p]crud to get started.",
   "short": "Pipeline CRUD",
   "min_bot_version": "3.4.0",

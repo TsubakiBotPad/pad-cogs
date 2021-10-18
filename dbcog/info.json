@@ -2,10 +2,10 @@
   "author": [
     "The Tsubaki Bot Team"
   ],
-  "description": "No commands, but loads all the monster data stored in Tsubaki.",
-  "end_user_data_statement": "No personal data is stored.",
+  "description": "Very few commands, but loads all the monster data stored in Tsubaki.",
+  "end_user_data_statement": "ID Query Settings are stored in this cog.",
   "install_msg": "Use [p]dbcog setdatafile if it's applicable to you.",
-  "short": "Loads monster data (LOAD THIS FIRST)",
+  "short": "Loads monster data",
   "min_bot_version": "3.4.0",
   "max_bot_version": "0.0.0",
   "min_python_version": [
