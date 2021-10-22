@@ -34,6 +34,7 @@ Latent Acronyms:
     Stats (+ for 2 slot): hp, atk, rcv, all(all stat), hp+, atk+, rcv+
     Resists (+ for 2 slot): rres, bres, gres, lres, dres, rres+, bres+, gres+, lres+, dres+
     AA4: ls(leader swap), jsf(jammer skyfall), psf(poison skyfall), attr(attribute absorb res), vdp(void damage penatration)
+    Awakening restricted: unm(unmatchable clear), spn(spinner clear), abs(void damage absorb)
     Others: sdr, ah(autoheal)
 Repeat:
     *# defines number of times to repeat this particular card
