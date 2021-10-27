@@ -93,12 +93,10 @@ class Event:
         return self.open_datetime.astimezone(tz)
 
     def start_from_now(self):
-        return f'{self.start_from_now_sec() // 3600:2}h' \
-               f' {(self.start_from_now_sec() % 3600) // 60:2}m'
+        return "<t:" + str(int(self.open_datetime.timestamp())) + ":R>"
 
     def end_from_now(self):
-        return f'{self.end_from_now_sec() // 3600:2}h' \
-               f' {(self.end_from_now_sec() % 3600) // 60:2}m'
+        return "<t:" + str(int(self.close_datetime.timestamp())) + ":R>"
 
     def end_from_now_full_min(self):
         days, sec = divmod(self.end_from_now_sec(), 86400)
@@ -128,10 +126,11 @@ class Event:
     def to_partial_event(self, pe):
         group = self.group_short_name()
         if self.is_started():
-            return group + " " + self.end_from_now() + "   " + self.name_and_modifier
+            return "`" + group + " " + self.name_and_modifier + " " * (
+                max(24 - len(self.name_and_modifier), 0)) + "-`" + self.end_from_now()
         else:
-            return group + " " + self.start_pst().strftime("%H:%M") + " " + self.start_est().strftime("%H:%M") \
-                   + " " + self.start_from_now() + " " + self.name_and_modifier
+            return "`" + group + " " + self.name_and_modifier + " " * (
+                max(24 - len(self.name_and_modifier), 0)) + "-`" + self.start_from_now()
 
 
 class EventList:
