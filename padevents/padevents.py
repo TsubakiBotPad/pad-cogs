@@ -426,20 +426,20 @@ class PadEvents(commands.Cog, AutoEvent):
             await ctx.send("No events available for " + server)
             return
 
-        output = "Events for {}".format(server)
+        output = "**Events for {}**".format(server)
 
         if len(active_events) > 0:
-            output += "\n\n" + "  Remaining Dungeon"
+            output += "\n\n" + "`  Remaining Dungeon       - Ending Time`"
             for e in active_events:
                 output += "\n" + e.to_partial_event(self)
 
         if len(pending_events) > 0:
-            output += "\n\n" + "  PT    ET    ETA     Dungeon"
+            output += "\n\n" + "`  Dungeon                 - ETA`"
             for e in pending_events:
                 output += "\n" + e.to_partial_event(self)
 
         for page in pagify(output):
-            await ctx.send(box(page))
+            await ctx.send(page)
 
     def get_most_recent_day_change(self):
         now = datetime.datetime.utcnow().time()
