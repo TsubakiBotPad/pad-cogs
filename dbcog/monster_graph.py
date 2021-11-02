@@ -336,7 +336,13 @@ class MonsterGraph(object):
                     if self.debug_monster_ids is not None:
                         self.graph_dict[server].nodes[mid]['model'].base_evo_id = alt_ids[0]
                 else:
-                    self.issues.append(f"{mid} has no model in the {server.name} graph.")
+                    alert = False
+                    for edges in self.graph_dict[server][mid].values():
+                        for edge in edges.values():
+                            if not edge['type'].startswith('exchange'):
+                                alert |= True
+                    if alert:
+                        self.issues.append(f"{mid} has no model in the {server.name} graph.")
 
     def _get_edges(self, monster: MonsterModel, etype) -> Set[int]:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
