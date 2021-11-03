@@ -180,6 +180,7 @@ class MiscModifiers(Enum):
     REM = 'In REM'
     PEM = 'In PEM'
     VEM = 'In VEM'
+    INVEM = 'This evo is in VEM'
     MP = 'MP'
     INJP = 'In JP Server'
     ONLYJP = 'Only in JP Server'
@@ -210,6 +211,7 @@ MISC_MAP = {
     MiscModifiers.REM: ('rem',),
     MiscModifiers.PEM: ('pem',),
     MiscModifiers.VEM: ('vem', 'adpem'),
+    MiscModifiers.INVEM: ('invem', 'inadpem'),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
