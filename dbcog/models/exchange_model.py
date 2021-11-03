@@ -24,6 +24,6 @@ class ExchangeModel(BaseModel):
 
     def to_dict(self):
         return {
-            'from': self.target_monster_id,
-            'to': self.required_monster_ids,
+            'from': self.required_monster_ids,
+            'to': self.target_monster_id,
         }

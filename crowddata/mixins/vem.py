@@ -1,13 +1,22 @@
+from collections import Counter
 from datetime import timezone
-from typing import Any, TYPE_CHECKING
+from typing import Any, List, TYPE_CHECKING
 
 import time
+
+from discordmenu.embed.base import Box
+from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
+from discordmenu.embed.text import LabeledText
+from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
+from redbot.core.bot import Red
 from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
 from tsutils.time import NA_TIMEZONE, NEW_DAY, get_last_time
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
+
+from padinfo.view.components.monster.image import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -22,6 +31,7 @@ def opted_in(is_opted):
 
 class VEM(CogMixin):
     config: Config
+    bot: Red
 
     def setup_self(self):
         self.config.register_global(pulls=[])
@@ -215,6 +225,48 @@ class VEM(CogMixin):
         """Toggle if you want to confirm on skip/forgot"""
         await self.toggleskipconfirm(ctx)
 
+    @adpem.command()
+    async def showstats(self, ctx, *, query):
+        dbcog: Any = ctx.bot.get_cog("DBCog")
+        pdicog: Any = ctx.bot.get_cog("PadInfo")
+        if dbcog is None or pdicog is None:
+            return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
+        await dbcog.wait_until_ready()
+
+        query = '" "'.join(query.split())
+        monsters = await dbcog.find_monsters(f'"inadpem" "{query}"')
+        if not monsters:
+            return await ctx.send("No monsters matched that query.")
+
+        pulls = await self.config.pulls()
+        data = [d for d in pulls if type(d[1]) != str]
+        total = [dbcog.get_monster(p) for uid, ps, ts in data for p in ps]
+        adj = [dbcog.get_monster(p) for uid, ps, ts in data if self.has_good_data(uid, pulls) for p in ps]
+        you = [dbcog.get_monster(p) for uid, ps, ts in data if uid == ctx.author.id for p in ps]
+        valid = [m for m in total if m in monsters]
+
+        fields = []
+        for mon, c in Counter(valid).most_common(6 if len(valid) == 6 else 5):
+            fields.append(EmbedField(mon.name_en, Box(
+                LabeledText("Net", self.get_count(total, mon)),
+                LabeledText("Adj", self.get_count(adj, mon)),
+                LabeledText("You", self.get_count(you, mon))
+            ), inline=True))
+        if len(set(valid)) > 6:
+            fields.append(EmbedField("... & More", Box(f"+ {len(valid) - 5} more monsters"), inline=True))
+        await ctx.send(embed=EmbedView(
+            EmbedMain(
+                title=f"AdPEM Data for query: {query}",
+                description=Box(
+                LabeledText("Net", self.get_count(total, *valid)),
+                LabeledText("Adj", self.get_count(adj, *valid)),
+                LabeledText("You", self.get_count(you, *valid))
+                )
+            ),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(Counter(valid).most_common(1)[0][0])),
+            embed_fields=fields
+        ).to_embed())
+
     async def assert_ready(self, ctx, midnight: float) -> bool:
         pulls = await self.config.pulls()
         numtoday = len([1 for uid, v, ts in pulls
@@ -234,6 +286,30 @@ class VEM(CogMixin):
         async with self.config.pulls() as pulls:
             pulls.append((ctx.author.id, values, at_time))
 
+    def has_good_data(self, uid: int, pulls):
+        dbcog: Any = self.bot.get_cog("DBCog")
+
+        udata = [d for d in pulls if d[0] == uid]
+        if len([1 for uid, ps, t in udata if ps == "Forgot"]) / len(udata) > .3:
+            return False
+        if len(udata) <= 2:
+            return False
+
+        # upulls = [dbcog.get_monster(p) for u, ps, t in udata if isinstance(ps, list) for p in ps]
+        # if len([m for m in upulls if dbcog.database.graph.monster_is_rem_evo(m)]) / len(upulls) > .5:
+        #     return False
+
+        return True
+
     @staticmethod
     def midnight() -> float:
         return get_last_time(NEW_DAY, NA_TIMEZONE).astimezone(timezone.utc).timestamp()
+
+    @staticmethod
+    def get_count(arr: List[int], *elements: int) -> str:
+        if not arr:
+            return "N/A"
+        count = sum(arr.count(e) for e in elements)
+        if count == 0:
+            return "0"
+        return f"{round(100*count/len(arr), 3)}%"
