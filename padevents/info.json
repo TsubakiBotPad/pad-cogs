@@ -19,7 +19,7 @@
     "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
   "requirements": [
-    "tsutils>=4.0.7",
+    "tsutils>=5.3.0",
     "pytz",
     "prettytable"
   ],

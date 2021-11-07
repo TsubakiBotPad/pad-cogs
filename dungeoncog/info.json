@@ -21,7 +21,7 @@
     "menulistener": "https://github.com/TsubakiBotPad/misc-cogs"
   },
   "requirements": [
-    "tsutils>=3.4.0",
+    "tsutils>=5.3.0",
     "discord-menu>=0.16.0",
     "protobuf"
   ],
