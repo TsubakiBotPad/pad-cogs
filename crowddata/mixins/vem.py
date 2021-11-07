@@ -258,9 +258,9 @@ class VEM(CogMixin):
             EmbedMain(
                 title=f"AdPEM Data for query: {query}",
                 description=Box(
-                LabeledText("Net", self.get_count(total, *valid)),
-                LabeledText("Adj", self.get_count(adj, *valid)),
-                LabeledText("You", self.get_count(you, *valid))
+                LabeledText("Net", self.get_count(total, *set(valid))),
+                LabeledText("Adj", self.get_count(adj, *set(valid))),
+                LabeledText("You", self.get_count(you, *set(valid)))
                 )
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(Counter(valid).most_common(1)[0][0])),
@@ -309,7 +309,7 @@ class VEM(CogMixin):
     def get_count(arr: List[int], *elements: int) -> str:
         if not arr:
             return "N/A"
-        count = sum(arr.count(e) for e in elements)
+        count = sum(1 for m in arr if m in elements)
         if count == 0:
             return "0"
         return f"{round(100*count/len(arr), 3)}%"
