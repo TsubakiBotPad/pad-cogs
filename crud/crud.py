@@ -6,9 +6,9 @@ from datetime import datetime
 from io import BytesIO
 
 import aiofiles
+import aiomysql
 import discord
 import pygit2
-import pymysql
 from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
@@ -80,27 +80,27 @@ class Crud(commands.Cog):
 
     async def get_cursor(self):
         async with aiofiles.open(await self.config.config_file(), 'r') as db_config:
-            return self.connect(json.loads(await db_config.read())).cursor()
+            return (await self.connect(json.loads(await db_config.read()))).cursor()
 
     def connect(self, db_config):
-        return pymysql.connect(host=db_config['host'],
+        return aiomysql.connect(host=db_config['host'],
                                user=db_config['user'],
                                password=db_config['password'],
                                db=db_config['db'],
                                charset=db_config['charset'],
-                               cursorclass=pymysql.cursors.DictCursor,
+                               cursorclass=aiomysql.cursors.DictCursor,
                                autocommit=True)
 
     async def execute_write(self, ctx, sql, replacements):
-        with await self.get_cursor() as cursor:
-            affected = cursor.execute(sql, replacements)
+        async with await self.get_cursor() as cursor:
+            affected = await cursor.execute(sql, replacements)
             await ctx.send(inline(cursor._executed))
             await ctx.send("{} row(s) affected.".format(affected))
 
     async def execute_read(self, ctx, sql, replacements):
-        with await self.get_cursor() as cursor:
-            cursor.execute(sql, replacements)
-            results = list(cursor.fetchall())
+        async with await self.get_cursor() as cursor:
+            await cursor.execute(sql, replacements)
+            results = list(await cursor.fetchall())
             msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False, sort_keys=True)
             await ctx.send(inline(cursor._executed))
             for page in pagify(msg):
@@ -163,9 +163,9 @@ class Crud(commands.Cog):
         if name.lower() in ["none", "null", ""]:
             name = None
 
-        with await self.get_cursor() as cursor:
+        async with await self.get_cursor() as cursor:
             # Get the most recent english translation override
-            cursor.execute("""SELECT 
+            await cursor.execute("""SELECT 
                                 monsters.name_en AS monster_name,
                                 monster_name_overrides.name_en AS old_override
                               FROM monster_name_overrides
@@ -173,7 +173,7 @@ class Crud(commands.Cog):
                                 ON monsters.monster_id = monster_name_overrides.monster_id
                               WHERE monsters.monster_id = %s AND (is_translation = 1 OR is_translation IS NULL)
                               ORDER BY monster_name_overrides.tstamp DESC LIMIT 1""", (monster_id,))
-            old_val = cursor.fetchall()
+            old_val = await cursor.fetchall()
 
         if not old_val:
             await ctx.send(f"There is no monster with id {monster_id}")
@@ -191,8 +191,8 @@ class Crud(commands.Cog):
     @crud.command()
     async def editmonsseries(self, ctx, monster_id: int, series_id: int):
         """Change a monster's main series_id"""
-        with await self.get_cursor() as cursor:
-            cursor.execute("""SELECT
+        async with await self.get_cursor() as cursor:
+            await cursor.execute("""SELECT
                                 COALESCE(mno.name_en, monsters.name_en) AS monster_name,
                                 series.name_en AS series_name
                               FROM monster_series
@@ -201,15 +201,15 @@ class Crud(commands.Cog):
                               LEFT JOIN monster_name_overrides mno
                                 ON mno.monster_id = monsters.monster_id AND is_translation = 1
                               WHERE monsters.monster_id = %s AND priority = 1""", (monster_id,))
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
             if not rows:
                 await ctx.send("There is no monster with id: {}".format(monster_id))
                 return
             monster_name = rows[0]['monster_name']
             old_series = rows[0]['series_name']
 
-            cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
-            rows = cursor.fetchall()
+            await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
+            rows = await cursor.fetchall()
             if not rows:
                 await ctx.send(f"There is no series with id {series_id}")
                 return
@@ -268,9 +268,9 @@ class Crud(commands.Cog):
             return
 
         EXTRAS = {}
-        with await self.get_cursor() as cursor:
-            cursor.execute("SELECT MAX(series_id) AS max_id FROM series")
-            max_val = cursor.fetchall()[0]['max_id']
+        async with await self.get_cursor() as cursor:
+            await cursor.execute("SELECT MAX(series_id) AS max_id FROM series")
+            max_val = (await cursor.fetchall())[0]['max_id']
             EXTRAS['series_id'] = max_val + 1
         EXTRAS['tstamp'] = int(datetime.now().timestamp())
         elements = {**SERIES_KEYS, **EXTRAS, **elements}
