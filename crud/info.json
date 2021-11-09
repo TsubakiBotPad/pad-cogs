@@ -20,7 +20,7 @@
   },
   "requirements": [
     "tsutils>=5.0.0",
-    "pymysql",
+    "aiomysql",
     "aiofiles",
     "cryptography",
     "pygit2"
