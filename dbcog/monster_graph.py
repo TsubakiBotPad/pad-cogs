@@ -645,6 +645,9 @@ class MonsterGraph(object):
     def monster_is_vem_evo(self, monster: MonsterModel) -> bool:
         return any(alt.in_vem for alt in self.get_alt_monsters(monster))
 
+    def monster_is_orb_skin_evo(self, monster: MonsterModel) -> bool:
+        return any(alt.orb_skin_id for alt in self.get_alt_monsters(monster))
+
     def monster_is_exchange(self, monster: MonsterModel) -> bool:
         return bool(self._get_edges(monster, 'exchange_from'))
 
