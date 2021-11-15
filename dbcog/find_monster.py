@@ -303,6 +303,7 @@ class FindMonster:
         findmonster or findmonsters instead."""
         await self.dbcog.wait_until_ready()
 
+        query = query.split('//')[0]  # Remove comments
         query = rmdiacritics(query).lower().replace(",", "")
         query = re.sub(r'(\s|^)\'(\S+)\'(\s|$)', r'\1"\2"\3', query)  # Replace ' with " around tokens
         query = re.sub(r':=?r?([\'"])[^\1]+\1', lambda m: m.group(0).replace(' ', '\0'), query)  # Keep modded spaces
