@@ -298,12 +298,3 @@ class VEM(CogMixin):
     @staticmethod
     def midnight() -> float:
         return get_last_time(NEW_DAY, NA_TIMEZONE).astimezone(timezone.utc).timestamp()
-
-    @staticmethod
-    def get_count(arr: List[int], *elements: int) -> str:
-        if not arr:
-            return "N/A"
-        count = sum(1 for m in arr if m in elements)
-        if count == 0:
-            return "0"
-        return f"{round(100*count/len(arr), 3)}%"
