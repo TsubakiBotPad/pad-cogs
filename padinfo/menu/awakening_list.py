@@ -4,7 +4,7 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.enums import ChildMenuType
-from tsutils.menu.panes import emoji_buttons, MenuPanes
+from tsutils.menu.components.panes import emoji_buttons, MenuPanes
 
 from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListView, AwakeningListSortTypes
 

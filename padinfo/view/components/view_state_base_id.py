@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, List
 
 from discordmenu.embed.view_state import ViewState
 from tsutils.enums import AltEvoSort
+from tsutils.menu.components.config import UserConfig
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import EvoScrollViewState, MonsterEvolution
 

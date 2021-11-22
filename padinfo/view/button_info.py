@@ -4,17 +4,17 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text, BlockText
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL, ButtonInfoStatSet, \
     ButtonInfoResult
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

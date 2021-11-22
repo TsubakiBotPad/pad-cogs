@@ -3,18 +3,17 @@ from typing import List, TYPE_CHECKING
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
-
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
+from padinfo.view.components.evo_scroll_mixin import MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.components.evo_scroll_mixin import MonsterEvolution
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

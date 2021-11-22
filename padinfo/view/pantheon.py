@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, List
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
     get_rarity_emoji
 from padinfo.common.external_links import puzzledragonx

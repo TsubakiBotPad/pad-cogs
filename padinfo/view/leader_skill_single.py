@@ -4,15 +4,14 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
-
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.core.leader_skills import ls_single_multiplier_text
-from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.view_state_base import ViewStateBase
 from padinfo.view.common import get_monster_from_ims
+from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     pass
@@ -40,7 +39,9 @@ class LeaderSkillSingleViewState(ViewStateBase):
         query_settings = QuerySettings.deserialize(ims['query_settings'])
 
         mon = await get_monster_from_ims(dbcog, ims)
-        return LeaderSkillSingleViewState(original_author_id, menu_type, raw_query, query_settings, user_config.color, mon)
+        return LeaderSkillSingleViewState(original_author_id, menu_type,
+                                          raw_query, query_settings, user_config.color,
+                                          mon)
 
 
 class LeaderSkillSingleView:
