@@ -19,6 +19,7 @@ from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
 from tsutils.formatting import clean_global_mentions, strip_right_multiline
 from tsutils.json_utils import safe_read_json
+from tsutils.time import NA_TIMEZONE
 from tsutils.tsubaki import CLOUDFRONT_URL
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
@@ -1378,14 +1379,13 @@ class PadGlobal(commands.Cog):
     @commands.command(aliases=['currentinvade'])
     async def whichinvade(self, ctx):
         """Display which yinyangdra is currently invading for Mystics & Spectres event"""
-        pst = pytz.timezone("America/Los_Angeles")
-        curtime = datetime.datetime.now(pst)
-        if datetime.time(7) < curtime.time() < datetime.time(19):
+        curtime = datetime.datetime.now(NA_TIMEZONE)
+        if datetime.time(6) < curtime.time() < datetime.time(18):
             await ctx.send(self.c_commands['redinvadecurrent'])
-            totime = curtime.replace(hour=19, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=18, minute=0, second=0, microsecond=0)
         else:
             await ctx.send(self.c_commands['blueinvadecurrent'])
-            totime = curtime.replace(hour=7, minute=0, second=0, microsecond=0)
+            totime = curtime.replace(hour=6, minute=0, second=0, microsecond=0)
             if totime < curtime:
                 totime += datetime.timedelta(1)
         await ctx.send(inline("Invade switches in: " + humanize_timedelta(timedelta=totime - curtime)))
