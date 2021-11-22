@@ -4,6 +4,7 @@ from typing import Any, List, TYPE_CHECKING
 
 import time
 
+from discord import Color
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import LabeledText
@@ -13,9 +14,12 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE, NEW_DAY, get_last_time
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
+from crowddata.mixins.vem.menu.closable_embed import ClosableEmbedMenu
+from crowddata.mixins.vem.view.show_stats import ShowStatsViewProps, ShowStatsView
 from padinfo.view.components.monster.image import MonsterImage
 
 if TYPE_CHECKING:
@@ -228,13 +232,15 @@ class VEM(CogMixin):
     @adpem.command()
     async def showstats(self, ctx, *, query):
         dbcog: Any = ctx.bot.get_cog("DBCog")
-        pdicog: Any = ctx.bot.get_cog("PadInfo")
-        if dbcog is None or pdicog is None:
+
+        original_author_id = ctx.message.author.id
+
+        if dbcog is None:
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
         query = '" "'.join(query.split())
-        monsters = await dbcog.find_monsters(f'"inadpem" "{query}"')
+        monsters = await dbcog.find_monsters(f'inadpem {query}')
         if not monsters:
             return await ctx.send("No monsters matched that query.")
 
@@ -245,27 +251,15 @@ class VEM(CogMixin):
         you = [dbcog.get_monster(p) for uid, ps, ts in data if uid == ctx.author.id for p in ps]
         valid = [m for m in total if m in monsters]
 
-        fields = []
-        for mon, c in Counter(valid).most_common(6 if len(valid) == 6 else 5):
-            fields.append(EmbedField(mon.name_en, Box(
-                LabeledText("Net", self.get_count(total, mon)),
-                LabeledText("Adj", self.get_count(adj, mon)),
-                LabeledText("You", self.get_count(you, mon))
-            ), inline=True))
-        if len(set(valid)) > 6:
-            fields.append(EmbedField("... & More", Box(f"+ {len(valid) - 5} more monsters"), inline=True))
-        await ctx.send(embed=EmbedView(
-            EmbedMain(
-                title=f"AdPEM Data for query: {query}",
-                description=Box(
-                LabeledText("Net", self.get_count(total, *set(valid))),
-                LabeledText("Adj", self.get_count(adj, *set(valid))),
-                LabeledText("You", self.get_count(you, *set(valid)))
-                )
-            ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(Counter(valid).most_common(1)[0][0])),
-            embed_fields=fields
-        ).to_embed())
+        if not valid:
+            return await ctx.send("No monsters matching that query have been pulled.")
+
+        menu = ClosableEmbedMenu.menu()
+        props = ShowStatsViewProps(total, adj, you, valid)
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
+                                       Color.default(), ShowStatsView.VIEW_TYPE, props)
+
+        await menu.create(ctx, state)
 
     async def assert_ready(self, ctx, midnight: float) -> bool:
         pulls = await self.config.pulls()

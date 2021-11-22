@@ -4,13 +4,16 @@ from io import BytesIO
 from redbot.core import Config
 from redbot.core.bot import Red
 
-from crowddata.mixins.vem import VEM
+from crowddata.menu_map import crowddata_menu_map
+from crowddata.mixins.vem.vem import VEM
 
 logger = logging.getLogger('red.misc-cogs.crowddata')
 
 
 class CrowdData(VEM):
     """Stores user preferences for users."""
+
+    menu_map = crowddata_menu_map
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,3 +35,15 @@ class CrowdData(VEM):
     async def red_delete_data_for_user(self, *, requester, user_id):
         """Delete a user's personal data."""
         await self.delete_mixin_user_data(requester, user_id)
+
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
+
+    async def get_menu_default_data(self, ims):
+        data = {}
+        return data
