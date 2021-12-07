@@ -1,6 +1,9 @@
+from tsutils.menu.closable_embed_base import ClosableEmbedMenuPanes
+from tsutils.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
+
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
 from padinfo.menu.button_info import ButtonInfoMenu, ButtonInfoMenuPanes
-from padinfo.menu.closable_embed import ClosableEmbedMenu, ClosableEmbedMenuPanes
+from padinfo.menu.closable_embed import ClosableEmbedMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu, LeaderSkillMenuPanes
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu, LeaderSkillSingleMenuPanes
@@ -8,7 +11,6 @@ from padinfo.menu.monster_list import MonsterListMenu, MonsterListMenuPanes
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
 from padinfo.menu.scroll import ScrollMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollMenu, SeriesScrollMenuPanes
-from padinfo.menu.simple_text import SimpleTextMenu, SimpleTextMenuPanes
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState

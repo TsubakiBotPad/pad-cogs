@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, List, Optional
 
+from tsutils.menu.components.config import UserConfig
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListView
 
 if TYPE_CHECKING:

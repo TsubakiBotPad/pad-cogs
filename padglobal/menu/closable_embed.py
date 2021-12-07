@@ -1,7 +1,7 @@
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
+from tsutils.menu.components.panes import MenuPanes
 
-from tsutils.menu.panes import MenuPanes
 from padglobal.view.closable_embed import ClosableEmbedViewState
 from padglobal.view.which import WhichView
 

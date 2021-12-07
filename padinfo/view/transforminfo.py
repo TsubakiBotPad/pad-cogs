@@ -5,16 +5,16 @@ from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.enums import LsMultiplier
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.monster.image import MonsterImage
-from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

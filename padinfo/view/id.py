@@ -5,10 +5,10 @@ from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.enums import CardLevelModifier, CardModeModifier, CardPlusModifier, Server
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text

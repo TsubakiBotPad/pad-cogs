@@ -19,10 +19,13 @@ from tsutils.emoji import char_to_emoji
 from tsutils.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, LsMultiplier, \
     Server
 from tsutils.json_utils import safe_read_json
+from tsutils.menu.components.config import BotConfig
+from tsutils.menu.simple_text import SimpleTextMenu
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import QuerySettings
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
-from padinfo.common.config import BotConfig
 from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from padinfo.core.button_info import button_info
@@ -40,13 +43,11 @@ from padinfo.menu.monster_list import MonsterListEmoji, MonsterListMenu, Monster
 from padinfo.menu.na_diff import NaDiffMenu, NaDiffMenuPanes
 from padinfo.menu.scroll import ScrollMenuPanes
 from padinfo.menu.series_scroll import SeriesScrollEmoji, SeriesScrollMenu, SeriesScrollMenuPanes
-from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.menu.transforminfo import TransformInfoMenu, TransformInfoMenuPanes
 from padinfo.reaction_list import get_id_menu_initial_reaction_list
 from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProps
 from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListViewState
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
-from padinfo.view.closable_embed import ClosableEmbedViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
@@ -67,7 +68,6 @@ from padinfo.view.otherinfo import OtherInfoViewState
 from padinfo.view.pantheon import PantheonViewState
 from padinfo.view.pic import PicViewState
 from padinfo.view.series_scroll import SeriesScrollViewState
-from padinfo.view.simple_text import SimpleTextViewState
 from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:

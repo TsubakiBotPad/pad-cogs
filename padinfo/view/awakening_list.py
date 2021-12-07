@@ -3,11 +3,11 @@ from typing import List
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.view_state_base import ViewStateBase
 
-from padinfo.common.config import UserConfig
 from padinfo.view.common import get_awoken_skill_description
-from padinfo.view.components.view_state_base import ViewStateBase
 
 
 class AwakeningListSortTypes:

@@ -4,10 +4,10 @@ from discord import Message
 from discordmenu.embed.menu import EmbedMenu, EmbedControl
 from tsutils.emoji import char_to_emoji
 from tsutils.enums import ChildMenuType
-from tsutils.menu.panes import MenuPanes
+from tsutils.menu.components.panes import MenuPanes
+from tsutils.menu.simple_text import SimpleTextMenu
 
 from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
-from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.evos import EvosView, EvosViewState
 from padinfo.view.id import IdView, IdViewState

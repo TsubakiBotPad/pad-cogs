@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain
 from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.footers import embed_footer_with_state
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 from padinfo.view.components.monster.header import MonsterHeader
