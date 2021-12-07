@@ -4,11 +4,11 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.enums import Server, ChildMenuType
-from tsutils.menu.panes import MenuPanes
+from tsutils.menu.components.panes import MenuPanes
+from tsutils.menu.simple_text import SimpleTextMenu
+from tsutils.menu.view.simple_text import SimpleTextViewState, SimpleTextView
 
-from padinfo.menu.simple_text import SimpleTextMenu
 from padinfo.view.id import IdViewState, IdView
-from padinfo.view.simple_text import SimpleTextViewState, SimpleTextView
 
 
 class NaDiffEmoji:

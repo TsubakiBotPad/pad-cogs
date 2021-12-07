@@ -7,7 +7,7 @@ from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core.utils.chat_formatting import humanize_number
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader

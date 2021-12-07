@@ -3,7 +3,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.menu.footers import embed_footer_with_state
+from tsutils.menu.components.footers import embed_footer_with_state
 
 STAR = '* '
 BULLET_EMOJIS = ['db', 'dp', 'dg']

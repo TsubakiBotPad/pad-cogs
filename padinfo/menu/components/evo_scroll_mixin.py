@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Optional
 
 from discord import Message
-from tsutils.menu.panes import MenuPanes
+from tsutils.menu.components.panes import MenuPanes
 
 from padinfo.view.components.evo_scroll_mixin import EvoScrollViewState
 

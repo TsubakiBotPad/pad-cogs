@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 from discord import Message
 from discordmenu.embed.menu import EmbedControl, EmbedMenu
 from tsutils.emoji import char_to_emoji
-from tsutils.menu.panes import MenuPanes, emoji_buttons
+from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
 from padinfo.menu.id import IdMenu, IdMenuEmoji
 from padinfo.menu.na_diff import NaDiffEmoji, NaDiffMenu

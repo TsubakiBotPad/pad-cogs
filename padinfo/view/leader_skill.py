@@ -4,15 +4,14 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.menu.footers import embed_footer_with_state
-
+from tsutils.menu.components.config import UserConfig
+from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
 
-from padinfo.common.config import UserConfig
-from padinfo.core.leader_skills import ls_multiplier_text
 from padinfo.core.leader_skills import leaderskill_query
+from padinfo.core.leader_skills import ls_multiplier_text
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.view_state_base import ViewStateBase
 
 if TYPE_CHECKING:
     pass
