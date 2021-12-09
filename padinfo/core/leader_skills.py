@@ -57,7 +57,9 @@ def _format_number(val):
 
 
 def _format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
-    resist = ' Resist {}%'.format(_format_number(100 * resist)) if resist else ''
+    resist_val = ' Resist {}%'.format(_format_number(100 * resist)) if resist else ''
+
+    ehp = ' [{}x eHP]'.format(_format_number(hp / (1 - resist))) if resist else ''
 
     combos = '+{}c'.format(combo) if combo else ''
     true_damage = '{}'.format(_humanize_number(fua, 2)) if fua else ''
@@ -66,7 +68,7 @@ def _format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
     joined = ' '.join((a for a in [combos, true_damage, any_fua] if a))
     extras = f"[{joined}]" if joined else ''
 
-    return f"[{_format_number(hp)}/{_format_number(atk)}/{_format_number(rcv)}{resist}] {extras}"
+    return f"[{_format_number(hp)}/{_format_number(atk)}/{_format_number(rcv)}{resist_val}]{ehp} {extras}"
 
 
 async def leaderskill_query(dbcog, raw_query, author_id):
