@@ -55,7 +55,7 @@ class MonIdListener(commands.Cog):
                     m = await dbcog.find_monster(i, message.author.id)
                     if not m:  # monster not found
                         continue
-                    ret += "[{}] {}{}\n".format(i, m.name_en, " (untradable)" if m.sell_mp > 100 else "")
+                    ret += "[{}] {}{}\n".format(i, m.name_en, " (untradable)" if m.sell_mp >= 100 else "")
                 if ret != "":
                     await channel.send(ret)
 
