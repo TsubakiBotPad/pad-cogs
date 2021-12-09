@@ -13,7 +13,7 @@ class MonIdListener(commands.Cog):
 
         self.config = Config.get_conf(self, identifier=10100779)
         self.config.register_channel(enabled=False)
-        
+
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
         data = "No data is stored for user with ID {}.\n".format(user_id)
@@ -30,7 +30,7 @@ class MonIdListener(commands.Cog):
     async def on_message(self, message):
         channel = message.channel
         content = message.content
-        content = re.sub(r'297','',content)
+        content = re.sub(r'297', '', content)
         if await self.config.channel(channel).enabled():
             if message.guild is None:  # dms
                 return
@@ -50,12 +50,12 @@ class MonIdListener(commands.Cog):
                 matches = re.findall(r'\b\d{3,4}\b', content)
                 ret = ""
                 for i in matches:
-                    if(i=="100"): # skip when people say "is 100 mp or over" ~~and ryan's posts~~
+                    if (i == "100"):  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
                         continue
                     m = await dbcog.find_monster(i, message.author.id)
                     if not m:  # monster not found
                         continue
-                    ret += "[{}] {}\n".format(i, m.name_en)
+                    ret += "[{}] {}{}\n".format(i, m.name_en, " (untradable)" if m.sell_mp >= 100 else "")
                 if ret != "":
                     await channel.send(ret)
 
