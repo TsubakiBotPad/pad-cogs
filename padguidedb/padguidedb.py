@@ -31,7 +31,7 @@ class PadGuideDb(commands.Cog):
         self.settings = PadGuideDbSettings("padguidedb")
 
         self.queue_size = 0
-        self.full_etl_lock = asyncio.Lock()
+        self.pipeline_lock = asyncio.Lock()
         self.dungeon_lock = asyncio.Lock()
         self.extract_images_lock = asyncio.Lock()
         self.dungeon_load_lock = asyncio.Lock()
@@ -223,28 +223,38 @@ class PadGuideDb(commands.Cog):
 
     @pipeline.command()
     @is_padguidedb_admin()
-    async def fulletl(self, ctx):
+    async def fulletl(self, ctx, server='COMBINED'):
         """Runs a job which downloads pad data, and updates the padguide database."""
-        if self.full_etl_lock.locked():
-            await ctx.send(inline('Full ETL already running'))
+        await self.runetl(ctx, '--server='+server)
+
+    @pipeline.command()
+    @is_padguidedb_admin()
+    async def savechanges(self, ctx):
+        """Runs a job which saves changes made by CRUD."""
+        await self.runetl(ctx, '--skipdownload', '--processors=Monsters')
+
+    async def runetl(self, ctx, *args):
+        if self.pipeline_lock.locked():
+            await ctx.send(inline('Manual pipeline already running'))
             return
 
-        async with self.full_etl_lock:
-            await ctx.send(inline('Running full ETL pipeline: this could take a while'))
+        async with self.pipeline_lock:
+            await ctx.send(inline('Running pipeline: this could take a while'))
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.fullETLFile(),
+                *args,
 
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await process.communicate()
 
-            if b"Pipeline completed successfully!" not in stderr:
-                logger.error("Full ETL Error:\n" + stderr.decode())
-                await ctx.send(inline('Full ETL failed'))
-                return
-        await ctx.send(inline('Full ETL finished'))
+        if b"Pipeline completed successfully!" not in stderr:
+            logger.error("Pipeline Error:\n" + stderr.decode())
+            await ctx.send(inline('Pipeline failed'))
+        else:
+            await ctx.send(inline('Pipeline finished'))
 
     @pipeline.command()
     @is_padguidedb_admin()
