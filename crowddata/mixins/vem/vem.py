@@ -72,11 +72,11 @@ class VEM(CogMixin):
         if not await self.config.user(ctx.author).opted_in():
             return await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
 
-        if len(pulls := pulls.split(',')) != 4:
-            return await ctx.send(f"Please supply all 4 pulls with commas in between them. You can use names or"
+        if len(pulls := pulls.split(',')) != 5:
+            return await ctx.send(f"Please supply all 5 pulls with commas in between them. You can use names or"
                                   f" numbers.\n\t"
-                                  f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013`\n\t"
-                                  f"Valid input: `{ctx.prefix}adpem report Enoch, Facet, D Globe, B Super King`")
+                                  f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013, 618`\n\t"
+                                  f"Valid input: `{ctx.prefix}adpem report Enoch, Facet, D Globe, B Super King, Facet`")
 
         dbcog: Any = ctx.bot.get_cog("DBCog")
         pdicog: Any = ctx.bot.get_cog("PadInfo")
