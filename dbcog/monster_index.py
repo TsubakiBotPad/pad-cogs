@@ -465,9 +465,9 @@ class MonsterIndex:
         if self.graph.monster_is_pem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.PEM])
         if self.graph.monster_is_vem_evo(monster):
-            modifiers.update(MISC_MAP[MiscModifiers.VEM])
+            modifiers.update(MISC_MAP[MiscModifiers.ADPEM])
         if monster.in_vem:
-            modifiers.update(MISC_MAP[MiscModifiers.INVEM])
+            modifiers.update(MISC_MAP[MiscModifiers.INADPEM])
 
         if self.graph.monster_is_rem_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.REM])

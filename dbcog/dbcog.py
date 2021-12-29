@@ -14,7 +14,7 @@ from functools import reduce
 
 import time
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import discord
 from redbot.core import Config, checks, commands, data_manager
@@ -27,7 +27,7 @@ from tsutils.user_interaction import StatusManager, send_confirmation_message
 
 from . import token_mappings
 from .database_loader import load_database
-from .find_monster import FindMonster
+from .find_monster import FindMonster, MatchMap
 from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
@@ -324,6 +324,9 @@ class DBCog(commands.Cog, IdTest):
 
     async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
         return await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
+
+    async def _find_monster_debug(self, query: str) -> Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel], int]:
+        return await FindMonster(self, self.fm_flags_default).find_monster_debug(query)
 
     @staticmethod
     def get_aliased_attribute(monster: MonsterModel, alias: str) -> Union[Dict[str, Any], Any]:

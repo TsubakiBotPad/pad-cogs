@@ -1,6 +1,6 @@
 from tsutils.menu.closable_embed_base import ClosableEmbedMenuBase
 
-from crowddata.mixins.vem.view.show_stats import ShowStatsView
+from crowddata.mixins.adpem.view.show_stats import ShowStatsView
 
 
 class ClosableEmbedMenu(ClosableEmbedMenuBase):

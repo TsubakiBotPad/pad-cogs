@@ -179,8 +179,8 @@ class MiscModifiers(Enum):
     TRADEABLE = 'Tradeable'
     REM = 'In REM'
     PEM = 'In PEM'
-    VEM = 'In VEM'
-    INVEM = 'This evo is in VEM'
+    ADPEM = 'In AdPEM'
+    INADPEM = 'This evo is in AdPEM'
     MP = 'MP'
     INJP = 'In JP Server'
     ONLYJP = 'Only in JP Server'
@@ -210,8 +210,8 @@ MISC_MAP = {
     MiscModifiers.TRADEABLE: ('tradeable', 'tradable'),
     MiscModifiers.REM: ('rem',),
     MiscModifiers.PEM: ('pem',),
-    MiscModifiers.VEM: ('vem', 'adpem'),
-    MiscModifiers.INVEM: ('invem', 'inadpem'),
+    MiscModifiers.ADPEM: ('adpem', 'adpem'),
+    MiscModifiers.INADPEM: ('invem', 'inadpem'),
     MiscModifiers.MP: ('mp',),
     MiscModifiers.INJP: ('injp',),
     MiscModifiers.INNA: ('inna',),
