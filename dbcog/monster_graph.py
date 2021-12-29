@@ -160,10 +160,10 @@ class MonsterGraph(object):
             awakening_model = AwakeningModel(awoken_skill_model=awoken_skill_model, **a)
             mtoawo[a.monster_id].append(awakening_model)
 
-        mtoegg = defaultdict(lambda: {'pem': False, 'rem': False, 'vem': False})
+        mtoegg = defaultdict(lambda: {'pem': False, 'rem': False, 'adpem': False})
         for e in ems:
             data = json.loads(e.contents)
-            e_type = 'pem' if e.type == "PEM" else 'vem' if e.type == "VEM" else 'rem'
+            e_type = 'pem' if e.type == "PEM" else 'adpem' if e.type == "VEM" else 'rem'
             for m in data:
                 idx = int(m[1:-1])  # Remove parentheses
                 mtoegg[idx][e_type] = True
@@ -228,7 +228,7 @@ class MonsterGraph(object):
                                    is_farmable=m.drop_id is not None,
                                    in_pem=mtoegg[m.monster_id]['pem'],
                                    in_rem=mtoegg[m.monster_id]['rem'],
-                                   in_vem=mtoegg[m.monster_id]['vem'],
+                                   in_vem=mtoegg[m.monster_id]['adpem'],
                                    buy_mp=m.buy_mp,
                                    sell_mp=m.sell_mp,
                                    sell_gold=m.sell_gold,
@@ -716,7 +716,7 @@ class MonsterGraph(object):
         elif self.monster_is_pem_evo(monster):
             return 'PEM Card'
         elif self.monster_is_vem_evo(monster):
-            return 'VEM Card'
+            return 'AdPem Card'
 
     def numeric_next_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
         next_monster = None
