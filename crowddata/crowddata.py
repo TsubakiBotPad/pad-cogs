@@ -5,12 +5,12 @@ from redbot.core import Config
 from redbot.core.bot import Red
 
 from crowddata.menu_map import crowddata_menu_map
-from crowddata.mixins.vem.vem import VEM
+from crowddata.mixins.adpem.adpem import AdPEMStats
 
 logger = logging.getLogger('red.misc-cogs.crowddata')
 
 
-class CrowdData(VEM):
+class CrowdData(AdPEMStats):
     """Stores user preferences for users."""
 
     menu_map = crowddata_menu_map

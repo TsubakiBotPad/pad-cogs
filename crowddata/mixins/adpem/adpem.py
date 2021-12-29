@@ -1,14 +1,8 @@
-from collections import Counter
 from datetime import timezone
-from typing import Any, List, TYPE_CHECKING
+from typing import Any
 
 import time
-
 from discord import Color
-from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
-from discordmenu.embed.text import LabeledText
-from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -18,12 +12,8 @@ from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE, NEW_DAY, get_last_time
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
-from crowddata.mixins.vem.menu.closable_embed import ClosableEmbedMenu
-from crowddata.mixins.vem.view.show_stats import ShowStatsViewProps, ShowStatsView
-from padinfo.view.components.monster.image import MonsterImage
-
-if TYPE_CHECKING:
-    from dbcog.models.monster_model import MonsterModel
+from crowddata.mixins.adpem.menu.closable_embed import ClosableEmbedMenu
+from crowddata.mixins.adpem.view.show_stats import ShowStatsView, ShowStatsViewProps
 
 
 def opted_in(is_opted):
@@ -33,7 +23,7 @@ def opted_in(is_opted):
     return commands.check(check)
 
 
-class VEM(CogMixin):
+class AdPEMStats(CogMixin):
     config: Config
     bot: Red
 
@@ -87,27 +77,23 @@ class VEM(CogMixin):
         if not await self.assert_ready(ctx, self.midnight() - offset):
             return
 
-        monsters = [await dbcog.find_monster('vem ' + pull.strip())
+        monsters = [await dbcog.find_monster('inadpem ' + pull.strip())
                     for pull in pulls]
+
         if not all(monsters):
             unknown = '\n\t'.join(s for s, m in zip(pulls, monsters) if m is None)
             return await ctx.send(f"Not all monsters were valid. The following could not be processed:\n\t{unknown}")
 
-        def get_vem_evo(mon: "MonsterModel") -> "MonsterModel":
-            return {m for m in dbcog.database.graph.get_alt_monsters(mon) if m.in_vem}.pop()
-
-        correct_evos = [get_vem_evo(m) for m in monsters]
-
         check = '\n\t'.join(pdicog.monster_header.fmt_id_header(m, use_emoji=True).to_markdown()
-                            for m in correct_evos)
+                            for m in monsters)
         confirmation = await get_user_confirmation(ctx, f"Are these monsters correct?\n\t{check}",
-                                           timeout=30, force_delete=False, show_feedback=True)
+                                                   timeout=30, force_delete=False, show_feedback=True)
         if not confirmation:
             if confirmation is None:
                 await ctx.send(ctx.author.mention + " Submission timed out. Please resubmit and verify.")
             return
 
-        await self.add_pull(ctx, [m.monster_id for m in correct_evos], time.time() - offset)
+        await self.add_pull(ctx, [m.monster_id for m in monsters], time.time() - offset)
 
     @report.command()
     async def skip(self, ctx):
