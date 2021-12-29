@@ -18,7 +18,11 @@ from crowddata.mixins.adpem.view.show_stats import ShowStatsView, ShowStatsViewP
 
 def opted_in(is_opted):
     async def check(ctx):
-        return is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in()
+        if is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in():
+            return True
+        if is_opted and len(ctx.invoked_parents) != 1:
+            await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
+        return False
 
     return commands.check(check)
 
@@ -59,9 +63,6 @@ class AdPEMStats(CogMixin):
         await self.report_at_time(ctx, pulls, 24 * 60 * 60)
 
     async def report_at_time(self, ctx, pulls, offset):
-        if not await self.config.user(ctx.author).opted_in():
-            return await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
-
         if len(pulls := pulls.split(',')) != 5:
             return await ctx.send(f"Please supply all 5 pulls with commas in between them. You can use names or"
                                   f" numbers.\n\t"
