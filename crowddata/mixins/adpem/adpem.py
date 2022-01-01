@@ -80,7 +80,7 @@ class AdPEMStats(CogMixin):
             return
 
         monsters = [await dbcog.find_monster('inadpem ' + pull.strip())
-                    for pull in pulls]
+                    for pull in pulls_split]
 
         if not all(monsters):
             unknown = '\n\t'.join(s for s, m in zip(pulls, monsters) if m is None)
