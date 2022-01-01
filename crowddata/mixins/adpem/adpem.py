@@ -63,8 +63,8 @@ class AdPEMStats(CogMixin):
         await self.report_at_time(ctx, pulls, 24 * 60 * 60)
 
     async def report_at_time(self, ctx, pulls, offset):
-        pulls = pulls.split(',')
-        if len(pulls) != 5 and len(pulls) != 4:
+        pulls_split = pulls.split(',')
+        if len(pulls_split) != 5 and len(pulls_split) != 4:
             return await ctx.send(f"Please supply all of your pulls with commas in between them. You can use names or"
                                   f" numbers.\n\t"
                                   f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013, 618`\n\t"
