@@ -148,11 +148,11 @@ class MonsterGraph(object):
             table_suffix = "_" + server.value.lower()
             where = SERVER_ID_WHERE_CONDITION.format(["JP", "NA", "KR"].index(server.value))
 
-        ms = self.database.query_many(MONSTER_QUERY.format(table_suffix), ())
-        es = self.database.query_many(EVOS_QUERY.format(table_suffix), ())
-        aws = self.database.query_many(AWAKENINGS_QUERY.format(table_suffix), ())
-        ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where, ())
-        exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where, ())
+        ms = self.database.query_many(MONSTER_QUERY.format(table_suffix))
+        es = self.database.query_many(EVOS_QUERY.format(table_suffix))
+        aws = self.database.query_many(AWAKENINGS_QUERY.format(table_suffix))
+        ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where)
+        exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where)
 
         mtoawo = defaultdict(list)
         for a in aws:
