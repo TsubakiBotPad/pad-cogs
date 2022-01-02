@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Dict
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
@@ -13,7 +13,9 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
+    from dbcog.models.active_skill_model import ActiveSkillModel
     from dbcog.models.awakening_model import AwakeningModel
+    from dbcog.models.awoken_skill_model import AwokenSkillModel
 
 
 def _get_awakening_text(awakening: "AwakeningModel"):
@@ -84,6 +86,18 @@ class BaseIdMainView(BaseIdView):
             BoldText(active_cd),
             delimiter=' '
         )
+
+    @classmethod
+    def active_skill_text(cls, active_skill: "ActiveSkillModel",
+                          awoken_skill_map: Dict[int, "AwokenSkillModel"]):
+        if active_skill is None:
+            return 'None'
+        desc = active_skill.desc
+        for idx, awo_skill in awoken_skill_map.items():
+            phrase = awo_skill.name_en + ' awoken skill on the team'
+            if phrase in desc:
+                return desc.replace(phrase, f"{get_awakening_emoji(idx)} {phrase}")
+        return desc
 
     @staticmethod
     def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
