@@ -1,17 +1,20 @@
-import sqlite3 as lite
-
 import logging
+import sqlite3 as lite
+from typing import Dict, Generator, List, Optional, Tuple, TypeVar, Union
 
 logger = logging.getLogger('red.padbot-cogs.dbcog.database_manager')
 
-
-class DBCogTableNotFound(Exception):
-    def __init__(self, table_name):
-        self.message = '{} not found'.format(table_name)
+T = TypeVar('T')
 
 
-class DBCogDatabase(object):
-    def __init__(self, data_file):
+class DictWithAttrAccess(Dict[str, T]):
+    def __init__(self, item: Dict[str, T]):
+        super(DictWithAttrAccess, self).__init__(item)
+        self.__dict__ = self
+
+
+class DBCogDatabase:
+    def __init__(self, data_file: str):
         self._con = lite.connect(data_file, detect_types=lite.PARSE_DECLTYPES)
         self._con.row_factory = lite.Row
 
@@ -19,16 +22,17 @@ class DBCogDatabase(object):
         self.close()
         logger.info("Garbage Collecting Old Database")
 
-    def has_database(self):
+    def has_database(self) -> bool:
         return self._con is not None
 
-    def close(self):
+    def close(self) -> None:
         if self._con:
             self._con.close()
         self._con = None
 
     @staticmethod
-    def select_builder(tables, key=None, where=None, order=None, distinct=False):
+    def select_builder(tables, key: Optional[str] = None, where: Optional[str] = None,
+                       order: Optional[str] = None, distinct: bool = False) -> str:
         if distinct:
             SELECT_FROM = 'SELECT DISTINCT {fields} FROM {first_table}'
         else:
@@ -60,7 +64,10 @@ class DBCogDatabase(object):
             query.append(ORDER.format(order=order))
         return ' '.join(query)
 
-    def query_one(self, query, param):
+    def query_one(self, query: str, param: Tuple = None) -> Optional[DictWithAttrAccess]:
+        if param is None:
+            param = ()
+
         cursor = self._con.cursor()
         cursor.execute(query, param)
         res = cursor.fetchone()
@@ -68,42 +75,21 @@ class DBCogDatabase(object):
             return DictWithAttrAccess(res)
         return None
 
-    @staticmethod
-    def as_generator(cursor):
-        res = cursor.fetchone()
-        while res is not None:
-            yield DictWithAttrAccess(res)
-            res = cursor.fetchone()
+    def query_many(self, query: str, param: Tuple = None, idx_key: Optional[str] = None, as_generator: bool = False) \
+        -> Union[Generator[DictWithAttrAccess, None, None],
+                 List[DictWithAttrAccess],
+                 DictWithAttrAccess[DictWithAttrAccess]]:
+        if param is None:
+            param = ()
 
-    def query_many(self, query, param, idx_key=None, as_generator=False):
         cursor = self._con.cursor()
         cursor.execute(query, param)
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (DictWithAttrAccess(res)
-                    for res in cursor.fetchall())
+            return (DictWithAttrAccess(res) for res in cursor.fetchall())
         else:
             if idx_key is None:
                 return [DictWithAttrAccess(res) for res in cursor.fetchall()]
             else:
                 return DictWithAttrAccess({res[idx_key]: DictWithAttrAccess(res) for res in cursor.fetchall()})
-
-    def get_table_fields(self, table_name: str):
-        # SQL inject vulnerable :v
-        table_info = self.query_many('PRAGMA table_info(' + table_name + ')', (), dict)
-        pk = None
-        fields = []
-        for c in table_info:
-            if c['pk'] == 1:
-                pk = c['name']
-            fields.append(c['name'])
-        if len(fields) == 0:
-            raise DBCogTableNotFound(table_name)
-        return fields, pk
-
-
-class DictWithAttrAccess(dict):
-    def __init__(self, item):
-        super(DictWithAttrAccess, self).__init__(item)
-        self.__dict__ = self

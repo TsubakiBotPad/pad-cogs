@@ -852,7 +852,7 @@ class PadBuildImage(commands.Cog):
         Refresh assets folder
         """
         await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
-        awk_ids = self.bot.get_cog('DBCog').database.get_awoken_skill_ids()
+        awk_ids = self.bot.get_cog('DBCog').database.self.awoken_skill_map.keys()
         await self.settings.downloadAllAssets(awk_ids)
         await ctx.tick()
 
