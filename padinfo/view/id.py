@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
@@ -21,18 +21,20 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.awakening_model import AwakeningModel
+    from dbcog.models.awoken_skill_model import AwokenSkillModel
     from dbcog.database_context import DbContext
 
 
 class IdQueriedProps:
     def __init__(self, acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions,
-                 previous_transforms):
+                 previous_transforms, awoken_skill_map: Dict[int, "AwokenSkillModel"]):
         self.previous_evolutions = previous_evolutions
         self.true_evo_type_raw = true_evo_type_raw
         self.transform_base = transform_base
         self.previous_transforms = previous_transforms
         self.base_rarity = base_rarity
         self.acquire_raw = acquire_raw
+        self.awoken_skill_map = awoken_skill_map
 
 
 class IdViewState(ViewStateBaseId):
@@ -57,6 +59,7 @@ class IdViewState(ViewStateBaseId):
         self.previous_transforms = id_queried_props.previous_transforms
         self.transform_base: "MonsterModel" = id_queried_props.transform_base
         self.true_evo_type_raw = id_queried_props.true_evo_type_raw
+        self.awoken_skill_map = id_queried_props.awoken_skill_map
 
     def serialize(self):
         ret = super().serialize()
@@ -119,8 +122,9 @@ class IdViewState(ViewStateBaseId):
         base_rarity = db_context.graph.get_base_monster(monster).rarity
         previous_evolutions = db_context.graph.get_all_prev_evolutions(monster, include_self=True)
         previous_transforms = db_context.graph.get_all_prev_transforms(monster, include_self=False)
+        awoken_skill_map = db_context.awoken_skill_map
         return IdQueriedProps(acquire_raw, base_rarity, transform_base, true_evo_type_raw, previous_evolutions,
-                              previous_transforms)
+                              previous_transforms, awoken_skill_map)
 
     def set_na_diff_invalid_message(self, ims: dict) -> bool:
         message = self.get_na_diff_invalid_message()
@@ -275,7 +279,7 @@ class IdView(BaseIdMainView, EvoScrollView):
             ),
             EmbedField(
                 cls.active_skill_header(m, state.previous_transforms).to_markdown(),
-                Text(m.active_skill.desc if m.active_skill else 'None')
+                Text(cls.active_skill_text(m.active_skill, state.awoken_skill_map))
             ),
             EmbedField(
                 cls.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
