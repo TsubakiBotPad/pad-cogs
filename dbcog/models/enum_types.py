@@ -140,3 +140,4 @@ class AwokenSkills(Enum):
     ATTR3BOOST = 79
     ATTR4BOOST = 80
     ATTR5BOOST = 81
+    BLOBBOOST = 82

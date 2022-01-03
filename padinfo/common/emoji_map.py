@@ -89,6 +89,7 @@ AWAKENING_ID_TO_EMOJI_NAME_MAP = {
     79: 'boost_attr3',
     80: 'boost_attr4',
     81: 'boost_attr5',
+    82: 'blob_boost',
 }
 
 AWAKENING_RESTRICTED_LATENT_VALUE_TO_EMOJI_NAME_MAP = {
