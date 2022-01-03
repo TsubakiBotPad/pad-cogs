@@ -22,9 +22,10 @@ if TYPE_CHECKING:
 
 
 class TransformInfoQueriedProps:
-    def __init__(self, acquire_raw, previous_transforms):
+    def __init__(self, acquire_raw, previous_transforms, awoken_skill_map):
         self.acquire_raw = acquire_raw
         self.previous_transforms = previous_transforms
+        self.awoken_skill_map = awoken_skill_map
 
 
 class TransformInfoViewState(ViewStateBase):
@@ -37,6 +38,7 @@ class TransformInfoViewState(ViewStateBase):
         self.transformed_mon = transformed_mon
         self.acquire_raw = tfinfo_queried_props.acquire_raw
         self.previous_transforms = tfinfo_queried_props.previous_transforms
+        self.awoken_skill_map = tfinfo_queried_props.awoken_skill_map
         self.monster_ids = monster_ids
         self.is_jp_buffed = is_jp_buffed
         self.query_settings: QuerySettings = query_settings
@@ -80,7 +82,8 @@ class TransformInfoViewState(ViewStateBase):
         db_context: "DbContext"
         acquire_raw = db_context.graph.monster_acquisition(transformed_mon)
         previous_transforms = db_context.graph.get_all_prev_transforms(transformed_mon)
-        return TransformInfoQueriedProps(acquire_raw, previous_transforms)
+        awoken_skill_map = db_context.awoken_skill_map
+        return TransformInfoQueriedProps(acquire_raw, previous_transforms, awoken_skill_map)
 
 
 def _get_tf_stat_diff_text(stat, tf_stat):
@@ -199,10 +202,9 @@ class TransformInfoView(BaseIdMainView):
             EmbedField(
                 transformat(TransformInfoView.transform_active_header(transformed_mon).to_markdown()),
                 Box(
-                    Text(transformed_mon.active_skill.desc if transformed_mon.active_skill
-                         else 'None'),
+                    Text(cls.active_skill_text(transformed_mon.active_skill, state.awoken_skill_map)),
                     TransformInfoView.base_active_header(base_mon).to_markdown(),
-                    Text(base_mon.active_skill.desc if base_mon.active_skill else 'None')
+                    Text(cls.active_skill_text(base_mon.active_skill, state.awoken_skill_map))
                 )
             ),
             EmbedField(
