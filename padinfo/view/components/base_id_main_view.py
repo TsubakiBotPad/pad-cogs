@@ -1,3 +1,4 @@
+import re
 from abc import abstractmethod
 from typing import List, TYPE_CHECKING, Dict
 
@@ -94,9 +95,10 @@ class BaseIdMainView(BaseIdView):
             return 'None'
         desc = active_skill.desc
         for idx, awo_skill in awoken_skill_map.items():
-            phrase = awo_skill.name_en + ' awoken skill on the team'
-            if phrase in desc:
-                return desc.replace(phrase, f"{get_awakening_emoji(idx)} {phrase}")
+            # locate awoken skill names within the same clause as "on the team"
+            phrase_find = re.escape(awo_skill.name_en) + r'([^;]*?) awoken skill on the team'
+            phrase_repl = awo_skill.name_en + r'\1 awoken skill on the team'
+            desc = re.sub(phrase_find, f"{get_awakening_emoji(idx)} {phrase_repl}", desc)
         return desc
 
     @staticmethod
