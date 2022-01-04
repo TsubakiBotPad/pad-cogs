@@ -21,7 +21,7 @@ def opted_in(is_opted):
         if is_opted == await ctx.bot.get_cog("CrowdData").config.user(ctx.author).opted_in():
             return True
         if is_opted and len(ctx.invoked_parents) != 1:
-            await ctx.send(f"You need to opt in first via `{ctx.prefix}{' '.join(ctx.invoked_parents)} optin`")
+            await ctx.send(f"You need to opt in first via `{ctx.prefix}{ctx.invoked_parents[0]} optin`")
         return False
 
     return commands.check(check)
