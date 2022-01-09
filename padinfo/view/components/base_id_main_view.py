@@ -29,17 +29,6 @@ def _killer_latent_emoji(latent_name: str):
     return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
-def _get_compound_active_text(active: Optional["ActiveSkillModel"]) -> Optional[str]:
-    if active is None:
-        return None
-    return {
-        0: None,
-        1: f"[\N{GAME DIE} Random]",
-        2: f"[\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16} Transforms]",
-        3: f"[\N{BLACK UNIVERSAL RECYCLING SYMBOL}\N{VARIATION SELECTOR-16} Cycles]"
-    }.get(active.compound_skill_type_id)
-
-
 def _make_prefix(idx, compound_skill_type_id):
     return {
         0: '',
@@ -53,6 +42,13 @@ class BaseIdMainView(BaseIdView, ABC):
     transform_emoji_names = ['downr', 'downo', 'downy', 'downg', 'downb', 'downp']
     up_emoji_name = 'upgr'
     down_emoji_name = transform_emoji_names[0]
+
+    active_skill_type_texts = {
+        0: None,
+        1: f"[\N{GAME DIE} Random]",
+        2: f"[\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16} Transforms]",
+        3: f"[\N{BLACK UNIVERSAL RECYCLING SYMBOL}\N{VARIATION SELECTOR-16} Cycles]"
+    }
 
     @staticmethod
     def normal_awakenings_row(m: "MonsterModel"):
@@ -87,9 +83,11 @@ class BaseIdMainView(BaseIdView, ABC):
     def active_skill_header(cls, m: "MonsterModel", previous_transforms: List["MonsterModel"]):
 
         active_skill = m.active_skill
+        if active_skill is None:
+            return BoldText('Active Skill')
+
         if len(previous_transforms) == 0:
-            active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min) \
-                if active_skill else 'None'
+            active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min)
         else:
             skill_texts = []
             previous_transforms.reverse()
@@ -104,12 +102,20 @@ class BaseIdMainView(BaseIdView, ABC):
                                   cooldown_text))
             skill_texts.append('{} ({} cd)'.format(get_emoji(cls.up_emoji_name), m.active_skill.turn_max))
             active_cd = ' '.join(skill_texts)
+
         return Box(
             BoldText('Active Skill'),
-            BoldText(_get_compound_active_text(active_skill)),
+            cls.get_compound_active_text(active_skill),
             BoldText(active_cd),
             delimiter=' '
         )
+
+    @classmethod
+    def get_compound_active_text(cls, active: Optional["ActiveSkillModel"]) -> Optional[Box]:
+        text = cls.active_skill_type_texts.get(active.compound_skill_type_id)
+        if text is None:
+            return None
+        return BoldText(text)
 
     @classmethod
     def active_skill_text(cls, active_skill: Optional["ActiveSkillModel"],
