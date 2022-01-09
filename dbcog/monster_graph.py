@@ -9,7 +9,7 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DBCogDatabase
-from .models.active_skill_model import ActiveSkillModel
+from .models.active_skill_model import ActivePartModel, ActiveSkillModel, ActiveSubskillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel
@@ -38,21 +38,12 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.max_hp,
   leader_skills{0}.max_atk,
   leader_skills{0}.max_rcv,
-  leader_skills{0}.max_rcv,
   leader_skills{0}.max_shield,
   leader_skills{0}.max_combos,
   leader_skills{0}.bonus_damage,
   leader_skills{0}.mult_bonus_damage,
   leader_skills{0}.extra_time,
   leader_skills{0}.tags,
-  active_skills{0}.name_ja AS as_name_ja,
-  active_skills{0}.name_en AS as_name_en,
-  active_skills{0}.name_ko AS as_name_ko,
-  active_skills{0}.desc_ja AS as_desc_ja,
-  active_skills{0}.desc_en AS as_desc_en,
-  active_skills{0}.desc_ko AS as_desc_ko,
-  active_skills{0}.turn_max,
-  active_skills{0}.turn_min,
   COALESCE(series.series_id, 0) AS s_series_id,
   COALESCE(series.name_ja, 'Unsorted') AS s_name_ja,
   COALESCE(series.name_en, 'Unsorted') AS s_name_en,
@@ -154,6 +145,25 @@ class MonsterGraph(object):
         ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where)
         exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where)
 
+        aps = self.database.query_many("SELECT * FROM active_parts" + table_suffix,
+                                       idx_key='active_part_id', as_type=ActivePartModel)
+        ass_ap_ids = defaultdict(list)
+        for ass_ap in self.database.query_many(f"SELECT * FROM active_subskills_parts{table_suffix} "
+                                               f"ORDER BY order_idx"):
+            ass_ap_ids[ass_ap.active_subskill_id].append(aps[ass_ap.active_part_id])
+        asss = {}
+        for ass in self.database.query_many("SELECT * FROM active_subskills" + table_suffix):
+            asss[ass.active_subskill_id] = ActiveSubskillModel(active_parts=ass_ap_ids[ass.active_subskill_id],
+                                                               **ass)
+        as_ass_ids = defaultdict(list)
+        for as_ass in self.database.query_many(f"SELECT * FROM active_skills_subskills{table_suffix} "
+                                               f"ORDER BY order_idx"):
+            as_ass_ids[as_ass.active_skill_id].append(asss[as_ass.active_subskill_id])
+        acts = {}
+        for act in self.database.query_many("SELECT * FROM active_skills" + table_suffix):
+            acts[act.active_skill_id] = ActiveSkillModel(active_subskills=as_ass_ids[act.active_skill_id],
+                                                         **act)
+
         mtoawo = defaultdict(list)
         for a in aws:
             awoken_skill_model = AwokenSkillModel(**a)
@@ -189,17 +199,6 @@ class MonsterGraph(object):
                                         tags=m.tags,
                                         ) if m.leader_skill_id != 0 else None
 
-            as_model = ActiveSkillModel(active_skill_id=m.active_skill_id,
-                                        name_ja=m.as_name_ja,
-                                        name_en=m.as_name_en,
-                                        name_ko=m.as_name_ko,
-                                        desc_ja=m.as_desc_ja,
-                                        desc_en=m.as_desc_en,
-                                        desc_ko=m.as_desc_ko,
-                                        turn_max=m.turn_max,
-                                        turn_min=m.turn_min
-                                        ) if m.active_skill_id != 0 else None
-
             s_model = SeriesModel(series_id=m.s_series_id,
                                   name_ja=m.s_name_ja,
                                   name_en=m.s_name_en,
@@ -215,7 +214,7 @@ class MonsterGraph(object):
                                    name_is_translation=m.is_translation,
                                    awakenings=mtoawo[m.monster_id],
                                    leader_skill=ls_model,
-                                   active_skill=as_model,
+                                   active_skill=acts.get(m.active_skill_id),
                                    series=s_model,
                                    series_id=m.s_series_id,
                                    attribute_1_id=m.attribute_1_id,
