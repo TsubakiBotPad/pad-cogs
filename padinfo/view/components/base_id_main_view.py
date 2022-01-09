@@ -122,7 +122,7 @@ class BaseIdMainView(BaseIdView):
         if active_skill is None:
             return 'None'
         return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id)
-                         + jinja2.Template(subskill.desc_templated_en).render(**jinja2_replacements)
+                         + jinja2.Template(subskill.desc_templated).render(**jinja2_replacements)
                          for c, subskill in enumerate(active_skill.active_subskills, 1))
 
     @staticmethod

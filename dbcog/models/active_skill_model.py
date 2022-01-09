@@ -19,6 +19,10 @@ class ActivePartModel(BaseModel):
     def desc(self):
         return self.desc_en or self.desc_ja
 
+    @property
+    def desc_templated(self):
+        return self.desc_templated_en or self.desc_templated_ja
+
     def to_dict(self):
         return {
             'active_part_id': self.active_part_id,
@@ -47,8 +51,16 @@ class ActiveSubskillModel(BaseModel):
         self.active_parts = active_parts
 
     @property
+    def name(self):
+        return self.name_en or self.name_ja
+
+    @property
     def desc(self):
         return self.desc_en or self.desc_ja
+
+    @property
+    def desc_templated(self):
+        return self.desc_templated_en or self.desc_templated_ja
 
     def to_dict(self):
         return {
