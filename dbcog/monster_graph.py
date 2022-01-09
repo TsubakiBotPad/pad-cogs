@@ -9,7 +9,7 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DBCogDatabase
-from .models.active_skill_model import ActiveSkillModel
+from .models.active_skill_model import ActivePartModel, ActiveSkillModel, ActiveSubskillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel
@@ -38,21 +38,12 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.max_hp,
   leader_skills{0}.max_atk,
   leader_skills{0}.max_rcv,
-  leader_skills{0}.max_rcv,
   leader_skills{0}.max_shield,
   leader_skills{0}.max_combos,
   leader_skills{0}.bonus_damage,
   leader_skills{0}.mult_bonus_damage,
   leader_skills{0}.extra_time,
   leader_skills{0}.tags,
-  active_skills{0}.name_ja AS as_name_ja,
-  active_skills{0}.name_en AS as_name_en,
-  active_skills{0}.name_ko AS as_name_ko,
-  active_skills{0}.desc_ja AS as_desc_ja,
-  active_skills{0}.desc_en AS as_desc_en,
-  active_skills{0}.desc_ko AS as_desc_ko,
-  active_skills{0}.turn_max,
-  active_skills{0}.turn_min,
   COALESCE(series.series_id, 0) AS s_series_id,
   COALESCE(series.name_ja, 'Unsorted') AS s_name_ja,
   COALESCE(series.name_en, 'Unsorted') AS s_name_en,
@@ -74,6 +65,53 @@ FROM
   LEFT OUTER JOIN transformations{0} ON monsters{0}.monster_id = transformations{0}.from_monster_id
 GROUP BY
   monsters{0}.monster_id"""
+
+ACTIVE_QUERY = """SELECT
+  act.active_skill_id,
+  act.compound_skill_type_id,
+  act.name_ja AS act_name_ja,
+  act.name_en AS act_name_en,
+  act.name_ko AS act_name_ko,
+  act.desc_ja AS act_desc_ja,
+  act.desc_en AS act_desc_en,
+  act.desc_ko AS act_desc_ko,
+  act.desc_templated_ja AS act_desc_templated_ja,
+  act.desc_templated_en AS act_desc_templated_en,
+  act.desc_templated_ko AS act_desc_templated_ko,
+  act.desc_official_ja AS act_desc_official_ja,
+  act.desc_official_ko AS act_desc_official_ko,
+  act.desc_official_en AS act_desc_official_en,
+  act.turn_max,
+  act.turn_min,
+  ass.active_subskill_id,
+  ass.name_ja AS ass_name_ja,
+  ass.name_en AS ass_name_en,
+  ass.name_ko AS ass_name_ko,
+  ass.desc_ja AS ass_desc_ja,
+  ass.desc_en AS ass_desc_en,
+  ass.desc_ko AS ass_desc_ko,
+  ass.desc_templated_ja AS ass_desc_templated_ja,
+  ass.desc_templated_en AS ass_desc_templated_en,
+  ass.desc_templated_ko AS ass_desc_templated_ko,
+  ap.active_part_id,
+  ap.active_skill_type_id,
+  ap.desc_ja AS ap_desc_ja,
+  ap.desc_en AS ap_desc_en,
+  ap.desc_ko AS ap_desc_ko,
+  ap.desc_templated_ja AS ap_desc_templated_ja,
+  ap.desc_templated_en AS ap_desc_templated_en,
+  ap.desc_templated_ko AS ap_desc_templated_ko,
+  ass_ap.order_idx AS subskill_idx
+FROM
+  active_skills{0} AS act
+  JOIN active_skills_subskills{0} AS act_ass ON act.active_skill_id = act_ass.active_skill_id
+  JOIN active_subskills{0} AS ass ON act_ass.active_subskill_id = ass.active_subskill_id
+  JOIN active_subskills_parts{0} AS ass_ap ON ass.active_subskill_id = ass_ap.active_subskill_id
+  JOIN active_parts{0} AS ap ON ass_ap.active_part_id = ap.active_part_id
+ORDER BY
+  ass_ap.order_idx,
+  act_ass.order_idx
+"""
 
 # make sure we're only looking at the most recent row for any evolution
 # since the database might have old data in it still
@@ -154,6 +192,59 @@ class MonsterGraph(object):
         ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where)
         exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where)
 
+        as_query = self.database.query_many(ACTIVE_QUERY.format(table_suffix))
+        acts = {}
+        for row in as_query:
+            if row.active_skill_id not in acts:
+                acts[row.active_skill_id] = {
+                    'active_skill_id': row.active_skill_id,
+                    'compound_skill_type_id': row.compound_skill_type_id,
+                    'name_ja': row.act_name_ja,
+                    'name_en': row.act_name_en,
+                    'name_ko': row.act_name_ko,
+                    'desc_ja': row.act_desc_ja,
+                    'desc_en': row.act_desc_en,
+                    'desc_ko': row.act_desc_ko,
+                    'desc_templated_ja': row.act_desc_templated_ja,
+                    'desc_templated_en': row.act_desc_templated_en,
+                    'desc_templated_ko': row.act_desc_templated_ko,
+                    'desc_official_ja': row.act_desc_official_ja,
+                    'desc_official_ko': row.act_desc_official_ko,
+                    'desc_official_en': row.act_desc_official_en,
+                    'turn_max': row.turn_max,
+                    'turn_min': row.turn_min,
+
+                    'active_subskills': []
+                }
+            skill = acts[row.active_skill_id]
+            if len(skill['active_subskills']) <= row.subskill_idx:
+                skill['active_subskills'].append({
+                    'active_subskill_id': row.active_subskill_id,
+                    'name_ja': row.ass_name_ja,
+                    'name_en': row.ass_name_en,
+                    'name_ko': row.ass_name_ko,
+                    'desc_ja': row.ass_desc_ja,
+                    'desc_en': row.ass_desc_en,
+                    'desc_ko': row.ass_desc_ko,
+                    'desc_templated_ja': row.ass_desc_templated_ja,
+                    'desc_templated_en': row.ass_desc_templated_en,
+                    'desc_templated_ko': row.ass_desc_templated_ko,
+
+                    'active_parts': []
+                })
+            subskill = skill['active_subskills'][row.subskill_idx]
+            subskill['active_parts'].append({
+                'active_part_id': row.active_part_id,
+                'active_skill_type_id': row.active_skill_type_id,
+                'desc_ja': row.ap_desc_ja,
+                'desc_en': row.ap_desc_en,
+                'desc_ko': row.ap_desc_ko,
+                'desc_templated_ja': row.ap_desc_templated_ja,
+                'desc_templated_en': row.ap_desc_templated_en,
+                'desc_templated_ko': row.ap_desc_templated_ko,
+            })
+        acts = {asid: ActiveSkillModel(**act) for asid, act in acts.items()}
+
         mtoawo = defaultdict(list)
         for a in aws:
             awoken_skill_model = AwokenSkillModel(**a)
@@ -189,17 +280,6 @@ class MonsterGraph(object):
                                         tags=m.tags,
                                         ) if m.leader_skill_id != 0 else None
 
-            as_model = ActiveSkillModel(active_skill_id=m.active_skill_id,
-                                        name_ja=m.as_name_ja,
-                                        name_en=m.as_name_en,
-                                        name_ko=m.as_name_ko,
-                                        desc_ja=m.as_desc_ja,
-                                        desc_en=m.as_desc_en,
-                                        desc_ko=m.as_desc_ko,
-                                        turn_max=m.turn_max,
-                                        turn_min=m.turn_min
-                                        ) if m.active_skill_id != 0 else None
-
             s_model = SeriesModel(series_id=m.s_series_id,
                                   name_ja=m.s_name_ja,
                                   name_en=m.s_name_en,
@@ -215,7 +295,7 @@ class MonsterGraph(object):
                                    name_is_translation=m.is_translation,
                                    awakenings=mtoawo[m.monster_id],
                                    leader_skill=ls_model,
-                                   active_skill=as_model,
+                                   active_skill=acts.get(m.active_skill_id),
                                    series=s_model,
                                    series_id=m.s_series_id,
                                    attribute_1_id=m.attribute_1_id,
