@@ -1,4 +1,4 @@
-from typing import Collection, List, Optional
+from typing import Any, Collection, Dict, List, Optional, Sequence, Union
 
 from .base_model import BaseModel
 
@@ -28,7 +28,10 @@ class ActivePartModel(BaseModel):
 
 
 class ActiveSubskillModel(BaseModel):
-    def __init__(self, *, active_parts: Collection[ActivePartModel], **kwargs):
+    def __init__(self, *, active_parts: Sequence[Union[ActivePartModel, Dict[str, Any]]], **kwargs):
+        if active_parts and isinstance(active_parts[0], dict):
+            active_parts = [ActivePartModel(**ap) for ap in active_parts]
+
         self.active_subskill_id = kwargs['active_subskill_id']
 
         self.name_ja = kwargs['name_ja']
@@ -56,7 +59,10 @@ class ActiveSubskillModel(BaseModel):
 
 
 class ActiveSkillModel(BaseModel):
-    def __init__(self, *, active_subskills: Collection[ActiveSubskillModel], **kwargs):
+    def __init__(self, *, active_subskills: Sequence[Union[ActiveSubskillModel, Dict[str, Any]]], **kwargs):
+        if active_subskills and isinstance(active_subskills[0], dict):
+            active_subskills = [ActiveSubskillModel(**ass) for ass in active_subskills]
+
         self.active_skill_id = kwargs['active_skill_id']
         self.compound_skill_type_id = kwargs['compound_skill_type_id']
 

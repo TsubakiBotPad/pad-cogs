@@ -66,6 +66,53 @@ FROM
 GROUP BY
   monsters{0}.monster_id"""
 
+ACTIVE_QUERY = """SELECT
+  act.active_skill_id,
+  act.compound_skill_type_id,
+  act.name_ja AS act_name_ja,
+  act.name_en AS act_name_en,
+  act.name_ko AS act_name_ko,
+  act.desc_ja AS act_desc_ja,
+  act.desc_en AS act_desc_en,
+  act.desc_ko AS act_desc_ko,
+  act.desc_templated_ja AS act_desc_templated_ja,
+  act.desc_templated_en AS act_desc_templated_en,
+  act.desc_templated_ko AS act_desc_templated_ko,
+  act.desc_official_ja AS act_desc_official_ja,
+  act.desc_official_ko AS act_desc_official_ko,
+  act.desc_official_en AS act_desc_official_en,
+  act.turn_max,
+  act.turn_min,
+  ass.active_subskill_id,
+  ass.name_ja AS ass_name_ja,
+  ass.name_en AS ass_name_en,
+  ass.name_ko AS ass_name_ko,
+  ass.desc_ja AS ass_desc_ja,
+  ass.desc_en AS ass_desc_en,
+  ass.desc_ko AS ass_desc_ko,
+  ass.desc_templated_ja AS ass_desc_templated_ja,
+  ass.desc_templated_en AS ass_desc_templated_en,
+  ass.desc_templated_ko AS ass_desc_templated_ko,
+  ap.active_part_id,
+  ap.active_skill_type_id,
+  ap.desc_ja AS ap_desc_ja,
+  ap.desc_en AS ap_desc_en,
+  ap.desc_ko AS ap_desc_ko,
+  ap.desc_templated_ja AS ap_desc_templated_ja,
+  ap.desc_templated_en AS ap_desc_templated_en,
+  ap.desc_templated_ko AS ap_desc_templated_ko,
+  ass_ap.order_idx AS subskill_idx
+FROM
+  active_skills{0} AS act
+  JOIN active_skills_subskills{0} AS act_ass ON act.active_skill_id = act_ass.active_skill_id
+  JOIN active_subskills{0} AS ass ON act_ass.active_subskill_id = ass.active_subskill_id
+  JOIN active_subskills_parts{0} AS ass_ap ON ass.active_subskill_id = ass_ap.active_subskill_id
+  JOIN active_parts{0} AS ap ON ass_ap.active_part_id = ap.active_part_id
+ORDER BY
+  ass_ap.order_idx,
+  act_ass.order_idx
+"""
+
 # make sure we're only looking at the most recent row for any evolution
 # since the database might have old data in it still
 # group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
@@ -145,24 +192,58 @@ class MonsterGraph(object):
         ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where)
         exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where)
 
-        aps = self.database.query_many("SELECT * FROM active_parts" + table_suffix,
-                                       idx_key='active_part_id', as_type=ActivePartModel)
-        ass_ap_ids = defaultdict(list)
-        for ass_ap in self.database.query_many(f"SELECT * FROM active_subskills_parts{table_suffix} "
-                                               f"ORDER BY order_idx"):
-            ass_ap_ids[ass_ap.active_subskill_id].append(aps[ass_ap.active_part_id])
-        asss = {}
-        for ass in self.database.query_many("SELECT * FROM active_subskills" + table_suffix):
-            asss[ass.active_subskill_id] = ActiveSubskillModel(active_parts=ass_ap_ids[ass.active_subskill_id],
-                                                               **ass)
-        as_ass_ids = defaultdict(list)
-        for as_ass in self.database.query_many(f"SELECT * FROM active_skills_subskills{table_suffix} "
-                                               f"ORDER BY order_idx"):
-            as_ass_ids[as_ass.active_skill_id].append(asss[as_ass.active_subskill_id])
+        as_query = self.database.query_many(ACTIVE_QUERY.format(table_suffix))
         acts = {}
-        for act in self.database.query_many("SELECT * FROM active_skills" + table_suffix):
-            acts[act.active_skill_id] = ActiveSkillModel(active_subskills=as_ass_ids[act.active_skill_id],
-                                                         **act)
+        for row in as_query:
+            if row.active_skill_id not in acts:
+                acts[row.active_skill_id] = {
+                    'active_skill_id': row.active_skill_id,
+                    'compound_skill_type_id': row.compound_skill_type_id,
+                    'name_ja': row.act_name_ja,
+                    'name_en': row.act_name_en,
+                    'name_ko': row.act_name_ko,
+                    'desc_ja': row.act_desc_ja,
+                    'desc_en': row.act_desc_en,
+                    'desc_ko': row.act_desc_ko,
+                    'desc_templated_ja': row.act_desc_templated_ja,
+                    'desc_templated_en': row.act_desc_templated_en,
+                    'desc_templated_ko': row.act_desc_templated_ko,
+                    'desc_official_ja': row.act_desc_official_ja,
+                    'desc_official_ko': row.act_desc_official_ko,
+                    'desc_official_en': row.act_desc_official_en,
+                    'turn_max': row.turn_max,
+                    'turn_min': row.turn_min,
+
+                    'active_subskills': []
+                }
+            skill = acts[row.active_skill_id]
+            if len(skill['active_subskills']) <= row.subskill_idx:
+                skill['active_subskills'].append({
+                    'active_subskill_id': row.active_subskill_id,
+                    'name_ja': row.ass_name_ja,
+                    'name_en': row.ass_name_en,
+                    'name_ko': row.ass_name_ko,
+                    'desc_ja': row.ass_desc_ja,
+                    'desc_en': row.ass_desc_en,
+                    'desc_ko': row.ass_desc_ko,
+                    'desc_templated_ja': row.ass_desc_templated_ja,
+                    'desc_templated_en': row.ass_desc_templated_en,
+                    'desc_templated_ko': row.ass_desc_templated_ko,
+
+                    'active_parts': []
+                })
+            subskill = skill['active_subskills'][row.subskill_idx]
+            subskill['active_parts'].append({
+                'active_part_id': row.active_part_id,
+                'active_skill_type_id': row.active_skill_type_id,
+                'desc_ja': row.ap_desc_ja,
+                'desc_en': row.ap_desc_en,
+                'desc_ko': row.ap_desc_ko,
+                'desc_templated_ja': row.ap_desc_templated_ja,
+                'desc_templated_en': row.ap_desc_templated_en,
+                'desc_templated_ko': row.ap_desc_templated_ko,
+            })
+        acts = {asid: ActiveSkillModel(**act) for asid, act in acts.items()}
 
         mtoawo = defaultdict(list)
         for a in aws:
