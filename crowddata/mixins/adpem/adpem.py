@@ -32,7 +32,7 @@ class AdPEMStats(CogMixin):
     bot: Red
 
     def setup_self(self):
-        self.config.register_global(pulls=[])
+        self.config.register_global(pulls=[], valid_lengths=[4])
         self.config.register_user(opted_in=False, accounts=1, skipconf=False)
 
     async def red_get_data_for_user(self, *, user_id):
@@ -64,7 +64,7 @@ class AdPEMStats(CogMixin):
 
     async def report_at_time(self, ctx, pulls, offset):
         pulls_split = pulls.split(',')
-        if len(pulls_split) != 4:
+        if len(pulls_split) not in await self.config.valid_lengths():
             return await ctx.send(f"Please supply all of your pulls with commas in between them. You can use names or"
                                   f" numbers.\n\t"
                                   f"Valid input: `{ctx.prefix}adpem report 618, 3719, 3600, 3013, 618`\n\t"
@@ -216,6 +216,21 @@ class AdPEMStats(CogMixin):
     async def y_toggleskipconfirm(self, ctx):
         """Toggle if you want to confirm on skip/forgot"""
         await self.toggleskipconfirm(ctx)
+
+    @adpem.group(name="config")
+    @commands.is_owner()
+    async def v_config(self, ctx):
+        """Admin config"""
+        pass
+
+    @v_config.command()
+    async def maxrolls(self, ctx, *lens: int):
+        """Change the valid number of pulls.
+
+        If inputting multiple, separate with spaces
+        """
+        await self.config.valid_lengths.set(lens)
+        await ctx.tick()
 
     @adpem.command()
     async def showstats(self, ctx, *, query):
