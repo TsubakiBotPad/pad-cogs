@@ -85,12 +85,16 @@ class ActiveSkillModel(BaseModel):
         self.active_subskills = active_subskills
 
     @property
+    def name(self):
+        return self.name_en or self.name_ja
+
+    @property
     def desc(self):
         return self.desc_en or self.desc_ja
 
     @property
-    def name(self):
-        return self.name_en or self.name_ja
+    def desc_templated(self):
+        return self.desc_templated_en or self.desc_templated_ja
 
     def to_dict(self):
         return {

@@ -1,7 +1,8 @@
 import re
 from abc import abstractmethod
-from typing import List, TYPE_CHECKING, Dict
+from typing import List, Optional, TYPE_CHECKING, Dict
 
+import jinja2
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
@@ -89,17 +90,14 @@ class BaseIdMainView(BaseIdView):
         )
 
     @classmethod
-    def active_skill_text(cls, active_skill: "ActiveSkillModel",
+    def active_skill_text(cls, active_skill: Optional["ActiveSkillModel"],
                           awoken_skill_map: Dict[int, "AwokenSkillModel"]):
         if active_skill is None:
             return 'None'
-        desc = active_skill.desc
-        for idx, awo_skill in awoken_skill_map.items():
-            # locate awoken skill names within the same clause as "on the team"
-            phrase_find = re.escape(awo_skill.name_en) + r'([^;]*?) awoken skill on the team'
-            phrase_repl = awo_skill.name_en + r'\1 awoken skill on the team'
-            desc = re.sub(phrase_find, f"{get_awakening_emoji(idx)} {phrase_repl}", desc)
-        return desc
+        return jinja2.Template(active_skill.desc_templated).render(
+            awoskills={f"id{awid}": f"{get_awakening_emoji(awid)} {awo.name_en}"
+                       for awid, awo in awoken_skill_map.items()}
+        )
 
     @staticmethod
     def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
