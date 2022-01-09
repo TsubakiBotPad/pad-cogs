@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import timezone
 from typing import Any
 
@@ -14,6 +15,9 @@ from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 from crowddata.mixins.adpem.menu.closable_embed import ClosableEmbedMenu
 from crowddata.mixins.adpem.view.show_stats import ShowStatsView, ShowStatsViewProps
+
+# This is the timestamp of the most recent AdPEM reset
+LAST_RESET = 1640246400
 
 
 def opted_in(is_opted):
@@ -227,23 +231,25 @@ class AdPEMStats(CogMixin):
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
-        query = '" "'.join(query.split())
-        monsters = await dbcog.find_monsters(f'inadpem {query}')
-        if not monsters:
-            return await ctx.send("No monsters matched that query.")
+        async with ctx.typing():
+            query = '" "'.join(query.split())
+            monsters = await dbcog.find_monsters(f'inadpem "{query}"')
+            if not monsters:
+                return await ctx.send("No monsters matched that query.")
 
-        pulls = await self.config.pulls()
-        data = [d for d in pulls if type(d[1]) != str]
-        total = [dbcog.get_monster(p) for uid, ps, ts in data for p in ps]
-        adj = [dbcog.get_monster(p) for uid, ps, ts in data if self.has_good_data(uid, pulls) for p in ps]
-        you = [dbcog.get_monster(p) for uid, ps, ts in data if uid == ctx.author.id for p in ps]
-        valid = [m for m in total if m in monsters]
+            pulls = await self.config.pulls()
+            data = [(uid, ps, ts) for uid, ps, ts in pulls if not isinstance(ps, str) and ts > LAST_RESET]
+            total = [dbcog.get_monster(p) for uid, ps, ts in data for p in ps]
+            adj = [dbcog.get_monster(p) for uid, ps, ts in data if self.has_good_data(uid, pulls) for p in ps]
+            you = [dbcog.get_monster(p) for uid, ps, ts in data if uid == ctx.author.id for p in ps]
+            valid = {m for m in total if m in monsters}
+            most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
 
         if not valid:
             return await ctx.send("No monsters matching that query have been pulled.")
 
         menu = ClosableEmbedMenu.menu()
-        props = ShowStatsViewProps(total, adj, you, valid)
+        props = ShowStatsViewProps(total, adj, you, valid, most_common)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        Color.default(), ShowStatsView.VIEW_TYPE, props)
 
