@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 import jinja2
@@ -49,7 +49,7 @@ def _make_prefix(idx, compound_skill_type_id):
     }.get(compound_skill_type_id)
 
 
-class BaseIdMainView(BaseIdView):
+class BaseIdMainView(BaseIdView, ABC):
     transform_emoji_names = ['downr', 'downo', 'downy', 'downg', 'downb', 'downp']
     up_emoji_name = 'upgr'
     down_emoji_name = transform_emoji_names[0]
