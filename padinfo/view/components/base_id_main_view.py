@@ -1,10 +1,12 @@
-import re
-from abc import abstractmethod
-from typing import List, TYPE_CHECKING, Dict
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, TYPE_CHECKING
 
+import jinja2
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
+from discordmenu.emoji.emoji_cache import emoji_cache
+from tsutils.emoji import char_to_emoji
 from tsutils.enums import LsMultiplier
 
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
@@ -27,7 +29,27 @@ def _killer_latent_emoji(latent_name: str):
     return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
-class BaseIdMainView(BaseIdView):
+def _get_compound_active_text(active: Optional["ActiveSkillModel"]) -> Optional[str]:
+    if active is None:
+        return None
+    return {
+        0: None,
+        1: f"[\N{GAME DIE} Random]",
+        2: f"[\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16} Transforms]",
+        3: f"[\N{BLACK UNIVERSAL RECYCLING SYMBOL}\N{VARIATION SELECTOR-16} Cycles]"
+    }.get(active.compound_skill_type_id)
+
+
+def _make_prefix(idx, compound_skill_type_id):
+    return {
+        0: '',
+        1: emoji_cache.get_emoji('bd') + ' ',
+        2: char_to_emoji(str(idx)) + ' ',
+        3: char_to_emoji(str(idx)) + ' '
+    }.get(compound_skill_type_id)
+
+
+class BaseIdMainView(BaseIdView, ABC):
     transform_emoji_names = ['downr', 'downo', 'downy', 'downg', 'downb', 'downp']
     up_emoji_name = 'upgr'
     down_emoji_name = transform_emoji_names[0]
@@ -84,22 +106,24 @@ class BaseIdMainView(BaseIdView):
             active_cd = ' '.join(skill_texts)
         return Box(
             BoldText('Active Skill'),
+            BoldText(_get_compound_active_text(active_skill)),
             BoldText(active_cd),
             delimiter=' '
         )
 
     @classmethod
-    def active_skill_text(cls, active_skill: "ActiveSkillModel",
+    def active_skill_text(cls, active_skill: Optional["ActiveSkillModel"],
                           awoken_skill_map: Dict[int, "AwokenSkillModel"]):
+        jinja2_replacements = {
+            'awoskills': {f"id{awid}": f"{get_awakening_emoji(awid)} {awo.name_en}"
+                          for awid, awo in awoken_skill_map.items()}
+        }
+
         if active_skill is None:
             return 'None'
-        desc = active_skill.desc
-        for idx, awo_skill in awoken_skill_map.items():
-            # locate awoken skill names within the same clause as "on the team"
-            phrase_find = re.escape(awo_skill.name_en) + r'([^;]*?) awoken skill on the team'
-            phrase_repl = awo_skill.name_en + r'\1 awoken skill on the team'
-            desc = re.sub(phrase_find, f"{get_awakening_emoji(idx)} {phrase_repl}", desc)
-        return desc
+        return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id)
+                         + jinja2.Template(subskill.desc_templated).render(**jinja2_replacements)
+                         for c, subskill in enumerate(active_skill.active_subskills, 1))
 
     @staticmethod
     def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):

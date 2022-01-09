@@ -101,7 +101,7 @@ ACTIVE_QUERY = """SELECT
   ap.desc_templated_ja AS ap_desc_templated_ja,
   ap.desc_templated_en AS ap_desc_templated_en,
   ap.desc_templated_ko AS ap_desc_templated_ko,
-  ass_ap.order_idx AS subskill_idx
+  act_ass.order_idx AS subskill_idx
 FROM
   active_skills{0} AS act
   JOIN active_skills_subskills{0} AS act_ass ON act.active_skill_id = act_ass.active_skill_id
