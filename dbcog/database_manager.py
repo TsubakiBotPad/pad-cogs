@@ -1,6 +1,6 @@
 import logging
 import sqlite3 as lite
-from typing import Dict, Generator, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
 
 logger = logging.getLogger('red.padbot-cogs.dbcog.database_manager')
 
@@ -8,7 +8,9 @@ T = TypeVar('T')
 
 
 class DictWithAttrAccess(Dict[str, T]):
-    def __init__(self, item: Dict[str, T]):
+    def __init__(self, item: Optional[Dict[str, T]] = None, **items):
+        if items:
+            item = items
         super(DictWithAttrAccess, self).__init__(item)
         self.__dict__ = self
 
@@ -75,10 +77,11 @@ class DBCogDatabase:
             return DictWithAttrAccess(res)
         return None
 
-    def query_many(self, query: str, param: Tuple = None, idx_key: Optional[str] = None, as_generator: bool = False) \
-        -> Union[Generator[DictWithAttrAccess, None, None],
-                 List[DictWithAttrAccess],
-                 DictWithAttrAccess[DictWithAttrAccess]]:
+    def query_many(self, query: str, param: Tuple = None, idx_key: Optional[str] = None,
+                   as_generator: bool = False, as_type: Type[T] = DictWithAttrAccess) \
+        -> Union[Generator[T, None, None],
+                 List[T],
+                 Dict[Any, T]]:
         if param is None:
             param = ()
 
@@ -87,9 +90,9 @@ class DBCogDatabase:
         if cursor.rowcount == 0:
             return []
         if as_generator:
-            return (DictWithAttrAccess(res) for res in cursor.fetchall())
+            return (as_type(**res) for res in cursor.fetchall())
         else:
             if idx_key is None:
-                return [DictWithAttrAccess(res) for res in cursor.fetchall()]
+                return [as_type(**res) for res in cursor.fetchall()]
             else:
-                return DictWithAttrAccess({res[idx_key]: DictWithAttrAccess(res) for res in cursor.fetchall()})
+                return {res[idx_key]: as_type(**res) for res in cursor.fetchall()}
