@@ -30,6 +30,8 @@ class ShowStatsViewProps:
 class ShowStatsView:
     VIEW_TYPE = 'ShowStats'
 
+    MAX_EXPANDED_RESULTS = 6
+
     @staticmethod
     def get_count(arr: Collection["MonsterModel"], *elements: "MonsterModel") -> str:
         if not arr:
@@ -39,17 +41,21 @@ class ShowStatsView:
             return "0"
         return f"{round(100*count/len(arr), 3)}%"
 
-    @staticmethod
-    def embed(state: ClosableEmbedViewState, props: ShowStatsViewProps):
+    @classmethod
+    def embed(cls, state: ClosableEmbedViewState, props: ShowStatsViewProps):
         fields = []
-        for mon, c in Counter(props.valid).most_common(6 if len(props.valid) == 6 else 5):
+        for mon, c in Counter(props.valid).most_common(
+                cls.MAX_EXPANDED_RESULTS if len(props.valid) == cls.MAX_EXPANDED_RESULTS
+                else cls.MAX_EXPANDED_RESULTS-1):
             fields.append(EmbedField(mon.name_en, Box(
                 LabeledText("Net", ShowStatsView.get_count(props.total, mon)),
                 LabeledText("Adj", ShowStatsView.get_count(props.adj, mon)),
                 LabeledText("You", ShowStatsView.get_count(props.you, mon))
             ), inline=True))
-        if len(props.valid) > 6:
-            fields.append(EmbedField("... & More", Box(f"+ {len(props.valid) - 5} more monsters"), inline=True))
+        if len(props.valid) > cls.MAX_EXPANDED_RESULTS:
+            fields.append(EmbedField("... & More",
+                                     Box(f"+ {len(props.valid)-cls.MAX_EXPANDED_RESULTS-1} more monsters"),
+                                     inline=True))
 
         return EmbedView(
             EmbedMain(
