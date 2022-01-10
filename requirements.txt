@@ -4,6 +4,7 @@ aioodbc
 discord
 discord-menu
 git+git://github.com/TsubakiBotPad/python-romkan
+jinja2
 networkx
 opencv-python
 Pillow
