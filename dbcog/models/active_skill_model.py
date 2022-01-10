@@ -1,4 +1,4 @@
-from typing import Any, Collection, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Sequence, Union
 
 from .base_model import BaseModel
 
@@ -15,13 +15,8 @@ class ActivePartModel(BaseModel):
         self.desc_templated_en = kwargs['desc_templated_en']
         self.desc_templated_ko = kwargs['desc_templated_ko']
 
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def desc_templated(self):
-        return self.desc_templated_en or self.desc_templated_ja
+        self.desc = self.desc_en or self.desc_ja
+        self.desc_templated = self.desc_templated_en or self.desc_templated_ja
 
     def to_dict(self):
         return {
@@ -50,17 +45,9 @@ class ActiveSubskillModel(BaseModel):
 
         self.active_parts = active_parts
 
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def desc_templated(self):
-        return self.desc_templated_en or self.desc_templated_ja
+        self.name = self.name_en or self.name_ja
+        self.desc = self.desc_en or self.desc_ja
+        self.desc_templated = self.desc_templated_en or self.desc_templated_ja
 
     def to_dict(self):
         return {
@@ -96,17 +83,9 @@ class ActiveSkillModel(BaseModel):
 
         self.active_subskills = active_subskills
 
-    @property
-    def name(self):
-        return self.name_en or self.name_ja
-
-    @property
-    def desc(self):
-        return self.desc_en or self.desc_ja
-
-    @property
-    def desc_templated(self):
-        return self.desc_templated_en or self.desc_templated_ja
+        self.name = self.name_en or self.name_ja
+        self.desc = self.desc_en or self.desc_ja
+        self.desc_templated = self.desc_templated_en or self.desc_templated_ja
 
     def to_dict(self):
         return {
