@@ -250,7 +250,7 @@ class AdPEMStats(CogMixin):
         most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
         menu = ClosableEmbedMenu.menu()
         props = ShowStatsViewProps(total, adj, you, valid, most_common)
-        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query.replace('"', ''),
                                        Color.default(), ShowStatsView.VIEW_TYPE, props)
 
         await menu.create(ctx, state)
