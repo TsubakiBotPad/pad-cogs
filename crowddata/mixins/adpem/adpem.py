@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Any
 
 import time
@@ -17,7 +17,7 @@ from crowddata.mixins.adpem.menu.closable_embed import ClosableEmbedMenu
 from crowddata.mixins.adpem.view.show_stats import ShowStatsView, ShowStatsViewProps
 
 # This is the timestamp of the most recent AdPEM reset
-LAST_RESET = 1640246400
+LAST_RESET = datetime(year=2021, month=12, day=24).timestamp()
 
 
 def opted_in(is_opted):
@@ -87,7 +87,7 @@ class AdPEMStats(CogMixin):
                     for pull in pulls_split]
 
         if not all(monsters):
-            unknown = '\n\t'.join(s for s, m in zip(pulls, monsters) if m is None)
+            unknown = '\n\t'.join(s for s, m in zip(pulls_split, monsters) if m is None)
             return await ctx.send(f"Not all monsters were valid. The following could not be processed:\n\t{unknown}")
 
         check = '\n\t'.join(pdicog.monster_header.fmt_id_header(m, use_emoji=True).to_markdown()
@@ -243,11 +243,11 @@ class AdPEMStats(CogMixin):
             adj = [dbcog.get_monster(p) for uid, ps, ts in data if self.has_good_data(uid, pulls) for p in ps]
             you = [dbcog.get_monster(p) for uid, ps, ts in data if uid == ctx.author.id for p in ps]
             valid = {m for m in total if m in monsters}
-            most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
 
         if not valid:
             return await ctx.send("No monsters matching that query have been pulled.")
 
+        most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
         menu = ClosableEmbedMenu.menu()
         props = ShowStatsViewProps(total, adj, you, valid, most_common)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
