@@ -6,7 +6,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.emoji import char_to_emoji
+from tsutils.tsubaki import number_emoji_small
 from tsutils.enums import LsMultiplier
 
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
@@ -33,8 +33,8 @@ def _make_prefix(idx, compound_skill_type_id):
     return {
         0: '',
         1: emoji_cache.get_emoji('bd') + ' ',
-        2: char_to_emoji(str(idx)) + ' ',
-        3: char_to_emoji(str(idx)) + ' '
+        2: number_emoji_small(idx) + ' ',
+        3: number_emoji_small(idx) + ' '
     }.get(compound_skill_type_id)
 
 
