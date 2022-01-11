@@ -45,7 +45,7 @@ class BaseIdMainView(BaseIdView, ABC):
     active_skill_type_texts = {
         0: None,
         1: f"[\N{GAME DIE} Random]",
-        2: f"[\N{RIGHTWARDS ARROW WITH HOOK}\N{VARIATION SELECTOR-16} Transforms]",
+        2: f"[\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE} Transforms]",
         3: f"[\N{BLACK UNIVERSAL RECYCLING SYMBOL}\N{VARIATION SELECTOR-16} Cycles]"
     }
 
