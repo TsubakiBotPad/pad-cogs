@@ -33,7 +33,7 @@ def _make_prefix(idx, compound_skill_type_id, subskill):
     if compound_skill_type_id == 1:
         return emoji_cache.get_emoji('bd') + ' '
     elif compound_skill_type_id in (2, 3):
-        return number_emoji_small(idx) + (f' [{subskill.cooldown}cd] ' if idx != 1 else ' ')
+        return number_emoji_small(idx) + (f' **[{subskill.cooldown}cd]** ' if idx != 1 else ' ')
     return ''
 
 
