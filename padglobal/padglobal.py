@@ -328,6 +328,23 @@ class PadGlobal(commands.Cog):
         await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
                                                                              source_cmd if alias else corrected_cmd))
 
+    @padglobal.command()
+    async def eventswap(self, ctx):
+        current_text = self.c_commands['currentevent']
+        next_text = self.c_commands['nextevent']
+
+        if not await get_user_confirmation(ctx, "Are you sure you want to update for the new event?"):
+            await ctx.send("Making no change to current and next event.")
+            return
+
+        self.c_commands['lastevent'] = current_text
+        self.c_commands['currentevent'] = next_text
+        self.c_commands['nextevent'] = "N/A"
+
+        json.dump(self.c_commands, open(self.file_path, 'w+'))
+        await ctx.send(f"Okay, I've updated {inline('lastevent')} and {inline('currentevent')} accordingly,"
+                       f" and cleared {inline('nextevent')}.")
+
     async def _find_aliases(self, command: str):
         aliases = []
         for cmd in self.c_commands:
