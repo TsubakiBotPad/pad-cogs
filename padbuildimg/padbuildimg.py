@@ -557,7 +557,7 @@ class PadBuildImageGenerator(object):
                 120 if card.limit_mult is not None and card.limit_mult > 1 else card.level
             )
             if card.active_skill:
-                result_card['MAX_SLV'] = card.active_skill.turn_max - card.active_skill.turn_min + 1
+                result_card['MAX_SLV'] = card.active_skill.cooldown_turns_max - card.active_skill.cooldown_turns_min + 1
             else:
                 result_card['MAX_SLV'] = 0
             result_card['MAX_AWAKE'] = len(card.awakenings) - card.superawakening_count

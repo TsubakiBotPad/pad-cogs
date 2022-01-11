@@ -214,8 +214,8 @@ class MonsterSearchHelper:
         self.active_name = active_skill.name.lower() if active_skill and active_skill.name else ''
         self.active_desc = active_skill.desc.lower() if active_skill and active_skill.desc else ''
         self.active = '{} {}'.format(self.active_name, self.active_desc)
-        self.active_min = active_skill.turn_min if active_skill else None
-        self.active_max = active_skill.turn_max if active_skill else None
+        self.active_min = active_skill.cooldown_turns_min if active_skill else None
+        self.active_max = active_skill.cooldown_turns_max if active_skill else None
 
         self.color = [m.attr1.name.lower()]
         self.hascolor = [c.name.lower() for c in [m.attr1, m.attr2] if c]
