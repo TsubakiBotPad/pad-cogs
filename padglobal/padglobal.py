@@ -330,6 +330,11 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     async def eventswap(self, ctx):
+        if 'currentevent' not in self.c_commands or 'nextevent' not in self.c_commands:
+            await ctx.send(f"Please populate both {inline('currentevent')} and {inline('nextevent')} first."
+                           f" Cancelling.")
+            return
+
         current_text = self.c_commands['currentevent']
         next_text = self.c_commands['nextevent']
 
