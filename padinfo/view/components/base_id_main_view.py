@@ -29,13 +29,12 @@ def _killer_latent_emoji(latent_name: str):
     return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
-def _make_prefix(idx, compound_skill_type_id):
-    return {
-        0: '',
-        1: emoji_cache.get_emoji('bd') + ' ',
-        2: number_emoji_small(idx) + ' ',
-        3: number_emoji_small(idx) + ' '
-    }.get(compound_skill_type_id)
+def _make_prefix(idx, compound_skill_type_id, subskill):
+    if compound_skill_type_id == 1:
+        return emoji_cache.get_emoji('bd') + ' '
+    elif compound_skill_type_id in (2, 3):
+        return number_emoji_small(idx) + (f' [{subskill.cooldown}cd] ' if idx != 1 else ' ')
+    return ''
 
 
 class BaseIdMainView(BaseIdView, ABC):
@@ -87,20 +86,20 @@ class BaseIdMainView(BaseIdView, ABC):
             return BoldText('Active Skill')
 
         if len(previous_transforms) == 0:
-            active_cd = "({} -> {})".format(active_skill.turn_max, active_skill.turn_min)
+            active_cd = "({} -> {})".format(active_skill.cooldown_turns_max, active_skill.cooldown_turns_min)
         else:
             skill_texts = []
             previous_transforms.reverse()
             for i, mon in enumerate(previous_transforms):
                 skill = mon.active_skill
                 # we can assume skill is not None because the monster transforms
-                cooldown_text = '({}cd)'.format(str(skill.turn_max))
-                if skill.turn_min != skill.turn_max:
-                    cooldown_text = '{} -> {}'.format(skill.turn_min, skill.turn_max)
+                cooldown_text = '({}cd)'.format(str(skill.cooldown_turns_max))
+                if skill.cooldown_turns_min != skill.cooldown_turns_max:
+                    cooldown_text = '{} -> {}'.format(skill.cooldown_turns_min, skill.cooldown_turns_max)
                 skill_texts.append(
                     '{}{}'.format(get_emoji(cls.transform_emoji_names[i % len(cls.transform_emoji_names)]),
                                   cooldown_text))
-            skill_texts.append('{} ({} cd)'.format(get_emoji(cls.up_emoji_name), m.active_skill.turn_max))
+            skill_texts.append('{} ({} cd)'.format(get_emoji(cls.up_emoji_name), m.active_skill.cooldown_turns_max))
             active_cd = ' '.join(skill_texts)
 
         return Box(
@@ -127,7 +126,7 @@ class BaseIdMainView(BaseIdView, ABC):
 
         if active_skill is None:
             return 'None'
-        return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id)
+        return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id, subskill)
                          + jinja2.Template(subskill.desc_templated).render(**jinja2_replacements)
                          for c, subskill in enumerate(active_skill.active_subskills, 1))
 

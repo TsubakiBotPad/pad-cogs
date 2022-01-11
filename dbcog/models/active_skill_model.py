@@ -42,6 +42,7 @@ class ActiveSubskillModel(BaseModel):
         self.desc_templated_ja = kwargs['desc_templated_ja']
         self.desc_templated_en = kwargs['desc_templated_en']
         self.desc_templated_ko = kwargs['desc_templated_ko']
+        self.cooldown = kwargs['cooldown']
 
         self.active_parts = active_parts
 
@@ -78,8 +79,8 @@ class ActiveSkillModel(BaseModel):
         self.desc_official_en = kwargs['desc_official_en']
         self.desc_official_ko = kwargs['desc_official_ko']
 
-        self.turn_max = kwargs['turn_max']
-        self.turn_min = kwargs['turn_min']
+        self.cooldown_turns_max = kwargs['cooldown_turns_max']
+        self.cooldown_turns_min = kwargs['cooldown_turns_min']
 
         self.active_subskills = active_subskills
 
@@ -98,8 +99,8 @@ class ActiveSkillModel(BaseModel):
         if isinstance(other, ActiveSkillModel):
             return self.active_skill_id == other.active_skill_id \
                    and self.desc_en == other.desc_en \
-                   and self.turn_max == other.turn_max \
-                   and self.turn_min == other.turn_min
+                   and self.cooldown_turns_max == other.cooldown_turns_max \
+                   and self.cooldown_turns_min == other.cooldown_turns_min
         elif isinstance(other, ActiveSubskillModel):
             return self.active_skill_id == other.active_subskill_id \
                    and self.desc_en == other.desc_en

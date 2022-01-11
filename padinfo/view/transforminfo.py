@@ -138,7 +138,7 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def transform_active_header(cls, m: "MonsterModel"):
         active_skill = m.active_skill
-        active_cd = '({} cd)'.format(active_skill.turn_min) if active_skill else 'None'
+        active_cd = '({} cd)'.format(active_skill.cooldown_turns_min) if active_skill else 'None'
         return Box(
             get_emoji(cls.up_emoji_name),
             BoldText('Transform Active Skill {}'.format(active_cd)),

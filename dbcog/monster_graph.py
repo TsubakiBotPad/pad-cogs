@@ -81,8 +81,8 @@ ACTIVE_QUERY = """SELECT
   act.desc_official_ja AS act_desc_official_ja,
   act.desc_official_ko AS act_desc_official_ko,
   act.desc_official_en AS act_desc_official_en,
-  act.turn_max,
-  act.turn_min,
+  act.cooldown_turns_max,
+  act.cooldown_turns_min,
   ass.active_subskill_id,
   ass.name_ja AS ass_name_ja,
   ass.name_en AS ass_name_en,
@@ -93,6 +93,7 @@ ACTIVE_QUERY = """SELECT
   ass.desc_templated_ja AS ass_desc_templated_ja,
   ass.desc_templated_en AS ass_desc_templated_en,
   ass.desc_templated_ko AS ass_desc_templated_ko,
+  ass.cooldown AS ass_cooldown,
   ap.active_part_id,
   ap.active_skill_type_id,
   ap.desc_ja AS ap_desc_ja,
@@ -211,8 +212,8 @@ class MonsterGraph(object):
                     'desc_official_ja': row.act_desc_official_ja,
                     'desc_official_ko': row.act_desc_official_ko,
                     'desc_official_en': row.act_desc_official_en,
-                    'turn_max': row.turn_max,
-                    'turn_min': row.turn_min,
+                    'cooldown_turns_max': row.cooldown_turns_max,
+                    'cooldown_turns_min': row.cooldown_turns_min,
 
                     'active_subskills': []
                 }
@@ -229,6 +230,7 @@ class MonsterGraph(object):
                     'desc_templated_ja': row.ass_desc_templated_ja,
                     'desc_templated_en': row.ass_desc_templated_en,
                     'desc_templated_ko': row.ass_desc_templated_ko,
+                    'cooldown': row.ass_cooldown,
 
                     'active_parts': []
                 })
