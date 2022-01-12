@@ -100,7 +100,7 @@ class AutoEvent:
             return False
         if not autoevent.get('include3p', True) and event.clean_dungeon_name.startswith("Multiplayer"):
             return False
-        if autoevent.get('group', 'red') != event.group.lower():
+        if autoevent.get('group') != event.group:
             return False
         elif autoevent.get('regex'):
             return re.search(autoevent['searchstr'], event.clean_dungeon_name)
