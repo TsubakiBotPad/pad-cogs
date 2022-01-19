@@ -54,7 +54,7 @@ class AutoEvent:
                     async with self.config.sent() as sent:
                         sent[str((key, event.key, gid))] = time.time()
 
-                    index = GROUPS.index(event.group)
+                    index = GROUPS.index(event.group or 'red')
                     channel = guild.get_channel(aep['channels'][index])
                     if channel is None:
                         continue
