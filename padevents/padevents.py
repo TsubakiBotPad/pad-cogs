@@ -419,8 +419,8 @@ class PadEvents(commands.Cog, AutoEvent):
         group_to_active_event = {e.group: e for e in active_events}
         group_to_pending_event = {e.group: e for e in pending_events}
 
-        active_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
-        pending_events.sort(key=lambda e: (GROUPS.index(e.group), e.open_datetime))
+        active_events.sort(key=lambda e: (GROUPS.index(e.group or 'red'), e.open_datetime))
+        pending_events.sort(key=lambda e: (GROUPS.index(e.group or 'red'), e.open_datetime))
 
         if len(active_events) == 0 and len(pending_events) == 0:
             await ctx.send("No events available for " + server)
