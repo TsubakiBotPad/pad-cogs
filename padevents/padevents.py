@@ -148,10 +148,10 @@ class PadEvents(commands.Cog, AutoEvent):
                 role_name = f'{event.server}_group_{event.group_long_name()}'
                 role = channel.guild.get_role(role_name)
                 if role and role.mentionable:
-                    message = f"{role.mention} {event.name_and_modifier} is starting"
+                    message = f"{role.mention} {event.clean_dungeon_name} is starting"
                 else:
                     message = box(f"Server {event.server}, group {event.group_long_name()}:"
-                                  f" {event.name_and_modifier}")
+                                  f" {event.clean_dungeon_name}")
                 with suppress(discord.Forbidden):
                     await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
 
@@ -288,11 +288,11 @@ class PadEvents(commands.Cog, AutoEvent):
         active_events = server_events.active_only()
         events_today = server_events.today_only(server)
 
-        active_special = active_events.in_dungeon_type([DungeonType.Special])
+        active_special = active_events.with_dungeon_type(DungeonType.Special)
 
-        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B%e')
+        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B %-e')
 
-        ongoing_events = active_events.in_length([EventLength.weekly, EventLength.special])
+        ongoing_events = active_events.with_length(EventLength.weekly, EventLength.special)
         if ongoing_events:
             msg += "\n\n" + self.make_active_output('Ongoing Events', ongoing_events)
 
@@ -312,7 +312,7 @@ class PadEvents(commands.Cog, AutoEvent):
         tbl.vrules = prettytable.NONE
         tbl.align[table_name] = "l"
         for e in event_list:
-            tbl.add_row([e.name_and_modifier])
+            tbl.add_row([e.clean_dungeon_name])
         return tbl.get_string()
 
     def make_active_output(self, table_name, event_list):
@@ -322,68 +322,63 @@ class PadEvents(commands.Cog, AutoEvent):
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row([e.end_from_now_full_min().strip(), e.name_and_modifier])
+            tbl.add_row([e.end_from_now_full_min().strip(), e.clean_dungeon_name])
         return tbl.get_string()
 
-    def make_active_guerrilla_output(self, table_name, event_list):
+    def make_active_guerrilla_output(self, table_name: str, event_list: EventList) -> str:
         tbl = prettytable.PrettyTable([table_name, "Group", "Time"])
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row([e.name_and_modifier, e.group, e.end_from_now_full_min().strip()])
+            tbl.add_row([e.clean_dungeon_name, e.group, e.end_from_now_full_min().strip()])
         return tbl.get_string()
 
-    def make_full_guerrilla_output(self, table_name, event_list, starter_guerilla=True):
-        events_by_name = defaultdict(list)
+    def make_full_guerrilla_output(self, table_name, event_list):
+        events_by_name = defaultdict(set)
         for event in event_list:
-            events_by_name[event.name_and_modifier].append(event)
+            events_by_name[event.clean_dungeon_name].add(event)
 
-        rows = list()
-        grps = ["RED", "BLUE", "GREEN"] if starter_guerilla else ["A", "B", "C", "D", "E"]
+        rows = []
         for name, events in events_by_name.items():
             events = sorted(events, key=lambda e: e.open_datetime)
-            events_by_group = defaultdict(list)
+
+            events_by_group = {group: [] for group in GROUPS}
             for event in events:
                 if event.group is not None:
-                    events_by_group[event.group.upper()].append(event)
+                    events_by_group[event.group].append(event)
                 else:
-                    for group in grps:
+                    for group in GROUPS:
                         events_by_group[group].append(event)
 
-            done = False
-            while not done:
-                did_work = False
-                row = list()
-                row.append(name)
-                for g in grps:
-                    grp_list = events_by_group[g]
-                    if len(grp_list) == 0:
-                        row.append("")
+            while True:
+                row = []
+                for group in GROUPS:
+                    if len(events_by_group[group]) == 0:
+                        row.append('')
                     else:
-                        did_work = True
-                        event = grp_list.pop(0)
-                        row.append(event.to_guerrilla_str())
+                        # Get the timestamp of the earliest event in this group in PST
+                        start = events_by_group[group].pop(0).open_datetime.astimezone(pytz.timezone('US/Pacific'))
+                        row.append(start.strftime("%H:%M"))
 
-                if did_work and len(set(row)) == 2:  # One for Header and all three times are same
-                    rows.append([row[0], row[1], '=', '='])
-                elif did_work:
-                    rows.append(row)
+                if not any(row):
+                    break
+
+                if row[0] == row[1] == row[2]:
+                    rows.append([name, row[0], '=', '='])
                 else:
-                    done = True
-
-        col1 = table_name
-        tbl = prettytable.PrettyTable([col1] + grps)
-        tbl.align[col1] = "l"
-        tbl.hrules = prettytable.HEADER
-        tbl.vrules = prettytable.ALL
-
-        for r in rows:
-            tbl.add_row(r)
+                    rows.append([name] + row)
 
         header = "Times are shown in Pacific Time\n= means same for all groups\n"
-        return header + tbl.get_string() + "\n"
+        table = prettytable.PrettyTable([table_name, 'Red', 'Blue', 'Green'])
+        table.align[table_name] = "l"
+        table.hrules = prettytable.HEADER
+        table.vrules = prettytable.ALL
+        for r in rows:
+            table.add_row(r)
+
+        return header + table.get_string() + "\n"
 
     @commands.command(aliases=['events'])
     async def eventsna(self, ctx, group: StarterGroup = None):
@@ -408,11 +403,11 @@ class PadEvents(commands.Cog, AutoEvent):
 
         events = EventList(self.events)
         events = events.with_server(server)
-        events = events.in_dungeon_type([DungeonType.SoloSpecial, DungeonType.Special])
+        events = events.with_dungeon_type(DungeonType.SoloSpecial, DungeonType.Special)
         events = events.is_grouped()
 
-        active_events = events.active_only().items_by_open_time(reverse=True)
-        pending_events = events.pending_only().items_by_open_time(reverse=True)
+        active_events = sorted(events.active_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
+        pending_events = sorted(events.pending_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
 
         if group is not None:
             active_events = [e for e in active_events if e.group == group.lower()]
