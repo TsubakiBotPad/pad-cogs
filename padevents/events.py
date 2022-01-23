@@ -1,6 +1,6 @@
 import datetime
 from datetime import timedelta
-from typing import Callable, List, TYPE_CHECKING
+from typing import Callable, Collection, List, TYPE_CHECKING
 
 import itertools
 import pytz
@@ -29,44 +29,10 @@ class Event:
         self.group = scheduled_event.group_name
         self.dungeon = scheduled_event.dungeon
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
-        self.event_name = ''
 
         self.clean_dungeon_name = self.dungeon.clean_name_en if self.dungeon else 'unknown_dungeon'
-        self.clean_event_name = self.event_name.replace('!', '').replace(' ', '')
-
-        self.name_and_modifier = self.clean_dungeon_name
-        if self.clean_event_name != '':
-            self.name_and_modifier += ', ' + self.clean_event_name
 
         self.dungeon_type = DungeonType(self.dungeon.dungeon_type) if self.dungeon else DungeonType.Unknown
-
-    def start_from_now_sec(self):
-        now = datetime.datetime.now(pytz.utc)
-        return (self.open_datetime - now).total_seconds()
-
-    def end_from_now_sec(self):
-        now = datetime.datetime.now(pytz.utc)
-        return (self.close_datetime - now).total_seconds()
-
-    def is_started(self):
-        """True if past the open time for the event."""
-        return self.start_from_now_sec() <= 0
-
-    def is_finished(self):
-        """True if past the close time for the event."""
-        return self.end_from_now_sec() <= 0
-
-    def is_active(self):
-        """True if between open and close time for the event."""
-        return self.is_started() and not self.is_finished()
-
-    def is_pending(self):
-        """True if event has not started."""
-        return not self.is_started()
-
-    def is_available(self):
-        """True if event has not finished."""
-        return not self.is_finished()
 
     @property
     def event_length(self) -> EventLength:
@@ -80,25 +46,29 @@ class Event:
             return EventLength.daily
         return EventLength.limited
 
-    def tostr(self):
-        return self.open_datetime.strftime("%Y-%m-%d %H:%M") + "," + self.close_datetime.strftime("%Y-%m-%d %H:%M") \
-               + "," + self.group + "," + self.dungeon_name
+    def start_from_now_sec(self) -> float:
+        now = datetime.datetime.now(pytz.utc)
+        return (self.open_datetime - now).total_seconds()
 
-    def start_pst(self):
-        tz = pytz.timezone('US/Pacific')
-        return self.open_datetime.astimezone(tz)
+    def end_from_now_sec(self) -> float:
+        now = datetime.datetime.now(pytz.utc)
+        return (self.close_datetime - now).total_seconds()
 
-    def start_est(self):
-        tz = pytz.timezone('US/Eastern')
-        return self.open_datetime.astimezone(tz)
+    def is_started(self):
+        """True if past the open time for the event."""
+        return self.start_from_now_sec() <= 0
 
-    def start_from_now(self):
-        return "<t:" + str(int(self.open_datetime.timestamp())) + ":R>"
+    def is_finished(self):
+        """True if past the close time for the event."""
+        return self.end_from_now_sec() <= 0
 
-    def end_from_now(self):
-        return "<t:" + str(int(self.close_datetime.timestamp())) + ":R>"
+    def start_from_now_discord(self) -> str:
+        return f"<t:{int(self.open_datetime.timestamp())}:R>"
 
-    def end_from_now_full_min(self):
+    def end_from_now_discord(self) -> str:
+        return f"<t:{int(self.close_datetime.timestamp())}:R>"
+
+    def end_from_now_full_min(self) -> str:
         days, sec = divmod(self.end_from_now_sec(), 86400)
         hours, sec = divmod(sec, 3600)
         minutes, sec = divmod(sec, 60)
@@ -110,88 +80,55 @@ class Event:
         else:
             return '{:2}m'.format(int(minutes))
 
-    def to_guerrilla_str(self):
-        return self.start_pst().strftime("%H:%M")
-
-    def to_date_str(self):
-        return self.server + "," + self.group + "," + self.start_pst().strftime("%Y-%m-%d %H:%M") + "," + \
-               self.start_est().strftime("%Y-%m-%d %H:%M") + "," + self.start_from_now()
-
-    def group_short_name(self):
-        return self.group.upper().replace('RED', 'R').replace('BLUE', 'B').replace('GREEN', 'G')
-
     def group_long_name(self):
         return self.group.upper() if self.group is not None else "UNGROUPED"
 
     def to_partial_event(self, pe):
-        group = self.group_short_name()
+        group = self.group_long_name()[0]
         if self.is_started():
-            return "`" + group + " " + self.name_and_modifier + " " * (
-                max(24 - len(self.name_and_modifier), 0)) + "-`" + self.end_from_now()
+            return "`" + group + " " + self.clean_dungeon_name + " " * (
+                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.end_from_now_discord()
         else:
-            return "`" + group + " " + self.name_and_modifier + " " * (
-                max(24 - len(self.name_and_modifier), 0)) + "-`" + self.start_from_now()
+            return "`" + group + " " + self.clean_dungeon_name + " " * (
+                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.start_from_now_discord()
+
+    def __repr__(self):
+        return f"Event<{self.clean_dungeon_name} ({self.group} {self.server})>"
 
 
 class EventList:
-    def __init__(self, event_list: List[Event]):
+    def __init__(self, event_list: Collection[Event]):
         self.event_list = event_list
 
-    def with_func(self, func: Callable[[Event], bool], exclude=False):
-        if exclude:
-            return EventList(list(itertools.filterfalse(func, self.event_list)))
-        else:
-            return EventList(list(filter(func, self.event_list)))
+    def with_func(self, func: Callable[[Event], bool]) -> "EventList":
+        return EventList(list(filter(func, self.event_list)))
 
-    def with_server(self, server):
-        return self.with_func(lambda e: e.server == normalize_server_name(server))
+    def with_server(self, *servers):
+        servers = {normalize_server_name(s) for s in servers}
+        return self.with_func(lambda e: e.server in servers)
 
-    def with_type(self, event_type):
-        return self.with_func(lambda e: e.event_type == event_type)
-
-    def in_type(self, event_types):
+    def with_type(self, *event_types):
         return self.with_func(lambda e: e.event_type in event_types)
 
-    def with_length(self, event_length):
-        return self.with_func(lambda e: e.event_length == event_length)
-
-    def in_length(self, event_lengths):
+    def with_length(self, *event_lengths):
         return self.with_func(lambda e: e.event_length in event_lengths)
 
-    def with_dungeon_type(self, dungeon_type, exclude=False):
-        return self.with_func(lambda e: e.dungeon_type == dungeon_type, exclude)
+    def with_dungeon_type(self, *dungeon_types):
+        return self.with_func(lambda e: e.dungeon_type in dungeon_types)
 
-    def in_dungeon_type(self, dungeon_types, exclude=False):
-        return self.with_func(lambda e: e.dungeon_type in dungeon_types, exclude)
-
-    def is_grouped(self, exclude=False):
-        return self.with_func(lambda e: e.group is not None, exclude)
-
-    def with_name_contains(self, name, exclude=False):
-        return self.with_func(lambda e: name.lower() in e.dungeon_name.lower(), exclude)
-
-    def started_only(self):
-        return self.with_func(lambda e: e.is_started())
+    def is_grouped(self):
+        return self.with_func(lambda e: e.group is not None)
 
     def pending_only(self):
-        return self.with_func(lambda e: e.is_pending())
+        return self.with_func(lambda e: not e.is_started())
 
     def active_only(self):
-        return self.with_func(lambda e: e.is_active())
-
-    def available_only(self):
-        return self.with_func(lambda e: e.is_available())
+        return self.with_func(lambda e: e.is_started() and not e.is_finished())
 
     def today_only(self, server: str):
         server_timezone = SERVER_TIMEZONES[normalize_server_name(server)]
-        today = datetime.datetime.now(server_timezone).day
-        return self.with_func(lambda e: e.open_datetime.astimezone(server_timezone).day == today)
-
-    def items_by_open_time(self, reverse=False):
-        return list(sorted(self.event_list, key=(lambda e: (e.open_datetime, e.dungeon_name)), reverse=reverse))
-
-    def items_by_close_time(self, reverse=False):
-        return list(sorted(self.event_list, key=(lambda e: (e.close_datetime, e.dungeon_name)), reverse=reverse))
+        today = datetime.datetime.now(server_timezone).date()
+        return self.with_func(lambda e: e.open_datetime.astimezone(server_timezone).date() == today)
 
     def __iter__(self):
         return iter(self.event_list)

@@ -65,7 +65,7 @@ class AutoEvent:
                         offsetstr = f"<t:{int(event.open_datetime.timestamp())}:R>"
                     try:
                         timestr = humanize_timedelta(timedelta=event.close_datetime - event.open_datetime)
-                        await channel.send(f"{event.name_and_modifier} starts {offsetstr}!"
+                        await channel.send(f"{event.clean_dungeon_name} starts {offsetstr}!"
                                            f" It will be active for {timestr}.  {ment}",
                                            allowed_mentions=discord.AllowedMentions(roles=True))
                     except Exception:
