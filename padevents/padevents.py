@@ -195,8 +195,10 @@ class PadEvents(commands.Cog, AutoEvent):
 
     @padevents.command()
     @checks.is_owner()
-    async def testevent(self, ctx, server: Server, seconds: int = 0):
+    async def testevent(self, ctx, server: Server, seconds: int = 0, group='red'):
         server = server.value
+        if group.lower() not in ('red', 'blue', 'green'):
+            group = None
 
         dbcog: Any = self.bot.get_cog('DBCog')
         await dbcog.wait_until_ready()
@@ -211,7 +213,7 @@ class PadEvents(commands.Cog, AutoEvent):
             event_type_id=-1,
             start_timestamp=timestamp,
             end_timestamp=timestamp + 60,
-            group_name='red',
+            group_name=group and group.lower(),
             dungeon_model=DummyObject(
                 name_en='fake_dungeon_name',
                 clean_name_en='fake_dungeon_name',
