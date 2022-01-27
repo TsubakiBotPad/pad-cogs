@@ -59,7 +59,7 @@ def _format_number(val):
 
 
 def _format_ls_text(hp, atk, rcv, resist=0, combo=0, fua=0, mfua=0, te=0):
-    resist_val = ' {}{}%'.format(get_emoji('defense'), _format_number(100 * resist)) if resist else ''
+    resist_val = ' {}{}%'.format(get_emoji('shield_amount'), _format_number(100 * resist)) if resist else ''
 
     ehp = ' [{}x eHP]'.format(_format_number(hp / (1 - resist))) if resist else ''
 
