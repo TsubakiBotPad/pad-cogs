@@ -236,7 +236,7 @@ class FindMonster:
                 -self.dbcog.database.graph.get_base_id(monster),
                 monster.on_na if self.flags['na_prio'] else True,
                 not monster.is_equip,
-                monster.rarity,
+                self.dbcog.database.graph.get_monster_depth(monster),
                 monster.monster_no_na)
 
     def _get_monster_evos(self, matched_mons: Set[MonsterModel], matches: MatchMap) -> Set[MonsterModel]:
