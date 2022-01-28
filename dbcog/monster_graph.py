@@ -706,6 +706,20 @@ class MonsterGraph(object):
         nt = self.get_next_transform_id(monster)
         return nt and self.get_monster(nt, server=monster.server_priority)
 
+    def get_monster_depth(self, monster: MonsterModel) -> float:
+        if monster.monster_id == 5802:
+            # DMG sucks!
+            return 0
+
+        depth = 0.0
+        while None is not (prev := self.get_prev_transform(monster)) \
+                and prev.monster_id < monster.monster_id:
+            monster = prev
+            depth += .01
+        while None is not (monster := self.get_prev_evolution(monster)):
+            depth += 1
+        return depth
+
     def evo_mats(self, monster: MonsterModel) -> List[MonsterModel]:
         evo = self.get_evolution(monster)
         if evo is None:
