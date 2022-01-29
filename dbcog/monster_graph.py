@@ -164,7 +164,7 @@ WHERE
 SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
 
-class MonsterGraph(object):
+class MonsterGraph:
     def __init__(self, database: DBCogDatabase, debug_monster_ids: Optional[List[int]] = None):
         self.issues = []
         self.debug_monster_ids = debug_monster_ids
@@ -719,6 +719,11 @@ class MonsterGraph(object):
         while None is not (monster := self.get_prev_evolution(monster)):
             depth += 1
         return depth
+
+    def get_adjusted_rarity(self, monster: MonsterModel) -> float:
+        # After the revo/srevo changes, rarity doesn't work, and Mega GFEs means that depth doesn't work
+        # The max of base rarity + the depth or the current rarity.  This fixes revo rarities being nerfed
+        return max(self.get_base_monster(monster).rarity + self.get_monster_depth(monster), monster.rarity)
 
     def evo_mats(self, monster: MonsterModel) -> List[MonsterModel]:
         evo = self.get_evolution(monster)
