@@ -721,6 +721,7 @@ class MonsterGraph:
         return depth
 
     def get_adjusted_rarity(self, monster: MonsterModel) -> float:
+        # The max of base rarity + the depth or the current rarity.  This fixes revo rarities being nerfed
         return max(self.get_base_monster(monster).rarity + self.get_monster_depth(monster), monster.rarity)
 
     def evo_mats(self, monster: MonsterModel) -> List[MonsterModel]:
