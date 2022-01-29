@@ -843,8 +843,7 @@ class MonsterGraph(object):
         return self.get_monster(self._get_edge_or_none(monster, "evo_gem_of"), server=monster.server_priority)
 
     def monster_is_evo_gem(self, monster: MonsterModel) -> bool:
-        # Evo gems can no longer be calculated via exchange
-        # return bool(self.get_monster_from_evo_gem(monster))
+        # Evo gems can no longer be calculated via exchange as of Pixel Volcano Dragon
         return monster.name_en.endswith("'s Gem") or monster.name_ja.endswith("の希石")
 
     def material_of_ids(self, monster: MonsterModel) -> List[int]:
