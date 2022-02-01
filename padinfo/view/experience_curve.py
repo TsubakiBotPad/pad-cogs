@@ -11,7 +11,7 @@ from tsutils.menu.components.footers import embed_footer_with_state
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -125,7 +125,7 @@ class ExperienceCurveView:
                                  + (trunc_humanize(props.monster.exp_curve) if props.monster.exp_curve else "no")
                                  + f' curve)'),
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.monster)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.monster.monster_id)),
             embed_fields=[
                 EmbedField(
                     title='Exact',

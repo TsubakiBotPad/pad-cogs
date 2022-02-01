@@ -10,7 +10,7 @@ from padinfo.common.emoji_map import get_awakening_emoji
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_awoken_skill_description
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -78,7 +78,7 @@ class AwakeningHelpView:
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
                 puzzledragonx(monster),
-                MonsterImage.icon(monster)
+                MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields

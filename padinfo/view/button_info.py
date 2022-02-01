@@ -14,7 +14,7 @@ from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT
     ButtonInfoResult
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -208,7 +208,7 @@ class ButtonInfoView(EvoScrollView):
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
                 puzzledragonx(monster),
-                MonsterImage.icon(monster)
+                MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields

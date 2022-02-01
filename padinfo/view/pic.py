@@ -8,7 +8,7 @@ from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 
@@ -27,23 +27,23 @@ class PicView(BaseIdView, EvoScrollView):
 
     @classmethod
     def embed(cls, state: PicViewState):
-        url = MonsterImage.picture(state.monster)
+        url = MonsterImage.picture(state.monster.monster_id)
         animated = state.monster.has_animation
         fields = [EmbedField(
             'Extra Links',
             Box(
                 Box(
                     Text('Animation:'),
-                    LinkedText('(MP4)', MonsterImage.video(state.monster)),
+                    LinkedText('(MP4)', MonsterImage.video(state.monster.monster_no_jp)),
                     Text('|'),
-                    LinkedText('(GIF)', MonsterImage.gif(state.monster)),
+                    LinkedText('(GIF)', MonsterImage.gif(state.monster.monster_no_jp)),
                     delimiter=' '
                 ) if animated else None,
                 Box(
                     Text('Orb Skin:'),
-                    LinkedText('Regular', MonsterImage.orb_skin(state.monster)),
+                    LinkedText('Regular', MonsterImage.orb_skin(state.monster.orb_skin_id)),
                     Text('|'),
-                    LinkedText('Color Blind', MonsterImage.orb_skin_colorblind(state.monster)),
+                    LinkedText('Color Blind', MonsterImage.orb_skin_colorblind(state.monster.orb_skin_id)),
                     delimiter=' '
                 ) if state.monster.orb_skin_id else None,
             )
