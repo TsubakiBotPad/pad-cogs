@@ -217,7 +217,7 @@ class MonsterIndex:
             for me in alt_monsters:
                 for t in self.monster_id_to_nametokens[me.monster_id]:
                     if t in nametokens:
-                        self.add_name_token(self.name_tokens, t, m)
+                        self.add_name_token(t, m)
                 if me.is_equip or contains_ja(me.name_en):
                     continue
                 if last_token != me.name_en.split(',')[-1].strip():
@@ -237,28 +237,28 @@ class MonsterIndex:
 
             # Add important tokens
             for token in self.monster_id_to_nametokens[m.monster_id]:
-                self.add_name_token(self.name_tokens, token, m)
+                self.add_name_token(token, m)
             if m.monster_id in self.treename_overrides:
                 pass
             elif autotoken:
                 # Add a consistant last token as important token
                 for token in self._name_to_tokens(m.name_en.split(',')[-1].strip()):
-                    self.add_name_token(self.name_tokens, token, m)
+                    self.add_name_token(token, m)
             else:
                 # Add name tokens by guessing which ones are important
                 for token in self._get_important_tokens(m.name_en, treenames) + self._name_to_tokens(m.roma_subname):
-                    self.add_name_token(self.name_tokens, token, m)
+                    self.add_name_token(token, m)
                     if m.is_equip:
                         possessives = re.findall(r"(\w+)'s", m.name_en.lower())
                         for mevo in alt_monsters:
                             for token2 in possessives:
                                 if token2 in self._name_to_tokens(mevo.name_en.lower()) \
                                         and token2+"'s" not in self._name_to_tokens(mevo.name_en.lower()):
-                                    self.add_name_token(self.name_tokens, token2, mevo)
+                                    self.add_name_token(token2, mevo)
                     else:
                         for mevo in alt_monsters:
                             if token in self._name_to_tokens(mevo.name_en):
-                                self.add_name_token(self.name_tokens, token, mevo)
+                                self.add_name_token(token, mevo)
 
                 # For equips only, add every name token from every other non-equip monster in the tree.
                 # This has the effect of making automated name tokens behave slightly more like treenames
@@ -271,34 +271,41 @@ class MonsterIndex:
                         if not mevo.is_equip:
                             for token2 in self._get_important_tokens(mevo.name_en, treenames):
                                 if token2 not in HAZARDOUS_IN_NAME_MODS:
-                                    self.add_name_token(self.name_tokens, token2, m)
+                                    self.add_name_token(token2, m)
 
             # Fluff tokens
             for token in nametokens + list(self.monster_id_to_forcedfluff[m.monster_id]):
                 if m in self.name_tokens[token.lower()]:
                     continue
-                self.add_name_token(self.fluff_tokens, token, m)
+                self.add_fluff_token(token, m)
 
             # Monster Nickname
             for nick in self.monster_id_to_nickname[m.monster_id]:
-                self.add_name_token(self.manual_nick, nick, m)
+                self.add_manual_nick_token(nick, m)
 
             # Tree Nickname
             base_id = self.graph.get_base_id(m)
             for nick in self.monster_id_to_treename[base_id]:
-                self.add_name_token(self.manual_tree, nick, m)
+                self.add_manual_tree_token(nick, m)
 
-    def add_name_token(self, token_dict, token, m, depth=5):
+    def add_name_token(self, token, monster):
+        if monster in self.fluff_tokens[token.lower()]:
+            self.fluff_tokens[token.lower()].remove(monster)
+        self._add_content_token(self.name_tokens, token, monster)
+
+    def add_fluff_token(self, token, monster):
+        self._add_content_token(self.fluff_tokens, token, monster)
+
+    def add_manual_nick_token(self, token, monster):
+        self._add_content_token(self.manual_nick, token, monster)
+
+    def add_manual_tree_token(self, token, monster):
+        self._add_content_token(self.manual_tree, token, monster)
+
+    def _add_content_token(self, token_dict, token, m, depth=5):
         if depth <= 0:
             logger.warning(f"Depth exceeded with token {token}.  Aborting.")
             return
-
-        if token_dict is self.name_tokens:
-            if m in self.fluff_tokens[token.lower()]:
-                self.fluff_tokens[token.lower()].remove(m)
-        if token_dict is self.fluff_tokens:
-            if m in self.name_tokens[token.lower()]:
-                return
 
         token_dict[token.lower()].add(m)
         if token.lower() in self._known_mods and token.lower() not in HAZARDOUS_IN_NAME_MODS:
@@ -307,7 +314,7 @@ class MonsterIndex:
         # Replacements
         for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
             for t in self.replacement_tokens[ts]:
-                self.add_name_token(token_dict, t, m, depth - 1)
+                self._add_content_token(token_dict, t, m, depth - 1)
 
     @staticmethod
     def _name_to_tokens(oname):
