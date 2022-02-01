@@ -5,7 +5,7 @@ from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -21,4 +21,4 @@ class LookupView:
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(m).to_markdown(),
                 puzzledragonx(m),
-                MonsterImage.icon(m)))
+                MonsterImage.icon(m.monster_id)))

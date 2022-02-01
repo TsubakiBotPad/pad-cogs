@@ -15,7 +15,7 @@ from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
@@ -295,6 +295,6 @@ class IdView(BaseIdMainView, EvoScrollView):
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                   state.is_jp_buffed).to_markdown(),
                 url=puzzledragonx(m)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

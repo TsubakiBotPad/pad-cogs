@@ -7,7 +7,7 @@ from discordmenu.embed.view import EmbedView
 
 from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
 from padinfo.view.components.monster.header import MonsterHeader
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -33,4 +33,4 @@ class LinksView:
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 description=LinksView.linksbox(m),
                 url=puzzledragonx(m)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m)))
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)))
