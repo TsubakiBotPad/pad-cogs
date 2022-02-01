@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Collection, TYPE_CHECKING, List
+from typing import Collection, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedThumbnail, EmbedField
@@ -7,7 +7,6 @@ from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
-
 from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
