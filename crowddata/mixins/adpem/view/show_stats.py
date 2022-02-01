@@ -8,7 +8,7 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 
-from padinfo.view.components.monster.image import MonsterImage
+from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -66,7 +66,7 @@ class ShowStatsView:
                     LabeledText("You", ShowStatsView.get_count(props.you, *props.valid))
                 )
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.most_commmon)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.most_commmon.monster_id)),
             embed_fields=fields,
             embed_footer=embed_footer_with_state(state)
         )
