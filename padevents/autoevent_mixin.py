@@ -34,7 +34,7 @@ def user_is_donor(ctx, only_patron=False):
 class AutoEvent:
     bot: Red
     config: Config
-    events: List[Event]
+    events: Set[Event]
     started_events: Set[Event]
 
     async def do_autoevents(self):

@@ -6,7 +6,7 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import timedelta
 from io import BytesIO
-from typing import Any, NoReturn, Optional
+from typing import Any, Iterable, NoReturn, Optional, Set
 
 import discord
 import prettytable
@@ -42,7 +42,7 @@ class PadEvents(commands.Cog, AutoEvent):
         self.config.register_user(dmevents=[])
 
         # Load event data
-        self.events = list()
+        self.events = set()
         self.started_events = set()
 
         self.fake_uid = -time.time()
@@ -67,7 +67,7 @@ class PadEvents(commands.Cog, AutoEvent):
 
     def cog_unload(self):
         # Manually nulling out database because the GC for cogs seems to be pretty shitty
-        self.events = list()
+        self.events = set()
         self.started_events = set()
         self._event_loop.cancel()
         self._refresh_loop.cancel()
@@ -120,14 +120,14 @@ class PadEvents(commands.Cog, AutoEvent):
         await dbcog.wait_until_ready()
         scheduled_events = dbcog.database.get_all_events()
 
-        new_events = []
+        new_events = set()
         for se in scheduled_events:
             try:
-                new_events.append(Event(se))
+                new_events.add(Event(se))
             except Exception as ex:
                 logger.exception("Refresh error:")
 
-        self.events = new_events
+        self.events = self.coalesce_event_data(new_events)
         self.started_events = {ev.key for ev in new_events if ev.is_started()}
         async with self.config.sent() as seen:
             for key, value in [*seen.items()]:
@@ -221,7 +221,7 @@ class PadEvents(commands.Cog, AutoEvent):
                 dungeon_id=1,
             )
         )
-        self.events.append(Event(te))
+        self.events.add(Event(te))
         await ctx.tick()
 
     @padevents.command()
@@ -449,10 +449,22 @@ class PadEvents(commands.Cog, AutoEvent):
         else:
             return "JP"
 
+    def coalesce_event_data(self, events: Iterable[Event]) -> Set[Event]:
+        all_events = set()
 
-def make_channel_reg(channel_id, server):
-    server = normalize_server_name(server)
-    return {
-        "channel_id": channel_id,
-        "server": server
-    }
+        grouped = defaultdict(lambda: {})
+        for event in events:
+            if event.group is None:
+                all_events.add(event)
+                continue
+            key = (event.open_datetime, event.close_datetime, event.server, event.dungeon.dungeon_id)
+            grouped[key][event.group] = event
+
+        for _, grouped_events in grouped.items():
+            if len(grouped_events) != 3:
+                all_events.update(grouped_events.values())
+                continue
+            grouped_events['red'].group = None
+            all_events.add(grouped_events['red'])
+
+        return all_events
