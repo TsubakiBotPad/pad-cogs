@@ -293,6 +293,7 @@ class MonsterIndex:
             logger.warning(f"Depth exceeded with token {token}.  Aborting.")
             return
 
+        if token_dict is self.name_tokens:
             if m in self.fluff_tokens[token.lower()]:
                 self.fluff_tokens[token.lower()].remove(m)
         if token_dict is self.fluff_tokens:
