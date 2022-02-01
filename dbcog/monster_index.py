@@ -252,7 +252,8 @@ class MonsterIndex:
                         possessives = re.findall(r"(\w+)'s", m.name_en.lower())
                         for mevo in alt_monsters:
                             for token2 in possessives:
-                                if token2 in self._name_to_tokens(mevo.name_en.lower()):
+                                if token2 in self._name_to_tokens(mevo.name_en.lower()) \
+                                        and token2+"'s" not in self._name_to_tokens(mevo.name_en.lower()):
                                     self.add_name_token(self.name_tokens, token2, mevo)
                     else:
                         for mevo in alt_monsters:
