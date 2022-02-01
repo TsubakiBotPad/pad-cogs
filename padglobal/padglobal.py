@@ -19,13 +19,13 @@ from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
 from tsutils.formatting import clean_global_mentions, strip_right_multiline
 from tsutils.json_utils import safe_read_json
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE
 from tsutils.tsubaki import CLOUDFRONT_URL
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
-from padglobal.view.closable_embed import ClosableEmbedViewState
 from padglobal.view.which import UNKNOWN_EDIT_TIMESTAMP, WhichView, WhichViewProps
 
 logger = logging.getLogger('red.padbot-cogs.padglobal')
