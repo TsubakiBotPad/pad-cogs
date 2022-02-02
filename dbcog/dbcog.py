@@ -32,7 +32,8 @@ from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
-from .monster_index import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, MonsterIndex
+from .monster_index import MonsterIndex
+from .token_mappings import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
 

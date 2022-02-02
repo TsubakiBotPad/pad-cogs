@@ -1289,7 +1289,7 @@ class PadInfo(commands.Cog):
             return
         base_monster = dbcog.database.graph.get_base_monster(mon)
         mods = dbcog.indexes[server].modifiers[mon]
-        manual_modifiers = dbcog.indexes[server].manual_prefixes[mon.monster_id]
+        manual_modifiers = dbcog.indexes[server].manual_modifiers[mon.monster_id]
         EVOANDTYPE = dbcog.token_maps.EVO_TOKENS.union(dbcog.token_maps.TYPE_TOKENS)
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
@@ -1297,8 +1297,8 @@ class PadInfo(commands.Cog):
                f"[Name Tokens] {' '.join(sorted(t for t, ms in dbcog.indexes[server].name_tokens.items() if mon in ms))}\n"
                f"[Fluff Tokens] {' '.join(sorted(t for t, ms in dbcog.indexes[server].fluff_tokens.items() if mon in ms))}\n\n"
                f"[Manual Tokens]\n"
-               f"     Treenames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_tree.items() if mon in ms))}\n"
-               f"     Nicknames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_nick.items() if mon in ms))}\n\n"
+               f"     Treenames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_treenames.items() if mon in ms))}\n"
+               f"     Nicknames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_cardnames.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
                f"     Attribute: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.COLOR_TOKENS))}\n"
                f"     Awakening: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.AWAKENING_TOKENS))}\n"
