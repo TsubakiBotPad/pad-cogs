@@ -3,6 +3,7 @@ import csv
 import io
 import logging
 import re
+from collections import defaultdict
 from typing import Dict, List, Optional
 
 import aiohttp
@@ -11,21 +12,23 @@ from tsutils.enums import Server
 from tsutils.formatting import contains_ja
 
 from .errors import InvalidGraphState
+from .models.enum_types import AwokenSkills, DEFAULT_SERVER
 from .models.monster_model import MonsterModel
 from .monster_graph import MonsterGraph
-from .models.enum_types import DEFAULT_SERVER
-from .token_mappings import *
+from .token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, EvoTypes, \
+    HAZARDOUS_IN_NAME_MODS, KNOWN_MODIFIERS, LEGAL_END_TOKENS, MISC_MAP, MULTI_WORD_TOKENS, MiscModifiers, \
+    PROBLEMATIC_SERIES_TOKENS, SUB_COLOR_MAP, TYPE_MAP
+
+logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
 SHEETS_PATTERN = 'https://docs.google.com/spreadsheets/d/1EoZJ3w5xsXZ67kmarLE4vfrZSIIIAfj04HXeZVST3eY' \
                  '/pub?gid={}&single=true&output=csv'
-NICKNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('0')
-GROUP_TREENAMES_OVERRIDES_SHEET = SHEETS_PATTERN.format('2070615818')
-PANTHNAME_OVERRIDES_SHEET = SHEETS_PATTERN.format('959933643')
-NAME_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format('1229125459')
-MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('2089525837')
-TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format('1372419168')
-
-logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
+CARDNAME_OVERRIDE_SHEET = SHEETS_PATTERN.format(0)
+TREENAME_OVERRIDES_SHEET = SHEETS_PATTERN.format(2070615818)
+CARD_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format(2089525837)
+TREE_MODIFIER_OVERRIDE_SHEET = SHEETS_PATTERN.format(1372419168)
+CONTENT_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format(1229125459)
+SERIES_OVERRIDES_SHEET = SHEETS_PATTERN.format(959933643)
 
 
 class MonsterIndex:
@@ -34,30 +37,33 @@ class MonsterIndex:
         self.server = server
         self.issues = []
 
-        self.graph: Optional[MonsterGraph] = None
-
-        self.monster_id_to_nickname = defaultdict(set)
-        self.monster_id_to_nametokens = defaultdict(set)
-        self.monster_id_to_forcedfluff = defaultdict(set)
+        self.monster_id_to_cardname = defaultdict(set)
         self.monster_id_to_treename = defaultdict(set)
+        self.treename_overrides = set()
+        self.monster_id_to_name = defaultdict(set)
+        self.monster_id_to_forcedfluff = defaultdict(set)
         self.series_id_to_pantheon_nickname = defaultdict(set)
-        self.mwtoken_creators = defaultdict(set)
-        self.replacement_tokens = defaultdict(set)
-        self.remove_mods = defaultdict(set)
-        self.manual_prefixes = defaultdict(set)
-        self.manual_nick = defaultdict(set)
-        self.manual_tree = defaultdict(set)
+        self.content_token_aliases = defaultdict(set)
+        self.manual_modifiers = defaultdict(set)
+        self.manual_removed_modifiers = defaultdict(set)
+
+        self.all_name_tokens = {}
+        self.manual = {}
+        self.manual_cardnames = defaultdict(set)
+        self.manual_treenames = defaultdict(set)
         self.name_tokens = defaultdict(set)
         self.fluff_tokens = defaultdict(set)
-        self.modifiers = defaultdict(set)
-        self.treename_overrides = set()
-        self.multi_word_tokens = {}
-        self._known_mods = {}
-        self.manual = {}
-        self.all_name_tokens = {}
+
         self.all_modifiers = set()
+        self._known_mods = set()
+        self.modifiers = defaultdict(set)
         self.suffixes = set()
+
+        self.multi_word_tokens = {}
+        self.mwtoken_creators = defaultdict(set)
         self.mwt_to_len = defaultdict(lambda: 1)
+
+        self.graph: Optional[MonsterGraph] = None
 
     async def setup(self, graph: MonsterGraph):
         self.graph = graph
@@ -74,17 +80,17 @@ class MonsterIndex:
                                   if " " in m.series.name_en.strip()}.union(MULTI_WORD_TOKENS)
 
         treenames_data, nickname_data, pantheon_data, nt_alias_data, treemod_data, mod_data = await asyncio.gather(
-            sheet_to_reader(GROUP_TREENAMES_OVERRIDES_SHEET,
+            sheet_to_reader(TREENAME_OVERRIDES_SHEET,
                             ('base_id', 'new_treename', 'normal_prio', 'overrides')),
-            sheet_to_reader(NICKNAME_OVERRIDES_SHEET,
+            sheet_to_reader(CARDNAME_OVERRIDE_SHEET,
                             ('monster_id', 'name_en', 'normal_prio', 'overrides', 'fluff')),
-            sheet_to_reader(PANTHNAME_OVERRIDES_SHEET,
+            sheet_to_reader(SERIES_OVERRIDES_SHEET,
                             ('series_id', 'alias')),
-            sheet_to_reader(NAME_TOKEN_ALIAS_SHEET,
+            sheet_to_reader(CONTENT_TOKEN_ALIAS_SHEET,
                             ('tokens', 'alias')),
             sheet_to_reader(TREE_MODIFIER_OVERRIDE_SHEET,
                             ('base_id', 'modifiers')),
-            sheet_to_reader(MODIFIER_OVERRIDE_SHEET,
+            sheet_to_reader(CARD_MODIFIER_OVERRIDE_SHEET,
                             ('monster_id', 'modifiers', 'remove')),
         )
 
@@ -103,10 +109,10 @@ class MonsterIndex:
                         self.treename_overrides.add(evomid)
                 if data['normal_prio']:
                     for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=self.server)):
-                        self.monster_id_to_nametokens[evomid].update(self._name_to_tokens(name))
+                        self.monster_id_to_name[evomid].update(self._name_to_tokens(name))
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")]\
+                        self.mwtoken_creators[name.lower().replace(" ", "")] \
                             .add(graph.get_monster(mid, server=self.server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
                     self.monster_id_to_treename[mid].add(name.lower().replace(" ", ""))
@@ -127,15 +133,15 @@ class MonsterIndex:
                         self.issues.append(f"Invalid sheet settings for nickname `{name}`.")
                     continue
                 if data['normal_prio']:
-                    self.monster_id_to_nametokens[mid].update(self._name_to_tokens(name))
+                    self.monster_id_to_name[mid].update(self._name_to_tokens(name))
                 if data['overrides']:
                     self.treename_overrides.add(mid)
                 else:
                     if " " in name:
-                        self.mwtoken_creators[name.lower().replace(" ", "")]\
+                        self.mwtoken_creators[name.lower().replace(" ", "")] \
                             .add(graph.get_monster(mid, server=self.server))
                         self.multi_word_tokens.add(tuple(name.lower().split(" ")))
-                    self.monster_id_to_nickname[mid].add(name.lower().replace(" ", ""))
+                    self.monster_id_to_cardname[mid].add(name.lower().replace(" ", ""))
 
         for data in pantheon_data:
             if data['series_id'].isdigit():
@@ -146,7 +152,7 @@ class MonsterIndex:
                 self.series_id_to_pantheon_nickname[sid].add(name.lower().replace(" ", ""))
 
         for data in nt_alias_data:
-            self.replacement_tokens[frozenset(re.split(r'[,\s]+', data['tokens']))].add(data['alias'])
+            self.content_token_aliases[frozenset(re.split(r'[,\s]+', data['tokens']))].add(data['alias'])
 
         for data in mod_data:
             if data['monster_id'].isdigit():
@@ -163,9 +169,9 @@ class MonsterIndex:
                         self.multi_word_tokens.add(tuple(mod.lower().split(" ")))
                     mod = mod.lower().replace(" ", "")
                     if data['remove']:
-                        self.remove_mods[mid].update(mod)
+                        self.manual_removed_modifiers[mid].update(mod)
                     else:
-                        self.manual_prefixes[mid].update(get_modifier_aliases(mod))
+                        self.manual_modifiers[mid].update(get_modifier_aliases(mod))
 
         for data in treemod_data:
             if data['base_id'].isdigit() and graph.get_monster(int(data['base_id']), server=self.server):
@@ -177,14 +183,14 @@ class MonsterIndex:
                     mod = mod.replace(" ", "")
                     aliases = get_modifier_aliases(mod)
                     for evomid in self.graph.get_alt_ids(self.graph.get_monster(mid, server=self.server)):
-                        self.manual_prefixes[evomid].update(aliases)
+                        self.manual_modifiers[evomid].update(aliases)
 
         self._known_mods = {x for xs in self.series_id_to_pantheon_nickname.values()
                             for x in xs}.union(KNOWN_MODIFIERS)
 
         await self._build_monster_index(monsters)
 
-        self.manual = combine_tokens_dicts(self.manual_nick, self.manual_tree)
+        self.manual = combine_tokens_dicts(self.manual_cardnames, self.manual_treenames)
         self.all_name_tokens = combine_tokens_dicts(self.manual, self.fluff_tokens, self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
@@ -197,9 +203,9 @@ class MonsterIndex:
             self.modifiers[m] = await self.get_modifiers(m)
 
             # ID
-            self.manual_nick[str(m.monster_no_na)].add(m)
+            self.manual_cardnames[str(m.monster_no_na)].add(m)
             if m.monster_id > 10000:
-                self.manual_nick[str(m.monster_id)].add(m)
+                self.manual_cardnames[str(m.monster_id)].add(m)
             if m.monster_no_na != m.monster_no_jp:
                 self.name_tokens['na' + str(m.monster_no_na)].add(m)
                 self.name_tokens['jp' + str(m.monster_no_jp)].add(m)
@@ -215,7 +221,7 @@ class MonsterIndex:
 
             # Propagate name tokens throughout all evos
             for me in alt_monsters:
-                for t in self.monster_id_to_nametokens[me.monster_id]:
+                for t in self.monster_id_to_name[me.monster_id]:
                     if t in nametokens:
                         self.add_name_token(t, m)
                 if me.is_equip or contains_ja(me.name_en):
@@ -236,7 +242,7 @@ class MonsterIndex:
                         treenames.add(match.group(1))
 
             # Add important tokens
-            for token in self.monster_id_to_nametokens[m.monster_id]:
+            for token in self.monster_id_to_name[m.monster_id]:
                 self.add_name_token(token, m)
             if m.monster_id in self.treename_overrides:
                 pass
@@ -253,7 +259,7 @@ class MonsterIndex:
                         for mevo in alt_monsters:
                             for token2 in possessives:
                                 if token2 in self._name_to_tokens(mevo.name_en.lower()) \
-                                        and token2+"'s" not in self._name_to_tokens(mevo.name_en.lower()):
+                                        and token2 + "'s" not in self._name_to_tokens(mevo.name_en.lower()):
                                     self.add_name_token(token2, mevo)
                     else:
                         for mevo in alt_monsters:
@@ -280,7 +286,7 @@ class MonsterIndex:
                 self.add_fluff_token(token, m)
 
             # Monster Nickname
-            for nick in self.monster_id_to_nickname[m.monster_id]:
+            for nick in self.monster_id_to_cardname[m.monster_id]:
                 self.add_manual_nick_token(nick, m)
 
             # Tree Nickname
@@ -297,10 +303,10 @@ class MonsterIndex:
         self._add_content_token(self.fluff_tokens, token, monster)
 
     def add_manual_nick_token(self, token, monster):
-        self._add_content_token(self.manual_nick, token, monster)
+        self._add_content_token(self.manual_cardnames, token, monster)
 
     def add_manual_tree_token(self, token, monster):
-        self._add_content_token(self.manual_tree, token, monster)
+        self._add_content_token(self.manual_treenames, token, monster)
 
     def _add_content_token(self, token_dict, token, m, depth=5):
         if depth <= 0:
@@ -312,8 +318,8 @@ class MonsterIndex:
             self.modifiers[m].add(token.lower())
 
         # Replacements
-        for ts in (k for k in self.replacement_tokens if token.lower() in k and all(m in token_dict[t] for t in k)):
-            for t in self.replacement_tokens[ts]:
+        for ts in (k for k in self.content_token_aliases if token.lower() in k and all(m in token_dict[t] for t in k)):
+            for t in self.content_token_aliases[ts]:
                 self._add_content_token(token_dict, t, m, depth - 1)
 
     @staticmethod
@@ -346,7 +352,7 @@ class MonsterIndex:
             return cls._name_to_tokens(min(n1, n2, key=token_count))
 
     async def get_modifiers(self, monster: MonsterModel):
-        modifiers = self.manual_prefixes[monster.monster_id].union({'monster'})
+        modifiers = self.manual_modifiers[monster.monster_id].union({'monster'})
 
         basemon = self.graph.get_base_monster(monster)
 
@@ -537,7 +543,7 @@ class MonsterIndex:
         if self.graph.evo_gem_monster(monster) is not None:
             modifiers.update(MISC_MAP[MiscModifiers.HAS_GEM])
 
-        modifiers.difference_update(self.remove_mods[monster.monster_id])
+        modifiers.difference_update(self.manual_removed_modifiers[monster.monster_id])
 
         return modifiers
 
