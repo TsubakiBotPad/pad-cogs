@@ -1,8 +1,6 @@
 # padbot-cogs
 
-Red v3 Cogs developed originally for Miru Bot, now for Tsubaki Bot.
-
-Code should be PEP 8 formatted with a 120 character line limit.
+**Important: You must use Python 3.8 for the setup!!** If you use an earlier or later version, things WILL break. It's not just convenient to be on the same version as us, it's mandatory.
 
 # Setting up your own Tsubaki instance for contributing code
 
