@@ -21,7 +21,7 @@ SELECT
     encounters.level,
     encounters.hp,
     encounters.atk,
-    encounters.defence,
+    encounters.defense,
     sub_dungeons.name_ja AS sub_name_ja,
     sub_dungeons.name_en AS sub_name_en,
     sub_dungeons.name_ko AS sub_name_ko,
@@ -120,7 +120,7 @@ SELECT
     encounters.level,
     encounters.hp,
     encounters.atk,
-    encounters.defence
+    encounters.defense
 FROM
     encounters
 WHERE
@@ -141,7 +141,7 @@ SELECT
     encounters.level,
     encounters.hp,
     encounters.atk,
-    encounters.defence
+    encounters.defense
 FROM
     encounters
 WHERE
