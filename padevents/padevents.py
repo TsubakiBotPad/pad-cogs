@@ -404,7 +404,7 @@ class PadEvents(commands.Cog, AutoEvent):
         events = EventList(self.events)
         events = events.with_server(server)
         events = events.with_dungeon_type(DungeonType.SoloSpecial, DungeonType.Special)
-        events = events.is_grouped()
+        events = events.with_length(EventLength.limited)
 
         active_events = sorted(events.active_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
         pending_events = sorted(events.pending_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
