@@ -81,10 +81,10 @@ class Event:
             return '{:2}m'.format(int(minutes))
 
     def group_long_name(self):
-        return self.group.upper() if self.group is not None else "UNGROUPED"
+        return self.group.upper() if self.group is not None else "ALL"
 
     def to_partial_event(self, pe):
-        group = self.group_long_name()[0]
+        group = self.group_long_name()[0] if self.group is not None else " "
         if self.is_started():
             return "`" + group + " " + self.clean_dungeon_name + " " * (
                 max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.end_from_now_discord()
