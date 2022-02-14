@@ -151,7 +151,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHCOMBO10C: ('10c',),
     AwokenSkills.COMBOORB: ('co', 'corb'),
     AwokenSkills.VOICE: ('voice',),
-    AwokenSkills.DUNGEONBONUS: ('dgbonus', 'dgboost'),
+    AwokenSkills.DUNGEONBONUS: ('dgbonus', 'dgboost', 'dgb', 'dungeonboost', 'dungeonbonus'),
     AwokenSkills.REDUCEDHP: ('hp-',),
     AwokenSkills.REDUCEDATK: ('atk-',),
     AwokenSkills.REDUCEDRCV: ('rcv-',),
