@@ -513,7 +513,8 @@ class PadBuildImageGenerator(object):
                 assist_str = tok.value
                 ass_card = await self.dbcog.find_monster(tok.value, self.ctx.author.id)
                 if ass_card is None:
-                    raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
+                    raise commands.UserFeedbackCheckFailure(f'Lookup Error: Could not find a monster to match:'
+                                                            f' {tok.value}.')
             elif tok.type == 'REPEAT':
                 repeat = min(tok.value, MAX_LATENTS)
             elif tok.type == 'ID':
@@ -523,7 +524,8 @@ class PadBuildImageGenerator(object):
                 else:
                     card = await self.dbcog.find_monster(tok.value, self.ctx.author.id)
                     if card is None:
-                        raise commands.UserFeedbackCheckFailure('Lookup Error: Monster not found.')
+                        raise commands.UserFeedbackCheckFailure(f'Lookup Error: Could not find a monster to match:'
+                                                                f' {tok.value}.')
                     if not card.is_inheritable:
                         if is_assist:
                             return None, None
