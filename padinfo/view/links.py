@@ -4,10 +4,9 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
-from padinfo.common.external_links import puzzledragonx, youtube_search, skyozora, ilmina
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -19,10 +18,10 @@ class LinksView:
     @staticmethod
     def linksbox(m):
         return Box(
-            LinkedText('YouTube', youtube_search(m)),
-            LinkedText('Skyozora', skyozora(m)),
-            LinkedText('PDX', puzzledragonx(m)),
-            LinkedText('Ilmina', ilmina(m)),
+            LinkedText('YouTube', MonsterLink.youtube_search(m)),
+            LinkedText('Skyozora', MonsterLink.skyozora(m)),
+            LinkedText('PADIndex', MonsterLink.padindex(m)),
+            LinkedText('Ilmina', MonsterLink.ilmina(m)),
             delimiter=' | ')
 
     @staticmethod
@@ -32,5 +31,5 @@ class LinksView:
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 description=LinksView.linksbox(m),
-                url=puzzledragonx(m)),
+                url=MonsterLink.puzzledragonx(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)))

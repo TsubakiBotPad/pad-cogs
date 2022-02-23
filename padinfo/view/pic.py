@@ -3,12 +3,11 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
 from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 
@@ -57,7 +56,7 @@ class PicView(BaseIdView, EvoScrollView):
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                   state.is_jp_buffed).to_markdown(),
-                url=puzzledragonx(state.monster)),
+                url=MonsterLink.puzzledragonx(state.monster)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields,
             embed_body_image=EmbedBodyImage(url),
