@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import LinkedText, Text
 from tsutils.enums import Server
+from tsutils.tsubaki import MonsterLink
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
-from padinfo.common.external_links import puzzledragonx
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -27,12 +27,12 @@ class MonsterHeader:
     def short(cls, m: "MonsterModel", link=False):
         type_emojis = ''
         msg = '[{}] {}{}'.format(m.monster_no_na, type_emojis, m.name_en)
-        return '[{}]({})'.format(msg, puzzledragonx(m)) if link else msg
+        return '[{}]({})'.format(msg, MonsterLink.puzzledragonx(m)) if link else msg
 
     @classmethod
     def long(cls, m: "MonsterModel", link=False):
         msg = cls.short(m) + cls.jp_suffix(m)
-        return '[{}]({})'.format(msg, puzzledragonx(m)) if link else msg
+        return '[{}]({})'.format(msg, MonsterLink.puzzledragonx(m)) if link else msg
 
     @classmethod
     def name(cls, m: "MonsterModel", link=False, show_jp=False):
@@ -40,12 +40,12 @@ class MonsterHeader:
             m.monster_no_na,
             m.name_en,
             cls.jp_suffix(m) if show_jp else '')
-        return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
+        return LinkedText(msg, MonsterLink.puzzledragonx(m)) if link else Text(msg)
 
     @classmethod
     def long_v2(cls, m: "MonsterModel", link=False):
         msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, cls.jp_suffix(m))
-        return LinkedText(msg, puzzledragonx(m)) if link else Text(msg)
+        return LinkedText(msg, MonsterLink.puzzledragonx(m)) if link else Text(msg)
 
     @classmethod
     def long_maybe_tsubaki(cls, m: "MonsterModel", is_tsubaki, is_jp_buffed=False):
@@ -73,7 +73,7 @@ class MonsterHeader:
         return Box(
             prefix,
             Text(get_attribute_emoji_by_monster(m)),
-            LinkedText(msg, puzzledragonx(m)) if link else Text(msg),
+            LinkedText(msg, MonsterLink.puzzledragonx(m)) if link else Text(msg),
             Text(suffix) if suffix else None,
             delimiter=' '
         )

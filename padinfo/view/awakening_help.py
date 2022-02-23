@@ -5,12 +5,11 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedAuthor
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
 from padinfo.common.emoji_map import get_awakening_emoji
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.common import get_awoken_skill_description
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -77,7 +76,7 @@ class AwakeningHelpView:
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
-                puzzledragonx(monster),
+                MonsterLink.puzzledragonx(monster),
                 MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),

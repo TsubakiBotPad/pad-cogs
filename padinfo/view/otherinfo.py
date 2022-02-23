@@ -7,8 +7,8 @@ from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki import MonsterLink
 
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.monster.header import MonsterHeader
@@ -56,7 +56,7 @@ class OtherInfoView(BaseIdView, EvoScrollView):
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                   state.is_jp_buffed).to_markdown(),
-                url=puzzledragonx(m)),
+                url=MonsterLink.puzzledragonx(m)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=[
                 EmbedField(
