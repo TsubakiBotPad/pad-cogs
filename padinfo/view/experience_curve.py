@@ -119,7 +119,8 @@ class ExperienceCurveView:
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(props.monster, use_emoji=True),
-                url=MonsterLink.puzzledragonx(props.monster),
+                # TODO: add query_settings
+                url=MonsterLink.header_link(props.monster),
                 description=Text(f'lv{props.low} -> lv{props.high} ('
                                  + (trunc_humanize(props.monster.exp_curve) if props.monster.exp_curve else "no")
                                  + f' curve)'),

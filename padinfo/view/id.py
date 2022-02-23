@@ -293,7 +293,7 @@ class IdView(BaseIdMainView, EvoScrollView):
                 title=MonsterHeader.fmt_id_header(m,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                   state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.puzzledragonx(m)),
+                url=MonsterLink.header_link(m, state.query_settings)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)
