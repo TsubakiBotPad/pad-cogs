@@ -7,14 +7,12 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
-from padinfo.common.external_links import ilmina_skill
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
@@ -88,7 +86,7 @@ class MaterialsViewState(ViewStateBaseId):
         gemusedin = db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
         skillups = []
         skillup_evo_count = 0
-        link = ilmina_skill(monster)
+        link = MonsterLink.ilmina(monster)
 
         if monster.active_skill:
             sums = [m for m in db_context.get_monsters_by_active(monster.active_skill.active_skill_id,
@@ -159,7 +157,7 @@ class MaterialsView(BaseIdView, EvoScrollView):
                 title=MonsterHeader.fmt_id_header(state.monster,
                                                   state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                   state.is_jp_buffed).to_markdown(),
-                url=puzzledragonx(state.monster)
+                url=MonsterLink.puzzledragonx(state.monster)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
             embed_footer=embed_footer_with_state(state),

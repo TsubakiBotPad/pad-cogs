@@ -8,13 +8,12 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
-from padinfo.common.external_links import puzzledragonx
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL, ButtonInfoStatSet, \
     ButtonInfoResult
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState, MonsterEvolution
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -207,7 +206,7 @@ class ButtonInfoView(EvoScrollView):
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
-                puzzledragonx(monster),
+                MonsterLink.puzzledragonx(monster),
                 MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),

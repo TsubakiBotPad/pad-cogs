@@ -8,10 +8,9 @@ from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core.utils.chat_formatting import humanize_number
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -26,8 +25,8 @@ GLOBE_EXP = {
 }
 TA2_EXP = 12_000_000
 TA3_EXP = 50_000_000
-    
-    
+
+
 class ExperienceCurveViewProps:
     def __init__(self, monster: "MonsterModel", low: int, high: int, offset: Union[float, int]):
         self.monster = monster
@@ -120,7 +119,7 @@ class ExperienceCurveView:
             EmbedMain(
                 color=state.color,
                 title=MonsterHeader.fmt_id_header(props.monster, use_emoji=True),
-                url=puzzledragonx(props.monster),
+                url=MonsterLink.puzzledragonx(props.monster),
                 description=Text(f'lv{props.low} -> lv{props.high} ('
                                  + (trunc_humanize(props.monster.exp_curve) if props.monster.exp_curve else "no")
                                  + f' curve)'),

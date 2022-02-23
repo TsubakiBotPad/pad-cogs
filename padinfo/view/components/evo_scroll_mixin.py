@@ -3,8 +3,7 @@ from typing import List, TYPE_CHECKING, NamedTuple, Optional
 
 from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import HighlightableLinks, LinkedText
-
-from padinfo.common.external_links import puzzledragonx
+from tsutils.tsubaki import MonsterLink
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -66,8 +65,10 @@ class EvoScrollView:
         return EmbedField(
             field_text + help_text,
             HighlightableLinks(
-                links=[LinkedText(EvoScrollView.alt_fmt(evo), puzzledragonx(evo.monster)) for evo in
-                       state.alt_monsters],
+                links=[LinkedText(
+                    EvoScrollView.alt_fmt(evo),
+                    MonsterLink.puzzledragonx(evo.monster)
+                ) for evo in state.alt_monsters],
                 highlighted=next(i for i, me in enumerate(state.alt_monsters)
                                  if state.monster.monster_id == me.monster.monster_id)
             )

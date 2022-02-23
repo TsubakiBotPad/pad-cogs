@@ -9,12 +9,11 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki import MonsterImage, MonsterLink
 
 from padinfo.common.emoji_map import get_emoji
-from padinfo.common.external_links import puzzledragonx
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.monster.header import MonsterHeader
-from tsutils.tsubaki import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -225,7 +224,7 @@ class TransformInfoView(BaseIdMainView):
                 title=MonsterHeader.fmt_id_header(transformed_mon,
                                                   False,
                                                   state.is_jp_buffed).to_markdown(),
-                url=puzzledragonx(transformed_mon)
+                url=MonsterLink.puzzledragonx(transformed_mon)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon.monster_id)),
             embed_footer=embed_footer_with_state(state),
