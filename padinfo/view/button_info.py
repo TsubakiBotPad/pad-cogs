@@ -206,7 +206,7 @@ class ButtonInfoView(EvoScrollView):
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(monster).to_markdown(),
-                MonsterLink.puzzledragonx(monster),
+                MonsterLink.header_link(monster, state.query_settings),
                 MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),

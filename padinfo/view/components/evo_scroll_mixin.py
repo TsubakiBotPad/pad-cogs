@@ -3,6 +3,7 @@ from typing import List, TYPE_CHECKING, NamedTuple, Optional
 
 from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import HighlightableLinks, LinkedText
+from tsutils.query_settings import QuerySettings
 from tsutils.tsubaki import MonsterLink
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ class EvoScrollViewState:
     alt_monster_ids: List[int]
     monster: "MonsterModel"
     alt_monsters: List["MonsterEvolution"]
+    query_settings: QuerySettings
 
     def decrement_monster(self, dbcog, ims: dict):
 
@@ -67,7 +69,7 @@ class EvoScrollView:
             HighlightableLinks(
                 links=[LinkedText(
                     EvoScrollView.alt_fmt(evo),
-                    MonsterLink.puzzledragonx(evo.monster)
+                    MonsterLink.header_link(evo.monster, state.query_settings)
                 ) for evo in state.alt_monsters],
                 highlighted=next(i for i, me in enumerate(state.alt_monsters)
                                  if state.monster.monster_id == me.monster.monster_id)

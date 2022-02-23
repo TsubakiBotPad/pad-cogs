@@ -19,5 +19,6 @@ class LookupView:
             EmbedMain(color=color),
             embed_author=EmbedAuthor(
                 MonsterHeader.long_v2(m).to_markdown(),
-                MonsterLink.puzzledragonx(m),
+                # TODO: add query_settings
+                MonsterLink.header_link(m),
                 MonsterImage.icon(m.monster_id)))

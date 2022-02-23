@@ -224,7 +224,7 @@ class TransformInfoView(BaseIdMainView):
                 title=MonsterHeader.fmt_id_header(transformed_mon,
                                                   False,
                                                   state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.puzzledragonx(transformed_mon)
+                url=MonsterLink.header_link(transformed_mon, state.query_settings)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon.monster_id)),
             embed_footer=embed_footer_with_state(state),

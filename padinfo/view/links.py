@@ -31,5 +31,6 @@ class LinksView:
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 description=LinksView.linksbox(m),
-                url=MonsterLink.puzzledragonx(m)),
+                # TODO: add query_settings
+                url=MonsterLink.header_link(m)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)))
