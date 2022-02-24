@@ -553,7 +553,8 @@ class PadInfo(commands.Cog):
             return
         await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
-        embed = LinksView.embed(monster, color).to_embed()
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        embed = LinksView.embed(monster, color, query_settings).to_embed()
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -567,7 +568,8 @@ class PadInfo(commands.Cog):
             return
         await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
-        embed = LookupView.embed(monster, color).to_embed()
+        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        embed = LookupView.embed(monster, color, query_settings).to_embed()
         await ctx.send(embed=embed)
 
     async def log_id_result(self, ctx, monster_id: int):
