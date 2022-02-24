@@ -24,7 +24,7 @@ from tsutils.menu.simple_text import SimpleTextMenu
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import QuerySettings
-from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
+from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
 
 from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
@@ -1028,7 +1028,8 @@ class PadInfo(commands.Cog):
             await self.config.user(ctx.author).survey_mode.set(vals.index(value))
             await ctx.tick()
         else:
-            await ctx.send("value must be `always`, `sometimes`, or `never`")
+            await send_cancellation_message(
+                ctx, "value must be `always`, `sometimes`, or `never`")
 
     @is_donor()
     @idset.command()
@@ -1047,7 +1048,8 @@ class PadInfo(commands.Cog):
         elif re.match(r"^#?[0-9a-fA-F]{6}$", color):
             await self.config.user(ctx.author).color.set(int(color.lstrip("#"), 16))
         else:
-            await ctx.send("Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
+            await send_cancellation_message(
+                ctx, "Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
             return
         await ctx.tick()
 
@@ -1057,7 +1059,8 @@ class PadInfo(commands.Cog):
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             # The current na_prio enum has 0 and 1 instead of False and True as its values
             fm_flags['na_prio'] = int(value)
-        await ctx.send(f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
+        await send_confirmation_message(
+            ctx, f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
 
     @idset.command()
     async def server(self, ctx, server: str):
@@ -1074,9 +1077,9 @@ class PadInfo(commands.Cog):
                 fm_flags['server'] = server.upper()
             else:
                 if dbcog.DEFAULT_SERVER == Server.COMBINED:
-                    await ctx.send("Server must be `default` or `na`")
+                    await send_cancellation_message(ctx, "Server must be `default` or `na`")
                 else:
-                    await ctx.send("Server must be `na` or `combined`")
+                    await send_cancellation_message(ctx, "Server must be `na` or `combined`")
                 return
         await ctx.tick()
 
@@ -1094,10 +1097,12 @@ class PadInfo(commands.Cog):
             elif value == "numerical":
                 fm_flags['evosort'] = AltEvoSort.numerical.value
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
                 return
-        await ctx.send(f"Your `{ctx.prefix}id` evo sort preference has been set to **{value}**.")
+        await send_confirmation_message(
+            ctx, f"Your `{ctx.prefix}id` evo sort preference has been set to **{value}**.")
 
     @idset.command()
     async def lsmultiplier(self, ctx, value: str):
@@ -1117,10 +1122,12 @@ class PadInfo(commands.Cog):
                 not_value = 'double'
                 not_value_flag = 'lsdouble'
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `double` or `single`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` lsmultiplier preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
@@ -1141,10 +1148,12 @@ class PadInfo(commands.Cog):
                 not_value = '297'
                 not_value_flag = 'plus297'
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `297` or `0`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
@@ -1165,10 +1174,12 @@ class PadInfo(commands.Cog):
                 not_value = 'solo'
                 not_value_flag = 'solo'
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `coop` or `solo`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` cardmode preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
@@ -1189,10 +1200,12 @@ class PadInfo(commands.Cog):
                 not_value = '120'
                 not_value_flag = 'lv120'
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `110` or `120`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
@@ -1213,10 +1226,12 @@ class PadInfo(commands.Cog):
                 not_value = 'split'
                 not_value_flag = 'splitevos'
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `grouped` or `split`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @idset.command()
@@ -1242,10 +1257,12 @@ class PadInfo(commands.Cog):
                 not_value = value1
                 not_value_flag = value1_flag
             else:
-                await ctx.send(
+                await send_cancellation_message(
+                    ctx,
                     f'Please input an allowed value, either `{value1}` or `{value2}`.')
                 return
-        await ctx.send(
+        await send_confirmation_message(
+            ctx,
             f"Your default `{ctx.prefix}id` {setting_name} preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @commands.group()
