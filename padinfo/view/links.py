@@ -4,6 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
+from tsutils.query_settings import QuerySettings
 from tsutils.tsubaki import MonsterImage, MonsterLink
 
 from padinfo.view.components.monster.header import MonsterHeader
@@ -25,12 +26,11 @@ class LinksView:
             delimiter=' | ')
 
     @staticmethod
-    def embed(m: "MonsterModel", color):
+    def embed(m: "MonsterModel", color, query_settings: QuerySettings):
         return EmbedView(
             EmbedMain(
                 color=color,
                 title=MonsterHeader.long_v2(m).to_markdown(),
                 description=LinksView.linksbox(m),
-                # TODO: add query_settings
-                url=MonsterLink.header_link(m)),
+                url=MonsterLink.header_link(m, query_settings)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)))
