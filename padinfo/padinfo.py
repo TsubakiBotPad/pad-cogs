@@ -17,7 +17,7 @@ from tabulate import tabulate
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
 from tsutils.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, LsMultiplier, \
-    Server
+    Server, MonsterLinkTarget
 from tsutils.json_utils import safe_read_json
 from tsutils.menu.components.config import BotConfig
 from tsutils.menu.simple_text import SimpleTextMenu
@@ -1016,11 +1016,6 @@ class PadInfo(commands.Cog):
         """`[p]id` settings list"""
         await ctx.send("This command is still in progress!")
 
-    @idset.command(name="scroll")
-    async def idset_scroll(self, ctx):
-        await ctx.send(f"We no longer support number scroll as a preference. "
-                       f"Please use the `{ctx.prefix}scroll` command for numberscroll!")
-
     @idset.command()
     async def survey(self, ctx, value):
         """How often you see the id survey
@@ -1223,6 +1218,35 @@ class PadInfo(commands.Cog):
                 return
         await ctx.send(
             f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+
+    @idset.command()
+    async def linktarget(self, ctx, value: str):
+        """Monster link targets in your `[p]ids` queries
+
+        `[p]idset linktarget padindex`: [Default] Link to PADIndex always.
+        `[p]idset linktarget ilmina`: Link to Ilmina for cards that are in NA.
+        """
+        setting_name = 'linktarget'
+        value1 = 'padindex'
+        value1_flag = 'padindex'
+        value2 = 'ilmina'
+        value2_flag = 'ilmina'
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            value = value.lower()
+            if value == value1:
+                fm_flags[setting_name] = MonsterLinkTarget.padindex.value
+                not_value = value2
+                not_value_flag = value2_flag
+            elif value == value2:
+                fm_flags[setting_name] = MonsterLinkTarget.ilmina.value
+                not_value = value1
+                not_value_flag = value1_flag
+            else:
+                await ctx.send(
+                    f'Please input an allowed value, either `{value1}` or `{value2}`.')
+                return
+        await ctx.send(
+            f"Your default `{ctx.prefix}id` {setting_name} preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
 
     @commands.group()
     @checks.is_owner()
