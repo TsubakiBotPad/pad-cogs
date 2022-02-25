@@ -297,8 +297,16 @@ class PadGlobal(commands.Cog):
             await ctx.send("PAD command doesn't exist.")
 
     @padglobal.command()
+    async def prepend(self, ctx, command: str, *, addition):
+        """Prepend the additional text to an existing command before a blank line."""
+        await self._concatenate(ctx, command, 'prepend', addition)
+
+    @padglobal.command()
     async def append(self, ctx, command: str, *, addition):
         """Append the additional text to an existing command after a blank line."""
+        await self._concatenate(ctx, command, 'append', addition)
+
+    async def _concatenate(self, ctx, command: str, operation: str, addition):
         # the same cleaning that padglobal add does
         command = command.lower()
         addition = clean_global_mentions(addition)
@@ -318,15 +326,21 @@ class PadGlobal(commands.Cog):
             source_cmd = result
             result = self.c_commands[result]
 
-        result = "{}\n\n{}".format(result, addition)
+        if operation == 'prepend':
+            result = "{}\n\n{}".format(addition, result)
+        elif operation == 'append':
+            result = "{}\n\n{}".format(result, addition)
+        else:
+            raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
+
         if alias:
             self.c_commands[source_cmd] = result
         else:
             self.c_commands[corrected_cmd] = result
         json.dump(self.c_commands, open(self.file_path, 'w+'))
 
-        await ctx.send("Successfully appended to {}PAD command `{}`.".format("source " if alias else "",
-                                                                             source_cmd if alias else corrected_cmd))
+        await ctx.send("Successfully {}ed to {}PAD command `{}`.".format(operation, "source " if alias else "",
+                                                                         source_cmd if alias else corrected_cmd))
 
     @padglobal.command()
     async def eventswap(self, ctx):
