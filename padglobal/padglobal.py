@@ -297,6 +297,11 @@ class PadGlobal(commands.Cog):
             await ctx.send("PAD command doesn't exist.")
 
     @padglobal.command()
+    async def prepend(self, ctx, command: str, *, addition):
+        """Prepend the additional text to an existing command before a blank line."""
+        await self._concatenate(ctx, command, 'prepend', addition)
+
+    @padglobal.command()
     async def append(self, ctx, command: str, *, addition):
         """Append the additional text to an existing command after a blank line."""
         await self._concatenate(ctx, command, 'append', addition)
