@@ -620,7 +620,7 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
-        if monster_list is None:
+        if not monster_list:
             await ctx.send("No monster matched.")
             return
 
@@ -640,7 +640,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
         monster_list = await AllMatsViewState.do_query(dbcog, monster)
-        if monster_list is None:
+        if not monster_list:
             await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
             return
 
