@@ -620,7 +620,7 @@ class PadInfo(commands.Cog):
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
-        if monster_list is None:
+        if not monster_list:
             await ctx.send("No monster matched.")
             return
 
