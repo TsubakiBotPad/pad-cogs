@@ -640,7 +640,7 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
         monster_list = await AllMatsViewState.do_query(dbcog, monster)
-        if monster_list is None:
+        if not monster_list:
             await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
             return
 
