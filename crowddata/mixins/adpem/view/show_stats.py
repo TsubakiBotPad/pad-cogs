@@ -7,7 +7,7 @@ from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
-from tsutils.tsubaki import MonsterImage
+from tsutils.tsubaki.links import MonsterImage
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

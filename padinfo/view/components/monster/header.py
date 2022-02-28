@@ -4,7 +4,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.text import LinkedText, Text
 from tsutils.enums import Server
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterLink
+from tsutils.tsubaki.links import MonsterLink
 
 from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 

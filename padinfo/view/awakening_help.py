@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField, EmbedAuthor
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
 
 from padinfo.common.emoji_map import get_awakening_emoji
 from padinfo.view.common import get_awoken_skill_description

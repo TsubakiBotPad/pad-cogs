@@ -5,7 +5,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
 
 from padinfo.view.components.monster.header import MonsterHeader
 

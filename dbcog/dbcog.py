@@ -22,7 +22,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.enums import Server
 from tsutils.json_utils import async_cached_dadguide_request, safe_read_json
-from tsutils.tsubaki import CLOUDFRONT_URL
+from tsutils.tsubaki.links import CLOUDFRONT_URL
 from tsutils.user_interaction import StatusManager, send_confirmation_message
 
 from . import token_mappings

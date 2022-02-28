@@ -8,7 +8,7 @@ from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core.utils.chat_formatting import humanize_number
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
 
 from padinfo.view.components.monster.header import MonsterHeader
 

@@ -7,7 +7,7 @@ from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki import MonsterLink
+from tsutils.tsubaki.links import MonsterLink
 
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
