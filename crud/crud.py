@@ -63,7 +63,7 @@ class Crud(commands.Cog):
             GADMIN_COG.register_perm("crud")
         else:
             raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
-                                      "installed from misc-cogs and load it via `^load globaladmin`")
+                                      "installed from core-cogs and load it via `^load globaladmin`")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
