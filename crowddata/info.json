@@ -2,7 +2,7 @@
   "author": ["Aradia Megido#2552"],
   "description": "Allows users to set up custom preferences to be used cross-cog.",
   "end_user_data_statement": "All explicitly stored user preferences are kept persistantly.",
-  "install_msg": "See <https://github.com/TsubakiBotPad/misc-cogs/wiki/UserPreferences> for a full list of commands.",
+  "install_msg": "See <https://github.com/TsubakiBotPad/core-cogs/wiki/UserPreferences> for a full list of commands.",
   "short": "User Preferences",
   "min_bot_version": "3.4.0",
   "max_bot_version": "0.0.0",

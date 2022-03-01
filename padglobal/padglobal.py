@@ -94,7 +94,7 @@ class PadGlobal(commands.Cog):
             GADMIN_COG.register_perm("contentadmin")
         else:
             raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
-                                      "installed from misc-cogs and load it via `^load globaladmin`")
+                                      "installed from core-cogs and load it via `^load globaladmin`")
 
         self.file_path = _data_file('commands.json')
         self.c_commands = safe_read_json(self.file_path)
