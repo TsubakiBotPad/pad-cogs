@@ -9,8 +9,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core.utils.chat_formatting import humanize_number
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
-
-from padinfo.view.components.monster.header import MonsterHeader
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -118,7 +117,7 @@ class ExperienceCurveView:
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.fmt_id_header(props.monster, use_emoji=True),
+                title=MonsterHeader.menu_title(props.monster, use_emoji=True),
                 # TODO: add query_settings
                 url=MonsterLink.header_link(props.monster),
                 description=Text(f'lv{props.low} -> lv{props.high} ('

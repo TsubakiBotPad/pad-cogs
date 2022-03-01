@@ -8,11 +8,11 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
@@ -114,7 +114,7 @@ class MaterialsViewState(ViewStateBaseId):
         return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override
 
 
-def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
+def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW, query_settings: Optional[QuerySettings] = None):
     text = None
     if len(mons) == 0:
         text = "None"
@@ -122,10 +122,11 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW):
         text = f"({len(mons) - max_mons} more monster{'s' if len(mons) - max_mons > 1 else ''}, see `^allmats` for full list)"
     return EmbedField(
         title,
-        Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:max_mons]), text))
+        Box(*(MonsterHeader.box_with_emoji(
+            em, query_settings=query_settings) for em in mons[:max_mons]), text))
 
 
-def skillup_field(mons, sec, link):
+def skillup_field(mons, sec, link, query_settings):
     text = None
     text2 = None
     if len(mons) == 0:
@@ -142,7 +143,8 @@ def skillup_field(mons, sec, link):
 
     return EmbedField(
         "Skillups",
-        Box(*(MonsterHeader.short_with_emoji(em) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
+        Box(*(MonsterHeader.box_with_emoji(
+            em, query_settings=query_settings) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
 
 
 class MaterialsView(BaseIdView, EvoScrollView):
@@ -154,22 +156,23 @@ class MaterialsView(BaseIdView, EvoScrollView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.fmt_id_header(state.monster,
-                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.is_jp_buffed).to_markdown(),
+                title=MonsterHeader.menu_title(state.monster,
+                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(state.monster, state.query_settings)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=[f for f in [
-                mat_use_field(state.mats, "Evo materials")
+                mat_use_field(state.mats, "Evo materials", query_settings=state.query_settings)
                 if state.mats or not (state.monster.is_stackable or state.gem_override) else None,
-                mat_use_field(state.usedin, "Material for", 10)
+                mat_use_field(state.usedin, "Material for", 10, state.query_settings)
                 if state.usedin else None,
                 mat_use_field(state.gemusedin, "Evo gem ({}) is mat for".format(state.gemid),
-                              10 if state.gem_override else 5)
+                              10 if state.gem_override else 5, state.query_settings)
                 if state.gemusedin else None,
-                skillup_field(state.skillups, state.skillup_evo_count, state.link)
+                skillup_field(state.skillups, state.skillup_evo_count,
+                              state.link, state.query_settings)
                 if not (state.monster.is_stackable or state.gem_override) else None
             ] if f is not None] + [cls.evos_embed_field(state)]
         )

@@ -24,6 +24,7 @@ from tsutils.menu.simple_text import SimpleTextMenu
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
 
 from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
@@ -49,7 +50,6 @@ from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProp
 from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListViewState
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.common import invalid_monster_text
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.evos import EvosViewState
 from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
 from padinfo.view.id import IdViewState
@@ -124,7 +124,6 @@ class PadInfo(commands.Cog):
 
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
-        self.monster_header = MonsterHeader
         self.settings = settings
 
     async def red_get_data_for_user(self, *, user_id):
@@ -185,7 +184,7 @@ class PadInfo(commands.Cog):
         dbcog = await self.get_dbcog()
         monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is not None:
-            await ctx.send(MonsterHeader.short(monster))
+            await ctx.send(MonsterHeader.text_with_emoji(monster))
             await ctx.send(box(monster.name_ja))
         else:
             await self.send_id_failure_message(ctx, query)
@@ -998,7 +997,7 @@ class PadInfo(commands.Cog):
                 return
             base_dir = settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
-            header = '{} ({})'.format(MonsterHeader.short(monster), server)
+            header = '{} ({})'.format(MonsterHeader.text_with_emoji(monster), server)
             if not os.path.exists(voice_file):
                 await ctx.send(inline('Could not find voice for ' + header))
                 return
@@ -1591,7 +1590,7 @@ class PadInfo(commands.Cog):
         if start <= 0 or end > 120 or end < start or (start == end and offset):
             return await send_cancellation_message(ctx, f"Invalid bounds ({start}[{offset}] - {end}).")
 
-        header = MonsterHeader.fmt_id_header(monster, use_emoji=True).to_markdown()
+        header = MonsterHeader.menu_title(monster, use_emoji=True).to_markdown()
         if not monster.limit_mult and end > 99:
             return await send_cancellation_message(ctx, f"{header} cannot limit break.")
         if monster.level < end <= 99:
