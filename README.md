@@ -61,7 +61,7 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 ^addpath path/to/repo/root
 ```
 
-> Note: you may have to do this for both `pad-cogs` and `misc-cogs`.
+> Note: you may have to do this for `pad-cogs`, `core-cogs`, and `misc-cogs`.
 
 ## Loading cogs
 
@@ -81,7 +81,6 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 | Cog           | Purpose                                                         |
 | ---           | ---                                                             |
 | azurelane     | **DISCONTINUED** Azur Lane card lookup                          |
-| channelmirror | A better version of the built-in discord announcement channel   |
 | crud          | Database editor.  Not useful for bots other than prod Tsubaki   |
 | dbcog         | Central cog to host all PAD data                                |
 | damagecalc    | Simple attack damage calculator                                 |

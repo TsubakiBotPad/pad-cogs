@@ -16,7 +16,7 @@
   "hidden": false,
   "disabled": false,
   "required_cogs": {
-    "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs"
+    "globaladmin": "https://github.com/TsubakiBotPad/core-cogs"
   },
   "requirements": [
     "tsutils>=5.0.0",

@@ -16,7 +16,7 @@
   "hidden": false,
   "disabled": false,
   "required_cogs": {
-    "globaladmin": "https://github.com/TsubakiBotPad/misc-cogs",
+    "globaladmin": "https://github.com/TsubakiBotPad/core-cogs",
     "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs",
     "padinfo": "https://github.com/TsubakiBotPad/padbot-cogs"
   },
