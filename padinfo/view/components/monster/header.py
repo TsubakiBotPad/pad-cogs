@@ -50,16 +50,3 @@ class MonsterHeader:
                 query_settings: Optional[QuerySettings] = None):
         msg = '[{}] {}{}'.format(m.monster_no_na, m.name_en, cls.jp_suffix(m))
         return LinkedText(msg, MonsterLink.header_link(m, query_settings=query_settings)) if link else Text(msg)
-
-    @classmethod
-    def short_with_emoji(cls, m: "MonsterModel", link=True, prefix=None,
-                         query_settings: Optional[QuerySettings] = None):
-        msg = f"{m.monster_no_na} - {m.name_en}"
-        suffix = cls.jp_suffix(m, False, False)
-        return Box(
-            prefix,
-            Text(get_attribute_emoji_by_monster(m)),
-            LinkedText(msg, MonsterLink.header_link(m, query_settings=query_settings)) if link else Text(msg),
-            Text(suffix) if suffix else None,
-            delimiter=' '
-        )

@@ -9,8 +9,7 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
-
-from padinfo.view.components.monster.header import MonsterHeader
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -220,7 +219,8 @@ class SeriesScrollView:
             EmbedField(BoldText('Current rarity: {}'.format(state.rarity)),
                        Box(*SeriesScrollView._monster_list(
                            state.monster_list,
-                           state.current_index))),
+                           state.current_index,
+                           state.query_settings))),
             EmbedField(BoldText('Rarities'),
                        Box(
                            SeriesScrollView._all_rarity_text(state),
@@ -251,14 +251,15 @@ class SeriesScrollView:
         return ', '.join(lines)
 
     @staticmethod
-    def _monster_list(monsters, current_index):
+    def _monster_list(monsters, current_index, query_settings: QuerySettings):
         if not len(monsters):
             return []
         return [
-            MonsterHeader.short_with_emoji(
+            MonsterHeader.box_with_emoji(
                 mon,
                 link=SeriesScrollView._is_linked(i, current_index),
-                prefix=char_to_emoji(str(i))
+                prefix=char_to_emoji(str(i)),
+                query_settings=query_settings
             )
             for i, mon in enumerate(monsters)
         ]

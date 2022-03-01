@@ -9,8 +9,7 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
-
-from padinfo.view.components.monster.header import MonsterHeader
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -192,11 +191,12 @@ class MonsterListView:
     VIEW_TYPE = 'MonsterList'
 
     @classmethod
-    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int):
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings):
         if not len(monsters):
             return []
-        return [MonsterHeader.short_with_emoji(
-            mon, link=True, prefix=cls.get_emoji(i, current_monster_id)) for i, mon in enumerate(monsters)]
+        return [MonsterHeader.box_with_emoji(
+            mon, link=True, prefix=cls.get_emoji(i, current_monster_id),
+            query_settings=query_settings) for i, mon in enumerate(monsters)]
 
     @classmethod
     def get_emoji(cls, i: int, _current_monster_id: int):
@@ -206,7 +206,7 @@ class MonsterListView:
     def embed(cls, state: MonsterListViewState):
         fields = [
             EmbedField(state.title,
-                       Box(*cls.monster_list(state.monster_list, state.current_monster_id))),
+                       Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings))),
             EmbedField(BoldText('Page'),
                        Box('{} of {}'.format(state.current_page + 1, state.page_count)),
                        inline=True
