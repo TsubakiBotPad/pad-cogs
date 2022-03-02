@@ -5,7 +5,7 @@ from discordmenu.embed.text import Text, BoldText
 from tsutils.query_settings import QuerySettings
 from tsutils.tsubaki.monster_header import MonsterHeader
 
-from padinfo.common.emoji_map import get_awakening_emoji
+from tsutils.tsubaki.custom_emoji import get_awakening_emoji
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

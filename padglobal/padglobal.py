@@ -21,6 +21,7 @@ from tsutils.formatting import clean_global_mentions, strip_right_multiline
 from tsutils.json_utils import safe_read_json
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE
+from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster
 from tsutils.tsubaki.links import CLOUDFRONT_URL
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
@@ -639,7 +640,6 @@ class PadGlobal(commands.Cog):
 
     async def lookup_boss(self, term, ctx):
         dbcog = await self.get_dbcog()
-        pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
         m = await dbcog.find_monster(term, ctx.author.id)
@@ -647,7 +647,7 @@ class PadGlobal(commands.Cog):
             return None, None
 
         m = dbcog.database.graph.get_base_monster(m)
-        name = pdicog.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
+        name = get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.boss().get(monster_id, None)
 
@@ -768,7 +768,6 @@ class PadGlobal(commands.Cog):
     async def _resolve_which(self, ctx, term):
         dbcog = await self.get_dbcog()
         db_context = dbcog.database
-        padinfo = self.bot.get_cog("PadInfo")
 
         term = term.lower().replace('?', '')
         m = await dbcog.find_monster(term, ctx.author.id)
@@ -778,7 +777,7 @@ class PadGlobal(commands.Cog):
 
         m = db_context.graph.get_base_monster(m)
 
-        name = padinfo.get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
+        name = get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
         timestamp = UNKNOWN_EDIT_TIMESTAMP
@@ -869,7 +868,6 @@ class PadGlobal(commands.Cog):
 
     async def _pwhich_add(self, ctx, term, definition, need_confirm=True):
         dbcog = await self.get_dbcog()
-        pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
@@ -889,7 +887,7 @@ class PadGlobal(commands.Cog):
         if not is_int or op == 'edited' and need_confirm:
             if not await get_user_confirmation(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
                     'edit the' if op == 'edited' else 'add new',
-                    pdicog.get_attribute_emoji_by_monster(m),
+                    get_attribute_emoji_by_monster(m),
                     m.monster_no_na,
                     m.name_en)):
                 return
@@ -934,7 +932,6 @@ class PadGlobal(commands.Cog):
 
     async def _concatenate_which(self, ctx, term: str, operation: str, addition):
         dbcog = await self.get_dbcog()
-        pdicog = self.bot.get_cog("PadInfo")
 
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
@@ -953,7 +950,7 @@ class PadGlobal(commands.Cog):
             if not await get_user_confirmation(ctx,
                                                'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
                                                    operation,
-                                                   pdicog.get_attribute_emoji_by_monster(m),
+                                                   get_attribute_emoji_by_monster(m),
                                                    m.monster_no_na,
                                                    m.name_en)):
                 return

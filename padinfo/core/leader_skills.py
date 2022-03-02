@@ -1,6 +1,6 @@
 import re
 
-from padinfo.common.emoji_map import get_emoji
+from tsutils.tsubaki.custom_emoji import get_emoji
 
 
 def _humanize_number(number, sigfigs=2):
