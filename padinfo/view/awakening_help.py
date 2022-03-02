@@ -6,10 +6,10 @@ from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.common.emoji_map import get_awakening_emoji
 from padinfo.view.common import get_awoken_skill_description
-from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -75,7 +75,7 @@ class AwakeningHelpView:
                 description='This monster has no awakenings.' if not monster.awakenings else ''
             ),
             embed_author=EmbedAuthor(
-                MonsterHeader.long_v2(monster).to_markdown(),
+                MonsterHeader.menu_title(monster).to_markdown(),
                 # TODO: add query_settings
                 MonsterLink.header_link(monster),
                 MonsterImage.icon(monster.monster_id)

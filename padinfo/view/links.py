@@ -6,8 +6,7 @@ from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
-
-from padinfo.view.components.monster.header import MonsterHeader
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -30,7 +29,7 @@ class LinksView:
         return EmbedView(
             EmbedMain(
                 color=color,
-                title=MonsterHeader.long_v2(m).to_markdown(),
+                title=MonsterHeader.menu_title(m).to_markdown(),
                 description=LinksView.linksbox(m),
                 url=MonsterLink.header_link(m, query_settings)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)))
