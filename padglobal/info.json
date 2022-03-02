@@ -16,9 +16,9 @@
   "hidden": false,
   "disabled": false,
   "required_cogs": {
-    "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs",
+    "dbcog": "https://github.com/TsubakiBotPad/pad-cogs",
     "globaladmin": "https://github.com/TsubakiBotPad/core-cogs",
-    "padinfo": "https://github.com/TsubakiBotPad/padbot-cogs"
+    "padinfo": "https://github.com/TsubakiBotPad/pad-cogs"
   },
   "requirements": [
     "tsutils>=4.0.0",
