@@ -8,10 +8,10 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.leader_skills import ls_multiplier_text
-from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     pass
@@ -63,9 +63,9 @@ class LeaderSkillView:
             embed_main=EmbedMain(
                 title=ls_multiplier_text(lls, rls),
                 description=Box(
-                    BoldText(MonsterHeader.name(state.l_mon, link=True, show_jp=True)),
+                    BoldText(MonsterHeader.box_with_emoji(state.l_mon, query_settings=state.l_query_settings)),
                     Text(lls.desc if lls else 'None'),
-                    BoldText(MonsterHeader.name(state.r_mon, link=True, show_jp=True)),
+                    BoldText(MonsterHeader.box_with_emoji(state.r_mon, query_settings=state.r_query_settings)),
                     Text(rls.desc if rls else 'None')),
                 color=state.color),
             embed_footer=embed_footer_with_state(state))
