@@ -17,7 +17,7 @@
   "hidden": false,
   "disabled": false,
   "required_cogs": {
-    "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs",
+    "dbcog": "https://github.com/TsubakiBotPad/pad-cogs",
     "menulistener": "https://github.com/TsubakiBotPad/core-cogs"
   },
   "requirements": [
