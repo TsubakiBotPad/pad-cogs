@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import Text, BoldText
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.common.emoji_map import get_awakening_emoji
-from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -35,6 +35,6 @@ def get_awoken_skill_description(awoken_skill: "AwokenSkillModel"):
     )
 
 
-def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str, link: bool = False):
-    monster_name = MonsterHeader.short_with_emoji(monster, link=link).to_markdown()
+def invalid_monster_text(query: str, monster: "MonsterModel", append_text: str):
+    monster_name = MonsterHeader.text_with_emoji(monster)
     return f'Your query `{query}` found {monster_name}{append_text}.'

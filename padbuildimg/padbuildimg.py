@@ -13,7 +13,7 @@ from ply import lex
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils.cog_settings import CogSettings
-from tsutils.tsubaki import CLOUDFRONT_URL
+from tsutils.tsubaki.links import CLOUDFRONT_URL
 
 HELP_MSG = """
 ^buildimg <build_shorthand>

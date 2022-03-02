@@ -9,7 +9,9 @@
   "min_python_version": [3, 8, 1],
   "hidden": false,
   "disabled": false,
-  "required_cogs": {},
+  "required_cogs": {
+    "dbcog": "https://github.com/TsubakiBotPad/padbot-cogs"
+  },
   "requirements": [],
   "tags": []
 }

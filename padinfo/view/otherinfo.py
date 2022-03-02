@@ -7,11 +7,11 @@ from discordmenu.embed.text import LabeledText, Text
 from discordmenu.embed.view import EmbedView
 from redbot.core.utils.chat_formatting import box
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki import MonsterLink
+from tsutils.tsubaki.links import MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 from padinfo.view.links import LinksView
 
@@ -53,9 +53,9 @@ class OtherInfoView(BaseIdView, EvoScrollView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.fmt_id_header(state.monster,
-                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.is_jp_buffed).to_markdown(),
+                title=MonsterHeader.menu_title(state.monster,
+                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(m, state.query_settings)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=[

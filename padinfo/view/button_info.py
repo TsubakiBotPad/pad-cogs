@@ -8,12 +8,12 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.button_info import button_info, LIMIT_BREAK_LEVEL, SUPER_LIMIT_BREAK_LEVEL, ButtonInfoStatSet, \
     ButtonInfoResult
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, EvoScrollViewState, MonsterEvolution
-from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -205,7 +205,7 @@ class ButtonInfoView(EvoScrollView):
                 description='(Co-op mode)' if is_coop else '(Singleplayer mode)'
             ),
             embed_author=EmbedAuthor(
-                MonsterHeader.long_v2(monster).to_markdown(),
+                MonsterHeader.menu_title(monster).to_markdown(),
                 MonsterLink.header_link(monster, state.query_settings),
                 MonsterImage.icon(monster.monster_id)
             ),

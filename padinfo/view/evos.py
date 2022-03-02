@@ -6,12 +6,12 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import MonsterEvolution
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
@@ -77,11 +77,11 @@ class EvosView(BaseIdView):
     VIEW_TYPE = 'Evos'
 
     @staticmethod
-    def _evo_lines(monsters, current_monster):
+    def _evo_lines(monsters, current_monster, query_settings):
         if not len(monsters):
             return []
         return [
-            MonsterHeader.short_with_emoji(ae, link=ae.monster_id != current_monster.monster_id)
+            MonsterHeader.box_with_emoji(ae, link=ae.monster_id != current_monster.monster_id, query_settings=query_settings)
             for ae in sorted(monsters, key=lambda x: int(x.monster_id))
         ]
 
@@ -90,7 +90,7 @@ class EvosView(BaseIdView):
         fields = [
             EmbedField(
                 ("{} evolution" if len(state.alt_versions) == 1 else "{} evolutions").format(len(state.alt_versions)),
-                Box(*EvosView._evo_lines(state.alt_versions, state.monster)))]
+                Box(*EvosView._evo_lines(state.alt_versions, state.monster, state.query_settings)))]
 
         if state.gem_versions:
             fields.append(
@@ -102,9 +102,9 @@ class EvosView(BaseIdView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.fmt_id_header(state.monster,
-                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.is_jp_buffed).to_markdown(),
+                title=MonsterHeader.menu_title(state.monster,
+                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(state.monster, state.query_settings)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
             embed_footer=embed_footer_with_state(state),

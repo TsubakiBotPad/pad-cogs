@@ -8,13 +8,13 @@ from tsutils.enums import CardLevelModifier, CardModeModifier, CardPlusModifier,
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterImage, MonsterLink
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
-from padinfo.view.components.monster.header import MonsterHeader
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
@@ -290,9 +290,9 @@ class IdView(BaseIdMainView, EvoScrollView):
         return EmbedView(
             EmbedMain(
                 color=state.color,
-                title=MonsterHeader.fmt_id_header(m,
-                                                  state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                                  state.is_jp_buffed).to_markdown(),
+                title=MonsterHeader.menu_title(m,
+                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
+                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(m, state.query_settings)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
             embed_footer=embed_footer_with_state(state),
