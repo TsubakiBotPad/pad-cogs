@@ -24,11 +24,11 @@ from tsutils.menu.simple_text import SimpleTextMenu
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
+    get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
 
-from padinfo.common.emoji_map import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
-    get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings

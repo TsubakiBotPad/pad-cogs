@@ -5,9 +5,8 @@ from discordmenu.embed.components import EmbedField, EmbedMain
 from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster
 from tsutils.tsubaki.monster_header import MonsterHeader
-
-from padinfo.common.emoji_map import get_attribute_emoji_by_monster
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

@@ -7,9 +7,8 @@ from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.enums import LsMultiplier
-from tsutils.tsubaki.custom_emoji import number_emoji_small
+from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
 
-from padinfo.common.emoji_map import get_awakening_emoji, get_emoji
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
 from padinfo.view.base import BaseIdView
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
