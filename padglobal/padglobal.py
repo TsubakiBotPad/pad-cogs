@@ -21,7 +21,7 @@ from tsutils.formatting import clean_global_mentions, strip_right_multiline
 from tsutils.json_utils import safe_read_json
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE
-from tsutils.tsubaki import CLOUDFRONT_URL
+from tsutils.tsubaki.links import CLOUDFRONT_URL
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu

@@ -11,6 +11,7 @@ from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.time import NA_TIMEZONE, NEW_DAY, get_last_time
+from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
 
 from crowddata.mixins.adpem.menu.closable_embed import ClosableEmbedMenu
@@ -76,8 +77,7 @@ class AdPEMStats(CogMixin):
                                   f"Valid input: `{ctx.prefix}adpem report Enoch, Facet, D Globe, B Super King, Facet`")
 
         dbcog: Any = ctx.bot.get_cog("DBCog")
-        pdicog: Any = ctx.bot.get_cog("PadInfo")
-        if dbcog is None or pdicog is None:
+        if dbcog is None:
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
@@ -91,7 +91,7 @@ class AdPEMStats(CogMixin):
             unknown = '\n\t'.join(s for s, m in zip(pulls_split, monsters) if m is None)
             return await ctx.send(f"Not all monsters were valid. The following could not be processed:\n\t{unknown}")
 
-        check = '\n\t'.join(pdicog.monster_header.fmt_id_header(m, use_emoji=True).to_markdown()
+        check = '\n\t'.join(MonsterHeader.menu_title(m, use_emoji=True).to_markdown()
                             for m in monsters)
         confirmation = await get_user_confirmation(ctx, f"Are these monsters correct?\n\t{check}",
                                                    timeout=30, force_delete=False, show_feedback=True)
@@ -148,8 +148,7 @@ class AdPEMStats(CogMixin):
 
     async def remove_at_time(self, ctx, midnight):
         dbcog: Any = ctx.bot.get_cog("DBCog")
-        pdicog: Any = ctx.bot.get_cog("PadInfo")
-        if dbcog is None or pdicog is None:
+        if dbcog is None:
             return await ctx.send("Required cogs not loaded. Please alert a bot owner.")
         await dbcog.wait_until_ready()
 
@@ -165,7 +164,7 @@ class AdPEMStats(CogMixin):
                 pulltext.append(c + ' ' + pull)
             else:
                 pulltext.append(c + '\n\t' + '\n\t'.join(
-                    pdicog.monster_header.fmt_id_header(dbcog.get_monster(mid), use_emoji=True).to_markdown()
+                    MonsterHeader.menu_title(dbcog.get_monster(mid), use_emoji=True).to_markdown()
                     for mid in pull)
                                 )
         pulltext = '\n\n'.join(pulltext)

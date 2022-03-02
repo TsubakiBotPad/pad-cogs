@@ -3,9 +3,8 @@ from typing import TYPE_CHECKING
 from discordmenu.embed.components import EmbedMain, EmbedAuthor
 from discordmenu.embed.view import EmbedView
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterImage, MonsterLink
-
-from padinfo.view.components.monster.header import MonsterHeader
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -19,6 +18,6 @@ class LookupView:
         return EmbedView(
             EmbedMain(color=color),
             embed_author=EmbedAuthor(
-                MonsterHeader.long_v2(m).to_markdown(),
+                MonsterHeader.menu_title(m).to_markdown(),
                 MonsterLink.header_link(m, query_settings),
                 MonsterImage.icon(m.monster_id)))

@@ -8,10 +8,10 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.leader_skills import ls_single_multiplier_text
 from padinfo.view.common import get_monster_from_ims
-from padinfo.view.components.monster.header import MonsterHeader
 
 if TYPE_CHECKING:
     pass
@@ -54,7 +54,7 @@ class LeaderSkillSingleView:
             embed_main=EmbedMain(
                 title=ls_single_multiplier_text(ls),
                 description=Box(
-                    BoldText(MonsterHeader.name(state.mon, link=True, show_jp=True)),
+                    BoldText(MonsterHeader.box_with_emoji(state.mon, query_settings=state.query_settings)),
                     Text(ls.desc if ls else 'None')),
                 color=state.color),
             embed_footer=embed_footer_with_state(state))

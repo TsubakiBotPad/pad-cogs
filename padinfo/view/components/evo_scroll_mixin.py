@@ -4,7 +4,7 @@ from typing import List, TYPE_CHECKING, NamedTuple, Optional
 from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import HighlightableLinks, LinkedText
 from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki import MonsterLink
+from tsutils.tsubaki.links import MonsterLink
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
