@@ -9,10 +9,10 @@ from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings import QuerySettings
+from tsutils.tsubaki.custom_emoji import get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 
-from padinfo.common.emoji_map import get_emoji
 from padinfo.view.components.base_id_main_view import BaseIdMainView
 
 if TYPE_CHECKING:
