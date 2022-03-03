@@ -1,11 +1,10 @@
 import datetime
 from datetime import timedelta
-from typing import Callable, Collection, List, TYPE_CHECKING
+from typing import Callable, Collection, TYPE_CHECKING
 
-import itertools
 import pytz
 from tsutils.formatting import normalize_server_name
-from tsutils.time import JP_TIMEZONE, NA_TIMEZONE, KR_TIMEZONE
+from tsutils.time import JP_TIMEZONE, KR_TIMEZONE, NA_TIMEZONE
 
 from padevents.enums import DungeonType, EventLength
 
@@ -24,8 +23,8 @@ class Event:
     def __init__(self, scheduled_event: "ScheduledEventModel"):
         self.key = scheduled_event.event_id
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
-        self.open_datetime = scheduled_event.open_datetime
-        self.close_datetime = scheduled_event.close_datetime
+        self.open_datetime: datetime = scheduled_event.open_datetime
+        self.close_datetime: datetime = scheduled_event.close_datetime
         self.group = scheduled_event.group_name
         self.dungeon = scheduled_event.dungeon
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'

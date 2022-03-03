@@ -5,7 +5,7 @@ from typing import Set, List, Tuple, Optional, Mapping, Union, Iterable, Any, Di
 
 from Levenshtein import jaro_winkler
 from tsutils.formatting import rmdiacritics
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.enums import Server
 
 from dbcog.find_monster_tokens import Token, SPECIAL_TOKEN_TYPES

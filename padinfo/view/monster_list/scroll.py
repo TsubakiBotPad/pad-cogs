@@ -1,9 +1,9 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from tsutils.menu.components.config import UserConfig
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 
-from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListView
+from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

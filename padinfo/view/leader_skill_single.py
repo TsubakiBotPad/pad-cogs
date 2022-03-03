@@ -7,7 +7,7 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.leader_skills import ls_single_multiplier_text

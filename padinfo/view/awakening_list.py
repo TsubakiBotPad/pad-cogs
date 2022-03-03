@@ -1,7 +1,7 @@
 from typing import List
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.components import EmbedField, EmbedMain
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state

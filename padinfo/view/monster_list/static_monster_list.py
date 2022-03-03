@@ -1,6 +1,6 @@
 from typing import List, TYPE_CHECKING
 
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 

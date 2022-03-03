@@ -1,6 +1,6 @@
 from typing import List
 
-from padinfo.menu.monster_list import MonsterListMenuPanes, MonsterListEmoji
+from padinfo.menu.monster_list import MonsterListEmoji, MonsterListMenuPanes
 
 
 class ScrollMenuPanes(MonsterListMenuPanes):

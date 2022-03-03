@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedMenu, EmbedControl
+from discordmenu.embed.menu import EmbedControl, EmbedMenu
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
 from padinfo.view.id import IdView, IdViewState
