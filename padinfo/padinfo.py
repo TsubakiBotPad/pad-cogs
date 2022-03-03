@@ -16,14 +16,17 @@ from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to
 from tabulate import tabulate
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
-from tsutils.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, LsMultiplier, \
-    Server, MonsterLinkTarget
+from tsutils.enums import Server
 from tsutils.json_utils import safe_read_json
 from tsutils.menu.components.config import BotConfig
 from tsutils.menu.simple_text import SimpleTextMenu
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.menu.view.simple_text import SimpleTextViewState
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings import validators
+from tsutils.query_settings.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, \
+    LsMultiplier, \
+    MonsterLinkTarget
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from tsutils.tsubaki.monster_header import MonsterHeader
@@ -86,19 +89,6 @@ HISTORY_DURATION = 11
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='padinfo')), file_name)
-
-
-COLORS = {
-    **{c: getattr(discord.Colour, c)().value for c in discord.Colour.__dict__ if
-       isinstance(discord.Colour.__dict__[c], classmethod) and
-       discord.Colour.__dict__[c].__func__.__code__.co_argcount == 1 and
-       isinstance(getattr(discord.Colour, c)(), discord.Colour)},
-    'pink': 0xffa1dd,
-
-    # Special
-    'random': 'random',
-    'clear': 0,
-}
 
 
 class PadInfo(commands.Cog):
@@ -1032,7 +1022,7 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def embedcolor(self, ctx, *, color):
+    async def embedcolor(self, ctx, *, color: validators.Color):
         """(DONOR ONLY) The color of all your `[p]id` embeds!
 
         Examples:
@@ -1042,14 +1032,11 @@ class PadInfo(commands.Cog):
 
         Picking random will choose a random hex code every time you use [p]id!
         """
-        if color in COLORS:
-            await self.config.user(ctx.author).color.set(COLORS[color])
-        elif re.match(r"^#?[0-9a-fA-F]{6}$", color):
-            await self.config.user(ctx.author).color.set(int(color.lstrip("#"), 16))
-        else:
-            await send_cancellation_message(
-                ctx, "Invalid color!  Valid colors are any hexcode and:\n" + ", ".join(COLORS))
-            return
+        # Remove this line once the Menu2 stuff is done
+        await self.config.user(ctx.author).color.set(color)
+
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            fm_flags['color'] = color
         await ctx.tick()
 
     @idset.command(usage="<on/off>")

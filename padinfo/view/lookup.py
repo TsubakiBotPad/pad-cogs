@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-from discordmenu.embed.components import EmbedMain, EmbedAuthor
+from discordmenu.embed.components import EmbedAuthor, EmbedMain
 from discordmenu.embed.view import EmbedView
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 

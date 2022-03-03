@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.monster_list import MonsterListViewState

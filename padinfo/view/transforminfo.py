@@ -4,11 +4,11 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.enums import LsMultiplier
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.enums import LsMultiplier
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader

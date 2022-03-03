@@ -1,13 +1,14 @@
-from typing import List, Optional, TYPE_CHECKING, Dict
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import BoldText, LabeledText, Text
 from discordmenu.embed.view import EmbedView
-from tsutils.enums import CardLevelModifier, CardModeModifier, CardPlusModifier, Server
+from tsutils.enums import Server
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.enums import CardLevelModifier, CardModeModifier, CardPlusModifier
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader

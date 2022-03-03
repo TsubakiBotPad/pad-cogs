@@ -9,7 +9,7 @@ from networkx import MultiDiGraph
 from tsutils.enums import Server
 
 from .database_manager import DBCogDatabase
-from .models.active_skill_model import ActivePartModel, ActiveSkillModel, ActiveSubskillModel
+from .models.active_skill_model import ActiveSkillModel
 from .models.awakening_model import AwakeningModel
 from .models.awoken_skill_model import AwokenSkillModel
 from .models.base_model import BaseModel

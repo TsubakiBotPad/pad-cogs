@@ -1,5 +1,5 @@
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField, EmbedBodyImage
+from discordmenu.embed.components import EmbedBodyImage, EmbedField, EmbedMain
 from discordmenu.embed.text import LinkedText, Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state

@@ -1,11 +1,11 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedMenu, EmbedControl
+from discordmenu.embed.menu import EmbedControl, EmbedMenu
 from tsutils.emoji import char_to_emoji
-from tsutils.enums import ChildMenuType
 from tsutils.menu.components.panes import MenuPanes
 from tsutils.menu.simple_text import SimpleTextMenu
+from tsutils.query_settings.enums import ChildMenuType
 
 from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
 from padinfo.view.components.view_state_base_id import ViewStateBaseId

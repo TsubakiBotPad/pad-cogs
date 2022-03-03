@@ -1,13 +1,12 @@
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
+from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster, get_attribute_emoji_by_enum, \
-    get_rarity_emoji
+from tsutils.query_settings.query_settings import QuerySettings
+from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_enum, get_attribute_emoji_by_monster, get_rarity_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 

@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.text import Text, BoldText
-from tsutils.query_settings import QuerySettings
-from tsutils.tsubaki.monster_header import MonsterHeader
-
+from discordmenu.embed.text import BoldText, Text
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

@@ -1,7 +1,7 @@
 from typing import List, Optional, TYPE_CHECKING
 
 from padinfo.core.padinfo_settings import settings
-from padinfo.menu.id import IdMenuPanes, IdMenuEmoji
+from padinfo.menu.id import IdMenuEmoji, IdMenuPanes
 from padinfo.view.evos import EvosViewState
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.pantheon import PantheonViewState

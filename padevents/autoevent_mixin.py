@@ -1,9 +1,9 @@
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
+import time
+from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
 
 import discord
-import time
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, inline

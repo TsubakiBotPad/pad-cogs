@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel

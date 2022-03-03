@@ -4,10 +4,10 @@ from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.emoji import char_to_emoji
-from tsutils.menu.components.panes import emoji_buttons, MenuPanes
+from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
 from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
-from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, ButtonInfoViewState, ButtonInfoView
+from padinfo.view.button_info import ButtonInfoOptions, ButtonInfoToggles, ButtonInfoView, ButtonInfoViewState
 
 
 class ButtonInfoEmoji:

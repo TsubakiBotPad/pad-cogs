@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField, EmbedAuthor
+from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state

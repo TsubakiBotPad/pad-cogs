@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from tsutils.enums import EvoGrouping
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.enums import EvoGrouping
+from tsutils.query_settings.query_settings import QuerySettings
 
 from padinfo.view.monster_list.monster_list import MonsterListViewState
 
