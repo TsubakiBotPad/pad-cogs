@@ -1,11 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedMenu, EmbedControl
+from discordmenu.embed.menu import EmbedControl, EmbedMenu
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
-from padinfo.menu.id import IdMenu, IdMenuPanes, IdMenuEmoji
+from padinfo.menu.id import IdMenu, IdMenuEmoji, IdMenuPanes
 from padinfo.view.id import IdView
 from padinfo.view.series_scroll import SeriesScrollView, SeriesScrollViewState
 

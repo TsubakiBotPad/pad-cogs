@@ -6,7 +6,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.enums import LsMultiplier
+from tsutils.query_settings.enums import LsMultiplier
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
 
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text

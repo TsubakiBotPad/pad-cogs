@@ -1,12 +1,12 @@
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedField
+from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
 from discordmenu.embed.text import LinkedText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.query_settings import QuerySettings
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 

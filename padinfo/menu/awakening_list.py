@@ -3,10 +3,10 @@ from typing import Optional
 from discord import Message
 from discordmenu.embed.control import EmbedControl
 from discordmenu.embed.menu import EmbedMenu
-from tsutils.enums import ChildMenuType
-from tsutils.menu.components.panes import emoji_buttons, MenuPanes
+from tsutils.menu.components.panes import MenuPanes, emoji_buttons
+from tsutils.query_settings.enums import ChildMenuType
 
-from padinfo.view.awakening_list import AwakeningListViewState, AwakeningListView, AwakeningListSortTypes
+from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListView, AwakeningListViewState
 
 
 class AwakeningListEmoji:

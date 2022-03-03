@@ -11,7 +11,7 @@ from padinfo.view.id import IdView
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
 from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
-from padinfo.view.monster_list.scroll import ScrollViewState, ScrollView
+from padinfo.view.monster_list.scroll import ScrollView, ScrollViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 
 
