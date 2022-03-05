@@ -319,9 +319,6 @@ class FindMonster:
             key=lambda t: t[1].get(t[0], MonsterMatch()).score
         )
 
-        self.dbcog.historic_lookups[query] = best_monster.monster_id if best_monster else -1
-        json.dump(self.dbcog.historic_lookups, open(self.dbcog.historic_lookups_file_path, "w+"))
-
         return best_monster, matches_dict, valid_monsters, 0
 
     async def find_monster(self, query: str) -> Optional[MonsterModel]:
