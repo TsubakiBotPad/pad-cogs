@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import random
@@ -110,7 +111,8 @@ class PadInfo(commands.Cog):
         self.config.register_user(survey_mode=0, color=None, beta_id3=False, id_history=[])
         self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[], do_survey=False)
 
-        self.historic_lookups = safe_read_json(_data_file('historic_lookups_id3.json'))
+        self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
+        self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
 
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
@@ -160,6 +162,10 @@ class PadInfo(commands.Cog):
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
         return dbcog
+
+    def save_historic_data(self, query, monster: Optional["MonsterModel"]):
+        self.historic_lookups[query] = monster.monster_id if monster else -1
+        json.dump(self.historic_lookups, open(self.historic_lookups_file_path, "w+"))
 
     async def get_menu_default_data(self, ims):
         data = {
@@ -247,9 +253,8 @@ class PadInfo(commands.Cog):
         raw_query = query
 
         if (monster := await self._get_monster(ctx, query)) is None:
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         # id3 messaging stuff
         if monster and monster.monster_no_na != monster.monster_no_jp:
@@ -273,6 +278,8 @@ class PadInfo(commands.Cog):
                             reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     async def send_survey_after(self, ctx, query, result_monster):
         dbcog = await self.get_dbcog()
@@ -340,9 +347,9 @@ class PadInfo(commands.Cog):
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
-        await self.log_id_result(ctx, monster.monster_id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
 
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
@@ -360,6 +367,8 @@ class PadInfo(commands.Cog):
                                         raw_query, color, message)
             menu = NaDiffMenu.menu(initial_control=NaDiffMenu.message_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command(name="evos")
     @checks.bot_has_permissions(embed_links=True)
@@ -374,9 +383,8 @@ class PadInfo(commands.Cog):
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dbcog, monster)
         alt_versions, gem_versions = await EvosViewState.do_query(dbcog, monster)
@@ -397,6 +405,8 @@ class PadInfo(commands.Cog):
                               )
         menu = IdMenu.menu(initial_control=IdMenu.evos_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command(name="mats", aliases=['evomats', 'evomat', 'skillups'])
     @checks.bot_has_permissions(embed_links=True)
@@ -410,9 +420,8 @@ class PadInfo(commands.Cog):
 
         if not monster:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override = \
             await MaterialsViewState.do_query(dbcog, monster)
@@ -434,6 +443,8 @@ class PadInfo(commands.Cog):
                                    )
         menu = IdMenu.menu(initial_control=IdMenu.mats_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command(aliases=["series", "panth"])
     @checks.bot_has_permissions(embed_links=True)
@@ -448,9 +459,8 @@ class PadInfo(commands.Cog):
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dbcog, monster)
         if pantheon_list is None:
@@ -470,6 +480,8 @@ class PadInfo(commands.Cog):
                                   )
         menu = IdMenu.menu(initial_control=IdMenu.pantheon_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command(aliases=['img'])
     @checks.bot_has_permissions(embed_links=True)
@@ -484,9 +496,8 @@ class PadInfo(commands.Cog):
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
@@ -500,6 +511,8 @@ class PadInfo(commands.Cog):
                              )
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command(aliases=['stats'])
     @checks.bot_has_permissions(embed_links=True)
@@ -514,9 +527,8 @@ class PadInfo(commands.Cog):
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
-
-        await self.log_id_result(ctx, monster.monster_id)
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
@@ -530,6 +542,8 @@ class PadInfo(commands.Cog):
                                    )
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
         await menu.create(ctx, state)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -539,12 +553,15 @@ class PadInfo(commands.Cog):
         monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         embed = LinksView.embed(monster, color, query_settings).to_embed()
         await ctx.send(embed=embed)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -554,12 +571,15 @@ class PadInfo(commands.Cog):
         monster = await dbcog.find_monster(query, ctx.author.id)
         if monster is None:
             await self.send_id_failure_message(ctx, query)
+            self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
         color = await self.get_user_embed_color(ctx)
         query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
         embed = LookupView.embed(monster, color, query_settings).to_embed()
         await ctx.send(embed=embed)
+        await self.log_id_result(ctx, monster.monster_id)
+        self.save_historic_data(query, monster)
 
     async def log_id_result(self, ctx, monster_id: int):
         history = await self.config.user(ctx.author).id_history()
