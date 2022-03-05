@@ -66,8 +66,6 @@ class DBCog(commands.Cog, IdTest):
         self.config.register_user(lastaction=None, fm_flags={})
 
         self.db_file_path = _data_file('dadguide.sqlite')
-        self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
-        self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
         self.monster_stats = monster_stats
         self.MonsterStatModifierInput = MonsterStatModifierInput
 
