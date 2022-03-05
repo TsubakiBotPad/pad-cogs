@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 
 
 class EvosViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, monster,
                          alt_monsters, is_jp_buffed, query_settings,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -56,7 +56,7 @@ class EvosViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    alt_versions, gem_versions,
                    reaction_list=reaction_list,
@@ -101,7 +101,7 @@ class EvosView(BaseIdView):
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title=MonsterHeader.menu_title(state.monster,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

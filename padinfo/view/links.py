@@ -25,10 +25,10 @@ class LinksView:
             delimiter=' | ')
 
     @staticmethod
-    def embed(m: "MonsterModel", color, query_settings: QuerySettings):
+    def embed(m: "MonsterModel", query_settings: QuerySettings):
         return EmbedView(
             EmbedMain(
-                color=color,
+                color=query_settings.color,
                 title=MonsterHeader.menu_title(m).to_markdown(),
                 description=LinksView.linksbox(m),
                 url=MonsterLink.header_link(m, query_settings)),

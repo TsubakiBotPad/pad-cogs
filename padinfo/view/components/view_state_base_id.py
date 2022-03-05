@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class ViewStateBaseId(ViewState, EvoScrollViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  reaction_list: List[str] = None,
                  extra_state=None):
@@ -21,7 +21,6 @@ class ViewStateBaseId(ViewState, EvoScrollViewState):
                          extra_state=extra_state)
         self.dfs_alt_monsters = alt_monsters
         self.reaction_list = reaction_list
-        self.color = color
         self.monster = monster
         self.is_jp_buffed = is_jp_buffed
         self.query = query
@@ -60,7 +59,7 @@ class ViewStateBaseId(ViewState, EvoScrollViewState):
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    reaction_list=reaction_list,
                    extra_state=ims)

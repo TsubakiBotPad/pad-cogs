@@ -4,6 +4,7 @@ from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 
 STAR = '* '
 BULLET_EMOJIS = ['db', 'dp', 'dg']
@@ -66,7 +67,7 @@ class WhichView:
     VIEW_TYPE = 'Which'
 
     @staticmethod
-    def embed(state, props: WhichViewProps):
+    def embed(state: ClosableEmbedViewState, props: WhichViewProps):
         name = props.name
         definition = props.definition
         timestamp = props.timestamp
@@ -76,7 +77,7 @@ class WhichView:
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title='Which {}'.format(name),
                 description=get_description(definition, timestamp, success)
             ),

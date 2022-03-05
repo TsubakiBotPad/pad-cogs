@@ -42,12 +42,12 @@ class IdViewState(ViewStateBaseId):
     nadiff_jp_only_text = ', which is only in JP'
     nadiff_identical_text = ', which is the same in NA & JP'
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, monster: "MonsterModel",
+    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
                  alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
                  id_queried_props: IdQueriedProps,
                  fallback_message: str = None, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, color, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, monster,
                          alt_monsters, is_jp_buffed, query_settings,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
@@ -90,7 +90,7 @@ class IdViewState(ViewStateBaseId):
         is_child = ims.get('is_child')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    id_queried_props,
                    fallback_message=fallback_message,
@@ -290,7 +290,7 @@ class IdView(BaseIdMainView, EvoScrollView):
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title=MonsterHeader.menu_title(m,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

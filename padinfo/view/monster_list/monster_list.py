@@ -19,7 +19,7 @@ class MonsterListViewState(ViewStateBase):
     VIEW_STATE_TYPE: str
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, query, color,
+    def __init__(self, original_author_id, menu_type, query,
                  monster_list: List["MonsterModel"], query_settings: QuerySettings,
                  title, message,
                  *,
@@ -44,7 +44,6 @@ class MonsterListViewState(ViewStateBase):
         self.title = title
         self.paginated_monsters = paginated_monsters
         self.reaction_list = reaction_list
-        self.color = color
         self.query = query
         self.query_settings = query_settings
 
@@ -106,7 +105,7 @@ class MonsterListViewState(ViewStateBase):
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
-        return cls(original_author_id, menu_type, query, user_config.color,
+        return cls(original_author_id, menu_type, query,
                    monster_list, query_settings,
                    title, idle_message,
                    current_page=current_page,
@@ -215,7 +214,7 @@ class MonsterListView:
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

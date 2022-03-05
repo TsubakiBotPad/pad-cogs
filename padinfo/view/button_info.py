@@ -37,12 +37,11 @@ class ButtonInfoToggles:
 
 
 class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, color, display_options: ButtonInfoToggles,
+    def __init__(self, original_author_id, menu_type, raw_query, display_options: ButtonInfoToggles,
                  monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
                  info: ButtonInfoResult, query_settings: QuerySettings,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None, reaction_list=reaction_list)
-        self.color = color
         self.display_options = display_options
         self.monster = monster
         self.info = info
@@ -74,7 +73,7 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         info = button_info.get_info(dbcog, monster)
         reaction_list = ims['reaction_list']
-        return ButtonInfoViewState(original_author_id, menu_type, raw_query, user_config.color, display_options,
+        return ButtonInfoViewState(original_author_id, menu_type, raw_query, display_options,
                                    monster, alt_monsters, info, query_settings, reaction_list=reaction_list)
 
     def set_player_count(self, new_count):
@@ -201,7 +200,7 @@ class ButtonInfoView(EvoScrollView):
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 description='(Co-op mode)' if is_coop else '(Singleplayer mode)'
             ),
             embed_author=EmbedAuthor(

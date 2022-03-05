@@ -116,7 +116,7 @@ class ExperienceCurveView:
         is_light = props.monster.full_damage_attr.value == 3
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
                 # TODO: add query_settings
                 url=MonsterLink.header_link(props.monster),

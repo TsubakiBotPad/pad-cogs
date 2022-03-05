@@ -28,11 +28,10 @@ class TransformInfoQueriedProps:
 
 
 class TransformInfoViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, color, base_mon, transformed_mon,
+    def __init__(self, original_author_id, menu_type, raw_query, base_mon, transformed_mon,
                  tfinfo_queried_props: TransformInfoQueriedProps, monster_ids, is_jp_buffed, query_settings,
                  reaction_list):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
-        self.color = color
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
         self.acquire_raw = tfinfo_queried_props.acquire_raw
@@ -70,7 +69,7 @@ class TransformInfoViewState(ViewStateBase):
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(
             base_mon) or dbcog.database.graph.monster_is_discrepant(transformed_mon)
 
-        return TransformInfoViewState(original_author_id, menu_type, raw_query, user_config.color,
+        return TransformInfoViewState(original_author_id, menu_type, raw_query,
                                       base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
                                       query_settings,
                                       reaction_list=reaction_list)
@@ -220,7 +219,7 @@ class TransformInfoView(BaseIdMainView):
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title=MonsterHeader.menu_title(transformed_mon,
                                                is_tsubaki=False,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

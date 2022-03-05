@@ -2,7 +2,7 @@ import random
 from typing import TYPE_CHECKING, List
 
 import discord
-from discord import Color, Embed
+from discord import Embed
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class DungeonViewState(ViewState):
-    def __init__(self, original_author_id: int, menu_type: str, raw_query: str, color: Color,
+    def __init__(self, original_author_id: int, menu_type: str, raw_query: str,
                  encounter: "EncounterModel", sub_dungeon_id: int, num_floors: int, floor: int, num_spawns: int,
                  floor_index: int, technical: int, database,
                  page: int = 0, verbose: bool = False):
@@ -30,7 +30,6 @@ class DungeonViewState(ViewState):
         self.floor_index = floor_index
         self.technical = technical
         self.database = database
-        self.color = color
         self.num_spawns = num_spawns
         self.page = page
         self.verbose = verbose
@@ -50,7 +49,7 @@ class DungeonViewState(ViewState):
         return ret
 
     @classmethod
-    async def deserialize(cls, dbcog, color, ims: dict, inc_floor: int = 0, inc_index: int = 0,
+    async def deserialize(cls, dbcog, ims: dict, inc_floor: int = 0, inc_index: int = 0,
                           verbose_toggle: bool = False, page: int = 0, reset_spawn: bool = False):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
@@ -88,7 +87,7 @@ class DungeonViewState(ViewState):
 
         encounter_model = floor_models[floor_index]
 
-        return cls(original_author_id, menu_type, raw_query, color, encounter_model, sub_dungeon_id,
+        return cls(original_author_id, menu_type, raw_query, encounter_model, sub_dungeon_id,
                    num_floors, floor, len(floor_models), floor_index,
                    technical, dbcog.database, verbose=verbose, page=page)
 

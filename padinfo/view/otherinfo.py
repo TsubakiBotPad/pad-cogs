@@ -52,7 +52,7 @@ class OtherInfoView(BaseIdView, EvoScrollView):
         m: "MonsterModel" = state.monster
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
                 title=MonsterHeader.menu_title(state.monster,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

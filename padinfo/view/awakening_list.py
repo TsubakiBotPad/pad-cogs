@@ -6,6 +6,7 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
+from tsutils.query_settings.query_settings import QuerySettings
 
 from padinfo.view.common import get_awoken_skill_description
 
@@ -18,7 +19,8 @@ class AwakeningListSortTypes:
 class AwakeningListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 10
 
-    def __init__(self, original_author_id, menu_type, color, sort_type, paginated_skills, current_page,
+    def __init__(self, original_author_id, menu_type, query_settings: QuerySettings,
+                 sort_type, paginated_skills, current_page,
                  extra_state=None,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, '', extra_state=extra_state, reaction_list=reaction_list)
@@ -26,7 +28,7 @@ class AwakeningListViewState(ViewStateBase):
         self.paginated_skills = paginated_skills
         self.total_pages = len(self.paginated_skills)
         self.current_page = current_page
-        self.color = color
+        self.query_settings = query_settings
 
     def serialize(self):
         ret = super().serialize()
@@ -34,6 +36,7 @@ class AwakeningListViewState(ViewStateBase):
             'current_page': self.current_page,
             'total_pages': self.total_pages,
             'sort_type': self.sort_type,
+            'query_settings': self.query_settings.serialize(),
         })
         return ret
 
@@ -45,7 +48,8 @@ class AwakeningListViewState(ViewStateBase):
         current_page = ims['current_page']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
-        return AwakeningListViewState(original_author_id, menu_type, user_config.color, sort_type, paginated_skills,
+        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        return AwakeningListViewState(original_author_id, menu_type, query_settings, sort_type, paginated_skills,
                                       current_page, reaction_list=reaction_list)
 
     @classmethod
@@ -76,7 +80,7 @@ class AwakeningListView:
 
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color=state.query_settings.color,
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields

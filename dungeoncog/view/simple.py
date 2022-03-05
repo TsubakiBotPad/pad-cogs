@@ -7,11 +7,10 @@ from tsutils.menu.components.footers import embed_footer_with_state
 
 class SimpleViewState(ViewState):
     def __init__(self, original_author_id, menu_type, raw_query,
-                 color, message_list, index):
+                 message_list, index):
         super().__init__(original_author_id, menu_type, raw_query)
         self.message_list = message_list
         self.index = index
-        self.color = color
 
     def serialize(self):
         ret = super().serialize()
@@ -22,11 +21,11 @@ class SimpleViewState(ViewState):
         return ret
 
     @classmethod
-    async def deserialize(cls, dbcog, color, ims: dict, inc):
+    async def deserialize(cls, dbcog, ims: dict, inc):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         raw_query = ims.get('raw_query')
-        return cls(original_author_id, menu_type, raw_query, color, ims.get('message_list'), ims.get('index') + inc)
+        return cls(original_author_id, menu_type, raw_query, ims.get('message_list'), ims.get('index') + inc)
 
 
 class SimpleView:
@@ -39,7 +38,7 @@ class SimpleView:
         ]
         return EmbedView(
             EmbedMain(
-                color=state.color,
+                color="black",
                 description=state.message_list[state.index]
             ),
             embed_fields=fields,
