@@ -42,7 +42,7 @@ class IdTracebackView:
     def embed(state, props: IdTracebackViewProps):
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.color,
+                color=state.query_settings.get_embedcolor(),
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
                 description=get_description(props.score)
             ),

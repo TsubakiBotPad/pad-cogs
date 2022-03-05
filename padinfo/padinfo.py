@@ -1027,7 +1027,7 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def embedcolor(self, ctx, *, color: validators.Color):
+    async def embedcolor(self, ctx, *, color: validators.EmbedColor):
         """(DONOR ONLY) The color of all your `[p]id` embeds!
 
         Examples:
@@ -1041,7 +1041,7 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).color.set(color)
 
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            fm_flags['color'] = color
+            fm_flags['embedcolor'] = color
         await ctx.tick()
 
     @idset.command(usage="<on/off>")

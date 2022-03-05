@@ -70,7 +70,7 @@ class MaterialsViewState(ViewStateBaseId):
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, user_config.color, monster,
+        return cls(original_author_id, menu_type, raw_query, query, monster,
                    alt_monsters, is_jp_buffed, query_settings,
                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, stackable,
                    reaction_list=reaction_list,
@@ -155,7 +155,7 @@ class MaterialsView(BaseIdView, EvoScrollView):
         # m: "MonsterModel", mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.color,
+                color=state.query_settings.get_embedcolor(),
                 title=MonsterHeader.menu_title(state.monster,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

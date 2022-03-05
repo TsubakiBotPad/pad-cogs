@@ -77,7 +77,7 @@ class WhichView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.color,
+                color=state.query_settings.get_embedcolor(),
                 title='Which {}'.format(name),
                 description=get_description(definition, timestamp, success)
             ),

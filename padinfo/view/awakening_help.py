@@ -71,7 +71,7 @@ class AwakeningHelpView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.color,
+                color=state.query_settings.get_embedcolor(),
                 description='This monster has no awakenings.' if not monster.awakenings else ''
             ),
             embed_author=EmbedAuthor(

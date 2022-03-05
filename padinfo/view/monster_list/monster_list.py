@@ -214,7 +214,7 @@ class MonsterListView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.color,
+                color=state.query_settings.get_embedcolor(),
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)
