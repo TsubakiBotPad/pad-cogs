@@ -58,12 +58,13 @@ class ShowStatsView:
 
         return EmbedView(
             EmbedMain(
+                color=state.query_settings.get_embedcolor(),
                 title=f"AdPEM Data for query: {state.raw_query}",
                 description=Box(
                     LabeledText("Net", ShowStatsView.get_count(props.total, *props.valid)),
                     LabeledText("Adj", ShowStatsView.get_count(props.adj, *props.valid)),
                     LabeledText("You", ShowStatsView.get_count(props.you, *props.valid))
-                )
+                ),
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.most_commmon.monster_id)),
             embed_fields=fields,
