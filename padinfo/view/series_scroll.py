@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class SeriesScrollViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, color, series_id,
+    def __init__(self, original_author_id, menu_type, raw_query, query, series_id,
                  paginated_monsters: List[List["MonsterModel"]], current_page, rarity: int,
                  query_settings: QuerySettings,
                  all_rarities: List[int],
@@ -41,7 +41,6 @@ class SeriesScrollViewState(ViewStateBase):
         self.child_message_id = child_message_id
         self.title = title
         self.reaction_list = reaction_list
-        self.color = color
         self.query = query
         self._max_len_so_far = max(max_len_so_far or len(self.monster_list), len(self.monster_list))
 
@@ -115,7 +114,7 @@ class SeriesScrollViewState(ViewStateBase):
         max_len_so_far = max(ims['max_len_so_far'] or len(current_monster_list), len(current_monster_list))
         idle_message = ims.get('idle_message')
 
-        return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, user_config.color, series_id,
+        return SeriesScrollViewState(original_author_id, menu_type, raw_query, query, series_id,
                                      paginated_monsters, current_page, rarity, query_settings,
                                      all_rarities,
                                      title, idle_message,
@@ -235,7 +234,7 @@ class SeriesScrollView:
         return EmbedView(
             EmbedMain(
                 title=state.title,
-                color=state.color,
+                color=state.query_settings.get_embedcolor(),
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)

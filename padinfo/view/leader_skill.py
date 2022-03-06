@@ -17,10 +17,9 @@ if TYPE_CHECKING:
 
 
 class LeaderSkillViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, color, l_mon, r_mon, l_query, r_query,
+    def __init__(self, original_author_id, menu_type, raw_query, l_mon, r_mon, l_query, r_query,
                  l_query_settings, r_query_settings):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
-        self.color = color
         self.l_mon = l_mon
         self.l_query = l_query
         self.l_query_settings = l_query_settings
@@ -47,7 +46,7 @@ class LeaderSkillViewState(ViewStateBase):
         r_query_settings = QuerySettings.deserialize(ims['r_query_settings'])
 
         l_mon, l_query, r_mon, r_query = await leaderskill_query(dbcog, raw_query, ims['original_author_id'])
-        return LeaderSkillViewState(original_author_id, menu_type, raw_query, user_config.color, l_mon, r_mon, l_query,
+        return LeaderSkillViewState(original_author_id, menu_type, raw_query, l_mon, r_mon, l_query,
                                     r_query, l_query_settings, r_query_settings)
 
 
@@ -66,5 +65,5 @@ class LeaderSkillView:
                     Text(lls.desc if lls else 'None'),
                     BoldText(MonsterHeader.box_with_emoji(state.r_mon, query_settings=state.r_query_settings)),
                     Text(rls.desc if rls else 'None')),
-                color=state.color),
+                color=state.l_query_settings.get_embedcolor()),
             embed_footer=embed_footer_with_state(state))

@@ -11,7 +11,6 @@ from io import BytesIO
 import discord
 import prettytable
 import pytz
-from discord import Color
 from redbot.core import checks, commands, data_manager, errors
 from redbot.core.utils.chat_formatting import bold, box, humanize_timedelta, inline, pagify
 from tsutils.cog_settings import CogSettings
@@ -20,6 +19,7 @@ from tsutils.emoji import fix_emojis_for_server, replace_emoji_names_with_code
 from tsutils.formatting import clean_global_mentions, strip_right_multiline
 from tsutils.json_utils import safe_read_json
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.time import NA_TIMEZONE
 from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster
 from tsutils.tsubaki.links import CLOUDFRONT_URL
@@ -756,13 +756,12 @@ class PadGlobal(commands.Cog):
         name, definition, timestamp, success = await self._resolve_which(ctx, term)
         if name is None or definition is None:
             return
-        # TODO: maybe support different colors one day if the configuration gets moved out of padinfo
-        color = Color.default()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, term)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
         props = WhichViewProps(name=name, definition=definition, timestamp=timestamp, success=success)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, term,
-                                       color, WhichView.VIEW_TYPE, props)
+                                       query_settings, WhichView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
