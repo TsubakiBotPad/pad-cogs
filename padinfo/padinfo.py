@@ -1037,8 +1037,6 @@ class PadInfo(commands.Cog):
 
         Picking random will choose a random hex code every time you use [p]id!
         """
-        # Remove this line once the Menu2 stuff is done
-        await self.config.user(ctx.author).color.set(color)
 
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             fm_flags['embedcolor'] = color
