@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class ScrollViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "Scroll"
 
-    def __init__(self, original_author_id, menu_type, query, color,
+    def __init__(self, original_author_id, menu_type, query,
                  monster_list: List["MonsterModel"], query_settings: QuerySettings,
                  title, message, current_monster_id: int,
                  *,
@@ -25,7 +25,7 @@ class ScrollViewState(MonsterListViewState):
                  extra_state=None,
                  child_message_id=None
                  ):
-        super().__init__(original_author_id, menu_type, query, color, monster_list, query_settings, title, message,
+        super().__init__(original_author_id, menu_type, query, monster_list, query_settings, title, message,
                          current_page=current_page, current_index=current_index, child_menu_type=child_menu_type,
                          child_reaction_list=child_reaction_list, reaction_list=reaction_list,
                          extra_state=extra_state, child_message_id=child_message_id)
@@ -63,7 +63,7 @@ class ScrollViewState(MonsterListViewState):
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
-        return ScrollViewState(original_author_id, menu_type, query, user_config.color,
+        return ScrollViewState(original_author_id, menu_type, query,
                                monster_list, query_settings,
                                title, idle_message, ims['current_monster_id'],
                                current_page=current_page,

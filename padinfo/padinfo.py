@@ -248,7 +248,6 @@ class PadInfo(commands.Cog):
 
     async def _do_id(self, ctx, query: str):
         dbcog = await self.get_dbcog()
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         raw_query = query
 
@@ -271,9 +270,9 @@ class PadInfo(commands.Cog):
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                             alt_monsters, is_jp_buffed, query_settings, id_queried_props,
                             reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
@@ -343,7 +342,6 @@ class PadInfo(commands.Cog):
         """Show differences between NA & JP versions of a card"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
@@ -356,15 +354,15 @@ class PadInfo(commands.Cog):
         id_queried_props = await IdViewState.do_query(dbcog, monster)
 
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, monster,
                             alt_monsters, is_jp_buffed, query_settings, id_queried_props)
         menu = NaDiffMenu.menu()
         message = state.get_na_diff_invalid_message()
         if message:
             state = SimpleTextViewState(original_author_id, NaDiffMenu.MENU_TYPE,
-                                        raw_query, color, message)
+                                        raw_query, query_settings, message)
             menu = NaDiffMenu.menu(initial_control=NaDiffMenu.message_control)
         await menu.create(ctx, state)
         await self.log_id_result(ctx, monster.monster_id)
@@ -376,7 +374,6 @@ class PadInfo(commands.Cog):
         """Monster info (evolutions tab)"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
@@ -389,7 +386,7 @@ class PadInfo(commands.Cog):
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dbcog, monster)
         alt_versions, gem_versions = await EvosViewState.do_query(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
         if alt_versions is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos or gems')
@@ -398,7 +395,7 @@ class PadInfo(commands.Cog):
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                               alt_monsters, is_jp_buffed, query_settings,
                               alt_versions, gem_versions,
                               reaction_list=initial_reaction_list
@@ -414,7 +411,6 @@ class PadInfo(commands.Cog):
         """Monster info (evo materials tab)"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
 
@@ -432,11 +428,11 @@ class PadInfo(commands.Cog):
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list
@@ -452,7 +448,6 @@ class PadInfo(commands.Cog):
         """Monster info (pantheon tab)"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
@@ -469,11 +464,11 @@ class PadInfo(commands.Cog):
             return
         alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                                   alt_monsters, is_jp_buffed, query_settings,
                                   pantheon_list, series_name, base_monster,
                                   reaction_list=initial_reaction_list
@@ -489,7 +484,6 @@ class PadInfo(commands.Cog):
         """Monster info (full image tab)"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
@@ -501,11 +495,11 @@ class PadInfo(commands.Cog):
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                              alt_monsters, is_jp_buffed, query_settings,
                              reaction_list=initial_reaction_list
                              )
@@ -520,7 +514,6 @@ class PadInfo(commands.Cog):
         """Monster info (misc info tab)"""
         dbcog = await self.get_dbcog()
         raw_query = query
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
 
         monster = await dbcog.find_monster(raw_query, ctx.author.id)
@@ -532,11 +525,11 @@ class PadInfo(commands.Cog):
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                                    alt_monsters, is_jp_buffed, query_settings,
                                    reaction_list=initial_reaction_list
                                    )
@@ -556,9 +549,8 @@ class PadInfo(commands.Cog):
             self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
-        color = await self.get_user_embed_color(ctx)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
-        embed = LinksView.embed(monster, color, query_settings).to_embed()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        embed = LinksView.embed(monster, query_settings).to_embed()
         await ctx.send(embed=embed)
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
@@ -574,9 +566,8 @@ class PadInfo(commands.Cog):
             self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
-        color = await self.get_user_embed_color(ctx)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
-        embed = LookupView.embed(monster, color, query_settings).to_embed()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        embed = LookupView.embed(monster, query_settings).to_embed()
         await ctx.send(embed=embed)
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
@@ -600,13 +591,12 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         info = button_info.get_info(dbcog, monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         display_options = ButtonInfoToggles()
         alt_monsters = ButtonInfoViewState.get_alt_monsters_and_evos(dbcog, monster)
-        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, color, display_options,
+        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, display_options,
                                     monster, alt_monsters, info, query_settings,
                                     reaction_list=ButtonInfoMenuPanes.get_user_reaction_list(display_options))
         menu = ButtonInfoMenu.menu()
@@ -626,7 +616,7 @@ class PadInfo(commands.Cog):
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
         dbcog = await self.get_dbcog()
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
         if not monster_list:
@@ -681,8 +671,7 @@ class PadInfo(commands.Cog):
                                ):
         raw_query = query
         original_author_id = ctx.message.author.id
-        color = await self.get_user_embed_color(ctx)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
@@ -691,7 +680,7 @@ class PadInfo(commands.Cog):
             _, child_panes_class = padinfo_menu_map[child_menu_type]
             child_reaction_list = child_panes_class.emoji_names()
 
-        state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query, color,
+        state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query,
                                 monster_list, query_settings,
                                 title, instruction_message,
                                 child_menu_type=child_menu_type,
@@ -707,7 +696,8 @@ class PadInfo(commands.Cog):
             'dbcog': dbcog,
             'user_config': user_config,
         }
-        child_state = SimpleTextViewState(original_author_id, view_state_type.VIEW_STATE_TYPE, raw_query, color,
+        child_state = SimpleTextViewState(original_author_id, view_state_type.VIEW_STATE_TYPE,
+                                          raw_query, query_settings,
                                           instruction_message,
                                           reaction_list=[]
                                           )
@@ -735,12 +725,11 @@ class PadInfo(commands.Cog):
         title = 'Monster Book Scroll'
         raw_query = query
         original_author_id = ctx.message.author.id
-        color = await self.get_user_embed_color(ctx)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
-        state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query, color,
+        state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query,
                                 monster_list, query_settings,
                                 title, instruction_message, monster.monster_id,
                                 child_menu_type=IdMenu.MENU_TYPE,
@@ -761,9 +750,8 @@ class PadInfo(commands.Cog):
         id_queried_props = await IdViewState.do_query(dbcog, monster)
         full_reaction_list = IdMenuPanes.emoji_names()
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
 
-        child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, color, monster,
+        child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
                                   alt_monsters, is_jp_buffed, query_settings, id_queried_props,
                                   reaction_list=full_reaction_list)
         child_menu = IdMenu.menu()
@@ -790,7 +778,7 @@ class PadInfo(commands.Cog):
         series_object: "SeriesModel" = monster.series
         title = series_object.name_en
         paginated_monsters = None
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
             paginated_monsters = await SeriesScrollViewState.do_query(dbcog, monster.series_id,
@@ -801,11 +789,10 @@ class PadInfo(commands.Cog):
 
         raw_query = query
         original_author_id = ctx.message.author.id
-        color = await self.get_user_embed_color(ctx)
         initial_reaction_list = SeriesScrollMenuPanes.get_initial_reaction_list(len(paginated_monsters))
         instruction_message = 'Click a reaction to see monster details!'
 
-        state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query, color,
+        state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query,
                                       series_id, paginated_monsters, 0, int(rarity),
                                       query_settings,
                                       all_rarities,
@@ -820,7 +807,8 @@ class PadInfo(commands.Cog):
             'dbcog': dbcog,
             'user_config': user_config,
         }
-        child_state = SimpleTextViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, color,
+        child_state = SimpleTextViewState(original_author_id, SeriesScrollMenu.MENU_TYPE,
+                                          raw_query, query_settings,
                                           instruction_message,
                                           reaction_list=[]
                                           )
@@ -858,12 +846,11 @@ class PadInfo(commands.Cog):
             await ctx.send(inline(err_msg.format('Right', r_query)))
             return
 
-        l_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), l_query)
-        r_query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), r_query or l_query)
+        l_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
+        r_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, r_query)
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
-        state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, color, l_mon, r_mon,
+        state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, l_mon, r_mon,
                                      l_query, r_query, l_query_settings, r_query_settings)
         menu = LeaderSkillMenu.menu()
         await menu.create(ctx, state)
@@ -894,12 +881,11 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, query_settings,
-                                           color, monster)
+                                           monster)
         menu = LeaderSkillSingleMenu.menu()
         await menu.create(ctx, state)
 
@@ -918,15 +904,14 @@ class PadInfo(commands.Cog):
             await self.send_invalid_monster_message(ctx, query, base_mon, ', which has no evos that transform')
             return
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_user_reaction_list(len(monster_ids))
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon)
-        query_settings = QuerySettings.extract(await self.get_fm_flags(ctx.author), query)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
         state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       color, base_mon, transformed_mon, tfinfo_queried_props, monster_ids,
+                                       base_mon, transformed_mon, tfinfo_queried_props, monster_ids,
                                        is_jp_buffed,
                                        query_settings,
                                        reaction_list=reaction_list)
@@ -940,13 +925,13 @@ class PadInfo(commands.Cog):
 
         Leave <query> blank to see a list of every awakening in the game."""
         dbcog = await self.get_dbcog()
-        color = await self.get_user_embed_color(ctx)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
 
         if not query:
             sort_type = AwakeningListSortTypes.numerical
             paginated_skills = await AwakeningListViewState.do_query(dbcog, sort_type)
             menu = AwakeningListMenu.menu()
-            state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, color,
+            state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, query_settings,
                                            sort_type, paginated_skills, 0,
                                            reaction_list=AwakeningListMenuPanes.get_user_reaction_list(sort_type))
             await menu.create(ctx, state)
@@ -962,7 +947,7 @@ class PadInfo(commands.Cog):
         menu = ClosableEmbedMenu.menu()
         props = AwakeningHelpViewProps(monster=monster)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       color, AwakeningHelpView.VIEW_TYPE, props)
+                                       query_settings, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command(aliases=['idhist'])
@@ -1042,7 +1027,7 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def embedcolor(self, ctx, *, color: validators.Color):
+    async def embedcolor(self, ctx, *, color: validators.EmbedColor):
         """(DONOR ONLY) The color of all your `[p]id` embeds!
 
         Examples:
@@ -1056,7 +1041,7 @@ class PadInfo(commands.Cog):
         await self.config.user(ctx.author).color.set(color)
 
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            fm_flags['color'] = color
+            fm_flags['embedcolor'] = color
         await ctx.tick()
 
     @idset.command(usage="<on/off>")
@@ -1561,12 +1546,11 @@ class PadInfo(commands.Cog):
                               f" {t[2]}"
                               for t in sorted(ntokens))
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
         props = IdTracebackViewProps(monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
                                      lower_priority_monsters=lpstr if lower_prio else "None")
-        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        IdTracebackView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
@@ -1604,13 +1588,9 @@ class PadInfo(commands.Cog):
             return await send_cancellation_message(ctx, f"{header} cannot get to level {end} "
                                                         f"(max level {monster.level}).")
 
-        color = await self.get_user_embed_color(ctx)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
         props = ExperienceCurveViewProps(monster=monster, low=start, high=end, offset=offset)
-        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query, color,
+        state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)
-
-    async def get_fm_flags(self, user: discord.User):
-        return await self.bot.get_cog("DBCog").config.user(user).fm_flags()

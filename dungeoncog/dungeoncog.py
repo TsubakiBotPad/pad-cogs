@@ -1,7 +1,6 @@
 import logging
 from typing import TYPE_CHECKING
 
-from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
@@ -45,7 +44,6 @@ class DungeonCog(commands.Cog):
     async def get_menu_default_data(self, ims):
         data = {
             'dbcog': await self.get_dbcog(),
-            'color': Color.default()
         }
         return data
 
@@ -139,7 +137,7 @@ class DungeonCog(commands.Cog):
             original_author_id = ctx.message.author.id
             test_list = ['1', '2', '3', '4']
             # print(pm_dungeon[0])
-            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, Color.default(), pm_dungeon[0][0],
+            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, pm_dungeon[0][0],
                                           dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                           len(pm_dungeon[0]), 0,
                                           int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)

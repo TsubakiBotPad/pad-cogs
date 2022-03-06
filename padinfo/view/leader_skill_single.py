@@ -18,9 +18,8 @@ if TYPE_CHECKING:
 
 
 class LeaderSkillSingleViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, query_settings, color, mon):
+    def __init__(self, original_author_id, menu_type, raw_query, query_settings, mon):
         super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
-        self.color = color
         self.mon = mon
         self.query_settings = query_settings
 
@@ -40,7 +39,7 @@ class LeaderSkillSingleViewState(ViewStateBase):
 
         mon = await get_monster_from_ims(dbcog, ims)
         return LeaderSkillSingleViewState(original_author_id, menu_type,
-                                          raw_query, query_settings, user_config.color,
+                                          raw_query, query_settings,
                                           mon)
 
 
@@ -56,5 +55,5 @@ class LeaderSkillSingleView:
                 description=Box(
                     BoldText(MonsterHeader.box_with_emoji(state.mon, query_settings=state.query_settings)),
                     Text(ls.desc if ls else 'None')),
-                color=state.color),
+                color=state.query_settings.get_embedcolor()),
             embed_footer=embed_footer_with_state(state))

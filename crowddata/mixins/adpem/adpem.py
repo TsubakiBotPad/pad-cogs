@@ -10,6 +10,7 @@ from redbot.core.bot import Red
 from tsutils.cog_mixins import CogMixin
 from tsutils.emoji import NO_EMOJI, char_to_emoji
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.time import NA_TIMEZONE, NEW_DAY, get_last_time
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, get_user_reaction
@@ -265,8 +266,9 @@ class AdPEMStats(CogMixin):
         most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
         menu = ClosableEmbedMenu.menu()
         props = ShowStatsViewProps(total, adj, you, valid, most_common)
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query.replace('"', ''),
-                                       Color.default(), ShowStatsView.VIEW_TYPE, props)
+                                       query_settings, ShowStatsView.VIEW_TYPE, props)
 
         await menu.create(ctx, state)
 
