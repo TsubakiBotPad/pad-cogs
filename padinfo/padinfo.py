@@ -847,7 +847,7 @@ class PadInfo(commands.Cog):
             return
 
         l_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
-        r_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, r_query)
+        r_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, r_query or l_query)
 
         original_author_id = ctx.message.author.id
         state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, l_mon, r_mon,
