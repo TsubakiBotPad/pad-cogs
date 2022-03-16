@@ -101,15 +101,57 @@ class PadGuideDb(commands.Cog):
         """Search for a dungeon via its jp or na name"""
         search_text = '%{}%'.format(search_text)
         with self.get_cursor() as cursor:
-            sql = ('select dungeon_id, name_en, name_ja, visible from dungeons'
-                   ' where lower(name_en) like %s or lower(name_ja) like %s'
-                   ' order by dungeon_id desc limit 20')
+            sql = ('SELECT dungeon_id, name_en, name_ja, visible FROM dungeons'
+                   ' WHERE LOWER(name_en) LIKE %s OR LOWER(name_ja) LIKE %s'
+                   ' ORDER BY dungeon_id DESC LIMIT 20')
             cursor.execute(sql, [search_text, search_text])
             results = list(cursor.fetchall())
             msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False)
             await ctx.send(inline(sql))
             for page in pagify(msg):
                 await ctx.send(box(page))
+
+    @padguidedb.command()
+    async def subdungeonlist(self, ctx, dungeon_id):
+        """Show the subdungeon ids of a dungeon"""
+        with self.get_cursor() as cursor:
+            cursor.execute('SELECT name_en FROM dungeons'
+                           ' WHERE dungeon_id = %s', (dungeon_id,))
+            dg_name = next(iter(cursor.fetchall()), {'name_en': None})['name_en']
+            if dg_name is None:
+                return await ctx.send(f"No dungeon found with id {dungeon_id}")
+
+            cursor.execute('SELECT sub_dungeon_id, name_en FROM sub_dungeons'
+                           ' WHERE dungeon_id = %s'
+                           ' ORDER BY sub_dungeon_id', (dungeon_id,))
+            results = list(cursor.fetchall())
+            msg = f'{dg_name}: {dungeon_id}\n\t' + '\n\t'.join(f"{row['name_en']}: {row['sub_dungeon_id']}"
+                                                               for row in results)
+            for page in pagify(msg):
+                await ctx.send(box(page))
+
+    @padguidedb.command()
+    async def searchsubdungeons(self, ctx, *, search_text):
+        """Show the subdungeon ids of all matching dungeons"""
+        search_text = f"%{search_text}%"
+        with self.get_cursor() as cursor:
+            cursor.execute('SELECT dungeon_id, name_en FROM dungeons'
+                           ' WHERE LOWER(name_en) LIKE %s OR LOWER(name_ja) LIKE %s'
+                           ' ORDER BY dungeon_id LIMIT 20', (search_text, search_text))
+            dgs = cursor.fetchall()
+            if not dgs:
+                return await ctx.send(f"No dungeons found")
+
+            msg = []
+            for dg in dgs:
+                cursor.execute('SELECT sub_dungeon_id, name_en FROM sub_dungeons'
+                               ' WHERE dungeon_id = %s'
+                               ' ORDER BY sub_dungeon_id', (dg['dungeon_id'],))
+                results = list(cursor.fetchall())
+                msg.append(f"{dg['name_en']} - {dg['dungeon_id']}\n\t"
+                           + '\n\t'.join(f"{row['name_en']} - {row['sub_dungeon_id']}"
+                                         for row in results))
+            await ctx.send_interactive(map(box, pagify('\n\n'.join(msg), delims=['\n\n'])))
 
     @padguidedb.command()
     @is_padguidedb_admin()
@@ -225,7 +267,7 @@ class PadGuideDb(commands.Cog):
     @is_padguidedb_admin()
     async def fulletl(self, ctx, server='COMBINED'):
         """Runs a job which downloads pad data, and updates the padguide database."""
-        await self.runetl(ctx, '--server='+server)
+        await self.runetl(ctx, '--server=' + server)
 
     @pipeline.command()
     @is_padguidedb_admin()
