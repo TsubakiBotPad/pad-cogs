@@ -16,7 +16,7 @@ class LookupView:
     @staticmethod
     def embed(m: "MonsterModel", query_settings: QuerySettings):
         return EmbedView(
-            EmbedMain(color=query_settings.get_embedcolor()),
+            EmbedMain(color=query_settings.embedcolor),
             embed_author=EmbedAuthor(
                 MonsterHeader.menu_title(m).to_markdown(),
                 MonsterLink.header_link(m, query_settings),

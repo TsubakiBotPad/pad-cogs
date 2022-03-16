@@ -200,7 +200,7 @@ class ButtonInfoView(EvoScrollView):
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.get_embedcolor(),
+                color=state.query_settings.embedcolor,
                 description='(Co-op mode)' if is_coop else '(Singleplayer mode)'
             ),
             embed_author=EmbedAuthor(

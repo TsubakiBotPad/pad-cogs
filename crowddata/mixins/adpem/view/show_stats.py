@@ -58,7 +58,7 @@ class ShowStatsView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.get_embedcolor(),
+                color=state.query_settings.embedcolor,
                 title=f"AdPEM Data for query: {state.raw_query}",
                 description=Box(
                     LabeledText("Net", ShowStatsView.get_count(props.total, *props.valid)),

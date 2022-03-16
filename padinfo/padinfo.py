@@ -23,7 +23,7 @@ from tsutils.menu.components.config import BotConfig
 from tsutils.menu.simple_text import SimpleTextMenu
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.menu.view.simple_text import SimpleTextViewState
-from tsutils.query_settings import validators
+from tsutils.query_settings import converters
 from tsutils.query_settings.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, \
     LsMultiplier, \
     MonsterLinkTarget
@@ -1027,7 +1027,7 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def embedcolor(self, ctx, *, color: validators.EmbedColor):
+    async def embedcolor(self, ctx, *, color: converters.EmbedColor):
         """(DONOR ONLY) The color of all your `[p]id` embeds!
 
         Examples:

@@ -155,7 +155,7 @@ class MaterialsView(BaseIdView, EvoScrollView):
         # m: "MonsterModel", mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.get_embedcolor(),
+                color=state.query_settings.embedcolor,
                 title=MonsterHeader.menu_title(state.monster,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),

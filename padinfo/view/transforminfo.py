@@ -219,7 +219,7 @@ class TransformInfoView(BaseIdMainView):
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.get_embedcolor(),
+                color=state.query_settings.embedcolor,
                 title=MonsterHeader.menu_title(transformed_mon,
                                                is_tsubaki=False,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),
