@@ -65,5 +65,5 @@ class LeaderSkillView:
                     Text(lls.desc if lls else 'None'),
                     BoldText(MonsterHeader.box_with_emoji(state.r_mon, query_settings=state.r_query_settings)),
                     Text(rls.desc if rls else 'None')),
-                color=state.l_query_settings.get_embedcolor()),
+                color=state.l_query_settings.embedcolor),
             embed_footer=embed_footer_with_state(state))

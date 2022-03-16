@@ -28,7 +28,7 @@ class LinksView:
     def embed(m: "MonsterModel", query_settings: QuerySettings):
         return EmbedView(
             EmbedMain(
-                color=query_settings.get_embedcolor(),
+                color=query_settings.embedcolor,
                 title=MonsterHeader.menu_title(m).to_markdown(),
                 description=LinksView.linksbox(m),
                 url=MonsterLink.header_link(m, query_settings)),
