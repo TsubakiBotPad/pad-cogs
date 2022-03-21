@@ -235,12 +235,12 @@ def process_monster(behavior: MonsterBehavior, encounter: "EncounterModel", data
                                 )
     monster_model = database.graph.get_monster(encounter.monster_id)
     monster = DungeonMonster(
-        name=monster_model.name_en,
         hp=encounter.hp,
         atk=encounter.atk,
         defense=encounter.defense,
         turns=encounter.turns,
-        level=encounter.level
+        level=encounter.level,
+        monster=monster_model
     )
     if behavior is None:
         return monster

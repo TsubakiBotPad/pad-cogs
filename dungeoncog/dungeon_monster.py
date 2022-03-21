@@ -8,8 +8,7 @@ class DungeonMonster(object):
     A class that symbolizes an encounter in a dungeon. Why is it not a model? Good question.
     """
 
-    def __init__(self, name: str, hp, atk, defense, turns, level, error=None):
-        self.name = name
+    def __init__(self, hp, atk, defense, turns, level, monster, error=None):
         self.hp = hp
         self.atk = atk
         self.defense = defense
@@ -18,6 +17,7 @@ class DungeonMonster(object):
         self.level = level
         self.groups: List[GroupedSkills] = []
         self.am_invade = False
+        self.monster = monster
 
         self.error = error
 
