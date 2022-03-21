@@ -147,13 +147,6 @@ class DungeonView:
             DungeonView.embed_helper(level, names, values, line)
 
     @staticmethod
-    def make_embed_description(dungeon_monster, desc=""):
-        return "HP:{} ATK:{} DEF:{} CD:{}{}".format(f'{dungeon_monster.hp:,}',
-                                                    f'{dungeon_monster.atk:,}',
-                                                    f'{dungeon_monster.defense:,}',
-                                                    f'{dungeon_monster.turns:,}', desc)
-
-    @staticmethod
     def embed(state: DungeonViewState):
         fields = []
         mb = MonsterBehavior()
@@ -191,6 +184,13 @@ class DungeonView:
         )
 
     @staticmethod
+    def make_embed_description(dungeon_monster, desc=""):
+        return "HP: {} ATK: {} DEF: {} CD: {}{}".format(f'{dungeon_monster.hp:,}',
+                                                        f'{dungeon_monster.atk:,}',
+                                                        f'{dungeon_monster.defense:,}',
+                                                        f'{dungeon_monster.turns:,}', desc)
+
+    @staticmethod
     def make_embed(dungeon_monster: DungeonMonster, verbose: bool = False, spawn: List[int] = None,
                    floor: List[int] = None, technical: int = None) -> List[discord.Embed]:
         """
@@ -209,12 +209,13 @@ class DungeonView:
         # We create two pages as monsters at max will only ever require two pages of embeds
         if spawn is not None:
             embed = discord.Embed(
-                title="{} Floor:{}/{} Spawn:{}/{} Page:".format(
-                    MonsterHeader.text_with_emoji(dungeon_monster.monster),
+                title="Floor: {}/{} Spawn: {}/{} Page: ".format(
                     floor[0], floor[1],
                     spawn[0], spawn[1]
                 ),
-                description=DungeonView.make_embed_description(dungeon_monster, desc)
+                description='{}\n{}'.format(
+                    MonsterHeader.text_with_emoji(dungeon_monster.monster),
+                    DungeonView.make_embed_description(dungeon_monster, desc))
             )
         else:
             embed = discord.Embed(
