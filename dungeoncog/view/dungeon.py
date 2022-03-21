@@ -8,6 +8,7 @@ from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.view_state import ViewState
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
@@ -208,14 +209,18 @@ class DungeonView:
         # We create two pages as monsters at max will only ever require two pages of embeds
         if spawn is not None:
             embed = discord.Embed(
-                title="{} Spawn:{}/{} Floor:{}/{} Page:".format(dungeon_monster.name,
-                                                                spawn[0], spawn[1],
-                                                                floor[0], floor[1]),
+                title="{} Floor:{}/{} Spawn:{}/{} Page:".format(
+                    MonsterHeader.text_with_emoji(dungeon_monster.monster),
+                    floor[0], floor[1],
+                    spawn[0], spawn[1]
+                ),
                 description=DungeonView.make_embed_description(dungeon_monster, desc)
             )
         else:
             embed = discord.Embed(
-                title="Enemy:{} at Level: {}".format(dungeon_monster.name, dungeon_monster.level),
+                title="Enemy:{} at Level: {}".format(
+                    MonsterHeader.text_with_emoji(dungeon_monster.monster),
+                    dungeon_monster.level),
                 description=DungeonView.make_embed_description(dungeon_monster, desc)
             )
 
