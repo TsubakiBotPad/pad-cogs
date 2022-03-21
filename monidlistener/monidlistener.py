@@ -2,6 +2,7 @@ import re
 from io import BytesIO
 
 from redbot.core import Config, checks, commands
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 
 class MonIdListener(commands.Cog):
@@ -50,12 +51,12 @@ class MonIdListener(commands.Cog):
                 matches = re.findall(r'\b\d{3,4}\b', content)
                 ret = ""
                 for i in matches:
-                    if (i == "100"):  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
+                    if i == "100":  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
                         continue
                     m = await dbcog.find_monster(i, message.author.id)
                     if not m:  # monster not found
                         continue
-                    ret += "[{}] {}{}\n".format(i, m.name_en, " (untradable)" if m.sell_mp >= 100 else "")
+                    ret += "{}{}\n".format(MonsterHeader.text_with_emoji(m), " (untradable)" if m.sell_mp >= 100 else "")
                 if ret != "":
                     await channel.send(ret)
 
