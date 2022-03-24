@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from fnmatch import fnmatch
-from typing import NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
+from typing import Iterable, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
 import regex as re
 from tsutils.helper_classes import DummyObject
@@ -195,11 +196,8 @@ class MonsterAttributeBool(SpecialToken):
         return False, MatchData()
 
 
-class HasMaterial(SpecialToken):
-    RE_MATCH = r"hasmat:([\"']?)(.+)\1"
-
-    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
-        _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+class SubqueryToken(ABC, SpecialToken):
+    def __init__(self, fullvalue, subquery, *, negated=False, exact=False, dbcog):
         self.subquery = subquery
         self.match_data = None
         self.valid_monsters = None
@@ -208,53 +206,48 @@ class HasMaterial(SpecialToken):
         super().__init__(negated=negated, exact=exact, dbcog=dbcog)
         self.full_value = fullvalue
 
-    async def prepare(self: T) -> T:
+    async def prepare(self):
         m_info, _ = await self.dbcog.find_monster_debug(self.subquery)
         self.match_data = m_info.monster_matches
         self.valid_monsters = m_info.valid_monsters
         self.max_score = max((self.match_data[mon].score for mon in self.valid_monsters), default=0)
         return self
 
+    @abstractmethod
+    def get_matching_monsters(self, monster: MonsterModel) -> Iterable[MonsterModel]:
+        ...
+
     async def matches(self, monster):
-        mats = self.valid_monsters.intersection(self.dbcog.database.graph.evo_mats(monster))
+        mats = self.valid_monsters.intersection(self.get_matching_monsters(monster))
         if not mats:
             return False, MatchData()
-        default_match = DummyObject(score=0)
         matched, score = max(((mat, self.match_data.get(mat, DummyObject(score=0)).score) for mat in mats),
                              key=lambda x: x[1])
         return score / self.max_score, MatchData(subquery_result=matched)
 
 
-class SeriesOf(SpecialToken):
+class HasMaterial(SubqueryToken):
+    RE_MATCH = r"hasmat:([\"']?)(.+)\1"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        super().__init__(fullvalue, subquery, negated=negated, exact=exact, dbcog=dbcog)
+
+    def get_matching_monsters(self, monster):
+        return self.dbcog.database.graph.evo_mats(monster)
+
+
+class SeriesOf(SubqueryToken):
     RE_MATCH = r"seriesof:([\"']?)(.+)\1"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
-        self.subquery = subquery
-        self.match_data = None
-        self.valid_monsters = None
-        self.max_score = None
+        super().__init__(fullvalue, subquery, negated=negated, exact=exact, dbcog=dbcog)
 
-        super().__init__(negated=negated, exact=exact, dbcog=dbcog)
-        self.full_value = fullvalue
-
-    async def prepare(self: T) -> T:
-        m_info, _ = await self.dbcog.find_monster_debug(self.subquery)
-        self.match_data = m_info.monster_matches
-        self.valid_monsters = m_info.valid_monsters
-        self.max_score = max((self.match_data[mon].score for mon in self.valid_monsters), default=0)
-        return self
-
-    async def matches(self, monster):
-        sameseries = self.valid_monsters.intersection(
-            self.dbcog.database.get_monsters_where(lambda m: m.series_id == monster.series_id,
-                                                   server=monster.server_priority,
-                                                   cache_key=('series_id', monster.series_id)))
-        if not sameseries:
-            return False, MatchData()
-        matched, score = max(((m, self.match_data.get(m, DummyObject(score=0)).score) for m in sameseries),
-                             key=lambda x: x[1])
-        return score / self.max_score, MatchData(subquery_result=matched)
+    def get_matching_monsters(self, monster):
+        return self.dbcog.database.get_monsters_where(lambda m: m.series_id == monster.series_id,
+                                                      server=monster.server_priority,
+                                                      cache_key=('series_id', monster.series_id))
 
 
 SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
