@@ -1512,44 +1512,49 @@ class PadInfo(commands.Cog):
 
         dbcog = await self.get_dbcog()
 
-        bestmatch, matches, _, _ = await dbcog.mon_finder.find_monster_debug(query)
+        m_info, e_info = await dbcog.find_monster_debug(query)
 
-        if bestmatch is None:
+        if m_info.matched_monster is None:
             await ctx.send("No monster matched.")
             return
 
         if selected_monster_id is not None:
-            selected = {m for m in matches if m.monster_id == selected_monster_id}
+            selected = {m for m in m_info.valid_monsters if m.monster_id == selected_monster_id}
             if not selected:
                 await ctx.send("The requested monster was not found as a result of the query.")
                 return
             monster = selected.pop()
         else:
-            monster = bestmatch
+            monster = m_info.matched_monster
 
-        score = matches[monster].score
-        ntokens = matches[monster].name
-        mtokens = matches[monster].mod
-        lower_prio = {m for m in matches if matches[m].score == matches[monster].score}.difference({monster})
+        score = m_info.monster_matches[monster].score
+        ntokens = m_info.monster_matches[monster].name
+        mtokens = m_info.monster_matches[monster].mod
+        lower_prio = {m for m in m_info.monster_matches
+                      if m_info.monster_matches[m].score == m_info.monster_matches[monster].score
+                      }.difference({monster})
         if len(lower_prio) > 20:
             lpstr = f"{len(lower_prio)} other monsters."
         else:
-            lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
+            lpstr = "\n".join(f"{MonsterHeader.text_with_emoji(m)}" for m in lower_prio)
 
-        mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
-                              f" ({round(dbcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
+        mtokenstr = '\n'.join((f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] and t[1] else ''}" +
+                               ('' if not t[1] else " (exact)" if t[0] == t[1]
+                               else f" ({round(dbcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2)})") +
+                               f" {t[2]}").strip()
                               for t in sorted(mtokens))
         ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
                               f" ({round(dbcog.mon_finder.calc_ratio_name(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
-                              f" {t[2]}"
+                              f" {t[2]}".strip()
                               for t in sorted(ntokens))
 
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         props = IdTracebackViewProps(monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
                                      lower_priority_monsters=lpstr if lower_prio else "None")
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       IdTracebackView.VIEW_TYPE, props)
+                                       query_settings, IdTracebackView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command()
@@ -1588,7 +1593,8 @@ class PadInfo(commands.Cog):
 
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         props = ExperienceCurveViewProps(monster=monster, low=start, high=end, offset=offset)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       ExperienceCurveView.VIEW_TYPE, props)
+                                       query_settings, ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)

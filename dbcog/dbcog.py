@@ -10,24 +10,24 @@ import asyncio
 import logging
 import os
 import shutil
-from functools import reduce
-
 import time
+from functools import reduce
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import box, pagify
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.enums import Server
-from tsutils.json_utils import async_cached_dadguide_request, safe_read_json
+from tsutils.json_utils import async_cached_dadguide_request
 from tsutils.tsubaki.links import CLOUDFRONT_URL
 from tsutils.user_interaction import StatusManager, send_confirmation_message
 
 from . import token_mappings
+from .database_context import DbContext
 from .database_loader import load_database
-from .find_monster import FindMonster, MatchMap
+from .find_monster import ExtraInfo, FindMonster, MonsterInfo
 from .idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
@@ -50,8 +50,8 @@ class DBCog(commands.Cog, IdTest):
         self.bot = bot
         self._is_ready = asyncio.Event()
 
-        self.database = None
-        self.indexes = {
+        self.database: Optional[DbContext] = None
+        self.indexes: Dict[Server, MonsterIndex] = {
             Server.COMBINED: MonsterIndex(Server.COMBINED),
             Server.NA: MonsterIndex(Server.NA),
         }
@@ -319,12 +319,14 @@ class DBCog(commands.Cog, IdTest):
         return {**self.fm_flags_default, **(await self.config.user_from_id(author_id).fm_flags())}
 
     async def find_monster(self, query: str, author_id: int = 0) -> Optional[MonsterModel]:
-        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
+        monster, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
+        return monster
 
     async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
-        return await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
+        monsters, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
+        return monsters
 
-    async def _find_monster_debug(self, query: str) -> Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel], int]:
+    async def find_monster_debug(self, query: str) -> Tuple[MonsterInfo, ExtraInfo]:
         return await FindMonster(self, self.fm_flags_default).find_monster_debug(query)
 
     @staticmethod
