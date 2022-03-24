@@ -55,9 +55,9 @@ class SpecialToken(Token):
         super().__init__(value, negated=negated, exact=exact)
 
     async def prepare(self: T) -> T:
-        pass
+        return self
 
-    def matches(self, monster: MonsterModel) -> bool:
+    def matches(self, monster: MonsterModel):
         return False
 
 
