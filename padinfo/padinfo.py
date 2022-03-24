@@ -1536,14 +1536,16 @@ class PadInfo(commands.Cog):
         if len(lower_prio) > 20:
             lpstr = f"{len(lower_prio)} other monsters."
         else:
-            lpstr = "\n".join(f"{get_attribute_emoji_by_monster(m)} {m.name_en} ({m.monster_id})" for m in lower_prio)
+            lpstr = "\n".join(f"{MonsterHeader.text_with_emoji(m)}" for m in lower_prio)
 
-        mtokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
-                              f" ({round(dbcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
+        mtokenstr = '\n'.join((f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] and t[1] else ''}" +
+                               ('' if not t[1] else " (exact)" if t[0] == t[1]
+                               else f" ({round(dbcog.mon_finder.calc_ratio_modifier(t[0], t[1]), 2)})") +
+                               f" {t[2]}").strip()
                               for t in sorted(mtokens))
         ntokenstr = '\n'.join(f"{inline(t[0])}{(': ' + t[1]) if t[0] != t[1] else ''}"
                               f" ({round(dbcog.mon_finder.calc_ratio_name(t[0], t[1]), 2) if t[0] != t[1] else 'exact'})"
-                              f" {t[2]}"
+                              f" {t[2]}".strip()
                               for t in sorted(ntokens))
 
         original_author_id = ctx.message.author.id
