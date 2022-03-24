@@ -121,21 +121,21 @@ class PadGuideDb(commands.Cog):
             if dg_name is None:
                 return await ctx.send(f"No dungeon found with id {dungeon_id}")
 
-            cursor.execute('SELECT name_ja, name_en FROM sub_dungeons'
+            cursor.execute('SELECT sub_dungeon_id, name_en FROM sub_dungeons'
                            ' WHERE dungeon_id = %s'
                            ' ORDER BY sub_dungeon_id', (dungeon_id,))
             results = list(cursor.fetchall())
-            msg = f'{dg_name}: {dungeon_id}\n\t' + '\n\t'.join(f"{row['name_en']}: https://pad.skyozora.com/stage/{row['name_ja']}"
+            msg = f'{dg_name}: {dungeon_id}\n\t' + '\n\t'.join(f"{row['name_en']}: {row['sub_dungeon_id']}"
                                                                for row in results)
             for page in pagify(msg):
-                await ctx.send(page)
+                await ctx.send(box(page))
 
     @padguidedb.command()
     async def searchsubdungeons(self, ctx, *, search_text):
         """Show the subdungeon ids of all matching dungeons"""
         search_text = f"%{search_text}%"
-        with bot.get_cog("PadGuideDb").get_cursor() as cursor:
-            cursor.execute('SELECT dungeon_id, name_ja, name_en FROM dungeons'
+        with self.get_cursor() as cursor:
+            cursor.execute('SELECT dungeon_id, name_en FROM dungeons'
                            ' WHERE LOWER(name_en) LIKE %s OR LOWER(name_ja) LIKE %s'
                            ' ORDER BY dungeon_id LIMIT 20', (search_text, search_text))
             dgs = cursor.fetchall()
@@ -149,9 +149,9 @@ class PadGuideDb(commands.Cog):
                                ' ORDER BY sub_dungeon_id', (dg['dungeon_id'],))
                 results = list(cursor.fetchall())
                 msg.append(f"{dg['name_en']} - {dg['dungeon_id']}\n\t"
-                           + '\n\t'.join(f"{row['name_en']} - https://pad.skyozora.com/stage/{dg['name_ja']}/{row['name_ja']}"
+                           + '\n\t'.join(f"{row['name_en']} - {row['sub_dungeon_id']}"
                                          for row in results))
-            await ctx.send_interactive(pagify('\n\n'.join(msg), delims=['\n\n']))
+            await ctx.send_interactive(map(box, pagify('\n\n'.join(msg), delims=['\n\n'])))
 
     @padguidedb.command()
     @is_padguidedb_admin()
