@@ -1,4 +1,6 @@
+from collections import defaultdict
 from fnmatch import fnmatch
+from typing import DefaultDict, Optional, Set, Type, TypeVar, TYPE_CHECKING
 
 import regex as re
 
@@ -10,16 +12,23 @@ from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, BOOL_MONSTE
     NUMERIC_MONSTER_ATTRIBUTE_NAMES, \
     PLUS_AWOKENSKILL_MAP, STRING_MONSTER_ATTRIBUTE_ALIASES, STRING_MONSTER_ATTRIBUTE_NAMES
 
+if TYPE_CHECKING:
+    from dbcog import DBCog
+
+T = TypeVar("T")
+
 
 def regexlist(tokens):
     return '(?:' + '|'.join(re.escape(t) for t in tokens) + ")"
 
 
 class Token:
-    def __init__(self, value, *, negated=False, exact=False):
+    def __init__(self, value: str, *, negated: bool = False, exact: bool = False):
         self.value = self.full_value = value
         self.negated = negated
         self.exact = exact
+
+        self.subquery_results: DefaultDict[str, Set[MonsterModel]] = defaultdict(set)
 
     def matches(self, monster: MonsterModel) -> bool:
         return True
@@ -41,9 +50,12 @@ class Token:
 class SpecialToken(Token):
     RE_MATCH = r""
 
-    def __init__(self, value, *, negated=False, exact=False, database):
-        self.database = database
+    def __init__(self, value, *, negated=False, exact=False, dbcog: "DBCog"):
+        self.dbcog = dbcog
         super().__init__(value, negated=negated, exact=exact)
+
+    async def prepare(self: T) -> T:
+        pass
 
     def matches(self, monster: MonsterModel) -> bool:
         return False
@@ -52,11 +64,11 @@ class SpecialToken(Token):
 class MultipleAwakeningToken(SpecialToken):
     RE_MATCH = rf"(\d+)-(sa-)?-?({regexlist(AWAKENING_TOKENS)})"
 
-    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         count, sa, value = re.fullmatch(self.RE_MATCH, fullvalue).groups()
         self.minimum_count = int(count)
         self.allows_super_awakenings = bool(sa)
-        super().__init__(value, negated=negated, exact=exact, database=database)
+        super().__init__(value, negated=negated, exact=exact, dbcog=dbcog)
         self.full_value = fullvalue
 
     def matches(self, monster):
@@ -68,7 +80,7 @@ class MultipleAwakeningToken(SpecialToken):
             # Keep track of whether we matched this cycle for SA check at the end
             matched = True
 
-            for awoken_skill in (self.database.awoken_skill_map[aws.value]
+            for awoken_skill in (self.dbcog.database.awoken_skill_map[aws.value]
                                  for aws, tokens in AWOKEN_SKILL_MAP.items()
                                  if self.value in tokens):
                 if (equivalence := PLUS_AWOKENSKILL_MAP.get(AwokenSkills(awakening.awoken_skill_id))) \
@@ -94,13 +106,13 @@ class MultipleAwakeningToken(SpecialToken):
 class MonsterAttributeNumeric(SpecialToken):
     RE_MATCH = rf"({regexlist(NUMERIC_MONSTER_ATTRIBUTE_NAMES)}):([<>=]+)?(\d+)([kmb])?"
 
-    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         c_attr, ineq, value, mult = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in NUMERIC_MONSTER_ATTRIBUTE_ALIASES.items()
                                          if c_attr in aliases}.pop()
         self.operator = ineq or "="
         self.rhs = int(value) * (1e9 if mult == 'b' else 1e6 if mult == 'm' else 1e3 if mult == 'k' else 1)
-        super().__init__('monster', negated=negated, exact=exact, database=database)
+        super().__init__('monster', negated=negated, exact=exact, dbcog=dbcog)
         self.full_value = fullvalue
 
     def matches(self, monster):
@@ -123,13 +135,13 @@ class MonsterAttributeNumeric(SpecialToken):
 class MonsterAttributeString(SpecialToken):
     RE_MATCH = rf"({regexlist(STRING_MONSTER_ATTRIBUTE_NAMES)}):([=rg]?)([\"']?)(.+)\3"
 
-    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         c_attr, match, _, string = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in STRING_MONSTER_ATTRIBUTE_ALIASES.items()
                                          if c_attr in aliases}.pop()
         self.match = match
         self.string = string
-        super().__init__('monster', negated=negated, exact=exact, database=database)
+        super().__init__('monster', negated=negated, exact=exact, dbcog=dbcog)
         self.full_value = fullvalue
 
     def matches(self, monster):
@@ -154,12 +166,12 @@ class MonsterAttributeString(SpecialToken):
 class MonsterAttributeBool(SpecialToken):
     RE_MATCH = rf"({regexlist(BOOL_MONSTER_ATTRIBUTE_NAMES)}):(.+)"
 
-    def __init__(self, fullvalue, *, negated=False, exact=False, database):
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         c_attr, raw_bool_value = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         self.monster_class_attributes = {ats for ats, aliases in BOOL_MONSTER_ATTRIBUTE_ALIASES.items()
                                          if c_attr in aliases}.pop()
         self.bool_value = raw_bool_value not in ('0', 'false', 'no')
-        super().__init__('monster', negated=negated, exact=exact, database=database)
+        super().__init__('monster', negated=negated, exact=exact, dbcog=dbcog)
         self.full_value = fullvalue
 
     def matches(self, monster):
@@ -174,9 +186,30 @@ class MonsterAttributeBool(SpecialToken):
         return False
 
 
-SPECIAL_TOKEN_TYPES = [
+class HasMaterial(SpecialToken):
+    RE_MATCH = r"hasmat:([\"']?)(.+)\1"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.subquery = subquery
+        self.matched_monster: Optional[MonsterModel] = None
+
+        super().__init__('monster', negated=negated, exact=exact, dbcog=dbcog)
+        self.full_value = fullvalue
+
+    async def prepare(self):
+        self.matched_monster = await self.dbcog.find_monster(self.subquery)
+        self.subquery_results['hasmat'].add(self.matched_monster)
+        return self
+
+    def matches(self, monster):
+        return self.matched_monster in self.dbcog.database.graph.evo_mats(monster)
+
+
+SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     MultipleAwakeningToken,
     MonsterAttributeNumeric,
     MonsterAttributeString,
     MonsterAttributeBool,
-]
+    HasMaterial,
+}
