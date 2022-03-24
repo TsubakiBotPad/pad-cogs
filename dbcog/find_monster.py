@@ -111,6 +111,9 @@ class FindMonster:
                 return False
 
         mult, data = await token.matches(monster)
+        if token.full_value in self.index.modifiers[monster] and mult <= 1:
+            mult, data = True, MatchData()
+            matched_token = token.full_value
         if mult == 0:
             return False
 
@@ -229,8 +232,8 @@ class FindMonster:
 
     def get_priority_tuple(self, monster: MonsterModel, tokenized_query: List[str] = None,
                            matches: MatchMap = None) -> Tuple[Any, ...]:
-        """Get the priority tuple for a monster.  
-        
+        """Get the priority tuple for a monster.
+
         This is a comparable tuple that's used to sort how well a monster matches a query.
         """
         if matches is None:

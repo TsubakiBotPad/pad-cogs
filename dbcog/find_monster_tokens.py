@@ -6,7 +6,7 @@ import regex as re
 from tsutils.helper_classes import DummyObject
 from tsutils.tsubaki.monster_header import MonsterHeader
 
-from dbcog.models.enum_types import AwokenSkills
+from dbcog.models.enum_types import Attribute, AwokenSkills
 from dbcog.models.monster_model import MonsterModel
 from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, BOOL_MONSTER_ATTRIBUTE_ALIASES, \
     BOOL_MONSTER_ATTRIBUTE_NAMES, \
@@ -22,11 +22,14 @@ T = TypeVar("T")
 
 class MatchData(NamedTuple):
     subquery_result: Optional[MonsterModel] = None
+    subattr_match: Optional[bool] = None
 
     def __repr__(self):
         ret = []
         if self.subquery_result is not None:
             ret.append(f"[Subquery: {MonsterHeader.text_with_emoji(self.subquery_result)}]")
+        if self.subattr_match:
+            ret.append("[Subattr]")
         return " ".join(ret)
 
 
@@ -250,6 +253,34 @@ class SeriesOf(SubqueryToken):
                                                       cache_key=('series_id', monster.series_id))
 
 
+class AttributeToken(SpecialToken):
+    RE_MATCH = r"[rbgldx]|red|fire|blue|water|green|wood|light|yellow|dark|purple|nil|none|null|white"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        if fullvalue in ('r', 'red', 'fire'):
+            self.attr = Attribute.Fire
+        elif fullvalue in ('b', 'blue', 'water'):
+            self.attr = Attribute.Water
+        elif fullvalue in ('g', 'green', 'wood'):
+            self.attr = Attribute.Wood
+        elif fullvalue in ('l', 'light', 'yellow'):
+            self.attr = Attribute.Light
+        elif fullvalue in ('d', 'dark', 'purple'):
+            self.attr = Attribute.Dark
+        else:
+            self.attr = Attribute.Nil
+
+        super().__init__(negated=negated, exact=exact, dbcog=dbcog)
+        self.full_value = fullvalue
+
+    async def matches(self, monster):
+        if monster.attr1 == self.attr:
+            return True, MatchData()
+        if monster.attr2 == self.attr:
+            return .999, MatchData(subattr_match=True)
+        return False, MatchData()
+
+
 SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     MultipleAwakeningToken,
     MonsterAttributeNumeric,
@@ -257,4 +288,5 @@ SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     MonsterAttributeBool,
     HasMaterial,
     SeriesOf,
+    AttributeToken,
 }
