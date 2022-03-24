@@ -13,26 +13,13 @@ if TYPE_CHECKING:
 
 
 class IdTracebackViewProps:
-    def __init__(self, monster: "MonsterModel", score: int, name_tokens: str,
+    def __init__(self, monster: "MonsterModel", score: float, name_tokens: str,
                  modifier_tokens: str, lower_priority_monsters: str):
         self.lower_priority_monsters = lower_priority_monsters
         self.modifier_tokens = modifier_tokens
         self.name_tokens = name_tokens
         self.score = score
         self.monster = monster
-
-
-def get_title(monster: "MonsterModel"):
-    return f"{get_attribute_emoji_by_monster(monster)} {monster.name_en} ({monster.monster_id})"
-
-
-def get_description(score: int):
-    return Box(
-        LabeledText(
-            'Total score',
-            str(round(score, 2))
-        )
-    )
 
 
 class IdTracebackView:
@@ -44,7 +31,7 @@ class IdTracebackView:
             EmbedMain(
                 color=state.query_settings.embedcolor,
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
-                description=get_description(props.score)
+                description=Box(LabeledText('Total score', str(round(props.score, 2))))
             ),
             embed_fields=[
                 EmbedField('Matched Name Tokens', Box(props.name_tokens)),

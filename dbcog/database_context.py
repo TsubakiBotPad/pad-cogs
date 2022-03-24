@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, List, Optional
+from typing import Any, Callable, Hashable, Iterable, List, Optional, Union
 
 from tsutils.enums import Server
 
@@ -29,12 +29,23 @@ class DbContext(object):
         self.graph = graph
         self.dungeon = dungeon
 
+        self.cached_monster_ids = None
+        self.cached_monsters = {}
+        self.cached_filters = {}
         self.debug_monster_ids = debug_monster_ids
 
         self.awoken_skill_map = {awsk.awoken_skill_id: awsk for awsk in self.get_all_awoken_skills()}
 
-    def get_monsters_where(self, f: Callable[[MonsterModel], bool], *, server: Server) -> List[MonsterModel]:
-        return [m for m in self.get_all_monsters(server) if f(m)]
+    def get_monsters_where(self, f: Callable[[MonsterModel], bool], *, server: Server, cache_key: Hashable = None) \
+            -> List[MonsterModel]:
+        if cache_key is None:
+            return [m for m in self.get_all_monsters(server) if f(m)]
+
+        if (cache_key, server) in self.cached_filters:
+            return self.cached_filters[(cache_key, server)]
+
+        self.cached_filters[(cache_key, server)] = self.get_monsters_where(f, server=server)
+        return self.cached_filters[(cache_key, server)]
 
     def get_monsters_by_series(self, series_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.series_id == series_id, server=server)
@@ -45,20 +56,29 @@ class DbContext(object):
     def get_monsters_by_leader(self, leader_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.leader_skill_id == leader_skill_id, server=server)
 
-    def get_all_monster_ids_query(self, server: Server) -> Iterable[int]:
+    def get_all_monster_ids(self, server: Server) -> List[int]:
         # We don't need to query if we're in debug mode.  We already know exactly which monsters we're working with
         if self.debug_monster_ids is not None:
             return self.debug_monster_ids
+
+        if self.cached_monster_ids is not None:
+            return self.cached_monster_ids
 
         table = 'monsters_na' if server == Server.NA else 'monsters'
         query = self.database.query_many(
             self.database.select_builder(tables={table: ('monster_id',)}),
             (),
             as_generator=True)
-        return map(lambda m: m.monster_id, query)
+        self.cached_monster_ids = [m.monster_id for m in query]
+        return self.cached_monster_ids
 
-    def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> Iterable[MonsterModel]:
-        return (self.graph.get_monster(mid, server=server) for mid in self.get_all_monster_ids_query(server))
+    def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> List[MonsterModel]:
+        if server in self.cached_monsters:
+            return self.cached_monsters[server]
+
+        self.cached_monsters[server] = [self.graph.get_monster(mid, server=server)
+                                        for mid in self.get_all_monster_ids(server)]
+        return self.cached_monsters[server]
 
     def get_all_events(self) -> Iterable[ScheduledEventModel]:
         result = self.database.query_many(SCHEDULED_EVENT_QUERY)
