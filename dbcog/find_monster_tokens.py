@@ -230,7 +230,7 @@ class SubqueryToken(ABC, SpecialToken):
 
 
 class HasMaterial(SubqueryToken):
-    RE_MATCH = r"hasmat:([\"']?)(.+)\1"
+    RE_MATCH = r"ha[sz]mat:([\"']?)(.+)\1"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
