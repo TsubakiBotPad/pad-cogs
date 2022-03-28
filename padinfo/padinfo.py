@@ -1010,16 +1010,16 @@ class PadInfo(commands.Cog):
         """`[p]id` settings list"""
         fm_flags = await self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags()
         settings = (f"Here are your current `{ctx.prefix}id` preference settings:\n"
-                    f"\tcardlevel: {'Lv110' if 'cardlevel' not in fm_flags.keys() else CardLevelModifier(fm_flags['cardlevel']).name.title()}\n"
+                    f"\tcardlevel: {'110' if 'cardlevel' not in fm_flags.keys() else CardLevelModifier(fm_flags['cardlevel']).name[2:]}\n"
                     f"\tcardmode: {'Solo' if 'cardmode' not in fm_flags.keys() else CardModeModifier(fm_flags['cardmode']).name.title()}\n"
-                    f"\tcardplus: {'Plus297' if 'cardplus' not in fm_flags.keys() else CardPlusModifier(fm_flags['cardplus']).name.title()}\n"
+                    f"\tcardplus: {'297' if 'cardplus' not in fm_flags.keys() else CardPlusModifier(fm_flags['cardplus']).name[4:]}\n"
                     f"\tembedcolor (Donor Only): {'Default' if 'embedcolor' not in fm_flags.keys() else fm_flags['embedcolor'].title()}\n"
-                    f"\tevogrouping: {'Grouped' if 'evogrouping' not in fm_flags.keys() else EvoGrouping(fm_flags['evogrouping']).name.title()}\n"
+                    f"\tevogrouping: {'Grouped' if 'evogrouping' not in fm_flags.keys() or fm_flags['evogrouping']==1 else 'Split'}\n"
                     f"\tevosort: {'Numerical' if 'evosort' not in fm_flags.keys() else AltEvoSort(fm_flags['evosort']).name.title()}\n"
-                    f"\tlinktarget: {'Padindex' if 'linktarget' not in fm_flags.keys() else MonsterLinkTarget(fm_flags['linktarget']).name.title()}\n"
-                    f"\tlsmultiplier: {'Double' if 'lsmultiplier' not in fm_flags.keys() else LsMultiplier(fm_flags['lsmultiplier']).name.title()}\n"
+                    f"\tlinktarget: {'PADIndex' if 'linktarget' not in fm_flags.keys() or fm_flags['linktarget']==0 else MonsterLinkTarget(fm_flags['linktarget']).name.title()}\n"
+                    f"\tlsmultiplier: {'Double' if 'lsmultiplier' not in fm_flags.keys() else LsMultiplier(fm_flags['lsmultiplier']).name[2:].title()}\n"
                     f"\tnaprio: {'On' if 'na_prio' not in fm_flags.keys() or fm_flags['na_prio']==1 else 'Off'}\n"
-                    f"\tserver: {'Default' if 'server' not in fm_flags.keys() else fm_flags['server'].title()}\n")
+                    f"\tserver: {'Default' if 'server' not in fm_flags.keys() or fm_flags['server']=='COMBINED' else fm_flags['server']}\n")
         await ctx.send(settings)
 
     @idset.command()
