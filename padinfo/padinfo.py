@@ -1013,13 +1013,13 @@ class PadInfo(commands.Cog):
                     f"\tcardlevel: {'110' if 'cardlevel' not in fm_flags.keys() else CardLevelModifier(fm_flags['cardlevel']).name[2:]}\n"
                     f"\tcardmode: {'Solo' if 'cardmode' not in fm_flags.keys() else CardModeModifier(fm_flags['cardmode']).name.title()}\n"
                     f"\tcardplus: {'297' if 'cardplus' not in fm_flags.keys() else CardPlusModifier(fm_flags['cardplus']).name[4:]}\n"
-                    f"\tembedcolor (Donor Only): {'Default' if 'embedcolor' not in fm_flags.keys() else fm_flags['embedcolor'].title()}\n"
                     f"\tevogrouping: {'Grouped' if 'evogrouping' not in fm_flags.keys() or fm_flags['evogrouping']==1 else 'Split'}\n"
                     f"\tevosort: {'Numerical' if 'evosort' not in fm_flags.keys() else AltEvoSort(fm_flags['evosort']).name.title()}\n"
                     f"\tlinktarget: {'PADIndex' if 'linktarget' not in fm_flags.keys() or fm_flags['linktarget']==0 else MonsterLinkTarget(fm_flags['linktarget']).name.title()}\n"
                     f"\tlsmultiplier: {'Double' if 'lsmultiplier' not in fm_flags.keys() else LsMultiplier(fm_flags['lsmultiplier']).name[2:].title()}\n"
                     f"\tnaprio: {'On' if 'na_prio' not in fm_flags.keys() or fm_flags['na_prio']==1 else 'Off'}\n"
-                    f"\tserver: {'Default' if 'server' not in fm_flags.keys() or fm_flags['server']=='COMBINED' else fm_flags['server']}\n")
+                    f"\tserver: {'Default' if 'server' not in fm_flags.keys() or fm_flags['server']=='COMBINED' else fm_flags['server']}\n"
+                    f"\t(Donor Only) embedcolor: {'Default' if 'embedcolor' not in fm_flags.keys() else fm_flags['embedcolor'].title()}")
         await ctx.send(settings)
 
     @idset.command()
