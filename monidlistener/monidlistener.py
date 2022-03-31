@@ -1,8 +1,14 @@
 import re
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 from redbot.core import Config, checks, commands
 from tsutils.tsubaki.monster_header import MonsterHeader
+
+
+if TYPE_CHECKING:
+    from dbcog.models.monster_model import MonsterModel
+    from dbcog.monster_graph import MonsterGraph
 
 
 class MonIdListener(commands.Cog):
@@ -32,33 +38,55 @@ class MonIdListener(commands.Cog):
         channel = message.channel
         content = message.content
         content = re.sub(r'297', '', content)
-        if await self.config.channel(channel).enabled():
-            if message.guild is None:  # dms
-                return
-            if message.author == self.bot.user:  # dont reply to self
-                return
-            if await self.is_command(message):  # skip commands
-                return
-            dbcog = self.bot.get_cog("DBCog")
-            if dbcog is None:
-                await channel.send("Error: DBCog Cog not loaded.  Please alert a bot owner.")
-                return
-            if re.search(r'\b\d{3}[ -,]{0,2}\d{3}[ -,]{0,2}\d{3}\b', content):  # friend code
-                return
-            if "+" in content or "plus" in content:
-                return
-            if re.search(r'\b\d{3,4}\b', content):
-                matches = re.findall(r'\b\d{3,4}\b', content)
-                ret = ""
-                for i in matches:
-                    if i == "100":  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
-                        continue
-                    m = await dbcog.find_monster(i, message.author.id)
-                    if not m:  # monster not found
-                        continue
-                    ret += "{}{}\n".format(MonsterHeader.text_with_emoji(m), " (untradable)" if m.sell_mp >= 100 else "")
-                if ret != "":
-                    await channel.send(ret)
+        if not await self.config.channel(channel).enabled():
+            return
+        if message.guild is None:  # dms
+            return
+        if message.author == self.bot.user:  # dont reply to self
+            return
+        if await self.is_command(message):  # skip commands
+            return
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            await channel.send("Error: DBCog Cog not loaded. Please alert a bot owner.")
+            return
+        if re.search(r'\b\d{3}[ -,]{0,2}\d{3}[ -,]{0,2}\d{3}\b', content):  # friend code
+            return
+        if "+" in content or "plus" in content:
+            return
+        if re.search(r'\b\d{3,4}\b', content):
+            matches = re.findall(r'\b\d{3,4}\b', content)
+            ret = ""
+            for i in matches:
+                if i == "100":  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
+                    continue
+                print(i)
+                m = dbcog.get_monster(int(i))
+                m: "MonsterModel"
+                if m is None:  # monster not found
+                    continue
+                dbcog.database.graph: "MonsterGraph"
+                if m.sell_mp < 100:
+                    tradeable_text = ''
+                else:
+                    print('hello')
+                    evo_gem_text = ''
+                    if m.evo_gem_id is not None:
+                        evo_gem = dbcog.get_monster(m.evo_gem_id)
+                        evo_gem: "MonsterModel"
+                        if evo_gem.sell_mp < 100:
+                            evo_gem_text = ', but it has a tradable evo gem!'
+                        else:
+                            evo_gem_text = ', and its evo gem is also not tradable'
+
+                    tradeable_text = " (untradable{})".format(evo_gem_text)
+
+                ret = "{}{}\n".format(
+                    MonsterHeader.text_with_emoji(m),
+                    tradeable_text
+                )
+            if ret != "":
+                await channel.send(ret)
 
     @commands.group(aliases=['monidlistener'])
     async def midlistener(self, ctx):
