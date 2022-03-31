@@ -94,7 +94,7 @@ class BaseIdMainView(BaseIdView, ABC):
                 # we can assume skill is not None because the monster transforms
                 cooldown_text = '({}cd)'.format(str(skill.cooldown_turns_max))
                 if skill.cooldown_turns_min != skill.cooldown_turns_max:
-                    cooldown_text = '{} -> {}'.format(skill.cooldown_turns_min, skill.cooldown_turns_max)
+                    cooldown_text = '{} -> {}'.format(skill.cooldown_turns_max, skill.cooldown_turns_min)
                 skill_texts.append(
                     '{}{}'.format(get_emoji(cls.transform_emoji_names[i % len(cls.transform_emoji_names)]),
                                   cooldown_text))
