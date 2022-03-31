@@ -77,7 +77,7 @@ class MonIdListener(commands.Cog):
 
                     tradeable_text = " (untradable{})".format(evo_gem_text)
 
-                ret = "{}{}\n".format(
+                ret += "{}{}\n".format(
                     MonsterHeader.text_with_emoji(m),
                     tradeable_text
                 )
