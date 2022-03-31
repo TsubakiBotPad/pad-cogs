@@ -60,20 +60,16 @@ class MonIdListener(commands.Cog):
             for i in matches:
                 if i == "100":  # skip when people say "is 100 mp or over" ~~and ryan's posts~~
                     continue
-                print(i)
-                m = dbcog.get_monster(int(i))
-                m: "MonsterModel"
+                m: "MonsterModel" = dbcog.get_monster(int(i))
                 if m is None:  # monster not found
                     continue
                 dbcog.database.graph: "MonsterGraph"
                 if m.sell_mp < 100:
                     tradeable_text = ''
                 else:
-                    print('hello')
                     evo_gem_text = ''
                     if m.evo_gem_id is not None:
-                        evo_gem = dbcog.get_monster(m.evo_gem_id)
-                        evo_gem: "MonsterModel"
+                        evo_gem: "MonsterModel" = dbcog.get_monster(m.evo_gem_id)
                         if evo_gem.sell_mp < 100:
                             evo_gem_text = ', but it has a tradable evo gem!'
                         else:
