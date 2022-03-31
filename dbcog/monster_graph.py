@@ -360,7 +360,7 @@ class MonsterGraph:
 
             if m.evo_gem_id:
                 if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
-                    graph.add_edge(m.monster_id, m.]_id, type='evo_gem_from')
+                    graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
                     graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
 
         for e in es:
