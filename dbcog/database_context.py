@@ -56,21 +56,14 @@ class DbContext(object):
     def get_monsters_by_leader(self, leader_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.leader_skill_id == leader_skill_id, server=server)
 
-    def get_all_monster_ids(self, server: Server) -> List[int]:
+    def get_all_monster_ids(self, server: Server) -> Iterable[int]:
         # We don't need to query if we're in debug mode.  We already know exactly which monsters we're working with
         if self.debug_monster_ids is not None:
             return self.debug_monster_ids
 
-        if self.cached_monster_ids is not None:
-            return self.cached_monster_ids
-
-        table = 'monsters_na' if server == Server.NA else 'monsters'
-        query = self.database.query_many(
-            self.database.select_builder(tables={table: ('monster_id',)}),
-            (),
-            as_generator=True)
-        self.cached_monster_ids = [m.monster_id for m in query]
-        return self.cached_monster_ids
+        suffix = '_na' if server == Server.NA else ''
+        query = self.database.query_many(f"SELECT monster_id FROM monsters{suffix}", as_generator=True)
+        return (m.monster_id for m in query)
 
     def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> List[MonsterModel]:
         if server in self.cached_monsters:
