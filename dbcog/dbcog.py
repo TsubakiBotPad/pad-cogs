@@ -59,7 +59,7 @@ class DBCog(commands.Cog, IdTest):
         self.fir_lock = asyncio.Lock()
         self.fir3_lock = asyncio.Lock()
 
-        self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER}
+        self.fm_flags_default = {'na_prio': True, 'server': DEFAULT_SERVER, 'ormod_prio': False}
         self.config = Config.get_conf(self, identifier=64667103)
         self.config.register_global(datafile='', indexlog=0, test_suite={}, fluff_suite=[], typo_mods=[],
                                     debug_mode=False, debug_mode_monsters=[3260])
