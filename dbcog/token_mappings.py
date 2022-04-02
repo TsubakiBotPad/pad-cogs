@@ -292,10 +292,6 @@ PROBLEMATIC_SERIES_TOKENS = {
     "sherias",
 }
 
-ID1_SUPPORTED = {'hw', 'h', 'x', 'ny', 'gh', 'v', 'np', 'ma', 'a', 'r', 'rr', 'rg', 'rb', 'rl', 'rd', 'rx', 'b', 'br',
-                 'bg', 'bb', 'bl', 'bd', 'bx', 'g', 'gr', 'gg', 'gb', 'gl', 'gd', 'gx', 'l', 'lr', 'lg', 'lb', 'll',
-                 'ld', 'lx', 'd', 'dr', 'dg', 'db', 'dl', 'dd', 'dx', 'x', 'xr', 'xg', 'xb', 'xl', 'xd', 'xx'}
-
 # This probably doesn't belong in here
 PlusAwakeningData = namedtuple("PlusAwakeningData", "awoken_skill value")
 PLUS_AWOKENSKILL_MAP = {

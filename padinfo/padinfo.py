@@ -108,8 +108,8 @@ class PadInfo(commands.Cog):
         self.remove_emoji = '\N{CROSS MARK}'
 
         self.config = Config.get_conf(self, identifier=9401770)
-        self.config.register_user(survey_mode=0, color=None, beta_id3=False, id_history=[])
-        self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[], do_survey=False)
+        self.config.register_user(color=None, beta_id3=False, id_history=[])
+        self.config.register_global(sometimes_perc=20, good=0, bad=0, bad_queries=[])
 
         self.historic_lookups_file_path = _data_file('historic_lookups_id3.json')
         self.historic_lookups = safe_read_json(self.historic_lookups_file_path)
@@ -209,38 +209,10 @@ class PadInfo(commands.Cog):
         """Monster info (main tab)"""
         await self._do_id(ctx, query)
 
-    async def _get_monster(self, ctx, query: str) -> Optional["MonsterModel"]:
+    async def _get_monster(self, ctx, query) -> Optional["MonsterModel"]:
         dbcog = await self.get_dbcog()
-        raw_query = query
 
-        goodquery = None
-        ID1_SUPPORTED = dbcog.token_maps.ID1_SUPPORTED
-        if query[0] in ID1_SUPPORTED and query[1:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
-            goodquery = [query[0], query[1:]]
-        elif query[:2] in ID1_SUPPORTED and query[2:] in dbcog.indexes[Server.COMBINED].all_name_tokens:
-            goodquery = [query[:2], query[2:]]
-
-        if goodquery:
-            bad = False
-            for monster in dbcog.indexes[Server.COMBINED].all_name_tokens[goodquery[1]]:
-                for modifier in dbcog.indexes[Server.COMBINED].modifiers[monster]:
-                    if modifier == 'xm' and goodquery[0] == 'x':
-                        goodquery[0] = 'xm'
-                    if modifier == goodquery[0]:
-                        bad = True
-            if bad and query not in dbcog.indexes[Server.COMBINED].all_name_tokens:
-                async def send_message():
-                    await asyncio.sleep(1)
-                    await ctx.send(f"Uh oh, it looks like you tried a query that isn't supported anymore!"
-                                   f" Try using `{' '.join(goodquery)}` (with a space) instead! For more"
-                                   f" info about the new id changes, check out"
-                                   f" <{IDGUIDE}>!")
-
-                asyncio.create_task(send_message())
-                async with self.config.bad_queries() as bad_queries:
-                    bad_queries.append((raw_query, ctx.author.id))
-
-        monster = await dbcog.find_monster(raw_query, ctx.author.id)
+        monster = await dbcog.find_monster(query, ctx.author.id)
 
         if monster is None:
             await self.send_id_failure_message(ctx, query)
@@ -262,9 +234,6 @@ class PadInfo(commands.Cog):
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if
                             ctx.author.id in self.bot.get_cog("PadGlobal").settings.bot_settings['admins'] else ""))
 
-        if await self.config.do_survey():
-            asyncio.create_task(self.send_survey_after(ctx, query, monster))
-
         alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
         id_queried_props = await IdViewState.do_query(dbcog, monster)
         full_reaction_list = IdMenuPanes.emoji_names()
@@ -279,58 +248,6 @@ class PadInfo(commands.Cog):
         await menu.create(ctx, state)
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
-
-    async def send_survey_after(self, ctx, query, result_monster):
-        dbcog = await self.get_dbcog()
-        survey_mode = await self.config.user(ctx.author).survey_mode()
-        survey_chance = (1, await self.config.sometimes_perc() / 100, 0)[survey_mode]
-        if random.random() < survey_chance:
-            mid1 = self.historic_lookups.get(query)
-            m1 = mid1 and dbcog.get_monster(mid1)
-            id1res = "Not Historic" if mid1 is None else f"{m1.name_en} ({m1.monster_id})" if mid1 > 0 else "None"
-            id3res = f"{result_monster.name_en} ({result_monster.monster_id})" if result_monster else "None"
-            params = urllib.parse.urlencode(
-                {'usp': 'pp_url',
-                 'entry.154088017': query,
-                 'entry.173096863': id3res,
-                 'entry.1016180044': id1res,
-                 'entry.1787446565': str(ctx.author)})
-            url = "https://docs.google.com/forms/d/e/1FAIpQLSeA2EBYiZTOYfGLNtTHqYdL6gMZrfurFZonZ5dRQa3XPHP9yw/viewform?" + params
-            await asyncio.sleep(1)
-            userres = await get_user_confirmation(ctx, "Was this the monster you were looking for?",
-                                                  yes_emoji=char_to_emoji('y'), no_emoji=char_to_emoji('n'))
-            if userres is True:
-                await self.config.good.set(await self.config.good() + 1)
-            elif userres is False:
-                await self.config.bad.set(await self.config.bad() + 1)
-                message = await ctx.send(f"Oh no!  You can help the Tsubaki team give better results"
-                                         f" by filling out this survey!\nPRO TIP: Use `{ctx.prefix}idset"
-                                         f" survey` to adjust how often this shows.\n\n<{url}>")
-                await asyncio.sleep(15)
-                await message.delete()
-
-    @commands.group()
-    async def idsurvey(self, ctx):
-        """Commands pertaining to the id survey"""
-
-    @idsurvey.command()
-    async def dosurvey(self, ctx, do_survey: bool):
-        """Toggle the survey avalibility"""
-        await self.config.do_survey.set(do_survey)
-        await ctx.tick()
-
-    @idsurvey.command()
-    async def sometimesperc(self, ctx, percent: int):
-        """Change what 'sometimes' means"""
-        await self.config.sometimes_perc.set(percent)
-        await ctx.tick()
-
-    @idsurvey.command()
-    async def checkbadness(self, ctx):
-        """Check how good id is according to end users"""
-        good = await self.config.good()
-        bad = await self.config.bad()
-        await ctx.send(f"{bad}/{good + bad} ({int(round(bad / (good + bad) * 100)) if good or bad else 'NaN'}%)")
 
     @staticmethod
     async def send_invalid_monster_message(ctx, query: str, monster: "MonsterModel", append_text: str):
@@ -1021,21 +938,6 @@ class PadInfo(commands.Cog):
                     f"\tserver: {'Default' if 'server' not in fm_flags.keys() or fm_flags['server']=='COMBINED' else fm_flags['server']}\n"
                     f"\t(Donor Only) embedcolor: {'Default' if 'embedcolor' not in fm_flags.keys() else fm_flags['embedcolor'].title()}")
         await ctx.send(settings)
-
-    @idset.command()
-    async def survey(self, ctx, value):
-        """How often you see the id survey
-
-        [p]idset survey always     (Always see survey after using id)
-        [p]idset survey sometimes  (See survey some of the time after using id)
-        [p]idset survey never      (Never see survey after using id D:)"""
-        vals = ['always', 'sometimes', 'never']
-        if value in vals:
-            await self.config.user(ctx.author).survey_mode.set(vals.index(value))
-            await ctx.tick()
-        else:
-            await send_cancellation_message(
-                ctx, "value must be `always`, `sometimes`, or `never`")
 
     @is_donor()
     @idset.command()
