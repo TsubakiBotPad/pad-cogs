@@ -342,7 +342,7 @@ class OrToken(SpecialToken):
         best_score, best_data = 0.0, None
         for idx, token in enumerate(self.tokens):
             score, data = await token.matches(monster, index)
-            print(token, score, data, monster)
+            # print(token, score, data, monster)
             if score > best_score:
                 best_score = score
                 best_data = TokenMatch(self.value, '', data.match_data | MatchData(or_index=(idx, token.value)))

@@ -20,7 +20,7 @@ class IdSearchViewState(MonsterListViewState):
         if not found_monsters:
             return None
 
-        print(query_settings.serialize())
+        # print(query_settings.serialize())
         if query_settings.evogrouping == EvoGrouping.splitevos:
             return found_monsters
         used = set()
