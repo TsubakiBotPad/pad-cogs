@@ -23,9 +23,19 @@ async def get_monster_from_ims(dbcog, ims: dict):
     return monster
 
 
-def get_awoken_skill_description(awoken_skill: "AwokenSkillModel"):
+def get_awoken_skill_description(awoken_skill: "AwokenSkillModel", show_help: bool = False, token_map: dict = None):
+    if token_map is None:
+        token_map = {}
     emoji_text = get_awakening_emoji(awoken_skill.awoken_skill_id, awoken_skill.name)
-    desc = awoken_skill.desc_en
+    if not show_help:
+        desc = awoken_skill.desc_en
+    else:
+        if awoken_skill.awoken_skill_id not in token_map:
+            desc = "No modifiers found. Please contact Tsubaki admins for support."
+        else:
+            tokens = token_map[awoken_skill.awoken_skill_id]
+            tokens: set
+            desc = ', '.join('`{}`'.format(token) for token in list(tokens))
     return Box(
         Text(emoji_text),
         BoldText(awoken_skill.name_en),

@@ -87,6 +87,8 @@ EVO_MAP = {
     EvoTypes.NONPIXEL: ('nonpixel', 'np'),
 }
 
+# awakening view state & awakening help props in padinfo are transforming this dict to `int: tuple`
+# so rewrite those two if this gets refactored at some point in the future!
 AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDHP: ('hp+', 'hp'),
     AwokenSkills.ENHANCEDATK: ('atk+', 'atk'),
