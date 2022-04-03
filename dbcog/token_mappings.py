@@ -131,7 +131,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.FODDERKILLER: ('enhancekiller', 'enhk', 'a2killer'),
     AwokenSkills.REDEEMKILLER: ('vendorkiller', 'vendork', 'a2killer'),
     AwokenSkills.ENHCOMBO7C: ('7c',),
-    AwokenSkills.GUARDBREAK: ('guardbreak',),
+    AwokenSkills.GUARDBREAK: ('guardbreak', 'gbr'),
     AwokenSkills.FUA: ('fua',),
     AwokenSkills.ENHTEAMHP: ('teamhp', 'thp'),
     AwokenSkills.ENHTEAMRCV: ('teamrcv', 'trcv'),
