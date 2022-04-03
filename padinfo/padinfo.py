@@ -925,18 +925,22 @@ class PadInfo(commands.Cog):
     async def idset_list(self, ctx):
         """`[p]id` settings list"""
         fm_flags = await self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags()
-        settings = (f"Here are your current `{ctx.prefix}id` preference settings:\n"
-                    f"\tcardlevel: {'110' if 'cardlevel' not in fm_flags.keys() else CardLevelModifier(fm_flags['cardlevel']).name[2:]}\n"
-                    f"\tcardmode: {'Solo' if 'cardmode' not in fm_flags.keys() else CardModeModifier(fm_flags['cardmode']).name.title()}\n"
-                    f"\tcardplus: {'297' if 'cardplus' not in fm_flags.keys() else CardPlusModifier(fm_flags['cardplus']).name[4:]}\n"
-                    f"\tevogrouping: {'Grouped' if 'evogrouping' not in fm_flags.keys() or fm_flags['evogrouping']==1 else 'Split'}\n"
-                    f"\tevosort: {'Numerical' if 'evosort' not in fm_flags.keys() else AltEvoSort(fm_flags['evosort']).name.title()}\n"
-                    f"\tlinktarget: {'PADIndex' if 'linktarget' not in fm_flags.keys() or fm_flags['linktarget']==0 else MonsterLinkTarget(fm_flags['linktarget']).name.title()}\n"
-                    f"\tlsmultiplier: {'Double' if 'lsmultiplier' not in fm_flags.keys() else LsMultiplier(fm_flags['lsmultiplier']).name[2:].title()}\n"
-                    f"\tnaprio: {'On' if 'na_prio' not in fm_flags.keys() or fm_flags['na_prio']==1 else 'Off'}\n"
-                    f"\tserver: {'Default' if 'server' not in fm_flags.keys() or fm_flags['server']=='COMBINED' else fm_flags['server']}\n"
-                    f"\t(Donor Only) embedcolor: {'Default' if 'embedcolor' not in fm_flags.keys() else fm_flags['embedcolor'].title()}")
-        await ctx.send(settings)
+        intro = f"Here are your current `{ctx.prefix}id` preference settings:\n"
+        user_settings = {
+            "cardlevel": '110' if 'cardlevel' not in fm_flags else CardLevelModifier(fm_flags['cardlevel']).name[2:],
+            "cardmode": 'Solo' if 'cardmode' not in fm_flags else CardModeModifier(fm_flags['cardmode']).name.title(),
+            "cardplus": '297' if 'cardplus' not in fm_flags else CardPlusModifier(fm_flags['cardplus']).name[4:],
+            "evogrouping": 'Grouped' if 'evogrouping' not in fm_flags or fm_flags['evogrouping'] == 1 else 'Split',
+            "evosort": 'Numerical' if 'evosort' not in fm_flags else AltEvoSort(fm_flags['evosort']).name.title(),
+            "linktarget": 'PADIndex' if 'linktarget' not in fm_flags or fm_flags[
+                'linktarget'] == 0 else MonsterLinkTarget(fm_flags['linktarget']).name.title(),
+            "lsmultiplier": 'Double' if 'lsmultiplier' not in fm_flags else LsMultiplier(fm_flags['lsmultiplier']).name[
+                                                                            2:].title(),
+            "naprio": 'On' if 'na_prio' not in fm_flags or fm_flags['na_prio'] == 1 else 'Off',
+            "server": 'Default' if 'server' not in fm_flags or fm_flags['server'] == 'COMBINED' else fm_flags['server'],
+            "(Donor Only) embedcolor": 'Default' if 'embedcolor' not in fm_flags else fm_flags['embedcolor'].title(),
+        }
+        await ctx.send(intro + '\n'.join(["\t{}: {}".format(k, v) for k, v in user_settings.items()]))
 
     @is_donor()
     @idset.command()
@@ -994,7 +998,7 @@ class PadInfo(commands.Cog):
         """
         await self._do_idsetting(ctx, 'evosort', AltEvoSort, value,
                                  'dfs', 'dfs',
-                                 'numerical', 'numerical',)
+                                 'numerical', 'numerical', )
 
     @idset.command()
     async def lsmultiplier(self, ctx, value: str):
@@ -1005,7 +1009,7 @@ class PadInfo(commands.Cog):
         """
         await self._do_idsetting(ctx, 'lsmultiplier', LsMultiplier, value,
                                  'double', 'lsdouble',
-                                 'single', 'lssingle',)
+                                 'single', 'lssingle', )
 
     @idset.command()
     async def cardplus(self, ctx, value: str):
@@ -1016,7 +1020,7 @@ class PadInfo(commands.Cog):
         """
         await self._do_idsetting(ctx, 'cardplus', CardPlusModifier, value,
                                  '297', 'plus297',
-                                 '0', 'plus0',)
+                                 '0', 'plus0', )
 
     @idset.command()
     async def cardmode(self, ctx, value: str):
@@ -1027,7 +1031,7 @@ class PadInfo(commands.Cog):
         """
         await self._do_idsetting(ctx, 'cardmode', CardModeModifier, value,
                                  'solo', 'solo',
-                                 'coop', 'coop',)
+                                 'coop', 'coop', )
 
     @idset.command()
     async def cardlevel(self, ctx, value: str):
@@ -1038,7 +1042,7 @@ class PadInfo(commands.Cog):
         """
         await self._do_idsetting(ctx, 'cardlevel', CardLevelModifier, value,
                                  '120', 'lv120',
-                                 '110', 'lv110',)
+                                 '110', 'lv110', )
 
     @idset.command()
     async def evogrouping(self, ctx, value: str):
