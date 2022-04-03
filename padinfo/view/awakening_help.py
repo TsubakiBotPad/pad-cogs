@@ -76,8 +76,7 @@ class AwakeningHelpView:
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.menu_title(monster).to_markdown(),
-                # TODO: add query_settings
-                MonsterLink.header_link(monster),
+                MonsterLink.header_link(monster, query_settings=state.query_settings),
                 MonsterImage.icon(monster.monster_id)
             ),
             embed_footer=embed_footer_with_state(state),
