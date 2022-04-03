@@ -4,7 +4,6 @@ import logging
 import os
 import random
 import re
-import urllib.parse
 from io import BytesIO
 from typing import List, Optional, TYPE_CHECKING, Type
 
@@ -12,9 +11,7 @@ import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, checks, commands, data_manager
-from redbot.core.commands import Literal as LiteralConverter
-from redbot.core.utils.chat_formatting import bold, box, inline, pagify, text_to_file
-from tabulate import tabulate
+from redbot.core.utils.chat_formatting import bold, box, inline, pagify
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import char_to_emoji
 from tsutils.enums import Server
@@ -31,7 +28,7 @@ from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from tsutils.tsubaki.monster_header import MonsterHeader
-from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
+from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
 from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import leaderskill_query
@@ -1286,44 +1283,6 @@ class PadInfo(commands.Cog):
             "".format(IDGUIDE, ctx))
         if query:
             await self.debugid(ctx, query=query)
-
-    @commands.command()
-    async def exportmodifiers(self, ctx, server: LiteralConverter["COMBINED", "NA"] = "COMBINED"):
-        server = Server(server)
-        DGCOG = await self.get_dbcog()
-        maps = DGCOG.token_maps
-        awakenings = {a.awoken_skill_id: a for a in DGCOG.database.get_all_awoken_skills()}
-        series = {s.series_id: s for s in DGCOG.database.get_all_series()}
-
-        ret = ("Jump to:\n\n"
-               "* [Types](#types)\n"
-               "* [Evolutions](#evolutions)\n"
-               "* [Misc](#misc)\n"
-               "* [Awakenings](#awakenings)\n"
-               "* [Series](#series)\n"
-               "* [Attributes](#attributes)\n\n\n\n")
-
-        etable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.EVO_MAP.items()]
-        ret += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
-        ttable = [(k.name, ", ".join(map(inline, v))) for k, v in maps.TYPE_MAP.items()]
-        ret += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
-        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.MISC_MAP.items()]
-        ret += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
-        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
-        ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
-        stable = [(series[k].name_en, ", ".join(map(inline, v)))
-                  for k, v in DGCOG.indexes[server].series_id_to_pantheon_nickname.items()]
-        ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
-        ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
-        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
-                   maps.SUB_COLOR_MAP.items()]
-        for k, v in maps.DUAL_COLOR_MAP.items():
-            k0name = k[0].name.replace("Nil", "None")
-            k1name = k[1].name.replace("Nil", "None")
-            ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
-        ret += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
-
-        await ctx.send(file=text_to_file(ret, filename="table.md"))
 
     @commands.command(aliases=["idcheckmod", "lookupmod", "idlookupmod", "luid", "idlu"])
     async def idmeaning(self, ctx, token, server: Optional[Server] = Server.COMBINED):

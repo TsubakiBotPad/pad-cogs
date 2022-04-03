@@ -17,7 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 from redbot.core import Config, checks, commands, data_manager
-from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.commands import Literal as LiteralConverter
+from redbot.core.utils.chat_formatting import box, pagify, inline, text_to_file
+from tabulate import tabulate
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.enums import Server
 from tsutils.json_utils import async_cached_dadguide_request
@@ -367,3 +369,40 @@ class DBCog(commands.Cog, IdTest):
             if k.endswith('_en'):
                 return await ctx.send(v)
         return await ctx.send('\n'.join([f"**{k}**: {v}" for k, v in data.items()]))
+
+    @commands.command()
+    async def exportmodifiers(self, ctx, server: LiteralConverter["COMBINED", "NA"] = "COMBINED"):
+        server = Server(server)
+        maps = self.token_maps
+        awakenings = {a.awoken_skill_id: a for a in self.database.get_all_awoken_skills()}
+        series = {s.series_id: s for s in self.database.get_all_series()}
+
+        ret = ("Jump to:\n\n"
+               "* [Types](#types)\n"
+               "* [Evolutions](#evolutions)\n"
+               "* [Misc](#misc)\n"
+               "* [Awakenings](#awakenings)\n"
+               "* [Series](#series)\n"
+               "* [Attributes](#attributes)\n\n\n\n")
+
+        etable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.EVO_MAP.items()]
+        ret += "\n\n### Evolutions\n\n" + tabulate(etable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ttable = [(k.name, ", ".join(map(inline, v))) for k, v in maps.TYPE_MAP.items()]
+        ret += "\n\n### Types\n\n" + tabulate(ttable, headers=["Meaning", "Tokens"], tablefmt="github")
+        mtable = [(k.value, ", ".join(map(inline, v))) for k, v in maps.MISC_MAP.items()]
+        ret += "\n\n### Misc\n\n" + tabulate(mtable, headers=["Meaning", "Tokens"], tablefmt="github")
+        atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
+        ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
+        stable = [(series[k].name_en, ", ".join(map(inline, v)))
+                  for k, v in self.indexes[server].series_id_to_pantheon_nickname.items()]
+        ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
+        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
+                   maps.SUB_COLOR_MAP.items()]
+        for k, v in maps.DUAL_COLOR_MAP.items():
+            k0name = k[0].name.replace("Nil", "None")
+            k1name = k[1].name.replace("Nil", "None")
+            ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
+        ret += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+
+        await ctx.send(file=text_to_file(ret, filename="table.md"))
