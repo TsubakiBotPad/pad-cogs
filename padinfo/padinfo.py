@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+from enum import EnumMeta
 from io import BytesIO
 from typing import List, Optional, TYPE_CHECKING, Type
 
@@ -991,19 +992,9 @@ class PadInfo(commands.Cog):
         `[p]idset evosort numerical`: Show alt evos sorted by card ID number.
         `[p]idset evosort dfs`: Show alt evos in a depth-first-sort order, starting with the base of the tree.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "dfs":
-                fm_flags['evosort'] = AltEvoSort.dfs.value
-            elif value == "numerical":
-                fm_flags['evosort'] = AltEvoSort.numerical.value
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `{AltEvoSort.dfs.name}` or `{AltEvoSort.numerical.name}`.')
-                return
-        await send_confirmation_message(
-            ctx, f"Your `{ctx.prefix}id` evo sort preference has been set to **{value}**.")
+        await self._do_idsetting(ctx, 'evosort', AltEvoSort, value,
+                                 'dfs', 'dfs',
+                                 'numerical', 'numerical',)
 
     @idset.command()
     async def lsmultiplier(self, ctx, value: str):
@@ -1012,24 +1003,9 @@ class PadInfo(commands.Cog):
         `[p]idset lsmultiplier double`: [Default] Show leader skill multipliers assuming the card is paired with itself.
         `[p]idset lsmultiplier single`: Show leader skill multipliers of just the single card.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "double":
-                fm_flags['lsmultiplier'] = LsMultiplier.lsdouble.value
-                not_value = 'single'
-                not_value_flag = 'lssingle'
-            elif value == "single":
-                fm_flags['lsmultiplier'] = LsMultiplier.lssingle.value
-                not_value = 'double'
-                not_value_flag = 'lsdouble'
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `double` or `single`.')
-                return
-        await send_confirmation_message(
-            ctx,
-            f"Your default `{ctx.prefix}id` lsmultiplier preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await self._do_idsetting(ctx, 'lsmultiplier', LsMultiplier, value,
+                                 'double', 'lsdouble',
+                                 'single', 'lssingle',)
 
     @idset.command()
     async def cardplus(self, ctx, value: str):
@@ -1038,24 +1014,9 @@ class PadInfo(commands.Cog):
         `[p]idset cardplus 297`: [Default] Show cards with +297 stats.
         `[p]idset cardplus 0`: Show cards with +0 stats.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "297":
-                fm_flags['cardplus'] = CardPlusModifier.plus297.value
-                not_value = '0'
-                not_value_flag = 'plus0'
-            elif value == "0":
-                fm_flags['cardplus'] = CardPlusModifier.plus0.value
-                not_value = '297'
-                not_value_flag = 'plus297'
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `297` or `0`.')
-                return
-        await send_confirmation_message(
-            ctx,
-            f"Your default `{ctx.prefix}id` cardplus preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await self._do_idsetting(ctx, 'cardplus', CardPlusModifier, value,
+                                 '297', 'plus297',
+                                 '0', 'plus0',)
 
     @idset.command()
     async def cardmode(self, ctx, value: str):
@@ -1064,24 +1025,9 @@ class PadInfo(commands.Cog):
         `[p]idset mode solo`: [Default] Show cards with stats in solo
         `[p]idset mode coop`: Show cards with stats in coop (i.e. multiboost)
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "solo":
-                fm_flags['cardmode'] = CardModeModifier.solo.value
-                not_value = 'coop'
-                not_value_flag = 'coop'
-            elif value == "coop":
-                fm_flags['cardmode'] = CardModeModifier.coop.value
-                not_value = 'solo'
-                not_value_flag = 'solo'
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `coop` or `solo`.')
-                return
-        await send_confirmation_message(
-            ctx,
-            f"Your default `{ctx.prefix}id` cardmode preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await self._do_idsetting(ctx, 'cardmode', CardModeModifier, value,
+                                 'solo', 'solo',
+                                 'coop', 'coop',)
 
     @idset.command()
     async def cardlevel(self, ctx, value: str):
@@ -1090,24 +1036,9 @@ class PadInfo(commands.Cog):
         `[p]idset cardlevel 110`: [Default] Show LB stats at 110.
         `[p]idset cardlevel 120`: Show LB stats at 120.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "120":
-                fm_flags['cardlevel'] = CardLevelModifier.lv120.value
-                not_value = '110'
-                not_value_flag = 'lv110'
-            elif value == "110":
-                fm_flags['cardlevel'] = CardLevelModifier.lv110.value
-                not_value = '120'
-                not_value_flag = 'lv120'
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `110` or `120`.')
-                return
-        await send_confirmation_message(
-            ctx,
-            f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await self._do_idsetting(ctx, 'cardlevel', CardLevelModifier, value,
+                                 '120', 'lv120',
+                                 '110', 'lv110',)
 
     @idset.command()
     async def evogrouping(self, ctx, value: str):
@@ -1116,24 +1047,9 @@ class PadInfo(commands.Cog):
         `[p]idset evogrouping grouped`: [Default] Show trees grouped.
         `[p]idset evogrouping split`: Show individual evos of trees split apart.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            value = value.lower()
-            if value == "split":
-                fm_flags['evogrouping'] = EvoGrouping.splitevos.value
-                not_value = 'grouped'
-                not_value_flag = 'groupevos'
-            elif value == "grouped":
-                fm_flags['evogrouping'] = EvoGrouping.groupevos.value
-                not_value = 'split'
-                not_value_flag = 'splitevos'
-            else:
-                await send_cancellation_message(
-                    ctx,
-                    f'Please input an allowed value, either `grouped` or `split`.')
-                return
-        await send_confirmation_message(
-            ctx,
-            f"Your default `{ctx.prefix}id` cardlevel preference has been set to **{value}**. You can temporarily access `{not_value}` with the flag `--{not_value_flag}` in your queries.")
+        await self._do_idsetting(ctx, 'evogrouping', EvoGrouping, value,
+                                 'split', 'splitevos',
+                                 'grouped', 'groupevos')
 
     @idset.command()
     async def linktarget(self, ctx, value: str):
@@ -1142,19 +1058,21 @@ class PadInfo(commands.Cog):
         `[p]idset linktarget padindex`: [Default] Link to PADIndex always.
         `[p]idset linktarget ilmina`: Link to Ilmina for cards that are in NA.
         """
-        setting_name = 'linktarget'
-        value1 = 'padindex'
-        value1_flag = 'padindex'
-        value2 = 'ilmina'
-        value2_flag = 'ilmina'
+        await self._do_idsetting(ctx, 'linktarget', MonsterLinkTarget, value,
+                                 'padindex', 'padindex',
+                                 'ilmina', 'ilmina')
+
+    async def _do_idsetting(self, ctx, setting_name, enum_type: EnumMeta, value,
+                            value1, value1_flag,
+                            value2, value2_flag):
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             value = value.lower()
             if value == value1:
-                fm_flags[setting_name] = MonsterLinkTarget.padindex.value
+                fm_flags[setting_name] = enum_type[value1_flag].value
                 not_value = value2
                 not_value_flag = value2_flag
             elif value == value2:
-                fm_flags[setting_name] = MonsterLinkTarget.ilmina.value
+                fm_flags[setting_name] = enum_type[value2_flag].value
                 not_value = value1
                 not_value_flag = value1_flag
             else:
