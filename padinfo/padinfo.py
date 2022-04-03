@@ -937,6 +937,7 @@ class PadInfo(commands.Cog):
             "lsmultiplier": 'Double' if 'lsmultiplier' not in fm_flags else LsMultiplier(fm_flags['lsmultiplier']).name[
                                                                             2:].title(),
             "naprio": 'On' if 'na_prio' not in fm_flags or fm_flags['na_prio'] == 1 else 'Off',
+            "ormod prio": 'On' if 'ormod_prio' not in fm_flags or fm_flags['ormod_prio'] is True else 'Off',
             "server": 'Default' if 'server' not in fm_flags or fm_flags['server'] == 'COMBINED' else fm_flags['server'],
             "(Donor Only) embedcolor": 'Default' if 'embedcolor' not in fm_flags else fm_flags['embedcolor'].title(),
         }
@@ -967,6 +968,14 @@ class PadInfo(commands.Cog):
             fm_flags['na_prio'] = int(value)
         await send_confirmation_message(
             ctx, f"NA monster prioritization has been **{'en' if value else 'dis'}abled**.")
+
+    @idset.command()
+    async def ormodprio(self, ctx, value: bool):
+        """Whether `[p]id` will be order-sensitive with respect to your "or" clauses"""
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            fm_flags['ormod_prio'] = bool(value)
+        await send_confirmation_message(
+            ctx, f"Order in or clause prioritization has been **{'en' if value else 'dis'}abled**.")
 
     @idset.command()
     async def server(self, ctx, server: str):
