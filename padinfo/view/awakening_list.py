@@ -21,6 +21,7 @@ class AwakeningListViewState(ViewStateBase):
 
     def __init__(self, original_author_id, menu_type, query_settings: QuerySettings,
                  sort_type, paginated_skills, current_page,
+                 token_map: dict,
                  extra_state=None,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, '', extra_state=extra_state, reaction_list=reaction_list)
@@ -29,6 +30,11 @@ class AwakeningListViewState(ViewStateBase):
         self.total_pages = len(self.paginated_skills)
         self.current_page = current_page
         self.query_settings = query_settings
+
+        # this is the list of allowed modifiers from token_mappings dbcog file (cannot import it bc redbot rules)
+        self.token_map = {}
+        for k in token_map.keys():
+            self.token_map[k.value] = token_map[k]
 
     def serialize(self):
         ret = super().serialize()
@@ -41,16 +47,17 @@ class AwakeningListViewState(ViewStateBase):
         return ret
 
     @classmethod
-    async def deserialize(cls, dbcog, user_config: UserConfig, ims: dict):
+    async def deserialize(cls, dbcog, _user_config: UserConfig, ims: dict):
         sort_type = ims['sort_type']
         paginated_skills = await cls.do_query(dbcog, sort_type)
         original_author_id = ims['original_author_id']
         current_page = ims['current_page']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
+        token_map = dbcog.AWOKEN_SKILL_TOKEN_MAP
         query_settings = QuerySettings.deserialize(ims.get('query_settings'))
         return AwakeningListViewState(original_author_id, menu_type, query_settings, sort_type, paginated_skills,
-                                      current_page, reaction_list=reaction_list)
+                                      current_page, token_map, reaction_list=reaction_list)
 
     @classmethod
     async def do_query(cls, dbcog, sort_type):
@@ -71,8 +78,14 @@ class AwakeningListView:
     @staticmethod
     def embed(state: AwakeningListViewState):
         fields = [
-            EmbedField('Awakenings - by {}'.format('name' if state.sort_type == AwakeningListSortTypes.alphabetical else 'id number'),
-                       Box(*[get_awoken_skill_description(awo) for awo in state.paginated_skills[state.current_page]])),
+            EmbedField(
+                'Awakenings - by {}'.format(
+                    'name' if state.sort_type == AwakeningListSortTypes.alphabetical else 'id number'),
+                Box(*[get_awoken_skill_description(
+                    awo,
+                    show_help=state.query_settings.showhelp.value,
+                    token_map=state.token_map) for awo in state.paginated_skills[state.current_page]]
+                    )),
             EmbedField('Page', Box(
                 '{} of {}'.format(str(state.current_page + 1), str(len(state.paginated_skills)))
             ))

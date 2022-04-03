@@ -844,12 +844,13 @@ class PadInfo(commands.Cog):
         dbcog = await self.get_dbcog()
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
 
-        if not query:
+        # TODO: Fix this absolutely awful way of finding if the query is empty but has a QS
+        if not query or query.startswith('--'):
             sort_type = AwakeningListSortTypes.numerical
             paginated_skills = await AwakeningListViewState.do_query(dbcog, sort_type)
             menu = AwakeningListMenu.menu()
             state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, query_settings,
-                                           sort_type, paginated_skills, 0,
+                                           sort_type, paginated_skills, 0, dbcog.AWOKEN_SKILL_TOKEN_MAP,
                                            reaction_list=AwakeningListMenuPanes.get_user_reaction_list(sort_type))
             await menu.create(ctx, state)
             return
@@ -862,7 +863,7 @@ class PadInfo(commands.Cog):
 
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
-        props = AwakeningHelpViewProps(monster=monster)
+        props = AwakeningHelpViewProps(monster=monster, token_map=dbcog.AWOKEN_SKILL_TOKEN_MAP)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        query_settings, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
