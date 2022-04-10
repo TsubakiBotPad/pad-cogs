@@ -4,6 +4,7 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import aiofiles
 import aiomysql
@@ -13,6 +14,9 @@ from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
+
+if TYPE_CHECKING:
+    from dbcog import DBCog
 
 logger = logging.getLogger('red.padbot-cogs.crud')
 
@@ -81,6 +85,13 @@ class Crud(commands.Cog):
     async def get_cursor(self):
         async with aiofiles.open(await self.config.config_file(), 'r') as db_config:
             return (await self.connect(json.loads(await db_config.read()))).cursor()
+
+    async def get_dbcog(self) -> "DBCog":
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            raise ValueError("DBCog cog is not loaded")
+        await dbcog.wait_until_ready()
+        return dbcog
 
     def connect(self, db_config):
         return aiomysql.connect(host=db_config['host'],
@@ -361,12 +372,18 @@ class Crud(commands.Cog):
     @awokenskill.command(name="search")
     async def awokenskill_search(self, ctx, *, search_text):
         """Search for a awoken skill via its jp or na name"""
-        search_text = '%{}%'.format(search_text).lower()
+        dbcog = await self.get_dbcog()
+        if search_text in dbcog.KNOWN_AWOKEN_SKILL_TOKENS:
+            awoken_skill_id = dbcog.KNOWN_AWOKEN_SKILL_TOKENS[search_text].value
+            where = f'awoken_skill_id = {awoken_skill_id}'
+        else:
+            search_text = '%{}%'.format(search_text).lower()
+            where = f"lower(name_en) LIKE {search_text} OR lower(name_ja) LIKE {search_text}"
         sql = ('SELECT awoken_skill_id, name_en, name_ja, name_ko, desc_en,'
                ' desc_ja, desc_ko FROM awoken_skills'
-               ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
+               ' WHERE %s'
                ' ORDER BY awoken_skill_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [search_text, search_text])
+        await self.execute_read(ctx, sql, [where])
 
     @awokenskill.command(name="add")
     @checks.is_owner()
@@ -442,11 +459,9 @@ class Crud(commands.Cog):
         [p]crud awokenskill edit 100 key1 "Value1" key2 "Value2"
         [p]crud awokenskill edit misc_comboboost key1 "Value1" key2 "Value2"
         """
-        pdicog = self.bot.get_cog("PadInfo")
-        emoji_to_awid = getattr(pdicog, 'awoken_emoji_names', {})
-
-        if awoken_skill in emoji_to_awid:
-            awoken_skill_id = emoji_to_awid[awoken_skill]
+        dbcog = await self.get_dbcog()
+        if awoken_skill in dbcog.KNOWN_AWOKEN_SKILL_TOKENS:
+            awoken_skill_id = dbcog.KNOWN_AWOKEN_SKILL_TOKENS[awoken_skill].value
         elif awoken_skill.isdigit():
             awoken_skill_id = int(awoken_skill)
         else:
