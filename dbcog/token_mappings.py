@@ -355,6 +355,6 @@ MONSTER_ATTR_ALIAS_TO_ATTR_MAP = {v: k for k, vs in {
 }.items() for v in vs}
 
 KNOWN_AWOKEN_SKILL_TOKENS = {}
-for skill, tokens in enumerate(KNOWN_AWOKEN_SKILL_TOKENS):
+for skill, tokens in AWOKEN_SKILL_MAP.items():
     for token in list(tokens):
         KNOWN_AWOKEN_SKILL_TOKENS[token] = skill
