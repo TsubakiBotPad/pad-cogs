@@ -35,7 +35,8 @@ from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
 from .monster_index import MonsterIndex
-from .token_mappings import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, AWOKEN_SKILL_MAP
+from .token_mappings import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, AWOKEN_SKILL_MAP, \
+    KNOWN_AWOKEN_SKILL_TOKENS
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
 
@@ -77,6 +78,7 @@ class DBCog(commands.Cog, IdTest):
 
         # expose for documentation command
         self.AWOKEN_SKILL_TOKEN_MAP = AWOKEN_SKILL_MAP
+        self.KNOWN_AWOKEN_SKILL_TOKENS = KNOWN_AWOKEN_SKILL_TOKENS
 
         self.mon_finder = None  # type: Optional[FindMonster]
 
