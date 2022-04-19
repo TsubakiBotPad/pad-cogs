@@ -137,8 +137,7 @@ class DungeonCog(commands.Cog):
                 f.extend(invades)
 
         if len(pm_dungeon) == 0:
-            await send_cancellation_message(ctx, "This dungeon exists, but we have no data for it")
-            return
+            return await send_cancellation_message(ctx, "This dungeon exists, but we have no data for it")
 
         menu = DungeonMenu.menu()
         original_author_id = ctx.message.author.id
