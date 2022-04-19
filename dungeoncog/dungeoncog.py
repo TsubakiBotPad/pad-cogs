@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
+from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.menu.dungeon import DungeonMenu
@@ -62,13 +63,9 @@ class DungeonCog(commands.Cog):
         if not dungeons:
             dungeons = database.get_dungeons_from_name(name)
             if len(dungeons) == 0:
-                await ctx.send("No dungeons found!")
-                return
+                return None
             if len(dungeons) > 1:
-                header = "Multiple Dungeons Found, please be more specific:\n"
-                for page in pagify(header + '\n'.join(d.name_en for d in dungeons)):
-                    await ctx.send(page)
-                return
+                return dungeons
             dungeon = dungeons.pop()
             sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
             sub_dungeon_model = None
@@ -95,56 +92,63 @@ class DungeonCog(commands.Cog):
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
         """
         if bad:
-            await ctx.send("Too many arguments.  Make sure to surround all"
-                           " arguments with spaces in quotes.")
+            await send_cancellation_message(ctx, "Too many arguments.  Make sure to surround all"
+                                                 " arguments with spaces in quotes.")
             return
 
         # load dbcog cog for database access
         dbcog = await self.get_dbcog()
         dungeon = await self.find_dungeon_from_name(ctx, name, dbcog.database.dungeon, difficulty)
 
-        if dungeon is not None:
+        if dungeon is None:
+            return await send_cancellation_message(ctx, "No dungeons found!")
+        if type(dungeon) == list:
+            header = "Multiple Dungeons Found, please be more specific:\n"
+            for page in pagify(header + '\n'.join(d.name_en for d in dungeon)):
+                await ctx.send(page)
+            return
+        # await ctx.send(format_overview(test_result))
+        current_stage = 0
+        pm_dungeon = []
+        # check for invades:
+        invades = []
+
+        # print(dungeon.sub_dungeons[0].encounter_models)
+        for enc_model in dungeon.sub_dungeons[0].encounter_models:
+            behavior_test = MonsterBehavior()
+            if (enc_model.enemy_data is not None) and (enc_model.enemy_data.behavior is not None):
+                behavior_test.ParseFromString(enc_model.enemy_data.behavior)
+            else:
+                behavior_test = None
+
             # await ctx.send(format_overview(test_result))
-            current_stage = 0
-            pm_dungeon = []
-            # check for invades:
-            invades = []
+            # pm = process_monster(behavior_test, enc_model, db_cog.database)
+            if enc_model.stage < 0:
+                # pm.am_invade = True
+                invades.append(enc_model)
+            elif enc_model.stage > current_stage:
+                current_stage = enc_model.stage
+                floor = [enc_model]
+                pm_dungeon.append(floor)
+            else:
+                pm_dungeon[current_stage - 1].append(enc_model)
+        for f in pm_dungeon:
+            if pm_dungeon.index(f) != (len(pm_dungeon) - 1):
+                f.extend(invades)
 
-            # print(dungeon.sub_dungeons[0].encounter_models)
-            for enc_model in dungeon.sub_dungeons[0].encounter_models:
-                behavior_test = MonsterBehavior()
-                if (enc_model.enemy_data is not None) and (enc_model.enemy_data.behavior is not None):
-                    behavior_test.ParseFromString(enc_model.enemy_data.behavior)
-                else:
-                    behavior_test = None
+        if len(pm_dungeon) == 0:
+            return await send_cancellation_message(ctx, "This dungeon exists, but we have no data for it")
 
-                # await ctx.send(format_overview(test_result))
-                # pm = process_monster(behavior_test, enc_model, db_cog.database)
-                if enc_model.stage < 0:
-                    # pm.am_invade = True
-                    invades.append(enc_model)
-                elif enc_model.stage > current_stage:
-                    current_stage = enc_model.stage
-                    floor = [enc_model]
-                    pm_dungeon.append(floor)
-                else:
-                    pm_dungeon[current_stage - 1].append(enc_model)
-            for f in pm_dungeon:
-                if pm_dungeon.index(f) != (len(pm_dungeon) - 1):
-                    f.extend(invades)
-
-            menu = DungeonMenu.menu()
-            original_author_id = ctx.message.author.id
-            test_list = ['1', '2', '3', '4']
-            # print(pm_dungeon[0])
-            view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, pm_dungeon[0][0],
-                                          dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
-                                          len(pm_dungeon[0]), 0,
-                                          int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)
-            await ctx.send(
-                "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
-                                                dungeon.sub_dungeons[0].name_ja))
-            message = await menu.create(ctx, view_state)
+        menu = DungeonMenu.menu()
+        original_author_id = ctx.message.author.id
+        view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, pm_dungeon[0][0],
+                                      dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
+                                      len(pm_dungeon[0]), 0,
+                                      int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)
+        await ctx.send(
+            "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
+                                            dungeon.sub_dungeons[0].name_ja))
+        await menu.create(ctx, view_state)
 
 
 '''    @commands.command()
