@@ -4,12 +4,16 @@ from typing import TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify, box
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
+from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
 from dungeoncog.menu.menu_map import dungeon_menu_map
 from dungeoncog.view.dungeon import DungeonViewState
+from dungeoncog.view.skyo_links import SkyoLinksViewProps, SkyoLinksView
 
 if TYPE_CHECKING:
     from dbcog.database_manager import DBCogDatabase
@@ -156,6 +160,9 @@ class DungeonCog(commands.Cog):
         """Show the subdungeon ids of all matching dungeons"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
+
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
+
         formatted_text = f'"%{search_text}%"'
         dgs = db.query_many(
             f'SELECT dungeon_id, name_en FROM dungeons'
@@ -164,12 +171,25 @@ class DungeonCog(commands.Cog):
         if not dgs:
             return await ctx.send(f"No dungeons found")
 
-        msg = []
+        dungeons = []
         for dg in dgs:
-            results = db.query_many(f"SELECT sub_dungeon_id, name_en FROM sub_dungeons"
-                                    f" WHERE dungeon_id = {dg['dungeon_id']}"
-                                    f" ORDER BY sub_dungeon_id")
-            msg.append(f"{dg['name_en']} - {dg['dungeon_id']}\n\t"
-                       + '\n\t'.join(f"{row['name_en']} - {row['sub_dungeon_id']}"
-                                     for row in results))
-        await ctx.send_interactive(map(box, pagify('\n\n'.join(msg), delims=['\n\n'])))
+            subdgs = db.query_many(f"SELECT sub_dungeon_id, name_en FROM sub_dungeons"
+                                   f" WHERE dungeon_id = {dg['dungeon_id']}"
+                                   f" ORDER BY sub_dungeon_id")
+            dg_dict = {
+                'name': dg['name_en'],
+                'idx': dg['dungeon_id'],
+                'subdungeons': [],
+            }
+            for subdg in subdgs:
+                dg_dict['subdungeons'].append({
+                    'name': subdg['name_en'],
+                    'idx': subdg['sub_dungeon_id'],
+                })
+            dungeons.append(dg_dict)
+
+        menu = ClosableEmbedMenu.menu()
+        props = SkyoLinksViewProps(dungeons)
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       query_settings, SkyoLinksView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
