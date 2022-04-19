@@ -92,8 +92,8 @@ class DungeonCog(commands.Cog):
         Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
         """
         if bad:
-            await ctx.send("Too many arguments.  Make sure to surround all"
-                           " arguments with spaces in quotes.")
+            await send_cancellation_message(ctx, "Too many arguments.  Make sure to surround all"
+                                                 " arguments with spaces in quotes.")
             return
 
         # load dbcog cog for database access
@@ -101,7 +101,7 @@ class DungeonCog(commands.Cog):
         dungeon = await self.find_dungeon_from_name(ctx, name, dbcog.database.dungeon, difficulty)
 
         if dungeon is None:
-            return await ctx.send("No dungeons found!")
+            return await send_cancellation_message(ctx, "No dungeons found!")
         if type(dungeon) == list:
             header = "Multiple Dungeons Found, please be more specific:\n"
             for page in pagify(header + '\n'.join(d.name_en for d in dungeon)):
