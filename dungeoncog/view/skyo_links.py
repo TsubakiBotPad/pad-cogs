@@ -15,9 +15,9 @@ class SkyoLinksViewProps:
 
 class SkyoLinksView:
     VIEW_TYPE = 'SkyoLinks'
-    dungeon_link = 'https://skyo.tsubakibot.com/d/{}'
-    subdungeon_link = 'https://skyo.tsubakibot.com/s/{}'
-    bad_chars = ['(', ')']
+    dungeon_link = 'https://skyo.tsubakibot.com/{}'
+    subdungeon_link = 'https://skyo.tsubakibot.com/{}'
+    bad_chars = ['[', ']']
 
     @classmethod
     def embed_fields(cls, dungeons):
