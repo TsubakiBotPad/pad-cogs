@@ -188,13 +188,14 @@ class PadGuideDb(commands.Cog):
                 '--floor_id={}'.format(dungeon_floor_id),
                 '--user_uuid={}'.format(self.settings.userUuidFor(server)),
                 '--user_intid={}'.format(self.settings.userIntidFor(server)),
+                '--stream_safe',
 
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await process.communicate()
 
-            if stderr:
+            if b"Traceback" in stderr:
                 logger.error("Dungeon Load Error:\n{}\n\n{}".format(stdout.decode(), stderr.decode()))
                 await send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
