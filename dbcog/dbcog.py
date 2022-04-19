@@ -232,20 +232,20 @@ class DBCog(commands.Cog, IdTest):
 
     async def download_and_refresh_nicknames(self):
         if await self.config.datafile():
-            logger.info('Copying dg data file')
+            logger.info('Copying database file')
             shutil.copy2(await self.config.datafile(), self.db_file_path)
         else:
-            logger.info('Downloading dg data files')
+            logger.info('Downloading database files')
             await async_cached_dadguide_request(self.db_file_path,
                                                 CLOUDFRONT_URL + '/db/dadguide.sqlite',
                                                 1 * 60 * 60)
 
-        logger.info('Loading dg database')
+        logger.info('Loading database')
         self.database = load_database(self.database, await self.get_debug_monsters())
-        logger.info('Building dg monster index')
+        logger.info('Building monster index')
         await self.create_index()
 
-        logger.info('Done refreshing dg data')
+        logger.info('Done refreshing database')
 
     @commands.group()
     @checks.is_owner()
