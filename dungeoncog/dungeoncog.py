@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, box
 from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
@@ -12,6 +12,7 @@ from dungeoncog.menu.menu_map import dungeon_menu_map
 from dungeoncog.view.dungeon import DungeonViewState
 
 if TYPE_CHECKING:
+    from dbcog.database_manager import DBCogDatabase
     from dbcog.dungeon_context import DungeonContext
 
 logger = logging.getLogger('red.padbot-cogs.dungeoncog')
@@ -150,24 +151,25 @@ class DungeonCog(commands.Cog):
                                             dungeon.sub_dungeons[0].name_ja))
         await menu.create(ctx, view_state)
 
+    @commands.command()
+    async def skyo(self, ctx, *, search_text):
+        """Show the subdungeon ids of all matching dungeons"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+        formatted_text = f'"%{search_text}%"'
+        dgs = db.query_many(
+            f'SELECT dungeon_id, name_en FROM dungeons'
+            f' WHERE LOWER(name_en) LIKE {formatted_text} OR LOWER(name_ja) LIKE {formatted_text}'
+            f' ORDER BY dungeon_id LIMIT 20')
+        if not dgs:
+            return await ctx.send(f"No dungeons found")
 
-'''    @commands.command()
-    async def spinner_help(self, ctx, spin_time, move_time):
-        """
-        spin_time: The cycle the spinner is set at (typically changes once every second)
-        move_time: How much time you have to move orbs
-        """
-        embed = discord.Embed(title="Spinner Helper {}s Rotation {}s Move Time".format(spin_time, move_time),
-                              description="Assuming orbs are set and are NOT moved during movement:")
-        casino = ["🔥", "🌊", "🌿", "💡", "🌙", "🩹"]
-        cycles = float(move_time) / float(spin_time)
-        rounded = int(cycles)
-        casino_dict = OrderedDict()
-        for c in casino:
-            casino_dict.update({c: casino[(casino.index(c) + rounded) % 6]})
-        casino_dict.update({"Other": casino[(rounded - 1) % 6]})
-        output = ""
-        for k, v in casino_dict.items():
-            output += "\n{} {} {}".format(k, "➡", v)
-        embed.add_field(name="Original -> Final", value=output)
-        await ctx.send(embed=embed)'''
+        msg = []
+        for dg in dgs:
+            results = db.query_many(f"SELECT sub_dungeon_id, name_en FROM sub_dungeons"
+                                    f" WHERE dungeon_id = {dg['dungeon_id']}"
+                                    f" ORDER BY sub_dungeon_id")
+            msg.append(f"{dg['name_en']} - {dg['dungeon_id']}\n\t"
+                       + '\n\t'.join(f"{row['name_en']} - {row['sub_dungeon_id']}"
+                                     for row in results))
+        await ctx.send_interactive(map(box, pagify('\n\n'.join(msg), delims=['\n\n'])))
