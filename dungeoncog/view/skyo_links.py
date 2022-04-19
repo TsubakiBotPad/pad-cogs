@@ -23,11 +23,12 @@ class SkyoLinksView:
     def embed_fields(cls, dungeons):
         ret = []
         for dungeon in dungeons:
-            ret.append(LinkedText(cls.dungeon_link.format(dungeon['idx']), cls.escape_name(dungeon['name'])))
+            ret.append(LinkedText(cls.escape_name(dungeon['name']), cls.dungeon_link.format(dungeon['idx'])))
             for subdungeon in dungeon['subdungeons']:
                 ret.append(Box(
                     "\u200b \u200b \u200b \u200b \u200b ",
-                    LinkedText(cls.subdungeon_link.format(subdungeon['idx']), cls.escape_name(subdungeon['name']))
+                    LinkedText(cls.escape_name(subdungeon['name']), cls.subdungeon_link.format(subdungeon['idx'])),
+                    delimiter=''
                 ))
         return [EmbedField('Dungeons', Box(*ret, delimiter='\n'))]
 

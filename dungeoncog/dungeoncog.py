@@ -163,19 +163,19 @@ class DungeonCog(commands.Cog):
 
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
 
-        formatted_text = f'"%{search_text}%"'
+        formatted_text = f'%{search_text}%'
         dgs = db.query_many(
-            f'SELECT dungeon_id, name_en FROM dungeons'
-            f' WHERE LOWER(name_en) LIKE {formatted_text} OR LOWER(name_ja) LIKE {formatted_text}'
-            f' ORDER BY dungeon_id LIMIT 20')
+            'SELECT dungeon_id, name_en FROM dungeons'
+            ' WHERE LOWER(name_en) LIKE ? OR LOWER(name_ja) LIKE ?'
+            ' ORDER BY dungeon_id LIMIT 20', (formatted_text, formatted_text))
         if not dgs:
             return await ctx.send(f"No dungeons found")
 
         dungeons = []
         for dg in dgs:
-            subdgs = db.query_many(f"SELECT sub_dungeon_id, name_en FROM sub_dungeons"
-                                   f" WHERE dungeon_id = {dg['dungeon_id']}"
-                                   f" ORDER BY sub_dungeon_id")
+            subdgs = db.query_many("SELECT sub_dungeon_id, name_en FROM sub_dungeons"
+                                   " WHERE dungeon_id = ?"
+                                   " ORDER BY sub_dungeon_id", (dg['dungeon_id'],))
             dg_dict = {
                 'name': dg['name_en'],
                 'idx': dg['dungeon_id'],
