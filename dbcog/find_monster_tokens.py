@@ -247,7 +247,7 @@ class MonsterAttributeBool(SpecialToken):
 class SubqueryToken(SpecialToken):
     def __init__(self, fullvalue, subquery, *, negated=False, exact=False, dbcog):
         self.subquery = subquery
-        self.matches = None
+        self.sub_matches = None
         self.valid_monsters = None
         self.max_score = None
 
@@ -255,9 +255,9 @@ class SubqueryToken(SpecialToken):
 
     async def prepare(self):
         m_info, _ = await self.dbcog.find_monster_debug(self.subquery)
-        self.matches = m_info.monster_matches
+        self.sub_matches = m_info.monster_matches
         self.valid_monsters = m_info.valid_monsters
-        self.max_score = max((self.matches[mon].score for mon in self.valid_monsters), default=0)
+        self.max_score = max((self.sub_matches[mon].score for mon in self.valid_monsters), default=0)
 
     @abstractmethod
     def get_matching_monsters(self, monster: MonsterModel) -> Iterable[MonsterModel]:
@@ -267,7 +267,7 @@ class SubqueryToken(SpecialToken):
         mons = self.valid_monsters.intersection(self.get_matching_monsters(monster))
         if not mons:
             return False, MatchData()
-        matched, score = max(((mon, self.matches.get(mon, DummyObject(score=0)).score) for mon in mons),
+        matched, score = max(((mon, self.sub_matches.get(mon, DummyObject(score=0)).score) for mon in mons),
                              key=lambda x: x[1])
         return score / self.max_score, MatchData(subquery_result=matched)
 
