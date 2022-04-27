@@ -3,15 +3,20 @@ from typing import TYPE_CHECKING
 
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, box
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
+from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
 from dungeoncog.menu.menu_map import dungeon_menu_map
 from dungeoncog.view.dungeon import DungeonViewState
+from dungeoncog.view.skyo_links import SkyoLinksViewProps, SkyoLinksView
 
 if TYPE_CHECKING:
+    from dbcog.database_manager import DBCogDatabase
     from dbcog.dungeon_context import DungeonContext
 
 logger = logging.getLogger('red.padbot-cogs.dungeoncog')
@@ -150,24 +155,41 @@ class DungeonCog(commands.Cog):
                                             dungeon.sub_dungeons[0].name_ja))
         await menu.create(ctx, view_state)
 
+    @commands.command()
+    async def skyo(self, ctx, *, search_text):
+        """Show the subdungeon ids of all matching dungeons"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
 
-'''    @commands.command()
-    async def spinner_help(self, ctx, spin_time, move_time):
-        """
-        spin_time: The cycle the spinner is set at (typically changes once every second)
-        move_time: How much time you have to move orbs
-        """
-        embed = discord.Embed(title="Spinner Helper {}s Rotation {}s Move Time".format(spin_time, move_time),
-                              description="Assuming orbs are set and are NOT moved during movement:")
-        casino = ["🔥", "🌊", "🌿", "💡", "🌙", "🩹"]
-        cycles = float(move_time) / float(spin_time)
-        rounded = int(cycles)
-        casino_dict = OrderedDict()
-        for c in casino:
-            casino_dict.update({c: casino[(casino.index(c) + rounded) % 6]})
-        casino_dict.update({"Other": casino[(rounded - 1) % 6]})
-        output = ""
-        for k, v in casino_dict.items():
-            output += "\n{} {} {}".format(k, "➡", v)
-        embed.add_field(name="Original -> Final", value=output)
-        await ctx.send(embed=embed)'''
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
+
+        formatted_text = f'%{search_text}%'
+        dgs = db.query_many(
+            'SELECT dungeon_id, name_en FROM dungeons'
+            ' WHERE LOWER(name_en) LIKE ? OR LOWER(name_ja) LIKE ?'
+            ' ORDER BY dungeon_id LIMIT 20', (formatted_text, formatted_text))
+        if not dgs:
+            return await ctx.send(f"No dungeons found")
+
+        dungeons = []
+        for dg in dgs:
+            subdgs = db.query_many("SELECT sub_dungeon_id, name_en FROM sub_dungeons"
+                                   " WHERE dungeon_id = ?"
+                                   " ORDER BY sub_dungeon_id", (dg['dungeon_id'],))
+            dg_dict = {
+                'name': dg['name_en'],
+                'idx': dg['dungeon_id'],
+                'subdungeons': [],
+            }
+            for subdg in subdgs:
+                dg_dict['subdungeons'].append({
+                    'name': subdg['name_en'],
+                    'idx': subdg['sub_dungeon_id'],
+                })
+            dungeons.append(dg_dict)
+
+        menu = ClosableEmbedMenu.menu()
+        props = SkyoLinksViewProps(dungeons)
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       query_settings, SkyoLinksView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
