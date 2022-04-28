@@ -62,6 +62,7 @@ class EvoTypes(Enum):
     EVO = 'Evolved'
     UVO = 'Ulimate'
     UUVO = 'Super Ultimate'
+    EQUIP = 'Equip'
     BASETRANS = 'Base Transform'
     TRANS = 'Transform'
     AWOKEN = 'Awoken'
@@ -70,6 +71,7 @@ class EvoTypes(Enum):
     SREVO = 'Super Reincarnated'
     PIXEL = 'Pixel'
     NONPIXEL = 'Nonpixel'
+    CHIBI = 'Chibi'
 
 
 EVO_MAP = {
@@ -77,6 +79,7 @@ EVO_MAP = {
     EvoTypes.EVO: ('evo', 'evolved'),
     EvoTypes.UVO: ('uvo', 'ult', 'ultimate', 'uevo'),
     EvoTypes.UUVO: ('uuvo', 'uult', 'uultimate', 'uuevo', 'suvo'),
+    EvoTypes.EQUIP: ('equip', 'assist', 'eq'),
     EvoTypes.BASETRANS: ('transformbase', 'transbase'),
     EvoTypes.TRANS: ('transform', 'trans', 'transformed', 'xf', 'xform', 'tf'),
     EvoTypes.AWOKEN: ('awoken', 'awo', 'a'),
@@ -85,6 +88,7 @@ EVO_MAP = {
     EvoTypes.SREVO: ('srevo', 'super', 'sr', 'superreincarnated'),
     EvoTypes.PIXEL: ('pixel', 'p', 'dot', 'px'),
     EvoTypes.NONPIXEL: ('nonpixel', 'np'),
+    EvoTypes.CHIBI: ('chibi', 'mini'),
 }
 
 # awakening view state & awakening help props in padinfo are transforming this dict to `int: tuple`
@@ -138,7 +142,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHTEAMHP: ('teamhp', 'thp'),
     AwokenSkills.ENHTEAMRCV: ('teamrcv', 'trcv'),
     AwokenSkills.VDP: ('vdp', 'box'),
-    AwokenSkills.EQUIP: ('equip', 'assist', 'eq'),
+    AwokenSkills.EQUIP: (),  # Equip is an evo type
     AwokenSkills.SUPERFUA: ('sfua',),
     AwokenSkills.SKILLCHARGE: ('rainbowhaste', 'skillcharge', 'hasteawo'),
     AwokenSkills.UNBINDABLE: ('unbindable', 'bindres'),
@@ -176,7 +180,6 @@ AWOKEN_SKILL_MAP = {
 
 
 class MiscModifiers(Enum):
-    CHIBI = 'Chibi'
     STORY = 'Story'
     FARMABLE = 'Farmable'
     TRADEABLE = 'Tradeable'
@@ -207,7 +210,6 @@ class MiscModifiers(Enum):
 
 
 MISC_MAP = {
-    MiscModifiers.CHIBI: ('chibi', 'mini'),
     MiscModifiers.STORY: ('story',),
     MiscModifiers.FARMABLE: ('farmable',),
     MiscModifiers.TRADEABLE: ('tradeable', 'tradable'),
