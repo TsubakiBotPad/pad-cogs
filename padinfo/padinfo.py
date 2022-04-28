@@ -1175,10 +1175,10 @@ class PadInfo(commands.Cog):
                f"     Treenames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_treenames.items() if mon in ms))}\n"
                f"     Nicknames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_cardnames.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
-               f"     Attribute: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.COLOR_TOKENS))}\n"
-               f"     Awakening: {' '.join(sorted(t for t in mods if t in dbcog.token_maps.AWAKENING_TOKENS))}\n"
-               f"    Evo & Type: {' '.join(sorted(t for t in mods if t in EVOANDTYPE))}\n"
-               f"         Other: {' '.join(sorted(t for t in mods if t not in dbcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
+               f"     Attribute: {' '.join(sorted(t for t in mods if t.split('-')[0] in dbcog.token_maps.COLOR_TOKENS))}\n"
+               f"     Awakening: {' '.join(sorted(t for t in mods if t.split('-')[0] in dbcog.token_maps.AWAKENING_TOKENS))}\n"
+               f"    Evo & Type: {' '.join(sorted(t for t in mods if t.split('-')[0] in EVOANDTYPE))}\n"
+               f"         Other: {' '.join(sorted(t for t in mods if t.split('-')[0] not in dbcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
                f"Manually Added: {' '.join(sorted(manual_modifiers))}\n")
         for page in pagify(ret):
             await ctx.send(box(page))

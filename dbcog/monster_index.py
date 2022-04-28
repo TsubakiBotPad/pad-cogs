@@ -443,12 +443,12 @@ class MonsterIndex:
                 logger.warning(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
                 self.issues.append(f"Invalid awoken skill ID: {aw.awoken_skill_id}")
 
-        # Numbered Equips
-        self.add_numbered_modifier(monster, modifiers, AWOKEN_SKILL_MAP[AwokenSkills.EQUIP],
+        # Equips
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.EQUIP],
                                    lambda m: m.is_equip)
 
         # Chibi
-        self.add_numbered_modifier(monster, modifiers, MISC_MAP[MiscModifiers.CHIBI],
+        self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.CHIBI],
                                    lambda m: (m.name_en == m.name_en.lower() and m.name_en != m.name_ja
                                               or 'ミニ' in m.name_ja or '(chibi)' in m.name_en))
 
