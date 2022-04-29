@@ -108,3 +108,38 @@ class MonIdListener(commands.Cog):
             if msg.content.startswith(p):
                 return True
         return False
+
+    @commands.command(aliases=['tradable'])
+    async def tradeable(self, ctx, *, query: str):
+        """Look up if a card is tradeable"""
+        dbcog = self.bot.get_cog("DBCog")
+        monster = await dbcog.find_monster(query)
+        if monster is None: 
+            await ctx.send("Sorry, your query `" + query + "` didn't match any results :(")
+            return
+
+        if monster.sell_mp < 100:
+            ret = "\t\t✅ This card is tradable!"
+        else: 
+            base_flag = False # Track other form tradability
+            gem_flag = False  # Track evo gem tradability
+
+            base_monster = dbcog.get_monster(monster.base_evo_id) 
+            if base_monster.sell_mp < 100:
+                base_flag = True
+
+            if monster.evo_gem_id is not None:
+                evo_gem: "MonsterModel" = dbcog.get_monster(monster.evo_gem_id)
+                if evo_gem.sell_mp < 100:
+                    gem_flag = True
+            
+            ret = (f"\t\t{'⁉️' if base_flag or gem_flag else '❌'} This card is **not tradable**.")
+            if base_flag:
+                ret += "\n\t\t\t\t✅ Other forms of this card are tradable."
+            if gem_flag:
+                ret += "\n\t\t\t\t✅ Evo gem for this card is tradable."
+            elif monster.evo_gem_id is not None:
+                ret += "\n\t\t\t\t❌ Evo gem for this card is not tradable."
+
+        await ctx.send("{}\n{}".format(
+            MonsterHeader.text_with_emoji(monster), ret))
