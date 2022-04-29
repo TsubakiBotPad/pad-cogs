@@ -345,6 +345,7 @@ class PadGlobal(commands.Cog):
 
     @padglobal.command()
     async def eventswap(self, ctx):
+        """Shift contents of nextevent command to currentevent"""
         if 'currentevent' not in self.c_commands or 'nextevent' not in self.c_commands:
             await ctx.send(f"Please populate both {inline('currentevent')} and {inline('nextevent')} first."
                            f" Cancelling.")
@@ -364,6 +365,28 @@ class PadGlobal(commands.Cog):
         json.dump(self.c_commands, open(self.file_path, 'w+'))
         await ctx.send(f"Okay, I've updated {inline('lastevent')} and {inline('currentevent')} accordingly,"
                        f" and cleared {inline('nextevent')}.")
+    
+    @padglobal.command()
+    async def rename(self, ctx, old_name, new_name):
+        """Rename a PAD global command"""
+        if old_name not in self.c_commands:
+            await ctx.send(f"Please populate {inline(old_name)} first.")
+            return
+        if new_name in self.c_commands:
+            await ctx.send("A command already exists with that name.")
+            return
+        if not await get_user_confirmation(ctx, f"Are you sure you want to rename command {inline(old_name)} to {inline(new_name)}?"):
+            await ctx.send("The command was not renamed.")
+            return
+        aliases = await self._find_aliases(old_name)
+        for alias in aliases:
+            self.c_commands[alias] = new_name
+
+        self.c_commands[new_name] = self.c_commands[old_name]
+        self.c_commands.pop(old_name)
+
+        json.dump(self.c_commands, open(self.file_path, 'w+'))
+        await ctx.send(f"Okay, I've deleted {inline(old_name)} and moved its contents to {inline(new_name)}.")
 
     async def _find_aliases(self, command: str):
         aliases = []
