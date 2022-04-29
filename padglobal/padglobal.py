@@ -367,7 +367,7 @@ class PadGlobal(commands.Cog):
                        f" and cleared {inline('nextevent')}.")
     
     @padglobal.command()
-    async def rename(self, ctx, old_name: str , new_name: str):
+    async def rename(self, ctx, old_name, new_name):
         """Rename a PAD global command"""
         if old_name not in self.c_commands:
             await ctx.send(f"Please populate {inline(old_name)} first.")
