@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import logging
@@ -44,20 +45,23 @@ class DungeonCog(commands.Cog):
         self.bot = bot
 
         self.aliases = defaultdict(set)
+        self.aliases_loaded = asyncio.Event()
 
         gadmin: Any = self.bot.get_cog("GlobalAdmin")
         if gadmin:
             gadmin.register_perm("contentadmin")
 
     async def load_aliases(self):
+        self.aliases_loaded.clear()
         self.aliases = defaultdict(set)
         async with aiohttp.ClientSession() as session:
             async with session.get(DUNGEON_ALIASES) as response:
                 reader = csv.reader(io.StringIO(await response.text()), delimiter=',')
         next(reader)
         for line in reader:
-            for a in line[2].replace(' ', '').split(', '):
+            for a in line[2].replace(' ', '').split(','):
                 self.aliases[a].add(line[0] or line[1])
+        self.aliases_loaded.set()
 
     async def load_emojis(self):
         await self.bot.wait_until_ready()
@@ -188,6 +192,7 @@ class DungeonCog(commands.Cog):
 
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
 
+        await self.aliases_loaded.wait()
         if search_text.replace(' ', '') not in self.aliases:
             formatted_text = f'%{search_text}%'
             sds = db.query_many(
@@ -198,13 +203,13 @@ class DungeonCog(commands.Cog):
                 ' OR LOWER(sub_dungeons.name_en) LIKE ? OR LOWER(sub_dungeons.name_ja) LIKE ?'
                 ' ORDER BY dungeons.dungeon_id LIMIT 20', (formatted_text,) * 4)
         else:
-            formatted_text = ', '.join(self.aliases[search_text.replace(' ', '')])
+            formatted_text = ', '.join(a for a in self.aliases[search_text.replace(' ', '')] if a.isnumeric())
             sds = db.query_many(
                 'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_en AS dg_name, sub_dungeons.name_en AS sd_name'
                 ' FROM sub_dungeons'
                 ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
-                f' WHERE dungeons.dungeon_id IN (?) OR sub_dungeon_id IN (?)'
-                ' ORDER BY dungeons.dungeon_id LIMIT 20', (formatted_text,) * 2)
+                f' WHERE dungeons.dungeon_id IN ({formatted_text}) OR sub_dungeon_id IN ({formatted_text})'
+                ' ORDER BY dungeons.dungeon_id LIMIT 20')
 
         if not sds:
             return await ctx.send(f"No dungeons found")
