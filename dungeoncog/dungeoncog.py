@@ -50,6 +50,7 @@ class DungeonCog(commands.Cog):
             gadmin.register_perm("contentadmin")
 
     async def load_aliases(self):
+        self.aliases = defaultdict(set)
         async with aiohttp.ClientSession() as session:
             async with session.get(DUNGEON_ALIASES) as response:
                 reader = csv.reader(io.StringIO(await response.text()), delimiter=',')
@@ -225,7 +226,6 @@ class DungeonCog(commands.Cog):
     @commands.command(aliases=['firdg'])
     @auth_check('contentadmin')
     async def force_dungeon_index_reload(self, ctx):
-        self.aliases = {}
         async with ctx.typing():
             await self.load_aliases()
         await ctx.send("Reloaded")
