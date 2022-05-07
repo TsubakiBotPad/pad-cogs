@@ -119,20 +119,17 @@ class DungeonCog(commands.Cog):
             dungeon = dungeons.pop()
         return dungeon
 
-    @commands.command(aliases=['dgid'])
-    async def dungeonid(self, ctx, name, difficulty=None, *bad: str):
-        """
-        Name: Name of Dungeon
-        Difficulty: Difficulty level/name of floor (eg. for A1, "Bipolar Goddess")
-        """
-        if bad:
-            await send_cancellation_message(ctx, "Too many arguments.  Make sure to surround all"
-                                                 " arguments with spaces in quotes.")
-            return
+    @commands.command(aliases=['dgid'], ignore_extra=False)
+    async def dungeonid(self, ctx, dungeon_name, floor_name=None):
+        """Get encounter data for a dungeon.
 
-        # load dbcog cog for database access
+        Quotes must be used around multi-word names
+        [p]dungeonid "blue bowl dragon"
+        [p]dungeonid "ultimate arena" "three hands of fate"
+        [p]dungeonid "castle of satan in the abyss" 3
+        """
         dbcog = await self.get_dbcog()
-        dungeon = await self.find_dungeon_from_name(ctx, name, dbcog.database.dungeon, difficulty)
+        dungeon = await self.find_dungeon_from_name(ctx, dungeon_name, dbcog.database.dungeon, floor_name)
 
         if dungeon is None:
             return await send_cancellation_message(ctx, "No dungeons found!")
@@ -175,7 +172,7 @@ class DungeonCog(commands.Cog):
 
         menu = DungeonMenu.menu()
         original_author_id = ctx.message.author.id
-        view_state = DungeonViewState(original_author_id, 'DungeonMenu', name, pm_dungeon[0][0],
+        view_state = DungeonViewState(original_author_id, 'DungeonMenu', dungeon_name, pm_dungeon[0][0],
                                       dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                       len(pm_dungeon[0]), 0,
                                       int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)
