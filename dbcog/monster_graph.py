@@ -3,7 +3,7 @@ import logging
 import re
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar, cast
 
 from networkx import MultiDiGraph
 from tsutils.enums import Server
@@ -50,8 +50,7 @@ MONSTER_QUERY = """SELECT
   COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
   series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id,
-  transformations{0}.to_monster_id AS transform_to_id
+  drops.drop_id
 FROM
   monsters{0}
   LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
@@ -62,7 +61,6 @@ FROM
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
   LEFT OUTER JOIN monster_name_overrides ON monsters{0}.monster_id = monster_name_overrides.monster_id
-  LEFT OUTER JOIN transformations{0} ON monsters{0}.monster_id = transformations{0}.from_monster_id
 GROUP BY
   monsters{0}.monster_id"""
 
@@ -133,6 +131,12 @@ FROM
   INNER JOIN evolutions{0} ON evolutions{0}.evolution_id = latest_evolutions.evolution_id
   AND evolutions{0}.tstamp = latest_evolutions.tstamp"""
 
+TRANSFORMS_QUERY = """SELECT
+  transformations{0}.*
+FROM
+  transformations{0}"""
+
+
 AWAKENINGS_QUERY = """SELECT
   awakenings{0}.awakening_id,
   awakenings{0}.monster_id,
@@ -189,6 +193,7 @@ class MonsterGraph:
 
         ms = self.database.query_many(MONSTER_QUERY.format(table_suffix))
         es = self.database.query_many(EVOS_QUERY.format(table_suffix))
+        tfs = self.database.query_many(TRANSFORMS_QUERY.format(table_suffix))
         aws = self.database.query_many(AWAKENINGS_QUERY.format(table_suffix))
         ems = self.database.query_many(EGG_QUERY.format(table_suffix) + where)
         exs = self.database.query_many(EXCHANGE_QUERY.format(table_suffix) + where)
@@ -353,17 +358,16 @@ class MonsterGraph:
             graph.add_node(m.monster_id, model=m_model)
             self.max_monster_id = max(self.max_monster_id, m.monster_id)
 
-            if m.transform_to_id:
-                if self.debug_monster_ids is None or m.transform_to_id in self.debug_monster_ids:
-                    graph.add_edge(m.monster_id, m.transform_to_id, type='transformation')
-                    graph.add_edge(m.transform_to_id, m.monster_id, type='back_transformation')
-
             if m.evo_gem_id:
                 if self.debug_monster_ids is None or m.evo_gem_id in self.debug_monster_ids:
                     graph.add_edge(m.monster_id, m.evo_gem_id, type='evo_gem_from')
                     graph.add_edge(m.evo_gem_id, m.monster_id, type='evo_gem_of')
 
         for e in es:
+            if self.debug_monster_ids is not None:
+                if e.from_id not in self.debug_monster_ids or e.to_id not in self.debug_monster_ids:
+                    continue
+
             evo_model = EvolutionModel(
                 evolution_type=e.evolution_type,
                 reversible=e.reversible,
@@ -376,23 +380,28 @@ class MonsterGraph:
                 mat_5_id=self.debug_validate_id(e.mat_5_id),
                 tstamp=e.tstamp,
             )
-            if self.debug_monster_ids is not None:
-                if evo_model.from_id not in self.debug_monster_ids or evo_model.to_id not in self.debug_monster_ids:
-                    continue
 
-            graph.add_edge(
-                evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
-            graph.add_edge(
-                evo_model.to_id, evo_model.from_id, type='back_evolution', model=evo_model)
+            graph.add_edge(evo_model.from_id, evo_model.to_id, type='evolution', model=evo_model)
+            graph.add_edge(evo_model.to_id, evo_model.from_id, type='back_evolution', model=evo_model)
 
             # for material_of queries
-            already_used_in_this_evo = []  # don't add same mat more than once per evo
+            already_used_in_this_evo = set()  # don't add same mat more than once per evo
             for mat in evo_model.mats:
                 if mat in already_used_in_this_evo:
                     continue
                 graph.add_edge(
                     mat, evo_model.to_id, type="material_of", model=evo_model)
-                already_used_in_this_evo.append(mat)
+                already_used_in_this_evo.add(mat)
+
+        for tf in tfs:
+            if self.debug_monster_ids is not None:
+                if tf.from_monster_id not in self.debug_monster_ids or tf.to_monster_id not in self.debug_monster_ids:
+                    continue
+
+            # Make a model with percentages here.
+
+            graph.add_edge(tf.from_monster_id, tf.to_monster_id, type='transformation')
+            graph.add_edge(tf.to_monster_id, tf.from_monster_id, type='back_transformation')
 
         exchanges = defaultdict(set)
         for ex in exs:
@@ -430,28 +439,27 @@ class MonsterGraph:
         return {mid for mid, atlas in self.graph_dict[monster.server_priority][monster.monster_id].items()
                 for edge in atlas.values() if edge.get('type') == etype}
 
-    def _get_edge_or_none(self, monster: MonsterModel, etype) -> Optional[int]:
+    def _get_edge_or_none(self, monster: MonsterModel, etype: str) -> Optional[int]:
         edges = self._get_edges(monster, etype)
         if edges:
             return edges.pop()
 
-    def _get_edge_model(self, monster: MonsterModel, etype) -> Optional[BaseModel]:
-        possible_results = set()
-        for atlas in self.graph_dict[monster.server_priority][monster.monster_id].values():
-            for edge in atlas.values():
-                if edge.get('type') == etype:
-                    possible_results.add(edge['model'])
-        if len(possible_results) == 0:
-            return None
-        return sorted(possible_results, key=lambda x: x.tstamp)[-1]
-
-    def _get_edge_model_set(self, monster: MonsterModel, etype, model_type: Type[M] = BaseModel) -> Set[M]:
+    def _get_edge_model_set(self, monster: MonsterModel, etype: str) -> Set[BaseModel]:
         possible_results = set()
         for atlas in self.graph_dict[monster.server_priority][monster.monster_id].values():
             for edge in atlas.values():
                 if edge.get('type') == etype:
                     possible_results.update(edge['models'])
-        return {model for model in possible_results}
+        return possible_results
+
+    def _get_newest_edge_model(self, monster: MonsterModel, etype: str) -> Optional[BaseModel]:
+        possible_results = set()
+        for atlas in self.graph_dict[monster.server_priority][monster.monster_id].values():
+            for edge in atlas.values():
+                if edge.get('type') == etype:
+                    possible_results.add(edge['model'])
+        if possible_results:
+            return min(possible_results, key=lambda x: x.tstamp)
 
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER, do_logging: bool = False) \
             -> Optional[MonsterModel]:
@@ -484,11 +492,8 @@ class MonsterGraph:
             mon = to_check.pop()
             if mon in mons:
                 continue
-            if (next_transform := self.get_next_transform(mon)):
-                to_check.add(next_transform)
-            prev = self.get_prev_transform(mon)
-            if prev is not None:
-                to_check.add(prev)
+            to_check.update(self.get_next_transforms(mon))
+            to_check.update(self.get_prev_transforms(mon))
             mons.add(mon)
         return mons
 
@@ -497,10 +502,10 @@ class MonsterGraph:
 
     def process_alt_monsters_from_base(self, base_monster: MonsterModel) -> List[MonsterModel]:
         ids = [base_monster]
-        transform = self.get_next_transform(base_monster)
-        if transform and (transform.monster_id > base_monster.monster_id
-                          or transform.monster_id == 5802):  # I hate DMG very much
-            ids += self.process_alt_monsters_from_base(transform)
+        for transform in sorted(self.get_next_transforms(base_monster), key=self.get_id_order_key):
+            if transform and (transform.monster_id > base_monster.monster_id
+                              or transform.monster_id == 5802):  # I hate DMG very much
+                ids += [mid for mid in self.process_alt_monsters_from_base(transform) if mid not in ids]
         for evo in sorted(self.get_next_evolutions(base_monster), key=self.get_id_order_key):
             ids += self.process_alt_monsters_from_base(evo)
         return ids
@@ -581,7 +586,7 @@ class MonsterGraph:
         return sorted(alt_cards, key=lambda m: m.monster_id)[-1]
 
     def get_evolution(self, monster) -> Optional[EvolutionModel]:
-        return self._get_edge_model(monster, 'back_evolution')
+        return self._get_newest_edge_model(monster, 'back_evolution')
 
     def monster_is_reversible_evo(self, monster: MonsterModel) -> bool:
         prev_evo = self.get_evolution(monster)
@@ -633,12 +638,35 @@ class MonsterGraph:
             return InternalEvoType.Ultimate
         return InternalEvoType.Normal
 
-    def get_prev_evolution_id(self, monster: MonsterModel) -> Optional[int]:
-        return self._get_edge_or_none(monster, 'back_evolution')
-
     def get_prev_evolution(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        pe = self.get_prev_evolution_id(monster)
+        pe = self._get_edge_or_none(monster, 'back_evolution')
         return pe and self.get_monster(pe, server=monster.server_priority)
+
+    def get_next_evolutions(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'evolution')}
+
+    def get_prev_transforms(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'back_transformation')}
+
+    def get_prev_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        # This doesn't need a special function, so I'll remove it later
+        transforms = self.get_prev_transforms(monster)
+        if not transforms:
+            return None
+        return min(transforms, key=lambda m: m.monster_id)
+
+    def get_next_transforms(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'transformation')}
+
+    def get_next_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        # Figure out how to get rid of this
+        transforms = self.get_next_transforms(monster)
+        if not transforms:
+            return None
+        return max(transforms, key=lambda m: m.monster_id)
 
     def get_all_prev_evolutions(self, monster: MonsterModel, *, include_self: bool = True) -> List[MonsterModel]:
         ret = []
@@ -679,32 +707,6 @@ class MonsterGraph:
             for i in to_pop:
                 ret.pop(i)
         return ret
-
-    def get_next_evolution_ids(self, monster: MonsterModel) -> Set[int]:
-        return self._get_edges(monster, 'evolution')
-
-    def get_next_evolutions(self, monster: MonsterModel) -> Set[MonsterModel]:
-        return {self.get_monster(mid, server=monster.server_priority)
-                for mid in self.get_next_evolution_ids(monster)}
-
-    def get_prev_transform_id(self, monster: MonsterModel) -> Optional[int]:
-        transforms = list(self._get_edges(monster, 'back_transformation'))
-        if len(transforms) > 0:
-            return transforms[0]
-        return None
-
-    def get_prev_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        prev = self.get_prev_transform_id(monster)
-        if prev is None:
-            return None
-        return self.get_monster(prev, server=monster.server_priority)
-
-    def get_next_transform_id(self, monster: MonsterModel) -> Optional[int]:
-        return self._get_edge_or_none(monster, 'transformation')
-
-    def get_next_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        nt = self.get_next_transform_id(monster)
-        return nt and self.get_monster(nt, server=monster.server_priority)
 
     def get_monster_depth(self, monster: MonsterModel) -> float:
         if monster.monster_id == 5802:
@@ -759,7 +761,7 @@ class MonsterGraph:
         return self._get_edges(monster, 'exchange_from')
 
     def get_monster_exchange_models(self, monster: MonsterModel) -> Set[ExchangeModel]:
-        return self._get_edge_model_set(monster, 'exchange_from')
+        return cast(Set[ExchangeModel], self._get_edge_model_set(monster, 'exchange_from'))
 
     def get_monster_exchange_mats(self, monster: MonsterModel) -> Set[MonsterModel]:
         return {self.get_monster(mid, server=monster.server_priority)
