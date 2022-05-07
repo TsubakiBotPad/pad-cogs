@@ -484,11 +484,8 @@ class MonsterGraph:
             mon = to_check.pop()
             if mon in mons:
                 continue
-            if (next_transform := self.get_next_transform(mon)):
-                to_check.add(next_transform)
-            prev = self.get_prev_transform(mon)
-            if prev is not None:
-                to_check.add(prev)
+            to_check.update(self.get_next_transforms(mon))
+            to_check.update(self.get_prev_transforms(mon))
             mons.add(mon)
         return mons
 
@@ -497,10 +494,10 @@ class MonsterGraph:
 
     def process_alt_monsters_from_base(self, base_monster: MonsterModel) -> List[MonsterModel]:
         ids = [base_monster]
-        transform = self.get_next_transform(base_monster)
-        if transform and (transform.monster_id > base_monster.monster_id
-                          or transform.monster_id == 5802):  # I hate DMG very much
-            ids += self.process_alt_monsters_from_base(transform)
+        for transform in sorted(self.get_next_transforms(base_monster), key=self.get_id_order_key):
+            if transform and (transform.monster_id > base_monster.monster_id
+                              or transform.monster_id == 5802):  # I hate DMG very much
+                ids += self.process_alt_monsters_from_base(transform)
         for evo in sorted(self.get_next_evolutions(base_monster), key=self.get_id_order_key):
             ids += self.process_alt_monsters_from_base(evo)
         return ids
@@ -633,12 +630,35 @@ class MonsterGraph:
             return InternalEvoType.Ultimate
         return InternalEvoType.Normal
 
-    def get_prev_evolution_id(self, monster: MonsterModel) -> Optional[int]:
-        return self._get_edge_or_none(monster, 'back_evolution')
-
     def get_prev_evolution(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        pe = self.get_prev_evolution_id(monster)
+        pe = self._get_edge_or_none(monster, 'back_evolution')
         return pe and self.get_monster(pe, server=monster.server_priority)
+
+    def get_next_evolutions(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'evolution')}
+
+    def get_prev_transforms(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'back_transformation')}
+
+    def get_prev_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        # This doesn't need a special function, so I'll remove it later
+        transforms = self.get_prev_transforms(monster)
+        if not transforms:
+            return None
+        return min(transforms, key=lambda m: m.monster_id)
+
+    def get_next_transforms(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {self.get_monster(mid, server=monster.server_priority)
+                for mid in self._get_edges(monster, 'transformation')}
+
+    def get_next_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
+        # Figure out how to get rid of this
+        transforms = self.get_next_transforms(monster)
+        if not transforms:
+            return None
+        return min(transforms, key=lambda m: m.monster_id)
 
     def get_all_prev_evolutions(self, monster: MonsterModel, *, include_self: bool = True) -> List[MonsterModel]:
         ret = []
@@ -679,32 +699,6 @@ class MonsterGraph:
             for i in to_pop:
                 ret.pop(i)
         return ret
-
-    def get_next_evolution_ids(self, monster: MonsterModel) -> Set[int]:
-        return self._get_edges(monster, 'evolution')
-
-    def get_next_evolutions(self, monster: MonsterModel) -> Set[MonsterModel]:
-        return {self.get_monster(mid, server=monster.server_priority)
-                for mid in self.get_next_evolution_ids(monster)}
-
-    def get_prev_transform_id(self, monster: MonsterModel) -> Optional[int]:
-        transforms = list(self._get_edges(monster, 'back_transformation'))
-        if len(transforms) > 0:
-            return transforms[0]
-        return None
-
-    def get_prev_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        prev = self.get_prev_transform_id(monster)
-        if prev is None:
-            return None
-        return self.get_monster(prev, server=monster.server_priority)
-
-    def get_next_transform_id(self, monster: MonsterModel) -> Optional[int]:
-        return self._get_edge_or_none(monster, 'transformation')
-
-    def get_next_transform(self, monster: MonsterModel) -> Optional[MonsterModel]:
-        nt = self.get_next_transform_id(monster)
-        return nt and self.get_monster(nt, server=monster.server_priority)
 
     def get_monster_depth(self, monster: MonsterModel) -> float:
         if monster.monster_id == 5802:

@@ -409,7 +409,7 @@ class MonsterIndex:
                                    lambda m: not self.graph.monster_is_transform_base(m))
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.BASETRANS],
                                    lambda m: (self.graph.monster_is_transform_base(m)
-                                              and self.graph.get_next_transform(m)))
+                                              and self.graph.get_next_transforms(m)))
 
         # Awoken
         self.add_numbered_modifier(monster, modifiers, EVO_MAP[EvoTypes.AWOKEN],
