@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from redbot.core import Config, checks, commands
 from tsutils.tsubaki.monster_header import MonsterHeader
-
+from tsutils.user_interaction import indented, confirmation_message, cancellation_message, send_cancellation_message
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -114,32 +114,33 @@ class MonIdListener(commands.Cog):
         """Look up if a card is tradeable"""
         dbcog = self.bot.get_cog("DBCog")
         monster = await dbcog.find_monster(query)
-        if monster is None: 
-            await ctx.send("Sorry, your query `" + query + "` didn't match any results :(")
-            return
+        if monster is None:
+            return await send_cancellation_message(
+                ctx, f"Sorry, your query `{query}` didn't match any results :(")
 
         if monster.sell_mp < 100:
-            ret = "\t\t✅ This card is tradable!"
-        else: 
-            base_flag = False # Track other form tradability
-            gem_flag = False  # Track evo gem tradability
+            return await self._send_tradeable_message(
+                ctx, monster, indented(confirmation_message("This card is tradable!")))
 
-            base_monster = dbcog.get_monster(monster.base_evo_id) 
-            if base_monster.sell_mp < 100:
-                base_flag = True
+        ret = [
+            indented(cancellation_message("This card is **not tradable**."))
+        ]
 
-            if monster.evo_gem_id is not None:
-                evo_gem: "MonsterModel" = dbcog.get_monster(monster.evo_gem_id)
-                if evo_gem.sell_mp < 100:
-                    gem_flag = True
-            
-            ret = (f"\t\t{'⁉️' if base_flag or gem_flag else '❌'} This card is **not tradable**.")
-            if base_flag:
-                ret += "\n\t\t\t\t✅ Other forms of this card are tradable."
-            if gem_flag:
-                ret += "\n\t\t\t\t✅ Evo gem for this card is tradable."
-            elif monster.evo_gem_id is not None:
-                ret += "\n\t\t\t\t❌ Evo gem for this card is not tradable."
+        base_monster = dbcog.get_monster(monster.base_evo_id)
+        if base_monster.sell_mp < 100:
+            ret.append(indented(confirmation_message(
+                "Other forms of this card are tradable."), level=2))
 
-        await ctx.send("{}\n{}".format(
-            MonsterHeader.text_with_emoji(monster), ret))
+        if monster.evo_gem_id is not None:
+            evo_gem: "MonsterModel" = dbcog.get_monster(monster.evo_gem_id)
+            if evo_gem.sell_mp < 100:
+                ret.append(indented(confirmation_message(
+                    "Evo gem for this card is tradable."), level=2))
+            else:
+                ret.append(indented(cancellation_message(
+                    "Evo gem for this card is not tradable."), level=2))
+        return await self._send_tradeable_message(ctx, monster, '\n'.join(ret))
+
+    @staticmethod
+    async def _send_tradeable_message(ctx, monster: "MonsterModel", msg: str):
+        await ctx.send("{}\n{}".format(MonsterHeader.text_with_emoji(monster), msg))
