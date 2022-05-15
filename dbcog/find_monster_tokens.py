@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
+from itertools import chain
 from typing import Iterable, List, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
 import regex as re
@@ -61,7 +62,7 @@ class TokenMatch(NamedTuple):
 
 
 def regexlist(tokens):
-    return '(?:' + '|'.join(re.escape(t) for t in tokens) + ")"
+    return '(?:' + '|'.join(re.escape(t) for t in chain(tokens, ['$^'])) + ")"
 
 
 class QueryToken(ABC):
