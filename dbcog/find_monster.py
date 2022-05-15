@@ -57,7 +57,7 @@ class FindMonster:
 
         self.index = self.dbcog.indexes[query_settings.server]
 
-        return re.sub(r'\s*(--|—)\w+(:{.+?})?\s*', ' ', original_query)
+        return re.sub(r'\s*(--|—)\w+(:{.+?})?(?:\s+|$)', ' ', original_query)
 
     def _merge_multi_word_tokens(self, tokens: List[str]) -> List[str]:
         result = []
@@ -310,7 +310,6 @@ class FindMonster:
         tokenized_query = self._process_settings(query).split()
         tokenized_query = [token.replace('\0', ' ') for token in tokenized_query]
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
-
         best_monster, matches_dict, valid_monsters = max(
             await self._find_monster_search(tokenized_query),
             await self._find_monster_search(mw_tokenized_query)
