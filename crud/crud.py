@@ -4,7 +4,7 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import aiofiles
 import aiomysql
@@ -13,6 +13,8 @@ import pygit2
 from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
+from tsutils.enums import Server
+from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
 if TYPE_CHECKING:
