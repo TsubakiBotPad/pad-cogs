@@ -6,7 +6,7 @@ import random
 import re
 from enum import EnumMeta
 from io import BytesIO
-from typing import List, Optional, TYPE_CHECKING, Type
+from typing import Callable, List, Optional, TYPE_CHECKING, Type
 
 import discord
 from discord import Color
@@ -1166,6 +1166,10 @@ class PadInfo(commands.Cog):
         mods = dbcog.indexes[server].modifiers[mon]
         manual_modifiers = dbcog.indexes[server].manual_modifiers[mon.monster_id]
         EVOANDTYPE = dbcog.token_maps.EVO_TOKENS.union(dbcog.token_maps.TYPE_TOKENS)
+
+        def mod_token_str(f: Callable[[str], bool]) -> str:
+            return ' '.join(sorted(t for t in mods if f(t) and not t.startswith('_')))
+
         ret = (f"[{mon.monster_id}] {mon.name_en}\n"
                f"Base: [{base_monster.monster_id}] {base_monster.name_en}\n"
                f"Series: {mon.series.name_en} ({mon.series_id}, {mon.series.series_type})\n\n"
@@ -1175,10 +1179,10 @@ class PadInfo(commands.Cog):
                f"     Treenames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_treenames.items() if mon in ms))}\n"
                f"     Nicknames: {' '.join(sorted(t for t, ms in dbcog.indexes[server].manual_cardnames.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
-               f"     Attribute: {' '.join(sorted(t for t in mods if t.split('-')[0] in dbcog.token_maps.COLOR_TOKENS))}\n"
-               f"     Awakening: {' '.join(sorted(t for t in mods if t.split('-')[0] in dbcog.token_maps.AWAKENING_TOKENS))}\n"
-               f"    Evo & Type: {' '.join(sorted(t for t in mods if t.split('-')[0] in EVOANDTYPE))}\n"
-               f"         Other: {' '.join(sorted(t for t in mods if t.split('-')[0] not in dbcog.token_maps.OTHER_HIDDEN_TOKENS))}\n"
+               f"     Attribute: {mod_token_str(lambda t: t.split('-')[0] in dbcog.token_maps.COLOR_TOKENS)}\n"
+               f"     Awakening: {mod_token_str(lambda t: t.split('-')[0] in dbcog.token_maps.AWAKENING_TOKENS)}\n"
+               f"    Evo & Type: {mod_token_str(lambda t: t.split('-')[0] in EVOANDTYPE)}\n"
+               f"         Other: {mod_token_str(lambda t: t.split('-')[0] not in dbcog.token_maps.OTHER_HIDDEN_TOKENS)}\n"
                f"Manually Added: {' '.join(sorted(manual_modifiers))}\n")
         for page in pagify(ret):
             await ctx.send(box(page))
