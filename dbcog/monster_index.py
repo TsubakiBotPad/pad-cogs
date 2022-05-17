@@ -376,6 +376,9 @@ class MonsterIndex:
         if monster.series_id in self.series_id_to_pantheon_nickname:
             modifiers.update(self.series_id_to_pantheon_nickname[monster.series_id])
 
+        # Group
+        modifiers.add("_group" + str(monster.group_id))
+
         # Rarity
         modifiers.add(str(monster.rarity) + "*")
         modifiers.add(str(basemon.rarity) + "*b")

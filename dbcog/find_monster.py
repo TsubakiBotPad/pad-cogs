@@ -7,9 +7,7 @@ from tsutils.formatting import rmdiacritics
 from tsutils.query_settings.query_settings import QuerySettings
 
 from dbcog.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, QueryToken, SpecialToken, \
-    TOKEN_JW_DISTANCE, \
-    TokenMatch, \
-    calc_ratio_modifier, calc_ratio_name, string_to_token
+    TOKEN_JW_DISTANCE, TokenMatch, calc_ratio_modifier, calc_ratio_name, string_to_token
 from dbcog.models.monster_model import MonsterModel
 
 SERIES_TYPE_PRIORITY = {
@@ -119,8 +117,8 @@ class FindMonster:
 
             if isinstance(token, SpecialToken) or token.value in self.index.all_modifiers \
                     or (any(self.calc_ratio_modifier(token, m, .1) > MODIFIER_JW_DISTANCE for m in longmods)
-                    and token.value not in self.index.all_name_tokens
-                    and len(token.value) >= 8):
+                        and token.value not in self.index.all_name_tokens
+                        and len(token.value) >= 8):
                 lastmodpos = not token.negated
                 modifiers.append(token)
             else:
