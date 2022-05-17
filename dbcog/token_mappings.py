@@ -305,13 +305,15 @@ PLUS_AWOKENSKILL_MAP = {
 }
 
 NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
-    (('monster_no_na',),): ('monsterid', 'monsterno'),
+    (('monster_no_na',),): ('monsterid', 'monsterno', 'monster#'),
     (('base_evo_id',),): ('baseid',),
     (('superawakening_count',),): ('sacount',),
     (('leader_skill', 'leader_skill_id'),): ('lsid',),
     (('active_skill', 'active_skill_id'),): ('asid',),
     (('series', 'series_id'),): ('sid', 'seriesid'),
     (('rarity',),): ('rarity', 'rare'),
+    (('series_id',),): ('seriesid', 'series#'),
+    (('rcv_min',),): ('minrcv',),
     (('buy_mp',),): ('buymp',),
     (('sell_mp',),): ('sellmp',),
     (('sell_gold',),): ('gold', 'coins'),

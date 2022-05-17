@@ -45,10 +45,6 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.extra_time,
   leader_skills{0}.tags,
   COALESCE(series.series_id, 0) AS s_series_id,
-  COALESCE(series.name_ja, 'Unsorted') AS s_name_ja,
-  COALESCE(series.name_en, 'Unsorted') AS s_name_en,
-  COALESCE(series.name_ko, 'Unsorted') AS s_name_ko,
-  series.series_type AS s_series_type,
   exchanges.target_monster_id AS evo_gem_id,
   drops.drop_id
 FROM
@@ -136,7 +132,6 @@ TRANSFORMS_QUERY = """SELECT
 FROM
   transformations{0}"""
 
-
 AWAKENINGS_QUERY = """SELECT
   awakenings{0}.awakening_id,
   awakenings{0}.monster_id,
@@ -158,11 +153,17 @@ WHERE
 """
 
 EXCHANGE_QUERY = """SELECT
-   *
+  *
 FROM
   exchanges
 WHERE
   start_timestamp < strftime('%s', 'now')
+"""
+
+SIMPLE_QUERY = """SELECT
+  *
+FROM
+  {0}
 """
 
 SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
@@ -266,6 +267,21 @@ class MonsterGraph:
                 idx = int(m[1:-1])  # Remove parentheses
                 mtoegg[idx][e_type] = True
 
+        ss_query = self.database.query_many(SIMPLE_QUERY.format('series'))
+        series = {}
+        for row in ss_query:
+            series[row.series_id] = SeriesModel(series_id=row.series_id,
+                                                name_ja=row.name_ja,
+                                                name_en=row.name_en,
+                                                name_ko=row.name_ko,
+                                                series_type=row.series_type
+                                                )
+
+        mss_query = self.database.query_many(SIMPLE_QUERY.format('monster_series'))
+        monster_series = defaultdict(set)
+        for row in mss_query:
+            monster_series[row.monster_id].add(series[row.series_id])
+
         for m in ms:
             if self.debug_monster_ids is not None and m.monster_id not in self.debug_monster_ids:
                 continue
@@ -287,13 +303,6 @@ class MonsterGraph:
                                         tags=m.tags,
                                         ) if m.leader_skill_id != 0 else None
 
-            s_model = SeriesModel(series_id=m.s_series_id,
-                                  name_ja=m.s_name_ja,
-                                  name_en=m.s_name_en,
-                                  name_ko=m.s_name_ko,
-                                  series_type=m.s_series_type
-                                  )
-
             m_model = MonsterModel(monster_id=m.monster_id,
                                    base_evo_id=m.base_id,
                                    monster_no_jp=m.monster_no_jp,
@@ -303,8 +312,9 @@ class MonsterGraph:
                                    awakenings=mtoawo[m.monster_id],
                                    leader_skill=ls_model,
                                    active_skill=acts.get(m.active_skill_id),
-                                   series=s_model,
+                                   series=series[m.s_series_id],
                                    series_id=m.s_series_id,
+                                   group_id=m.group_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
@@ -819,7 +829,7 @@ class MonsterGraph:
         elif self.monster_is_pem_evo(monster):
             return 'PEM Card'
         elif self.monster_is_vem_evo(monster):
-            return 'AdPem Card'
+            return 'AdPEM Card'
 
     def numeric_next_monster(self, monster: MonsterModel) -> Optional[MonsterModel]:
         next_monster = None
