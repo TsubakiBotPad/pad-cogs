@@ -4,7 +4,7 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import aiofiles
 import aiomysql
@@ -14,6 +14,8 @@ from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
+
+from crud.editseries import EditSeries
 
 if TYPE_CHECKING:
     from dbcog import DBCog
@@ -52,7 +54,7 @@ async def check_crud_channel(ctx):
     return chan is None or chan == ctx.channel.id or ctx.author.id in ctx.bot.owner_ids
 
 
-class Crud(commands.Cog):
+class Crud(commands.Cog, EditSeries):
     """PadGuide CRUD"""
 
     def __init__(self, bot, *args, **kwargs):
@@ -62,7 +64,7 @@ class Crud(commands.Cog):
         self.config.register_global(config_file=None, pipeline_base=None, chan=None)
         self.config.register_user(email=None)
 
-        GADMIN_COG = self.bot.get_cog("GlobalAdmin")
+        GADMIN_COG: Any = self.bot.get_cog("GlobalAdmin")
         if GADMIN_COG:
             GADMIN_COG.register_perm("crud")
         else:
@@ -87,7 +89,7 @@ class Crud(commands.Cog):
             return (await self.connect(json.loads(await db_config.read()))).cursor()
 
     async def get_dbcog(self) -> "DBCog":
-        dbcog = self.bot.get_cog("DBCog")
+        dbcog: "DBCog" = self.bot.get_cog("DBCog")
         if dbcog is None:
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
@@ -95,17 +97,17 @@ class Crud(commands.Cog):
 
     def connect(self, db_config):
         return aiomysql.connect(host=db_config['host'],
-                               user=db_config['user'],
-                               password=db_config['password'],
-                               db=db_config['db'],
-                               charset=db_config['charset'],
-                               cursorclass=aiomysql.cursors.DictCursor,
-                               autocommit=True)
+                                user=db_config['user'],
+                                password=db_config['password'],
+                                db=db_config['db'],
+                                charset=db_config['charset'],
+                                cursorclass=aiomysql.cursors.DictCursor,
+                                autocommit=True)
 
     async def execute_write(self, ctx, sql, replacements):
         async with await self.get_cursor() as cursor:
             affected = await cursor.execute(sql, replacements)
-            await ctx.send(inline(cursor._executed))
+            await ctx.send(inline(sql % replacements))
             await ctx.send("{} row(s) affected.".format(affected))
 
     async def execute_read(self, ctx, sql, replacements):
@@ -113,7 +115,7 @@ class Crud(commands.Cog):
             await cursor.execute(sql, replacements)
             results = list(await cursor.fetchall())
             msg = 'Results\n' + json.dumps(results, indent=2, ensure_ascii=False, sort_keys=True)
-            await ctx.send(inline(cursor._executed))
+            await ctx.send(inline(sql % replacements))
             for page in pagify(msg):
                 await ctx.send(box(page))
 
@@ -162,7 +164,7 @@ class Crud(commands.Cog):
     async def crud(self, ctx):
         """PadGuide database CRUD."""
 
-    @crud.command()
+    @commands.command()
     async def editmonsname(self, ctx, monster_id: int, *, name):
         """Change a monster's name_en_override
 
@@ -187,8 +189,7 @@ class Crud(commands.Cog):
             old_val = await cursor.fetchall()
 
         if not old_val:
-            await ctx.send(f"There is no monster with id {monster_id}")
-            return
+            return await ctx.send(f"There is no monster with id {monster_id}")
         monster_name = old_val[0]['monster_name']
         old_name = old_val[0]['old_override']
         if not await get_user_confirmation(ctx, (f"Are you sure you want to change `{monster_name} ({monster_id})`'s"
@@ -198,41 +199,6 @@ class Crud(commands.Cog):
         sql = (f'INSERT INTO monster_name_overrides (monster_id, name_en, is_translation, tstamp)'
                f' VALUES (%s, %s, 1, UNIX_TIMESTAMP())')
         await self.execute_write(ctx, sql, (monster_id, name))
-
-    @crud.command()
-    async def editmonsseries(self, ctx, monster_id: int, series_id: int):
-        """Change a monster's main series_id"""
-        async with await self.get_cursor() as cursor:
-            await cursor.execute("""SELECT
-                                COALESCE(mno.name_en, monsters.name_en) AS monster_name,
-                                series.name_en AS series_name
-                              FROM monster_series
-                              JOIN monsters ON monsters.monster_id = monster_series.monster_id
-                              JOIN series ON series.series_id = monster_series.series_id
-                              LEFT JOIN monster_name_overrides mno
-                                ON mno.monster_id = monsters.monster_id AND is_translation = 1
-                              WHERE monsters.monster_id = %s AND priority = 1""", (monster_id,))
-            rows = await cursor.fetchall()
-            if not rows:
-                await ctx.send("There is no monster with id: {}".format(monster_id))
-                return
-            monster_name = rows[0]['monster_name']
-            old_series = rows[0]['series_name']
-
-            await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
-            rows = await cursor.fetchall()
-            if not rows:
-                await ctx.send(f"There is no series with id {series_id}")
-                return
-            new_series = rows[0]['name_en']
-
-        if not await get_user_confirmation(ctx, (f"Are you sure you want to change `{monster_name} ({monster_id})`'s"
-                                                 f" series id from `{old_series}` to `{new_series}`?")):
-            return
-
-        sql = (f'UPDATE monster_series SET series_id = %s, tstamp = UNIX_TIMESTAMP()'
-               f' WHERE monster_id = %s AND priority = 1')
-        await self.execute_write(ctx, sql, (series_id, monster_id))
 
     @crud.command()
     async def searchdungeon(self, ctx, *, search_text):
@@ -271,12 +237,10 @@ class Crud(commands.Cog):
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in SERIES_KEYS for x in elements)):
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
 
         if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
-            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
-            return
+            return await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
 
         EXTRAS = {}
         async with await self.get_cursor() as cursor:
@@ -317,17 +281,14 @@ class Crud(commands.Cog):
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
         """
         if len(elements) % 2 != 0:
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in SERIES_KEYS for x in elements)):
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
 
         if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
-            await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
-            return
+            return await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
         sql = ('UPDATE series'
@@ -396,17 +357,14 @@ class Crud(commands.Cog):
         [p]crud awokenskill add key1 "Value1" key2 "Value2"
         """
         if len(elements) % 2 != 0:
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
 
         if "awoken_skill_id" not in elements or not elements["awoken_skill_id"].isdigit():
-            await ctx.send("You must supply an numeric `awoken_skill_id` when adding a new awoken skill.")
-            return
+            return await ctx.send("You must supply an numeric `awoken_skill_id` when adding a new awoken skill.")
         elements["awoken_skill_id"] = int(elements["awoken_skill_id"])
 
         EXTRAS = {
@@ -465,23 +423,19 @@ class Crud(commands.Cog):
         elif awoken_skill.isdigit():
             awoken_skill_id = int(awoken_skill)
         else:
-            await ctx.send("Invalid awoken skill.")
-            return
+            return await ctx.send("Invalid awoken skill.")
 
         awoken_skill_id = int(awoken_skill_id)
 
         if len(elements) % 2 != 0:
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
 
         if 'awoken_skill_id' in elements:
-            await ctx.send("`awoken_skill_id` is not a supported key for editing.")
-            return
+            return await ctx.send("`awoken_skill_id` is not a supported key for editing.")
 
         replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
         sql = ('UPDATE awoken_skills'
@@ -549,7 +503,6 @@ class Crud(commands.Cog):
         """Sets your email so GitHub commits can be properly attributed"""
         if email is not None and \
                 not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
-            await ctx.send("Invalid email.")
-            return
+            return await ctx.send("Invalid email.")
         await self.config.user(ctx.author).email.set(email)
         await ctx.tick()

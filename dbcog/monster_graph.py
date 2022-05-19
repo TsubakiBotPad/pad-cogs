@@ -136,7 +136,6 @@ TRANSFORMS_QUERY = """SELECT
 FROM
   transformations{0}"""
 
-
 AWAKENINGS_QUERY = """SELECT
   awakenings{0}.awakening_id,
   awakenings{0}.monster_id,
@@ -164,6 +163,12 @@ FROM
 WHERE
   start_timestamp < strftime('%s', 'now')
 """
+
+SIMPLE_QUERY = """SELECT
+   *
+ FROM
+   {0}
+ """
 
 SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
@@ -266,6 +271,21 @@ class MonsterGraph:
                 idx = int(m[1:-1])  # Remove parentheses
                 mtoegg[idx][e_type] = True
 
+        ss_query = self.database.query_many(SIMPLE_QUERY.format('series'))
+        series = {}
+        for row in ss_query:
+            series[row.series_id] = SeriesModel(series_id=row.series_id,
+                                                name_ja=row.name_ja,
+                                                name_en=row.name_en,
+                                                name_ko=row.name_ko,
+                                                series_type=row.series_type
+                                                )
+
+        mss_query = self.database.query_many(SIMPLE_QUERY.format('monster_series'))
+        monster_series = defaultdict(set)
+        for row in mss_query:
+            monster_series[row.monster_id].add(series[row.series_id])
+
         for m in ms:
             if self.debug_monster_ids is not None and m.monster_id not in self.debug_monster_ids:
                 continue
@@ -303,7 +323,8 @@ class MonsterGraph:
                                    awakenings=mtoawo[m.monster_id],
                                    leader_skill=ls_model,
                                    active_skill=acts.get(m.active_skill_id),
-                                   series=s_model,
+                                   series=series[m.s_series_id],
+                                   all_series=monster_series[m.monster_id],
                                    series_id=m.s_series_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
@@ -852,6 +873,14 @@ class MonsterGraph:
     def monster_is_evo_gem(self, monster: MonsterModel) -> bool:
         # Evo gems can no longer be calculated via exchange as of Pixel Volcano Dragon
         return monster.name_en.endswith("'s Gem") or monster.name_ja.endswith("の希石")
+
+    def monster_is_gfe_exchange(self, monster: MonsterModel, stars: Optional[int] = None) -> bool:
+        monsters = {self.get_monster(mid, server=monster.server_priority)
+                    for exc in self.get_monster_exchange_models(monster)
+                    for mid in exc.required_monster_ids}
+        if stars is not None:
+            monsters = {m for m in monsters if m.rarity == stars}
+        return any(s.series_id == 34 for m in monsters for s in m.all_series)
 
     def material_of_ids(self, monster: MonsterModel) -> List[int]:
         return sorted(self._get_edges(monster, 'material_of'))
