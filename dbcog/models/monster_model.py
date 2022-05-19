@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from typing import Set
 
 import romkan
 from tsutils.enums import Server
@@ -11,6 +12,7 @@ from .enum_types import Attribute, AwakeningRestrictedLatent, MonsterType, enum_
 from .leader_skill_model import LeaderSkillModel
 from .monster.monster_difference import MonsterDifference
 from .monster_stats import monster_stats
+from .series_model import SeriesModel
 
 
 class MonsterModel(BaseModel):
@@ -33,6 +35,7 @@ class MonsterModel(BaseModel):
         self.active_skill_id = self.active_skill.active_skill_id if self.active_skill else None
 
         self.series = m['series']
+        self.all_series: Set[SeriesModel] = m['all_series']
         self.series_id = m['series_id']
         self.group_id = m['group_id']
         self.name_ja = m['name_ja']

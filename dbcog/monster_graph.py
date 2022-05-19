@@ -313,6 +313,7 @@ class MonsterGraph:
                                    leader_skill=ls_model,
                                    active_skill=acts.get(m.active_skill_id),
                                    series=series[m.s_series_id],
+                                   all_series=monster_series[m.monster_id],
                                    series_id=m.s_series_id,
                                    group_id=m.group_id,
                                    attribute_1_id=m.attribute_1_id,
@@ -862,6 +863,14 @@ class MonsterGraph:
     def monster_is_evo_gem(self, monster: MonsterModel) -> bool:
         # Evo gems can no longer be calculated via exchange as of Pixel Volcano Dragon
         return monster.name_en.endswith("'s Gem") or monster.name_ja.endswith("の希石")
+
+    def monster_is_gfe_exchange(self, monster: MonsterModel, stars: Optional[int] = None) -> bool:
+        monsters = {self.get_monster(mid, server=monster.server_priority)
+                    for exc in self.get_monster_exchange_models(monster)
+                    for mid in exc.required_monster_ids}
+        if stars is not None:
+            monsters = {m for m in monsters if m.rarity == stars}
+        return any(s.series_id == 34 for m in monsters for s in m.all_series)
 
     def material_of_ids(self, monster: MonsterModel) -> List[int]:
         return sorted(self._get_edges(monster, 'material_of'))
