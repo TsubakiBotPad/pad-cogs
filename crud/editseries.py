@@ -48,11 +48,12 @@ else:
     EditSeriesTarget = Literal['monster', 'tree', 'group']
 
 
-def disjoint_sets(superset: Iterable[T], f: Callable[[T], bool]) -> Tuple[Set[T], Set[T]]:
+def disjoint_sets(superset: Iterable["MonsterModel"], f: Callable[["MonsterModel"], bool])\
+        -> Tuple[List["MonsterModel"], List["MonsterModel"]]:
     a, b = set(), set()
     for e in superset:
         (a if f(e) else b).add(e)
-    return a, b
+    return sorted(a, key=lambda m: m.monster_id), sorted(b, key=lambda m: m.monster_id)
 
 
 class EditSeries:
@@ -64,14 +65,18 @@ class EditSeries:
     async def es_execute_write(self, ctx, sql: str, replacements: Sequence = ()) -> int:
         async with await self.get_cursor() as cursor:
             affected = 0
-            if sql.strip():
-                affected = await cursor.execute(sql, replacements)
-                printable = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
-                printable = re.sub(r'\n', r'\n\t', printable).strip()
-                logger.info(f"{ctx.author} executed the following query via {ctx.message.content}:"
-                            f"\n{printable}"
-                            f"\nwhich affected {affected} row(s).")
-        await ctx.send("{} row(s) affected.".format(affected))
+            for mon in re.split(r'\n\s*\n', sql):
+                changed = 0
+                for query in mon.split(';'):
+                    if query.strip():
+                        changed += await cursor.execute(query, replacements)
+                affected += bool(changed)
+        printable = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
+        printable = re.sub(r'\n', r'\n\t', printable).strip()
+        logger.info(f"{ctx.author} executed the following query via {ctx.message.content}:"
+                    f"\n{printable}"
+                    f"\nwhich affected {affected} monster(s).")
+        await ctx.send("{} monster(s) affected.".format(affected))
         return affected
 
     @commands.command()
@@ -102,7 +107,8 @@ class EditSeries:
 
         monsters = None
         if target == 'monster':
-            monsters = [int(mid) for mid in re.split(r'\D+', target_str)]
+            dbcog = await self.get_dbcog()
+            monsters = [dbcog.get_monster(int(mid)) for mid in re.split(r'\D+', target_str)]
         elif target == 'tree':
             dbcog = await self.get_dbcog()
             monsters = dbcog.database.graph.get_alt_monsters(dbcog.get_monster(int(target_str)))
@@ -125,14 +131,14 @@ class EditSeries:
                 SELECT
                 monster_id, series_id
                 FROM monster_series
-                WHERE monster_id IN {monsters_str} AND series_id <> {series_id}""", ())
+                WHERE monster_id IN {monsters_str}""", ())
             rows = await cursor.fetchall()
             sids = defaultdict(set)
             for row in rows:
                 sids[row['monster_id']].add(row['series_id'])
+            print(sids)
             secondary, primary = disjoint_sets(monsters, lambda m: m.monster_id in sids)
-            seen, secondary = map(lambda ms: sorted(ms, key=lambda m: m.monster_id),
-                                  disjoint_sets(monsters, lambda m: series_id in sids[m.monster_id]))
+            seen, secondary = disjoint_sets(secondary, lambda m: series_id in sids[m.monster_id])
             await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
             rows = await cursor.fetchall()
             if not rows:
@@ -174,17 +180,15 @@ class EditSeries:
                 WHERE monster_id IN {monsters_str}""", ())
             rows = await cursor.fetchall()
             sids = defaultdict(set)
-            for row in rows:
-                sids[row['monster_id']].add(row['series_id'])
             primaries = {}
             for row in rows:
+                sids[row['monster_id']].add(row['series_id'])
                 if row['priority']:
                     primaries[row['monster_id']] = row['series_id']
             await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
             rows = await cursor.fetchall()
             was_primary, wasnt_primary = disjoint_sets(monsters, lambda m: primaries[m.monster_id] == series_id)
-            unadded, wasnt_primary = map(lambda ms: sorted(ms, key=lambda m: m.monster_id),
-                                         disjoint_sets(wasnt_primary, lambda m: series_id not in sids[m.monster_id]))
+            unadded, wasnt_primary = disjoint_sets(wasnt_primary, lambda m: series_id not in sids[m.monster_id])
             if not rows:
                 return await ctx.send(f"There is no series with id {series_id}")
             new_series = next(iter(rows))['name_en']
@@ -223,24 +227,26 @@ class EditSeries:
         async with await self.get_cursor() as cursor:
             await cursor.execute(f"""
                 SELECT
-                monster_id, series_id
+                monster_id, series_id, priority
                 FROM monster_series
                 WHERE monster_id IN {monsters_str}""", ())
             rows = await cursor.fetchall()
             await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
             mids = [row['monster_id'] for row in rows]
-            sids = defaultdict(set)
+            primaries = {}
             for row in rows:
-                sids[row['monster_id']].add(row['series_id'])
+                if row['priority']:
+                    primaries[row['monster_id']] = row['series_id']
+            has_series, no_series = disjoint_sets(monsters, lambda m: m.monster_id in mids)
+            already_primary, has_series = disjoint_sets(has_series, lambda m: primaries[m.monster_id] == series_id)
             rows = await cursor.fetchall()
             if not rows:
                 return await ctx.send(f"There is no series with id {series_id}")
             new_series = next(iter(rows))['name_en']
         sql = ""
-        has_series, no_series = disjoint_sets(monsters, lambda m: m.monster_id in mids)
-        in_series, not_in_series = map(lambda ms: sorted(ms, key=lambda m: m.monster_id),
-                                       disjoint_sets(has_series, lambda m: series_id in sids[m.monster_id]))
         for monster in monsters:
+            if monster in already_primary:
+                continue
             mid = monster.monster_id
             sql += f"""
                 DELETE FROM monster_series
@@ -260,6 +266,9 @@ class EditSeries:
         if no_series:
             confirmation.append(f"The following monsters will no longer be unsorted:"
                                 f" {', '.join(map(MonsterHeader.text_with_emoji, no_series))}.")
+        if already_primary:
+            confirmation.append(f"The following monsters will not be changed:"
+                                f" {', '.join(map(MonsterHeader.text_with_emoji, already_primary))}.")
         if not await get_user_confirmation(ctx, '\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
