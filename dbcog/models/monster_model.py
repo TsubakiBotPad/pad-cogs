@@ -37,6 +37,7 @@ class MonsterModel(BaseModel):
         self.series = m['series']
         self.all_series: Set[SeriesModel] = m['all_series']
         self.series_id = m['series_id']
+        self.group_id = m['group_id']
         self.name_ja = m['name_ja']
         self.name_ko = m['name_ko']
         self.name_en = self.unoverridden_name_en = m['name_en']

@@ -13,6 +13,8 @@ import pygit2
 from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
+from tsutils.enums import Server
+from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
 from crud.editseries import EditSeries
@@ -497,6 +499,16 @@ class Crud(commands.Cog, EditSeries):
     async def rmchan(self, ctx):
         await self.config.chan.set(None)
         await ctx.tick()
+
+    @commands.command(aliases=['group#', 'ghgroup#'])
+    async def ghgroupn(self, ctx, *, query):
+        dbcog: Any = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            return await ctx.send("DBCog not loaded.")
+        monster = await dbcog.find_monster(query, ctx.author.id)
+        if monster is None:
+            return await ctx.send("No matching monster found.")
+        await ctx.send(f"{MonsterHeader.text_with_emoji(monster)} is in GungHo Group #{monster.group_id}")
 
     @crud.command()
     async def setmyemail(self, ctx, email=None):
