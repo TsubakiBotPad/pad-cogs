@@ -198,11 +198,10 @@ class EditSeries:
                 WHERE monster_id = {mid} AND series_id = {series_id};
             """
             if monster in was_primary:
-                sql += f"""
-                    UPDATE monster_series
-                    SET priority = 1
-                    WHERE monster_id = {mid}
-                    LIMIT 1;
+                sql += f"""UPDATE monster_series
+                           SET priority = 1
+                           WHERE monster_id = {mid}
+                           LIMIT 1;
                 """
         confirmation = [f"You are removing series `{new_series}`."]
         if was_primary:
