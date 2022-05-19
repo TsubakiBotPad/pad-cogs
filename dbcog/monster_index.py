@@ -372,9 +372,10 @@ class MonsterIndex:
             modifiers.update(TYPE_MAP[mt])
 
         # Series
-        modifiers.add("series" + str(monster.series_id))
-        if monster.series_id in self.series_id_to_pantheon_nickname:
-            modifiers.update(self.series_id_to_pantheon_nickname[monster.series_id])
+        for series in monster.all_series:
+            modifiers.add("series" + str(series.series_id))
+            if series.series_id in self.series_id_to_pantheon_nickname:
+                modifiers.update(self.series_id_to_pantheon_nickname[series.series_id])
 
         # Group
         modifiers.add("_group" + str(monster.group_id))
