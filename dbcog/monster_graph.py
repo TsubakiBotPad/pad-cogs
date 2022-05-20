@@ -313,7 +313,7 @@ class MonsterGraph:
                                    leader_skill=ls_model,
                                    active_skill=acts.get(m.active_skill_id),
                                    series=series[m.s_series_id],
-                                   all_series=monster_series[m.monster_id],
+                                   all_series=monster_series[m.monster_id] or {series[0]},
                                    series_id=m.s_series_id,
                                    group_id=m.group_id,
                                    attribute_1_id=m.attribute_1_id,
