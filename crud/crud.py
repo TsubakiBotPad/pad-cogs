@@ -91,7 +91,7 @@ class Crud(commands.Cog, EditSeries):
             return (await self.connect(json.loads(await db_config.read()))).cursor()
 
     async def get_dbcog(self) -> "DBCog":
-        dbcog: "DBCog" = self.bot.get_cog("DBCog")
+        dbcog: Any = self.bot.get_cog("DBCog")
         if dbcog is None:
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
@@ -234,15 +234,15 @@ class Crud(commands.Cog, EditSeries):
         [p]crud series add key1 "Value1" key2 "Value2"
         """
         if len(elements) % 2 != 0:
-            await ctx.send_help()
-            return
+            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
+                                                        " multi-word values are in quotes")
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in SERIES_KEYS for x in elements)):
-            return await ctx.send_help()
+            return await send_cancellation_message(ctx, f"Valid keys are {', '.join(map(inline, SERIES_KEYS))}")
 
         if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
-            return await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
+            return await send_cancellation_message(ctx, "`series_type` must be one of: " + ", ".join(SERIES_TYPES))
 
         EXTRAS = {}
         async with await self.get_cursor() as cursor:
