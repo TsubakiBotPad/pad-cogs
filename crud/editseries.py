@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.crud.editseries')
 T = TypeVar("T")
+CR = '\n'
 
 if not TYPE_CHECKING:
     class AliasedKeywordConverter(Converter):
@@ -158,13 +159,13 @@ class EditSeries:
         confirmation = [f"You are adding series `{new_series}`."]
         if primary:
             confirmation.append(f"The following monsters will have the series added as a primary series:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, primary))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, primary))}.")
         if secondary:
             confirmation.append(f"The following monsters will have the series added as a secondary series:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, secondary))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, secondary))}.")
         if seen:
             confirmation.append(f"The following monsters will not be changed as they already have the series:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, seen))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, seen))}.")
         if not await get_user_confirmation(ctx, '\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
@@ -210,13 +211,13 @@ class EditSeries:
         confirmation = [f"You are removing series `{new_series}`."]
         if was_primary:
             confirmation.append(f"The following monsters will have their primary series removed:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, was_primary))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, was_primary))}.")
         if wasnt_primary:
             confirmation.append(f"The following monsters will have their secondary series removed:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, wasnt_primary))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, wasnt_primary))}.")
         if unadded:
             confirmation.append(f"The following monsters will continue to not have the series:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, unadded))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, unadded))}.")
         if not await get_user_confirmation(ctx, '\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
@@ -262,13 +263,13 @@ class EditSeries:
         confirmation = [f"You are promoting series `{new_series}`."]
         if has_series:
             confirmation.append(f"The following monsters will have this primary series added:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, has_series))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, has_series))}.")
         if no_series:
             confirmation.append(f"The following monsters will no longer be unsorted:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, no_series))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, no_series))}.")
         if already_primary:
             confirmation.append(f"The following monsters will not be changed:"
-                                f" {', '.join(map(MonsterHeader.text_with_emoji, already_primary))}.")
+                                f" {CR.join(map(MonsterHeader.text_with_emoji, already_primary))}.")
         if not await get_user_confirmation(ctx, '\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
