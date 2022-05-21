@@ -1,7 +1,7 @@
 import logging
 import re
 from collections import defaultdict
-from typing import Callable, Coroutine, Iterable, List, Literal, Sequence, Set, TYPE_CHECKING, Tuple, TypeVar
+from typing import Callable, Coroutine, Iterable, List, Literal, Sequence, TYPE_CHECKING, Tuple, TypeVar
 
 from aiomysql import Cursor
 from discord.ext.commands import BadArgument, Converter
@@ -40,15 +40,15 @@ if not TYPE_CHECKING:
     })
     EditSeriesTarget = AliasedKeywordConverter({
         'monster': ('monsters'),
-        'tree': None,
-        'group': None,
+        'tree': ('trees'),
+        'group': ('groups'),
     })
 else:
     EditSeriesCommand = Literal['add', 'remove', 'promote']
     EditSeriesTarget = Literal['monster', 'tree', 'group']
 
 
-def disjoint_sets(superset: Iterable["MonsterModel"], f: Callable[["MonsterModel"], bool])\
+def disjoint_sets(superset: Iterable["MonsterModel"], f: Callable[["MonsterModel"], bool]) \
         -> Tuple[List["MonsterModel"], List["MonsterModel"]]:
     a, b = set(), set()
     for e in superset:
@@ -71,10 +71,10 @@ class EditSeries:
                     if query.strip():
                         changed += await cursor.execute(query, replacements)
                 affected += bool(changed)
-        printable = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
-        printable = re.sub(r'\n', r'\n\t', printable).strip()
+        display = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
+        display = re.sub(r'\n', r'\n\t', display).strip()
         logger.info(f"{ctx.author} executed the following query via {ctx.message.content}:"
-                    f"\n{printable}"
+                    f"\n{display}"
                     f"\nwhich affected {affected} monster(s).")
         await ctx.send("{} monster(s) affected.".format(affected))
         return affected
@@ -90,9 +90,9 @@ class EditSeries:
             promote - Add a series as primary, possibly demoting an existing primary in the process
 
         Targets:
-            monster/monsters - One or more monsters specified by id
-            tree - A monster tree specified by a monster id of any monster in the tree
-            group - A GH group specified by a group id
+            monster(s) - Monsters specified by id
+            tree(s) - Monster trees specified by monster ids of any monster in the tree
+            group(s) - GH groups specified by a group ids
 
         Examples:
            [p]editseries add 91 monsters 1319, 1825
@@ -105,17 +105,23 @@ class EditSeries:
                 await ctx.send_help()
                 raise ClientInlineTextException()
 
+        dbcog = await self.get_dbcog()
+
         monsters = None
         if target == 'monster':
-            dbcog = await self.get_dbcog()
-            monsters = [dbcog.get_monster(int(mid)) for mid in re.split(r'\D+', target_str)]
+            monsters = [dbcog.get_monster(int(mid))
+                        for mid in re.split(r'\D+', target_str)]
         elif target == 'tree':
-            dbcog = await self.get_dbcog()
-            monsters = dbcog.database.graph.get_alt_monsters(dbcog.get_monster(int(target_str)))
+            monsters = [monster
+                        for bmid in re.split(r'\D+', target_str)
+                        for monster in dbcog.database.graph.get_alt_monsters(dbcog.get_monster(int(bmid)))]
         elif target == 'group':
-            dbcog = await self.get_dbcog()
-            monsters = dbcog.database.get_monsters_where(lambda m: m.group_id == int(target_str),
-                                                         server=Server.COMBINED)
+            monsters = [monster
+                        for gid in re.split(r'\D+', target_str)
+                        for monster in dbcog.database.get_monsters_where(lambda m: m.group_id == int(gid),
+                                                                         server=Server.COMBINED)]
+        if not monsters:
+            return await ctx.send("No matching monsters found.")
 
         if command == 'add':
             await self.es_add(ctx, series_id, monsters)
@@ -136,7 +142,6 @@ class EditSeries:
             sids = defaultdict(set)
             for row in rows:
                 sids[row['monster_id']].add(row['series_id'])
-            print(sids)
             secondary, primary = disjoint_sets(monsters, lambda m: m.monster_id in sids)
             seen, secondary = disjoint_sets(secondary, lambda m: series_id in sids[m.monster_id])
             await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
