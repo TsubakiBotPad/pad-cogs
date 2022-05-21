@@ -66,14 +66,14 @@ class PipelineUI(commands.Cog):
     async def pipelineui(self, context):
         """PadGuide database manipulation."""
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def addadmin(self, ctx, user: discord.Member):
         """Adds a user to the padguide db admin"""
         self.settings.addAdmin(user.id)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def rmadmin(self, ctx, user):
         """Removes a user from the padguide db admin"""
@@ -89,14 +89,14 @@ class PipelineUI(commands.Cog):
                 return
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setconfigfile(self, ctx, *, config_file):
         """Set the database config file."""
         self.settings.setConfigFile(config_file)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     async def searchdungeon(self, ctx, *, search_text):
         """Search for a dungeon via its jp or na name"""
         search_text = '%{}%'.format(search_text)
@@ -111,7 +111,7 @@ class PipelineUI(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    @padguidedb.command()
+    @pipelineui.command()
     async def subdungeonlist(self, ctx, dungeon_id):
         """Show the subdungeon ids of a dungeon"""
         with self.get_cursor() as cursor:
@@ -130,7 +130,7 @@ class PipelineUI(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    @padguidedb.command()
+    @pipelineui.command()
     async def searchsubdungeons(self, ctx, *, search_text):
         """Show the subdungeon ids of all matching dungeons"""
         search_text = f"%{search_text}%"
@@ -153,7 +153,7 @@ class PipelineUI(commands.Cog):
                                          for row in results))
             await ctx.send_interactive(map(box, pagify('\n\n'.join(msg), delims=['\n\n'])))
 
-    @padguidedb.command()
+    @pipelineui.command()
     @is_padguidedb_admin()
     async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int, queues: int = 1):
         if queues > 5:
@@ -204,7 +204,7 @@ class PipelineUI(commands.Cog):
                     'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
             self.queue_size -= 1
 
-    @padguidedb.command()
+    @pipelineui.command()
     @is_padguidedb_admin()
     async def olddungeondrops(self, ctx, dungeon_id: int, dungeon_floor_id: int):
         with self.get_cursor() as cursor:
@@ -221,7 +221,7 @@ class PipelineUI(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    @padguidedb.command()
+    @pipelineui.command()
     @is_padguidedb_admin()
     async def dungeondrops(self, ctx, dungeon_id: int):
         with self.get_cursor() as cursor:
@@ -251,7 +251,7 @@ class PipelineUI(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def cleardungeon(self, ctx, dungeon_id: int):
         with self.get_cursor() as cursor:
@@ -259,7 +259,7 @@ class PipelineUI(commands.Cog):
             cursor.execute(sql)
         await ctx.tick()
 
-    @padguidedb.group()
+    @pipelineui.group()
     @is_padguidedb_admin()
     async def pipeline(self, context):
         """PadGuide pipeline utilities."""
@@ -346,42 +346,42 @@ class PipelineUI(commands.Cog):
                 return
         await ctx.send(inline('Image extract finished'))
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setdungeonscriptfile(self, ctx, *, dungeon_script_file):
         """Set the dungeon script file."""
         self.settings.setDungeonScriptFile(dungeon_script_file)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setfulletlfile(self, ctx, *, full_etl_file):
         """Set the full ETL file."""
         self.settings.setFullETLFile(full_etl_file)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setdungeonprocessorfile(self, ctx, *, full_etl_file):
         """Set the full ETL file."""
         self.settings.setDungeonProcessorFile(full_etl_file)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setimageupdatefile(self, ctx, *, image_update_file):
         """Set the image update file."""
         self.settings.setImageUpdateFile(image_update_file)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setpythonexecutable(self, ctx, *, python_executable):
         """Set the python executable file."""
         self.settings.setPythonExecutable(python_executable)
         await ctx.tick()
 
-    @padguidedb.command()
+    @pipelineui.command()
     @checks.is_owner()
     async def setuserinfo(self, ctx, server: str, user_uuid: str, user_intid: str):
         """Set the dungeon script."""

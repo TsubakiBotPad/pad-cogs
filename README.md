@@ -89,7 +89,7 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 | padbuildimg   | Creates images of PAD teams via a special query language        |
 | padbuilds     | See user-made builds for dungeons i think??? (nobody uses this) |
 | padevents     | A scheduler cog to help players see upcoming daily GH dungeons. |
-| padguidedb    | Database editor.  Not offered to Tsubaki clones.                |
+| pipelineui    | Database editor.  Not offered to Tsubaki clones.                |
 | padglobal     | Global PAD info commands                                        |
 | padinfo       | Monster lookup and info display                                 |
 | padmonitor    | Keeps an eye out for PAD updates                                |      
