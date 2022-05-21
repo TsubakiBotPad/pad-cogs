@@ -91,12 +91,12 @@ class EditSeries:
             promote - Add a series as primary, possibly demoting an existing primary in the process
 
         Targets:
-            monster(s) - Monsters specified by id
-            tree(s) - Monster trees specified by monster ids of any monster in the tree
-            group(s) - GH groups specified by a group ids
+            monster - Monsters specified by id
+            tree - Monster trees specified by monster ids of any monster in the tree
+            group - GH groups specified by a group ids
 
         Examples:
-           [p]editseries add 91 monsters 1319, 1825
+           [p]editseries add 91 monster 1319, 1825
            [p]editseries rm 7 tree 1
            [p]editseries promote 28 group 112
         """
@@ -163,15 +163,15 @@ class EditSeries:
             """
         confirmation = [f"You are adding series `{new_series}`."]
         if primary:
-            confirmation.append(f"The following monsters will have the series added as a primary series:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, primary))}.")
+            confirmation.append("The following monsters will have the series added as a primary series:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, primary)))
         if secondary:
-            confirmation.append(f"The following monsters will have the series added as a secondary series:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, secondary))}.")
+            confirmation.append("The following monsters will have the series added as a secondary series:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, secondary)))
         if seen:
-            confirmation.append(f"The following monsters will not be changed as they already have the series:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, seen))}.")
-        if not await get_user_confirmation(ctx, '\n'.join(confirmation),
+            confirmation.append("The following monsters will not be changed as they already have the series:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, seen)))
+        if not await get_user_confirmation(ctx, '\n\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
         await self.es_execute_write(ctx, sql)
@@ -215,15 +215,15 @@ class EditSeries:
                 """
         confirmation = [f"You are removing series `{new_series}`."]
         if was_primary:
-            confirmation.append(f"The following monsters will have their primary series removed:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, was_primary))}.")
+            confirmation.append("The following monsters will have their primary series removed:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, was_primary)))
         if wasnt_primary:
-            confirmation.append(f"The following monsters will have their secondary series removed:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, wasnt_primary))}.")
+            confirmation.append("The following monsters will have their secondary series removed:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, wasnt_primary)))
         if unadded:
-            confirmation.append(f"The following monsters will continue to not have the series:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, unadded))}.")
-        if not await get_user_confirmation(ctx, '\n'.join(confirmation),
+            confirmation.append("The following monsters will continue to not have the series:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, unadded)))
+        if not await get_user_confirmation(ctx, '\n\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
         await self.es_execute_write(ctx, sql)
@@ -267,15 +267,15 @@ class EditSeries:
             """
         confirmation = [f"You are promoting series `{new_series}`."]
         if has_series:
-            confirmation.append(f"The following monsters will have this primary series added:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, has_series))}.")
+            confirmation.append("The following monsters will have this primary series added:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, has_series)))
         if no_series:
-            confirmation.append(f"The following monsters will no longer be unsorted:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, no_series))}.")
+            confirmation.append("The following monsters will no longer be unsorted:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, no_series)))
         if already_primary:
-            confirmation.append(f"The following monsters will not be changed:"
-                                f" {CR.join(map(MonsterHeader.text_with_emoji, already_primary))}.")
-        if not await get_user_confirmation(ctx, '\n'.join(confirmation),
+            confirmation.append("The following monsters will not be changed:\n"
+                                + '\n'.join(map(MonsterHeader.text_with_emoji, already_primary)))
+        if not await get_user_confirmation(ctx, '\n\n'.join(confirmation),
                                            timeout=30, force_delete=False):
             return
         await self.es_execute_write(ctx, sql)
