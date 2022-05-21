@@ -80,7 +80,6 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 
 | Cog           | Purpose                                                         |
 | ---           | ---                                                             |
-| azurelane     | **DISCONTINUED** Azur Lane card lookup                          |
 | crud          | Database editor.  Not useful for bots other than prod Tsubaki   |
 | dbcog         | Central cog to host all PAD data                                |
 | damagecalc    | Simple attack damage calculator                                 |
@@ -89,12 +88,11 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 | padbuildimg   | Creates images of PAD teams via a special query language        |
 | padbuilds     | See user-made builds for dungeons i think??? (nobody uses this) |
 | padevents     | A scheduler cog to help players see upcoming daily GH dungeons. |
-| pipelineui    | Database editor.  Not offered to Tsubaki clones.                |
 | padglobal     | Global PAD info commands                                        |
 | padinfo       | Monster lookup and info display                                 |
 | padmonitor    | Keeps an eye out for PAD updates                                |      
 | padsearch     | Search for monsters with specific attributes                    |
-| padrem        | Rare Egg Machine simulation.  I don't think this ever existed   |
+| pipelineui    | Database editor.  Not offered to Tsubaki clones.                |
 | pricecheck    | Lumon's thing.  Something about stamina trade equivalence       |
 | profile       | Global user PAD profile storage and lookup                      |
 | schoolidol    | **DISCONTINUED** Love Live! School Idol Festival card lookup    |
