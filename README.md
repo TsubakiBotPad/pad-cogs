@@ -78,21 +78,25 @@ Once the bot is launched, set it to use your repo directory as a cog path. Type 
 
 Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 
-| Cog           | Purpose                                                         |
-| ---           | ---                                                             |
-| crud          | Database editor.  Not useful for bots other than prod Tsubaki   |
-| dbcog         | Central cog to host all PAD data                                |
-| damagecalc    | Simple attack damage calculator                                 |
-| feedback      | A specialized feedback cog for Tsubaki specifically             |
-| padboard      | Converts board images to dawnglare board/solved board links     |
-| padbuildimg   | Creates images of PAD teams via a special query language        |
-| padbuilds     | See user-made builds for dungeons i think??? (nobody uses this) |
-| padevents     | A scheduler cog to help players see upcoming daily GH dungeons. |
-| padglobal     | Global PAD info commands                                        |
-| padinfo       | Monster lookup and info display                                 |
-| padmonitor    | Keeps an eye out for PAD updates                                |      
-| padsearch     | Search for monsters with specific attributes                    |
-| pipelineui    | Database editor.  Not offered to Tsubaki clones.                |
-| pricecheck    | Lumon's thing.  Something about stamina trade equivalence       |
-| profile       | Global user PAD profile storage and lookup                      |
-| schoolidol    | **DISCONTINUED** Love Live! School Idol Festival card lookup    |
+| Cog | Purpose |
+| --- | --- |
+| azurelane | **DISCONTINUED** Azur Lane card lookup |
+| crowddata | Crowdsourced data collection |
+| crud | Database editor.  Not useful for bots other than prod Tsubaki |
+| dbcog | Central cog to host all PAD data |
+| dungeoncog | A cog to search and get info for dungeons |
+| damagecalc | Simple attack damage calculator |
+| feedback | A specialized feedback cog for Tsubaki specifically |
+| monidlistener | A listener to give info for monster ids |
+| padboard | Converts board images to dawnglare board/solved board links |
+| padbuildimg | Creates images of PAD teams via a special query language |
+| padbuilds | See user-made builds for dungeons i think??? (nobody uses this) |
+| padevents | A scheduler cog to help players see upcoming daily GH dungeons. |
+| padglobal | Global PAD info commands |
+| padinfo | Monster lookup and info display |
+| padmonitor | Keeps an eye out for PAD updates | 
+| padsearch | Search for monsters with specific attributes |
+| pipelineui | Interface for running the pipeline (Tsubaki-only) |
+| pricecheck | Lumon's thing.  Something about stamina trade equivalence |
+| profile | Global user PAD profile storage and lookup |
+| schoolidol | **DISCONTINUED** Love Live! School Idol Festival card lookup |
