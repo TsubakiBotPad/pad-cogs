@@ -23,7 +23,7 @@ def is_padguidedb_admin():
 
 
 class PipelineUI(commands.Cog):
-    """PadGuide Database manipulator"""
+    """UI to the Tsubaki database"""
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
