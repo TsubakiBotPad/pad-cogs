@@ -10,19 +10,19 @@ from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cog_settings import CogSettings
 from tsutils.user_interaction import send_repeated_consecutive_messages
 
-logger = logging.getLogger('red.padbot-cogs.padguidedb')
+logger = logging.getLogger('red.padbot-cogs.pipelineui')
 
 
 def is_padguidedb_admin_check(ctx):
     is_owner = ctx.author.id in ctx.bot.owner_ids
-    return is_owner or ctx.bot.get_cog("PadGuideDb").settings.checkAdmin(ctx.author.id)
+    return is_owner or ctx.bot.get_cog("PipelineUI").settings.checkAdmin(ctx.author.id)
 
 
 def is_padguidedb_admin():
     return commands.check(is_padguidedb_admin_check)
 
 
-class PadGuideDb(commands.Cog):
+class PipelineUI(commands.Cog):
     """PadGuide Database manipulator"""
 
     def __init__(self, bot, *args, **kwargs):
@@ -61,9 +61,9 @@ class PadGuideDb(commands.Cog):
                                cursorclass=pymysql.cursors.DictCursor,
                                autocommit=True)
 
-    @commands.group(aliases=['pdb'])
+    @commands.group(aliases=['pdb', 'pui'])
     @is_padguidedb_admin()
-    async def padguidedb(self, context):
+    async def pipelineui(self, context):
         """PadGuide database manipulation."""
 
     @padguidedb.command()
