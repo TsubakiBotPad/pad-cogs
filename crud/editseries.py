@@ -71,10 +71,10 @@ class EditSeries:
                     if query.strip():
                         changed += await cursor.execute(query, replacements)
                 affected += bool(changed)
-        printable = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
-        printable = re.sub(r'\n', r'\n\t', printable).strip()
+        display = re.sub(r'\n[ \t]+', r'\n', sql % replacements)
+        display = re.sub(r'\n', r'\n\t', display).strip()
         logger.info(f"{ctx.author} executed the following query via {ctx.message.content}:"
-                    f"\n{printable}"
+                    f"\n{display}"
                     f"\nwhich affected {affected} monster(s).")
         await ctx.send("{} monster(s) affected.".format(affected))
         return affected
@@ -120,6 +120,8 @@ class EditSeries:
                         for gid in re.split(r'\D+', target_str)
                         for monster in dbcog.database.get_monsters_where(lambda m: m.group_id == int(gid),
                                                                          server=Server.COMBINED)]
+        if not monsters:
+            return await ctx.send("No matching monsters found.")
 
         if command == 'add':
             await self.es_add(ctx, series_id, monsters)
@@ -140,7 +142,6 @@ class EditSeries:
             sids = defaultdict(set)
             for row in rows:
                 sids[row['monster_id']].add(row['series_id'])
-            print(sids)
             secondary, primary = disjoint_sets(monsters, lambda m: m.monster_id in sids)
             seen, secondary = disjoint_sets(secondary, lambda m: series_id in sids[m.monster_id])
             await cursor.execute("SELECT name_en FROM series WHERE series_id = %s", (series_id,))
