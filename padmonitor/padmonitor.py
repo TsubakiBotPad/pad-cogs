@@ -7,14 +7,16 @@ from io import BytesIO
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, pagify
 
-from typing import TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from tsutils.cog_settings import CogSettings
 from tsutils.formatting import contains_ja
 
-logger = logging.getLogger('red.padbot-cogs.padmonitor')
 if TYPE_CHECKING:
     from dbcog.database_context import DbContext
+    from dbcog.models.monster_model import MonsterModel
+
+logger = logging.getLogger('red.padbot-cogs.padmonitor')
 
 
 class PadMonitor(commands.Cog):
@@ -48,47 +50,45 @@ class PadMonitor(commands.Cog):
 
     async def check_seen(self):
         """Refresh the monster indexes."""
-        DGCOG = self.bot.get_cog('DBCog')
-        await DGCOG.wait_until_ready()
-        db_context: "DbContext" = DGCOG.database
-        all_monsters = [*db_context.get_all_monsters()]
+        dbcog = self.bot.get_cog('DBCog')
+        await dbcog.wait_until_ready()
+        all_monsters = [*dbcog.database.get_all_monsters()]
         jp_monster_map = {m.monster_id: m for m in all_monsters if m.on_jp}
         na_monster_map = {m.monster_id: m for m in all_monsters if m.on_na}
 
-        def process(existing, new_map, name):
+        def process(existing: List[int], new_map: Dict[int, "MonsterModel"], name: str)\
+                -> Optional[str]:
             if not existing:
+                # If everything is new, assume nothing is and log all current monsters as seen
                 logger.info('preloading %i', len(new_map))
                 existing.extend(new_map.keys())
                 self.settings.save_settings()
                 return None
 
-            existing_set = set(existing)
-            new_set = set(new_map.keys())
-            delta_set = new_set - existing_set
+            delta_set = set(new_map.keys()).difference(existing)
 
-            if delta_set:
-                existing.extend(delta_set)
-                self.settings.save_settings()
-
-                msg = 'New monsters added to {}:'.format(name)
-                for m in [new_map[x] for x in delta_set]:
-                    msg += '\n\t[{}] {}'.format(m.monster_id, m.unoverridden_name_en)
-                    if contains_ja(m.name_en) and m.name_en_override is not None:
-                        msg += ' ({})'.format(m.name_en_override)
-                return msg
-            else:
+            if not delta_set:
+                # There are no new monsters
                 return None
 
-        jp_results = process(self.settings.jp_seen(), jp_monster_map, 'JP')
-        na_results = process(self.settings.na_seen(), na_monster_map, 'NA')
+            existing.extend(delta_set)
+            self.settings.save_settings()
+            msg = 'New monsters added to {}:'.format(name)
+            for mid in sorted(delta_set):
+                m = new_map[mid]
+                msg += f'\n\t[{m.monster_id}] {m.unoverridden_name_en}'
+                if contains_ja(m.name_en) and m.name_en_override is not None:
+                    msg += f' ({m.name_en_override})'
+            return msg
 
-        for msg in [jp_results, na_results]:
-            if not msg:
-                continue
+        if (jp_results := process(self.settings.jp_seen(), jp_monster_map, 'JP')):
             for channel_id in self.settings.new_monster_channels():
-                await self.announce(channel_id, msg)
+                await self.announce(channel_id, jp_results)
+        if (na_results := process(self.settings.na_seen(), na_monster_map, 'NA')):
+            for channel_id in self.settings.new_monster_channels():
+                await self.announce(channel_id, na_results)
 
-    async def announce(self, channel_id, message):
+    async def announce(self, channel_id: int, message: str):
         try:
             channel = self.bot.get_channel(int(channel_id))
             for page in pagify(message):
@@ -139,34 +139,34 @@ class PadMonitorSettings(CogSettings):
         }
         return config
 
-    def jp_seen(self):
+    def jp_seen(self) -> List[int]:
         return self.bot_settings['jp_seen_ids']
 
-    def na_seen(self):
+    def na_seen(self) -> List[int]:
         return self.bot_settings['na_seen_ids']
 
-    def add_jp_seen(self, monster_id: int):
+    def add_jp_seen(self, monster_id: int) -> None:
         ids = self.jp_seen()
         if monster_id not in ids:
             ids.append(monster_id)
             self.save_settings()
 
-    def add_na_seen(self, monster_id: int):
+    def add_na_seen(self, monster_id: int) -> None:
         ids = self.na_seen()
         if monster_id not in ids:
             ids.append(monster_id)
             self.save_settings()
 
-    def new_monster_channels(self):
+    def new_monster_channels(self) -> List[int]:
         return self.bot_settings['new_monster_channels']
 
-    def add_new_monster_channel(self, channel_id):
+    def add_new_monster_channel(self, channel_id: int) -> None:
         channels = self.new_monster_channels()
         if channel_id not in channels:
             channels.append(channel_id)
             self.save_settings()
 
-    def rm_new_monster_channel(self, channel_id):
+    def rm_new_monster_channel(self, channel_id: int) -> None:
         channels = self.new_monster_channels()
         if channel_id in channels:
             channels.remove(channel_id)
