@@ -159,7 +159,7 @@ class EditSeries:
                 INSERT INTO monster_series
                 (monster_series_id, monster_id, series_id, priority, tstamp)
                 VALUES
-                ({series_id * 100000 + mid}, {mid}, {series_id}, {int(mid in sids)}, UNIX_TIMESTAMP()); 
+                ({series_id * 100000 + mid}, {mid}, {series_id}, {int(mid not in sids)}, UNIX_TIMESTAMP()); 
             """
         confirmation = [f"You are adding series `{new_series}`."]
         if primary:
