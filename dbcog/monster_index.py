@@ -482,6 +482,15 @@ class MonsterIndex:
         if is_story(monster):
             modifiers.update(MISC_MAP[MiscModifiers.STORY])
 
+        # GFE Shop
+        if monster.in_rem:
+            if self.graph.monster_is_gfe_exchange(monster):
+                modifiers.update(MISC_MAP[MiscModifiers.GFESHOP])
+                if self.graph.monster_is_gfe_exchange(monster, 6):
+                    modifiers.update(MISC_MAP[MiscModifiers.GFESHOP6S])
+                if self.graph.monster_is_gfe_exchange(monster, 7):
+                    modifiers.update(MISC_MAP[MiscModifiers.GFESHOP7S])
+
         # New
         if self.graph.monster_is_new(monster):
             modifiers.update(MISC_MAP[MiscModifiers.NEW])

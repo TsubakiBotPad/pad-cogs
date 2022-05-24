@@ -207,6 +207,9 @@ class MiscModifiers(Enum):
     PERMANENT_EXCHANGE = 'Permanently exchangable'
     TEMP_EXCHANGE = 'Temporarily exchangable at some point in time'
     HAS_GEM = 'Has an evo gem'
+    GFESHOP = 'GFE exchangable'
+    GFESHOP6S = '6* GFE exchangable'
+    GFESHOP7S = '7* GFE exchangable'
 
 
 MISC_MAP = {
@@ -237,6 +240,9 @@ MISC_MAP = {
     MiscModifiers.PERMANENT_EXCHANGE: ('permshop', 'shopperm'),
     MiscModifiers.TEMP_EXCHANGE: ('tempshop', 'shoptemp'),
     MiscModifiers.HAS_GEM: ('hasgem',),
+    MiscModifiers.GFESHOP: ('gfeshop',),
+    MiscModifiers.GFESHOP6S: ('6*gfeshop', 'gfeshop6*'),
+    MiscModifiers.GFESHOP7S: ('7*gfeshop', 'gfeshop7*'),
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {

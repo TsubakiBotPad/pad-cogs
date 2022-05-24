@@ -870,7 +870,7 @@ class MonsterGraph:
                     for mid in exc.required_monster_ids}
         if stars is not None:
             monsters = {m for m in monsters if m.rarity == stars}
-        return any(s.series_id == 34 for m in monsters for s in m.all_series)
+        return len({m for m in monsters for s in m.all_series if s.series_id == 34}) > 1
 
     def material_of_ids(self, monster: MonsterModel) -> List[int]:
         return sorted(self._get_edges(monster, 'material_of'))
