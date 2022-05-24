@@ -4,7 +4,7 @@
   ],
   "description": "Displays data about Azur Lane.",
   "end_user_data_statement": "No personal data is stored.",
-  "install_msg": "Use [p]alid to get started.  NOTE: This cog is no longer supported.",
+  "install_msg": "Use [p]alid to get started.",
   "short": "Shows Azur Lane data",
   "min_bot_version": "3.4.0",
   "max_bot_version": "0.0.0",
@@ -13,7 +13,7 @@
     8,
     1
   ],
-  "hidden": true,
+  "hidden": false,
   "disabled": false,
   "required_cogs": {},
   "requirements": [
