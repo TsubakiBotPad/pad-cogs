@@ -11,7 +11,6 @@ import logging
 import os
 import shutil
 import time
-from functools import reduce
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -342,10 +341,24 @@ class DBCog(commands.Cog, IdTest):
             raise ValueError(f"Invalid alias {alias}")
 
         ret = {}
-        keys = [ks for ks in zip(*MONSTER_ATTR_ALIAS_TO_ATTR_MAP[alias])
-                if len(ks) == 1 or not reduce(lambda x, y: x == y, ks)].pop()
+        keys = MONSTER_ATTR_ALIAS_TO_ATTR_MAP[alias]
+        while all(len(key) > 1 for key in keys) \
+                and len({key[0] for key in keys}) == 1:
+            keys = [key[1:] for key in keys]
+        while all(len(key) > 1 for key in keys) \
+                and len({key[-1] for key in keys}) == 1:
+            keys = [key[:-1] for key in keys]
+        keys = [' - '.join(key) for key in keys]
+        for string, replacement in {
+            '_en': ' (english)',
+            '_ja': ' (japanese)',
+            '_ko': ' (korean)',
+            '_': ' ',
+        }.items():
+            keys = [key.replace(string, replacement) for key in keys]
+
         for key, attrs in zip(keys, MONSTER_ATTR_ALIAS_TO_ATTR_MAP[alias]):
-            value: Any = monster
+            value = monster
             for attr in attrs:
                 value = getattr(value, attr)
             ret[key] = value
@@ -367,9 +380,6 @@ class DBCog(commands.Cog, IdTest):
             return await ctx.send("Sorry, {} doesn't have this attribute".format(monster.name_en))
         if not isinstance(data, dict):
             return await ctx.send(data)
-        for k, v in data.items():
-            if k.endswith('_en'):
-                return await ctx.send(v)
         return await ctx.send('\n'.join([f"**{k}**: {v}" for k, v in data.items()]))
 
     @commands.command()
