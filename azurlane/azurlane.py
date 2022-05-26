@@ -1,31 +1,34 @@
 import difflib
 import json
 import logging
-from collections import OrderedDict
 from io import BytesIO
+from typing import Any
 
 import aiohttp
-import discord
-from redbot.core import checks, commands
-from tsutils.emoji import char_to_emoji
-from tsutils.old_menu import EmojiUpdater, Menu
-from tsutils.tsubaki.links import CLOUDFRONT_URL
+from redbot.core import checks, commands, Config
+from tsutils.menu.components.config import BotConfig
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
-logger = logging.getLogger('red.padbot-cogs.azurlane')
+from azurlane.azurlane_view import AzurlaneViewState
+from azurlane.menu import AzurlaneMenu, AzurlaneMenuPanes
+from azurlane.menu_map import azurlane_menu_map
+from azurlane.resources import DATA_URL
 
-BASE_URL = f'{CLOUDFRONT_URL}/azurlane/{{}}'
-DATA_URL = BASE_URL.format('data.json')
+logger = logging.getLogger('red.padbot-cogs.azurlane')
 
 
 class AzurLane(commands.Cog):
     """AzurLane."""
 
+    menu_map = azurlane_menu_map
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.card_data = []
-        self.menu = Menu(bot)
+
+        self.config = Config.get_conf(self, identifier=9401770)
 
         self.id_to_card = None
         self.names_to_card = None
@@ -41,6 +44,21 @@ class AzurLane(commands.Cog):
         No personal data is stored in this cog.
         """
         return
+
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
+
+    async def get_menu_default_data(self, ims):
+        data = {
+            'alcog': self,
+            'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
+        }
+        return data
 
     async def reload_al(self):
         await self.bot.wait_until_ready()
@@ -70,48 +88,14 @@ class AzurLane(commands.Cog):
                 if len(matches):
                     c = self.names_to_card[matches[0]]
 
-        if c:
-            await self.do_menu(ctx, c)
-        else:
-            await send_cancellation_message(ctx, f'No matches for query `{query}`.')
+        if not c:
+            return await send_cancellation_message(ctx, f'No matches for query `{query}`.')
+        reaction_list = AzurlaneMenuPanes.get_initial_reaction_list(len(c['images']))
+        menu = AzurlaneMenu.menu()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        state = AzurlaneViewState(ctx.message.author.id, AzurlaneMenu.MENU_TYPE,
+                                  query_settings,
+                                  c, 0,
+                                  reaction_list=reaction_list)
 
-    async def do_menu(self, ctx, c):
-        emoji_to_embed = OrderedDict()
-        for idx, image_info in enumerate(c['images']):
-            emoji = char_to_emoji(str(idx))
-            emoji_to_embed[emoji] = self.make_card_embed(c, idx)
-        starting_menu_emoji = list(emoji_to_embed.keys())[0]
-        return await self._do_menu(ctx, starting_menu_emoji, emoji_to_embed)
-
-    async def _do_menu(self, ctx, starting_menu_emoji, emoji_to_embed):
-        remove_emoji = self.menu.emoji['no']
-        emoji_to_embed[remove_emoji] = self.menu.reaction_delete_message
-
-        try:
-            result_msg, result_embed = await self.menu.custom_menu(ctx,
-                                                                   EmojiUpdater(emoji_to_embed), starting_menu_emoji,
-                                                                   timeout=20)
-            if result_msg and result_embed:
-                # Message is finished but not deleted, clear the footer
-                result_embed.set_footer(text=discord.Embed.Empty)
-                await result_msg.edit(embed=result_embed)
-        except Exception as ex:
-            logger.exception('Menu failure')
-
-    @classmethod
-    def make_card_embed(cls, c, image_idx):
-        cid = c['id']
-        name = c['name_en']
-        info_url = c['url']
-        image = c['images'][image_idx]
-        image_title = image['title']
-
-        url = image['url']
-        file_name = url[url.rfind("/") + 1:]
-
-        embed = discord.Embed()
-        embed.title = f'[{cid}] {name} - {image_title}'
-        embed.url = BASE_URL.format(file_name)
-        embed.set_image(url=BASE_URL.format(file_name))
-        embed.set_footer(text='Requester may click the reactions below to switch tabs')
-        return embed
+        await menu.create(ctx, state)
