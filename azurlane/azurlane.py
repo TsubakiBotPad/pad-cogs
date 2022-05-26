@@ -92,9 +92,6 @@ class AzurLane(commands.Cog):
             return await send_cancellation_message(ctx, f'No matches for query `{query}`.')
         reaction_list = AzurlaneMenuPanes.get_initial_reaction_list(len(c['images']))
         menu = AzurlaneMenu.menu()
-        print('*******')
-        print(type(menu))
-        print('*******')
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         state = AzurlaneViewState(ctx.message.author.id, AzurlaneMenu.MENU_TYPE,
                                   query_settings,

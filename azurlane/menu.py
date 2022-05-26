@@ -87,7 +87,6 @@ class AzurlaneMenu:
         alcog = data['alcog']
         user_config = data['user_config']
         view_state = await AzurlaneViewState.deserialize(alcog, user_config, ims)
-        await view_state.increment_index(data['dbcog'])
         return AzurlaneMenu.pane_control(view_state)
 
     @classmethod

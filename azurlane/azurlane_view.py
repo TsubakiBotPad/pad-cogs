@@ -20,8 +20,6 @@ class AzurlaneViewState(ViewStateBase):
                  c, image_idx,
                  extra_state=None, reaction_list=None
                  ):
-        print("menu_type")
-        print(menu_type)
         super().__init__(original_author_id, menu_type, '', extra_state=extra_state, reaction_list=reaction_list)
         self.query_settings = query_settings
         self.menu_type = menu_type
@@ -45,7 +43,7 @@ class AzurlaneViewState(ViewStateBase):
         reaction_list = ims['reaction_list']
         image_idx = ims['current_index']
 
-        card = alcog.id_to_card(ims['idx'])
+        card = alcog.id_to_card[ims['idx']]
         return AzurlaneViewState(original_author_id, menu_type, query_settings, card, image_idx,
                                  reaction_list=reaction_list)
 
