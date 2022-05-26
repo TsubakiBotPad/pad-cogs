@@ -4,7 +4,7 @@ from itertools import chain
 from typing import Iterable, List, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
 import regex as re
-from Levenshtein import jaro_winkler
+from Levenshtein import jaro, jaro_winkler
 from tsutils.helper_classes import DummyObject
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -205,6 +205,7 @@ class MonsterAttributeString(SpecialToken):
         super().__init__(fullvalue, negated=negated, exact=exact, dbcog=dbcog)
 
     async def special_matches(self, monster):
+        max_score = 0
         for class_attrs in self.monster_class_attributes:
             val: MonsterModel = monster
             for class_attr in class_attrs:
@@ -220,6 +221,9 @@ class MonsterAttributeString(SpecialToken):
                 return True, MatchData()
             elif self.string in val:
                 return True, MatchData()
+            max_score = max(max_score, jaro(self.string, val))
+        if max_score >= TOKEN_JW_DISTANCE:
+            return max_score, MatchData()
         return False, MatchData()
 
 
@@ -320,7 +324,7 @@ class AttributeToken(SpecialToken):
         if monster.attr1 == self.attr:
             return True, MatchData()
         if monster.attr2 == self.attr:
-            return .999, MatchData(subattr_match=True)
+            return 1 - EPSILON, MatchData(subattr_match=True)
         return False, MatchData()
 
 
