@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Callable, Coroutine, Dict, List, Optional
+from typing import Callable, Coroutine, List, Optional
 
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
@@ -17,7 +17,7 @@ from dbcog.monster_index import MonsterIndex
 class IdTest:
     bot: Red
     config: Config
-    indexes: Dict[Server, MonsterIndex]
+    get_index: Callable[[Server], Coroutine[None, None, MonsterIndex]]
     find_monster: Callable[[int], Coroutine[None, None, MonsterModel]]
     wait_until_ready: Callable[[], Coroutine[None, None, None]]
 
@@ -128,8 +128,8 @@ class IdTest:
             suite.sort(key=lambda v: (v['id'], v['token'], v['fluff']))
 
             await self.wait_until_ready()
-            fluff = mid in [m.monster_id for m in self.indexes[server].fluff_tokens[token]]
-            name = mid in [m.monster_id for m in self.indexes[server].name_tokens[token]]
+            fluff = mid in [m.monster_id for m in (await self.get_index(server)).fluff_tokens[token]]
+            name = mid in [m.monster_id for m in (await self.get_index(server)).name_tokens[token]]
             passing = (fluffy and fluff) or (not fluffy and name)
 
             if await get_user_reaction(ctx, f"Added {'passing' if passing else 'failing'}"
@@ -447,9 +447,9 @@ class IdTest:
                                                                                   v['fluff'],
                                                                                   v['server'])))):
                 fluff = case['id'] in [m.monster_id for m in
-                                       self.indexes[Server(case['server'])].fluff_tokens[case['token']]]
+                                       (await self.get_index(Server(case['server']))).fluff_tokens[case['token']]]
                 name = case['id'] in [m.monster_id for m in
-                                      self.indexes[Server(case['server'])].name_tokens[case['token']]]
+                                      (await self.get_index(Server(case['server']))).name_tokens[case['token']]]
 
                 if (case['fluff'] and not fluff) or (not case['fluff'] and not name):
                     q = '"{}"'.format(case['token'])
@@ -495,8 +495,10 @@ class IdTest:
                     qc += 1
 
             async for c, v in AsyncIter(enumerate(fsuite)):
-                fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
-                name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
+                fluff = v['id'] in [m.monster_id for m
+                                    in (await self.get_index(Server(v['server']))).fluff_tokens[v['token']]]
+                name = v['id'] in [m.monster_id for m
+                                   in (await self.get_index(Server(v['server']))).name_tokens[v['token']]]
 
                 if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                     q = '"{}"'.format(v['token'])
@@ -542,8 +544,10 @@ class IdTest:
 
         fsuite = await self.config.fluff_suite()
         async for c, v in AsyncIter(enumerate(fsuite)):
-            fluff = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].fluff_tokens[v['token']]]
-            name = v['id'] in [m.monster_id for m in self.indexes[Server(v['server'])].name_tokens[v['token']]]
+            fluff = v['id'] in [m.monster_id for m
+                                in (await self.get_index(Server(v['server']))).fluff_tokens[v['token']]]
+            name = v['id'] in [m.monster_id for m
+                               in (await self.get_index(Server(v['server']))).name_tokens[v['token']]]
 
             if (v['fluff'] and not fluff) or (not v['fluff'] and not name):
                 q = '"{}"'.format(v['token'])

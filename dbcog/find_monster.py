@@ -45,15 +45,18 @@ class ExtraInfo(NamedTuple):
 
 
 class FindMonster:
+    TOKEN_JW_DISTANCE = TOKEN_JW_DISTANCE
+    MODIFIER_JW_DISTANCE = MODIFIER_JW_DISTANCE
+
     def __init__(self, dbcog, flags: Dict[str, Any]):
         self.dbcog = dbcog
         self.flags = flags
         self.index = self.dbcog.indexes[Server(flags['server'])]
 
-    def _process_settings(self, original_query: str) -> str:
+    async def _process_settings(self, original_query: str) -> str:
         query_settings = QuerySettings.extract(self.flags, original_query)
 
-        self.index = self.dbcog.indexes[query_settings.server]
+        self.index = await self.dbcog.get_index(query_settings.server)
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?(?:\s+|$)', ' ', original_query)
 
@@ -305,7 +308,7 @@ class FindMonster:
         query = re.sub(r':=?r?("[^"]+"|\'[^\']+\')', lambda m: m.group(0).replace(' ', '\0'), query)
         query = re.sub(r'\[[^[]+]', lambda m: m.group(0).replace(' ', '\0'), query)
 
-        tokenized_query = self._process_settings(query).split()
+        tokenized_query = (await self._process_settings(query)).split()
         tokenized_query = [token.replace('\0', ' ') for token in tokenized_query]
         mw_tokenized_query = self._merge_multi_word_tokens(tokenized_query)
         best_monster, matches_dict, valid_monsters = max(
