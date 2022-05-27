@@ -154,8 +154,7 @@ class DBCog(commands.Cog, IdTest):
     async def create_index(self):
         """Exported function that allows a client cog to create an id3 monster index"""
         for server in SERVERS:
-            self.indexes[server] = MonsterIndex(server)
-            await self.indexes[server].setup(self.database.graph)
+            await self.indexes[server].reset(self.database.graph)
 
         self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())
@@ -192,6 +191,10 @@ class DBCog(commands.Cog, IdTest):
                 for channel in channels:
                     await channel.send(box(page))
 
+    async def get_index(self, server: Server = DEFAULT_SERVER) -> MonsterIndex:
+        await self.indexes[server].is_ready.wait()
+        return self.indexes[server]
+
     def get_monster(self, monster_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[MonsterModel]:
         """Exported function that allows a client cog to get a full MonsterModel by monster_id"""
         return self.database.graph.get_monster(monster_id, server=server)
@@ -216,8 +219,7 @@ class DBCog(commands.Cog, IdTest):
             try:
                 async with StatusManager(self.bot):
                     await self.download_and_refresh_nicknames()
-                logger.info('Done refreshing DBCog, triggering ready')
-                self._is_ready.set()
+                logger.info('Done refreshing DBCog')
             except Exception as ex:
                 short_wait = True
                 logger.exception("DBCog data download/refresh failed: %s", ex)
@@ -241,7 +243,8 @@ class DBCog(commands.Cog, IdTest):
 
         logger.info('Loading database')
         self.database = load_database(self.database, await self.get_debug_monsters())
-        logger.info('Building monster index')
+        logger.info('Building monster index, triggering ready')
+        self._is_ready.set()
         await self.create_index()
 
         logger.info('Done refreshing database')
@@ -406,7 +409,7 @@ class DBCog(commands.Cog, IdTest):
         atable = [(awakenings[k.value].name_en, ", ".join(map(inline, v))) for k, v in maps.AWOKEN_SKILL_MAP.items()]
         ret += "\n\n### Awakenings\n\n" + tabulate(atable, headers=["Meaning", "Tokens"], tablefmt="github")
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
-                  for k, v in self.indexes[server].series_id_to_pantheon_nickname.items()]
+                  for k, v in (await self.get_index(server)).series_id_to_pantheon_nickname.items()]
         ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
         ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
         ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
