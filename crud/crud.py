@@ -13,7 +13,6 @@ import pygit2
 from redbot.core import Config, checks, commands, errors
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
-from tsutils.enums import Server
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
@@ -149,7 +148,8 @@ class Crud(commands.Cog, EditSeries):
             index.write()
             tree = index.write_tree()
             email = await self.config.user(ctx.author).email()
-            author = pygit2.Signature(str(ctx.author), email or "famiel@tsubakibot.com")
+            author = pygit2.Signature(re.sub(r'[<>]', '', str(ctx.author)),
+                                      email or "famiel@tsubakibot.com")
             commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
             parent, ref = repo.resolve_refish(refish=repo.head.name)
             repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
@@ -337,16 +337,16 @@ class Crud(commands.Cog, EditSeries):
         """Search for a awoken skill via its jp or na name"""
         dbcog = await self.get_dbcog()
         if search_text in dbcog.KNOWN_AWOKEN_SKILL_TOKENS:
-            awoken_skill_id = dbcog.KNOWN_AWOKEN_SKILL_TOKENS[search_text].value
-            where = f'awoken_skill_id = {awoken_skill_id}'
+            where = f'awoken_skill_id = %s'
+            replacements = (dbcog.KNOWN_AWOKEN_SKILL_TOKENS[search_text].value,)
         else:
-            search_text = '%{}%'.format(search_text).lower()
-            where = f"lower(name_en) LIKE {search_text} OR lower(name_ja) LIKE {search_text}"
-        sql = ('SELECT awoken_skill_id, name_en, name_ja, name_ko, desc_en,'
-               ' desc_ja, desc_ko FROM awoken_skills'
-               ' WHERE %s'
-               ' ORDER BY awoken_skill_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [where])
+            where = f"lower(name_en) LIKE %s OR lower(name_ja) LIKE %s"
+            replacements = ('%{}%'.format(search_text).lower(),) * 2
+        sql = (f'SELECT awoken_skill_id, name_en, name_ja, name_ko, desc_en,'
+               f' desc_ja, desc_ko FROM awoken_skills'
+               f' WHERE {where}'
+               f' ORDER BY awoken_skill_id DESC LIMIT 20')
+        await self.execute_read(ctx, sql, replacements)
 
     @awokenskill.command(name="add")
     @checks.is_owner()
