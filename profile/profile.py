@@ -10,7 +10,7 @@ from tsutils.formatting import normalize_server_name
 logger = logging.getLogger('red.padbot-cogs.profile')
 
 
-SUPPORTED_SERVERS = ["NA", "KR", "JP", "EU"]
+SUPPORTED_SERVERS = ["NA", "KR", "JP"]
 
 
 def validate_and_clean_id(pad_id):

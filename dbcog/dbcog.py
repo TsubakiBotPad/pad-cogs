@@ -25,16 +25,16 @@ from tsutils.json_utils import async_cached_dadguide_request
 from tsutils.tsubaki.links import CLOUDFRONT_URL
 from tsutils.user_interaction import StatusManager, send_confirmation_message
 
-from . import token_mappings
+from .find_monster import token_mappings
 from .database_context import DbContext
 from .database_loader import load_database
-from .find_monster import ExtraInfo, FindMonster, MonsterInfo
-from .idtest_mixin import IdTest
+from dbcog.find_monster.find_monster import ExtraInfo, FindMonster, MonsterInfo
+from dbcog.find_monster.idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
 from .models.monster_stats import MonsterStatModifierInput, monster_stats
 from .monster_index import MonsterIndex
-from .token_mappings import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, AWOKEN_SKILL_MAP, \
+from dbcog.find_monster.token_mappings import MONSTER_ATTR_ALIAS_TO_ATTR_MAP, MONSTER_CLASS_ATTRIBUTES, AWOKEN_SKILL_MAP, \
     KNOWN_AWOKEN_SKILL_TOKENS
 
 logger = logging.getLogger('red.padbot-cogs.dbcog')
@@ -156,6 +156,14 @@ class DBCog(commands.Cog, IdTest):
         for server in SERVERS:
             self.indexes[server] = MonsterIndex(server)
             await self.indexes[server].setup(self.database.graph)
+
+        self.mon_finder = FindMonster(self, self.fm_flags_default)
+        asyncio.create_task(self.check_index())
+
+    async def load_old_index(self):
+        data = b'\x80\x04}\x94.'
+        for server in SERVERS:
+            self.indexes[server] = MonsterIndex.deserialize(data, server, self.database.graph)
 
         self.mon_finder = FindMonster(self, self.fm_flags_default)
         asyncio.create_task(self.check_index())

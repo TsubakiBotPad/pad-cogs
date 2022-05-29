@@ -8,14 +8,14 @@ from Levenshtein import jaro, jaro_winkler
 from tsutils.helper_classes import DummyObject
 from tsutils.tsubaki.monster_header import MonsterHeader
 
-from dbcog.models.enum_types import Attribute, AwokenSkills
-from dbcog.models.monster_model import MonsterModel
-from dbcog.monster_index import MonsterIndex
-from dbcog.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, BOOL_MONSTER_ATTRIBUTE_ALIASES, \
+from dbcog.find_monster.token_mappings import AWAKENING_TOKENS, AWOKEN_SKILL_MAP, BOOL_MONSTER_ATTRIBUTE_ALIASES, \
     BOOL_MONSTER_ATTRIBUTE_NAMES, \
     NUMERIC_MONSTER_ATTRIBUTE_ALIASES, \
     NUMERIC_MONSTER_ATTRIBUTE_NAMES, \
     PLUS_AWOKENSKILL_MAP, STRING_MONSTER_ATTRIBUTE_ALIASES, STRING_MONSTER_ATTRIBUTE_NAMES
+from dbcog.models.enum_types import Attribute, AwokenSkills
+from dbcog.models.monster_model import MonsterModel
+from dbcog.monster_index import MonsterIndex
 
 if TYPE_CHECKING:
     from dbcog import DBCog
@@ -277,15 +277,37 @@ class SubqueryToken(SpecialToken):
         return score / self.max_score, MatchData(subquery_result=matched)
 
 
-class HasMaterial(SubqueryToken):
-    RE_MATCH = r"ha[sz]mat:([\"']?)(.+)\1"
+SQT = TypeVar("SQT", bound=Type[SubqueryToken])
+
+
+def make_tree_based(subquery_token: SQT, name: str, regex: str) -> SQT:
+    class _TreeToken(subquery_token):
+        RE_MATCH = regex
+
+        def get_matching_monsters(self, monster):
+            return chain(*(super(_TreeToken, self).get_matching_monsters(nevo)
+                           for nevo in self.dbcog.database.graph.get_all_prev_evolutions(monster)))
+
+    _TreeToken.__name__ = name
+    return _TreeToken
+
+
+class SelfHasMaterial(SubqueryToken):
+    RE_MATCH = (rf"(?:selfha[sz]mat|ha[sz]matself):([\"']?)(.+)\1")
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         _, subquery = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
         super().__init__(fullvalue, subquery, negated=negated, exact=exact, dbcog=dbcog)
 
     def get_matching_monsters(self, monster):
-        return self.dbcog.database.graph.evo_mats(monster)
+        return self.dbcog.database.graph.evo_mats(self.dbcog.database.graph.evo_gem_monster(monster) or monster)
+
+
+HasMaterial = make_tree_based(
+    SelfHasMaterial,
+    "HasMaterial",
+    rf"ha[sz]mat:([\"']?)(.+)\1"
+)
 
 
 class SeriesOf(SubqueryToken):
@@ -410,6 +432,7 @@ SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     MonsterAttributeNumeric,
     MonsterAttributeString,
     MonsterAttributeBool,
+    SelfHasMaterial,
     HasMaterial,
     SeriesOf,
     AttributeToken,

@@ -6,7 +6,7 @@ from tsutils.enums import Server
 from tsutils.formatting import rmdiacritics
 from tsutils.query_settings.query_settings import QuerySettings
 
-from dbcog.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, QueryToken, SpecialToken, \
+from dbcog.find_monster.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, QueryToken, SpecialToken, \
     TOKEN_JW_DISTANCE, TokenMatch, calc_ratio_modifier, calc_ratio_name, string_to_token
 from dbcog.models.monster_model import MonsterModel
 
