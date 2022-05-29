@@ -65,6 +65,38 @@ class MonsterIndex:
 
         self.graph: Optional[MonsterGraph] = None
 
+    async def reset(self, graph: MonsterGraph):
+        self.is_ready.clear()
+        self.issues = []
+
+        self.monster_id_to_cardname = defaultdict(set)
+        self.monster_id_to_treename = defaultdict(set)
+        self.treename_overrides = set()
+        self.monster_id_to_name = defaultdict(set)
+        self.monster_id_to_forcedfluff = defaultdict(set)
+        self.series_id_to_pantheon_nickname = defaultdict(set)
+        self.content_token_aliases = defaultdict(set)
+        self.manual_modifiers = defaultdict(set)
+        self.manual_removed_modifiers = defaultdict(set)
+
+        self.all_name_tokens = {}
+        self.manual = {}
+        self.manual_cardnames = defaultdict(set)
+        self.manual_treenames = defaultdict(set)
+        self.name_tokens = defaultdict(set)
+        self.fluff_tokens = defaultdict(set)
+
+        self.all_modifiers = set()
+        self._known_mods = set()
+        self.modifiers = defaultdict(set)
+        self.suffixes = set()
+
+        self.multi_word_tokens = {}
+        self.mwtoken_creators = defaultdict(set)
+        self.mwt_to_len = defaultdict(lambda: 1)
+
+        await self.setup(graph)
+
     async def setup(self, graph: MonsterGraph):
         self.graph = graph
         monsters = graph.get_all_monsters(self.server)

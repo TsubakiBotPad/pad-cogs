@@ -89,7 +89,7 @@ async def leaderskill_query(dbcog, raw_query, author_id):
             if sep == ' ':
                 # Handle a very specific failure case, user typing something like "uuvo ragdra"
                 m = await dbcog.find_monster(query, author_id)
-                if m and left_query in dbcog.indexes[m.server_priority].modifiers[m]:
+                if m and left_query in (await dbcog.get_index(m.server_priority)).modifiers[m]:
                     left_query = query
                     right_query = None
             break
