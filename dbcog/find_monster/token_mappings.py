@@ -2,7 +2,7 @@ from collections import defaultdict, namedtuple
 from enum import Enum
 from typing import Mapping, Tuple, TypeVar
 
-from .models.enum_types import Attribute, AwokenSkills, MonsterType
+from dbcog.models.enum_types import Attribute, AwokenSkills, MonsterType
 
 K = TypeVar('K')
 V = TypeVar('V')
