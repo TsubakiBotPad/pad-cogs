@@ -1194,9 +1194,11 @@ class PadInfo(commands.Cog):
 
         For name tokens, the full word goes second as name token matching is not commutitive
         """
-
+        s1: str
+        s2: str
         dbcog = await self.get_dbcog()
-
+        s1 = s1.lower()
+        s2 = s2.lower()
         dist = dbcog.mon_finder.calc_ratio_modifier(s1, s2)
         dist2 = dbcog.mon_finder.calc_ratio_name(s1, s2)
         yes = '\N{WHITE HEAVY CHECK MARK}'
