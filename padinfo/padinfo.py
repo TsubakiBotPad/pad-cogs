@@ -1192,10 +1192,8 @@ class PadInfo(commands.Cog):
     async def debugiddist(self, ctx, s1, s2):
         """Find the distance between two queries.
 
-        For name tokens, the full word goes second as name token matching is not commutitive
+        For name tokens, the full word goes second as name token matching is not commutitive. Inputs will be converted to lowercase.
         """
-        s1: str
-        s2: str
         dbcog = await self.get_dbcog()
         s1 = s1.lower()
         s2 = s2.lower()
