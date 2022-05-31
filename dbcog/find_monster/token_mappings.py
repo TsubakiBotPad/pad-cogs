@@ -176,6 +176,19 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ATTR4BOOST: ('attr4', '4attr'),
     AwokenSkills.ATTR5BOOST: ('attr5', '5attr'),
     AwokenSkills.BLOBBOOST: ('blobboost', 'blob', 'brickboost', 'brick'),
+    AwokenSkills.ADDTYPEDRAGON: (),
+    AwokenSkills.ADDTYPEGOD: (),
+    AwokenSkills.ADDTYPEDEVIL: (),
+    AwokenSkills.ADDTYPEMACHINE: (),
+    AwokenSkills.ADDTYPEBALANCED: (),
+    AwokenSkills.ADDTYPEATTACKER: (),
+    AwokenSkills.ADDTYPEPHYSICAL: (),
+    AwokenSkills.ADDTYPEHEALER: (),
+    AwokenSkills.SUBATTRRED: (),
+    AwokenSkills.SUBATTRBLUE: (),
+    AwokenSkills.SUBATTRGREEN: (),
+    AwokenSkills.SUBATTRLIGHT: (),
+    AwokenSkills.SUBATTRDARK: (),
 }
 
 
