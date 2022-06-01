@@ -27,9 +27,19 @@ EPSILON = .001
 
 
 class MatchData(NamedTuple):
+    # The actual matching token
+    token: "QueryToken"
+
+    # Type of name token
     name_type: Optional[str] = None
+
+    # Subquery result
     subquery_result: Optional[MonsterModel] = None
+
+    # Whether a attribute token matched the subattribute
     subattr_match: Optional[bool] = None
+
+    # Which or result was chosen
     or_index: Optional[Tuple[int, str]] = None
 
     def __repr__(self):
@@ -56,8 +66,13 @@ class MatchData(NamedTuple):
 
 
 class TokenMatch(NamedTuple):
+    # User token string
     token: str
+
+    # Monster token string
     matched: str
+
+    # Extra match data
     match_data: MatchData
 
 
@@ -100,7 +115,7 @@ class RegularToken(QueryToken):
         if matched_token not in index.modifiers[monster] or ratio <= MODIFIER_JW_DISTANCE:
             return 0.0, None
 
-        return ratio, TokenMatch(self.value, matched_token, MatchData())
+        return ratio, TokenMatch(self.value, matched_token, MatchData(self))
 
 
 class SpecialToken(QueryToken):
@@ -111,13 +126,13 @@ class SpecialToken(QueryToken):
         super().__init__(value, negated=negated, exact=exact)
 
     async def special_matches(self, monster: MonsterModel) -> Tuple[Union[bool, float], MatchData]:
-        return True, MatchData()
+        return True, MatchData(self)
 
     async def matches(self, monster, index):
         mult, data = await self.special_matches(monster)
         if self.value in index.modifiers[monster] and mult <= 1:
             # If the full value is actually a modifier
-            return 1.0, TokenMatch(self.value, self.value, MatchData())
+            return 1.0, TokenMatch(self.value, self.value, MatchData(self))
         return mult, TokenMatch(self.value, '', data)
 
     async def prepare(self):
@@ -138,7 +153,7 @@ class MultipleAwakeningToken(SpecialToken):
         monster_total_awakenings_matching_token = 0
         for awakening in monster.awakenings:
             if awakening.is_super and not self.allows_super_awakenings:
-                return False, MatchData()
+                return False, MatchData(self)
 
             # Keep track of whether we matched this cycle for SA check at the end
             matched = True
@@ -156,13 +171,13 @@ class MultipleAwakeningToken(SpecialToken):
                 matched = False
 
             if monster_total_awakenings_matching_token >= self.minimum_count:
-                return True, MatchData()
+                return True, MatchData(self)
 
             # If we already matched an SA and didn't return True, fail immediately.
             # We only allow one SA to count towards the total for each MultipleAwakeningToken
             if awakening.is_super and matched:
-                return False, MatchData()
-        return False, MatchData()
+                return False, MatchData(self)
+        return False, MatchData(self)
 
 
 class MonsterAttributeNumeric(SpecialToken):
@@ -185,12 +200,12 @@ class MonsterAttributeNumeric(SpecialToken):
                 continue
             # Test each character of the equality operator because I don't want to use the eval function here
             if "<" in self.operator and val < self.rhs:
-                return True, MatchData()
+                return True, MatchData(self)
             if ">" in self.operator and val > self.rhs:
-                return True, MatchData()
+                return True, MatchData(self)
             if "=" in self.operator and val == self.rhs:
-                return True, MatchData()
-        return False, MatchData()
+                return True, MatchData(self)
+        return False, MatchData(self)
 
 
 class MonsterAttributeString(SpecialToken):
@@ -214,17 +229,17 @@ class MonsterAttributeString(SpecialToken):
                 continue
             val: str = val.lower()
             if self.match == "=" and val == self.string:  # Exact match
-                return True, MatchData()
+                return True, MatchData(self)
             elif self.match == "r" and bool(re.search(self.string, val)):  # Regex match
-                return True, MatchData()
+                return True, MatchData(self)
             elif self.match == "g" and fnmatch(val, '*' + self.string + '*'):  # Glob match
-                return True, MatchData()
+                return True, MatchData(self)
             elif self.string in val:
-                return True, MatchData()
+                return True, MatchData(self)
             max_score = max(max_score, jaro(self.string, val))
         if max_score >= TOKEN_JW_DISTANCE:
-            return max_score, MatchData()
-        return False, MatchData()
+            return max_score, MatchData(self)
+        return False, MatchData(self)
 
 
 class MonsterAttributeBool(SpecialToken):
@@ -245,11 +260,13 @@ class MonsterAttributeBool(SpecialToken):
             if val is None:
                 continue
             if val == self.bool_value:
-                return True, MatchData()
-        return False, MatchData()
+                return True, MatchData(self)
+        return False, MatchData(self)
 
 
 class SubqueryToken(SpecialToken):
+    label: str
+
     def __init__(self, fullvalue, subquery, *, negated=False, exact=False, dbcog):
         self.subquery = subquery
         self.sub_matches = None
@@ -271,10 +288,10 @@ class SubqueryToken(SpecialToken):
     async def special_matches(self, monster):
         mons = self.valid_monsters.intersection(self.get_matching_monsters(monster))
         if not mons:
-            return False, MatchData()
+            return False, MatchData(self)
         matched, score = max(((mon, self.sub_matches.get(mon, DummyObject(score=0)).score) for mon in mons),
                              key=lambda x: x[1])
-        return score / self.max_score, MatchData(subquery_result=matched)
+        return score / self.max_score, MatchData(self, subquery_result=matched)
 
 
 SQT = TypeVar("SQT", bound=Type[SubqueryToken])
@@ -293,6 +310,7 @@ def make_tree_based(subquery_token: SQT, name: str, regex: str) -> SQT:
 
 
 class SelfHasMaterial(SubqueryToken):
+    label = 'hasmat'
     RE_MATCH = (rf"(?:selfha[sz]mat|ha[sz]matself):([\"']?)(.+)\1")
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
@@ -311,6 +329,7 @@ HasMaterial = make_tree_based(
 
 
 class SeriesOf(SubqueryToken):
+    label = 'seriesof'
     RE_MATCH = r"seriesof:([\"']?)(.+)\1"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
@@ -344,10 +363,10 @@ class AttributeToken(SpecialToken):
 
     async def special_matches(self, monster):
         if monster.attr1 == self.attr:
-            return True, MatchData()
+            return True, MatchData(self)
         if monster.attr2 == self.attr:
-            return 1 - EPSILON, MatchData(subattr_match=True)
-        return False, MatchData()
+            return 1 - EPSILON, MatchData(self, subattr_match=True)
+        return False, MatchData(self)
 
 
 class OrToken(SpecialToken):
@@ -372,7 +391,7 @@ class OrToken(SpecialToken):
             # print(token, score, data, monster)
             if score > best_score:
                 best_score = score
-                best_data = TokenMatch(self.value, '', data.match_data | MatchData(or_index=(idx, token.value)))
+                best_data = TokenMatch(self.value, '', data.match_data | MatchData(self, or_index=(idx, token.value)))
         return best_score, best_data
 
 

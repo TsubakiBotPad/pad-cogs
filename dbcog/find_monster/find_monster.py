@@ -2,6 +2,7 @@ import re
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
 
+from frozendict import frozendict
 from tsutils.enums import Server
 from tsutils.formatting import rmdiacritics
 from tsutils.query_settings.query_settings import QuerySettings
@@ -23,8 +24,13 @@ SERIES_TYPE_PRIORITY = {
 
 class MonsterMatch:
     def __init__(self):
+        # The total score of the monster
         self.score: float = 0
+
+        # Match data for all name tokens
         self.name: Set[TokenMatch] = set()
+
+        # Match data for all modifier tokens
         self.mod: Set[TokenMatch] = set()
 
     def __repr__(self):
@@ -35,12 +41,32 @@ MatchMap = Mapping[MonsterModel, MonsterMatch]
 
 
 class MonsterInfo(NamedTuple):
+    # The best matching monster
     matched_monster: Optional[MonsterModel]
+
+    # How the user tokens matched each monster
     monster_matches: MatchMap
+
+    # All monsters that were not rejected by the query
     valid_monsters: Set[MonsterModel]
 
 
+class SubqueryData(NamedTuple):
+    # Subquery token type matched
+    label: str
+
+    # Subquery given
+    subquery: str
+
+    # Immutable Parent-to-Child monster mapping
+    map: Mapping[MonsterModel, MonsterModel]
+
+
 class ExtraInfo(NamedTuple):
+    # Subquery Result
+    subquery_data: Set[SubqueryData]
+
+    # Unused
     return_code: int
 
 
@@ -177,7 +203,7 @@ class FindMonster:
                 for matched_monster in monsters:
                     if matched_monster not in valid_monsters and await token.matches(matched_monster, self.index):
                         matches[matched_monster].name.add(
-                            TokenMatch(token.value, match, MatchData(name_type=name_type)))
+                            TokenMatch(token.value, match, MatchData(token, name_type=name_type)))
                         matches[matched_monster].score += value
                         valid_monsters.add(matched_monster)
 
@@ -253,7 +279,18 @@ class FindMonster:
 
         return max(monsters, key=lambda m: self.get_priority_tuple(m, tokenized_query, matches))
 
-    async def _find_monster_search(self, tokenized_query: List[str]) -> \
+    def build_extra_info(self, monster_matches: MatchMap) -> ExtraInfo:
+        subquery_data = defaultdict(dict)
+        for monster, match in monster_matches.items():
+            for mod_token in match.mod:
+                if mod_token.match_data.subquery_result:
+                    subquery_data[mod_token.match_data.token][monster] = mod_token.match_data.subquery_result
+        subquery_data = {SubqueryData(token.label, token.subquery, frozendict(m))
+                         for token, m in subquery_data.items()}
+
+        return ExtraInfo(subquery_data, 0)
+
+    async def _find_monCOLOR_MAPster_search(self, tokenized_query: List[str]) -> \
             Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel]]:
         mod_tokens, name_query_tokens = await self._interpret_query(tokenized_query)
 
@@ -319,7 +356,9 @@ class FindMonster:
             key=lambda t: t[1].get(t[0], MonsterMatch()).score
         )
 
-        return MonsterInfo(best_monster, matches_dict, valid_monsters), ExtraInfo(0)
+        monster_info = MonsterInfo(best_monster, matches_dict, valid_monsters)
+        extra_info = self.build_extra_info(matches_dict)
+        return monster_info, extra_info
 
     async def find_monster(self, query: str) -> Tuple[Optional[MonsterModel], ExtraInfo]:
         """Get the best matching monster for a query.  Returns None if no eligable monsters exist."""
