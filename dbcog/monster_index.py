@@ -2,6 +2,7 @@ import asyncio
 import csv
 import io
 import logging
+import pickle
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional
@@ -600,6 +601,43 @@ class MonsterIndex:
                 curr_mods.update(f'{mod}-{ms.index(monster) + 1}' for mod in added_mods)
         elif else_mods:
             curr_mods.update(else_mods)
+
+    def serialize(self) -> bytes:
+        return pickle.dumps({
+            'issues': self.issues,
+            'monster_id_to_cardname': self.monster_id_to_cardname,
+            'monster_id_to_treename': self.monster_id_to_treename,
+            'treename_overrides': self.treename_overrides,
+            'monster_id_to_name': self.monster_id_to_name,
+            'monster_id_to_forcedfluff': self.monster_id_to_forcedfluff,
+            'series_id_to_pantheon_nickname': self.series_id_to_pantheon_nickname,
+            'content_token_aliases': self.content_token_aliases,
+            'manual_modifiers': self.manual_modifiers,
+            'manual_removed_modifiers': self.manual_removed_modifiers,
+            'all_name_tokens': self.all_name_tokens,
+            'manual': self.manual,
+            'manual_cardnames': self.manual_cardnames,
+            'manual_treenames': self.manual_treenames,
+            'name_tokens': self.name_tokens,
+            'fluff_tokens': self.fluff_tokens,
+            'all_modifiers': self.all_modifiers,
+            '_known_mods': self._known_mods,
+            'modifiers': self.modifiers,
+            'suffixes': self.suffixes,
+            'multi_word_tokens': self.multi_word_tokens,
+            'mwtoken_creators': self.mwtoken_creators,
+            'mwt_to_len': self.mwt_to_len,
+        })
+
+    @classmethod
+    def deserialize(cls, data: bytes, server: Server, graph: MonsterGraph) -> "MonsterIndex":
+        data = pickle.loads(data)
+        self = cls(server)
+        for key, value in data.items():
+            setattr(self, key, value)
+        self.graph = graph
+        self.is_ready.set()
+        return self
 
 
 async def sheet_to_reader(url, headers) -> List[Dict[str, str]]:

@@ -37,6 +37,7 @@ class MonsterModel(BaseModel):
         self.series = m['series']
         self.all_series: Set[SeriesModel] = m['all_series']
         self.series_id = m['series_id']
+        self.collab_id = m['collab_id']
         self.group_id = m['group_id']
         self.name_ja = m['name_ja']
         self.name_ko = m['name_ko']
@@ -207,6 +208,17 @@ class MonsterModel(BaseModel):
     def __repr__(self):
         server_prefix = self.server_priority.name + " " if self.server_priority != Server.COMBINED else ""
         return "Monster<{}{} ({})>".format(server_prefix, self.name_en, self.monster_id)
+
+    def __hash__(self):
+        return hash((
+            self.monster_id,
+            self.on_jp, self.on_na, self.on_kr,
+            [awo.awakening_id for awo in self.awakenings],
+            self.active_skill.desc_en, self.leader_skill.desc_en,
+            self.series_id, self.group_id, self.collab_id,
+            self.name_en, self.name_ja, self.name_ko,
+            self.stat_values,
+        ))
 
 
 class MonsterSearchHelper:

@@ -316,6 +316,7 @@ class MonsterGraph:
                                    all_series=monster_series[m.monster_id] or {series[0]},
                                    series_id=m.s_series_id,
                                    group_id=m.group_id,
+                                   collab_id=m.collab_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
@@ -889,3 +890,10 @@ class MonsterGraph:
     def debug_validate_id(self, monster_id: int) -> Optional[int]:
         if self.debug_monster_ids is None or monster_id in self.debug_monster_ids:
             return monster_id
+
+    def hash_graph(self, server: Server) -> int:
+        graph = self.graph_dict[server]
+        graph_hash = hash((graph.nodes, graph.edges))
+        for monster in self.get_all_monsters(server):
+            graph_hash ^= hash(monster)
+        return graph_hash
