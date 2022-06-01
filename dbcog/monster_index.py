@@ -16,7 +16,7 @@ from .errors import InvalidGraphState
 from .models.enum_types import AwokenSkills, DEFAULT_SERVER
 from .models.monster_model import MonsterModel
 from .monster_graph import MonsterGraph
-from .token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, EvoTypes, \
+from dbcog.find_monster.token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, EvoTypes, \
     HAZARDOUS_IN_NAME_MODS, KNOWN_MODIFIERS, LEGAL_END_TOKENS, MISC_MAP, MULTI_WORD_TOKENS, MiscModifiers, \
     PROBLEMATIC_SERIES_TOKENS, SUB_COLOR_MAP, TYPE_MAP
 

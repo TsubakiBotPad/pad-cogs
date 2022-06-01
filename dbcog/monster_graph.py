@@ -720,6 +720,19 @@ class MonsterGraph:
                 ret.pop(i)
         return ret
 
+    def get_all_next_evolutions(self, monster: MonsterModel, include_self: bool = True) -> Set[MonsterModel]:
+        to_parse = {monster}
+        ret = set()
+        while to_parse:
+            mon = to_parse.pop()
+            if mon in ret:
+                continue
+            ret.add(mon)
+            to_parse.update(self.get_next_evolutions(mon))
+        if not include_self:
+            ret.remove(monster)
+        return ret
+
     def get_monster_depth(self, monster: MonsterModel) -> float:
         if monster.monster_id == 5802:
             # DMG sucks!
