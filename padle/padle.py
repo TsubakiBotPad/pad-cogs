@@ -30,6 +30,7 @@ from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterCo
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
 from padle.view.padle_scroll_view import PADleScrollView
+from tsutils.menu.components.config import BotConfig
 
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
@@ -68,7 +69,10 @@ class PADle(commands.Cog):
         await menulistener.register(self)
 
     async def get_menu_default_data(self, ims):
-        data = {}
+        data = {
+            'dbcog': self,
+            'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
+        }
         return data
 
     async def get_dbcog(self) -> "DBCog":

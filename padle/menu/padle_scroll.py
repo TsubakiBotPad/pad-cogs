@@ -30,15 +30,22 @@ class PADleScrollMenu:
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
         print("Left clicked!!")
-        view_state = await cls._get_view_state(ims, **data)
+        view_state = PADleScrollMenu.respond_with_pane(message, ims, **data)
         view_state.decrement_page()
         return PADleScrollMenu.control(view_state)
 
     @classmethod
     async def respond_with_right(cls, message: Optional[Message], ims, **data):
-        view_state = await cls._get_view_state(ims, **data)
+        print("Right clicked!!")
+        view_state = PADleScrollMenu.respond_with_pane(message, ims, **data)
         view_state.increment_page()
         return PADleScrollMenu.control(view_state)
+    
+    @classmethod
+    async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> PADleScrollViewState:
+        dbcog = data['dbcog']
+        user_config = data['user_config']
+        return PADleScrollViewState.deserialize(dbcog, user_config, ims)
     
     @classmethod
     def control(cls, state: PADleScrollViewState):
@@ -54,10 +61,6 @@ class PADleScrollMenu:
     @classmethod
     def _get_view(cls, state: PADleScrollViewState) -> Type[PADleScrollView]:
         return cls.view_types.get(state.VIEW_STATE_TYPE) or PADleScrollView
-    
-    @classmethod
-    async def _get_view_state(cls, ims: dict, **data) -> PADleScrollViewState:
-        return PADleScrollViewState()
         
 
 class PADleMenuPanes(MenuPanes):
