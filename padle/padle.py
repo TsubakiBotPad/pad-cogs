@@ -19,6 +19,11 @@ from tsutils.helper_functions import conditional_iterator
 from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message
 from tsutils.emoji import NO_EMOJI, SendableEmoji, YES_EMOJI
 
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
+from padle.closable_embed import ClosableEmbedMenu
+from padle.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
+from padle.menu_map import padle_menu_map
 
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
@@ -34,6 +39,8 @@ logger = logging.getLogger('red.padbot-cogs.padle')
 class PADle(commands.Cog):
     """PADle"""
 
+    menu_map = padle_menu_map
+    
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -44,7 +51,19 @@ class PADle(commands.Cog):
                                     subs=[], all_scores=[], save_daily_scores=[])
 
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
+        
+    async def register_menu(self):
+        await self.bot.wait_until_ready()
+        menulistener = self.bot.get_cog("MenuListener")
+        if menulistener is None:
+            logger.warning("MenuListener is not loaded.")
+            return
+        await menulistener.register(self)
 
+    async def get_menu_default_data(self, ims):
+        data = {}
+        return data
+    
     async def get_dbcog(self) -> "DBCog":
         dbcog = self.bot.get_cog("DBCog")
         if dbcog is None:
@@ -59,7 +78,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def help(self, ctx):
         """Instructions for PADle"""
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix=ctx.prefix
         await ctx.send("- PADle is similar to Wordle, except for PAD cards.\n"
                        "- You have infinite tries to guess the hidden PAD card (chosen from a list "
                        "of more well-known monsters). Everyone is trying to guess the same PAD card. "
@@ -71,7 +90,7 @@ class PADle(commands.Cog):
     @padle.command(aliases=["sub"])
     async def subscribe(self, ctx, sub_arg=True):
         """Subscribe to daily notifications of new PADles"""
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix=ctx.prefix
         subbed_users = await self.config.subs()
         if not sub_arg:
             if ctx.author.id in subbed_users:
@@ -112,7 +131,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return
 
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix=ctx.prefix
         em = discord.Embed(title="PADle #{}".format(await self.config.num_days()), type="rich",
                            description="Guess a card with `{}padle guess <card>`!\nIf "
                            "you give up, use `{}padle giveup`.".format(prefix,prefix))
@@ -189,35 +208,35 @@ class PADle(commands.Cog):
                                                                           (average / completes))
         return embed
     
-    # @padle.command()
-    # @commands.is_owner()
-    # async def fullreset(self, ctx):
-    #     """Resets all stats and information."""
-    #     with open("./pad-cogs/padle/monsters.txt", "r") as f:
-    #         monsters = f.readline().split(",")
-    #         await self.config.padle_today.set(random.choice(monsters))
+    @padle.command()
+    @commands.is_owner()
+    async def fullreset(self, ctx):
+        """Resets all stats and information."""
+        with open("./pad-cogs/padle/monsters.txt", "r") as f:
+            monsters = f.readline().split(",")
+            await self.config.padle_today.set(random.choice(monsters))
 
-    #     await self.config.num_days.set(1)
-    #     await self.config.subs.set([])
-    #     await self.config.all_scores.set([])
-    #     await self.config.save_daily_scores.set([])
-    #     all_users = await self.config.all_users()
-    #     for userid in all_users:
-    #         user = await self.bot.fetch_user(userid)
-    #         await self.config.user(user).guesses.set([])
-    #         # need to send message if a user is mid-game
-    #         if(await self.config.user(user).start() and not await self.config.user(user).done()):
-    #             try:
-    #                 await user.send("A full reset occured, the PADle expired.")
-    #             except:
-    #                 pass
-    #         await self.config.user(user).start.set(False)
-    #         await self.config.user(user).done.set(False)
-    #         await self.config.user(user).score.set([])
-    #         await self.config.user(user).edit_id.set("")
-    #         await self.config.user(user).channel_id.set("")
-    #         await self.config.user(user).embed_text.set([])
-    #     await ctx.tick()
+        await self.config.num_days.set(1)
+        await self.config.subs.set([])
+        await self.config.all_scores.set([])
+        await self.config.save_daily_scores.set([])
+        all_users = await self.config.all_users()
+        for userid in all_users:
+            user = await self.bot.fetch_user(userid)
+            await self.config.user(user).guesses.set([])
+            # need to send message if a user is mid-game
+            if(await self.config.user(user).start() and not await self.config.user(user).done()):
+                try:
+                    await user.send("A full reset occured, the PADle expired.")
+                except:
+                    pass
+            await self.config.user(user).start.set(False)
+            await self.config.user(user).done.set(False)
+            await self.config.user(user).score.set([])
+            await self.config.user(user).edit_id.set("")
+            await self.config.user(user).channel_id.set("")
+            await self.config.user(user).embed_text.set([])
+        await ctx.tick()
 
     # this takes a long time to run
     # @padle.command()
@@ -244,7 +263,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def guess(self, ctx, *, guess):
         """Guess a card for the daily PADle"""
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix=ctx.prefix
         if ctx.guild is not None:
             return await ctx.send("You can only play PADle in DMs!")
         if(not await self.config.user(ctx.author).start()):
@@ -255,9 +274,13 @@ class PADle(commands.Cog):
 
         guess_monster = await dbcog.find_monster(guess, ctx.author.id)
         if guess_monster is None:
-            await ctx.send("Monster not found, please try again.", delete_after=10)
-            return False
-
+            close_menu = ClosableEmbedMenu.menu()
+            props = PADleMonsterConfirmationViewProps("Monster not found, please try again.")
+            query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
+            state = ClosableEmbedViewState(ctx.author.id, ClosableEmbedMenu.MENU_TYPE, guess,
+                                        query_settings, PADleMonsterConfirmationView.VIEW_TYPE, props)
+            await close_menu.create(ctx, state)
+            return 
         m_embed = EmbedView(
             EmbedMain(
                 title=MonsterHeader.menu_title(guess_monster).to_markdown(),
@@ -329,7 +352,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def giveup(self, ctx):
         """Give up on today's PADle"""
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix = ctx.prefix
         if ctx.guild is not None:
             return await ctx.send("You can only play PADle in DMs!")
         if(not await self.config.user(ctx.author).start()):
@@ -358,7 +381,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def score(self, ctx):
         """Share your PADle score"""
-        prefix = (await self.bot.get_prefix(ctx.message))[0]
+        prefix=ctx.prefix
         if(not await self.config.user(ctx.author).done()):
             await ctx.send("You have not done today's PADle yet!")
             return
