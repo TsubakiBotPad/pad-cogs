@@ -284,9 +284,10 @@ class PADle(commands.Cog):
             props = PADleMonsterConfirmationViewProps("Monster not found, please try again.")
             query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
             state = ClosableEmbedViewState(ctx.author.id, ClosableEmbedMenu.MENU_TYPE, guess,
-                                        query_settings, PADleMonsterConfirmationView.VIEW_TYPE, props)
+                                           query_settings, PADleMonsterConfirmationView.VIEW_TYPE, props)
             await close_menu.create(ctx, state)
-            return 
+            return
+
         m_embed = EmbedView(
             EmbedMain(
                 title=MonsterHeader.menu_title(guess_monster).to_markdown(),
