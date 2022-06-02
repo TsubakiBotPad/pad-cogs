@@ -1,4 +1,3 @@
-from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.components import EmbedMain
@@ -20,5 +19,4 @@ class PADleMonsterConfirmationView:
                 color=c.red(),
                 title=props.title,
             ),
-            embed_footer=embed_footer_with_state(state)
         )

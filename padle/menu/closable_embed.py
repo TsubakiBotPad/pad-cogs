@@ -1,5 +1,5 @@
 from tsutils.menu.closable_embed_base import ClosableEmbedMenuBase
-from padle.confirmation import PADleMonsterConfirmationView
+from padle.view.confirmation import PADleMonsterConfirmationView
 
 
 class ClosableEmbedMenu(ClosableEmbedMenuBase):
