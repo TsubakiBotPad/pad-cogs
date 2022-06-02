@@ -4,12 +4,16 @@ import random
 import asyncio
 import logging
 
+from typing import TYPE_CHECKING
+from aiofiles import open as aopen
 from typing import List, Literal, Optional
 from redbot.core import Config, commands
 from math import ceil
 
-# from dbcog.monster_graph import MonsterGraph # used for creating the filter
-from dbcog.dbcog import DBCog
+if TYPE_CHECKING:
+    from dbcog.dbcog import DBCog
+    # from dbcog.monster_graph import MonsterGraph # used for creating the filter
+    
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
@@ -88,7 +92,7 @@ class PADle(commands.Cog):
                        "Use `{}padle start` to begin!".format(prefix))
 
     @padle.command(aliases=["sub"])
-    async def subscribe(self, ctx, sub_arg=True):
+    async def subscribe(self, ctx, sub_arg:bool=True):
         """Subscribe to daily notifications of new PADles"""
         prefix=ctx.prefix
         subbed_users = await self.config.subs()
@@ -118,9 +122,9 @@ class PADle(commands.Cog):
     @padle.command()
     async def start(self, ctx):
         """Start a game of PADle"""
-        if(await self.config.user(ctx.author).done()):
+        if await self.config.user(ctx.author).done():
             return await ctx.send("You have already finished today's PADle!")
-        if(await self.config.user(ctx.author).start()):
+        if await self.config.user(ctx.author).start():
             return await ctx.send("You have already started a game!")
         confirmation = await get_user_confirmation(ctx, "Start today's (#{}) PADle game?".format(
             await self.config.num_days()), timeout=30, force_delete=False, show_feedback=True)
@@ -147,7 +151,7 @@ class PADle(commands.Cog):
         await self.config.user(ctx.author).embed_text.set([])
 
     @padle.command(aliases=["stats"])
-    async def globalstats(self, ctx, day=0):
+    async def globalstats(self, ctx, day: int = 0):
         """Gives global stats for the PADle (optionally on a specified day)"""
         num_days = await self.config.num_days()
         if day <= 0 or day > num_days:
@@ -190,7 +194,7 @@ class PADle(commands.Cog):
             else:
                 completes += 1
                 average += int(item)
-        guess_monster = await dbcog.find_monster(info[0], ctx.author.id)
+        guess_monster = dbcog.get_monster(int(info[0]))
         embed = EmbedView(
             EmbedMain(
                 title="PADle #{} Stats".format(day)),
@@ -222,10 +226,12 @@ class PADle(commands.Cog):
         await self.config.save_daily_scores.set([])
         all_users = await self.config.all_users()
         for userid in all_users:
-            user = await self.bot.fetch_user(userid)
+            user = self.bot.get_user(userid)
+            if user is None:
+                continue
             await self.config.user(user).guesses.set([])
             # need to send message if a user is mid-game
-            if(await self.config.user(user).start() and not await self.config.user(user).done()):
+            if await self.config.user(user).start() and not await self.config.user(user).done():
                 try:
                     await user.send("A full reset occured, the PADle expired.")
                 except:
@@ -244,7 +250,7 @@ class PADle(commands.Cog):
     #     dbcog = await self.get_dbcog()
     #     mgraph = dbcog.database.graph
     #     final = []
-    #     for i in range(0, 8800):
+    #     for i in range(0, graph.max_monster_id):
     #         monster = await dbcog.find_monster(str(i), ctx.author)
     #         try:
     #             nextTrans = mgraph.get_next_transform(monster)
@@ -266,9 +272,9 @@ class PADle(commands.Cog):
         prefix=ctx.prefix
         if ctx.guild is not None:
             return await ctx.send("You can only play PADle in DMs!")
-        if(not await self.config.user(ctx.author).start()):
+        if not await self.config.user(ctx.author).start():
             return await ctx.send("You have not started the game of PADle yet, try `{}padle start`!".format(prefix))
-        if(await self.config.user(ctx.author).done()):
+        if await self.config.user(ctx.author).done():
             return await ctx.send("You have already played today's PADle!")
         dbcog = await self.get_dbcog()
 
@@ -300,7 +306,7 @@ class PADle(commands.Cog):
         points = 0
         async with self.config.user(ctx.author).guesses() as guesses:
             guesses.append(guess_monster.monster_id)
-        monster = await dbcog.find_monster(str(await self.config.padle_today()), ctx.author.id)
+        monster = dbcog.get_monster(int(await self.config.padle_today()))
         line = await self.get_name_line(ctx, monster, guess_monster)
         other_line = await self.get_other_info_line(ctx, monster, guess_monster)
         awakenings_line = await self.get_awakenings_line(ctx, monster, guess_monster)
@@ -331,19 +337,19 @@ class PADle(commands.Cog):
         message = await ctx.send(embed=discord.Embed(title="Padle"))
         await self.config.user(ctx.author).edit_id.set(message.id)
         await self.config.user(ctx.author).channel_id.set(ctx.channel.id)
-        score = ":yellow_square:"
-        if(guess_monster.monster_id == monster.monster_id):
+        score = "\N{LARGE YELLOW SQUARE}"
+        if guess_monster.monster_id == monster.monster_id:
             await ctx.send("You got the PADle in {} guesses! Use `{}padle score` to share your score.".format(
                 len(await self.config.user(ctx.author).guesses()), prefix))
             await self.config.user(ctx.author).done.set(True)
             async with self.config.all_scores() as all_scores:
                 all_scores.append(str(len(await self.config.user(ctx.author).guesses())))
-            score = ":green_square:"
+            score = "\N{LARGE GREEN SQUARE}"
         else:
-            if(points < 9):
-                score = ":orange_square:"
-            if(points < 5):
-                score = ":red_square:"
+            if points < 9:
+                score = "\N{LARGE ORANGE SQUARE}"
+            if points < 5:
+                score = "\N{LARGE RED SQUARE}"
         async with self.config.user(ctx.author).score() as scores:
             scores.append(score)
         start_adding_reactions(message, emojis)
@@ -355,9 +361,9 @@ class PADle(commands.Cog):
         prefix = ctx.prefix
         if ctx.guild is not None:
             return await ctx.send("You can only play PADle in DMs!")
-        if(not await self.config.user(ctx.author).start()):
+        if not await self.config.user(ctx.author).start():
             return await ctx.send("You have not started the game of PADle yet, try `{}padle start`!".format(prefix))
-        if(await self.config.user(ctx.author).done()):
+        if await self.config.user(ctx.author).done():
             return await ctx.send("You have already played today's PADle!")
         confirmation = await get_user_confirmation(ctx, "Are you sure you would like to give up?", timeout=20)
         dbcog = await self.get_dbcog()
@@ -365,7 +371,7 @@ class PADle(commands.Cog):
             if confirmation is None:
                 await send_cancellation_message(ctx, "Confirmation timeout.")
             return
-        monster = await dbcog.find_monster(str(await self.config.padle_today()), ctx.author.id)
+        monster = dbcog.get_monster(int(await self.config.padle_today()))
         await self.config.user(ctx.author).done.set(True)
         m_embed = EmbedView(EmbedMain(title=MonsterHeader.menu_title(monster).to_markdown(),
                                       description="PADle #{}".format(await self.config.num_days()),
@@ -374,7 +380,7 @@ class PADle(commands.Cog):
         await ctx.send(embed=m_embed)
         await ctx.send("Use `{}padle score` to share your score!".format(prefix))
         async with self.config.user(ctx.author).score() as scores:
-            scores.append(":x:")
+            scores.append("\N{CROSS MARK}")
         async with self.config.all_scores() as all_scores:
             all_scores.append("X")
 
@@ -382,12 +388,12 @@ class PADle(commands.Cog):
     async def score(self, ctx):
         """Share your PADle score"""
         prefix=ctx.prefix
-        if(not await self.config.user(ctx.author).done()):
+        if not await self.config.user(ctx.author).done():
             await ctx.send("You have not done today's PADle yet!")
             return
         score = await self.config.user(ctx.author).score()
-        value = "X" if ":x:" in score else len(await self.config.user(ctx.author).guesses())
-        if(ctx.guild is None):
+        value = "X" if "\N{CROSS MARK}" in score else len(await self.config.user(ctx.author).guesses())
+        if ctx.guild is None:
             msg = "PADle #{}: {}".format(await self.config.num_days(), value) + "\n" + "".join(score)
             await ctx.send(msg)
             await ctx.send("*Hint: You can use the command `{}padle score` anywhere "
@@ -407,24 +413,24 @@ class PADle(commands.Cog):
                 return True
 
         await self.bot.wait_until_ready()
-        # idk what x is but it wants it to be there
-        async for x in conditional_iterator(is_day_change, poll_interval=10):
+        async for _ in conditional_iterator(is_day_change, poll_interval=10):
             try:
-                # to be used at a later date...
                 async with self.config.save_daily_scores() as save_daily:
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-                with open("./pad-cogs/padle/monsters.txt", "r") as f:
-                    monsters = f.readline().split(",")
+                async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
+                    monsters = (await f.readline()).split(",")
                     await self.config.padle_today.set(random.choice(monsters))
                 num = await self.config.num_days()
                 await self.config.num_days.set(num + 1)
                 all_users = await self.config.all_users()
                 await self.config.all_scores.set([])
                 for userid in all_users:
-                    user = await self.bot.fetch_user(userid)
+                    user = self.bot.get_user(userid)
+                    if user is None:
+                        continue
                     await self.config.user(user).guesses.set([])
                     # need to send message if a user is mid-game
-                    if(await self.config.user(user).start() and not await self.config.user(user).done()):
+                    if await self.config.user(user).start() and not await self.config.user(user).done():
                         await user.send("The PADle expired; a new one is available.")
                     await self.config.user(user).start.set(False)
                     await self.config.user(user).done.set(False)
@@ -434,8 +440,9 @@ class PADle(commands.Cog):
                     await self.config.user(user).embed_text.set([])
                 subbed_users = await self.config.subs()
                 for userid in subbed_users:
-                    user = await self.bot.fetch_user(userid)
-                    await user.send("PADle #{} is now available!".format(await self.config.num_days()))
+                    user = self.bot.get_user(userid)
+                    if user is not None:
+                        await user.send("PADle #{} is now available!".format(await self.config.num_days()))
             except asyncio.CancelledError:
                 raise
             except Exception:
@@ -446,14 +453,14 @@ class PADle(commands.Cog):
         attr1 = guess_monster.attr1.name.lower()
         attr2 = guess_monster.attr2.name.lower()
         attr_feedback = []
-        attr_feedback.append(":white_check_mark:" if attr1 == monster.attr1.name.lower() else ":x:")
-        attr_feedback.append(":white_check_mark:" if attr2 == monster.attr2.name.lower() else ":x:")
-        if(attr1 == monster.attr2.name.lower() and
-           attr2 != monster.attr2.name.lower() and attr1 != monster.attr1.name.lower()):
-            attr_feedback[0] = ":yellow_square:"
-        if(attr2 == monster.attr1.name.lower() and
-           attr2 != monster.attr2.name.lower() and attr1 != monster.attr1.name.lower()):
-            attr_feedback[1] = ":yellow_square:"
+        attr_feedback.append("\N{WHITE HEAVY CHECK MARK}" if attr1 == monster.attr1.name.lower() else "\N{CROSS MARK}")
+        attr_feedback.append("\N{WHITE HEAVY CHECK MARK}" if attr2 == monster.attr2.name.lower() else "\N{CROSS MARK}")
+        if (attr1 == monster.attr2.name.lower() and
+            attr2 != monster.attr2.name.lower() and attr1 != monster.attr1.name.lower()):
+            attr_feedback[0] = "\N{LARGE YELLOW SQUARE}"
+        if (attr2 == monster.attr1.name.lower() and
+            attr2 != monster.attr2.name.lower() and attr1 != monster.attr1.name.lower()):
+            attr_feedback[1] = "\N{LARGE YELLOW SQUARE}"
         line.append(get_emoji("orb_{}".format(attr1)))
         line.append(attr_feedback[0] + " / ")
         line.append(get_emoji("orb_{}".format(attr2)))
@@ -470,17 +477,17 @@ class PADle(commands.Cog):
         points = 0
         for index, guess_awakening in enumerate(guess_monster.awakenings[:9]):
             awakes.append(get_awakening_emoji(guess_awakening.awoken_skill_id, guess_awakening.name))
-            if(index < len(monster.awakenings) and
+            if (index < len(monster.awakenings) and
                monster.awakenings[index].awoken_skill_id == guess_awakening.awoken_skill_id):
-                feedback.append(":white_check_mark:")
+                feedback.append("\N{WHITE HEAVY CHECK MARK}")
                 points += 1
             else:
-                feedback.append(":x:")
+                feedback.append("\N{CROSS MARK}")
                 if index < len(monster.awakenings):
                     unused.append(monster.awakenings[index].awoken_skill_id)
         for index, guess_awakening in enumerate(guess_monster.awakenings[:9]):
-            if guess_awakening.awoken_skill_id in unused and feedback[index] != ":white_check_mark:":
-                feedback[index] = ":yellow_square:"
+            if guess_awakening.awoken_skill_id in unused and feedback[index] != "\N{WHITE HEAVY CHECK MARK}":
+                feedback[index] = "\N{LARGE YELLOW SQUARE}"
                 points += 0.5
                 unused.remove(guess_awakening.awoken_skill_id)
         return ["\n".join(["".join(awakes), "".join(feedback)]), points]
@@ -490,28 +497,28 @@ class PADle(commands.Cog):
         line1 = []
         line1.append(get_rarity_emoji(guess_monster.rarity))
         if monster.rarity == guess_monster.rarity:
-            line1.append(":white_check_mark: | ")
+            line1.append("\N{WHITE HEAVY CHECK MARK} | ")
             points += 1
         elif guess_monster.rarity > monster.rarity:
-            line1.append(":arrow_down: | ")
+            line1.append("\N{DOWNWARDS BLACK ARROW}\N{VARIATION SELECTOR-16} | ")
         else:
-            line1.append(":arrow_up: | ")
+            line1.append("\N{UPWARDS BLACK ARROW}\N{VARIATION SELECTOR-16} | ")
         for type in guess_monster.types:
             line1.append(get_type_emoji(type))
             if type in monster.types:
                 points += 1
-                line1.append(":white_check_mark: ")
+                line1.append("\N{WHITE HEAVY CHECK MARK} ")
             else:
-                line1.append(":x: ")
+                line1.append("\N{CROSS MARK} ")
         line1.append(" | Sell MP: ")
         line1.append('{:,}'.format(guess_monster.sell_mp))
         if guess_monster.sell_mp == monster.sell_mp:
-            line1.append(":white_check_mark:")
+            line1.append("\N{WHITE HEAVY CHECK MARK}")
             points += 1
         elif guess_monster.sell_mp > monster.sell_mp:
-            line1.append(":arrow_down:")
+            line1.append("\N{DOWNWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}")
         else:
-            line1.append(":arrow_up:")
+            line1.append("\N{UPWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}")
 
         return ["".join(line1), points]
 
