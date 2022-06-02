@@ -189,35 +189,35 @@ class PADle(commands.Cog):
                                                                           (average / completes))
         return embed
     
-    @padle.command()
-    @commands.is_owner()
-    async def fullreset(self, ctx):
-        """Resets all stats and information."""
-        with open("./pad-cogs/padle/monsters.txt", "r") as f:
-            monsters = f.readline().split(",")
-            await self.config.padle_today.set(random.choice(monsters))
+    # @padle.command()
+    # @commands.is_owner()
+    # async def fullreset(self, ctx):
+    #     """Resets all stats and information."""
+    #     with open("./pad-cogs/padle/monsters.txt", "r") as f:
+    #         monsters = f.readline().split(",")
+    #         await self.config.padle_today.set(random.choice(monsters))
 
-        await self.config.num_days.set(1)
-        await self.config.subs.set([])
-        await self.config.all_scores.set([])
-        await self.config.save_daily_scores.set([])
-        all_users = await self.config.all_users()
-        for userid in all_users:
-            user = await self.bot.fetch_user(userid)
-            await self.config.user(user).guesses.set([])
-            # need to send message if a user is mid-game
-            if(await self.config.user(user).start() and not await self.config.user(user).done()):
-                try:
-                    await user.send("A full reset occured, the PADle expired.")
-                except:
-                    pass
-            await self.config.user(user).start.set(False)
-            await self.config.user(user).done.set(False)
-            await self.config.user(user).score.set([])
-            await self.config.user(user).edit_id.set("")
-            await self.config.user(user).channel_id.set("")
-            await self.config.user(user).embed_text.set([])
-        await ctx.tick()
+    #     await self.config.num_days.set(1)
+    #     await self.config.subs.set([])
+    #     await self.config.all_scores.set([])
+    #     await self.config.save_daily_scores.set([])
+    #     all_users = await self.config.all_users()
+    #     for userid in all_users:
+    #         user = await self.bot.fetch_user(userid)
+    #         await self.config.user(user).guesses.set([])
+    #         # need to send message if a user is mid-game
+    #         if(await self.config.user(user).start() and not await self.config.user(user).done()):
+    #             try:
+    #                 await user.send("A full reset occured, the PADle expired.")
+    #             except:
+    #                 pass
+    #         await self.config.user(user).start.set(False)
+    #         await self.config.user(user).done.set(False)
+    #         await self.config.user(user).score.set([])
+    #         await self.config.user(user).edit_id.set("")
+    #         await self.config.user(user).channel_id.set("")
+    #         await self.config.user(user).embed_text.set([])
+    #     await ctx.tick()
 
     # this takes a long time to run
     # @padle.command()
