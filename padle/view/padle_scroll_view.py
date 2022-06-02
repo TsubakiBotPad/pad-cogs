@@ -47,19 +47,25 @@ class PADleScrollViewState(ViewStateBase):
     def get_num_pages(self):
         return ceil(len(self.all_text) / 5)
     
-    def increment_page(self):
-        print("Incrementing!")
-        if self.current_page < self.get_num_pages() - 1:
-            self.current_page = self.current_page + 1
+    @classmethod
+    def get_num_pages_ims(self, ims):
+        return ceil(len(ims['all_text']) / 5)
+    
+    @classmethod
+    def increment_page(self, ims):
+        print("incrementing!")
+        if ims['current_page'] < self.get_num_pages_ims(ims) - 1:
+            ims['current_page'] = ims['current_page'] + 1
             return
-        self.current_page = 0
-
-    def decrement_page(self):
-        print("Decrementing!")
-        if self.current_page > 0:
-            self.current_page = self.current_page - 1
+        ims['current_page'] = 0
+        
+    @classmethod
+    def decrement_page(self, ims):
+        print("decrementing!")
+        if ims['current_page'] > 0:
+            ims['current_page'] = ims['current_page'] - 1
             return
-        self.current_page = self.get_num_pages() - 1
+        ims['current_page'] = self.get_num_pages_ims(ims) - 1
         
     def serialize(self):
         ret = super().serialize()
@@ -72,7 +78,7 @@ class PADleScrollViewState(ViewStateBase):
         return ret
 
     @classmethod
-    async def deserialize(cls, dbcog, _user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, _user_config: UserConfig, ims: dict):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']

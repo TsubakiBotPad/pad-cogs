@@ -68,19 +68,19 @@ class PADle(commands.Cog):
             return
         await menulistener.register(self)
 
-    async def get_menu_default_data(self, ims):
-        data = {
-            'dbcog': self,
-            'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
-        }
-        return data
-
     async def get_dbcog(self) -> "DBCog":
         dbcog = self.bot.get_cog("DBCog")
         if dbcog is None:
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
         return dbcog
+    
+    async def get_menu_default_data(self, ims):
+        data = {
+            'dbcog': await self.get_dbcog(),
+            'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
+        }
+        return data
 
     @commands.group()
     async def padle(self, ctx):
