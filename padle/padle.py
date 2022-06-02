@@ -337,15 +337,15 @@ class PADle(commands.Cog):
         # idk what x is but it wants it to be there
         async for x in conditional_iterator(is_day_change, poll_interval=10):
             try:
+                # to be used at a later date...
+                async with self.config.saveDailyScores() as saveDaily:
+                    saveDaily.append([await self.config.padleToday(), await self.config.allScores()])
                 with open("./pad-cogs/padle/monsters.txt", "r") as f:
                     monsters = f.readline().split(",")
                     await self.config.padleToday.set(random.choice(monsters))
                 num = await self.config.numDays()
                 await self.config.numDays.set(num + 1)
                 allUsers = await self.config.all_users()
-                # to be used at a later date...
-                async with self.config.saveDailyScores() as saveDaily:
-                    saveDaily.append(await self.config.allScores())
                 await self.config.allScores.set([])
                 for userid in allUsers:
                     user = await self.bot.fetch_user(userid)
