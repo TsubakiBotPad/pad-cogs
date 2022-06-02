@@ -290,7 +290,7 @@ class FindMonster:
 
         return ExtraInfo(subquery_data, 0)
 
-    async def _find_monCOLOR_MAPster_search(self, tokenized_query: List[str]) -> \
+    async def _find_monster_search(self, tokenized_query: List[str]) -> \
             Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel]]:
         mod_tokens, name_query_tokens = await self._interpret_query(tokenized_query)
 
