@@ -55,7 +55,7 @@ class PADle(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=630817360)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
-                                  edit_id="", channel_id="", past_guesses={})
+                                  edit_id="", channel_id="", all_guesses={})
         self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
                                     subs=[], all_scores=[], save_daily_scores=[])
 
@@ -81,7 +81,7 @@ class PADle(commands.Cog):
         data = {
             'dbcog': await self.get_dbcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
-            'past_guesses': {} if user is None else self.config.user(user).past_guesses()
+            'all_guesses': {} if user is None else self.config.user(user).all_guesses()
         }
         return data
 
@@ -253,6 +253,7 @@ class PADle(commands.Cog):
             await self.config.user(user).score.set([])
             await self.config.user(user).edit_id.set("")
             await self.config.user(user).channel_id.set("")
+            await self.config.user(user).all_guesses.set({})
         await ctx.tick()
 
     # this takes a long time to run
@@ -318,32 +319,17 @@ class PADle(commands.Cog):
         async with self.config.user(ctx.author).todays_guesses() as todays_guesses:
             todays_guesses.append(guess_monster.monster_id)
         monster = dbcog.get_monster(int(await self.config.padle_today()))
-     
+        cur_day = await self.config.num_days()
         todays_guesses = await self.config.user(ctx.author).todays_guesses()
+        async with self.config.user(ctx.author).all_guesses() as all_guesses:
+            all_guesses[str(cur_day)] = todays_guesses
+        
         try:
             channel = self.bot.get_channel(await self.config.user(ctx.author).channel_id())
             del_msg = await channel.fetch_message(await self.config.user(ctx.author).edit_id())
             await del_msg.delete()
         except discord.NotFound: #user already deleted message
             pass
-        # embed_pages = []
-        # embed_controls = {
-        #     "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
-        #     "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
-        # }
-        # emojis = ["\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
-        #           "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}"]
-        # num_pages = ceil(len(embed_texts) / 5)
-        # for pageNum in range(ceil(len(embed_texts) / 5)):
-        #     embed = discord.Embed(title="Padle #{}".format(await self.config.num_days()), type="rich")
-        #     for index, text in enumerate(embed_texts[:5]):
-        #         embed.add_field(name="**Guess {}**:".format(index + 1 + pageNum * 5), value=text, inline=False)
-        #     embed.set_footer(text="Page {}/{}".format((pageNum + 1), num_pages))
-        #     embed_texts = embed_texts[5:]
-        #     embed_pages.append(embed)
-        # message = await ctx.send(embed=discord.Embed(title="Padle"))
-        # await self.config.user(ctx.author).edit_id.set(message.id)
-        # await self.config.user(ctx.author).channel_id.set(ctx.channel.id)
         
         guess_monster_diff = MonsterDiff(monster, guess_monster)
         points = guess_monster_diff.get_diff_score()
@@ -352,7 +338,6 @@ class PADle(commands.Cog):
         reaction_list = ["\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
                          "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}"]
         #query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
-        cur_day = await self.config.num_days()
         
         state = PADleScrollViewState(ctx.author.id, PADleScrollMenu.MENU_TYPE, guess, dbcog=dbcog, monster=monster, 
                                     cur_day_guesses=todays_guesses, current_day=cur_day, 
@@ -455,8 +440,8 @@ class PADle(commands.Cog):
                     if user is None:
                         continue
                     # save past guesses
-                    async with self.config.user(user).past_guesses() as past_guesses:
-                        past_guesses[str(num)] = await self.config.user(user).todays_guesses()
+                    async with self.config.user(user).all_guesses() as all_guesses:
+                        all_guesses[str(num)] = await self.config.user(user).todays_guesses()
                     await self.config.user(user).todays_guesses.set([])
                     # need to send message if a user is mid-game
                     if await self.config.user(user).start() and not await self.config.user(user).done():
