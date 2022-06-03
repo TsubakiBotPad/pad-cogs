@@ -81,9 +81,17 @@ class PADle(commands.Cog):
         data = {
             'dbcog': await self.get_dbcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
-            'all_guesses': {} if user is None else self.config.user(user).all_guesses()
+            'today_guesses': await self.get_today_guesses(user, ims.get('current_day'))
         }
         return data
+
+    async def get_today_guesses(self, user, current_day):
+        if current_day is None:
+            return None
+        if user is None:
+            return {}
+        async with self.config.user(user).all_guesses() as all_guesses:
+            return all_guesses.get(str(current_day))
 
     @commands.group()
     async def padle(self, ctx):
@@ -228,9 +236,9 @@ class PADle(commands.Cog):
     @commands.is_owner()
     async def fullreset(self, ctx):
         """Resets all stats and information."""
-        with open("./pad-cogs/padle/monsters.txt", "r") as f:
-            monsters = f.readline().split(",")
-            await self.config.padle_today.set(random.choice(monsters))
+        # with open("./pad-cogs/padle/monsters.txt", "r") as f:
+        #     monsters = f.readline().split(",")
+        await self.config.padle_today.set(3260)
 
         await self.config.num_days.set(1)
         await self.config.subs.set([])
@@ -334,14 +342,12 @@ class PADle(commands.Cog):
         guess_monster_diff = MonsterDiff(monster, guess_monster)
         points = guess_monster_diff.get_diff_score()
         
-        padle_menu = PADleScrollMenu().menu()
-        reaction_list = ["\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
-                         "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}"]
+        padle_menu = PADleScrollMenu.menu()
         #query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
         
         state = PADleScrollViewState(ctx.author.id, PADleScrollMenu.MENU_TYPE, guess, dbcog=dbcog, monster=monster, 
-                                    cur_day_guesses=todays_guesses, current_day=cur_day, 
-                                    reaction_list=reaction_list, current_page=ceil(len(todays_guesses) / 5))
+                                     cur_day_guesses=todays_guesses, current_day=cur_day,
+                                     current_page=ceil(len(todays_guesses) / 5))
         message = await padle_menu.create(ctx, state)
         await self.config.user(ctx.author).edit_id.set(message.id)
         await self.config.user(ctx.author).channel_id.set(ctx.channel.id)
@@ -363,8 +369,6 @@ class PADle(commands.Cog):
             scores.append(score)
         # start_adding_reactions(message, emojis)
         # await menus.menu(ctx, embed_pages, embed_controls, message=message, page=len(embed_pages) - 1, timeout=60 * 60)
-        
-        
 
     @padle.command()
     async def giveup(self, ctx):

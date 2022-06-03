@@ -1,10 +1,10 @@
 from math import ceil
-from typing import List, Optional, Type
+from typing import Optional
 
 from discord import Message
 from discordmenu.embed.menu import EmbedControl, EmbedMenu
-from tsutils.emoji import char_to_emoji
-from tsutils.menu.components.panes import MenuPanes, emoji_buttons
+from tsutils.menu.components.panes import MenuPanes
+
 from padle.view.padle_scroll_view import PADleScrollView, PADleScrollViewState
 
 
@@ -16,7 +16,7 @@ class ScrollEmojis:
 
 class PADleScrollMenu:
     MENU_TYPE = 'PADleScrollMenu'
-    
+
     view_types = {
         PADleScrollViewState.VIEW_STATE_TYPE: PADleScrollView
     }
@@ -27,14 +27,14 @@ class PADleScrollMenu:
             initial_control = PADleScrollMenu.control
         embed = EmbedMenu(PADleMenuPanes.transitions(), initial_control)
         return embed
-    
+
     @classmethod
-    def get_num_pages_ims(ims):
+    def get_num_pages_ims(cls, ims):
         return ceil(len(ims['guesses']) / 5)
-    
+
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
-        #PADleScrollMenu.decrement_page(ims)
+        # PADleScrollMenu.decrement_page(ims)
         if ims['current_page'] < PADleScrollMenu.get_num_pages_ims(ims) - 1:
             ims['current_page'] = ims['current_page'] + 1
         else:
@@ -48,24 +48,25 @@ class PADleScrollMenu:
         else:
             ims['current_page'] = PADleScrollMenu.get_num_pages_ims(ims) - 1
         return await PADleScrollMenu.respond_with_pane(message, ims, **data)
-    
+
     @classmethod
     async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> PADleScrollViewState:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        all_guesses = data['all_guesses']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, ims, all_guesses)
+        today_guesses = data['today_guesses']
+        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, ims, today_guesses)
         return PADleScrollMenu.control(view_state)
-    
+
     @staticmethod
     def control(state: PADleScrollViewState):
         if state is None:
             return None
-        reaction_list = state.reaction_list
+        reaction_list = PADleMenuPanes.get_initial_reaction_list()
         return EmbedControl(
             [PADleScrollView.embed(state)],
             reaction_list
         )
+
 
 class PADleMenuPanes(MenuPanes):
     INITIAL_EMOJI = ScrollEmojis.prev_page
@@ -73,8 +74,7 @@ class PADleMenuPanes(MenuPanes):
         ScrollEmojis.next_page: (PADleScrollMenu.respond_with_right, PADleScrollView.VIEW_TYPE),
         ScrollEmojis.prev_page: (PADleScrollMenu.respond_with_left, PADleScrollView.VIEW_TYPE),
     }
-    HIDDEN_EMOJIS = [ScrollEmojis.delete]
-    
+
     @classmethod
     def get_initial_reaction_list(cls):
         return [ScrollEmojis.prev_page, ScrollEmojis.next_page]

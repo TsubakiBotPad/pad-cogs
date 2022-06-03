@@ -58,11 +58,12 @@ class PADleScrollViewState(ViewStateBase):
             'reaction_list': self.reaction_list,
             'current_day': self.current_day,
             'cur_monster': self.monster.monster_id,
+            'guesses': self.cur_day_guesses,
         })
         return ret
 
     @classmethod
-    async def deserialize(dbcog, _user_config: UserConfig, ims: dict, all_guesses):
+    async def deserialize(cls, dbcog, _user_config: UserConfig, ims: dict, today_guesses):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
@@ -70,10 +71,9 @@ class PADleScrollViewState(ViewStateBase):
         current_day = ims['current_day']
         cur_monster = ims['cur_monster']
         monster = dbcog.get_monster(int(cur_monster))
-        cur_day_guesses = all_guesses[current_day]
         return PADleScrollViewState(original_author_id, menu_type, "", current_page=current_page,
                                     current_day=current_day, reaction_list=reaction_list, dbcog=dbcog,
-                                    cur_day_guesses=cur_day_guesses, monster=monster)
+                                    cur_day_guesses=today_guesses, monster=monster)
 
 class PADleScrollView:
     VIEW_TYPE = 'PADleScroll'
