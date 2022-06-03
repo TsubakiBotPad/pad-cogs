@@ -8,6 +8,7 @@ from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings.query_settings import QuerySettings
+from padle.monsterdiff import MonsterDiff
 
 from discordmenu.embed.components import EmbedFooter
 
@@ -20,23 +21,26 @@ if TYPE_CHECKING:
 
 class PADleScrollViewState(ViewStateBase):
     VIEW_STATE_TYPE: str="PADleScrollView"
-    def __init__(self, original_author_id, menu_type, raw_query, title="", all_text=[], current_page=0, extra_state=None,
-                 reaction_list = None):
+    def __init__(self, original_author_id, menu_type, raw_query, dbcog, monster, cur_day_guesses={}, current_page=0, extra_state=None,
+                 reaction_list = None, current_day:int=0,):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
-        self.all_text = all_text
+        self.cur_day_guesses = cur_day_guesses
         self.current_page = current_page
         self.reaction_list = reaction_list
-        self.title = title
+        self.current_day = current_day
+        self.dbcog = dbcog
+        self.monster = monster
     
     def get_cur_fields(self):
         fields = []
         for item in range((5*(self.current_page-1)),(5*(self.current_page))):
-            if item >= len(self.all_text):
+            if item >= len(self.cur_day_guesses):
                 continue
+            guessed_mon = MonsterDiff(self.monster, self.dbcog.get_monster(int(self.cur_day_guesses[item])))
             fields.append(EmbedField(
                 title=f"**Guess #{item+1}**:",
-                body=Box(self.all_text[item]),
+                body=Box("\n".join([guessed_mon.get_name_line_feedback_text(), guessed_mon.get_other_info_feedback_text(), guessed_mon.get_awakenings_feedback_text()])),
             ))
         return fields
             
@@ -45,48 +49,31 @@ class PADleScrollViewState(ViewStateBase):
         return "Page " + str(self.current_page) + "/" + str(self.get_num_pages())
     
     def get_num_pages(self):
-        return ceil(len(self.all_text) / 5)
-    
-    @classmethod
-    def get_num_pages_ims(self, ims):
-        return ceil(len(ims['all_text']) / 5)
-    
-    @classmethod
-    def increment_page(self, ims):
-        print("incrementing!")
-        if ims['current_page'] < self.get_num_pages_ims(ims) - 1:
-            ims['current_page'] = ims['current_page'] + 1
-            return
-        ims['current_page'] = 0
-        
-    @classmethod
-    def decrement_page(self, ims):
-        print("decrementing!")
-        if ims['current_page'] > 0:
-            ims['current_page'] = ims['current_page'] - 1
-            return
-        ims['current_page'] = self.get_num_pages_ims(ims) - 1
+        return ceil(len(self.cur_day_guesses) / 5)
         
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'all_text': self.all_text,
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
-            'title': self.title,
+            'current_day': self.current_day,
+            'cur_monster': self.monster.monster_id,
         })
         return ret
 
     @classmethod
-    async def deserialize(dbcog, _user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, _user_config: UserConfig, ims: dict, all_guesses):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
-        all_text = ims.get("all_text")
-        current_page = ims.get("current_page")
-        title = ims.get("title")
-        return PADleScrollViewState(original_author_id, menu_type, "", all_text=all_text, current_page=current_page,
-                                    title=title, reaction_list=reaction_list)
+        current_page = ims['current_page']
+        current_day = ims['current_day']
+        cur_monster = ims['cur_monster']
+        monster = dbcog.get_monster(int(cur_monster))
+        cur_day_guesses = all_guesses[current_day]
+        return PADleScrollViewState(original_author_id, menu_type, "", current_page=current_page,
+                                    current_day=current_day, reaction_list=reaction_list, dbcog=dbcog,
+                                    cur_day_guesses=cur_day_guesses, monster=monster)
 
 class PADleScrollView:
     VIEW_TYPE = 'PADleScroll'
@@ -96,9 +83,7 @@ class PADleScrollView:
         fields = state.get_cur_fields()
         return EmbedView(
             EmbedMain(
-                title=state.title,
-            ), # doing embed_footer_with_state() gave me 'form body too long' error ??
-            embed_footer=EmbedFooter(
-                state.get_pages_footer(),
-                icon_url=TSUBAKI_FLOWER_ICON_URL),
+                title=f"**PADle #{state.current_day}**",
+            ), 
+            embed_footer=embed_footer_with_state(state, text=state.get_pages_footer()),
             embed_fields=fields)

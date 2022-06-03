@@ -30,7 +30,7 @@ class PADleScrollMenu:
     
     @classmethod
     def get_num_pages_ims(ims):
-        return ceil(len(ims['all_text']) / 5)
+        return ceil(len(ims['guesses']) / 5)
     
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
@@ -53,7 +53,8 @@ class PADleScrollMenu:
     async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> PADleScrollViewState:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, ims)
+        all_guesses = data['all_guesses']
+        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, ims, all_guesses)
         return PADleScrollMenu.control(view_state)
     
     @staticmethod
