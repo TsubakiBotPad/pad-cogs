@@ -213,12 +213,17 @@ class MonsterModel(BaseModel):
         return hash((
             self.monster_id,
             self.on_jp, self.on_na, self.on_kr,
-            [awo.awakening_id for awo in self.awakenings],
-            self.active_skill.desc_en, self.leader_skill.desc_en,
+            tuple(awo.awakening_id for awo in self.awakenings),
+            self.active_skill_id, self.leader_skill_id,
             self.series_id, self.group_id, self.collab_id,
             self.name_en, self.name_ja, self.name_ko,
-            self.stat_values,
+            str(self.stat_values),
         ))
+
+    def __eq__(self, other):
+        if isinstance(other, MonsterModel):
+            return self.monster_id == other.monster_id and self.server_priority.value == other.server_priority.value
+        return False
 
 
 class MonsterSearchHelper:

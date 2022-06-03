@@ -906,7 +906,7 @@ class MonsterGraph:
 
     def hash_graph(self, server: Server) -> int:
         graph = self.graph_dict[server]
-        graph_hash = hash((graph.nodes, graph.edges))
+        graph_hash = hash((frozenset(graph.nodes), frozenset(graph.edges)))
         for monster in self.get_all_monsters(server):
             graph_hash ^= hash(monster)
         return graph_hash

@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import csv
 import io
 import logging
@@ -12,13 +13,14 @@ from redbot.core.utils import AsyncIter
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja
 
-from .errors import InvalidGraphState
-from .models.enum_types import AwokenSkills, DEFAULT_SERVER
-from .models.monster_model import MonsterModel
-from .monster_graph import MonsterGraph
-from dbcog.find_monster.token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, EvoTypes, \
+from dbcog.find_monster.token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, \
+    EvoTypes, \
     HAZARDOUS_IN_NAME_MODS, KNOWN_MODIFIERS, LEGAL_END_TOKENS, MISC_MAP, MULTI_WORD_TOKENS, MiscModifiers, \
     PROBLEMATIC_SERIES_TOKENS, SUB_COLOR_MAP, TYPE_MAP
+from .errors import InvalidGraphState
+from .models.enum_types import AwokenSkills
+from .models.monster_model import MonsterModel
+from .monster_graph import MonsterGraph
 
 logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
@@ -32,8 +34,12 @@ CONTENT_TOKEN_ALIAS_SHEET = SHEETS_PATTERN.format(1229125459)
 SERIES_OVERRIDES_SHEET = SHEETS_PATTERN.format(959933643)
 
 
+def _one():
+    return 1
+
+
 class MonsterIndex:
-    def __init__(self, server: Server = DEFAULT_SERVER):
+    def __init__(self, server):
         self.is_ready = asyncio.Event()
         self.server = server
         self.issues = []
@@ -62,41 +68,9 @@ class MonsterIndex:
 
         self.multi_word_tokens = {}
         self.mwtoken_creators = defaultdict(set)
-        self.mwt_to_len = defaultdict(lambda: 1)
+        self.mwt_to_len = defaultdict(_one)
 
         self.graph: Optional[MonsterGraph] = None
-
-    async def reset(self, graph: MonsterGraph):
-        self.is_ready.clear()
-        self.issues = []
-
-        self.monster_id_to_cardname = defaultdict(set)
-        self.monster_id_to_treename = defaultdict(set)
-        self.treename_overrides = set()
-        self.monster_id_to_name = defaultdict(set)
-        self.monster_id_to_forcedfluff = defaultdict(set)
-        self.series_id_to_pantheon_nickname = defaultdict(set)
-        self.content_token_aliases = defaultdict(set)
-        self.manual_modifiers = defaultdict(set)
-        self.manual_removed_modifiers = defaultdict(set)
-
-        self.all_name_tokens = {}
-        self.manual = {}
-        self.manual_cardnames = defaultdict(set)
-        self.manual_treenames = defaultdict(set)
-        self.name_tokens = defaultdict(set)
-        self.fluff_tokens = defaultdict(set)
-
-        self.all_modifiers = set()
-        self._known_mods = set()
-        self.modifiers = defaultdict(set)
-        self.suffixes = set()
-
-        self.multi_word_tokens = {}
-        self.mwtoken_creators = defaultdict(set)
-        self.mwt_to_len = defaultdict(lambda: 1)
-
-        await self.setup(graph)
 
     async def setup(self, graph: MonsterGraph):
         self.graph = graph
@@ -227,9 +201,10 @@ class MonsterIndex:
         self.all_name_tokens = combine_tokens_dicts(self.manual, self.fluff_tokens, self.name_tokens)
         self.all_modifiers = {p for ps in self.modifiers.values() for p in ps}
         self.suffixes = LEGAL_END_TOKENS
-        self.mwt_to_len = defaultdict(lambda: 1, {"".join(mw): len(mw) for mw in self.multi_word_tokens})
+        self.mwt_to_len = defaultdict(_one, {"".join(mw): len(mw) for mw in self.multi_word_tokens})
 
         self.is_ready.set()
+        return self
 
     async def _build_monster_index(self, monsters):
         async for m in AsyncIter(monsters):
@@ -602,8 +577,8 @@ class MonsterIndex:
         elif else_mods:
             curr_mods.update(else_mods)
 
-    def serialize(self) -> bytes:
-        return pickle.dumps({
+    def serialize(self) -> str:
+        return base64.b64encode(pickle.dumps({
             'issues': self.issues,
             'monster_id_to_cardname': self.monster_id_to_cardname,
             'monster_id_to_treename': self.monster_id_to_treename,
@@ -627,11 +602,11 @@ class MonsterIndex:
             'multi_word_tokens': self.multi_word_tokens,
             'mwtoken_creators': self.mwtoken_creators,
             'mwt_to_len': self.mwt_to_len,
-        })
+        })).decode()
 
     @classmethod
-    def deserialize(cls, data: bytes, server: Server, graph: MonsterGraph) -> "MonsterIndex":
-        data = pickle.loads(data)
+    def deserialize(cls, data: str, server: Server, graph: MonsterGraph) -> "MonsterIndex":
+        data = pickle.loads(base64.b64decode(data))
         self = cls(server)
         for key, value in data.items():
             setattr(self, key, value)
