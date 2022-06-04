@@ -30,7 +30,7 @@ class PADleScrollMenu:
 
     @classmethod
     def get_num_pages_ims(cls, ims):
-        return ceil(len(ims['guesses']) / 5)
+        return ceil(len(ims['guesses_ids']) / 5)
 
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):

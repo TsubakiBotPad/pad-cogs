@@ -75,7 +75,7 @@ class PADle(commands.Cog):
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
         return dbcog
-    
+
     async def get_menu_default_data(self, ims):
         user = self.bot.get_user(ims['original_author_id'])
         data = {
@@ -168,7 +168,6 @@ class PADle(commands.Cog):
         await self.config.user(ctx.author).start.set(True)
         await self.config.user(ctx.author).edit_id.set(message.id)
         await self.config.user(ctx.author).channel_id.set(message.channel.id)
-
 
     @padle.command(aliases=["stats"])
     async def globalstats(self, ctx, day: int = 0):
@@ -331,27 +330,28 @@ class PADle(commands.Cog):
         todays_guesses = await self.config.user(ctx.author).todays_guesses()
         async with self.config.user(ctx.author).all_guesses() as all_guesses:
             all_guesses[str(cur_day)] = todays_guesses
-        
+
         try:
             channel = self.bot.get_channel(await self.config.user(ctx.author).channel_id())
             del_msg = await channel.fetch_message(await self.config.user(ctx.author).edit_id())
             await del_msg.delete()
-        except discord.NotFound: #user already deleted message
+        except discord.NotFound:  # user already deleted message
             pass
-        
+
         guess_monster_diff = MonsterDiff(monster, guess_monster)
         points = guess_monster_diff.get_diff_score()
-        
+
         padle_menu = PADleScrollMenu.menu()
-        #query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
-        
-        state = PADleScrollViewState(ctx.author.id, PADleScrollMenu.MENU_TYPE, guess, dbcog=dbcog, monster=monster, 
-                                     cur_day_guesses=todays_guesses, current_day=cur_day,
-                                     current_page=ceil(len(todays_guesses) / 5))
+        # query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
+        cur_page = ceil(len(todays_guesses) / 5) - 1
+        page_guesses = await PADleScrollViewState.do_queries(dbcog, todays_guesses)
+        state = PADleScrollViewState(ctx.author.id, PADleScrollMenu.MENU_TYPE, guess, monster=monster,
+                                     cur_day_guesses=page_guesses, current_day=cur_day,
+                                     current_page=cur_page)
         message = await padle_menu.create(ctx, state)
         await self.config.user(ctx.author).edit_id.set(message.id)
         await self.config.user(ctx.author).channel_id.set(ctx.channel.id)
-        
+
         score = "\N{LARGE YELLOW SQUARE}"
         if guess_monster.monster_id == monster.monster_id:
             await ctx.send("You got the PADle in {} guesses! Use `{}padle score` to share your score.".format(
