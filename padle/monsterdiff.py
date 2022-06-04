@@ -1,4 +1,4 @@
-from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, get_emoji
+from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, get_attribute_emoji_by_enum
 
 
 class MonsterDiff:
@@ -91,9 +91,9 @@ class MonsterDiff:
                 attr_feedback.append("\N{LARGE YELLOW SQUARE}")
             else:
                 attr_feedback.append("\N{WHITE HEAVY CHECK MARK}")
-        line.append(get_emoji("orb_{}".format(attr1)))
+        line.append(get_attribute_emoji_by_enum(self.guess_monster.attr1))
         line.append(attr_feedback[0] + " / ")
-        line.append(get_emoji("orb_{}".format(attr2)))
+        line.append(get_attribute_emoji_by_enum(self.guess_monster.attr2))
         line.append(attr_feedback[1] + " ")
         line.append("[" + str(self.guess_monster.monster_id) + "] ")
         line.append(self.guess_monster.name_en)

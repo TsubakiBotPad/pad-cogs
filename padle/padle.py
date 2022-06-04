@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from dbcog.dbcog import DBCog
     # from dbcog.monster_graph import MonsterGraph # used for creating the filter
 
-from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -29,18 +28,12 @@ from padle.menu.closable_embed import ClosableEmbedMenu
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
-from padle.view.padle_scroll_view import PADleScrollView
 from tsutils.menu.components.config import BotConfig
 from padle.monsterdiff import MonsterDiff
+from padle.monsters import MONSTER_LIST
 
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
-from redbot.core.utils import menus
-from redbot.core.utils.menus import (
-    next_page,
-    prev_page,
-    start_adding_reactions
-)
 
 logger = logging.getLogger('red.padbot-cogs.padle')
 
@@ -264,26 +257,28 @@ class PADle(commands.Cog):
         await ctx.tick()
 
     # this takes a long time to run
-    # @padle.command()
-    # async def filter(self, ctx):
-    #     dbcog = await self.get_dbcog()
-    #     mgraph = dbcog.database.graph
-    #     final = []
-    #     for i in range(0, graph.max_monster_id):
-    #         monster = await dbcog.find_monster(str(i), ctx.author)
-    #         try:
-    #             nextTrans = mgraph.get_next_transform(monster)
-    #             prevTrans = mgraph.get_prev_transform(monster)
-    #             if(monster is not None and monster.name_en is not None and monster.on_na and
-    #                 ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-    #                  "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-    #                     nextTrans is None and monster.level >= 99):
-    #                 final.append(str(i))
-    #         except Exception as e:
-    #             print("Error " + str(i))
-    #             pass
-    #     await ctx.tick()
-    #     print(",".join(final))
+    @padle.command()
+    async def filter(self, ctx):
+        dbcog = await self.get_dbcog()
+        mgraph = dbcog.database.graph
+        final = []
+        # await ctx.send(mgraph.max_monster_id) 
+        for i in range(0, 8800): # hard coded bc max_monster_id as calculated above is 15k???
+            monster = await dbcog.find_monster(str(i), ctx.author)
+            try:
+                nextTrans = mgraph.get_next_transform(monster)
+                prevTrans = mgraph.get_prev_transform(monster)
+                if(monster is not None and monster.name_en is not None and monster.on_na and
+                    monster.series.series_type != 'collab' and
+                    ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
+                     "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+                        nextTrans is None and monster.level >= 99):
+                    final.append(str(i))
+            except Exception as e:
+                print("Error " + str(i))
+                pass
+        await ctx.tick()
+        print(",".join(final))
 
     @padle.command()
     async def guess(self, ctx, *, guess):
@@ -432,9 +427,9 @@ class PADle(commands.Cog):
             try:
                 async with self.config.save_daily_scores() as save_daily:
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-                async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
-                    monsters = (await f.readline()).split(",")
-                    await self.config.padle_today.set(random.choice(monsters))
+                #async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
+                #    monsters = (await f.readline()).split(",")
+                await self.config.padle_today.set(int(random.choice(MONSTER_LIST)))
                 num = await self.config.num_days()
                 await self.config.num_days.set(num + 1)
                 all_users = await self.config.all_users()

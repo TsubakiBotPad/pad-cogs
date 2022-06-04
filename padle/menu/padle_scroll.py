@@ -71,8 +71,8 @@ class PADleScrollMenu:
 class PADleMenuPanes(MenuPanes):
     INITIAL_EMOJI = ScrollEmojis.prev_page
     DATA = {
-        ScrollEmojis.next_page: (PADleScrollMenu.respond_with_right, PADleScrollView.VIEW_TYPE),
-        ScrollEmojis.prev_page: (PADleScrollMenu.respond_with_left, PADleScrollView.VIEW_TYPE),
+        ScrollEmojis.next_page: (PADleScrollMenu.respond_with_left, PADleScrollView.VIEW_TYPE),
+        ScrollEmojis.prev_page: (PADleScrollMenu.respond_with_right, PADleScrollView.VIEW_TYPE),
     }
 
     @classmethod
