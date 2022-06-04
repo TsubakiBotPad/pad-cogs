@@ -224,61 +224,61 @@ class PADle(commands.Cog):
                                                                            (average / completes))
         return embed
 
-    @padle.command()
-    @commands.is_owner()
-    async def fullreset(self, ctx):
-        """Resets all stats and information."""
-        # with open("./pad-cogs/padle/monsters.txt", "r") as f:
-        #     monsters = f.readline().split(",")
-        await self.config.padle_today.set(3260)
+    # @padle.command()
+    # @commands.is_owner()
+    # async def fullreset(self, ctx):
+    #     """Resets all stats and information."""
+    #     # with open("./pad-cogs/padle/monsters.txt", "r") as f:
+    #     #     monsters = f.readline().split(",")
+    #     await self.config.padle_today.set(3260)
 
-        await self.config.num_days.set(1)
-        await self.config.subs.set([])
-        await self.config.all_scores.set([])
-        await self.config.save_daily_scores.set([])
-        all_users = await self.config.all_users()
-        for userid in all_users:
-            user = self.bot.get_user(userid)
-            if user is None:
-                continue
-            await self.config.user(user).todays_guesses.set([])
-            # need to send message if a user is mid-game
-            if await self.config.user(user).start() and not await self.config.user(user).done():
-                try:
-                    await user.send("A full reset occured, the PADle expired.")
-                except:
-                    pass
-            await self.config.user(user).start.set(False)
-            await self.config.user(user).done.set(False)
-            await self.config.user(user).score.set([])
-            await self.config.user(user).edit_id.set("")
-            await self.config.user(user).channel_id.set("")
-            await self.config.user(user).all_guesses.set({})
-        await ctx.tick()
+    #     await self.config.num_days.set(1)
+    #     await self.config.subs.set([])
+    #     await self.config.all_scores.set([])
+    #     await self.config.save_daily_scores.set([])
+    #     all_users = await self.config.all_users()
+    #     for userid in all_users:
+    #         user = self.bot.get_user(userid)
+    #         if user is None:
+    #             continue
+    #         await self.config.user(user).todays_guesses.set([])
+    #         # need to send message if a user is mid-game
+    #         if await self.config.user(user).start() and not await self.config.user(user).done():
+    #             try:
+    #                 await user.send("A full reset occured, the PADle expired.")
+    #             except:
+    #                 pass
+    #         await self.config.user(user).start.set(False)
+    #         await self.config.user(user).done.set(False)
+    #         await self.config.user(user).score.set([])
+    #         await self.config.user(user).edit_id.set("")
+    #         await self.config.user(user).channel_id.set("")
+    #         await self.config.user(user).all_guesses.set({})
+    #     await ctx.tick()
 
     # this takes a long time to run
-    @padle.command()
-    async def filter(self, ctx):
-        dbcog = await self.get_dbcog()
-        mgraph = dbcog.database.graph
-        final = []
-        # await ctx.send(mgraph.max_monster_id) 
-        for i in range(0, 8800): # hard coded bc max_monster_id as calculated above is 15k???
-            monster = await dbcog.find_monster(str(i), ctx.author)
-            try:
-                nextTrans = mgraph.get_next_transform(monster)
-                prevTrans = mgraph.get_prev_transform(monster)
-                if(monster is not None and monster.name_en is not None and monster.on_na and
-                    monster.series.series_type != 'collab' and
-                    ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-                     "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-                        nextTrans is None and monster.level >= 99):
-                    final.append(str(i))
-            except Exception as e:
-                print("Error " + str(i))
-                pass
-        await ctx.tick()
-        print(",".join(final))
+    # @padle.command()
+    # async def filter(self, ctx):
+    #     dbcog = await self.get_dbcog()
+    #     mgraph = dbcog.database.graph
+    #     final = []
+    #     # await ctx.send(mgraph.max_monster_id) 
+    #     for i in range(0, 8800): # hard coded bc max_monster_id as calculated above is 15k???
+    #         monster = await dbcog.find_monster(str(i), ctx.author)
+    #         try:
+    #             nextTrans = mgraph.get_next_transform(monster)
+    #             prevTrans = mgraph.get_prev_transform(monster)
+    #             if(monster is not None and monster.name_en is not None and monster.on_na and
+    #                 monster.series.series_type != 'collab' and
+    #                 ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
+    #                  "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+    #                     nextTrans is None and monster.level >= 99):
+    #                 final.append(str(i))
+    #         except Exception as e:
+    #             print("Error " + str(i))
+    #             pass
+    #     await ctx.tick()
+    #     print(",".join(final))
 
     @padle.command()
     async def guess(self, ctx, *, guess):
