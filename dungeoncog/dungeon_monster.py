@@ -12,7 +12,6 @@ class DungeonMonster(object):
         self.hp = hp
         self.atk = atk
         self.defense = defense
-        self.defense = hp
         self.turns = turns
         self.level = level
         self.groups: List[GroupedSkills] = []
