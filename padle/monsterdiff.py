@@ -1,4 +1,5 @@
-from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, get_attribute_emoji_by_enum
+from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, \
+    get_attribute_emoji_by_enum
 
 
 class MonsterDiff:
@@ -38,20 +39,21 @@ class MonsterDiff:
         return attr_feedback
 
     def get_awakenings_diff(self, monster, guess_monster):
-        unused = []
+        guess_awo_count = len(guess_monster.awakenings) - guess_monster.superawakening_count
+        monster_awo_count = len(monster.awakenings) - guess_monster.superawakening_count
+        unused = monster.awakenings[:monster_awo_count]
         feedback = []
-        for index, guess_awakening in enumerate(guess_monster.awakenings[:9]):
-            if (index < len(monster.awakenings) and
+        for index, guess_awakening in enumerate(guess_monster.awakenings[:guess_awo_count]):
+            if (index < monster_awo_count and
                     monster.awakenings[index].awoken_skill_id == guess_awakening.awoken_skill_id):
                 feedback.append(1)
+                unused.remove(guess_awakening)
             else:
                 feedback.append(0)
-                if index < len(monster.awakenings):
-                    unused.append(monster.awakenings[index].awoken_skill_id)
-        for index, guess_awakening in enumerate(guess_monster.awakenings[:9]):
-            if guess_awakening.awoken_skill_id in unused and feedback[index] != 1:
+        for index, guess_awakening in enumerate(guess_monster.awakenings[:guess_awo_count]):
+            if guess_awakening in unused and feedback[index] != 1:
                 feedback[index] = 0.5
-                unused.remove(guess_awakening.awoken_skill_id)
+                unused.remove(guess_awakening)
         return feedback
 
     def get_rarity_diff(self, monster, guess_monster):
@@ -127,7 +129,8 @@ class MonsterDiff:
     def get_awakenings_feedback_text(self) -> str:
         awakes = []
         feedback = []
-        for index, guess_awake in enumerate(self.guess_monster.awakenings[:9]):
+        guess_awo_count = len(self.guess_monster.awakenings) - self.guess_monster.superawakening_count
+        for index, guess_awake in enumerate(self.guess_monster.awakenings[:guess_awo_count]):
             awakes.append(get_awakening_emoji(guess_awake.awoken_skill_id, guess_awake.name))
             val = self.awakenings_diff[index]
             if val == 0:

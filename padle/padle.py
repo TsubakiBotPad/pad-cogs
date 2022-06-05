@@ -19,7 +19,8 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 
 from tsutils.cogs.userpreferences import get_user_preference
 from tsutils.helper_functions import conditional_iterator
-from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message
+from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
+    get_user_reaction
 from tsutils.emoji import NO_EMOJI, SendableEmoji, YES_EMOJI
 
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
@@ -51,7 +52,7 @@ class PADle(commands.Cog):
                                   edit_id="", channel_id="", all_guesses={})
         self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
                                     subs=[], all_scores=[], save_daily_scores=[])
-
+        self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
 
     async def register_menu(self):
@@ -131,6 +132,10 @@ class PADle(commands.Cog):
             subs.remove(ctx.author.id)
         return await send_confirmation_message(ctx, "You will no longer receive notifications of new PADles.")
 
+    async def can_play_in_guild(self, ctx):
+        return (ctx.guild is not None and ctx.author.guild_permissions.administrator and ctx.guild.member_count < 10 and
+                await self.config.guild(ctx.guild).allow())
+
     @padle.command()
     async def start(self, ctx):
         """Start a game of PADle"""
@@ -138,6 +143,21 @@ class PADle(commands.Cog):
             return await ctx.send("You have already finished today's PADle!")
         if await self.config.user(ctx.author).start():
             return await ctx.send("You have already started a game!")
+        if (ctx.guild is not None and ctx.author.guild_permissions.administrator and ctx.guild.member_count < 10 and
+                not await self.config.guild(ctx.guild).allow()):
+            guild_confirmation = await get_user_confirmation(ctx, "It looks like you're in a private server. "
+                                                                  "Would you like to play PADle in this server"
+                                                                  " rather than in DMs?", timeout=30,
+                                                             force_delete=False, show_feedback=True)
+            if guild_confirmation is None:
+                return await send_cancellation_message(ctx, "Confirmation timeout.")
+            if await self.config.guild(ctx.guild).allow():
+                return await ctx.send("You have already enabled PADle in this server!")
+            if not guild_confirmation:
+                await send_confirmation_message(ctx, "PADles will continue being played in DMs.")
+            else:
+                await send_confirmation_message(ctx, "PADles can now be played in this server.")
+                await self.config.guild(ctx.guild).allow.set(True)
         confirmation = await get_user_confirmation(ctx, "Start today's (#{}) PADle game?".format(
             await self.config.num_days()), timeout=30, force_delete=False, show_feedback=True)
         if confirmation is None:
@@ -151,6 +171,13 @@ class PADle(commands.Cog):
         em = discord.Embed(title="PADle #{}".format(await self.config.num_days()), type="rich",
                            description="Guess a card with `{}padle guess <card>`!\nIf "
                                        "you give up, use `{}padle giveup`.".format(prefix, prefix))
+        if await self.can_play_in_guild(ctx):
+            message = await ctx.send(embed=em)
+            await self.config.user(ctx.author).start.set(True)
+            await self.config.user(ctx.author).edit_id.set(message.id)
+            await self.config.user(ctx.author).channel_id.set(message.channel.id)
+            return
+        # else
         try:
             message = await ctx.author.send(embed=em)
         except discord.Forbidden:
@@ -224,37 +251,37 @@ class PADle(commands.Cog):
                                                                            (average / completes))
         return embed
 
-    # @padle.command()
-    # @commands.is_owner()
-    # async def fullreset(self, ctx):
-    #     """Resets all stats and information."""
-    #     # with open("./pad-cogs/padle/monsters.txt", "r") as f:
-    #     #     monsters = f.readline().split(",")
-    #     await self.config.padle_today.set(3260)
+    @padle.command()
+    @commands.is_owner()
+    async def fullreset(self, ctx):
+        """Resets all stats and information."""
+        # with open("./pad-cogs/padle/monsters.txt", "r") as f:
+        #     monsters = f.readline().split(",")
+        await self.config.padle_today.set(3260)
 
-    #     await self.config.num_days.set(1)
-    #     await self.config.subs.set([])
-    #     await self.config.all_scores.set([])
-    #     await self.config.save_daily_scores.set([])
-    #     all_users = await self.config.all_users()
-    #     for userid in all_users:
-    #         user = self.bot.get_user(userid)
-    #         if user is None:
-    #             continue
-    #         await self.config.user(user).todays_guesses.set([])
-    #         # need to send message if a user is mid-game
-    #         if await self.config.user(user).start() and not await self.config.user(user).done():
-    #             try:
-    #                 await user.send("A full reset occured, the PADle expired.")
-    #             except:
-    #                 pass
-    #         await self.config.user(user).start.set(False)
-    #         await self.config.user(user).done.set(False)
-    #         await self.config.user(user).score.set([])
-    #         await self.config.user(user).edit_id.set("")
-    #         await self.config.user(user).channel_id.set("")
-    #         await self.config.user(user).all_guesses.set({})
-    #     await ctx.tick()
+        await self.config.num_days.set(1)
+        await self.config.subs.set([])
+        await self.config.all_scores.set([])
+        await self.config.save_daily_scores.set([])
+        all_users = await self.config.all_users()
+        for userid in all_users:
+            user = self.bot.get_user(userid)
+            if user is None:
+                continue
+            await self.config.user(user).todays_guesses.set([])
+            # need to send message if a user is mid-game
+            if await self.config.user(user).start() and not await self.config.user(user).done():
+                try:
+                    await user.send("A full reset occured, the PADle expired.")
+                except:
+                    pass
+            await self.config.user(user).start.set(False)
+            await self.config.user(user).done.set(False)
+            await self.config.user(user).score.set([])
+            await self.config.user(user).edit_id.set("")
+            await self.config.user(user).channel_id.set("")
+            await self.config.user(user).all_guesses.set({})
+        await ctx.tick()
 
     # this takes a long time to run
     # @padle.command()
@@ -262,7 +289,7 @@ class PADle(commands.Cog):
     #     dbcog = await self.get_dbcog()
     #     mgraph = dbcog.database.graph
     #     final = []
-    #     # await ctx.send(mgraph.max_monster_id) 
+    #     # await ctx.send(mgraph.max_monster_id)
     #     for i in range(0, 8800): # hard coded bc max_monster_id as calculated above is 15k???
     #         monster = await dbcog.find_monster(str(i), ctx.author)
     #         try:
@@ -284,7 +311,7 @@ class PADle(commands.Cog):
     async def guess(self, ctx, *, guess):
         """Guess a card for the daily PADle"""
         prefix = ctx.prefix
-        if ctx.guild is not None:
+        if ctx.guild is not None and not await self.can_play_in_guild(ctx):
             return await ctx.send("You can only play PADle in DMs!")
         if not await self.config.user(ctx.author).start():
             return await ctx.send("You have not started the game of PADle yet, try `{}padle start`!".format(prefix))
@@ -308,10 +335,11 @@ class PADle(commands.Cog):
                 description="Did you mean this monster?"),
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(guess_monster.monster_id))).to_embed()
-        confirmation = await self.get_embed_user_conf(ctx, m_embed, timeout=20)
+        did_you_mean_msg = await ctx.send(embed=m_embed)
+        confirmation = await get_user_reaction(ctx, did_you_mean_msg, YES_EMOJI, NO_EMOJI, timeout=20)
         if confirmation is None:
             return await send_cancellation_message(ctx, "Confirmation timeout.")
-        if confirmation is False:
+        if confirmation == NO_EMOJI:
             return await send_cancellation_message(ctx, "Please guess again.")
         if not await self.config.user(ctx.author).start():
             return await send_cancellation_message(ctx,
@@ -369,7 +397,7 @@ class PADle(commands.Cog):
     async def giveup(self, ctx):
         """Give up on today's PADle"""
         prefix = ctx.prefix
-        if ctx.guild is not None:
+        if ctx.guild is not None and not await self.can_play_in_guild(ctx):
             return await ctx.send("You can only play PADle in DMs!")
         if not await self.config.user(ctx.author).start():
             return await ctx.send("You have not started the game of PADle yet, try `{}padle start`!".format(prefix))
@@ -427,7 +455,7 @@ class PADle(commands.Cog):
             try:
                 async with self.config.save_daily_scores() as save_daily:
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-                #async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
+                # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
                 #    monsters = (await f.readline()).split(",")
                 await self.config.padle_today.set(int(random.choice(MONSTER_LIST)))
                 num = await self.config.num_days()
@@ -459,47 +487,3 @@ class PADle(commands.Cog):
                 raise
             except Exception:
                 logger.exception("Error in loop:")
-
-    # i don't know if i should edit tsutils stuff
-    async def get_embed_user_conf(self, ctx, embed,
-                                  yes_emoji: SendableEmoji = YES_EMOJI, no_emoji: SendableEmoji = NO_EMOJI,
-                                  timeout: int = 10, force_delete: Optional[bool] = None, show_feedback: bool = False) \
-            -> Literal[True, False, None]:
-        msg = await ctx.send(embed=embed)
-        asyncio.create_task(msg.add_reaction(yes_emoji))
-        asyncio.create_task(msg.add_reaction(no_emoji))
-
-        def check(reaction, user):
-            return (str(reaction.emoji) in [yes_emoji, no_emoji] and
-                    user.id == ctx.author.id and reaction.message.id == msg.id)
-
-        ret = False
-        try:
-            r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=timeout)
-            if r.emoji == yes_emoji:
-                ret = True
-        except asyncio.TimeoutError:
-            ret = None
-
-        do_delete = force_delete
-        if do_delete is None:
-            do_delete = await get_user_preference(ctx.bot, ctx.author, 'delete_confirmation', unloaded_default=True)
-
-        if do_delete:
-            try:
-                await msg.delete()
-            except discord.Forbidden:
-                pass
-
-            if show_feedback:
-                if ret is True:
-                    await ctx.react_quietly(yes_emoji)
-                elif ret is False:
-                    await ctx.react_quietly(no_emoji)
-        else:
-            if ret is not True:
-                await msg.remove_reaction(yes_emoji, ctx.me)
-            if ret is not False:
-                await msg.remove_reaction(no_emoji, ctx.me)
-
-        return ret
