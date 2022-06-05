@@ -402,6 +402,7 @@ class PADle(commands.Cog):
 
     @padle.command()
     async def resend(self, ctx):
+        """Resends the guess list message."""
         if await self.ensure_active_game(ctx):
             return
         dbcog = await self.get_dbcog()
