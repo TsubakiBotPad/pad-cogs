@@ -11,7 +11,6 @@ from padle.view.padle_scroll_view import PADleScrollView, PADleScrollViewState
 class ScrollEmojis:
     prev_page = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
     next_page = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-    delete = '\N{CROSS MARK}'
 
 
 class PADleScrollMenu:
@@ -30,7 +29,7 @@ class PADleScrollMenu:
 
     @classmethod
     def get_num_pages_ims(cls, ims):
-        return ceil(len(ims['guesses_ids']) / 5)
+        return ims['num_pages']
 
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
@@ -54,7 +53,7 @@ class PADleScrollMenu:
         dbcog = data['dbcog']
         user_config = data['user_config']
         today_guesses = data['today_guesses']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, ims, today_guesses)
+        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, today_guesses, ims)
         return PADleScrollMenu.control(view_state)
 
     @staticmethod

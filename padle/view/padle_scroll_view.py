@@ -23,17 +23,16 @@ if TYPE_CHECKING:
 class PADleScrollViewState(ViewStateBase):
     VIEW_STATE_TYPE: str = "PADleScrollView"
 
-    def __init__(self, original_author_id, menu_type, raw_query, monster, cur_day_guesses=[],
-                 current_page=0, extra_state=None, reaction_list=None, current_day: int = 0):
+    def __init__(self, original_author_id, menu_type, raw_query="", monster=None, cur_day_page_guesses=[],
+                 current_page=0, extra_state=None, reaction_list=None, current_day: int = 0, num_pages=0):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
-        self.cur_day_guesses = cur_day_guesses
-        self.cur_day_page_guesses = cur_day_guesses[((current_page) * 5):((current_page + 1) * 5)]
+        self.cur_day_page_guesses = cur_day_page_guesses
         self.current_page = current_page
         self.reaction_list = reaction_list
         self.current_day = current_day
         self.monster = monster
-        self.num_pages = ceil(len(cur_day_guesses) / 5)
+        self.num_pages = num_pages
 
     def get_cur_fields(self):
         fields = []
@@ -71,24 +70,24 @@ class PADleScrollViewState(ViewStateBase):
             'reaction_list': self.reaction_list,
             'current_day': self.current_day,
             'cur_monster': self.monster.monster_id,
-            'guesses_ids': self.get_monster_ids_list(self.cur_day_guesses),
+            'num_pages': self.num_pages
         })
         return ret
 
     @classmethod
-    async def deserialize(cls, dbcog, _user_config: UserConfig, ims: dict, today_guesses):
+    async def deserialize(cls, dbcog, _user_config: UserConfig, todays_guesses, ims: dict):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
-        current_page = ims['current_page']
+        cur_page = ims['current_page']
         current_day = ims['current_day']
         cur_monster = ims['cur_monster']
-        guesses = ims['guesses_ids']
+        num_pages = ims['num_pages']
         monster = dbcog.get_monster(int(cur_monster))
-        cur_day_guesses = await cls.do_queries(dbcog, guesses)
-        return PADleScrollViewState(original_author_id, menu_type, "", current_page=current_page,
+        cur_day_page_guesses = await cls.do_queries(dbcog, todays_guesses[((cur_page) * 5):((cur_page + 1) * 5)])
+        return PADleScrollViewState(original_author_id, menu_type, "", current_page=cur_page,
                                     current_day=current_day, reaction_list=reaction_list,
-                                    cur_day_guesses=cur_day_guesses, monster=monster)
+                                    cur_day_page_guesses=cur_day_page_guesses, monster=monster, num_pages=num_pages)
 
 
 class PADleScrollView:
