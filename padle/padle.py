@@ -3,8 +3,10 @@ import datetime
 import random
 import asyncio
 import logging
+from io import BytesIO
+import json
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 from aiofiles import open as aopen
 from typing import List, Literal, Optional
 from redbot.core import Config, commands
@@ -46,7 +48,7 @@ class PADle(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=630817360)
+        self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id="", channel_id="", all_guesses={})
         self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
@@ -54,20 +56,37 @@ class PADle(commands.Cog):
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
 
+    async def red_get_data_for_user(self, *, user_id):
+        """Get a user's personal data."""
+        all_guesses = await self.config.user_from_id(user_id).all_guesses()
+        if all_guesses:
+            data = f"You have {len(all_guesses)} days of guess data stored."
+            f"Here are your guesses:\n{json.dumps(all_guesses)}"
+        else:
+            data = f"No data is stored for user with ID {user_id}."
+        return {"user_data.txt": BytesIO(data.encode())}
+    
+    async def red_delete_data_for_user(self, *, requester, user_id):
+        """Delete a user's personal data."""
+        await self.config.user_from_id(user_id).clear()
+
     async def register_menu(self):
         await self.bot.wait_until_ready()
-        menulistener = self.bot.get_cog("MenuListener")
+        menulistener: Any = self.bot.get_cog("MenuListener")
         if menulistener is None:
             logger.warning("MenuListener is not loaded.")
             return
         await menulistener.register(self)
 
     async def get_dbcog(self) -> "DBCog":
-        dbcog = self.bot.get_cog("DBCog")
+        dbcog: Any = self.bot.get_cog("DBCog")
         if dbcog is None:
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
         return dbcog
+    
+    def cog_unload(self):
+        self._daily_padle_loop.cancel()
 
     async def get_menu_default_data(self, ims):
         user = self.bot.get_user(ims['original_author_id'])
@@ -78,7 +97,7 @@ class PADle(commands.Cog):
         }
         return data
 
-    async def get_today_guesses(self, user, current_day):
+    async def get_today_guesses(self, user: discord.User, current_day: Union[str, int]):
         if current_day is None:
             return None
         if user is None:
@@ -180,7 +199,7 @@ class PADle(commands.Cog):
         # else
         try:
             await ctx.author.send(embed=em)
-        except discord.Forbidden:
+        except discord.HTTPException:
             return await send_cancellation_message(ctx,
                                                    "Looks like I can't DM you. Try checking your Privacy Settings.")
         if ctx.guild is not None:
@@ -217,7 +236,7 @@ class PADle(commands.Cog):
             embed = await self.get_past_padle_embed(ctx, day)
         await ctx.send(embed=embed)
 
-    async def get_past_padle_embed(self, ctx, day):
+    async def get_past_padle_embed(self, ctx, day: int):
         dbcog = await self.get_dbcog()
         daily_scores = await self.config.save_daily_scores()
         info = daily_scores[day - 1]
@@ -360,12 +379,13 @@ class PADle(commands.Cog):
         async with self.config.user(ctx.author).all_guesses() as all_guesses:
             all_guesses[str(cur_day)] = todays_guesses
 
-        try:
-            channel = self.bot.get_channel(await self.config.user(ctx.author).channel_id())
-            del_msg = await channel.fetch_message(await self.config.user(ctx.author).edit_id())
-            await del_msg.delete()
-        except:  # user already deleted message
-            pass
+        channel = self.bot.get_channel(await self.config.user(ctx.author).channel_id())
+        if channel is not None:
+            try:
+                del_msg = await channel.fetch_message(await self.config.user(ctx.author).edit_id())
+                await del_msg.delete()
+            except discord.HTTPException:
+                pass
 
         guess_monster_diff = MonsterDiff(monster, guess_monster)
         points = guess_monster_diff.get_diff_score()
@@ -397,12 +417,10 @@ class PADle(commands.Cog):
                 score = "\N{LARGE RED SQUARE}"
         async with self.config.user(ctx.author).score() as scores:
             scores.append(score)
-        # start_adding_reactions(message, emojis)
-        # await menus.menu(ctx, embed_pages, embed_controls, message=message, page=len(embed_pages) - 1, timeout=60 * 60)
 
     @padle.command()
     async def resend(self, ctx):
-        """Resends the guess list message."""
+        """Resends the guess list message"""
         if await self.ensure_active_game(ctx):
             return
         dbcog = await self.get_dbcog()

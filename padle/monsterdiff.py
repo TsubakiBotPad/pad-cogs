@@ -1,10 +1,12 @@
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, \
     get_attribute_emoji_by_enum
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from dbcog.dbcog import MonsterModel
 
 class MonsterDiff:
 
-    def __init__(self, monster, guess_monster):
+    def __init__(self, monster: "MonsterModel", guess_monster: "MonsterModel"):
         self.monster = monster
         self.guess_monster = guess_monster
         self.awakenings_diff = self.get_awakenings_diff(monster, guess_monster)
