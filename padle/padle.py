@@ -2,13 +2,12 @@ import discord
 import datetime
 import random
 import asyncio
+import re
 import logging
 from io import BytesIO
 import json
 
 from typing import TYPE_CHECKING, Any, Union
-from aiofiles import open as aopen
-from typing import List, Literal, Optional
 from redbot.core import Config, commands
 from math import ceil
 
@@ -23,6 +22,8 @@ from tsutils.helper_functions import conditional_iterator
 from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
     get_user_reaction
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
+from tsutils.cogs.globaladmin import auth_check
+from redbot.core.utils.chat_formatting import box, pagify
 
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
@@ -32,7 +33,6 @@ from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
 from tsutils.menu.components.config import BotConfig
 from padle.monsterdiff import MonsterDiff
-from padle.monsters import MONSTER_LIST
 
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
@@ -52,9 +52,13 @@ class PADle(commands.Cog):
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id="", channel_id="", all_guesses={})
         self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
-                                    subs=[], all_scores=[], save_daily_scores=[])
+                                    subs=[], all_scores=[], save_daily_scores=[],
+                                    monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
+        GACOG = self.bot.get_cog("GlobalAdmin")
+        if GACOG:
+            GACOG.register_perm("padleadmin")
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -65,7 +69,7 @@ class PADle(commands.Cog):
         else:
             data = f"No data is stored for user with ID {user_id}."
         return {"user_data.txt": BytesIO(data.encode())}
-    
+
     async def red_delete_data_for_user(self, *, requester, user_id):
         """Delete a user's personal data."""
         await self.config.user_from_id(user_id).clear()
@@ -84,7 +88,7 @@ class PADle(commands.Cog):
             raise ValueError("DBCog cog is not loaded")
         await dbcog.wait_until_ready()
         return dbcog
-    
+
     def cog_unload(self):
         self._daily_padle_loop.cancel()
 
@@ -267,38 +271,6 @@ class PADle(commands.Cog):
                                                                            completes / (completes + giveups),
                                                                            (average / completes))
         return embed
-
-    @padle.command()
-    @commands.is_owner()
-    async def fullreset(self, ctx):
-        """Resets all stats and information."""
-        # with open("./pad-cogs/padle/monsters.txt", "r") as f:
-        #     monsters = f.readline().split(",")
-        await self.config.padle_today.set(3260)
-
-        await self.config.num_days.set(1)
-        await self.config.subs.set([])
-        await self.config.all_scores.set([])
-        await self.config.save_daily_scores.set([])
-        all_users = await self.config.all_users()
-        for userid in all_users:
-            user = self.bot.get_user(userid)
-            if user is None:
-                continue
-            await self.config.user(user).todays_guesses.set([])
-            # need to send message if a user is mid-game
-            if await self.config.user(user).start() and not await self.config.user(user).done():
-                try:
-                    await user.send("A full reset occured, the PADle expired.")
-                except:
-                    pass
-            await self.config.user(user).start.set(False)
-            await self.config.user(user).done.set(False)
-            await self.config.user(user).score.set([])
-            await self.config.user(user).edit_id.set("")
-            await self.config.user(user).channel_id.set("")
-            await self.config.user(user).all_guesses.set({})
-        await ctx.tick()
 
     # this takes a long time to run
     # @padle.command()
@@ -499,7 +471,13 @@ class PADle(commands.Cog):
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
                 # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
                 #    monsters = (await f.readline()).split(",")
-                await self.config.padle_today.set(int(random.choice(MONSTER_LIST)))
+                tmrw_padle = await self.config.tmrw_padle()
+                if not tmrw_padle == 0:
+                    await self.config.padle_today.set(tmrw_padle)
+                    await self.config.tmrw_padle.set(0)
+                else:
+                    MONSTERS_LIST = await self.config.monsters_list()
+                    await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
                 num = await self.config.num_days()
                 await self.config.num_days.set(num + 1)
                 all_users = await self.config.all_users()
@@ -529,3 +507,165 @@ class PADle(commands.Cog):
                 raise
             except Exception:
                 logger.exception("Error in loop:")
+
+    @padle.command()
+    @auth_check('padleadmin')
+    async def fullreset(self, ctx):
+        """Resets all stats and information."""
+        confirmation = await get_user_confirmation(ctx,
+                                                   "Fully reset all stats and data in PADle? You cannot undo this!")
+        if confirmation is None:
+            return await send_cancellation_message(ctx, "Confirmation timeout.")
+        if not confirmation:
+            return await send_cancellation_message(ctx, "Nothing was reset.")
+
+        await self.config.padle_today.set(3260)
+
+        await self.config.tmrw_padle.set(0)
+        await self.config.num_days.set(1)
+        await self.config.subs.set([])
+        await self.config.all_scores.set([])
+        await self.config.save_daily_scores.set([])
+        all_users = await self.config.all_users()
+        for userid in all_users:
+            user = self.bot.get_user(userid)
+            if user is None:
+                continue
+            await self.config.user(user).todays_guesses.set([])
+            # need to send message if a user is mid-game
+            if await self.config.user(user).start() and not await self.config.user(user).done():
+                try:
+                    await user.send("A full reset occured, the PADle expired.")
+                except:
+                    pass
+            await self.config.user(user).start.set(False)
+            await self.config.user(user).done.set(False)
+            await self.config.user(user).score.set([])
+            await self.config.user(user).edit_id.set("")
+            await self.config.user(user).channel_id.set("")
+            await self.config.user(user).all_guesses.set({})
+        await ctx.tick()
+
+    @padle.command()
+    @auth_check("padleadmin")
+    async def addmonsters(self, ctx, *, list):
+        """Adds CSV of monster IDs to the list of possible PADles"""
+        clean_list = re.sub(" ", "", list).split(",")
+        dbcog = await self.get_dbcog()
+        result = []
+        valids = []
+        monsters_list = await self.config.monsters_list()
+        for id in clean_list:
+            if not id.isnumeric():
+                result.append(f"{id} is not a valid monster ID.")
+                continue
+            m = dbcog.get_monster(int(id))
+            if m is None:
+                result.append(f"{id} is not a valid monster ID.")
+                continue
+            if not m.on_na or m.name_en is None:
+                result.append(f"{id} is not a monster on the NA server.")
+                continue
+            if int(id) in monsters_list:
+                result.append(
+                    f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} is already a possible PADle.")
+                continue
+            valids.append(int(id))
+            result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} was added.")
+        async with self.config.monsters_list() as m_list:
+            m_list.extend(valids)
+        for page in pagify("\n".join(result)):
+            await ctx.send(page)
+
+    @padle.command()
+    @auth_check("padleadmin")
+    async def removemonsters(self, ctx, *, list):
+        """Removes CSV of monster IDs to the list of possible PADles"""
+        clean_list = re.sub(" ", "", list).split(",")
+        dbcog = await self.get_dbcog()
+        result = []
+        valids = []
+        monsters_list = await self.config.monsters_list()
+        for id in clean_list:
+            if not id.isnumeric():
+                result.append(f"{id} is not a valid monster ID.")
+                continue
+            m = dbcog.get_monster(int(id))
+            if m is None:
+                result.append(f"{id} is not a valid monster ID.")
+                continue
+            if not m.on_na or m.name_en is None:
+                result.append(f"{id} is not a monster on the NA server.")
+                continue
+            if int(id) not in monsters_list:
+                result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} is not a possible PADle.")
+                continue
+            valids.append(int(id))
+            result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} was removed.")
+        await self.config.monsters_list.set([m for m in monsters_list if m not in valids])
+        for page in pagify("\n".join(result)):
+            await ctx.send(page)
+
+    @padle.command()
+    @auth_check("padleadmin")
+    async def list(self, ctx):
+        """Lists all possible PADles"""
+        dbcog = await self.get_dbcog()
+        monsters_list = await self.config.monsters_list()
+        monsters_list.sort()
+        result = []
+        for id in monsters_list:
+            m = dbcog.get_monster(int(id))
+            if m is None or not m.on_na or m.name_en is None:
+                # this should never happen but just in case
+                result.append(f"**Error**: {id} is a valid PADle but not a monster.")
+                continue
+            result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()}")
+        for page in pagify("\n".join(result)):
+            await ctx.send(page)
+        await ctx.send(f"There are **{len(result)}** valid PADles!")
+
+    @padle.command(aliases=["settmrw", "settmrwpadle"])
+    @auth_check("padleadmin")
+    async def settomorrowpadle(self, ctx, id: int):
+        """Sets tomorrow's PADle to a specified monster ID"""
+        dbcog = await self.get_dbcog()
+        monsters_list = await self.config.monsters_list()
+        if id == 0:
+            confirmation = await get_user_confirmation(ctx, "Would you like to make tomorrow's PADle random?")
+            if confirmation is None:
+                return await send_cancellation_message(ctx, "Confirmation timeout")
+            if not confirmation:
+                return await ctx.send("No changes were made.")
+            await self.config.tmrw_padle.set(0)
+            return await send_confirmation_message(ctx, "Tomorrow's PADle will be random.")
+        if id not in monsters_list:
+            # for the most part, avoid abuse and ensure validness
+            return await ctx.send("This monster is not a valid PADle. If you would like to set it as tomorrow's"
+                                  " PADle, please add it to the list of PADles first.")
+        m = dbcog.get_monster(id)
+        title = MonsterHeader.menu_title(m, use_emoji=True).to_markdown()
+        confirmation = await get_user_confirmation(ctx, "Are you sure you would like to change tomorrow's PADle to "
+                                                        f"{title}?")
+        if confirmation is None:
+            return await send_cancellation_message(ctx, "Confirmation timeout")
+        if not confirmation:
+            return await ctx.send("No change to tomorrow's PADle was made.")
+        await self.config.tmrw_padle.set(id)
+        prefix = ctx.prefix
+        await send_confirmation_message(ctx, f"Tomorrow's PADle will be {title}!"
+                                             f"Use `{prefix}padle settomorrowpadle 0` to undo this.")
+
+    @padle.command(aliases=["isin"])
+    @auth_check("padleadmin")
+    async def contains(self, ctx, *, query):
+        """Checks if a monster is in the list of possible PADles"""
+        monsters_list = await self.config.monsters_list()
+        dbcog = await self.get_dbcog()
+        monster = await dbcog.find_monster(query, ctx.author.id)
+        if monster is None:
+            return
+        title = MonsterHeader.menu_title(monster, use_emoji=True).to_markdown()
+        if monster.monster_id in monsters_list:
+            return await send_confirmation_message(ctx, f"{title} is a possible PADle.")
+        await send_cancellation_message(ctx, f"{title} is not a possible PADle.")
