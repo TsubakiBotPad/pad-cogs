@@ -244,22 +244,19 @@ class PADle(commands.Cog):
                                      "**Average Guess Count**: {:.2f}").format(completes, giveups,
                                                                                completes / (completes + giveups),
                                                                                (average / completes))
-            embed.set_footer(text = f"Try {ctx.prefix}padle globalstats [day] for other day's stats!",
+            embed.set_footer(text=f"Try {ctx.prefix}padle globalstats [day] for other day's stats!",
                              icon_url=TSUBAKI_FLOWER_ICON_URL)
         else:
             embed = await self.get_past_padle_embed(ctx, day)
         await ctx.send(embed=embed)
-    
+
     @padle.command()
     async def stats(self, ctx):
         """Personal PADle stats"""
         if await self.config.user(ctx.author).start() and not await self.config.user(ctx.author).done():
             return await send_cancellation_message(ctx, "Please finish today's PADle before checking your stats!")
         all_guesses = await self.config.user(ctx.author).all_guesses()
-        played = 0
-        for key, value in all_guesses.items():
-            if value:
-                played += 1
+        played = len(all_guesses)
         save_daily = await self.config.save_daily_scores()
         if played == 0:
             return await send_cancellation_message(ctx, "You haven't played PADle yet!")
@@ -277,24 +274,25 @@ class PADle(commands.Cog):
             else:
                 if cur_streak > max_streak:
                     max_streak = cur_streak
-                cur_streak = 0
+                if day != await self.config.num_days():
+                    cur_streak = 0
 
         if cur_streak > max_streak:
             max_streak = cur_streak
         all_monsters_guessed = []
         for key, value in all_guesses.items():
             all_monsters_guessed.extend(value)
-        mode = max(set(all_monsters_guessed), key = all_monsters_guessed.count)
+        mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
         m_embed = EmbedView(
             EmbedMain(
                 title=f"{ctx.author.name}'s PADle Stats",
                 description=(f"**Games Played**: {played}\n"
-                "**Win Rate**: {:.2%}\n".format(wins / played) + 
-                f"**Current Streak**: {cur_streak}\n"
-                f"**Max Streak**: {max_streak}\n"
-                f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(m).to_markdown()}")),
+                             "**Win Rate**: {:.2%}\n".format(wins / played) +
+                             f"**Current Streak**: {cur_streak}\n"
+                             f"**Max Streak**: {max_streak}\n"
+                             f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(m).to_markdown()}")),
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(m.monster_id))).to_embed()
         await ctx.send(embed=m_embed)
@@ -549,9 +547,10 @@ class PADle(commands.Cog):
                     user = self.bot.get_user(userid)
                     if user is None:
                         continue
-                    # save past guesses
-                    async with self.config.user(user).all_guesses() as all_guesses:
-                        all_guesses[str(num)] = await self.config.user(user).todays_guesses()
+                    # save past guesses only if started
+                    if await self.config.user(user).start():
+                        async with self.config.user(user).all_guesses() as all_guesses:
+                            all_guesses[str(num)] = await self.config.user(user).todays_guesses()
                     await self.config.user(user).todays_guesses.set([])
                     # need to send message if a user is mid-game
                     if await self.config.user(user).start() and not await self.config.user(user).done():
@@ -573,7 +572,7 @@ class PADle(commands.Cog):
 
     @padleadmin.command()
     async def fullreset(self, ctx):
-        """Resets all stats and information."""
+        """Resets all stats and information"""
         confirmation = await get_user_confirmation(ctx,
                                                    "Fully reset all stats and data in PADle? You cannot undo this!")
         if confirmation is None:
@@ -747,12 +746,11 @@ class PADle(commands.Cog):
         if monster.monster_id in monsters_list:
             return await send_confirmation_message(ctx, f"{title} is a possible PADle.")
         await send_cancellation_message(ctx, f"{title} is not a possible PADle.")
-        
+
     @padleadmin.command()
     async def advance(self, ctx):
         """Advance day"""
-        confirmation = await get_user_confirmation(ctx,
-                                                   "Advance to the next day? You cannot undo this!")
+        confirmation = await get_user_confirmation(ctx, "Advance to the next day? You cannot undo this!")
         if confirmation is None:
             return await send_cancellation_message(ctx, "Confirmation timeout.")
         if not confirmation:
@@ -778,9 +776,10 @@ class PADle(commands.Cog):
                 user = self.bot.get_user(userid)
                 if user is None:
                     continue
-                # save past guesses
-                async with self.config.user(user).all_guesses() as all_guesses:
-                    all_guesses[str(num)] = await self.config.user(user).todays_guesses()
+                # save past guesses only if started
+                if await self.config.user(user).start():
+                    async with self.config.user(user).all_guesses() as all_guesses:
+                        all_guesses[str(num)] = await self.config.user(user).todays_guesses()
                 await self.config.user(user).todays_guesses.set([])
                 # need to send message if a user is mid-game
                 if await self.config.user(user).start() and not await self.config.user(user).done():
