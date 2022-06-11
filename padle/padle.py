@@ -750,7 +750,13 @@ class PADle(commands.Cog):
         
     @padleadmin.command()
     async def advance(self, ctx):
-        """Advance day."""
+        """Advance day"""
+        confirmation = await get_user_confirmation(ctx,
+                                                   "Advance to the next day? You cannot undo this!")
+        if confirmation is None:
+            return await send_cancellation_message(ctx, "Confirmation timeout.")
+        if not confirmation:
+            return await send_cancellation_message(ctx, "The PADle was unchanged.")
         try:
             await self.config.stored_day.set(datetime.datetime.now().day)
             async with self.config.save_daily_scores() as save_daily:
