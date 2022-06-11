@@ -34,8 +34,11 @@ from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
 from tsutils.menu.components.config import BotConfig
 from padle.monsterdiff import MonsterDiff
 
-from discordmenu.embed.components import EmbedThumbnail, EmbedMain
+from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
 from discordmenu.embed.view import EmbedView
+from tsutils.tsubaki.links import CLOUDFRONT_URL
+
+TSUBAKI_FLOWER_ICON_URL = CLOUDFRONT_URL + '/tsubaki/tsubakiflower.png'
 
 logger = logging.getLogger('red.padbot-cogs.padle')
 
@@ -215,9 +218,9 @@ class PADle(commands.Cog):
             await send_confirmation_message(ctx, "Check your DMs!")
         await self.config.user(ctx.author).start.set(True)
 
-    @padle.command(aliases=["stats"])
+    @padle.command()
     async def globalstats(self, ctx, day: int = 0):
-        """Gives global stats for the PADle (optionally on a specified day)"""
+        """Global stats for the PADle (optionally on a specified day)"""
         num_days = await self.config.num_days()
         if day <= 0 or day > num_days:
             day = await self.config.num_days()
@@ -241,9 +244,60 @@ class PADle(commands.Cog):
                                      "**Average Guess Count**: {:.2f}").format(completes, giveups,
                                                                                completes / (completes + giveups),
                                                                                (average / completes))
+            embed.set_footer(text = f"Try {ctx.prefix}padle globalstats [day] for other day's stats!",
+                             icon_url=TSUBAKI_FLOWER_ICON_URL)
         else:
             embed = await self.get_past_padle_embed(ctx, day)
         await ctx.send(embed=embed)
+    
+    @padle.command()
+    async def stats(self, ctx):
+        """Personal PADle stats"""
+        if await self.config.user(ctx.author).start() and not await self.config.user(ctx.author).done():
+            return await send_cancellation_message(ctx, "Please finish today's PADle before checking your stats!")
+        all_guesses = await self.config.user(ctx.author).all_guesses()
+        played = 0
+        for key, value in all_guesses.items():
+            if value:
+                played += 1
+        save_daily = await self.config.save_daily_scores()
+        if played == 0:
+            return await send_cancellation_message(ctx, "You haven't played PADle yet!")
+        cur_streak = 0
+        max_streak = 0
+        wins = 0
+        for day in range(1, await self.config.num_days() + 1):
+            if day == await self.config.num_days():
+                correct_id = await self.config.padle_today()
+            else:
+                correct_id = save_daily[day - 1][0]
+            if str(day) in all_guesses and len(all_guesses[str(day)]) != 0 and all_guesses[str(day)][-1] == correct_id:
+                cur_streak += 1
+                wins += 1
+            else:
+                if cur_streak > max_streak:
+                    max_streak = cur_streak
+                cur_streak = 0
+
+        if cur_streak > max_streak:
+            max_streak = cur_streak
+        all_monsters_guessed = []
+        for key, value in all_guesses.items():
+            all_monsters_guessed.extend(value)
+        mode = max(set(all_monsters_guessed), key = all_monsters_guessed.count)
+        dbcog = await self.get_dbcog()
+        m = dbcog.get_monster(mode)
+        m_embed = EmbedView(
+            EmbedMain(
+                title=f"{ctx.author.name}'s PADle Stats",
+                description=(f"**Games Played**: {played}\n"
+                "**Win Rate**: {:.2%}\n".format(wins / played) + 
+                f"**Current Streak**: {cur_streak}\n"
+                f"**Max Streak**: {max_streak}\n"
+                f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(m).to_markdown()}")),
+            embed_thumbnail=EmbedThumbnail(
+                MonsterImage.icon(m.monster_id))).to_embed()
+        await ctx.send(embed=m_embed)
 
     async def get_past_padle_embed(self, ctx, day: int):
         dbcog = await self.get_dbcog()
@@ -270,7 +324,7 @@ class PADle(commands.Cog):
                                  "**Total Wins**: {}\n**Total Losses**: {}\n**Win Rate**: 0%\n"
                                  "**Average Guess Count**: 0").format(completes, giveups)
         else:
-            embed.description = ("**" + MonsterHeader.menu_title(guess_monster).to_markdown() + "**" +
+            embed.description = ("**" + MonsterHeader.menu_title(guess_monster).to_markdown() + "**\n" +
                                  "**Total Wins**: {}\n**Total Losses**: {}\n**Win Rate**: {:.2%}\n"
                                  "**Average Guess Count**: {:.2f}").format(completes, giveups,
                                                                            completes / (completes + giveups),
@@ -440,8 +494,12 @@ class PADle(commands.Cog):
             scores.append("\N{CROSS MARK}")
         async with self.config.all_scores() as all_scores:
             all_scores.append("X")
+        cur_day = await self.config.num_days()
+        todays_guesses = await self.config.user(ctx.author).todays_guesses()
+        async with self.config.user(ctx.author).all_guesses() as all_guesses:
+            all_guesses[str(cur_day)] = todays_guesses
 
-    @padle.command()
+    @padle.command(aliases=["share"])
     async def score(self, ctx):
         """Share your PADle score"""
         prefix = ctx.prefix
@@ -674,7 +732,7 @@ class PADle(commands.Cog):
             return await ctx.send("No change to tomorrow's PADle was made.")
         await self.config.tmrw_padle.set(id)
         prefix = ctx.prefix
-        await send_confirmation_message(ctx, f"Tomorrow's PADle will be {title}!"
+        await send_confirmation_message(ctx, f"Tomorrow's PADle will be {title}! "
                                              f"Use `{prefix}padle settomorrowpadle 0` to undo this.")
 
     @padleadmin.command(aliases=["isin"])
@@ -689,3 +747,50 @@ class PADle(commands.Cog):
         if monster.monster_id in monsters_list:
             return await send_confirmation_message(ctx, f"{title} is a possible PADle.")
         await send_cancellation_message(ctx, f"{title} is not a possible PADle.")
+        
+    @padleadmin.command()
+    async def advance(self, ctx):
+        """Advance day."""
+        try:
+            await self.config.stored_day.set(datetime.datetime.now().day)
+            async with self.config.save_daily_scores() as save_daily:
+                save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
+            # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
+            #    monsters = (await f.readline()).split(",")
+            tmrw_padle = await self.config.tmrw_padle()
+            if tmrw_padle == 0:
+                MONSTERS_LIST = await self.config.monsters_list()
+                await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+            else:
+                await self.config.padle_today.set(tmrw_padle)
+                await self.config.tmrw_padle.set(0)
+            num = await self.config.num_days()
+            await self.config.num_days.set(num + 1)
+            all_users = await self.config.all_users()
+            await self.config.all_scores.set([])
+            for userid in all_users:
+                user = self.bot.get_user(userid)
+                if user is None:
+                    continue
+                # save past guesses
+                async with self.config.user(user).all_guesses() as all_guesses:
+                    all_guesses[str(num)] = await self.config.user(user).todays_guesses()
+                await self.config.user(user).todays_guesses.set([])
+                # need to send message if a user is mid-game
+                if await self.config.user(user).start() and not await self.config.user(user).done():
+                    await user.send("The PADle expired; a new one is available.")
+                await self.config.user(user).start.set(False)
+                await self.config.user(user).done.set(False)
+                await self.config.user(user).score.set([])
+                await self.config.user(user).edit_id.set("")
+                await self.config.user(user).channel_id.set("")
+            subbed_users = await self.config.subs()
+            for userid in subbed_users:
+                user = self.bot.get_user(userid)
+                if user is not None:
+                    await user.send("PADle #{} is now available!".format(await self.config.num_days()))
+            await ctx.tick()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Error in loop:")
