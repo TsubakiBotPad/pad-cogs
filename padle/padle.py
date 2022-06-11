@@ -472,12 +472,12 @@ class PADle(commands.Cog):
                 # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
                 #    monsters = (await f.readline()).split(",")
                 tmrw_padle = await self.config.tmrw_padle()
-                if not tmrw_padle == 0:
-                    await self.config.padle_today.set(tmrw_padle)
-                    await self.config.tmrw_padle.set(0)
-                else:
+                if tmrw_padle == 0:
                     MONSTERS_LIST = await self.config.monsters_list()
                     await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+                else:
+                    await self.config.padle_today.set(tmrw_padle)
+                    await self.config.tmrw_padle.set(0)
                 num = await self.config.num_days()
                 await self.config.num_days.set(num + 1)
                 all_users = await self.config.all_users()
