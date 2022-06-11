@@ -1,4 +1,5 @@
-from typing import Any, Callable, Hashable, Iterable, List, Optional, Union
+from functools import lru_cache
+from typing import Callable, Hashable, Iterable, List, Optional
 
 from tsutils.enums import Server
 
@@ -19,22 +20,23 @@ SCHEDULED_EVENT_QUERY = """SELECT
   dungeons.name_ko AS d_name_ko,
   dungeons.dungeon_type AS dungeon_type
 FROM
-  schedule LEFT OUTER JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id"""
+  schedule 
+  LEFT JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id
+"""
 
 
-class DbContext(object):
+class DbContext:
     def __init__(self, database: DBCogDatabase, graph: MonsterGraph, dungeon: DungeonContext,
                  debug_monster_ids: Optional[List[int]] = None):
         self.database = database
         self.graph = graph
         self.dungeon = dungeon
 
-        self.cached_monster_ids = None
-        self.cached_monsters = {}
         self.cached_filters = {}
         self.debug_monster_ids = debug_monster_ids
 
         self.awoken_skill_map = {awsk.awoken_skill_id: awsk for awsk in self.get_all_awoken_skills()}
+        self.series_map = {series.series_id: series for series in self.get_all_series()}
 
     def get_monsters_where(self, f: Callable[[MonsterModel], bool], *, server: Server, cache_key: Hashable = None) \
             -> List[MonsterModel]:
@@ -47,15 +49,19 @@ class DbContext(object):
         self.cached_filters[(cache_key, server)] = self.get_monsters_where(f, server=server)
         return self.cached_filters[(cache_key, server)]
 
+    @lru_cache(maxsize=None)
     def get_monsters_by_series(self, series_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.series_id == series_id, server=server)
 
+    @lru_cache(maxsize=None)
     def get_monsters_by_active(self, active_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
+    @lru_cache(maxsize=None)
     def get_monsters_by_leader(self, leader_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.leader_skill_id == leader_skill_id, server=server)
 
+    @lru_cache(maxsize=None)
     def get_all_monster_ids(self, server: Server) -> Iterable[int]:
         # We don't need to query if we're in debug mode.  We already know exactly which monsters we're working with
         if self.debug_monster_ids is not None:
@@ -65,14 +71,11 @@ class DbContext(object):
         query = self.database.query_many(f"SELECT monster_id FROM monsters{suffix}", as_generator=True)
         return (m.monster_id for m in query)
 
+    @lru_cache(maxsize=None)
     def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> List[MonsterModel]:
-        if server in self.cached_monsters:
-            return self.cached_monsters[server]
+        return [self.graph.get_monster(mid, server=server) for mid in self.get_all_monster_ids(server)]
 
-        self.cached_monsters[server] = [self.graph.get_monster(mid, server=server)
-                                        for mid in self.get_all_monster_ids(server)]
-        return self.cached_monsters[server]
-
+    @lru_cache(maxsize=None)
     def get_all_events(self) -> Iterable[ScheduledEventModel]:
         result = self.database.query_many(SCHEDULED_EVENT_QUERY)
         for se in result:
@@ -82,10 +85,12 @@ class DbContext(object):
                                                **se)
             yield ScheduledEventModel(**se)
 
+    @lru_cache(maxsize=None)
     def get_all_awoken_skills(self) -> List[AwokenSkillModel]:
         result = self.database.query_many("SELECT * FROM awoken_skills")
         return [AwokenSkillModel(**r) for r in result]
 
+    @lru_cache(maxsize=None)
     def get_all_series(self) -> List[SeriesModel]:
         result = self.database.query_many("SELECT * FROM series")
         return [SeriesModel(**r) for r in result]
