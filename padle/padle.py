@@ -113,6 +113,11 @@ class PADle(commands.Cog):
     async def padle(self, ctx):
         """Commands pertaining to PADle"""
 
+    @commands.group(aliases=['padleconfig'])
+    @auth_check('padleadmin')
+    async def padleadmin(self, ctx):
+        """Commands pertaining to PADle setup"""
+
     @padle.command()
     async def help(self, ctx):
         """Instructions for PADle"""
@@ -508,8 +513,7 @@ class PADle(commands.Cog):
             except Exception:
                 logger.exception("Error in loop:")
 
-    @padle.command()
-    @auth_check('padleadmin')
+    @padleadmin.command()
     async def fullreset(self, ctx):
         """Resets all stats and information."""
         confirmation = await get_user_confirmation(ctx,
@@ -546,9 +550,8 @@ class PADle(commands.Cog):
             await self.config.user(user).all_guesses.set({})
         await ctx.tick()
 
-    @padle.command()
-    @auth_check("padleadmin")
-    async def addmonsters(self, ctx, *, list):
+    @padleadmin.command()
+    async def add(self, ctx, *, list):
         """Adds CSV of monster IDs to the list of possible PADles"""
         clean_list = re.sub(" ", "", list).split(",")
         dbcog = await self.get_dbcog()
@@ -577,9 +580,8 @@ class PADle(commands.Cog):
         for page in pagify("\n".join(result)):
             await ctx.send(page)
 
-    @padle.command()
-    @auth_check("padleadmin")
-    async def removemonsters(self, ctx, *, list):
+    @padleadmin.command()
+    async def remove(self, ctx, *, list):
         """Removes CSV of monster IDs to the list of possible PADles"""
         clean_list = re.sub(" ", "", list).split(",")
         dbcog = await self.get_dbcog()
@@ -606,8 +608,28 @@ class PADle(commands.Cog):
         for page in pagify("\n".join(result)):
             await ctx.send(page)
 
-    @padle.command()
-    @auth_check("padleadmin")
+    @padleadmin.command()
+    async def set(self, ctx):
+        """Set possible PADles to attached CSV/text file"""
+        if ctx.message.attachments:
+            try:
+                data = [int(x) for x in
+                        re.sub("[^0-9,]", "", (await ctx.message.attachments[0].read()).decode("utf-8")).split(",")]
+                dbcog = await self.get_dbcog()
+                for id in data:
+                    m = dbcog.get_monster(int(id))
+                    if m is None or not m.on_na or m.name_en is None:
+                        return await send_cancellation_message(ctx, f"{id} was invalid. Please remove "
+                                                                    "this ID and try again.")
+                await self.config.monsters_list.set(data)
+                await ctx.tick()
+            except Exception as e:
+                await send_cancellation_message(ctx, "Something went wrong.")
+                await ctx.send(box(str(e)))
+        else:
+            return await send_cancellation_message(ctx, "Looks like no file was attached!")
+
+    @padleadmin.command()
     async def list(self, ctx):
         """Lists all possible PADles"""
         dbcog = await self.get_dbcog()
@@ -625,8 +647,7 @@ class PADle(commands.Cog):
             await ctx.send(page)
         await ctx.send(f"There are **{len(result)}** valid PADles!")
 
-    @padle.command(aliases=["settmrw", "settmrwpadle"])
-    @auth_check("padleadmin")
+    @padleadmin.command(aliases=["settmrw", "settmrwpadle"])
     async def settomorrowpadle(self, ctx, id: int):
         """Sets tomorrow's PADle to a specified monster ID"""
         dbcog = await self.get_dbcog()
@@ -656,8 +677,7 @@ class PADle(commands.Cog):
         await send_confirmation_message(ctx, f"Tomorrow's PADle will be {title}!"
                                              f"Use `{prefix}padle settomorrowpadle 0` to undo this.")
 
-    @padle.command(aliases=["isin"])
-    @auth_check("padleadmin")
+    @padleadmin.command(aliases=["isin"])
     async def contains(self, ctx, *, query):
         """Checks if a monster is in the list of possible PADles"""
         monsters_list = await self.config.monsters_list()
