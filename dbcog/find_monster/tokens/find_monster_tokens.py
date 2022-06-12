@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from fnmatch import fnmatch
 from itertools import chain
 from typing import Iterable, List, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
@@ -373,26 +374,53 @@ class OrToken(SpecialToken):
     RE_MATCH = r"\[.+ .+\]"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
-        self._strings = re.sub(r'"[^"]+"|\'[^\']+\'',
-                               lambda m: m.group(0).replace(' ', ''),
-                               fullvalue[1:-1]).split()
+        self.subqueries = [s.replace('\0', ' ')
+                           for s in re.sub(r'"[^"]+"|\'[^\']+\'',
+                                           lambda m: m.group(0).replace(' ', '\0')[1:-1],
+                                           fullvalue[1:-1]).split()]
+        print(self.subqueries)
 
         self.tokens: Optional[List[QueryToken]] = None
+        self.results = []
 
         super().__init__(fullvalue, negated=negated, exact=exact, dbcog=dbcog)
 
     async def prepare(self):
-        self.tokens = [await string_to_token(s, self.dbcog) for s in self._strings]
+        Subquery = namedtuple("Subquery", 'sub_matches valid_monsters max_score')
+        for subquery in self.subqueries:
+            m_info, _ = await self.dbcog.find_monster_debug(subquery)
+            self.results.append(Subquery(
+                m_info.monster_matches,
+                m_info.valid_monsters,
+                max((m_info.monster_matches[mon].score for mon in m_info.valid_monsters), default=0)
+            ))
 
-    async def matches(self, monster, index):
-        best_score, best_data = 0.0, None
-        for idx, token in enumerate(self.tokens):
-            score, data = await token.matches(monster, index)
-            # print(token, score, data, monster)
-            if score > best_score:
-                best_score = score
-                best_data = TokenMatch(self.value, '', data.match_data | MatchData(self, or_index=(idx, token.value)))
+    async def special_matches(self, monster):
+        best_score = 0
+        best_data = MatchData(self)
+        for c, subquery in enumerate(self.results):
+            mons = subquery.valid_monsters
+            if monster not in subquery.valid_monsters:
+                continue
+            score = subquery.sub_matches.get(monster, DummyObject(score=0)).score
+            if best_score < score / subquery.max_score:
+                best_score = score / subquery.max_score
+                best_data = MatchData(self, or_index=(c, self.subqueries[c]))
         return best_score, best_data
+
+
+class IDRangeToken(SpecialToken):
+    RE_MATCH = r"(\d+?)-(\d*)"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        lbound, rbound = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        self.lower_bound = int(lbound)
+        self.upper_bound = int(rbound or 9e9)
+
+        super().__init__(fullvalue, negated=negated, exact=exact, dbcog=dbcog)
+
+    async def special_matches(self, monster):
+        return self.lower_bound <= monster.monster_id <= self.upper_bound, MatchData(self)
 
 
 def calc_ratio_modifier(s1: Union[QueryToken, str], s2: str, prefix_weight: float = .05) -> float:
@@ -456,4 +484,5 @@ SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     SeriesOf,
     AttributeToken,
     OrToken,
+    IDRangeToken,
 }
