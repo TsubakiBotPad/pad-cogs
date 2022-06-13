@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.control import EmbedControl
+from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -84,8 +84,8 @@ class DungeonMenu:
     def message_control(state: DungeonViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [DungeonView.embed(state)],
+        return EmbedWrapper(
+            DungeonView.embed(state),
             DungeonMenuPanes.emoji_names()
         )
 

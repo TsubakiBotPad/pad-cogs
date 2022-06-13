@@ -1,7 +1,8 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes
 from tsutils.menu.simple_text import SimpleTextMenu
@@ -112,8 +113,8 @@ class IdMenu(EvoScrollMenu):
     def id_control(state: IdViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [IdView.embed(state)],
+        return EmbedWrapper(
+            IdView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 
@@ -121,8 +122,8 @@ class IdMenu(EvoScrollMenu):
     def evos_control(state: Optional[EvosViewState]):
         if state is None:
             return None
-        return EmbedControl(
-            [EvosView.embed(state)],
+        return EmbedWrapper(
+            EvosView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 
@@ -130,8 +131,8 @@ class IdMenu(EvoScrollMenu):
     def mats_control(state: Optional[MaterialsViewState]):
         if state is None:
             return None
-        return EmbedControl(
-            [MaterialsView.embed(state)],
+        return EmbedWrapper(
+            MaterialsView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 
@@ -139,8 +140,8 @@ class IdMenu(EvoScrollMenu):
     def pic_control(state: PicViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [PicView.embed(state)],
+        return EmbedWrapper(
+            PicView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 
@@ -148,8 +149,8 @@ class IdMenu(EvoScrollMenu):
     def pantheon_control(state: Optional[PantheonViewState]):
         if state is None:
             return None
-        return EmbedControl(
-            [PantheonView.embed(state)],
+        return EmbedWrapper(
+            PantheonView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 
@@ -157,8 +158,8 @@ class IdMenu(EvoScrollMenu):
     def otherinfo_control(state: OtherInfoViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [OtherInfoView.embed(state)],
+        return EmbedWrapper(
+            OtherInfoView.embed(state),
             state.reaction_list or IdMenuPanes.emoji_names()
         )
 

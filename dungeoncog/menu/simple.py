@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.control import EmbedControl
+from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -45,8 +45,8 @@ class SimpleMenu:
         if state is None:
             return None
         reaction_list = state.reaction_list
-        return EmbedControl(
-            [SimpleView.embed(state)],
+        return EmbedWrapper(
+            SimpleView.embed(state),
             reaction_list
         )
 
