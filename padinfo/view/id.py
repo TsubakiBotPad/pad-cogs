@@ -136,11 +136,11 @@ class IdViewState(ViewStateBaseId):
     def get_na_diff_invalid_message(self) -> Optional[str]:
         monster: "MonsterModel" = self.monster
         if monster.on_na and not monster.on_jp:
-            return invalid_monster_text(self.query, monster, self.nadiff_na_only_text, link=True)
+            return invalid_monster_text(self.query, monster, self.nadiff_na_only_text)
         if monster.on_jp and not monster.on_na:
-            return invalid_monster_text(self.query, monster, self.nadiff_jp_only_text, link=True)
+            return invalid_monster_text(self.query, monster, self.nadiff_jp_only_text)
         if not self.is_jp_buffed:
-            return invalid_monster_text(self.query, monster, self.nadiff_identical_text, link=True)
+            return invalid_monster_text(self.query, monster, self.nadiff_identical_text)
         return None
 
 
