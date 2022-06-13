@@ -1,6 +1,8 @@
 from typing import Optional
 
 from discord import Message
+from discordmenu.embed.emoji import DELETE_MESSAGE_EMOJI
+from discordmenu.embed.transitions import EmbedTransition, EmbedMenuDefaultTransitions
 from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
@@ -19,7 +21,8 @@ class DungeonMenu:
     @staticmethod
     def menu():
         embed = EmbedMenu(DungeonMenuPanes.transitions(), DungeonMenu.message_control,
-                          delete_func=DungeonMenu.respond_with_delete)
+                          EmbedMenuDefaultTransitions(
+                              delete_message=EmbedTransition(DELETE_MESSAGE_EMOJI, DungeonMenu.respond_with_delete)))
         return embed
 
     @staticmethod

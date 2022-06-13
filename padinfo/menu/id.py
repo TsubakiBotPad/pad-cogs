@@ -1,7 +1,9 @@
 from typing import Optional
 
 from discord import Message
+from discordmenu.embed.emoji import DELETE_MESSAGE_EMOJI
 from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.transitions import EmbedMenuDefaultTransitions, EmbedTransition
 from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes
@@ -33,7 +35,8 @@ class IdMenu(EvoScrollMenu):
             initial_control = IdMenu.id_control
 
         embed = EmbedMenu(IdMenuPanes.transitions(), initial_control,
-                          delete_func=IdMenu.respond_with_delete)
+                          EmbedMenuDefaultTransitions(
+                              delete_message=EmbedTransition(DELETE_MESSAGE_EMOJI, IdMenu.respond_with_delete)))
         return embed
 
     @staticmethod

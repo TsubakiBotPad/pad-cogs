@@ -1,6 +1,8 @@
 from typing import Optional
 
 from discord import Message
+from discordmenu.embed.emoji import DELETE_MESSAGE_EMOJI
+from discordmenu.embed.transitions import EmbedTransition, EmbedMenuDefaultTransitions
 from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.enums import Server
@@ -26,7 +28,8 @@ class NaDiffMenu:
         if initial_control is None:
             initial_control = NaDiffMenu.id_control
         embed = EmbedMenu(NaDiffMenuPanes.transitions(), initial_control,
-                          delete_func=NaDiffMenu.respond_with_delete)
+                          EmbedMenuDefaultTransitions(
+                              delete_message=EmbedTransition(DELETE_MESSAGE_EMOJI, NaDiffMenu.respond_with_delete)))
         return embed
 
     @staticmethod
