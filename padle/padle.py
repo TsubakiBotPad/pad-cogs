@@ -322,30 +322,6 @@ class PADle(commands.Cog):
                                                                            (average / completes))
         return embed
 
-    # this takes a long time to run
-    # @padle.command()
-    # async def filter(self, ctx):
-    #     dbcog = await self.get_dbcog()
-    #     mgraph = dbcog.database.graph
-    #     final = []
-    #     # await ctx.send(mgraph.max_monster_id)
-    #     for i in range(0, 8800): # hard coded bc max_monster_id as calculated above is 15k???
-    #         monster = await dbcog.find_monster(str(i), ctx.author)
-    #         try:
-    #             nextTrans = mgraph.get_next_transform(monster)
-    #             prevTrans = mgraph.get_prev_transform(monster)
-    #             if(monster is not None and monster.name_en is not None and monster.on_na and
-    #                 monster.series.series_type != 'collab' and
-    #                 ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-    #                  "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-    #                     nextTrans is None and monster.level >= 99):
-    #                 final.append(str(i))
-    #         except Exception as e:
-    #             print("Error " + str(i))
-    #             pass
-    #     await ctx.tick()
-    #     print(",".join(final))
-
     async def do_quit_early(self, ctx):
         prefix = ctx.prefix
         if ctx.guild is not None and not await self.can_play_in_guild(ctx):
@@ -781,3 +757,30 @@ class PADle(commands.Cog):
             raise
         except Exception:
             logger.exception("Error in loop:")
+    
+    @padleadmin.command()
+    async def filter(self, ctx):
+        """Re-creates the list of monsters"""
+        confirmation = await get_user_confirmation(ctx, "This command will take a long time to execute. Run anyways?")
+        if not confirmation:
+            return
+        dbcog = await self.get_dbcog()
+        mgraph = dbcog.database.graph
+        final = []
+        # await ctx.send(mgraph.max_monster_id)
+        for i in range(1, 8800): # hard coded bc max_monster_id as calculated above is 15k???
+            monster = await dbcog.find_monster(str(i), ctx.author)
+            with suppress(Exception):
+                nextTrans = mgraph.get_next_transform(monster)
+                prevTrans = mgraph.get_prev_transform(monster)
+                if(monster is not None and monster.name_en is not None and monster.on_na and
+                    monster.series.series_type != 'collab' and
+                    ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
+                     "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+                        nextTrans is None and monster.level >= 99):
+                    final.append(str(i))
+        with open("result.txt", "w") as file:
+            file.write(",".join(final))
+        with open("result.txt", "rb") as file:
+            await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
+        await ctx.tick()

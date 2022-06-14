@@ -1,5 +1,4 @@
-from math import ceil
-from typing import Collection, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.base import Box
@@ -7,14 +6,9 @@ from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.view.view_state_base import ViewStateBase
-from tsutils.query_settings.query_settings import QuerySettings
 from padle.monsterdiff import MonsterDiff
 
-from discordmenu.embed.components import EmbedFooter
-
-from tsutils.tsubaki.links import CLOUDFRONT_URL
-
-TSUBAKI_FLOWER_ICON_URL = CLOUDFRONT_URL + '/tsubaki/tsubakiflower.png'
+from tsutils.menu.components.footers import TSUBAKI_FLOWER_ICON_URL
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
