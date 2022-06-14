@@ -555,7 +555,7 @@ class PADle(commands.Cog):
             await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
         else:
             await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
-
+        await self.config.stored_day.set(datetime.datetime.now().day)
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
         await self.config.subs.set([])
