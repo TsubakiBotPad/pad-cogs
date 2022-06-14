@@ -5,6 +5,7 @@ import json
 import logging
 import random
 import re
+import csv
 from contextlib import suppress
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
 from discordmenu.embed.view import EmbedView
@@ -39,7 +40,9 @@ logger = logging.getLogger('red.padbot-cogs.padle')
 
 class PADle(commands.Cog):
     """A Wordle game for PAD"""
-
+    
+    # Used if no monster list is set
+    FALLBACK_PADLE_MONSTER = 3260
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -48,8 +51,8 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
-                                    subs=[], all_scores=[], save_daily_scores=[],
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=0, 
+                                    num_days=1, subs=[], all_scores=[], save_daily_scores=[],
                                     monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
@@ -496,12 +499,13 @@ class PADle(commands.Cog):
             try:
                 async with self.config.save_daily_scores() as save_daily:
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-                # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
-                #    monsters = (await f.readline()).split(",")
                 tmrw_padle = await self.config.tmrw_padle()
                 if tmrw_padle == 0:
                     MONSTERS_LIST = await self.config.monsters_list()
-                    await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+                    if len(MONSTERS_LIST) == 0:
+                        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
+                    else:
+                        await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
                 else:
                     await self.config.padle_today.set(tmrw_padle)
                     await self.config.tmrw_padle.set(0)
@@ -546,7 +550,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "Nothing was reset.")
 
-        await self.config.padle_today.set(3260)
+        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
 
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
@@ -717,12 +721,13 @@ class PADle(commands.Cog):
             await self.config.stored_day.set(datetime.datetime.now().day)
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-            # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
-            #    monsters = (await f.readline()).split(",")
             tmrw_padle = await self.config.tmrw_padle()
             if tmrw_padle == 0:
                 MONSTERS_LIST = await self.config.monsters_list()
-                await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+                if len(MONSTERS_LIST) == 0:
+                    await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
+                else:
+                    await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
             else:
                 await self.config.padle_today.set(tmrw_padle)
                 await self.config.tmrw_padle.set(0)
