@@ -5,6 +5,7 @@ import json
 import logging
 import random
 import re
+import csv
 from contextlib import suppress
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
 from discordmenu.embed.view import EmbedView
@@ -496,12 +497,13 @@ class PADle(commands.Cog):
             try:
                 async with self.config.save_daily_scores() as save_daily:
                     save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-                # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
-                #    monsters = (await f.readline()).split(",")
                 tmrw_padle = await self.config.tmrw_padle()
                 if tmrw_padle == 0:
                     MONSTERS_LIST = await self.config.monsters_list()
-                    await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+                    if len(MONSTERS_LIST) == 0:
+                        await self.config.padle_today.set(3260)
+                    else:
+                        await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
                 else:
                     await self.config.padle_today.set(tmrw_padle)
                     await self.config.tmrw_padle.set(0)
@@ -717,12 +719,13 @@ class PADle(commands.Cog):
             await self.config.stored_day.set(datetime.datetime.now().day)
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
-            # async with aopen("./pad-cogs/padle/monsters.txt", "r") as f:
-            #    monsters = (await f.readline()).split(",")
             tmrw_padle = await self.config.tmrw_padle()
             if tmrw_padle == 0:
                 MONSTERS_LIST = await self.config.monsters_list()
-                await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+                if len(MONSTERS_LIST) == 0:
+                    await self.config.padle_today.set(3260)
+                else:
+                    await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
             else:
                 await self.config.padle_today.set(tmrw_padle)
                 await self.config.tmrw_padle.set(0)
