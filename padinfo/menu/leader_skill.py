@@ -1,7 +1,8 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -52,15 +53,15 @@ class LeaderSkillMenu:
 
     @staticmethod
     def ls_control(state: LeaderSkillViewState):
-        return EmbedControl(
-            [LeaderSkillView.embed(state)],
+        return EmbedWrapper(
+            LeaderSkillView.embed(state),
             LeaderSkillMenuPanes.emoji_names()
         )
 
     @staticmethod
     def id_control(state: IdViewState):
-        return EmbedControl(
-            [IdView.embed(state)],
+        return EmbedWrapper(
+            IdView.embed(state),
             LeaderSkillMenuPanes.emoji_names()
         )
 
