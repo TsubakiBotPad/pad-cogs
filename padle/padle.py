@@ -1,15 +1,15 @@
 import asyncio
 import datetime
+import re
 import discord
 import json
 import logging
 import random
-import re
 import csv
 from contextlib import suppress
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
 from discordmenu.embed.view import EmbedView
-from io import BytesIO
+from io import BytesIO, StringIO
 from math import ceil
 from padle.menu.closable_embed import ClosableEmbedMenu
 from padle.menu.menu_map import padle_menu_map
@@ -632,16 +632,27 @@ class PADle(commands.Cog):
         """Set possible PADles to attached CSV/text file"""
         if ctx.message.attachments:
             try:
-                data = [int(x) for x in
-                        re.sub("[^0-9,]", "", (await ctx.message.attachments[0].read()).decode("utf-8")).split(",")]
+                input = StringIO((await ctx.message.attachments[0].read()).decode("utf-8"))
+                reader = csv.reader(input, delimiter=",")
+                valid = []
+                invalid = []
                 dbcog = await self.get_dbcog()
-                for id in data:
-                    m = dbcog.get_monster(int(id))
-                    if m is None or not m.on_na or m.name_en is None:
-                        return await send_cancellation_message(ctx, f"{id} was invalid. Please remove "
-                                                                    "this ID and try again.")
-                await self.config.monsters_list.set(data)
-                await ctx.tick()
+                for row in reader:
+                    for text_id in row:
+                        id = re.sub(" ", "", text_id)
+                        if not id.isnumeric():
+                            invalid.append(id)
+                            continue
+                        m = dbcog.get_monster(int(id))
+                        if m is None or not m.on_na or m.name_en is None:
+                            invalid.append(id)
+                            continue
+                        valid.append(int(id))
+                if len(invalid) == 0:
+                    await self.config.monsters_list.set(valid)
+                    return await ctx.tick()
+                await send_cancellation_message(ctx, "The following IDs were invalid: "
+                                                f"{', '.join(invalid)}. Please remove them and try again.")
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
                 logger.exception(str(e))
