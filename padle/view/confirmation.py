@@ -20,5 +20,5 @@ class PADleMonsterConfirmationView:
                 color=Color.red(),
                 title=props.title,
             ),
-            embed_footer=embed_footer_with_state(state)
+            embed_footer=embed_footer_with_state(state, text="Click the X to close.")
         )
