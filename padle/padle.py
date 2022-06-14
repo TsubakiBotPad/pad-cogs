@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import re
 import discord
 import json
 import logging
@@ -634,16 +635,24 @@ class PADle(commands.Cog):
                 input = StringIO((await ctx.message.attachments[0].read()).decode("utf-8"))
                 reader = csv.reader(input, delimiter=",")
                 valid = []
+                invalid = []
                 dbcog = await self.get_dbcog()
                 for row in reader:
-                    for id in row:
+                    for text_id in row:
+                        id = re.sub(" ", "", text_id)
+                        if not id.isnumeric():
+                            invalid.append(id)
+                            continue
                         m = dbcog.get_monster(int(id))
                         if m is None or not m.on_na or m.name_en is None:
-                            return await send_cancellation_message(ctx, f"{id} was invalid. Please remove "
-                                                                        "this ID and try again.")
+                            invalid.append(id)
+                            continue
                         valid.append(int(id))
-                await self.config.monsters_list.set(valid)
-                await ctx.tick()
+                if len(invalid) == 0:
+                    await self.config.monsters_list.set(valid)
+                    return await ctx.tick()
+                await send_cancellation_message(ctx, "The following IDs were invalid: "
+                                                f"{', '.join(invalid)}. Please remove them and try again.")
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
                 logger.exception(str(e))
