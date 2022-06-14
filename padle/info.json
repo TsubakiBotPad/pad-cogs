@@ -1,0 +1,21 @@
+{
+    "author": [
+      "fluff#2368"
+    ],
+    "description": "PADle, a Wordle game for PAD.",
+    "end_user_data_statement": "No personal data is stored.",
+    "install_msg": "Use [p]padle.",
+    "min_bot_version": "3.4.0",
+    "max_bot_version": "0.0.0",
+    "min_python_version": [
+      3,
+      8,
+      1
+    ],
+    "hidden": false,
+    "disabled": false,
+    "required_cogs": {},
+    "requirements": ["tsutils>=4.0.0"],
+    "tags": []
+  }
+  
