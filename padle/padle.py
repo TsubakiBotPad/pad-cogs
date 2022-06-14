@@ -40,7 +40,9 @@ logger = logging.getLogger('red.padbot-cogs.padle')
 
 class PADle(commands.Cog):
     """A Wordle game for PAD"""
-
+    
+    # Used if no monster list is set
+    FALLBACK_PADLE_MONSTER = 3260
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -49,8 +51,8 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
-                                    subs=[], all_scores=[], save_daily_scores=[],
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=0, 
+                                    num_days=1, subs=[], all_scores=[], save_daily_scores=[],
                                     monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
@@ -501,7 +503,7 @@ class PADle(commands.Cog):
                 if tmrw_padle == 0:
                     MONSTERS_LIST = await self.config.monsters_list()
                     if len(MONSTERS_LIST) == 0:
-                        await self.config.padle_today.set(3260)
+                        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
                     else:
                         await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
                 else:
@@ -548,7 +550,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "Nothing was reset.")
 
-        await self.config.padle_today.set(3260)
+        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
 
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
@@ -723,7 +725,7 @@ class PADle(commands.Cog):
             if tmrw_padle == 0:
                 MONSTERS_LIST = await self.config.monsters_list()
                 if len(MONSTERS_LIST) == 0:
-                    await self.config.padle_today.set(3260)
+                    await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
                 else:
                     await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
             else:
