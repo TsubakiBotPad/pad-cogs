@@ -2,7 +2,8 @@ from math import ceil
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.menu.components.panes import MenuPanes
 
 from padle.view.padle_scroll_view import PADleScrollView, PADleScrollViewState
@@ -49,7 +50,7 @@ class PADleScrollMenu:
         return await PADleScrollMenu.respond_with_pane(message, ims, **data)
 
     @classmethod
-    async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> PADleScrollViewState:
+    async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> EmbedWrapper:
         dbcog = data['dbcog']
         user_config = data['user_config']
         today_guesses = data['today_guesses']
@@ -61,8 +62,8 @@ class PADleScrollMenu:
         if state is None:
             return None
         reaction_list = PADleMenuPanes.get_initial_reaction_list()
-        return EmbedControl(
-            [PADleScrollView.embed(state)],
+        return EmbedWrapper(
+            PADleScrollView.embed(state),
             reaction_list
         )
 

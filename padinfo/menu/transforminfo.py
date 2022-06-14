@@ -1,7 +1,9 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
+
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -66,15 +68,15 @@ class TransformInfoMenu:
     @staticmethod
     def tf_control(state: TransformInfoViewState):
         reaction_list = state.reaction_list
-        return EmbedControl(
-            [TransformInfoView.embed(state)],
+        return EmbedWrapper(
+            TransformInfoView.embed(state),
             reaction_list
         )
 
     @staticmethod
     def id_control(state: IdViewState, reaction_list):
-        return EmbedControl(
-            [IdView.embed(state)],
+        return EmbedWrapper(
+            IdView.embed(state),
             reaction_list
         )
 

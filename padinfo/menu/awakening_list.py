@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.control import EmbedControl
+from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 from tsutils.query_settings.enums import ChildMenuType
@@ -69,8 +69,8 @@ class AwakeningListMenu:
         if state is None:
             return None
         reaction_list = AwakeningListMenuPanes.get_user_reaction_list(state.sort_type)
-        return EmbedControl(
-            [AwakeningListView.embed(state)],
+        return EmbedWrapper(
+            AwakeningListView.embed(state),
             reaction_list
         )
 

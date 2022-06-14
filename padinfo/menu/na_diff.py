@@ -1,7 +1,9 @@
 from typing import Optional
 
 from discord import Message
-from discordmenu.embed.control import EmbedControl
+from discordmenu.embed.emoji import DELETE_MESSAGE_EMOJI
+from discordmenu.embed.transitions import EmbedTransition, EmbedMenuDefaultTransitions
+from discordmenu.embed.wrapper import EmbedWrapper
 from discordmenu.embed.menu import EmbedMenu
 from tsutils.enums import Server
 from tsutils.menu.components.panes import MenuPanes
@@ -26,7 +28,8 @@ class NaDiffMenu:
         if initial_control is None:
             initial_control = NaDiffMenu.id_control
         embed = EmbedMenu(NaDiffMenuPanes.transitions(), initial_control,
-                          delete_func=NaDiffMenu.respond_with_delete)
+                          EmbedMenuDefaultTransitions(
+                              delete_message=EmbedTransition(DELETE_MESSAGE_EMOJI, NaDiffMenu.respond_with_delete)))
         return embed
 
     @staticmethod
@@ -71,8 +74,8 @@ class NaDiffMenu:
     def id_control(state: IdViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [IdView.embed(state)],
+        return EmbedWrapper(
+            IdView.embed(state),
             state.reaction_list or NaDiffMenuPanes.emoji_names()
         )
 
@@ -80,8 +83,8 @@ class NaDiffMenu:
     def message_control(state: SimpleTextViewState):
         if state is None:
             return None
-        return EmbedControl(
-            [SimpleTextView.embed(state)],
+        return EmbedWrapper(
+            SimpleTextView.embed(state),
             state.reaction_list
         )
 

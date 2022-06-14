@@ -1,7 +1,8 @@
 from typing import List, Optional
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -156,8 +157,8 @@ class SeriesScrollMenu:
 
     @staticmethod
     def monster_list_control(state: SeriesScrollViewState):
-        return EmbedControl(
-            [SeriesScrollView.embed(state)],
+        return EmbedWrapper(
+            SeriesScrollView.embed(state),
             SeriesScrollMenuPanes.get_initial_reaction_list(state.max_len_so_far)
         )
 

@@ -1,7 +1,8 @@
 from typing import List, Optional, Type
 
 from discord import Message
-from discordmenu.embed.menu import EmbedControl, EmbedMenu
+from discordmenu.embed.menu import EmbedMenu
+from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes, emoji_buttons
 
@@ -174,8 +175,8 @@ class MonsterListMenu:
             return None
         reaction_list = state.reaction_list
         view_type = cls._get_view(state)
-        return EmbedControl(
-            [view_type.embed(state)],
+        return EmbedWrapper(
+            view_type.embed(state),
             reaction_list
         )
 
