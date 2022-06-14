@@ -1,50 +1,44 @@
-import discord
-import datetime
-import random
 import asyncio
-import re
-import logging
-from io import BytesIO
+import datetime
+import discord
 import json
-
-from typing import TYPE_CHECKING, Any, Union
-from redbot.core import Config, commands
+import logging
+import random
+import re
+from contextlib import suppress
+from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
+from discordmenu.embed.view import EmbedView
+from io import BytesIO
 from math import ceil
+from padle.menu.closable_embed import ClosableEmbedMenu
+from padle.menu.menu_map import padle_menu_map
+from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
+from padle.monsterdiff import MonsterDiff
+from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
+from redbot.core import Config, commands
+from redbot.core.utils.chat_formatting import pagify
+from tsutils.cogs.globaladmin import auth_check
+from tsutils.emoji import NO_EMOJI, YES_EMOJI
+from tsutils.helper_functions import conditional_iterator
+from tsutils.menu.components.config import BotConfig
+from tsutils.menu.components.footers import TSUBAKI_FLOWER_ICON_URL
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.query_settings.query_settings import QuerySettings
+from tsutils.tsubaki.links import MonsterImage, MonsterLink
+from tsutils.tsubaki.monster_header import MonsterHeader
+from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
+    get_user_reaction
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 if TYPE_CHECKING:
     from dbcog.dbcog import DBCog
     # from dbcog.monster_graph import MonsterGraph # used for creating the filter
 
-from tsutils.tsubaki.links import MonsterImage, MonsterLink
-from tsutils.tsubaki.monster_header import MonsterHeader
-
-from tsutils.helper_functions import conditional_iterator
-from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
-    get_user_reaction
-from tsutils.emoji import NO_EMOJI, YES_EMOJI
-from tsutils.cogs.globaladmin import auth_check
-from redbot.core.utils.chat_formatting import box, pagify
-
-from tsutils.menu.view.closable_embed import ClosableEmbedViewState
-from tsutils.query_settings.query_settings import QuerySettings
-from padle.menu.closable_embed import ClosableEmbedMenu
-from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
-from padle.menu.menu_map import padle_menu_map
-from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
-from tsutils.menu.components.config import BotConfig
-from padle.monsterdiff import MonsterDiff
-
-from discordmenu.embed.components import EmbedThumbnail, EmbedMain, EmbedFooter
-from discordmenu.embed.view import EmbedView
-from tsutils.tsubaki.links import CLOUDFRONT_URL
-
-TSUBAKI_FLOWER_ICON_URL = CLOUDFRONT_URL + '/tsubaki/tsubakiflower.png'
-
 logger = logging.getLogger('red.padbot-cogs.padle')
 
 
 class PADle(commands.Cog):
-    """PADle"""
+    """A Wordle game for PAD"""
 
     menu_map = padle_menu_map
 
@@ -53,13 +47,13 @@ class PADle(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
-                                  edit_id="", channel_id="", all_guesses={})
+                                  edit_id=0, channel_id=0, all_guesses={})
         self.config.register_global(padle_today=3260, stored_day=0, num_days=1,
                                     subs=[], all_scores=[], save_daily_scores=[],
                                     monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
-        GACOG = self.bot.get_cog("GlobalAdmin")
+        GACOG: Any = self.bot.get_cog("GlobalAdmin")
         if GACOG:
             GACOG.register_perm("padleadmin")
 
@@ -104,7 +98,7 @@ class PADle(commands.Cog):
         }
         return data
 
-    async def get_today_guesses(self, user: discord.User, current_day: Union[str, int]):
+    async def get_today_guesses(self, user: discord.User, current_day: Union[str, int]) -> Optional[List[int]]:
         if current_day is None:
             return None
         if user is None:
@@ -137,25 +131,24 @@ class PADle(commands.Cog):
     async def subscribe(self, ctx, sub_arg: bool = True):
         """Subscribe to daily notifications of new PADles"""
         prefix = ctx.prefix
-        subbed_users = await self.config.subs()
-        if not sub_arg:
-            if ctx.author.id in subbed_users:
-                return await self.unsubscribe(ctx)
-            return await send_cancellation_message(ctx, "You are not subscribed.")
-        if ctx.author.id not in subbed_users:
-            async with self.config.subs() as subs:
-                subs.append(ctx.author.id)
-            return await send_confirmation_message(ctx, "You will now receive notifications of new PADles. "
-                                                        "You can unsubscribe with `{}padle subscribe 0`.".format(
-                prefix))
+        async with self.config.subs() as subbed_users:
+            if not sub_arg:
+                if ctx.author.id in subbed_users:
+                    return await self.unsubscribe(ctx)
+                return await send_cancellation_message(ctx, "You are not subscribed.")
+            if ctx.author.id not in subbed_users:
+                subbed_users.append(ctx.author.id)
+                return await send_confirmation_message(ctx, "You will now receive notifications of new PADles. "
+                                                            "You can unsubscribe with `{}padle subscribe 0`.".format(
+                    prefix))
 
-        confirmation = await get_user_confirmation(ctx, "You are already subscribed. Did you mean to unsubscribe?")
-        if confirmation:
-            await self.unsubscribe(ctx)
-        elif confirmation is None:
-            await send_cancellation_message(ctx, "Confirmation timeout")
-        else:
-            await ctx.send("No changes were made, you will still receive notifications of new PADles.")
+            confirmation = await get_user_confirmation(ctx, "You are already subscribed. Did you mean to unsubscribe?")
+            if confirmation:
+                await self.unsubscribe(ctx)
+            elif confirmation is None:
+                await send_cancellation_message(ctx, "Confirmation timeout")
+            else:
+                await ctx.send("No changes were made, you will still receive notifications of new PADles.")
 
     async def unsubscribe(self, ctx):
         async with self.config.subs() as subs:
@@ -289,7 +282,7 @@ class PADle(commands.Cog):
             EmbedMain(
                 title=f"{ctx.author.name}'s PADle Stats",
                 description=(f"**Games Played**: {played}\n"
-                             "**Win Rate**: {:.2%}\n".format(wins / played) +
+                             f"**Win Rate**: {wins / played:.2%}\n"
                              f"**Current Streak**: {cur_streak}\n"
                              f"**Max Streak**: {max_streak}\n"
                              f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(m).to_markdown()}")),
@@ -353,7 +346,7 @@ class PADle(commands.Cog):
     #     await ctx.tick()
     #     print(",".join(final))
 
-    async def ensure_active_game(self, ctx):
+    async def do_quit_early(self, ctx):
         prefix = ctx.prefix
         if ctx.guild is not None and not await self.can_play_in_guild(ctx):
             await ctx.send("You can only play PADle in DMs!")
@@ -369,7 +362,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def guess(self, ctx, *, guess):
         """Guess a card for the daily PADle"""
-        if await self.ensure_active_game(ctx):
+        if await self.do_quit_early(ctx):
             return
         dbcog = await self.get_dbcog()
 
@@ -389,8 +382,7 @@ class PADle(commands.Cog):
                 description="Did you mean this monster?"),
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(guess_monster.monster_id))).to_embed()
-        did_you_mean_msg = await ctx.send(embed=m_embed)
-        confirmation = await get_user_reaction(ctx, did_you_mean_msg, YES_EMOJI, NO_EMOJI, timeout=20)
+        confirmation = await get_user_reaction(ctx, m_embed, YES_EMOJI, NO_EMOJI, timeout=20)
         if confirmation is None:
             return await send_cancellation_message(ctx, "Confirmation timeout.")
         if confirmation == NO_EMOJI:
@@ -410,11 +402,9 @@ class PADle(commands.Cog):
 
         channel = self.bot.get_channel(await self.config.user(ctx.author).channel_id())
         if channel is not None:
-            try:
+            with suppress(discord.HTTPException):
                 del_msg = await channel.fetch_message(await self.config.user(ctx.author).edit_id())
                 await del_msg.delete()
-            except discord.HTTPException:
-                pass
 
         guess_monster_diff = MonsterDiff(monster, guess_monster)
         points = guess_monster_diff.get_diff_score()
@@ -450,7 +440,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def resend(self, ctx):
         """Resends the guess list message"""
-        if await self.ensure_active_game(ctx):
+        if await self.do_quit_early(ctx):
             return
         dbcog = await self.get_dbcog()
         monster = dbcog.get_monster(int(await self.config.padle_today()))
@@ -472,7 +462,7 @@ class PADle(commands.Cog):
     @padle.command()
     async def giveup(self, ctx):
         """Give up on today's PADle"""
-        if await self.ensure_active_game(ctx):
+        if await self.do_quit_early(ctx):
             return
         confirmation = await get_user_confirmation(ctx, "Are you sure you would like to give up?", timeout=20)
         dbcog = await self.get_dbcog()
@@ -505,12 +495,12 @@ class PADle(commands.Cog):
             await ctx.send("You have not done today's PADle yet!")
             return
         score = await self.config.user(ctx.author).score()
-        value = "X" if "\N{CROSS MARK}" in score else len(await self.config.user(ctx.author).todays_guesses())
+        value = "X" if "\N{CROSS MARK}" in score else str(len(await self.config.user(ctx.author).todays_guesses()))
         if ctx.guild is None:
             msg = "PADle #{}: {}".format(await self.config.num_days(), value) + "\n" + "".join(score)
             await ctx.send(msg)
-            await ctx.send("*Hint: You can use the command `{}padle score` anywhere "
-                           "and have Tsubaki automatically share your score for you!*".format(prefix))
+            await ctx.send(f"*Hint: You can use the command `{prefix}padle score` anywhere "
+                           f"and have {ctx.me.name} automatically share your score for you!*")
         else:
             await ctx.message.delete()
             msg = ctx.author.mention + "'s PADle #{}: {}".format(await self.config.num_days(), value) + "\n" + "".join(
@@ -558,8 +548,8 @@ class PADle(commands.Cog):
                     await self.config.user(user).start.set(False)
                     await self.config.user(user).done.set(False)
                     await self.config.user(user).score.set([])
-                    await self.config.user(user).edit_id.set("")
-                    await self.config.user(user).channel_id.set("")
+                    await self.config.user(user).edit_id.set(0)
+                    await self.config.user(user).channel_id.set(0)
                 subbed_users = await self.config.subs()
                 for userid in subbed_users:
                     user = self.bot.get_user(userid)
@@ -602,29 +592,25 @@ class PADle(commands.Cog):
             await self.config.user(user).start.set(False)
             await self.config.user(user).done.set(False)
             await self.config.user(user).score.set([])
-            await self.config.user(user).edit_id.set("")
-            await self.config.user(user).channel_id.set("")
+            await self.config.user(user).edit_id.set(0)
+            await self.config.user(user).channel_id.set(0)
             await self.config.user(user).all_guesses.set({})
         await ctx.tick()
 
     @padleadmin.command()
-    async def add(self, ctx, *, list):
-        """Adds CSV of monster IDs to the list of possible PADles"""
-        clean_list = re.sub(" ", "", list).split(",")
+    async def add(self, ctx, *ids: int):
+        """Adds space-separated list of monster IDs to the list of possible PADles"""
         dbcog = await self.get_dbcog()
         result = []
         valids = []
         monsters_list = await self.config.monsters_list()
-        for id in clean_list:
-            if not id.isnumeric():
-                result.append(f"{id} is not a valid monster ID.")
-                continue
-            m = dbcog.get_monster(int(id))
+        for id in ids:
+            m = dbcog.get_monster(id)
             if m is None:
-                result.append(f"{id} is not a valid monster ID.")
+                result.append(f"{str(id)} is not a valid monster ID.")
                 continue
             if not m.on_na or m.name_en is None:
-                result.append(f"{id} is not a monster on the NA server.")
+                result.append(f"{str(id)} is not a monster on the NA server.")
                 continue
             if int(id) in monsters_list:
                 result.append(
@@ -638,23 +624,19 @@ class PADle(commands.Cog):
             await ctx.send(page)
 
     @padleadmin.command()
-    async def remove(self, ctx, *, list):
-        """Removes CSV of monster IDs to the list of possible PADles"""
-        clean_list = re.sub(" ", "", list).split(",")
+    async def remove(self, ctx, *ids: int):
+        """Removes space-separated list of monster IDs to the list of possible PADles"""
         dbcog = await self.get_dbcog()
         result = []
         valids = []
         monsters_list = await self.config.monsters_list()
-        for id in clean_list:
-            if not id.isnumeric():
-                result.append(f"{id} is not a valid monster ID.")
-                continue
-            m = dbcog.get_monster(int(id))
+        for id in ids:
+            m = dbcog.get_monster(id)
             if m is None:
-                result.append(f"{id} is not a valid monster ID.")
+                result.append(f"{str(id)} is not a valid monster ID.")
                 continue
             if not m.on_na or m.name_en is None:
-                result.append(f"{id} is not a monster on the NA server.")
+                result.append(f"{str(id)} is not a monster on the NA server.")
                 continue
             if int(id) not in monsters_list:
                 result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} is not a possible PADle.")
@@ -682,7 +664,7 @@ class PADle(commands.Cog):
                 await ctx.tick()
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
-                await ctx.send(box(str(e)))
+                logger.exception(str(e))
         else:
             return await send_cancellation_message(ctx, "Looks like no file was attached!")
 
@@ -699,7 +681,7 @@ class PADle(commands.Cog):
                 # this should never happen but just in case
                 result.append(f"**Error**: {id} is a valid PADle but not a monster.")
                 continue
-            result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()}")
+            result.append(MonsterHeader.menu_title(m, use_emoji=True).to_markdown())
         for page in pagify("\n".join(result)):
             await ctx.send(page)
         await ctx.send(f"There are **{len(result)}** valid PADles!")
@@ -787,8 +769,8 @@ class PADle(commands.Cog):
                 await self.config.user(user).start.set(False)
                 await self.config.user(user).done.set(False)
                 await self.config.user(user).score.set([])
-                await self.config.user(user).edit_id.set("")
-                await self.config.user(user).channel_id.set("")
+                await self.config.user(user).edit_id.set(0)
+                await self.config.user(user).channel_id.set(0)
             subbed_users = await self.config.subs()
             for userid in subbed_users:
                 user = self.bot.get_user(userid)

@@ -1,6 +1,6 @@
 from .padle import PADle
 
-__red_end_user_data_statement__ = "No personal data is stored."
+__red_end_user_data_statement__ = "Guess data for PADles played is saved."
 
 
 async def setup(bot):
