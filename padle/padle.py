@@ -211,7 +211,7 @@ class PADle(commands.Cog):
             return await send_cancellation_message(ctx,
                                                    "Looks like I can't DM you. Try checking your Privacy Settings.")
         if ctx.guild is not None:
-            await send_confirmation_message(ctx, "Check your DMs!")
+            await send_confirmation_message(ctx, f"{ctx.author.name}, check your DMs!")
         await self.config.user(ctx.author).start.set(True)
 
     @padle.command()
@@ -550,7 +550,11 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "Nothing was reset.")
 
-        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
+        MONSTERS_LIST = await self.config.monsters_list()
+        if len(MONSTERS_LIST) == 0:
+            await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
+        else:
+            await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
 
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
