@@ -93,7 +93,7 @@ class GlobalStatsView:
             return EmbedView(
                 EmbedMain(
                     title=f"**PADle #{state.current_day} Stats**",
-                    description=Box(BoldText(MonsterHeader.menu_title(state.monster).to_markdown()), Box("\n" + description)),
+                    description=Box(BoldText(MonsterHeader.menu_title(state.monster).to_markdown()), Box(description), delimiter="\n\n"),
                     color=state.query_settings.embedcolor,
                 ),
                 embed_footer=embed_footer_with_state(state, text=GlobalStatsView.get_pages_footer(state)),
