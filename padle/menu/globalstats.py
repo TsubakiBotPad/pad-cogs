@@ -9,10 +9,10 @@ from typing import Optional
 class ScrollEmojis:
     prev_page = '\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}'
     next_page = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
-
+    home = '\N{HOUSE BUILDING}'
 
 class GlobalStatsMenu:
-    MENU_TYPE = 'GlobalStatsMenu'
+    MENU_TYPE = 'PADleGlobalStatsMenu'
 
     view_types = {
         GlobalStatsViewState.VIEW_STATE_TYPE: GlobalStatsView
@@ -27,27 +27,26 @@ class GlobalStatsMenu:
 
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
-        if ims['current_day'] < ims['num_days']:
-            ims['current_day'] = ims['current_day'] + 1
-        else:
-            ims['current_day'] = 1
-        return await GlobalStatsMenu.respond_with_pane(message, ims, **data)
+        GlobalStatsViewState.decrement_page(ims)
+        state = await cls._get_view_state(ims, **data)
+        return GlobalStatsMenu.control(state)
 
     @classmethod
     async def respond_with_right(cls, message: Optional[Message], ims, **data):
-        if ims['current_day'] > 1:
-            ims['current_day'] = ims['current_day'] - 1
-        else:
-            ims['current_day'] = ims['num_days']
-        return await GlobalStatsMenu.respond_with_pane(message, ims, **data)
+        GlobalStatsViewState.increment_page(ims)
+        state = await cls._get_view_state(ims, **data)
+        return GlobalStatsMenu.control(state)
+
+    @classmethod
+    async def _get_view_state(cls, ims: dict, **data) -> GlobalStatsViewState:
+        dbcog = data['dbcog']
+        user_config = data['user_config']
+        padle_cog = data['padle_cog']
+        return await GlobalStatsViewState.deserialize(dbcog, user_config, padle_cog, ims)
 
     @classmethod
     async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> EmbedWrapper:
-        dbcog = data['dbcog']
-        user_config = data['user_config']
-        daily_scores_list = data['daily_scores_list']
-        cur_day_scores = data['cur_day_scores']
-        view_state = await GlobalStatsViewState.deserialize(dbcog, user_config, daily_scores_list, cur_day_scores, ims)
+        view_state = await cls._get_view_state(ims, **data)
         return GlobalStatsMenu.control(view_state)
 
     @staticmethod
@@ -62,11 +61,15 @@ class GlobalStatsMenu:
 
 
 class GlobalStatsMenuPanes(MenuPanes):
-    INITIAL_EMOJI = ScrollEmojis.prev_page
+    INITIAL_EMOJI = ScrollEmojis.home
+    
     DATA = {
-        ScrollEmojis.next_page: (GlobalStatsMenu.respond_with_left, GlobalStatsView.VIEW_TYPE),
-        ScrollEmojis.prev_page: (GlobalStatsMenu.respond_with_right, GlobalStatsView.VIEW_TYPE),
+        ScrollEmojis.next_page: (GlobalStatsMenu.respond_with_right, GlobalStatsView.VIEW_TYPE),
+        ScrollEmojis.prev_page: (GlobalStatsMenu.respond_with_left, GlobalStatsView.VIEW_TYPE),
+        ScrollEmojis.home: (GlobalStatsMenu.respond_with_pane, GlobalStatsView.VIEW_TYPE),
     }
+    
+    HIDDEN_EMOJIS = [ScrollEmojis.home]
 
     @classmethod
     def get_initial_reaction_list(cls):

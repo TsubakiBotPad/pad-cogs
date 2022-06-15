@@ -53,8 +53,8 @@ class PADleScrollMenu:
     async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> EmbedWrapper:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        today_guesses = data['today_guesses']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, today_guesses, ims)
+        padle_cog = data['padle_cog']
+        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, padle_cog, ims)
         return PADleScrollMenu.control(view_state)
 
     @staticmethod

@@ -93,13 +93,10 @@ class PADle(commands.Cog):
         self._daily_padle_loop.cancel()
 
     async def get_menu_default_data(self, ims):
-        user = self.bot.get_user(ims['original_author_id'])
         data = {
             'dbcog': await self.get_dbcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
-            'today_guesses': await self.get_today_guesses(user, ims.get('current_day')),
-            'daily_scores_list': await self.config.save_daily_scores(),
-            'cur_day_scores': await self.config.all_scores()
+            'padle_cog': self,
         }
         return data
 
@@ -231,10 +228,10 @@ class PADle(commands.Cog):
             all = await self.config.save_daily_scores()
             stats = all[day - 1][1]
             monster = dbcog.get_monster(all[day - 1][0])
-
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
         global_stats_menu = GlobalStatsMenu.menu()
-        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, "", current_day=day,
-                                     num_days=num_days, monster=monster, stats=stats)
+        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "", 
+                                     current_day=day, num_days=num_days, monster=monster, stats=stats)
         await global_stats_menu.create(ctx, state)
 
     @padle.command()

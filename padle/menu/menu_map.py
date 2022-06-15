@@ -7,5 +7,5 @@ from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsMenuPanes
 padle_menu_map = {
     ClosableEmbedMenu.MENU_TYPE: (ClosableEmbedMenu, ClosableEmbedMenuPanes),
     PADleScrollMenu.MENU_TYPE: (PADleScrollMenu, PADleMenuPanes),
-    GlobalStatsMenu.MENU_TYPE: (GlobalStatsMenu, GlobalStatsMenuPanes)
+    GlobalStatsMenu.MENU_TYPE: (GlobalStatsMenu, GlobalStatsMenuPanes),
 }
