@@ -1,11 +1,14 @@
 from discordmenu.embed.components import EmbedMain, EmbedThumbnail
 from discordmenu.embed.view import EmbedView
+from discordmenu.embed.base import Box
+from discordmenu.embed.text import BoldText
 from tsutils.menu.components.config import UserConfig
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.tsubaki.links import MonsterImage
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.query_settings.query_settings import QuerySettings
+
 
 
 class GlobalStatsViewState(ViewStateBase):
@@ -90,7 +93,7 @@ class GlobalStatsView:
             return EmbedView(
                 EmbedMain(
                     title=f"**PADle #{state.current_day} Stats**",
-                    description="**" + MonsterHeader.menu_title(state.monster).to_markdown() + "**\n" + description,
+                    description=Box(BoldText(MonsterHeader.menu_title(state.monster).to_markdown()), Box("\n" + description)),
                     color=state.query_settings.embedcolor,
                 ),
                 embed_footer=embed_footer_with_state(state, text=GlobalStatsView.get_pages_footer(state)),

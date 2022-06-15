@@ -78,7 +78,7 @@ class PADleScrollViewState(ViewStateBase):
         cur_monster = ims['cur_monster']
         num_pages = ims['num_pages']
         monster = dbcog.get_monster(int(cur_monster))
-        user = padle_cog.bot.get_user(ims['original_author_id'])
+        user = padle_cog.bot.get_user(original_author_id)
         today_guesses = await padle_cog.get_today_guesses(user, ims.get('current_day'))
         cur_day_page_guesses = await cls.do_queries(dbcog, today_guesses[((cur_page) * 5):((cur_page + 1) * 5)])
         return PADleScrollViewState(original_author_id, menu_type, "", current_page=cur_page,
