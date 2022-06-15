@@ -32,12 +32,14 @@ class GlobalStatsViewState(ViewStateBase):
         })
         return ret
 
+    @staticmethod
     def increment_page(ims):
         if ims['current_day'] < ims['num_days']:
             ims['current_day'] = ims['current_day'] + 1
         else:
             ims['current_day'] = 1
-            
+
+    @staticmethod
     def decrement_page(ims):
         if ims['current_day'] > 1:
             ims['current_day'] = ims['current_day'] - 1
