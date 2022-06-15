@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import re
 import discord
 import json
@@ -7,6 +6,7 @@ import logging
 import random
 import csv
 from contextlib import suppress
+from datetime import datetime, timezone, timedelta
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
 from io import BytesIO, StringIO
@@ -43,6 +43,8 @@ class PADle(commands.Cog):
     
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
+    # Set hours to preferred timezone offset from UTC for day change calculations
+    tzinfo = timezone(timedelta(hours = -8.0))
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -51,9 +53,9 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=datetime.datetime.now().day, 
-                                    num_days=1, subs=[], all_scores=[], save_daily_scores=[],
-                                    monsters_list=[], tmrw_padle=0)
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, 
+                                    stored_day=datetime.now(self.tzinfo).day, num_days=1, subs=[], 
+                                    all_scores=[], save_daily_scores=[], monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
         GACOG: Any = self.bot.get_cog("GlobalAdmin")
@@ -486,7 +488,7 @@ class PADle(commands.Cog):
 
     async def generate_padle(self):
         async def is_day_change():
-            cur_day = datetime.datetime.now().day
+            cur_day = datetime.now(self.tzinfo).day
             old_day = await self.config.stored_day()
             if cur_day != old_day:
                 await self.config.stored_day.set(cur_day)
@@ -553,7 +555,7 @@ class PADle(commands.Cog):
             await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
         else:
             await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
-        await self.config.stored_day.set(datetime.datetime.now().day)
+        await self.config.stored_day.set(datetime.now(self.tzinfo).day)
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
         await self.config.subs.set([])
@@ -731,7 +733,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "The PADle was unchanged.")
         try:
-            await self.config.stored_day.set(datetime.datetime.now().day)
+            await self.config.stored_day.set(datetime.now(self.tzinfo).day)
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
             tmrw_padle = await self.config.tmrw_padle()
