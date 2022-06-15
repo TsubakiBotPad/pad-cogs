@@ -590,10 +590,10 @@ class PADle(commands.Cog):
         for id in ids:
             m = dbcog.get_monster(id)
             if m is None:
-                result.append(f"{str(id)} is not a valid monster ID.")
+                result.append(f"{id} is not a valid monster ID.")
                 continue
             if not m.on_na or m.name_en is None:
-                result.append(f"{str(id)} is not a monster on the NA server.")
+                result.append(f"{id} is not a monster on the NA server.")
                 continue
             if int(id) in monsters_list:
                 result.append(
@@ -658,7 +658,7 @@ class PADle(commands.Cog):
                                                 f"{', '.join(invalid)}. Please remove them and try again.")
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
-                logger.exception(str(e))
+                logger.exception("Error when setting CSV of PADles.")
         else:
             return await send_cancellation_message(ctx, "Looks like no file was attached!")
 
