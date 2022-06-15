@@ -264,20 +264,18 @@ class PADle(commands.Cog):
                 correct_id = await self.config.padle_today()
             else:
                 correct_id = save_daily[day - 1][0]
-            if str(day) in all_guesses and len(all_guesses[str(day)]) != 0 and all_guesses[str(day)][-1] == correct_id:
+            if str(day) in all_guesses and correct_id in all_guesses[str(day)]:
                 cur_streak += 1
                 wins += 1
-            else:
-                if cur_streak > max_streak:
-                    max_streak = cur_streak
-                if day != await self.config.num_days():
-                    cur_streak = 0
-
-        if cur_streak > max_streak:
-            max_streak = cur_streak
+            elif day != await self.config.num_days() or await self.config.user(ctx.author).done():
+                cur_streak = 0
+            if cur_streak > max_streak:
+                max_streak = cur_streak
         all_monsters_guessed = []
         for key, value in all_guesses.items():
             all_monsters_guessed.extend(value)
+        if not all_monsters_guessed:
+            all_monsters_guessed.append(self.FALLBACK_PADLE_MONSTER)
         mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
