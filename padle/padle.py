@@ -66,8 +66,8 @@ class PADle(commands.Cog):
         """Get a user's personal data."""
         all_guesses = await self.config.user_from_id(user_id).all_guesses()
         if all_guesses:
-            data = f"You have {len(all_guesses)} days of guess data stored."
-            f"Here are your guesses:\n{json.dumps(all_guesses)}"
+            data = (f"You have {len(all_guesses)} days of guess data stored."
+                    f"Here are your guesses:\n{json.dumps(all_guesses)}")
         else:
             data = f"No data is stored for user with ID {user_id}."
         return {"user_data.txt": BytesIO(data.encode())}
@@ -108,8 +108,7 @@ class PADle(commands.Cog):
             return None
         if user is None:
             return {}
-        async with self.config.user(user).all_guesses() as all_guesses:
-            return all_guesses.get(str(current_day))
+        return (await self.config.user(user).all_guesses()).get(str(current_day))
 
     @commands.group()
     async def padle(self, ctx):
@@ -781,15 +780,11 @@ class PADle(commands.Cog):
     @padleadmin.command()
     async def filter(self, ctx):
         """Re-creates the list of monsters"""
-        confirmation = await get_user_confirmation(ctx, "This command will take a long time to execute. Run anyways?")
-        if not confirmation:
-            return
         dbcog = await self.get_dbcog()
         mgraph = dbcog.database.graph
         final = []
-        # await ctx.send(mgraph.max_monster_id)
-        for i in range(1, 8800): # hard coded bc max_monster_id as calculated above is 15k???
-            monster = await dbcog.find_monster(str(i), ctx.author)
+        for i in range(1, mgraph.max_monster_id):
+            monster = dbcog.get_monster(i)
             with suppress(Exception):
                 nextTrans = mgraph.get_next_transform(monster)
                 prevTrans = mgraph.get_prev_transform(monster)
