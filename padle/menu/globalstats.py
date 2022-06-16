@@ -11,6 +11,7 @@ class ScrollEmojis:
     next_page = '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}'
     home = '\N{HOUSE BUILDING}'
 
+
 class GlobalStatsMenu:
     MENU_TYPE = 'PADleGlobalStatsMenu'
 
@@ -62,13 +63,13 @@ class GlobalStatsMenu:
 
 class GlobalStatsMenuPanes(MenuPanes):
     INITIAL_EMOJI = ScrollEmojis.home
-    
+
     DATA = {
         ScrollEmojis.next_page: (GlobalStatsMenu.respond_with_right, GlobalStatsView.VIEW_TYPE),
         ScrollEmojis.prev_page: (GlobalStatsMenu.respond_with_left, GlobalStatsView.VIEW_TYPE),
         ScrollEmojis.home: (GlobalStatsMenu.respond_with_pane, GlobalStatsView.VIEW_TYPE),
     }
-    
+
     HIDDEN_EMOJIS = [ScrollEmojis.home]
 
     @classmethod
