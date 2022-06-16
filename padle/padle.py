@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.padle')
 
+
 class PADle(commands.Cog):
     """A Wordle game for PAD"""
 
@@ -126,7 +127,7 @@ class PADle(commands.Cog):
     async def help(self, ctx):
         """Instructions for PADle"""
         await ctx.send(self._get_help_text(ctx))
-    
+
     def _get_help_text(self, ctx):
         args = {"db": get_emoji("db"), "p": ctx.prefix, "tsubaki": get_emoji("tsubaki")}
         help_text = """PADle is a Wordle-inspired guessing game, but with some differences!
@@ -778,7 +779,7 @@ The following monsters are exceptions to the above and will NOT be included:
             monster = dbcog.get_monster(i)
             if monster is None:
                 continue
-            if (self.is_valid_padle(monster, mgraph)):
+            if self.is_valid_padle(monster, mgraph):
                 final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
@@ -802,7 +803,7 @@ The following monsters are exceptions to the above and will NOT be included:
                 ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prev_trans is not None)) or
                  # OR a Super Reincarnated evo of a pantheon
                  ("Super Reincarnated" in monster.name_en and monster.sell_mp == 5000) or
-                # OR 15k non-collab, non-event monsters with SA / max transformed
-                (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prev_trans is not None) and
-                 monster.series.series_type == 'regular'))
+                 # OR 15k non-collab, non-event monsters with SA / max transformed
+                 (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prev_trans is not None) and
+                  monster.series.series_type == 'regular'))
         )
