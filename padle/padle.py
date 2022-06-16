@@ -14,13 +14,13 @@ from io import BytesIO, StringIO
 from math import ceil
 from padle.help_texts import HELP_TEXT, RULES_TEXT
 from padle.menu.closable_embed import ClosableEmbedMenu
-from padle.menu.closable_stats import ClosableStatsMenu
 from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
+from padle.menu.personal_stats import PersonalStatsMenu
 from padle.monsterdiff import MonsterDiff
-from padle.view.closable_stats_view import ClosableStatsView, ClosableStatsViewProps
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
+from padle.view.personal_stats_view import PersonalStatsView, PersonalStatsViewProps
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import pagify
 from tsutils.cogs.globaladmin import auth_check
@@ -281,12 +281,12 @@ class PADle(commands.Cog):
         mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
-        menu = ClosableStatsMenu.menu()
+        menu = PersonalStatsMenu.menu()
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
-        props = ClosableStatsViewProps(query_settings, ctx.author.name, played, wins/played, 
+        props = PersonalStatsViewProps(query_settings, ctx.author.name, played, wins / played,
                                        cur_streak, max_streak, m)
-        state = ClosableEmbedViewState(ctx.author.id, ClosableStatsMenu.MENU_TYPE, "", query_settings,
-                                       ClosableStatsView.VIEW_TYPE, props)
+        state = ClosableEmbedViewState(ctx.author.id, PersonalStatsMenu.MENU_TYPE, "", query_settings,
+                                       PersonalStatsView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     async def do_quit_early(self, ctx):
