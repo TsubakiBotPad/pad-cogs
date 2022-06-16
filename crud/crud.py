@@ -152,7 +152,7 @@ class Crud(commands.Cog, EditSeries):
                                       email or "famiel@tsubakibot.com")
             commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
             parent, ref = repo.resolve_refish(refish=repo.head.name)
-            repo.create_commit(ref.name, author, commiter, "Updating JSON", tree, [parent.oid])
+            repo.create_commit(ref.name, author, commiter, "Updating "+filepath, tree, [parent.oid])
             upcred = pygit2.UserPass(keys['username'], keys['token'])
             remote = discord.utils.get(repo.remotes, name="origin")
             remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
