@@ -1,8 +1,10 @@
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, \
     get_attribute_emoji_by_enum
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from dbcog.dbcog import MonsterModel
+
 
 class MonsterDiff:
 
