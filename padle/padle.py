@@ -12,6 +12,7 @@ from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
 from io import BytesIO, StringIO
 from math import ceil
+from padle.help_texts import HELP_TEXT, RULES_TEXT
 from padle.menu.closable_embed import ClosableEmbedMenu
 from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.menu.menu_map import padle_menu_map
@@ -26,6 +27,7 @@ from tsutils.helper_functions import conditional_iterator
 from tsutils.menu.components.config import BotConfig
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
+from tsutils.time import NA_TIMEZONE
 from tsutils.tsubaki.custom_emoji import get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
@@ -45,8 +47,6 @@ class PADle(commands.Cog):
 
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
-    # Set hours to preferred timezone offset from UTC for day change calculations
-    tzinfo = timezone(timedelta(hours=-8.0))
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -112,7 +112,7 @@ class PADle(commands.Cog):
         return (await self.config.user(user).all_guesses()).get(str(current_day))
 
     def _day_today(self):
-        return datetime.now(self.tzinfo).day
+        return datetime.now(NA_TIMEZONE).day
 
     @commands.group()
     async def padle(self, ctx):
@@ -130,37 +130,12 @@ class PADle(commands.Cog):
 
     def _get_help_text(self, ctx):
         args = {"db": get_emoji("db"), "p": ctx.prefix, "tsubaki": get_emoji("tsubaki")}
-        help_text = """PADle is a Wordle-inspired guessing game, but with some differences!
-{db} You are not guessing words! Instead, you are guessing monsters.
-{db} The difference is based on awakenings, rarity, monster points, and a few other attributes. \
-Your current score screen will tell you if your guesses are correct, wrong, or misplaced (for awakenings).
-{db} Because this can be much harder than guessing words, you have infinite guesses!
-{db} Like Wordle, you can guess any monster, but only certain monsters can be the final PADle. \
-See `{p}padle validrules` to see what monsters count as "valid" final PADles.
-{db} Share your number of guesses with `{p}padle score`!
-
-To see the main menu at any time, type `{p}padle`. To see this specific greeting again, type `{p}padle help`.
-
-Happy puzzling! {tsubaki}""".format(**args)
-        return help_text
+        return HELP_TEXT.format(**args)
 
     @padle.command()
     async def validrules(self, ctx):
         args = {"db": get_emoji("db"), "rd": get_emoji("rd")}
-        rules_text = """Valid monsters include the following:
-{db} Super Reincarnated evolutions of pantheons
-{db} 50k+ MP AND [have a Super Awakening OR are max transformed]
-{db} 15k MP AND are non-event AND [have a Super Awakening OR are max transformed]
-        
-The following monsters are exceptions to the above and will NOT be included:
-{rd} Collab monsters (note this does not exclude Event monsters such as from Heroine or Relic Saga)
-{rd} An equip evolution
-{rd} Monsters not on the NA server
-{rd} Monsters that are not max-transformed
-
-*NOTE: The Super Awakening check ensures monsters chosen are max-evo, for the most part.*
-""".format(**args)
-        await ctx.send(rules_text)
+        await ctx.send(RULES_TEXT.format(**args))
 
     @padle.command(aliases=["sub"])
     async def subscribe(self, ctx, sub_arg: bool = True):
@@ -773,13 +748,13 @@ The following monsters are exceptions to the above and will NOT be included:
     async def filter(self, ctx):
         """Re-creates the list of monsters"""
         dbcog = await self.get_dbcog()
-        mgraph = dbcog.database.graph
+        graph = dbcog.database.graph
         final = []
-        for i in range(1, mgraph.max_monster_id + 1):
+        for i in range(1, graph.max_monster_id + 1):
             monster = dbcog.get_monster(i)
             if monster is None:
                 continue
-            if self.is_valid_padle(monster, mgraph):
+            if self.is_valid_padle(monster, graph):
                 final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
@@ -787,9 +762,9 @@ The following monsters are exceptions to the above and will NOT be included:
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
 
-    def is_valid_padle(self, monster, mgraph):
-        next_trans = mgraph.get_next_transform(monster)
-        prev_trans = mgraph.get_prev_transform(monster)
+    def is_valid_padle(self, monster, graph):
+        next_trans = graph.get_next_transform(monster)
+        prev_trans = graph.get_prev_transform(monster)
         return (  # Monster is in NA
                 monster.name_en is not None and monster.on_na and
                 # No collab monsters
