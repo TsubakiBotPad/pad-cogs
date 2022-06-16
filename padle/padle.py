@@ -234,7 +234,7 @@ The following monsters are exceptions to the above and will NOT be included:
                            color=discord.Color.teal())
         if await self.can_play_in_guild(ctx):
             if len(await self.config.user(ctx.author).all_guesses()) == 0:
-                await ctx.send("Hello! It looks like tihs is your first PADle game.")
+                await ctx.send("Hello! It looks like this is your first PADle game.")
                 await ctx.send(self._get_help_text(ctx))
             await ctx.send(embed=em)
             await self.config.user(ctx.author).start.set(True)
@@ -242,7 +242,7 @@ The following monsters are exceptions to the above and will NOT be included:
         # else
         try:
             if len(await self.config.user(ctx.author).all_guesses()) == 0:
-                await ctx.author.send("Hello! It looks like tihs is your first PADle game.")
+                await ctx.author.send("Hello! It looks like this is your first PADle game.")
                 await ctx.author.send(self._get_help_text(ctx))
             await ctx.author.send(embed=em)
         except discord.HTTPException:
