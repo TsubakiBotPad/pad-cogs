@@ -58,6 +58,8 @@ async def check_crud_channel(ctx):
 class Crud(commands.Cog, EditSeries):
     """PadGuide CRUD"""
 
+    json_folder = 'etl/pad/storage_processor/'
+
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
@@ -120,7 +122,7 @@ class Crud(commands.Cog, EditSeries):
             for page in pagify(msg):
                 await ctx.send(box(page))
 
-    async def git_verify(self, ctx, filepath):
+    async def git_verify(self, ctx, folder, filename):
         try:
             repo = pygit2.Repository(await self.config.pipeline_base())
         except pygit2.GitError:
@@ -143,6 +145,7 @@ class Crud(commands.Cog, EditSeries):
                                                         f" github username <username> token <access token>`")
 
         try:
+            filepath = folder + filename
             index = repo.index
             index.add(filepath)
             index.write()
@@ -152,8 +155,7 @@ class Crud(commands.Cog, EditSeries):
                                       email or "famiel@tsubakibot.com")
             commiter = pygit2.Signature("Famiel", "famiel@tsubakibot.com")
             parent, ref = repo.resolve_refish(refish=repo.head.name)
-            filename_idx = filepath.rfind("/")
-            repo.create_commit(ref.name, author, commiter, f"Updating {filepath if filename_idx == -1 else filepath[filename_idx+1: ]}", tree, [parent.oid])
+            repo.create_commit(ref.name, author, commiter, f"Updating {filename}", tree, [parent.oid])
             upcred = pygit2.UserPass(keys['username'], keys['token'])
             remote = discord.utils.get(repo.remotes, name="origin")
             remote.push(['refs/heads/master'], callbacks=pygit2.RemoteCallbacks(credentials=upcred))
@@ -260,7 +262,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, (*elements.values(),))
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
         j.append({
@@ -272,7 +274,7 @@ class Crud(commands.Cog, EditSeries):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
+        await self.git_verify(ctx, self.json_folder, 'series.json')
 
     @series.command(name="edit")
     async def series_edit(self, ctx, series_id: int, *elements):
@@ -300,7 +302,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, (*elements.values(), series_id))
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
         for e in j:
@@ -308,7 +310,7 @@ class Crud(commands.Cog, EditSeries):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
+        await self.git_verify(ctx, self.json_folder, 'series.json')
 
     @series.command(name="delete")
     @checks.is_owner()
@@ -319,7 +321,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, series_id)
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/series.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
         for e in j[:]:
@@ -327,7 +329,7 @@ class Crud(commands.Cog, EditSeries):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/series.json')
+        await self.git_verify(ctx, self.json_folder, 'series.json')
 
     @crud.group(aliases=["awos"])
     async def awokenskill(self, ctx):
@@ -385,7 +387,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, (*elements.values(),))
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/awoken_skill.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
         j.append({
@@ -408,7 +410,7 @@ class Crud(commands.Cog, EditSeries):
         })
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
+        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
 
     @awokenskill.command(name="edit")
     async def awokenskill_edit(self, ctx, awoken_skill, *elements):
@@ -447,7 +449,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, (*elements.values(), awoken_skill_id))
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/awoken_skill.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
 
@@ -456,7 +458,7 @@ class Crud(commands.Cog, EditSeries):
                 e.update(elements)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
+        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
 
     @awokenskill.command(name="delete")
     @checks.is_owner()
@@ -467,7 +469,7 @@ class Crud(commands.Cog, EditSeries):
 
         await self.execute_write(ctx, sql, awoken_skill_id)
 
-        fn = os.path.join(await self.config.pipeline_base(), 'etl/pad/storage_processor/awoken_skill.json')
+        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
         async with aiofiles.open(fn, 'r') as f:
             j = json.loads(await f.read())
         for e in j[:]:
@@ -475,7 +477,7 @@ class Crud(commands.Cog, EditSeries):
                 j.remove(e)
         async with aiofiles.open(fn, 'w') as f:
             await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, 'etl/pad/storage_processor/awoken_skill.json')
+        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
 
     @crud.command()
     @checks.is_owner()
