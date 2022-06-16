@@ -34,7 +34,6 @@ class PADleScrollMenu:
 
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
-        # PADleScrollMenu.decrement_page(ims)
         if ims['current_page'] < PADleScrollMenu.get_num_pages_ims(ims) - 1:
             ims['current_page'] = ims['current_page'] + 1
         else:
@@ -54,7 +53,7 @@ class PADleScrollMenu:
         dbcog = data['dbcog']
         user_config = data['user_config']
         padle_cog = data['padle_cog']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, padle_cog, ims)
+        view_state = await PADleScrollViewState.deserialize(dbcog, padle_cog, user_config, ims)
         return PADleScrollMenu.control(view_state)
 
     @staticmethod
