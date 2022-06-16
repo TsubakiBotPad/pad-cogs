@@ -14,6 +14,7 @@ from math import ceil
 from padle.menu.closable_embed import ClosableEmbedMenu
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
+from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.monsterdiff import MonsterDiff
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
 from redbot.core import Config, commands
@@ -22,7 +23,6 @@ from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
 from tsutils.helper_functions import conditional_iterator
 from tsutils.menu.components.config import BotConfig
-from tsutils.menu.components.footers import TSUBAKI_FLOWER_ICON_URL
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
@@ -40,7 +40,7 @@ logger = logging.getLogger('red.padbot-cogs.padle')
 
 class PADle(commands.Cog):
     """A Wordle game for PAD"""
-    
+
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
     menu_map = padle_menu_map
@@ -51,7 +51,7 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=datetime.datetime.now().day, 
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=datetime.datetime.now().day,
                                     num_days=1, subs=[], all_scores=[], save_daily_scores=[],
                                     monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
@@ -93,11 +93,10 @@ class PADle(commands.Cog):
         self._daily_padle_loop.cancel()
 
     async def get_menu_default_data(self, ims):
-        user = self.bot.get_user(ims['original_author_id'])
         data = {
             'dbcog': await self.get_dbcog(),
             'user_config': await BotConfig.get_user(self.config, ims['original_author_id']),
-            'today_guesses': await self.get_today_guesses(user, ims.get('current_day'))
+            'padle_cog': self,
         }
         return data
 
@@ -220,31 +219,20 @@ class PADle(commands.Cog):
         num_days = await self.config.num_days()
         if day <= 0 or day > num_days:
             day = await self.config.num_days()
+
         if day == num_days:
             stats = await self.config.all_scores()
-            giveups = 0
-            completes = 0
-            average = 0
-            for item in stats:
-                if item == "X":
-                    giveups += 1
-                else:
-                    completes += 1
-                    average += int(item)
-            embed = discord.Embed(title="PADle #{} Stats".format(await self.config.num_days()), type="rich")
-            if completes == 0:
-                embed.description = (f"**Total Wins**: {completes}\n**Total Losses**: {giveups}\n**Win Rate**: 0%\n"
-                                     "**Average Guess Count**: 0")
-            else:
-                embed.description = ("**Total Wins**: {}\n**Total Losses**: {}\n**Win Rate**: {:.2%}\n"
-                                     "**Average Guess Count**: {:.2f}").format(completes, giveups,
-                                                                               completes / (completes + giveups),
-                                                                               (average / completes))
-            embed.set_footer(text=f"Try {ctx.prefix}padle globalstats [day] for other day's stats!",
-                             icon_url=TSUBAKI_FLOWER_ICON_URL)
+            monster = None
         else:
-            embed = await self.get_past_padle_embed(ctx, day)
-        await ctx.send(embed=embed)
+            dbcog = await self.get_dbcog()
+            all = await self.config.save_daily_scores()
+            stats = all[day - 1][1]
+            monster = dbcog.get_monster(all[day - 1][0])
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
+        global_stats_menu = GlobalStatsMenu.menu()
+        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "", 
+                                     current_day=day, num_days=num_days, monster=monster, stats=stats)
+        await global_stats_menu.create(ctx, state)
 
     @padle.command()
     async def stats(self, ctx):
@@ -292,38 +280,6 @@ class PADle(commands.Cog):
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(m.monster_id))).to_embed()
         await ctx.send(embed=m_embed)
-
-    async def get_past_padle_embed(self, ctx, day: int):
-        dbcog = await self.get_dbcog()
-        daily_scores = await self.config.save_daily_scores()
-        info = daily_scores[day - 1]
-        stats = info[1]
-        giveups = 0
-        completes = 0
-        average = 0
-        for item in stats:
-            if item == "X":
-                giveups += 1
-            else:
-                completes += 1
-                average += int(item)
-        guess_monster = dbcog.get_monster(int(info[0]))
-        embed = EmbedView(
-            EmbedMain(
-                title="PADle #{} Stats".format(day)),
-            embed_thumbnail=EmbedThumbnail(
-                MonsterImage.icon(guess_monster.monster_id))).to_embed()
-        if completes == 0:
-            embed.description = ("**" + MonsterHeader.menu_title(guess_monster).to_markdown() + "**\n" +
-                                 "**Total Wins**: {}\n**Total Losses**: {}\n**Win Rate**: 0%\n"
-                                 "**Average Guess Count**: 0").format(completes, giveups)
-        else:
-            embed.description = ("**" + MonsterHeader.menu_title(guess_monster).to_markdown() + "**\n" +
-                                 "**Total Wins**: {}\n**Total Losses**: {}\n**Win Rate**: {:.2%}\n"
-                                 "**Average Guess Count**: {:.2f}").format(completes, giveups,
-                                                                           completes / (completes + giveups),
-                                                                           (average / completes))
-        return embed
 
     async def do_quit_early(self, ctx):
         prefix = ctx.prefix
@@ -652,7 +608,7 @@ class PADle(commands.Cog):
                     await self.config.monsters_list.set(valid)
                     return await ctx.tick()
                 await send_cancellation_message(ctx, "The following IDs were invalid: "
-                                                f"{', '.join(invalid)}. Please remove them and try again.")
+                                                     f"{', '.join(invalid)}. Please remove them and try again.")
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
                 logger.exception(str(e))
@@ -773,7 +729,7 @@ class PADle(commands.Cog):
             raise
         except Exception:
             logger.exception("Error in loop:")
-    
+
     @padleadmin.command()
     async def filter(self, ctx):
         """Re-creates the list of monsters"""
@@ -784,15 +740,15 @@ class PADle(commands.Cog):
         mgraph = dbcog.database.graph
         final = []
         # await ctx.send(mgraph.max_monster_id)
-        for i in range(1, 8800): # hard coded bc max_monster_id as calculated above is 15k???
+        for i in range(1, 8800):  # hard coded bc max_monster_id as calculated above is 15k???
             monster = await dbcog.find_monster(str(i), ctx.author)
             with suppress(Exception):
                 nextTrans = mgraph.get_next_transform(monster)
                 prevTrans = mgraph.get_prev_transform(monster)
-                if(monster is not None and monster.name_en is not None and monster.on_na and
-                    monster.series.series_type != 'collab' and
-                    ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-                     "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+                if (monster is not None and monster.name_en is not None and monster.on_na and
+                        monster.series.series_type != 'collab' and
+                        ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
+                         "Super Reincarnated" in monster.name_en) and not monster.is_equip and
                         nextTrans is None and monster.level >= 99):
                     final.append(str(i))
         with open("result.txt", "w") as file:
