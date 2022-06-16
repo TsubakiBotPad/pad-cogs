@@ -587,19 +587,19 @@ class PADle(commands.Cog):
         result = []
         valids = []
         monsters_list = await self.config.monsters_list()
-        for id in ids:
-            m = dbcog.get_monster(id)
+        for monster_id in ids:
+            m = dbcog.get_monster(monster_id)
             if m is None:
-                result.append(f"{id} is not a valid monster ID.")
+                result.append(f"{monster_id} is not a valid monster ID.")
                 continue
             if not m.on_na or m.name_en is None:
-                result.append(f"{id} is not a monster on the NA server.")
+                result.append(f"{monster_id} is not a monster on the NA server.")
                 continue
-            if int(id) in monsters_list:
+            if monster_id in monsters_list:
                 result.append(
                     f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} is already a possible PADle.")
                 continue
-            valids.append(int(id))
+            valids.append(monster_id)
             result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} was added.")
         async with self.config.monsters_list() as m_list:
             m_list.extend(valids)
@@ -785,17 +785,21 @@ class PADle(commands.Cog):
         final = []
         for i in range(1, mgraph.max_monster_id):
             monster = dbcog.get_monster(i)
-            with suppress(Exception):
-                nextTrans = mgraph.get_next_transform(monster)
-                prevTrans = mgraph.get_prev_transform(monster)
-                if(monster is not None and monster.name_en is not None and monster.on_na and
-                    monster.series.series_type != 'collab' and
-                    ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-                     "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-                        nextTrans is None and monster.level >= 99):
-                    final.append(str(i))
+            if monster is None:
+                continue
+            if(self.is_valid_padle(monster, mgraph)):
+                final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
         with open("result.txt", "rb") as file:
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
+        
+    def is_valid_padle(monster, mgraph):
+        nextTrans = mgraph.get_next_transform(monster)
+        prevTrans = mgraph.get_prev_transform(monster)
+        return (monster.name_en is not None and monster.on_na and
+                monster.series.series_type != 'collab' and
+                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or 
+                 "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+                nextTrans is None and monster.level >= 99)
