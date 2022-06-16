@@ -1,22 +1,26 @@
 import asyncio
-import re
+import csv
 import discord
+import itertools
 import json
 import logging
 import random
-import csv
+import re
 from contextlib import suppress
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
 from io import BytesIO, StringIO
 from math import ceil
+from padle.help_texts import HELP_TEXT, RULES_TEXT
 from padle.menu.closable_embed import ClosableEmbedMenu
+from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
-from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
+from padle.menu.personal_stats import PersonalStatsMenu
 from padle.monsterdiff import MonsterDiff
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
+from padle.view.personal_stats_view import PersonalStatsView, PersonalStatsViewProps
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import pagify
 from tsutils.cogs.globaladmin import auth_check
@@ -25,6 +29,8 @@ from tsutils.helper_functions import conditional_iterator
 from tsutils.menu.components.config import BotConfig
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
+from tsutils.time import NA_TIMEZONE
+from tsutils.tsubaki.custom_emoji import get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
@@ -43,8 +49,6 @@ class PADle(commands.Cog):
 
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
-    # Set hours to preferred timezone offset from UTC for day change calculations
-    tzinfo = timezone(timedelta(hours = -8.0))
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -53,8 +57,8 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, 
-                                    stored_day=datetime.now(self.tzinfo).day, num_days=1, subs=[], 
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER,
+                                    stored_day=self._day_today(), num_days=1, subs=[],
                                     all_scores=[], save_daily_scores=[], monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
@@ -66,7 +70,7 @@ class PADle(commands.Cog):
         """Get a user's personal data."""
         all_guesses = await self.config.user_from_id(user_id).all_guesses()
         if all_guesses:
-            data = (f"You have {len(all_guesses)} days of guess data stored."
+            data = (f"You have {len(all_guesses)} days of guess data stored. "
                     f"Here are your guesses:\n{json.dumps(all_guesses)}")
         else:
             data = f"No data is stored for user with ID {user_id}."
@@ -109,6 +113,9 @@ class PADle(commands.Cog):
             return {}
         return (await self.config.user(user).all_guesses()).get(str(current_day))
 
+    def _day_today(self):
+        return datetime.now(NA_TIMEZONE).day
+
     @commands.group()
     async def padle(self, ctx):
         """Commands pertaining to PADle"""
@@ -121,14 +128,16 @@ class PADle(commands.Cog):
     @padle.command()
     async def help(self, ctx):
         """Instructions for PADle"""
-        prefix = ctx.prefix
-        await ctx.send("- PADle is similar to Wordle, except for PAD cards.\n"
-                       "- You have infinite tries to guess the hidden PAD card (chosen from a list "
-                       "of more well-known monsters). Everyone is trying to guess the same PAD card. "
-                       "With each guess, you are given feedback as to how similar the two cards are, "
-                       "including comparing the awakenings, rarity, typings, attributes, and monster "
-                       "point sell value.\n- A new PADle is available every day. "
-                       "Use `{}padle start` to begin!".format(prefix))
+        await ctx.send(self._get_help_text(ctx))
+
+    def _get_help_text(self, ctx):
+        args = {"db": get_emoji("db"), "p": ctx.prefix, "tsubaki": get_emoji("tsubaki")}
+        return HELP_TEXT.format(**args)
+
+    @padle.command()
+    async def validrules(self, ctx):
+        args = {"db": get_emoji("db"), "rd": get_emoji("rd")}
+        await ctx.send(RULES_TEXT.format(**args))
 
     @padle.command(aliases=["sub"])
     async def subscribe(self, ctx, sub_arg: bool = True):
@@ -201,11 +210,17 @@ class PADle(commands.Cog):
                                        f" use `{prefix}padle resend`.",
                            color=discord.Color.teal())
         if await self.can_play_in_guild(ctx):
+            if len(await self.config.user(ctx.author).all_guesses()) == 0:
+                await ctx.send("Hello! It looks like this is your first PADle game.")
+                await ctx.send(self._get_help_text(ctx))
             await ctx.send(embed=em)
             await self.config.user(ctx.author).start.set(True)
             return
         # else
         try:
+            if len(await self.config.user(ctx.author).all_guesses()) == 0:
+                await ctx.author.send("Hello! It looks like this is your first PADle game.")
+                await ctx.author.send(self._get_help_text(ctx))
             await ctx.author.send(embed=em)
         except discord.HTTPException:
             return await send_cancellation_message(ctx,
@@ -231,7 +246,7 @@ class PADle(commands.Cog):
             monster = dbcog.get_monster(all[day - 1][0])
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
         global_stats_menu = GlobalStatsMenu.menu()
-        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "", 
+        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "",
                                      current_day=day, num_days=num_days, monster=monster, stats=stats)
         await global_stats_menu.create(ctx, state)
 
@@ -258,27 +273,21 @@ class PADle(commands.Cog):
                 wins += 1
             elif day != await self.config.num_days() or await self.config.user(ctx.author).done():
                 cur_streak = 0
-            if cur_streak > max_streak:
-                max_streak = cur_streak
-        all_monsters_guessed = []
-        for key, value in all_guesses.items():
-            all_monsters_guessed.extend(value)
+            max_streak = max(max_streak, cur_streak)
+        flatten = itertools.chain.from_iterable
+        all_monsters_guessed = list(flatten(all_guesses.values()))
         if not all_monsters_guessed:
             all_monsters_guessed.append(self.FALLBACK_PADLE_MONSTER)
         mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
-        m_embed = EmbedView(
-            EmbedMain(
-                title=f"{ctx.author.name}'s PADle Stats",
-                description=(f"**Games Played**: {played}\n"
-                             f"**Win Rate**: {wins / played:.2%}\n"
-                             f"**Current Streak**: {cur_streak}\n"
-                             f"**Max Streak**: {max_streak}\n"
-                             f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(m).to_markdown()}")),
-            embed_thumbnail=EmbedThumbnail(
-                MonsterImage.icon(m.monster_id))).to_embed()
-        await ctx.send(embed=m_embed)
+        menu = PersonalStatsMenu.menu()
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
+        props = PersonalStatsViewProps(query_settings, ctx.author.name, played, wins / played,
+                                       cur_streak, max_streak, m)
+        state = ClosableEmbedViewState(ctx.author.id, PersonalStatsMenu.MENU_TYPE, "", query_settings,
+                                       PersonalStatsView.VIEW_TYPE, props)
+        await menu.create(ctx, state)
 
     async def do_quit_early(self, ctx):
         prefix = ctx.prefix
@@ -443,7 +452,7 @@ class PADle(commands.Cog):
 
     async def generate_padle(self):
         async def is_day_change():
-            cur_day = datetime.now(self.tzinfo).day
+            cur_day = self._day_today()
             old_day = await self.config.stored_day()
             if cur_day != old_day:
                 await self.config.stored_day.set(cur_day)
@@ -510,7 +519,7 @@ class PADle(commands.Cog):
             await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
         else:
             await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
-        await self.config.stored_day.set(datetime.now(self.tzinfo).day)
+        await self.config.stored_day.set(self._day_today())
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
         await self.config.subs.set([])
@@ -688,7 +697,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "The PADle was unchanged.")
         try:
-            await self.config.stored_day.set(datetime.now(self.tzinfo).day)
+            await self.config.stored_day.set(self._day_today())
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
             tmrw_padle = await self.config.tmrw_padle()
@@ -737,25 +746,37 @@ class PADle(commands.Cog):
     async def filter(self, ctx):
         """Re-creates the list of monsters"""
         dbcog = await self.get_dbcog()
-        mgraph = dbcog.database.graph
+        graph = dbcog.database.graph
         final = []
-        for i in range(1, mgraph.max_monster_id):
+        for i in range(1, graph.max_monster_id + 1):
             monster = dbcog.get_monster(i)
             if monster is None:
                 continue
-            if(self.is_valid_padle(monster, mgraph)):
+            if self.is_valid_padle(monster, graph):
                 final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
         with open("result.txt", "rb") as file:
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
-        
-    def is_valid_padle(monster, mgraph):
-        nextTrans = mgraph.get_next_transform(monster)
-        prevTrans = mgraph.get_prev_transform(monster)
-        return (monster.name_en is not None and monster.on_na and
+
+    def is_valid_padle(self, monster, graph):
+        next_trans = graph.get_next_transform(monster)
+        prev_trans = graph.get_prev_transform(monster)
+        return (  # Monster is in NA
+                monster.name_en is not None and monster.on_na and
+                # No collab monsters
                 monster.series.series_type != 'collab' and
-                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or 
-                 "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-                nextTrans is None and monster.level >= 99)
+                # No equips
+                not monster.is_equip and
+                # No monsters with next transforms
+                next_trans is None and
+                monster.level >= 99 and
+                # A GFE (max transformed or has SA)
+                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prev_trans is not None)) or
+                 # OR a Super Reincarnated evo of a pantheon
+                 ("Super Reincarnated" in monster.name_en and monster.sell_mp == 5000) or
+                 # OR 15k non-collab, non-event monsters with SA / max transformed
+                 (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prev_trans is not None) and
+                  monster.series.series_type == 'regular'))
+        )

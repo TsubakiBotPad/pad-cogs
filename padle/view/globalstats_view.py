@@ -10,11 +10,10 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.query_settings.query_settings import QuerySettings
 
 
-
 class GlobalStatsViewState(ViewStateBase):
     VIEW_STATE_TYPE: str = "PADleGlobalStatsView"
 
-    def __init__(self, original_author_id, menu_type, query_settings: QuerySettings, raw_query="", 
+    def __init__(self, original_author_id, menu_type, query_settings: QuerySettings, raw_query="",
                  current_day=0, num_days=0, extra_state=None, reaction_list=None, monster=None, stats=[]):
         super().__init__(original_author_id, menu_type, raw_query,
                          extra_state=extra_state)
@@ -77,7 +76,7 @@ class GlobalStatsView:
     @classmethod
     def get_pages_footer(cls, state):
         return "Day " + str(state.current_day) + "/" + str(state.num_days)
-    
+
     @staticmethod
     def embed(state: GlobalStatsViewState):
         description = GlobalStatsView.get_description(state)
@@ -99,7 +98,7 @@ class GlobalStatsView:
                 embed_fields=[EmbedField("Stats", Box(description))],
                 embed_footer=embed_footer_with_state(state, text=GlobalStatsView.get_pages_footer(state)),
                 embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)))
-    
+
     @classmethod
     def get_description(cls, state):
         giveups = 0
