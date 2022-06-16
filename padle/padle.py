@@ -1,11 +1,11 @@
 import asyncio
-import re
+import csv
 import discord
 import itertools
 import json
 import logging
 import random
-import csv
+import re
 from contextlib import suppress
 from datetime import datetime, timezone, timedelta
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
@@ -13,20 +13,20 @@ from discordmenu.embed.view import EmbedView
 from io import BytesIO, StringIO
 from math import ceil
 from padle.menu.closable_embed import ClosableEmbedMenu
+from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.menu.menu_map import padle_menu_map
 from padle.menu.padle_scroll import PADleScrollMenu, PADleScrollViewState
-from padle.menu.globalstats import GlobalStatsMenu, GlobalStatsViewState
 from padle.monsterdiff import MonsterDiff
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import pagify
-from dbcog.models.enum_types import InternalEvoType
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
 from tsutils.helper_functions import conditional_iterator
 from tsutils.menu.components.config import BotConfig
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
+from tsutils.tsubaki.custom_emoji import get_emoji
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_confirmation_message, send_cancellation_message, \
@@ -39,14 +39,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.padle')
 
-
 class PADle(commands.Cog):
     """A Wordle game for PAD"""
 
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
     # Set hours to preferred timezone offset from UTC for day change calculations
-    tzinfo = timezone(timedelta(hours = -8.0))
+    tzinfo = timezone(timedelta(hours=-8.0))
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -55,8 +54,8 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, 
-                                    stored_day=self._day_today(), num_days=1, subs=[], 
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER,
+                                    stored_day=self._day_today(), num_days=1, subs=[],
                                     all_scores=[], save_daily_scores=[], monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
@@ -126,14 +125,41 @@ class PADle(commands.Cog):
     @padle.command()
     async def help(self, ctx):
         """Instructions for PADle"""
-        prefix = ctx.prefix
-        await ctx.send("- PADle is similar to Wordle, except for PAD cards.\n"
-                       "- You have infinite tries to guess the hidden PAD card (chosen from a list "
-                       "of more well-known monsters). Everyone is trying to guess the same PAD card. "
-                       "With each guess, you are given feedback as to how similar the two cards are, "
-                       "including comparing the awakenings, rarity, typings, attributes, and monster "
-                       "point sell value.\n- A new PADle is available every day. "
-                       "Use `{}padle start` to begin!".format(prefix))
+        await ctx.send(self._get_help_text(ctx))
+    
+    def _get_help_text(self, ctx):
+        args = {"db": get_emoji("db"), "p": ctx.prefix, "tsubaki": get_emoji("tsubaki")}
+        help_text = """PADle is a Wordle-inspired guessing game, but with some differences!
+{db} You are not guessing words! Instead, you are guessing monsters.
+{db} The difference is based on awakenings, rarity, monster points, and a few other attributes. \
+Your current score screen will tell you if your guesses are correct, wrong, or misplaced (for awakenings).
+{db} Because this can be much harder than guessing words, you have infinite guesses!
+{db} Like Wordle, you can guess any monster, but only certain monsters can be the final PADle. \
+See `{p}padle validrules` to see what monsters count as "valid" final PADles.
+{db} Share your number of guesses with `{p}padle score`!
+
+To see the main menu at any time, type `{p}padle`. To see this specific greeting again, type `{p}padle help`.
+
+Happy puzzling! {tsubaki}""".format(**args)
+        return help_text
+
+    @padle.command()
+    async def validrules(self, ctx):
+        args = {"db": get_emoji("db"), "rd": get_emoji("rd")}
+        rules_text = """Valid monsters include the following:
+{db} Super Reincarnated evolutions of pantheons
+{db} 50k+ MP AND [have a Super Awakening OR are max transformed]
+{db} 15k MP AND are non-event AND [have a Super Awakening OR are max transformed]
+        
+The following monsters are exceptions to the above and will NOT be included:
+{rd} Collab monsters (note this does not exclude Event monsters such as from Heroine or Relic Saga)
+{rd} An equip evolution
+{rd} Monsters not on the NA server
+{rd} Monsters that are not max-transformed
+
+*NOTE: The Super Awakening check ensures monsters chosen are max-evo, for the most part.*
+""".format(**args)
+        await ctx.send(rules_text)
 
     @padle.command(aliases=["sub"])
     async def subscribe(self, ctx, sub_arg: bool = True):
@@ -206,11 +232,17 @@ class PADle(commands.Cog):
                                        f" use `{prefix}padle resend`.",
                            color=discord.Color.teal())
         if await self.can_play_in_guild(ctx):
+            if len(await self.config.user(ctx.author).all_guesses()) == 0:
+                await ctx.send("Hello! It looks like tihs is your first PADle game.")
+                await ctx.send(self._get_help_text(ctx))
             await ctx.send(embed=em)
             await self.config.user(ctx.author).start.set(True)
             return
         # else
         try:
+            if len(await self.config.user(ctx.author).all_guesses()) == 0:
+                await ctx.author.send("Hello! It looks like tihs is your first PADle game.")
+                await ctx.author.send(self._get_help_text(ctx))
             await ctx.author.send(embed=em)
         except discord.HTTPException:
             return await send_cancellation_message(ctx,
@@ -236,7 +268,7 @@ class PADle(commands.Cog):
             monster = dbcog.get_monster(all[day - 1][0])
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
         global_stats_menu = GlobalStatsMenu.menu()
-        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "", 
+        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "",
                                      current_day=day, num_days=num_days, monster=monster, stats=stats)
         await global_stats_menu.create(ctx, state)
 
@@ -746,32 +778,31 @@ class PADle(commands.Cog):
             monster = dbcog.get_monster(i)
             if monster is None:
                 continue
-            if(self.is_valid_padle(monster, mgraph)):
+            if (self.is_valid_padle(monster, mgraph)):
                 final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
         with open("result.txt", "rb") as file:
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
-        
+
     def is_valid_padle(self, monster, mgraph):
-        nextTrans = mgraph.get_next_transform(monster)
-        prevTrans = mgraph.get_prev_transform(monster)
-        return (
-            # Monster is in NA
+        next_trans = mgraph.get_next_transform(monster)
+        prev_trans = mgraph.get_prev_transform(monster)
+        return (  # Monster is in NA
                 monster.name_en is not None and monster.on_na and
-            # No collab monsters
+                # No collab monsters
                 monster.series.series_type != 'collab' and
-            # No equips
+                # No equips
                 not monster.is_equip and
-            # No monsters with next transforms
-                nextTrans is None and
+                # No monsters with next transforms
+                next_trans is None and
                 monster.level >= 99 and
-            # A GFE (max transformed or has SA)
-                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or 
-            # OR a Super Reincarnated evo
-                "Super Reincarnated" in monster.name_en) or 
-            # OR 15k non-collab, non-event monsters with SA / max transformed
-                (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prevTrans is not None) and 
-                 monster.series.series_type == 'regular')
+                # A GFE (max transformed or has SA)
+                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prev_trans is not None)) or
+                 # OR a Super Reincarnated evo of a pantheon
+                 ("Super Reincarnated" in monster.name_en and monster.sell_mp == 5000) or
+                # OR 15k non-collab, non-event monsters with SA / max transformed
+                (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prev_trans is not None) and
+                 monster.series.series_type == 'regular'))
         )
