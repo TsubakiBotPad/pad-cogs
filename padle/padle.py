@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import re
 import discord
 import json
@@ -7,6 +6,7 @@ import logging
 import random
 import csv
 from contextlib import suppress
+from datetime import datetime, timezone, timedelta
 from discordmenu.embed.components import EmbedThumbnail, EmbedMain
 from discordmenu.embed.view import EmbedView
 from io import BytesIO, StringIO
@@ -43,6 +43,8 @@ class PADle(commands.Cog):
 
     # Used if no monster list is set
     FALLBACK_PADLE_MONSTER = 3260
+    # Set hours to preferred timezone offset from UTC for day change calculations
+    tzinfo = timezone(timedelta(hours = -8.0))
     menu_map = padle_menu_map
 
     def __init__(self, bot, *args, **kwargs):
@@ -51,9 +53,9 @@ class PADle(commands.Cog):
         self.config = Config.get_conf(self, identifier=94073)
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
-        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, stored_day=datetime.datetime.now().day,
-                                    num_days=1, subs=[], all_scores=[], save_daily_scores=[],
-                                    monsters_list=[], tmrw_padle=0)
+        self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, 
+                                    stored_day=datetime.now(self.tzinfo).day, num_days=1, subs=[], 
+                                    all_scores=[], save_daily_scores=[], monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
         GACOG: Any = self.bot.get_cog("GlobalAdmin")
@@ -64,8 +66,8 @@ class PADle(commands.Cog):
         """Get a user's personal data."""
         all_guesses = await self.config.user_from_id(user_id).all_guesses()
         if all_guesses:
-            data = f"You have {len(all_guesses)} days of guess data stored."
-            f"Here are your guesses:\n{json.dumps(all_guesses)}"
+            data = (f"You have {len(all_guesses)} days of guess data stored."
+                    f"Here are your guesses:\n{json.dumps(all_guesses)}")
         else:
             data = f"No data is stored for user with ID {user_id}."
         return {"user_data.txt": BytesIO(data.encode())}
@@ -105,8 +107,7 @@ class PADle(commands.Cog):
             return None
         if user is None:
             return {}
-        async with self.config.user(user).all_guesses() as all_guesses:
-            return all_guesses.get(str(current_day))
+        return (await self.config.user(user).all_guesses()).get(str(current_day))
 
     @commands.group()
     async def padle(self, ctx):
@@ -210,7 +211,7 @@ class PADle(commands.Cog):
             return await send_cancellation_message(ctx,
                                                    "Looks like I can't DM you. Try checking your Privacy Settings.")
         if ctx.guild is not None:
-            await send_confirmation_message(ctx, "Check your DMs!")
+            await send_confirmation_message(ctx, f"{ctx.author.name}, check your DMs!")
         await self.config.user(ctx.author).start.set(True)
 
     @padle.command()
@@ -252,20 +253,18 @@ class PADle(commands.Cog):
                 correct_id = await self.config.padle_today()
             else:
                 correct_id = save_daily[day - 1][0]
-            if str(day) in all_guesses and len(all_guesses[str(day)]) != 0 and all_guesses[str(day)][-1] == correct_id:
+            if str(day) in all_guesses and correct_id in all_guesses[str(day)]:
                 cur_streak += 1
                 wins += 1
-            else:
-                if cur_streak > max_streak:
-                    max_streak = cur_streak
-                if day != await self.config.num_days():
-                    cur_streak = 0
-
-        if cur_streak > max_streak:
-            max_streak = cur_streak
+            elif day != await self.config.num_days() or await self.config.user(ctx.author).done():
+                cur_streak = 0
+            if cur_streak > max_streak:
+                max_streak = cur_streak
         all_monsters_guessed = []
         for key, value in all_guesses.items():
             all_monsters_guessed.extend(value)
+        if not all_monsters_guessed:
+            all_monsters_guessed.append(self.FALLBACK_PADLE_MONSTER)
         mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
@@ -444,7 +443,7 @@ class PADle(commands.Cog):
 
     async def generate_padle(self):
         async def is_day_change():
-            cur_day = datetime.datetime.now().day
+            cur_day = datetime.now(self.tzinfo).day
             old_day = await self.config.stored_day()
             if cur_day != old_day:
                 await self.config.stored_day.set(cur_day)
@@ -506,8 +505,12 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "Nothing was reset.")
 
-        await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
-        await self.config.stored_day.set(datetime.datetime.now().day)
+        MONSTERS_LIST = await self.config.monsters_list()
+        if len(MONSTERS_LIST) == 0:
+            await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
+        else:
+            await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
+        await self.config.stored_day.set(datetime.now(self.tzinfo).day)
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
         await self.config.subs.set([])
@@ -540,19 +543,19 @@ class PADle(commands.Cog):
         result = []
         valids = []
         monsters_list = await self.config.monsters_list()
-        for id in ids:
-            m = dbcog.get_monster(id)
+        for monster_id in ids:
+            m = dbcog.get_monster(monster_id)
             if m is None:
-                result.append(f"{str(id)} is not a valid monster ID.")
+                result.append(f"{monster_id} is not a valid monster ID.")
                 continue
             if not m.on_na or m.name_en is None:
-                result.append(f"{str(id)} is not a monster on the NA server.")
+                result.append(f"{monster_id} is not a monster on the NA server.")
                 continue
-            if int(id) in monsters_list:
+            if monster_id in monsters_list:
                 result.append(
                     f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} is already a possible PADle.")
                 continue
-            valids.append(int(id))
+            valids.append(monster_id)
             result.append(f"{MonsterHeader.menu_title(m, use_emoji=True).to_markdown()} was added.")
         async with self.config.monsters_list() as m_list:
             m_list.extend(valids)
@@ -611,7 +614,7 @@ class PADle(commands.Cog):
                                                      f"{', '.join(invalid)}. Please remove them and try again.")
             except Exception as e:
                 await send_cancellation_message(ctx, "Something went wrong.")
-                logger.exception(str(e))
+                logger.exception("Error when setting CSV of PADles.")
         else:
             return await send_cancellation_message(ctx, "Looks like no file was attached!")
 
@@ -685,7 +688,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "The PADle was unchanged.")
         try:
-            await self.config.stored_day.set(datetime.datetime.now().day)
+            await self.config.stored_day.set(datetime.now(self.tzinfo).day)
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
             tmrw_padle = await self.config.tmrw_padle()
@@ -733,26 +736,26 @@ class PADle(commands.Cog):
     @padleadmin.command()
     async def filter(self, ctx):
         """Re-creates the list of monsters"""
-        confirmation = await get_user_confirmation(ctx, "This command will take a long time to execute. Run anyways?")
-        if not confirmation:
-            return
         dbcog = await self.get_dbcog()
         mgraph = dbcog.database.graph
         final = []
-        # await ctx.send(mgraph.max_monster_id)
-        for i in range(1, 8800):  # hard coded bc max_monster_id as calculated above is 15k???
-            monster = await dbcog.find_monster(str(i), ctx.author)
-            with suppress(Exception):
-                nextTrans = mgraph.get_next_transform(monster)
-                prevTrans = mgraph.get_prev_transform(monster)
-                if (monster is not None and monster.name_en is not None and monster.on_na and
-                        monster.series.series_type != 'collab' and
-                        ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or
-                         "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-                        nextTrans is None and monster.level >= 99):
-                    final.append(str(i))
+        for i in range(1, mgraph.max_monster_id):
+            monster = dbcog.get_monster(i)
+            if monster is None:
+                continue
+            if(self.is_valid_padle(monster, mgraph)):
+                final.append(str(i))
         with open("result.txt", "w") as file:
             file.write(",".join(final))
         with open("result.txt", "rb") as file:
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
+        
+    def is_valid_padle(monster, mgraph):
+        nextTrans = mgraph.get_next_transform(monster)
+        prevTrans = mgraph.get_prev_transform(monster)
+        return (monster.name_en is not None and monster.on_na and
+                monster.series.series_type != 'collab' and
+                ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or 
+                 "Super Reincarnated" in monster.name_en) and not monster.is_equip and
+                nextTrans is None and monster.level >= 99)
