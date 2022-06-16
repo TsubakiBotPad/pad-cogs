@@ -1,4 +1,4 @@
-from discordmenu.embed.components import EmbedMain, EmbedThumbnail
+from discordmenu.embed.components import EmbedMain, EmbedThumbnail, EmbedField
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText
@@ -84,18 +84,19 @@ class GlobalStatsView:
         if state.num_days == state.current_day:
             return EmbedView(
                 EmbedMain(
-                    title=f"**PADle #{state.current_day} Stats**",
-                    description=description,
+                    title=BoldText(f"PADle #{state.current_day}"),
                     color=state.query_settings.embedcolor,
                 ),
+                embed_fields=[EmbedField("Stats", Box(description))],
                 embed_footer=embed_footer_with_state(state, text=GlobalStatsView.get_pages_footer(state)))
         else:
             return EmbedView(
                 EmbedMain(
-                    title=f"**PADle #{state.current_day} Stats**",
-                    description=Box(BoldText(MonsterHeader.menu_title(state.monster).to_markdown()), Box(description), delimiter="\n\n"),
+                    title=BoldText(f"PADle #{state.current_day}"),
+                    description=Box(BoldText(MonsterHeader.menu_title(state.monster).to_markdown())),
                     color=state.query_settings.embedcolor,
                 ),
+                embed_fields=[EmbedField("Stats", Box(description))],
                 embed_footer=embed_footer_with_state(state, text=GlobalStatsView.get_pages_footer(state)),
                 embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)))
     
