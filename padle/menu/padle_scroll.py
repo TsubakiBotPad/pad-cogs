@@ -34,7 +34,6 @@ class PADleScrollMenu:
 
     @classmethod
     async def respond_with_left(cls, message: Optional[Message], ims, **data):
-        # PADleScrollMenu.decrement_page(ims)
         if ims['current_page'] < PADleScrollMenu.get_num_pages_ims(ims) - 1:
             ims['current_page'] = ims['current_page'] + 1
         else:
@@ -53,8 +52,8 @@ class PADleScrollMenu:
     async def respond_with_pane(cls, message: Optional[Message], ims, **data) -> EmbedWrapper:
         dbcog = data['dbcog']
         user_config = data['user_config']
-        today_guesses = data['today_guesses']
-        view_state = await PADleScrollViewState.deserialize(dbcog, user_config, today_guesses, ims)
+        padle_cog = data['padle_cog']
+        view_state = await PADleScrollViewState.deserialize(dbcog, padle_cog, user_config, ims)
         return PADleScrollMenu.control(view_state)
 
     @staticmethod
