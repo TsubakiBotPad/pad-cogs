@@ -1,6 +1,7 @@
 import asyncio
 import re
 import discord
+import itertools
 import json
 import logging
 import random
@@ -19,6 +20,7 @@ from padle.monsterdiff import MonsterDiff
 from padle.view.confirmation import PADleMonsterConfirmationView, PADleMonsterConfirmationViewProps
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import pagify
+from dbcog.models.enum_types import InternalEvoType
 from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
 from tsutils.helper_functions import conditional_iterator
@@ -54,7 +56,7 @@ class PADle(commands.Cog):
         self.config.register_user(todays_guesses=[], start=False, done=False, score=[],
                                   edit_id=0, channel_id=0, all_guesses={})
         self.config.register_global(padle_today=self.FALLBACK_PADLE_MONSTER, 
-                                    stored_day=datetime.now(self.tzinfo).day, num_days=1, subs=[], 
+                                    stored_day=self._day_today(), num_days=1, subs=[], 
                                     all_scores=[], save_daily_scores=[], monsters_list=[], tmrw_padle=0)
         self.config.register_guild(allow=False)
         self._daily_padle_loop = bot.loop.create_task(self.generate_padle())
@@ -66,7 +68,7 @@ class PADle(commands.Cog):
         """Get a user's personal data."""
         all_guesses = await self.config.user_from_id(user_id).all_guesses()
         if all_guesses:
-            data = (f"You have {len(all_guesses)} days of guess data stored."
+            data = (f"You have {len(all_guesses)} days of guess data stored. "
                     f"Here are your guesses:\n{json.dumps(all_guesses)}")
         else:
             data = f"No data is stored for user with ID {user_id}."
@@ -108,6 +110,9 @@ class PADle(commands.Cog):
         if user is None:
             return {}
         return (await self.config.user(user).all_guesses()).get(str(current_day))
+
+    def _day_today(self):
+        return datetime.now(self.tzinfo).day
 
     @commands.group()
     async def padle(self, ctx):
@@ -258,11 +263,9 @@ class PADle(commands.Cog):
                 wins += 1
             elif day != await self.config.num_days() or await self.config.user(ctx.author).done():
                 cur_streak = 0
-            if cur_streak > max_streak:
-                max_streak = cur_streak
-        all_monsters_guessed = []
-        for key, value in all_guesses.items():
-            all_monsters_guessed.extend(value)
+            max_streak = max(max_streak, cur_streak)
+        flatten = itertools.chain.from_iterable
+        all_monsters_guessed = list(flatten(all_guesses.values()))
         if not all_monsters_guessed:
             all_monsters_guessed.append(self.FALLBACK_PADLE_MONSTER)
         mode = max(set(all_monsters_guessed), key=all_monsters_guessed.count)
@@ -443,7 +446,7 @@ class PADle(commands.Cog):
 
     async def generate_padle(self):
         async def is_day_change():
-            cur_day = datetime.now(self.tzinfo).day
+            cur_day = self._day_today()
             old_day = await self.config.stored_day()
             if cur_day != old_day:
                 await self.config.stored_day.set(cur_day)
@@ -510,7 +513,7 @@ class PADle(commands.Cog):
             await self.config.padle_today.set(self.FALLBACK_PADLE_MONSTER)
         else:
             await self.config.padle_today.set(int(random.choice(MONSTERS_LIST)))
-        await self.config.stored_day.set(datetime.now(self.tzinfo).day)
+        await self.config.stored_day.set(self._day_today())
         await self.config.tmrw_padle.set(0)
         await self.config.num_days.set(1)
         await self.config.subs.set([])
@@ -688,7 +691,7 @@ class PADle(commands.Cog):
         if not confirmation:
             return await send_cancellation_message(ctx, "The PADle was unchanged.")
         try:
-            await self.config.stored_day.set(datetime.now(self.tzinfo).day)
+            await self.config.stored_day.set(self._day_today())
             async with self.config.save_daily_scores() as save_daily:
                 save_daily.append([await self.config.padle_today(), await self.config.all_scores()])
             tmrw_padle = await self.config.tmrw_padle()
@@ -739,7 +742,7 @@ class PADle(commands.Cog):
         dbcog = await self.get_dbcog()
         mgraph = dbcog.database.graph
         final = []
-        for i in range(1, mgraph.max_monster_id):
+        for i in range(1, mgraph.max_monster_id + 1):
             monster = dbcog.get_monster(i)
             if monster is None:
                 continue
@@ -751,11 +754,24 @@ class PADle(commands.Cog):
             await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
         await ctx.tick()
         
-    def is_valid_padle(monster, mgraph):
+    def is_valid_padle(self, monster, mgraph):
         nextTrans = mgraph.get_next_transform(monster)
         prevTrans = mgraph.get_prev_transform(monster)
-        return (monster.name_en is not None and monster.on_na and
+        return (
+            # Monster is in NA
+                monster.name_en is not None and monster.on_na and
+            # No collab monsters
                 monster.series.series_type != 'collab' and
+            # No equips
+                not monster.is_equip and
+            # No monsters with next transforms
+                nextTrans is None and
+                monster.level >= 99 and
+            # A GFE (max transformed or has SA)
                 ((monster.sell_mp >= 50000 and (monster.superawakening_count > 1 or prevTrans is not None)) or 
-                 "Super Reincarnated" in monster.name_en) and not monster.is_equip and
-                nextTrans is None and monster.level >= 99)
+            # OR a Super Reincarnated evo
+                "Super Reincarnated" in monster.name_en) or 
+            # OR 15k non-collab, non-event monsters with SA / max transformed
+                (monster.sell_mp == 15000 and (monster.superawakening_count > 1 or prevTrans is not None) and 
+                 monster.series.series_type == 'regular')
+        )
