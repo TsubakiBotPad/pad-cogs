@@ -136,6 +136,7 @@ class PADle(commands.Cog):
 
     @padle.command()
     async def validrules(self, ctx):
+        """Show rules for the valid-answer monster list"""
         args = {"db": get_emoji("db"), "rd": get_emoji("rd")}
         await ctx.send(RULES_TEXT.format(**args))
 
@@ -193,8 +194,11 @@ class PADle(commands.Cog):
             else:
                 await send_confirmation_message(ctx, "PADles can now be played in this server.")
                 await self.config.guild(ctx.guild).allow.set(True)
-        confirmation = await get_user_confirmation(ctx, "Start today's (#{}) PADle game?".format(
-            await self.config.num_days()), timeout=30, force_delete=False, show_feedback=True)
+        if ctx.guild is None:
+            message = "Start today's (#{}) PADle game?".format(await self.config.num_days())
+        else:
+            message = "{}, start today's (#{}) PADle game?".format(ctx.author.name, await self.config.num_days())
+        confirmation = await get_user_confirmation(ctx, message, timeout=30, force_delete=False, show_feedback=True)
         if confirmation is None:
             return await send_cancellation_message(ctx, "Confirmation timeout.")
         if await self.config.user(ctx.author).start():
