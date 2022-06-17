@@ -144,29 +144,29 @@ class PADle(commands.Cog):
     async def subscribe(self, ctx, sub_arg: bool = True):
         """Subscribe to daily notifications of new PADles"""
         prefix = ctx.prefix
-        async with self.config.subs() as subbed_users:
-            if not sub_arg:
-                if ctx.author.id in subbed_users:
-                    return await self.unsubscribe(ctx)
-                return await send_cancellation_message(ctx, "You are not subscribed.")
-            if ctx.author.id not in subbed_users:
-                subbed_users.append(ctx.author.id)
-                return await send_confirmation_message(ctx, "You will now receive notifications of new PADles. "
-                                                            "You can unsubscribe with `{}padle subscribe 0`.".format(
-                    prefix))
+        subbed_users = await self.config.subs()
+        if not sub_arg:
+            if ctx.author.id in subbed_users:
+                async with self.config.subs() as subs:
+                    subs.remove(ctx.author.id)
+                return await send_confirmation_message(ctx, "You will no longer receive notifications of new PADles.")
+            return await send_cancellation_message(ctx, "You are not subscribed.")
+        if ctx.author.id not in subbed_users:
+            async with self.config.subs() as subs:
+                subs.append(ctx.author.id)
+            return await send_confirmation_message(ctx, "You will now receive notifications of new PADles. "
+                                                        "You can unsubscribe with `{}padle subscribe 0`.".format(
+                prefix))
 
-            confirmation = await get_user_confirmation(ctx, "You are already subscribed. Did you mean to unsubscribe?")
-            if confirmation:
-                await self.unsubscribe(ctx)
-            elif confirmation is None:
-                await send_cancellation_message(ctx, "Confirmation timeout")
-            else:
-                await ctx.send("No changes were made, you will still receive notifications of new PADles.")
-
-    async def unsubscribe(self, ctx):
-        async with self.config.subs() as subs:
-            subs.remove(ctx.author.id)
-        return await send_confirmation_message(ctx, "You will no longer receive notifications of new PADles.")
+        confirmation = await get_user_confirmation(ctx, "You are already subscribed. Did you mean to unsubscribe?")
+        if confirmation:
+            async with self.config.subs() as subs:
+                subs.remove(ctx.author.id)
+            return await send_confirmation_message(ctx, "You will no longer receive notifications of new PADles.")
+        elif confirmation is None:
+            await send_cancellation_message(ctx, "Confirmation timeout")
+        else:
+            await ctx.send("No changes were made, you will still receive notifications of new PADles.")
 
     async def can_play_in_guild(self, ctx):
         return (ctx.guild is not None and ctx.author.guild_permissions.administrator and ctx.guild.member_count < 10 and
