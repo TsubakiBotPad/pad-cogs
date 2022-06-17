@@ -147,7 +147,7 @@ class PADle(commands.Cog):
         async with self.config.subs() as subbed_users:
             if not sub_arg:
                 if ctx.author.id in subbed_users:
-                    return await self.unsubscribe(ctx)
+                    return await self.unsubscribe(ctx, subbed_users)
                 return await send_cancellation_message(ctx, "You are not subscribed.")
             if ctx.author.id not in subbed_users:
                 subbed_users.append(ctx.author.id)
@@ -157,15 +157,14 @@ class PADle(commands.Cog):
 
             confirmation = await get_user_confirmation(ctx, "You are already subscribed. Did you mean to unsubscribe?")
             if confirmation:
-                await self.unsubscribe(ctx)
+                await self.unsubscribe(ctx, subbed_users)
             elif confirmation is None:
                 await send_cancellation_message(ctx, "Confirmation timeout")
             else:
                 await ctx.send("No changes were made, you will still receive notifications of new PADles.")
 
-    async def unsubscribe(self, ctx):
-        async with self.config.subs() as subs:
-            subs.remove(ctx.author.id)
+    async def unsubscribe(self, ctx, subs):
+        subs.remove(ctx.author.id)
         return await send_confirmation_message(ctx, "You will no longer receive notifications of new PADles.")
 
     async def can_play_in_guild(self, ctx):
