@@ -136,7 +136,7 @@ class PADle(commands.Cog):
 
     @padle.command()
     async def validrules(self, ctx):
-        """Rules on what the final PADle can be"""
+        """Show rules for the valid-answer monster list"""
         args = {"db": get_emoji("db"), "rd": get_emoji("rd")}
         await ctx.send(RULES_TEXT.format(**args))
 

@@ -11,11 +11,13 @@ To see the main menu at any time, type `{p}padle`. To see this specific greeting
 
 Happy puzzling! {tsubaki}"""
 
-RULES_TEXT = """Valid monsters include the following:
+RULES_TEXT = """You are able to guess any monster, but the final PADle answer is chosen from a limited list of monsters.
+
+Valid monsters include the following:
 {db} Super Reincarnated evolutions of pantheons
 {db} 50k+ MP AND [have a Super Awakening OR are max transformed]
 {db} 15k MP AND are non-event AND [have a Super Awakening OR are max transformed]
-        
+
 The following monsters are exceptions to the above and will NOT be included:
 {rd} Collab monsters (note this does not exclude Event monsters such as from Heroine or Relic Saga)
 {rd} An equip evolution
