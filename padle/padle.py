@@ -758,10 +758,7 @@ class PADle(commands.Cog):
                 continue
             if self.is_valid_padle(monster, graph):
                 final.append(str(i))
-        with open("result.txt", "w") as file:
-            file.write(",".join(final))
-        with open("result.txt", "rb") as file:
-            await ctx.send("List of monsters:", file=discord.File(file, "result.txt"))
+        await ctx.send("List of monsters:", file=discord.File(BytesIO(",".join(final).encode('utf-8')), "result.txt"))
         await ctx.tick()
 
     def is_valid_padle(self, monster, graph):
