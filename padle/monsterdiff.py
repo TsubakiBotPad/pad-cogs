@@ -44,7 +44,7 @@ class MonsterDiff:
 
     def get_awakenings_diff(self, monster, guess_monster):
         guess_awo_count = len(guess_monster.awakenings) - guess_monster.superawakening_count
-        monster_awo_count = len(monster.awakenings) - guess_monster.superawakening_count
+        monster_awo_count = len(monster.awakenings) - monster.superawakening_count
         unused = monster.awakenings[:monster_awo_count]
         feedback = []
         for index, guess_awakening in enumerate(guess_monster.awakenings[:guess_awo_count]):
