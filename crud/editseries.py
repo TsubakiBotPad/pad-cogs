@@ -43,10 +43,11 @@ if not TYPE_CHECKING:
         'monster': ('monsters'),
         'tree': ('trees'),
         'group': ('groups'),
+        'collab': ('collabs'),
     })
 else:
     EditSeriesCommand = Literal['add', 'remove', 'promote']
-    EditSeriesTarget = Literal['monster', 'tree', 'group']
+    EditSeriesTarget = Literal['monster', 'tree', 'group', 'collab']
 
 
 def disjoint_sets(superset: Iterable["MonsterModel"], f: Callable[["MonsterModel"], bool]) \
@@ -86,14 +87,15 @@ class EditSeries:
         """Affect the series of a target.
 
         Commands:
-            add - Add a series. If this is the only series, add as a primary series
-            remove - Remove a series. If this is the primary series, randomly choose another to take its place
-            promote - Add a series as primary, possibly demoting an existing primary in the process
+            `add` - Add a series. If this is the only series, add as a primary series
+            `remove` - Remove a series. If this is the primary series, randomly choose another to take its place
+            `promote` - Add a series as primary, possibly demoting an existing primary in the process
 
         Targets:
-            monster - Monsters specified by id
-            tree - Monster trees specified by monster ids of any monster in the tree
-            group - GH groups specified by a group ids
+            `monster` - Monsters specified by id
+            `tree` - Monster trees specified by monster ids of any monster in the tree
+            `group` - GH groups specified by group id
+            `collab` - GH collabs specified by collab id
 
         Examples:
            [p]editseries add 91 monster 1319, 1825
@@ -120,6 +122,11 @@ class EditSeries:
             monsters = [monster
                         for gid in re.split(r'\D+', target_str)
                         for monster in dbcog.database.get_monsters_where(lambda m: m.group_id == int(gid),
+                                                                         server=Server.COMBINED)]
+        elif target == 'collab':
+            monsters = [monster
+                        for gid in re.split(r'\D+', target_str)
+                        for monster in dbcog.database.get_monsters_where(lambda m: m.collab_id == int(gid),
                                                                          server=Server.COMBINED)]
         if not monsters:
             return await ctx.send("No matching monsters found.")
