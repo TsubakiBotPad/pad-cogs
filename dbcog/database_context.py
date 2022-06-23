@@ -76,6 +76,15 @@ class DbContext:
         return [self.graph.get_monster(mid, server=server) for mid in self.get_all_monster_ids(server)]
 
     @lru_cache(maxsize=None)
+    def get_all_dungeons(self, server: Server = DEFAULT_SERVER) -> List[DungeonModel]:
+        suffix = ""
+        if server == Server.NA:
+            suffix = '_na'
+
+        result = self.database.query_many("SELECT * FROM dungeons" + suffix)
+        return [DungeonModel(**r) for r in result]
+
+    @lru_cache(maxsize=None)
     def get_all_events(self) -> Iterable[ScheduledEventModel]:
         result = self.database.query_many(SCHEDULED_EVENT_QUERY)
         for se in result:
