@@ -46,8 +46,8 @@ class PadMonitor(commands.Cog):
             try:
                 await self.check_seen_monsters()
                 await self.check_seen_dungeons()
-            except Exception as ex:
-                logger.exception("check seen loop caught exception " + str(ex))
+            except Exception:
+                logger.exception("Error in PadMonitor loop:")
 
             await asyncio.sleep(60 * 5)
 
@@ -59,7 +59,7 @@ class PadMonitor(commands.Cog):
                     region: str) -> Optional[str]:
             if not existing:
                 # If everything is new, assume nothing is and log all current monsters as seen
-                logger.info('preloading %i', len(new_map))
+                logger.info('preloading %i monsters', len(new_map))
                 existing.extend(new_map.keys())
                 return None
 
@@ -101,7 +101,7 @@ class PadMonitor(commands.Cog):
             # TODO: Don't repeat so much code here
             if not existing:
                 # If everything is new, assume nothing is and log all current dungeons as seen
-                logger.info('preloading %i', len(new_map))
+                logger.info('preloading %i dungeons', len(new_map))
                 existing.extend(new_map.keys())
                 return None
 
@@ -129,11 +129,11 @@ class PadMonitor(commands.Cog):
 
     async def announce(self, channel_id: int, message: str):
         try:
-            channel = self.bot.get_channel(int(channel_id))
+            channel = self.bot.get_channel(channel_id)
             for page in pagify(message):
                 await channel.send(box(page))
         except Exception as ex:
-            logger.exception('failed to send message to {}:'.format(channel_id))
+            logger.exception(f'Failed to send message to {channel_id}:')
 
     @commands.group(aliases=['pdm'])
     async def padmonitor(self, ctx):
