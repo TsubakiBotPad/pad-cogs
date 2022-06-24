@@ -306,7 +306,7 @@ class DungeonContext(object):
         enemy_skill_query = self.database.query_one(format_with_suffix(ES_QUERY, server), (enemy_skill_id,))
         return EnemySkillModel(**enemy_skill_query)
 
-    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_dungeon_name: Optional[str], *, server: Server) \
+    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_dungeon_name: Optional[str], *, server: Server = DEFAULT_SERVER) \
             -> Optional[int]:
         if sub_dungeon_name is None:
             sub_dungeon_name = ""
