@@ -10,10 +10,12 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 from tsutils.cogs.globaladmin import auth_check
+from tsutils.enums import Server
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
+from dbcog.models.enum_types import DEFAULT_SERVER
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
@@ -89,19 +91,20 @@ class DungeonCog(commands.Cog):
         await dbcog.wait_until_ready()
         return dbcog
 
-    async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None):
+    async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None,
+                                     server: Server = DEFAULT_SERVER):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
-        dungeons = database.get_dungeons_from_nickname(name.lower())
+        dungeons = database.get_dungeons_from_nickname(name.lower(), server=server)
         if not dungeons:
-            dungeons = database.get_dungeons_from_name(name)
+            dungeons = database.get_dungeons_from_name(name, server=server)
             if len(dungeons) == 0:
                 return None
             if len(dungeons) > 1:
                 return dungeons
             dungeon = dungeons.pop()
-            sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
+            sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty, server=server)
             sub_dungeon_model = None
             if sub_id is None:
                 sub_id = 0

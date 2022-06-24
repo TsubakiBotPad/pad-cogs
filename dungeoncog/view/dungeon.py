@@ -7,6 +7,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedMain, EmbedField
 from discordmenu.embed.view import EmbedView
 from discordmenu.embed.view_state import ViewState
+from tsutils.enums import Server
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -73,7 +74,7 @@ class DungeonViewState(ViewState):
             verbose = not verbose
 
         # get encounter models for the floor
-        floor_models = dbcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor)
+        floor_models = dbcog.database.dungeon.get_floor_from_sub_dungeon(sub_dungeon_id, floor, server=Server.COMBINED)
 
         # check if we are on final monster of the floor
         if floor_index >= len(floor_models):
