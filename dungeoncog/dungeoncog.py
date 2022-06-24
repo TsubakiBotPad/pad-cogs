@@ -15,7 +15,6 @@ from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
-from dbcog.models.enum_types import DEFAULT_SERVER
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
@@ -92,7 +91,7 @@ class DungeonCog(commands.Cog):
         return dbcog
 
     async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None,
-                                     server: Server = DEFAULT_SERVER):
+                                     server: Server = None):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
@@ -104,7 +103,14 @@ class DungeonCog(commands.Cog):
             if len(dungeons) > 1:
                 return dungeons
             dungeon = dungeons.pop()
-            sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty, server=server)
+            if server is not None:
+                # slightly bullshit handling here because we can't have DEFAULT_SERVER imported
+                # here due to cross-cog bullshit.
+                # please move DEFAULT_SERVER to tsutils or do a proper cross-cog import
+                # for a proper patch but this is a hotfix okay
+                sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty, server=server)
+            else:
+                sub_id = database.get_sub_dungeon_id_from_name(dungeon.dungeon_id, difficulty)
             sub_dungeon_model = None
             if sub_id is None:
                 sub_id = 0
