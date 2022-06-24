@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from io import BytesIO
-from typing import Annotated, Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import discord
 from redbot.core import Config, checks, commands
@@ -45,6 +45,7 @@ class PadMonitor(commands.Cog):
         while self == self.bot.get_cog('PadMonitor'):
             try:
                 await self.check_seen_monsters()
+                await self.check_seen_dungeons()
             except Exception as ex:
                 logger.exception("check seen loop caught exception " + str(ex))
 
@@ -53,7 +54,7 @@ class PadMonitor(commands.Cog):
     async def check_seen_monsters(self):
         """Refresh the monster indexes."""
 
-        def process(existing: Annotated[List[int], "Will be mutated"],
+        def process(existing: List[int],  # Will be mutated
                     new_map: Dict[int, "MonsterModel"],
                     region: str) -> Optional[str]:
             if not existing:
@@ -95,9 +96,9 @@ class PadMonitor(commands.Cog):
     async def check_seen_dungeons(self):
         """Refresh the dungeons indexes."""
 
-        def process(existing: Annotated[List[int], "Will be mutated"],
-                    new_map: Dict[int, "DungeonModel"],
-                    region: str) -> Optional[str]:
+        def process(existing: List[int],  # Will be mutated
+                    new_map: Dict[int, "DungeonModel"]) -> Optional[str]:
+            # TODO: Don't repeat so much code here
             if not existing:
                 # If everything is new, assume nothing is and log all current dungeons as seen
                 logger.info('preloading %i', len(new_map))
@@ -111,25 +112,20 @@ class PadMonitor(commands.Cog):
                 return None
 
             existing.extend(delta_set)
-            msg = f'New dungeons added to {region}:'
+            msg = f'New dungeons added:'
             for mid in sorted(delta_set):
                 msg += f'\n\t{new_map[mid].name_en}'
             return msg
 
         dbcog = self.bot.get_cog('DBCog')
         await dbcog.wait_until_ready()
-        all_monsters = dbcog.database.get_all_monsters()
+        all_dungeons = dbcog.database.dungeon.get_all_dungeons()
 
-        jp_monster_map = {m.monster_id: m for m in all_monsters if m.on_jp}
-        async with self.config.seen_jp_monsters() as jp_seen:
-            if (jp_results := process(jp_seen, jp_monster_map, 'JP')):
-                for channel_id in await self.config.monster_announce_channels():
-                    await self.announce(channel_id, jp_results)
-        na_monster_map = {m.monster_id: m for m in all_monsters if m.on_na}
-        async with self.config.seen_na_monsters() as na_seen:
-            if (na_results := process(na_seen, na_monster_map, 'NA')):
-                for channel_id in await self.config.monster_announce_channels():
-                    await self.announce(channel_id, na_results)
+        dungeon_map = {m.dungeon_id: m for m in all_dungeons}  # TODO: Find a way to test server
+        async with self.config.seen_jp_dungeons() as seen:
+            if (results := process(seen, dungeon_map)):
+                for channel_id in await self.config.dungeon_announce_channels():
+                    await self.announce(channel_id, results)
 
     async def announce(self, channel_id: int, message: str):
         try:
@@ -150,9 +146,10 @@ class PadMonitor(commands.Cog):
         """Update PDM channels"""
         async with ctx.typing():
             await self.check_seen_monsters()
+            await self.check_seen_dungeons()
         await ctx.tick()
 
-    @commands.group(name='monsters', aliases=['monster'])
+    @padmonitor.group(name='monsters', aliases=['monster'])
     async def pdm_monsters(self, ctx):
         """New monster announcement"""
         pass
@@ -181,7 +178,7 @@ class PadMonitor(commands.Cog):
             announce_channels.remove(channel.id)
         await ctx.tick()
 
-    @commands.group(name='dungeons', aliases=['dungeon'])
+    @padmonitor.group(name='dungeons', aliases=['dungeon'])
     async def pdm_dungeons(self, ctx):
         """New dungeon announcement"""
         pass

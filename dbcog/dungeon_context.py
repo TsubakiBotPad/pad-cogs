@@ -1,5 +1,6 @@
+from collections import defaultdict
 from functools import lru_cache
-from typing import Iterable, Optional, List
+from typing import Dict, List, Mapping, Optional, Set
 
 from tsutils.enums import Server
 
@@ -9,7 +10,6 @@ from dbcog.models.encounter_model import EncounterModel
 from dbcog.models.enemy_data_model import EnemyDataModel
 from dbcog.models.enemy_skill_model import EnemySkillModel
 from dbcog.models.enum_types import DEFAULT_SERVER
-from dbcog.models.scheduled_event_model import ScheduledEventModel
 from dbcog.models.sub_dungeon_model import SubDungeonModel
 
 
@@ -235,10 +235,17 @@ DUNGEON_NICKNAMES = {
 
 class DungeonContext(object):
     def __init__(self, database: DBCogDatabase):
+        self._enemy_data_map: Dict[Server, Dict[int, EnemyDataModel]] = {}
+        self._encounter_map: Dict[Server, Dict[int, EncounterModel]] = {}
+        self._encounters_by_sub_dungeon_id: Dict[Server, Mapping[int, Set[EncounterModel]]] = {}
+        self._sub_dungeon_map: Dict[Server, Dict[int, SubDungeonModel]] = {}
+        self._sub_dungeons_by_dungeon_id: Dict[Server, Mapping[int, Set[SubDungeonModel]]] = {}
+        self._dungeon_map: Dict[Server, Dict[int, DungeonModel]] = {}
+
         self.database = database
 
     def get_dungeons_from_name(self, name: str, *, server: Server) -> List[DungeonModel]:
-        dungeons_result = self.database.query_many(format_with_suffix(DUNGEON_QUERY, server), (name+"%",))
+        dungeons_result = self.database.query_many(format_with_suffix(DUNGEON_QUERY, server), (name + "%",))
         dungeons = []
         for d in dungeons_result:
             dungeons.append(DungeonModel([], **d))
@@ -246,7 +253,8 @@ class DungeonContext(object):
         for dm in dungeons:
             subs = self.database.query_many(format_with_suffix(SUB_DUNGEON_QUERY, server), (dm.dungeon_id,))
             for s in subs:
-                encounters = self.database.query_many(format_with_suffix(ENCOUNTER_QUERY, server), (s['sub_dungeon_id'],))
+                encounters = self.database.query_many(format_with_suffix(ENCOUNTER_QUERY, server),
+                                                      (s['sub_dungeon_id'],))
                 ems = []
                 for e in encounters:
                     data = self.database.query_one(ENEMY_DATA_QUERY, (e["enemy_id"],))
@@ -298,7 +306,7 @@ class DungeonContext(object):
         enemy_skill_query = self.database.query_one(format_with_suffix(ES_QUERY, server), (enemy_skill_id,))
         return EnemySkillModel(**enemy_skill_query)
 
-    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_dungeon_name: Optional[str], *, server: Server)\
+    def get_sub_dungeon_id_from_name(self, dungeon_id: int, sub_dungeon_name: Optional[str], *, server: Server) \
             -> Optional[int]:
         if sub_dungeon_name is None:
             sub_dungeon_name = ""
@@ -324,6 +332,22 @@ class DungeonContext(object):
         return sub_dungeons[0]['sub_dungeon_id']
 
     @lru_cache(maxsize=None)
+    def get_all_enemy_data(self, *, server: Server = DEFAULT_SERVER) -> List[EnemyDataModel]:
+        suffix = ""
+        if server == Server.NA:
+            pass
+            # TODO: There's currently no servers for enemy data.
+            # suffix = '_na'
+
+        result = self.database.query_many(f"SELECT * FROM enemy_data{suffix}")
+        return [EnemyDataModel(**r) for r in result]
+
+    def get_enemy_data(self, enemy_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[EnemyDataModel]:
+        if server not in self._enemy_data_map:
+            self._enemy_data_map[server] = {ed.enemy_id: ed for ed in self.get_all_enemy_data(server=server)}
+        return self._enemy_data_map[server].get(enemy_id)
+
+    @lru_cache(maxsize=None)
     def get_all_encounters(self, server: Server = DEFAULT_SERVER) -> List[EncounterModel]:
         suffix = ""
         if server == Server.NA:
@@ -331,33 +355,52 @@ class DungeonContext(object):
             # TODO: There's currently no servers for encounters.
             # suffix = '_na'
 
-        result = self.database.query_many("SELECT * FROM encounters" + suffix)
-        return [SubDungeonModel(**r) for r in result]
+        result = self.database.query_many(f"SELECT * FROM encounters{suffix}")
+        return [EncounterModel(self.get_enemy_data(r.enemy_id), **r) for r in result]
+
+    def get_encounter(self, encounter_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[EncounterModel]:
+        if server not in self._encounter_map:
+            self._encounter_map[server] = {e.encounter_id: e for e in self.get_all_encounters(server=server)}
+        return self._encounter_map[server].get(encounter_id)
 
     @lru_cache(maxsize=None)
-    def get_all_subdungeons(self, server: Server = DEFAULT_SERVER) -> List[SubDungeonModel]:
+    def get_all_sub_dungeons(self, server: Server = DEFAULT_SERVER) -> List[SubDungeonModel]:
+        if server not in self._encounters_by_sub_dungeon_id:
+            self._encounters_by_sub_dungeon_id[server] = defaultdict(set)
+            for encounter in self.get_all_encounters(server=server):
+                self._encounters_by_sub_dungeon_id[server][encounter.sub_dungeon_id].add(encounter)
+
         suffix = ""
         if server == Server.NA:
             suffix = '_na'
 
-        result = self.database.query_many("SELECT * FROM dungeons" + suffix)
-        return [SubDungeonModel(**r) for r in result]
+        result = self.database.query_many(f"SELECT * FROM sub_dungeons{suffix}")
+        return [SubDungeonModel(sorted(self._encounters_by_sub_dungeon_id[server][r.sub_dungeon_id],
+                                       key=lambda e: e.encounter_id),
+                                **r) for r in result]
+
+    def get_sub_dungeon(self, sub_dungeon_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[SubDungeonModel]:
+        if server not in self._sub_dungeon_map:
+            self._sub_dungeon_map[server] = {e.sub_dungeon_id: e for e in self.get_all_sub_dungeons(server=server)}
+        return self._sub_dungeon_map[server].get(sub_dungeon_id)
 
     @lru_cache(maxsize=None)
     def get_all_dungeons(self, server: Server = DEFAULT_SERVER) -> List[DungeonModel]:
+        if server not in self._sub_dungeons_by_dungeon_id:
+            self._sub_dungeons_by_dungeon_id[server] = defaultdict(set)
+            for sub_dungeon in self.get_all_sub_dungeons(server=server):
+                self._sub_dungeons_by_dungeon_id[server][sub_dungeon.dungeon_id].add(sub_dungeon)
+
         suffix = ""
         if server == Server.NA:
             suffix = '_na'
 
-        result = self.database.query_many("SELECT * FROM dungeons" + suffix)
-        return [DungeonModel(**r) for r in result]
+        result = self.database.query_many(f"SELECT * FROM dungeons{suffix}")
+        return [DungeonModel(sorted(self._sub_dungeons_by_dungeon_id[server][r.dungeon_id],
+                                    key=lambda sd: sd.sub_dungeon_id),
+                             **r) for r in result]
 
-    @lru_cache(maxsize=None)
-    def get_all_events(self) -> Iterable[ScheduledEventModel]:
-        result = self.database.query_many(SCHEDULED_EVENT_QUERY)
-        for se in result:
-            se['dungeon_model'] = DungeonModel(name_ja=se['d_name_ja'],
-                                               name_en=se['d_name_en'],
-                                               name_ko=se['d_name_ko'],
-                                               **se)
-            yield ScheduledEventModel(**se)
+    def get_dungeon(self, dungeon_id: int, *, server: Server = DEFAULT_SERVER) -> Optional[DungeonModel]:
+        if server not in self._dungeon_map:
+            self._dungeon_map[server] = {e.dungeon_id: e for e in self.get_all_dungeons(server=server)}
+        return self._dungeon_map[server].get(dungeon_id)
