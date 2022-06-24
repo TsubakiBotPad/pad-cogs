@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Optional, List
+from typing import Iterable, Optional, List
 
 from tsutils.enums import Server
 
@@ -8,6 +8,8 @@ from dbcog.models.dungeon_model import DungeonModel
 from dbcog.models.encounter_model import EncounterModel
 from dbcog.models.enemy_data_model import EnemyDataModel
 from dbcog.models.enemy_skill_model import EnemySkillModel
+from dbcog.models.enum_types import DEFAULT_SERVER
+from dbcog.models.scheduled_event_model import ScheduledEventModel
 from dbcog.models.sub_dungeon_model import SubDungeonModel
 
 
@@ -186,6 +188,17 @@ WHERE
     monsters{0}.monster_id = ?
 '''
 
+SCHEDULED_EVENT_QUERY = """SELECT
+  schedule.*,
+  dungeons.name_ja AS d_name_ja,
+  dungeons.name_en AS d_name_en,
+  dungeons.name_ko AS d_name_ko,
+  dungeons.dungeon_type AS dungeon_type
+FROM
+  schedule 
+  LEFT JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id
+"""
+
 # TODO: Move to gdoc
 DUNGEON_NICKNAMES = {
     'a1': 1022001,
@@ -311,5 +324,40 @@ class DungeonContext(object):
         return sub_dungeons[0]['sub_dungeon_id']
 
     @lru_cache(maxsize=None)
-    def get_dungeon(self, dungeon_id: int, *, server: Server) -> DungeonModel:
-        ...
+    def get_all_encounters(self, server: Server = DEFAULT_SERVER) -> List[EncounterModel]:
+        suffix = ""
+        if server == Server.NA:
+            pass
+            # TODO: There's currently no servers for encounters.
+            # suffix = '_na'
+
+        result = self.database.query_many("SELECT * FROM encounters" + suffix)
+        return [SubDungeonModel(**r) for r in result]
+
+    @lru_cache(maxsize=None)
+    def get_all_subdungeons(self, server: Server = DEFAULT_SERVER) -> List[SubDungeonModel]:
+        suffix = ""
+        if server == Server.NA:
+            suffix = '_na'
+
+        result = self.database.query_many("SELECT * FROM dungeons" + suffix)
+        return [SubDungeonModel(**r) for r in result]
+
+    @lru_cache(maxsize=None)
+    def get_all_dungeons(self, server: Server = DEFAULT_SERVER) -> List[DungeonModel]:
+        suffix = ""
+        if server == Server.NA:
+            suffix = '_na'
+
+        result = self.database.query_many("SELECT * FROM dungeons" + suffix)
+        return [DungeonModel(**r) for r in result]
+
+    @lru_cache(maxsize=None)
+    def get_all_events(self) -> Iterable[ScheduledEventModel]:
+        result = self.database.query_many(SCHEDULED_EVENT_QUERY)
+        for se in result:
+            se['dungeon_model'] = DungeonModel(name_ja=se['d_name_ja'],
+                                               name_en=se['d_name_en'],
+                                               name_ko=se['d_name_ko'],
+                                               **se)
+            yield ScheduledEventModel(**se)
