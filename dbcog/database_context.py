@@ -49,19 +49,15 @@ class DbContext:
         self.cached_filters[(cache_key, server)] = self.get_monsters_where(f, server=server)
         return self.cached_filters[(cache_key, server)]
 
-    @lru_cache(maxsize=None)
     def get_monsters_by_series(self, series_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.series_id == series_id, server=server)
 
-    @lru_cache(maxsize=None)
     def get_monsters_by_active(self, active_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.active_skill_id == active_skill_id, server=server)
 
-    @lru_cache(maxsize=None)
     def get_monsters_by_leader(self, leader_skill_id: int, *, server: Server) -> List[MonsterModel]:
         return self.get_monsters_where(lambda m: m.leader_skill_id == leader_skill_id, server=server)
 
-    @lru_cache(maxsize=None)
     def get_all_monster_ids(self, server: Server) -> Iterable[int]:
         # We don't need to query if we're in debug mode.  We already know exactly which monsters we're working with
         if self.debug_monster_ids is not None:
@@ -71,16 +67,13 @@ class DbContext:
         query = self.database.query_many(f"SELECT monster_id FROM monsters{suffix}", as_generator=True)
         return (m.monster_id for m in query)
 
-    @lru_cache(maxsize=None)
     def get_all_monsters(self, server: Server = DEFAULT_SERVER) -> List[MonsterModel]:
         return [self.graph.get_monster(mid, server=server) for mid in self.get_all_monster_ids(server)]
 
-    @lru_cache(maxsize=None)
     def get_all_awoken_skills(self) -> List[AwokenSkillModel]:
         result = self.database.query_many("SELECT * FROM awoken_skills")
         return [AwokenSkillModel(**r) for r in result]
 
-    @lru_cache(maxsize=None)
     def get_all_series(self) -> List[SeriesModel]:
         result = self.database.query_many("SELECT * FROM series")
         return [SeriesModel(**r) for r in result]
