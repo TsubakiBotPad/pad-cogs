@@ -78,6 +78,15 @@ class DbContext:
         result = self.database.query_many("SELECT * FROM series")
         return [SeriesModel(**r) for r in result]
 
+    def get_all_events(self) -> Iterable[ScheduledEventModel]:
+        result = self.database.query_many(SCHEDULED_EVENT_QUERY)
+        for se in result:
+            se['dungeon_model'] = DungeonModel(name_ja=se['d_name_ja'],
+                                               name_en=se['d_name_en'],
+                                               name_ko=se['d_name_ko'],
+                                               **se)
+            yield ScheduledEventModel(**se)
+
     def has_database(self) -> bool:
         return self.database.has_database()
 
