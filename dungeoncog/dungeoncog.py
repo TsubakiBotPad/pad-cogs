@@ -15,7 +15,6 @@ from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
-from dbcog.models.enum_types import DEFAULT_SERVER
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
 from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
@@ -92,7 +91,7 @@ class DungeonCog(commands.Cog):
         return dbcog
 
     async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None,
-                                     server: Server = DEFAULT_SERVER):
+                                     ):  # server: Server = DEFAULT_SERVER):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """
