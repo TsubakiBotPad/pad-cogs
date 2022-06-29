@@ -4,7 +4,6 @@ from typing import Optional, TYPE_CHECKING
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.enums import Server
 
-from dbcog.models.enum_types import DEFAULT_SERVER
 from dungeoncog.dungeon_monster import DungeonMonster
 from dungeoncog.enemy_skill import ProcessedSkill
 from dungeoncog.enemy_skills_pb2 import Behavior, BehaviorGroup, Condition, MonsterBehavior
@@ -15,6 +14,9 @@ if TYPE_CHECKING:
     from dbcog.database_context import DbContext
     from dbcog.models.encounter_model import EncounterModel
 
+    
+DEFAULT_SERVER = Server.COMBINED
+    
 GROUP_TYPES = {
     0: "Unspecified",
     1: "Passive",
