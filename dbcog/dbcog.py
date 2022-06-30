@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 from redbot.core import Config, checks, commands, data_manager
-from redbot.core.commands import Literal as LiteralConverter
 from redbot.core.utils.chat_formatting import box, pagify, inline, text_to_file
 from tabulate import tabulate
 from tsutils.cogs.globaladmin import auth_check
@@ -42,6 +41,12 @@ logger = logging.getLogger('red.padbot-cogs.dbcog')
 
 def _data_file(file_name: str) -> str:
     return os.path.join(str(data_manager.cog_data_path(raw_name='dbcog')), file_name)
+
+
+# TODO: Find a way to get literal back
+class LiteralConverter:
+    def __class_getitem__(cls, *_):
+        return Any
 
 
 class DBCog(commands.Cog, IdTest):
