@@ -105,7 +105,6 @@ class MonsterModel(BaseModel):
         self.voice_id_jp = m['voice_id_jp']
         self.voice_id_na = m['voice_id_na']
 
-        self.pronunciation_ja = m['pronunciation_ja']
         self.has_animation = m['has_animation']
         self.has_hqimage = m['has_hqimage']
 
