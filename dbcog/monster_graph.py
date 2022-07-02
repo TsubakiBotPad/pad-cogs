@@ -346,7 +346,6 @@ class MonsterGraph:
                                    exp=m.exp,
                                    fodder_exp=m.fodder_exp,
                                    limit_mult=m.limit_mult,
-                                   pronunciation_ja=m.pronunciation_ja,
                                    voice_id_jp=m.voice_id_jp,
                                    voice_id_na=m.voice_id_na,
                                    hp_max=m.hp_max,
