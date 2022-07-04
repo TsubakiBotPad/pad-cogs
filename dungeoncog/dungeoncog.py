@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger('red.padbot-cogs.dungeoncog')
 EMBED_NOT_GENERATED = -1
+DEFAULT_SERVER = Server.COMBINED
 
 DUNGEON_ALIASES = "https://docs.google.com/spreadsheets/d/e/" \
                   "2PACX-1vQ3F4shS6w2na4FXA-vZyyhKcOQ0zRA1B3T7zaX0Bm4cEjW-1IVw91josPtLgc9Zh_TGh8GTD6zFmd0" \
@@ -91,7 +92,7 @@ class DungeonCog(commands.Cog):
         return dbcog
 
     async def find_dungeon_from_name(self, ctx, name, database: "DungeonContext", difficulty: str = None,
-                                     server: Server = None):
+                                     server: Server = DEFAULT_SERVER):
         """
         Gets the sub_dungeon model given the name of a dungeon and its difficulty.
         """

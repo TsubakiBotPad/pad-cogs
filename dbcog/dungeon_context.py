@@ -257,7 +257,7 @@ class DungeonContext(object):
                                                       (s['sub_dungeon_id'],))
                 ems = []
                 for e in encounters:
-                    data = self.database.query_one(ENEMY_DATA_QUERY, (e["enemy_id"],))
+                    data = self.database.query_one(format_with_suffix(ENEMY_DATA_QUERY, server), (e["enemy_id"],))
                     if data is not None:
                         edm = EnemyDataModel(**data)
                     else:
