@@ -45,9 +45,15 @@ if not TYPE_CHECKING:
         'group': ('groups'),
         'collab': ('collabs'),
     })
+    PropagateTarget = AliasedKeywordConverter({
+        'series': None,
+        'group': ('groups'),
+        'collab': ('collabs'),
+    })
 else:
     EditSeriesCommand = Literal['add', 'remove', 'promote']
     EditSeriesTarget = Literal['monster', 'tree', 'group', 'collab']
+    PropagateTarget = Literal['series', 'group', 'collab']
 
 
 def disjoint_sets(superset: Iterable["MonsterModel"], f: Callable[["MonsterModel"], bool]) \
@@ -81,7 +87,7 @@ class EditSeries:
         await ctx.send("{} monster(s) affected.".format(affected))
         return affected
 
-    @commands.command()
+    @commands.group(aliases=['seriesedit'], invoke_without_command=True)
     async def editseries(self, ctx, command: EditSeriesCommand, series_id: int,
                          target: EditSeriesTarget, *, target_str):
         """Affect the series of a target.
@@ -137,6 +143,35 @@ class EditSeries:
             await self.es_remove(ctx, series_id, monsters)
         elif command == 'promote':
             await self.es_promote(ctx, series_id, monsters)
+
+    @editseries.command()
+    async def propagate(self, ctx, target: PropagateTarget, *, target_ids):
+        target_ids = [int(d) for d in re.split(r'\D+', target_ids)]
+        dbcog = await self.get_dbcog()
+
+        monsters = None
+        if target == "series":
+            if target_ids == 0:
+                return await ctx.send("You cannot propagate the unsorted series.")
+            monsters = {evo
+                        for monster in dbcog.database.get_monsters_where(lambda m: m.series_id in target_ids,
+                                                                         server=Server.COMBINED)
+                        for evo in dbcog.database.graph.get_alt_monsters(monster)}
+        elif target == "group":
+            monsters = {monster for monster in dbcog.database.get_monsters_where(lambda m: m.group_id in target_ids,
+                                                                                 server=Server.COMBINED)}
+        elif target == "collab":
+            monsters = {monster for monster in dbcog.database.get_monsters_where(lambda m: m.collab_id in target_ids,
+                                                                                 server=Server.COMBINED)}
+
+        if not monsters:
+            return await ctx.send("No monsters found.")
+
+        series = {m.series_id for m in monsters}.difference({0})
+        if len(series) != 1:
+            return await ctx.send("The requested series has inconsistant trees.")
+
+        await self.es_promote(ctx, next(iter(series)), sorted(monsters, key=lambda m: m.monster_id))
 
     async def es_add(self, ctx, series_id: int, monsters: List["MonsterModel"]):
         monsters_str = "(" + ",".join(str(m.monster_id) for m in monsters) + ")"
