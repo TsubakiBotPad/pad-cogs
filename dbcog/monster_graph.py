@@ -316,6 +316,7 @@ class MonsterGraph:
                                    all_series=monster_series[m.monster_id] or {series[0]},
                                    series_id=m.s_series_id,
                                    group_id=m.group_id,
+                                   collab_id=m.collab_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
