@@ -1,0 +1,21 @@
+{
+  "author": [
+    "Aradia Megido#2552"
+  ],
+  "description": "Holds temporary things that will be removed later.",
+  "end_user_data_statement": "No personal data is stored.",
+  "install_msg": "I don't even know what I'm supposed to put in these.",
+  "short": "Temporary Utilities",
+  "min_bot_version": "3.4.0",
+  "max_bot_version": "0.0.0",
+  "min_python_version": [
+    3,
+    8,
+    1
+  ],
+  "hidden": true,
+  "disabled": false,
+  "required_cogs": {},
+  "requirements": [],
+  "tags": []
+}
