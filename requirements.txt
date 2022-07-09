@@ -54,7 +54,7 @@ six==1.16.0
 tabulate==0.8.7
 tsutils
 typing-extensions==3.10.0.2
-uvloop==0.16.0
+# uvloop==0.16.0
 wcwidth==0.2.5
 wheel
 yarl==1.6.3
