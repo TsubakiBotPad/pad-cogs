@@ -7,7 +7,8 @@ from tsutils.enums import Server
 from tsutils.formatting import rmdiacritics
 from tsutils.query_settings.query_settings import QuerySettings
 
-from dbcog.find_monster.tokens.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, QueryToken, SpecialToken, \
+from dbcog.find_monster.tokens.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, MatchMap, \
+    MonsterInfo, MonsterMatch, QueryToken, SpecialToken, \
     TOKEN_JW_DISTANCE, TokenMatch, calc_ratio_modifier, calc_ratio_name, string_to_token
 from dbcog.models.monster_model import MonsterModel
 
@@ -20,35 +21,6 @@ SERIES_TYPE_PRIORITY = {
     "lowpriority": 0,
     None: 0
 }
-
-
-class MonsterMatch:
-    def __init__(self):
-        # The total score of the monster
-        self.score: float = 0
-
-        # Match data for all name tokens
-        self.name: Set[TokenMatch] = set()
-
-        # Match data for all modifier tokens
-        self.mod: Set[TokenMatch] = set()
-
-    def __repr__(self):
-        return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
-
-
-MatchMap = Mapping[MonsterModel, MonsterMatch]
-
-
-class MonsterInfo(NamedTuple):
-    # The best matching monster
-    matched_monster: Optional[MonsterModel]
-
-    # How the user tokens matched each monster
-    monster_matches: MatchMap
-
-    # All monsters that were not rejected by the query
-    valid_monsters: Set[MonsterModel]
 
 
 class SubqueryData(NamedTuple):
@@ -115,11 +87,11 @@ class FindMonster:
     async def _monster_has_modifier(self, monster: MonsterModel, token: QueryToken, matches: MatchMap) -> bool:
         score, match = await token.matches(monster, self.index)
         if not score:
-            return False
+            return False ^ token.negated
 
         matches[monster].score += score
         matches[monster].mod.add(match)
-        return True
+        return True ^ (token.negated and match.match_data.can_negate)
 
     async def _interpret_query(self, tokenized_query: List[str]) -> Tuple[Set[QueryToken], Set[QueryToken]]:
         modifiers = []
@@ -217,7 +189,7 @@ class FindMonster:
                                  matches: MatchMap) -> Set[MonsterModel]:
         for mod_token in mod_tokens:
             potential_evos = {m for m in potential_evos if
-                              await self._monster_has_modifier(m, mod_token, matches) ^ mod_token.negated}
+                              await self._monster_has_modifier(m, mod_token, matches)}
             if not potential_evos:
                 return set()
         return potential_evos
@@ -263,8 +235,8 @@ class FindMonster:
             for evo in self.dbcog.database.graph.get_alt_monsters(monster):
                 monster_evos.add(evo)
                 if matches[evo].score < matches[monster].score:
-                    matches[evo].name = {(t[0], t[1],
-                                          f'(from evo {monster.monster_id})') for t in matches[monster].name}
+                    matches[evo].name = {TokenMatch(t[0], t[1], MatchData(t.match_data.token, from_evo=monster.monster_id))
+                                         for t in matches[monster].name}
                     matches[evo].score = matches[monster].score - EPSILON * 3
 
         return monster_evos
@@ -344,6 +316,7 @@ class FindMonster:
         # Keep some spaces
         query = re.sub(r':=?r?("[^"]+"|\'[^\']+\')', lambda m: m.group(0).replace(' ', '\0'), query)
         query = re.sub(r'\[[^[]+]', lambda m: m.group(0).replace(' ', '\0'), query)
+        query = re.sub(r'\([^(]+\)', lambda m: m.group(0).replace(' ', '\0'), query)
 
         tokenized_query = (await self._process_settings(query)).split()
         tokenized_query = [token.replace('\0', ' ') for token in tokenized_query]
