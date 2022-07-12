@@ -63,7 +63,7 @@ from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
-from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListQueriedProps
 from padinfo.view.monster_list.scroll import ScrollViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
@@ -532,13 +532,13 @@ class PadInfo(commands.Cog):
                            child_reaction_list=None):
         dbcog = await self.get_dbcog()
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
+        queried_props = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
-        if not monster_list:
+        if not queried_props or not queried_props.monster_list:
             await ctx.send("No monster matched.")
             return
 
-        await self._do_monster_list(ctx, dbcog, query, monster_list, 'ID Search Results',
+        await self._do_monster_list(ctx, dbcog, query, queried_props, 'ID Search Results',
                                     IdSearchViewState,
                                     child_menu_type=child_menu_type,
                                     child_reaction_list=child_reaction_list)
@@ -561,7 +561,7 @@ class PadInfo(commands.Cog):
         _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dbcog, monster)
 
         title = 'Material For' if usedin else 'Gem is Material For'
-        await self._do_monster_list(ctx, dbcog, query, monster_list, title, AllMatsViewState)
+        await self._do_monster_list(ctx, dbcog, query, MonsterListQueriedProps(monster_list), title, AllMatsViewState)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -577,9 +577,10 @@ class PadInfo(commands.Cog):
         if monster_list is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos')
             return
-        await self._do_monster_list(ctx, dbcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
+        await self._do_monster_list(ctx, dbcog, query, MonsterListQueriedProps(monster_list),
+                                    'Evolution List', StaticMonsterListViewState)
 
-    async def _do_monster_list(self, ctx, dbcog, query, monster_list: List["MonsterModel"],
+    async def _do_monster_list(self, ctx, dbcog, query, queried_props: MonsterListQueriedProps,
                                title, view_state_type: Type[MonsterListViewState],
                                child_menu_type: Optional[str] = None,
                                child_reaction_list: Optional[List] = None
@@ -587,7 +588,7 @@ class PadInfo(commands.Cog):
         raw_query = query
         original_author_id = ctx.message.author.id
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         if child_menu_type is None:
@@ -596,7 +597,7 @@ class PadInfo(commands.Cog):
             child_reaction_list = child_panes_class.emoji_names()
 
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query,
-                                monster_list, query_settings,
+                                queried_props, query_settings,
                                 title, instruction_message,
                                 child_menu_type=child_menu_type,
                                 child_reaction_list=child_reaction_list,
@@ -636,16 +637,16 @@ class PadInfo(commands.Cog):
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
-        monster_list = await ScrollViewState.do_query(dbcog, monster)
+        queried_props = await ScrollViewState.do_query(dbcog, monster)
         title = 'Monster Book Scroll'
         raw_query = query
         original_author_id = ctx.message.author.id
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query,
-                                monster_list, query_settings,
+                                queried_props, query_settings,
                                 title, instruction_message, monster.monster_id,
                                 child_menu_type=IdMenu.MENU_TYPE,
                                 child_reaction_list=IdMenuPanes.emoji_names(),
@@ -878,7 +879,8 @@ class PadInfo(commands.Cog):
         if not monster_list:
             await ctx.send('Did not find any recent queries in history.')
             return
-        await self._do_monster_list(ctx, dbcog, '', monster_list, 'Result History', StaticMonsterListViewState)
+        queried_props = MonsterListQueriedProps(monster_list)
+        await self._do_monster_list(ctx, dbcog, '', queried_props, 'Result History', StaticMonsterListViewState)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):

@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain
@@ -13,6 +13,13 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
+    from dbcog.find_monster.find_monster import ExtraInfo
+
+
+class MonsterListQueriedProps:
+    def __init__(self, monster_list: List["MonsterModel"], extra_info: "ExtraInfo" = None):
+        self.extra_info = extra_info
+        self.monster_list = monster_list
 
 
 class MonsterListViewState(ViewStateBase):
@@ -20,7 +27,7 @@ class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, query,
-                 monster_list: List["MonsterModel"], query_settings: QuerySettings,
+                 queried_props: MonsterListQueriedProps, query_settings: QuerySettings,
                  title, message,
                  *,
                  current_page: int = 0,
@@ -33,7 +40,8 @@ class MonsterListViewState(ViewStateBase):
                  ):
         super().__init__(original_author_id, menu_type, query,
                          extra_state=extra_state)
-        paginated_monsters = self.paginate(monster_list)
+        paginated_monsters = self.paginate(queried_props.monster_list)
+        self.queried_props = queried_props
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = len(paginated_monsters)
@@ -91,7 +99,7 @@ class MonsterListViewState(ViewStateBase):
             return None
         title = ims['title']
 
-        monster_list = await cls.query_from_ims(dbcog, ims)
+        queried_props = await cls.query_from_ims(dbcog, ims)
         current_page = ims['current_page']
         current_index = ims.get('current_index')
 
@@ -106,7 +114,7 @@ class MonsterListViewState(ViewStateBase):
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
         return cls(original_author_id, menu_type, query,
-                   monster_list, query_settings,
+                   queried_props, query_settings,
                    title, idle_message,
                    current_page=current_page,
                    current_index=current_index,
@@ -118,7 +126,7 @@ class MonsterListViewState(ViewStateBase):
                    )
 
     @classmethod
-    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         ...
 
     @staticmethod
@@ -129,7 +137,8 @@ class MonsterListViewState(ViewStateBase):
 
     @classmethod
     async def query_paginated_from_ims(cls, dbcog, ims) -> List[List["MonsterModel"]]:
-        return cls.paginate(await cls.query_from_ims(dbcog, ims))
+        queried_props = await cls.query_from_ims(dbcog, ims)
+        return cls.paginate(queried_props.monster_list)
 
     def increment_page(self):
         if self.current_page < len(self.paginated_monsters) - 1:
@@ -201,8 +210,15 @@ class MonsterListView:
     def get_emoji(cls, i: int, _current_monster_id: int):
         return char_to_emoji(str(i))
 
+    # @classmethod
+    # def get_title(cls, state):
+    #     if state.queried_props.extra_info is None:
+    #         return None
+    #     if not any([state.queried_props.extra_info.subquery_data])
+
     @classmethod
     def embed(cls, state: MonsterListViewState):
+        # print(state.queried_props.extra_info.subquery_data)
         fields = [
             EmbedField(state.title,
                        Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings))),
@@ -214,6 +230,7 @@ class MonsterListView:
 
         return EmbedView(
             EmbedMain(
+                # title=cls.get_title(state),
                 color=state.query_settings.embedcolor,
             ),
             embed_footer=embed_footer_with_state(state),

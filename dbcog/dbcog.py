@@ -178,7 +178,6 @@ class DBCog(commands.Cog, IdTest):
         for index in self.indexes.values():
             issues.extend(index.issues)
         for class_attributes in MONSTER_CLASS_ATTRIBUTES:
-            good = False
             for monster in self.database.get_all_monsters():
                 val: Any = monster
                 for ca in class_attributes:
@@ -344,9 +343,9 @@ class DBCog(commands.Cog, IdTest):
         monster, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
         return monster
 
-    async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
+    async def find_monsters(self, query: str, author_id: int = 0) -> Tuple[List[MonsterModel], ExtraInfo]:
         monsters, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
-        return monsters
+        return monsters, e_info
 
     async def find_monster_debug(self, query: str) -> Tuple[MonsterInfo, ExtraInfo]:
         return await FindMonster(self, self.fm_flags_default).find_monster_debug(query)
