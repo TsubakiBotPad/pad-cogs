@@ -14,6 +14,7 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
     from dbcog.find_monster.find_monster import ExtraInfo
+    from dbcog.find_monster.find_monster import SubqueryData
 
 
 class MonsterListQueriedProps:
@@ -42,6 +43,9 @@ class MonsterListViewState(ViewStateBase):
                          extra_state=extra_state)
         paginated_monsters = self.paginate(queried_props.monster_list)
         self.queried_props = queried_props
+        if self.queried_props.extra_info is not None:
+            self.subquery_data = self.queried_props.extra_info.subquery_data
+        self.extra_info = self.queried_props.extra_info
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = len(paginated_monsters)
@@ -210,27 +214,89 @@ class MonsterListView:
     def get_emoji(cls, i: int, _current_monster_id: int):
         return char_to_emoji(str(i))
 
-    # @classmethod
-    # def get_title(cls, state):
-    #     if state.queried_props.extra_info is None:
-    #         return None
-    #     if not any([state.queried_props.extra_info.subquery_data])
+    @classmethod
+    def has_subqueries(cls, state):
+        if state.queried_props.extra_info is None:
+            return False
+        return state.queried_props.extra_info.subquery_data
+
+    @classmethod
+    def get_title(cls, state):
+        if not cls.has_subqueries(state):
+            return None
+        return state.title
+
+    @classmethod
+    def get_subquery_mon(cls, mon_id, subquery_data):
+        best_weight = 100000000000  # infinity
+        subquery_mon = None
+        for item in list(subquery_data):
+            item: "SubqueryData"
+            if mon_id not in item.map:
+                continue
+            # we want to show the most restrictive query possible
+            if len(item.map) <= best_weight:
+                subquery_mon = item.map[mon_id]
+        return subquery_mon
+
+    @classmethod
+    def get_subquery_model(cls, state, m_id):
+        for item in list(state.extra_info.subquery_monsters):
+            if m_id in item.map:
+                return item.map[m_id]
 
     @classmethod
     def embed(cls, state: MonsterListViewState):
-        # print(state.queried_props.extra_info.subquery_data)
-        fields = [
-            EmbedField(state.title,
-                       Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings))),
-            EmbedField(BoldText('Page'),
-                       Box('{} of {}'.format(state.current_page + 1, state.page_count)),
-                       inline=True
-                       )
-        ]
+        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        # print(list(state.queried_props.extra_info))
+        fields = []
+
+        if not cls.has_subqueries(state):
+            fields.append(
+                EmbedField(state.title,
+                           Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings)))
+            )
+
+        else:
+            cur_subq_id = None
+            cur_mon_list = []
+            for m in state.monster_list:
+                print(m)
+                subq_id = cls.get_subquery_mon(m.monster_id, state.subquery_data)
+                if cur_mon_list and subq_id != cur_subq_id:
+                    cur_subq_id = subq_id
+                    title = MonsterHeader.box_with_emoji(
+                        cls.get_subquery_model(state, cur_subq_id), query_settings=state.query_settings, link=False)
+                    fields.append(
+                        EmbedField(
+                            title,
+                            Box(*cls.monster_list(
+                                cur_mon_list, state.current_monster_id, state.query_settings)))
+                    )
+                    cur_mon_list = []
+                cur_mon_list.append(m)
+                cur_subq_id = subq_id
+
+            title = MonsterHeader.box_with_emoji(
+                cls.get_subquery_model(state, cur_subq_id), query_settings=state.query_settings, link=False)
+            fields.append(
+                EmbedField(
+                    title,
+                    Box(*cls.monster_list(
+                        cur_mon_list, state.current_monster_id, state.query_settings)))
+            )
+
+        fields.append(EmbedField(BoldText('Page'),
+                                 Box('{} of {}'.format(state.current_page + 1, state.page_count)),
+                                 inline=True
+                                 ))
 
         return EmbedView(
             EmbedMain(
-                # title=cls.get_title(state),
+                title=cls.get_title(state),
                 color=state.query_settings.embedcolor,
             ),
             embed_footer=embed_footer_with_state(state),

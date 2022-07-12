@@ -31,12 +31,19 @@ class SubqueryData(NamedTuple):
     subquery: str
 
     # Immutable Parent-to-Child monster mapping
-    map: Mapping[MonsterModel, MonsterModel]
+    map: Mapping[int, int]
+
+
+class SubqueryMonsters(NamedTuple):
+
+    map: Mapping[int, MonsterModel]
 
 
 class ExtraInfo(NamedTuple):
     # Subquery Result
     subquery_data: Set[SubqueryData]
+
+    subquery_monsters: Set[SubqueryMonsters]
 
     # Unused
     return_code: int
@@ -251,16 +258,24 @@ class FindMonster:
 
         return max(monsters, key=lambda m: self.get_priority_tuple(m, tokenized_query, matches))
 
-    def build_extra_info(self, monster_matches: MatchMap) -> ExtraInfo:
+    @staticmethod
+    def build_extra_info(monster_matches: MatchMap) -> ExtraInfo:
         subquery_data = defaultdict(dict)
+        subquery_mons = defaultdict()
         for monster, match in monster_matches.items():
             for mod_token in match.mod:
-                if mod_token.match_data.subquery_result:
-                    subquery_data[mod_token.match_data.token][monster] = mod_token.match_data.subquery_result
+                match_data = mod_token.match_data
+                if match_data.subquery_result:
+                    subquery_data[match_data.token][monster.monster_id] = match_data.subquery_result.monster_id
+                    if match_data.subquery_result.monster_id not in subquery_mons:
+                        subquery_mons[match_data.subquery_result.monster_id] = match_data.subquery_result
         subquery_data = {SubqueryData(token.label, token.subquery, frozendict(m))
                          for token, m in subquery_data.items()}
 
-        return ExtraInfo(subquery_data, 0)
+        subquery_mons = {SubqueryMonsters(frozendict({token: mon}))
+                         for token, mon in subquery_mons.items()}
+
+        return ExtraInfo(subquery_data, subquery_mons, 0)
 
     async def _find_monster_search(self, tokenized_query: List[str]) -> \
             Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel]]:
