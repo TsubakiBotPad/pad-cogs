@@ -470,7 +470,7 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
 
-    @commands.command()
+    @commands.command(aliases=['lu'])
     @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
