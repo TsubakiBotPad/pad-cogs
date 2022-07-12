@@ -203,11 +203,11 @@ class MonsterListView:
     VIEW_TYPE = 'MonsterList'
 
     @classmethod
-    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings):
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings, offset=0):
         if not len(monsters):
             return []
         return [MonsterHeader.box_with_emoji(
-            mon, link=True, prefix=cls.get_emoji(i, current_monster_id),
+            mon, link=True, prefix=cls.get_emoji(offset+i, current_monster_id),
             query_settings=query_settings) for i, mon in enumerate(monsters)]
 
     @classmethod
@@ -258,6 +258,8 @@ class MonsterListView:
         else:
             cur_subq_id = None
             cur_mon_list = []
+            offset = 0
+            i = 0
             for m in state.monster_list:
                 subq_id = cls.get_subquery_mon(m.monster_id, state.subquery_data)
                 if cur_mon_list and subq_id != cur_subq_id:
@@ -268,11 +270,14 @@ class MonsterListView:
                         EmbedField(
                             title,
                             Box(*cls.monster_list(
-                                cur_mon_list, state.current_monster_id, state.query_settings)))
+                                cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
                     )
                     cur_mon_list = []
+                    offset += i
+                    i = 0
                 cur_mon_list.append(m)
                 cur_subq_id = subq_id
+                i += 1
 
             title = MonsterHeader.box_with_emoji(
                 cls.get_subquery_model(state, cur_subq_id), query_settings=state.query_settings, link=False)
@@ -280,7 +285,7 @@ class MonsterListView:
                 EmbedField(
                     title,
                     Box(*cls.monster_list(
-                        cur_mon_list, state.current_monster_id, state.query_settings)))
+                        cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
             )
 
         fields.append(EmbedField(BoldText('Page'),
