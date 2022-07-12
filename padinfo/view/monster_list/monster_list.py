@@ -247,11 +247,6 @@ class MonsterListView:
 
     @classmethod
     def embed(cls, state: MonsterListViewState):
-        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        # print(list(state.queried_props.extra_info))
         fields = []
 
         if not cls.has_subqueries(state):
@@ -264,7 +259,6 @@ class MonsterListView:
             cur_subq_id = None
             cur_mon_list = []
             for m in state.monster_list:
-                print(m)
                 subq_id = cls.get_subquery_mon(m.monster_id, state.subquery_data)
                 if cur_mon_list and subq_id != cur_subq_id:
                     cur_subq_id = subq_id
