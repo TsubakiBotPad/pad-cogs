@@ -227,7 +227,7 @@ class MonsterListView:
     @classmethod
     def embed(cls, state: MonsterListViewState):
         fields = []
-
+        print(state.extra_info)
         if not cls.has_subqueries(state):
             fields.append(
                 EmbedField(state.title,
@@ -242,7 +242,6 @@ class MonsterListView:
             for m in state.monster_list:
                 subq_id = state.extra_info.get_subquery_mon(m.monster_id)
                 if cur_mon_list and subq_id != cur_subq_id:
-                    cur_subq_id = subq_id
                     title = MonsterHeader.box_with_emoji(
                         state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings,
                         link=False)
