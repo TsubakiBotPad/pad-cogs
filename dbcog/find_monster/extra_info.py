@@ -35,8 +35,8 @@ class ExtraInfo(NamedTuple):
         """Returns the subquery monster ID, preferring the one that restricted the query by the most (i.e. returned the fewest options in the result set)"""
         best_weight = 100000000000  # infinity
         subquery_mon = None
+        item: SubqueryData
         for item in list(self.subquery_data):
-            item: "SubqueryData"
             if matched_mon_id not in item.map:
                 continue
             # we want to show the most restrictive query possible
