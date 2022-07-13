@@ -27,7 +27,8 @@ from tsutils.user_interaction import StatusManager, send_confirmation_message
 from .find_monster import token_mappings
 from .database_context import DbContext
 from .database_loader import load_database
-from dbcog.find_monster.find_monster import ExtraInfo, FindMonster, MonsterInfo
+from dbcog.find_monster.find_monster import FindMonster, MonsterInfo
+from .find_monster.extra_info import ExtraInfo
 from dbcog.find_monster.idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel

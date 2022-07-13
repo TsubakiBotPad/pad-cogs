@@ -13,8 +13,7 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
-    from dbcog.find_monster.find_monster import ExtraInfo
-    from dbcog.find_monster.find_monster import SubqueryData
+    from dbcog.find_monster.extra_info import SubqueryData, ExtraInfo
 
 
 class MonsterListQueriedProps:
@@ -43,8 +42,6 @@ class MonsterListViewState(ViewStateBase):
                          extra_state=extra_state)
         paginated_monsters = self.paginate(queried_props.monster_list)
         self.queried_props = queried_props
-        if self.queried_props.extra_info is not None:
-            self.subquery_data = self.queried_props.extra_info.subquery_data
         self.extra_info = self.queried_props.extra_info
         self.current_index = current_index
         self.current_page = current_page
@@ -203,11 +200,12 @@ class MonsterListView:
     VIEW_TYPE = 'MonsterList'
 
     @classmethod
-    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings, offset=0):
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings,
+                     offset=0):
         if not len(monsters):
             return []
         return [MonsterHeader.box_with_emoji(
-            mon, link=True, prefix=cls.get_emoji(offset+i, current_monster_id),
+            mon, link=True, prefix=cls.get_emoji(offset + i, current_monster_id),
             query_settings=query_settings) for i, mon in enumerate(monsters)]
 
     @classmethod
@@ -227,25 +225,6 @@ class MonsterListView:
         return state.title
 
     @classmethod
-    def get_subquery_mon(cls, mon_id, subquery_data):
-        best_weight = 100000000000  # infinity
-        subquery_mon = None
-        for item in list(subquery_data):
-            item: "SubqueryData"
-            if mon_id not in item.map:
-                continue
-            # we want to show the most restrictive query possible
-            if len(item.map) <= best_weight:
-                subquery_mon = item.map[mon_id]
-        return subquery_mon
-
-    @classmethod
-    def get_subquery_model(cls, state, m_id):
-        for item in list(state.extra_info.subquery_monsters):
-            if m_id in item.map:
-                return item.map[m_id]
-
-    @classmethod
     def embed(cls, state: MonsterListViewState):
         fields = []
 
@@ -261,11 +240,12 @@ class MonsterListView:
             offset = 0
             i = 0
             for m in state.monster_list:
-                subq_id = cls.get_subquery_mon(m.monster_id, state.subquery_data)
+                subq_id = state.extra_info.get_subquery_mon(m.monster_id)
                 if cur_mon_list and subq_id != cur_subq_id:
                     cur_subq_id = subq_id
                     title = MonsterHeader.box_with_emoji(
-                        cls.get_subquery_model(state, cur_subq_id), query_settings=state.query_settings, link=False)
+                        state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings,
+                        link=False)
                     fields.append(
                         EmbedField(
                             title,
@@ -280,7 +260,7 @@ class MonsterListView:
                 i += 1
 
             title = MonsterHeader.box_with_emoji(
-                cls.get_subquery_model(state, cur_subq_id), query_settings=state.query_settings, link=False)
+                state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings, link=False)
             fields.append(
                 EmbedField(
                     title,
