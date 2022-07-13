@@ -227,7 +227,6 @@ class MonsterListView:
     @classmethod
     def embed(cls, state: MonsterListViewState):
         fields = []
-        print(state.extra_info)
         if not cls.has_subqueries(state):
             fields.append(
                 EmbedField(state.title,
