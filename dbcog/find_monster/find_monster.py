@@ -1,12 +1,12 @@
 import re
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
+from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Set, Tuple, Union
 
-from frozendict import frozendict
 from tsutils.enums import Server
 from tsutils.formatting import rmdiacritics
 from tsutils.query_settings.query_settings import QuerySettings
 
+from dbcog.find_monster.extra_info import ExtraInfo
 from dbcog.find_monster.tokens.find_monster_tokens import EPSILON, MODIFIER_JW_DISTANCE, MatchData, MatchMap, \
     MonsterInfo, MonsterMatch, QueryToken, SpecialToken, \
     TOKEN_JW_DISTANCE, TokenMatch, calc_ratio_modifier, calc_ratio_name, string_to_token
@@ -21,25 +21,6 @@ SERIES_TYPE_PRIORITY = {
     "lowpriority": 0,
     None: 0
 }
-
-
-class SubqueryData(NamedTuple):
-    # Subquery token type matched
-    label: str
-
-    # Subquery given
-    subquery: str
-
-    # Immutable Parent-to-Child monster mapping
-    map: Mapping[MonsterModel, MonsterModel]
-
-
-class ExtraInfo(NamedTuple):
-    # Subquery Result
-    subquery_data: Set[SubqueryData]
-
-    # Unused
-    return_code: int
 
 
 class FindMonster:
@@ -235,8 +216,9 @@ class FindMonster:
             for evo in self.dbcog.database.graph.get_alt_monsters(monster):
                 monster_evos.add(evo)
                 if matches[evo].score < matches[monster].score:
-                    matches[evo].name = {TokenMatch(t[0], t[1], MatchData(t.match_data.token, from_evo=monster.monster_id))
-                                         for t in matches[monster].name}
+                    matches[evo].name = {
+                        TokenMatch(t[0], t[1], MatchData(t.match_data.token, from_evo=monster.monster_id))
+                        for t in matches[monster].name}
                     matches[evo].score = matches[monster].score - EPSILON * 3
 
         return monster_evos
@@ -250,17 +232,6 @@ class FindMonster:
             tokenized_query = []
 
         return max(monsters, key=lambda m: self.get_priority_tuple(m, tokenized_query, matches))
-
-    def build_extra_info(self, monster_matches: MatchMap) -> ExtraInfo:
-        subquery_data = defaultdict(dict)
-        for monster, match in monster_matches.items():
-            for mod_token in match.mod:
-                if mod_token.match_data.subquery_result:
-                    subquery_data[mod_token.match_data.token][monster] = mod_token.match_data.subquery_result
-        subquery_data = {SubqueryData(token.label, token.subquery, frozendict(m))
-                         for token, m in subquery_data.items()}
-
-        return ExtraInfo(subquery_data, 0)
 
     async def _find_monster_search(self, tokenized_query: List[str]) -> \
             Tuple[Optional[MonsterModel], MatchMap, Set[MonsterModel]]:
@@ -330,7 +301,7 @@ class FindMonster:
         )
 
         monster_info = MonsterInfo(best_monster, matches_dict, valid_monsters)
-        extra_info = self.build_extra_info(matches_dict)
+        extra_info = ExtraInfo.build_extra_info(matches_dict)
         return monster_info, extra_info
 
     async def find_monster(self, query: str) -> Tuple[Optional[MonsterModel], ExtraInfo]:

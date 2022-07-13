@@ -27,7 +27,8 @@ from tsutils.user_interaction import StatusManager, send_confirmation_message
 from .find_monster import token_mappings
 from .database_context import DbContext
 from .database_loader import load_database
-from dbcog.find_monster.find_monster import ExtraInfo, FindMonster, MonsterInfo
+from dbcog.find_monster.find_monster import FindMonster, MonsterInfo
+from .find_monster.extra_info import ExtraInfo
 from dbcog.find_monster.idtest_mixin import IdTest
 from .models.enum_types import DEFAULT_SERVER, SERVERS
 from .models.monster_model import MonsterModel
@@ -178,7 +179,6 @@ class DBCog(commands.Cog, IdTest):
         for index in self.indexes.values():
             issues.extend(index.issues)
         for class_attributes in MONSTER_CLASS_ATTRIBUTES:
-            good = False
             for monster in self.database.get_all_monsters():
                 val: Any = monster
                 for ca in class_attributes:
@@ -344,9 +344,9 @@ class DBCog(commands.Cog, IdTest):
         monster, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monster(query)
         return monster
 
-    async def find_monsters(self, query: str, author_id: int = 0) -> List[MonsterModel]:
+    async def find_monsters(self, query: str, author_id: int = 0) -> Tuple[List[MonsterModel], ExtraInfo]:
         monsters, e_info = await FindMonster(self, await self.get_fm_flags(author_id)).find_monsters(query)
-        return monsters
+        return monsters, e_info
 
     async def find_monster_debug(self, query: str) -> Tuple[MonsterInfo, ExtraInfo]:
         return await FindMonster(self, self.fm_flags_default).find_monster_debug(query)
