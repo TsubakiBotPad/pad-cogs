@@ -28,12 +28,19 @@ def _killer_latent_emoji(latent_name: str):
     return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
-def _make_prefix(idx, compound_skill_type_id, subskill):
-    if compound_skill_type_id == 1:
+def _make_prefix(idx, skill, subskill):
+    if skill.compound_skill_type_id == 1:
         return emoji_cache.get_emoji('bd') + ' '
-    elif compound_skill_type_id in (2, 3):
+    elif skill.compound_skill_type_id in (2, 3):
         return number_emoji_small(idx) + (f' **[{subskill.cooldown}cd]** ' if idx != 1 else ' ')
     return ''
+
+
+def _make_suffix(idx, skill, subskill):
+    if subskill.board_76 != "Z" * (7 * 6):
+        return (f" [see 6x5](https://pad.dawnglare.com/?patt={subskill.board_65}&showfill=1) ·"
+                f" [see 7x6](https://pad.dawnglare.com/?patt={subskill.board_76}&showfill=1&height=6&width=7)")
+    return ""
 
 
 class BaseIdMainView(BaseIdView, ABC):
@@ -125,8 +132,9 @@ class BaseIdMainView(BaseIdView, ABC):
 
         if active_skill is None:
             return 'None'
-        return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id, subskill)
+        return "\n".join(_make_prefix(c, active_skill, subskill)
                          + jinja2.Template(subskill.desc_templated).render(**jinja2_replacements)
+                         + _make_suffix(c, active_skill, subskill)
                          for c, subskill in enumerate(active_skill.active_subskills, 1))
 
     @staticmethod

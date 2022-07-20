@@ -87,6 +87,8 @@ ACTIVE_QUERY = """SELECT
   ass.desc_templated_ja AS ass_desc_templated_ja,
   ass.desc_templated_en AS ass_desc_templated_en,
   ass.desc_templated_ko AS ass_desc_templated_ko,
+  ass.board_65 AS ass_board_65,
+  ass.board_76 AS ass_board_76,
   ass.cooldown AS ass_cooldown,
   ap.active_part_id,
   ap.active_skill_type_id,
@@ -236,6 +238,8 @@ class MonsterGraph:
                     'desc_templated_ja': row.ass_desc_templated_ja,
                     'desc_templated_en': row.ass_desc_templated_en,
                     'desc_templated_ko': row.ass_desc_templated_ko,
+                    'board_65': row.ass_board_65,
+                    'board_76': row.ass_board_76,
                     'cooldown': row.ass_cooldown,
 
                     'active_parts': []

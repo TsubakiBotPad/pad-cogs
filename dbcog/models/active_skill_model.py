@@ -42,6 +42,8 @@ class ActiveSubskillModel(BaseModel):
         self.desc_templated_ja = kwargs['desc_templated_ja']
         self.desc_templated_en = kwargs['desc_templated_en']
         self.desc_templated_ko = kwargs['desc_templated_ko']
+        self.board_65 = kwargs['board_65']
+        self.board_76 = kwargs['board_76']
         self.cooldown = kwargs['cooldown']
 
         self.active_parts = active_parts
