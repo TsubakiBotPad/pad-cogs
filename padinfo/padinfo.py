@@ -1421,7 +1421,8 @@ class PadInfo(commands.Cog):
         board = BoardGenerator(message)
 
         if board.invalid_board:
-            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 board.")
+            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 "
+                                                 "board. Rows/columns must be separated with spaces.")
         elif board.invalid_orbs:
             await send_cancellation_message(ctx, f"An invalid letter was used. Only {board.allowed_letters}are allowed.")
         else:

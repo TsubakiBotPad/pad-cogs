@@ -7,69 +7,50 @@ class BoardGenerator(object):
 
     def __init__(self, board):
         self.board = board.split()
+        self.board_height = None
+        self.board_width = None
         self.invalid_board = False
-        self.invert = self.inversion_check()
-        self.generate_clean_board()
-        self.validate_orbs()
+        self.invert = BoardGenerator.inversion in self.board
+        self.clean_board = self.get_clean_board()
+        self.invalid_orbs = not all(letter in BoardGenerator.allowed_letters for letter in self.clean_board)
         self.board_length = len(self.clean_board)
         self.eval_board_size()
-        self.generate_link()
+        self.link = self.get_link()
 
-    def inversion_check(self):
-        if BoardGenerator.inversion in self.board:
-            invert = True
-        else:
-            invert = False
-
-        return invert
-
-    def generate_clean_board(self):
+    def get_clean_board(self):
         board = self.board
 
         if self.invert:
             board.remove(BoardGenerator.inversion)
-            clean = ''.join(self.invert_board(board))
+            clean = ''.join(self.invert_fill(board))
         else:
             clean = ''.join(board)
 
-        self.clean_board = clean
+        return clean
 
-    def invert_board(self, board):
-        build_string = []
+    def invert_fill(self, board):
         inverted_board = []
 
         try:
             for i in range(len(board[0])):
+                build_string = ""
                 for j in range(len(board)):
-                    build_string.append(board[j][i])
-                clean_string = ''.join(build_string)
-                inverted_board.append(clean_string)
-                build_string = []
+                    build_string += board[j][i]
+                inverted_board.append(build_string)
         except:
             self.invalid_board = True
 
         return inverted_board
 
-    def validate_orbs(self):
-        if not all(letter in BoardGenerator.allowed_letters for letter in self.clean_board):
-            invalid_orbs = True
-        else:
-            invalid_orbs = False
-
-        self.invalid_orbs = invalid_orbs
-
     def eval_board_size(self):
         length = self.board_length
 
         if length == 20:
-            height = 4
-            width = 5
+            height, width = 4, 5
         elif length == 42:
-            height = 6
-            width = 7
+            height, width = 6, 7
         elif length == 30:
-            height = 5
-            width = 6
+            height, width = 5, 6
         else:
             height = 0
             width = 0
@@ -78,11 +59,11 @@ class BoardGenerator(object):
         self.board_height = height
         self.board_width = width
 
-    def generate_link(self):
+    def get_link(self):
         length = self.board_length
         link = BoardGenerator.dawnglare_link.format(self.clean_board)
 
         if length == 20 or length == 42:
             link = f"{link}&height={self.board_height}&width={self.board_width}"
 
-        self.link = link
+        return link
