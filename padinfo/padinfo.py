@@ -71,6 +71,7 @@ from padinfo.view.pantheon import PantheonViewState
 from padinfo.view.pic import PicViewState
 from padinfo.view.series_scroll import SeriesScrollViewState
 from padinfo.view.transforminfo import TransformInfoViewState
+from .boardgenerator import BoardGenerator
 
 if TYPE_CHECKING:
     from dbcog.dbcog import DBCog
@@ -1409,3 +1410,19 @@ class PadInfo(commands.Cog):
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        query_settings, ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)
+
+    @commands.command()
+    async def board(self, ctx, *, message):
+        """Generate a Dawnglare link from the user provided string.
+        Rows/columns separated with spaces.
+        Default fill direction is right then down.
+        Use -1 to invert fill, going down then right."""
+
+        board = BoardGenerator(message)
+
+        if board.invalid_board:
+            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 board.")
+        elif board.invalid_orbs:
+            await send_cancellation_message(ctx, f"An invalid letter was used. Only {board.allowed_letters}are allowed.")
+        else:
+            await ctx.send(board.link)
