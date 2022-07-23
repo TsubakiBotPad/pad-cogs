@@ -1414,17 +1414,16 @@ class PadInfo(commands.Cog):
     @commands.command()
     async def board(self, ctx, *, message):
         """Generate a Dawnglare link from the user provided string.
-        Rows/columns separated with spaces.
         Default fill direction is right then down.
         Use -1 to invert fill, going down then right."""
 
         board = BoardGenerator(message.upper())
 
         if board.invalid_board:
-            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 "
-                                                 "board. Rows/columns must be separated with spaces.")
+            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 board.")
+
         if board.invalid_orbs:
-            await send_cancellation_message(ctx, f"An invalid letter was used. Only {board.allowed_letters}are allowed.")
+            await send_cancellation_message(ctx, f"An invalid letter was used. Only {board.allowed_letters} are allowed.")
 
         if not (board.invalid_board or board.invalid_orbs):
             await ctx.send(board.link)
