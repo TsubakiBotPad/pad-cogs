@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, Iterable, List, Mapping, Optional, Set
 
 from tsutils.enums import Server
 
@@ -10,6 +10,7 @@ from dbcog.models.encounter_model import EncounterModel
 from dbcog.models.enemy_data_model import EnemyDataModel
 from dbcog.models.enemy_skill_model import EnemySkillModel
 from dbcog.models.enum_types import DEFAULT_SERVER
+from dbcog.models.monster_model import MonsterModel
 from dbcog.models.sub_dungeon_model import SubDungeonModel
 
 
@@ -197,6 +198,16 @@ SCHEDULED_EVENT_QUERY = """SELECT
 FROM
   schedule 
   LEFT JOIN dungeons ON schedule.dungeon_id = dungeons.dungeon_id
+"""
+
+DROP_QUERY = """SELECT
+  sub_dungeons{0}.sub_dungeon_id
+FROM
+  sub_dungeons{0}
+  JOIN encounters ON encounters.sub_dungeon_id = sub_dungeons{0}.sub_dungeon_id
+  JOIN drops ON drops.encounter_id = encounters.encounter_id
+WHERE
+  drops.monster_id = ?
 """
 
 # TODO: Move to gdoc
@@ -404,3 +415,18 @@ class DungeonContext(object):
         if server not in self._dungeon_map:
             self._dungeon_map[server] = {e.dungeon_id: e for e in self.get_all_dungeons(server=server)}
         return self._dungeon_map[server].get(dungeon_id)
+
+    @lru_cache(maxsize=None)
+    def get_subdungeons_from_drop_monster(self, monster: MonsterModel) -> List[SubDungeonModel]:
+        suffix = ""
+        if monster.server_priority == Server.NA:
+            suffix = '_na'
+
+        rows = self.database.query_many(DROP_QUERY.format(suffix), (monster.monster_id,))
+        return [self.get_sub_dungeon(row.sub_dungeon_id, server=monster.server_priority) for row in rows]
+
+    def get_dungeon_mapping(self, subdungeons: Iterable[SubDungeonModel]) -> Mapping[DungeonModel, List[SubDungeonModel]]:
+        mapping = defaultdict(list)
+        for sd in sorted(subdungeons, key=lambda sd: sd.sub_dungeon_id):
+            mapping[self.get_dungeon(sd.dungeon_id)].append(sd)
+        return mapping
