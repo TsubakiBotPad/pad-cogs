@@ -1412,7 +1412,7 @@ class PadInfo(commands.Cog):
         await menu.create(ctx, state)
 
     @commands.command()
-    async def board(self, ctx, *, message):
+    async def boardlink(self, ctx, *, message):
         """Generate a Dawnglare link from the user provided string.
         Default fill direction is right then down.
         Use -1 to invert fill, going down then right."""
