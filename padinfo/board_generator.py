@@ -15,14 +15,18 @@ class BoardGenerator(object):
         self.invert = self.inversion in self.board
         self.board = self.board.replace(self.inversion, "")
         self.board_length = len(self.board)
-        self.invalid_board = self.board_length not in self.board_sizes
+        self.invalid_size = self.board_length not in self.board_sizes
         self.invalid_orbs = not all(letter in self.allowed_letters for letter in self.board)
-        if not self.invalid_board and not self.invalid_orbs:
-            self.board_height = self.board_sizes[self.board_length].get('height')
-            self.board_width = self.board_sizes[self.board_length].get('width')
-            if self.invert:
-                self.board = self.invert_fill(self.board)
-            self.link = self.get_link()
+
+        if self.invalid_size or self.invalid_orbs:
+            return
+
+        self.board_height = self.board_sizes[self.board_length].get('height')
+        self.board_width = self.board_sizes[self.board_length].get('width')
+
+        if self.invert:
+            self.board = self.invert_fill(self.board)
+        self.link = self.get_link()
 
     def invert_fill(self, board):
         inverted_board = ""

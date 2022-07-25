@@ -31,6 +31,7 @@ from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_att
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
+from padinfo.board_generator import BoardGenerator
 from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -71,7 +72,6 @@ from padinfo.view.pantheon import PantheonViewState
 from padinfo.view.pic import PicViewState
 from padinfo.view.series_scroll import SeriesScrollViewState
 from padinfo.view.transforminfo import TransformInfoViewState
-from .boardgenerator import BoardGenerator
 
 if TYPE_CHECKING:
     from dbcog.dbcog import DBCog
@@ -1419,11 +1419,11 @@ class PadInfo(commands.Cog):
 
         board = BoardGenerator(message.upper())
 
-        if board.invalid_board:
+        if board.invalid_size:
             await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 board.")
 
         if board.invalid_orbs:
             await send_cancellation_message(ctx, f"An invalid letter was used. Only {board.allowed_letters} are allowed.")
 
-        if not (board.invalid_board or board.invalid_orbs):
+        if not (board.invalid_size or board.invalid_orbs):
             await ctx.send(board.link)
