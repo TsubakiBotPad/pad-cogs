@@ -860,11 +860,12 @@ class PadBuildImage(commands.Cog):
         """
         Refresh assets folder
         """
-        await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
-        dbcog = await self.get_dbcog()
-        awk_ids = dbcog.database.awoken_skill_map.keys()
-        await self.settings.downloadAllAssets(awk_ids)
-        await ctx.tick()
+        async with ctx.typing():
+            await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
+            dbcog = await self.get_dbcog()
+            awk_ids = dbcog.database.awoken_skill_map.keys()
+            await self.settings.downloadAllAssets(awk_ids)
+            await ctx.tick()
 
     @commands.command()
     @commands.guild_only()
