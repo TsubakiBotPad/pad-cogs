@@ -61,11 +61,11 @@ class Event:
         """True if past the close time for the event."""
         return self.end_from_now_sec() <= 0
 
-    def start_from_now_discord(self) -> str:
-        return f"<t:{int(self.open_datetime.timestamp())}:R>"
+    def start_from_now_discord(self, output_type: str) -> str:
+        return f"<t:{int(self.open_datetime.timestamp())}:{output_type}>"
 
-    def end_from_now_discord(self) -> str:
-        return f"<t:{int(self.close_datetime.timestamp())}:R>"
+    def end_from_now_discord(self, output_type: str) -> str:
+        return f"<t:{int(self.close_datetime.timestamp())}:{output_type}>"
 
     def end_from_now_full_min(self) -> str:
         days, sec = divmod(self.end_from_now_sec(), 86400)
@@ -82,14 +82,14 @@ class Event:
     def group_long_name(self):
         return self.group.upper() if self.group is not None else "ALL"
 
-    def to_partial_event(self, pe):
-        group = self.group_long_name()[0] if self.group is not None else " "
+    def to_partial_event(self, pe, output_type: str):
+        group = self.group_long_name()[0] if self.group is not None else ""
         if self.is_started():
             return "`" + group + " " + self.clean_dungeon_name + " " * (
-                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.end_from_now_discord()
+                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.end_from_now_discord(output_type)
         else:
             return "`" + group + " " + self.clean_dungeon_name + " " * (
-                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.start_from_now_discord()
+                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.start_from_now_discord(output_type)
 
     def __repr__(self):
         return f"Event<{self.clean_dungeon_name} ({self.group} {self.server})>"
