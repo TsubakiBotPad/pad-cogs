@@ -156,14 +156,19 @@ class PadEvents(commands.Cog, AutoEvent):
                     await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
 
     async def do_daily_post(self, server):
-        msg = self.make_active_text(server)
+        ongoing_daily_msg = self.make_active_ongoing_daily_text(server)
+        limited_msg = self.make_active_limited_text(server)
         for cid, data in (await self.config.all_channels()).items():
             if (channel := self.bot.get_channel(cid)) is None \
                     or server not in data['daily_servers']:
                 continue
-            for page in pagify(msg, delims=['\n\n']):
+            for page in pagify(ongoing_daily_msg, delims=['\n\n']):
                 with suppress(discord.Forbidden):
                     await channel.send(box(page))
+            if limited_msg:
+                for page in pagify(limited_msg):
+                    with suppress(discord.Forbidden):
+                        await channel.send(page)
 
     async def do_autoevent_summary(self, server):
         events = EventList(self.events).with_server(server).today_only('NA')
@@ -184,9 +189,9 @@ class PadEvents(commands.Cog, AutoEvent):
                 if not aepevents:
                     continue
                 msg = self.make_full_guerrilla_output('AEP Event', aepevents)
-                for page in pagify(msg, delims=['\n\n']):
+                for page in pagify(msg):
                     with suppress(discord.Forbidden):
-                        await channel.send(box(page))
+                        await channel.send(page)
 
     @commands.group(aliases=['pde'])
     @checks.mod_or_permissions(manage_guild=True)
@@ -277,11 +282,15 @@ class PadEvents(commands.Cog, AutoEvent):
     async def active(self, ctx, server: Server):
         server = server.value
 
-        msg = self.make_active_text(server)
-        for page in pagify(msg, delims=['\n\n']):
+        ongoing_daily_msg = self.make_active_ongoing_daily_text(server)
+        for page in pagify(ongoing_daily_msg, delims=['\n\n']):
             await ctx.send(box(page))
+        limited_msg = self.make_active_limited_text(server)
+        if limited_msg:
+            for page in pagify(limited_msg):
+                await ctx.send(page)
 
-    def make_active_text(self, server):
+    def make_active_ongoing_daily_text(self, server):
         server = normalize_server_name(server)
 
         server_events = EventList(self.events).with_server(server)
@@ -290,7 +299,7 @@ class PadEvents(commands.Cog, AutoEvent):
 
         active_special = active_events.with_dungeon_type(DungeonType.Special)
 
-        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B %-e')
+        msg = server + " Events - " + datetime.datetime.now(SERVER_TIMEZONES[server]).strftime('%A, %B %d')
 
         ongoing_events = active_events.with_length(EventLength.weekly, EventLength.special)
         if ongoing_events:
@@ -300,10 +309,17 @@ class PadEvents(commands.Cog, AutoEvent):
         if active_dailies_events:
             msg += "\n\n" + self.make_daily_output('Daily Dungeons', active_dailies_events)
 
-        limited_events = events_today.with_length(EventLength.limited)
-        if limited_events:
-            msg += "\n\n" + self.make_full_guerrilla_output('Limited Events', limited_events)
+        return msg
 
+    def make_active_limited_text(self, server):
+        server = normalize_server_name(server)
+
+        server_events = EventList(self.events).with_server(server)
+        events_today = server_events.today_only(server)
+        limited_events = events_today.with_length(EventLength.limited)
+        msg = ""
+        if limited_events:
+            msg = self.make_full_guerrilla_output('Limited Events', limited_events)
         return msg
 
     def make_daily_output(self, table_name, event_list):
@@ -353,32 +369,14 @@ class PadEvents(commands.Cog, AutoEvent):
                         events_by_group[group].append(event)
 
             while True:
-                row = []
-                for group in GROUPS:
-                    if len(events_by_group[group]) == 0:
-                        row.append('')
-                    else:
-                        # Get the timestamp of the earliest event in this group in PST
-                        start = events_by_group[group].pop(0).open_datetime.astimezone(pytz.timezone('US/Pacific'))
-                        row.append(start.strftime("%H:%M"))
-
-                if not any(row):
+                # All groups are now the same
+                if len(events_by_group['red']) == 0:
                     break
-
-                if row[0] == row[1] == row[2]:
-                    rows.append([name, row[0], '=', '='])
                 else:
-                    rows.append([name] + row)
+                    rows.append(events_by_group['red'].pop(0).to_partial_event(self, "t"))
 
-        header = "Times are shown in Pacific Time\n= means same for all groups\n"
-        table = prettytable.PrettyTable([table_name, 'Red', 'Blue', 'Green'])
-        table.align[table_name] = "l"
-        table.hrules = prettytable.HEADER
-        table.vrules = prettytable.ALL
-        for r in rows:
-            table.add_row(r)
-
-        return header + table.get_string() + "\n"
+        header = "`  " + table_name + "`\n"
+        return header + "\n".join(rows)
 
     @commands.command(aliases=['events'])
     async def eventsna(self, ctx, group: StarterGroup = None):
@@ -426,14 +424,14 @@ class PadEvents(commands.Cog, AutoEvent):
         output = "**Events for {}**".format(server)
 
         if len(active_events) > 0:
-            output += "\n\n" + "`  Remaining Dungeon       - Ending Time`"
+            output += "\n\n" + "`  Remaining Dungeon      - Ending Time`"
             for e in active_events:
-                output += "\n" + e.to_partial_event(self)
+                output += "\n" + e.to_partial_event(self, "R")
 
         if len(pending_events) > 0:
-            output += "\n\n" + "`  Dungeon                 - ETA`"
+            output += "\n\n" + "`  Dungeon                - ETA`"
             for e in pending_events:
-                output += "\n" + e.to_partial_event(self)
+                output += "\n" + e.to_partial_event(self, "R")
 
         for page in pagify(output):
             await ctx.send(page)
