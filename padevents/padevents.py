@@ -1,19 +1,19 @@
 import asyncio
 import datetime
 import logging
-import time
 from collections import defaultdict
 from contextlib import suppress
 from datetime import timedelta
 from io import BytesIO
-from typing import Any, Iterable, NoReturn, Optional, Set
+from typing import Any, NoReturn, Optional
 
 import discord
 import prettytable
 import pytz
+import time
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, pagify
-from tsutils.enums import Server, StarterGroup
+from tsutils.enums import Server
 from tsutils.formatting import normalize_server_name
 from tsutils.helper_classes import DummyObject
 from tsutils.helper_functions import conditional_iterator, repeating_timer
@@ -25,7 +25,6 @@ from padevents.events import Event, EventList, SERVER_TIMEZONES
 logger = logging.getLogger('red.padbot-cogs.padevents')
 
 SUPPORTED_SERVERS = ["JP", "NA", "KR"]
-GROUPS = ['red', 'blue', 'green']
 
 
 class PadEvents(commands.Cog, AutoEvent):
@@ -120,15 +119,14 @@ class PadEvents(commands.Cog, AutoEvent):
         await dbcog.wait_until_ready()
         scheduled_events = dbcog.database.get_all_events()
 
-        new_events = set()
+        self.events = set()
         for se in scheduled_events:
             try:
-                new_events.add(Event(se))
+                self.events.add(Event(se))
             except Exception as ex:
                 logger.exception("Refresh error:")
 
-        self.events = self.coalesce_event_data(new_events)
-        self.started_events = {ev.key for ev in new_events if ev.is_started()}
+        self.started_events = {ev.key for ev in self.events if ev.is_started()}
         async with self.config.sent() as seen:
             for key, value in [*seen.items()]:
                 if value < time.time() - 60 * 60:
@@ -145,13 +143,7 @@ class PadEvents(commands.Cog, AutoEvent):
                 if (channel := self.bot.get_channel(cid)) is None \
                         or event.server not in data['guerrilla_servers']:
                     continue
-                role_name = f'{event.server}_group_{event.group_long_name()}'
-                role = channel.guild.get_role(role_name)
-                if role and role.mentionable:
-                    message = f"{role.mention} {event.clean_dungeon_name} is starting"
-                else:
-                    message = box(f"Server {event.server}, group {event.group_long_name()}:"
-                                  f" {event.clean_dungeon_name}")
+                message = box(f"Server {event.server}: {event.clean_dungeon_name}")
                 with suppress(discord.Forbidden):
                     await channel.send(message, allowed_mentions=discord.AllowedMentions(roles=True))
 
@@ -177,9 +169,8 @@ class PadEvents(commands.Cog, AutoEvent):
                 continue
             channels = defaultdict(list)
             for key, aep in data.get('pingroles', {}).items():
-                for channel in aep['channels']:
-                    if channel is not None:
-                        channels[channel].append(aep)
+                if aep['channel'] is not None:
+                    channels[aep['channel']].append(aep)
             for cid, aeps in channels.items():
                 if (channel := self.bot.get_channel(cid)) is None:
                     continue
@@ -200,10 +191,8 @@ class PadEvents(commands.Cog, AutoEvent):
 
     @padevents.command()
     @checks.is_owner()
-    async def testevent(self, ctx, server: Server, seconds: int = 0, group='red'):
+    async def testevent(self, ctx, server: Server, seconds: int = 0):
         server = server.value
-        if group.lower() not in ('red', 'blue', 'green'):
-            group = None
 
         dbcog: Any = self.bot.get_cog('DBCog')
         await dbcog.wait_until_ready()
@@ -218,7 +207,6 @@ class PadEvents(commands.Cog, AutoEvent):
             event_type_id=-1,
             start_timestamp=timestamp,
             end_timestamp=timestamp + 60,
-            group_name=group and group.lower(),
             dungeon_model=DummyObject(
                 name_en='fake_dungeon_name',
                 clean_name_en='fake_dungeon_name',
@@ -342,77 +330,69 @@ class PadEvents(commands.Cog, AutoEvent):
         return tbl.get_string()
 
     def make_active_guerrilla_output(self, table_name: str, event_list: EventList) -> str:
-        tbl = prettytable.PrettyTable([table_name, "Group", "Time"])
+        tbl = prettytable.PrettyTable([table_name, "Time"])
         tbl.hrules = prettytable.HEADER
         tbl.vrules = prettytable.NONE
         tbl.align[table_name] = "l"
         tbl.align["Time"] = "r"
         for e in event_list:
-            tbl.add_row([e.clean_dungeon_name, e.group, e.end_from_now_full_min().strip()])
+            tbl.add_row([e.clean_dungeon_name, e.end_from_now_full_min().strip()])
         return tbl.get_string()
 
     def make_full_guerrilla_output(self, table_name, event_list, server):
         return "**" + table_name + "** - " + self.do_partial_text(server, "t", event_list)
 
     @commands.command(aliases=['events'])
-    async def eventsna(self, ctx, group: StarterGroup = None):
+    async def eventsna(self, ctx):
         """Display upcoming daily events for NA."""
-        await self.do_partial(ctx, Server.NA, "R", group)
+        await self.do_partial(ctx, Server.NA, "R")
 
     @commands.command()
-    async def eventsna2(self, ctx, group: StarterGroup = None):
+    async def eventsna2(self, ctx):
         """Display upcoming daily events for NA as a timestamp."""
-        await self.do_partial(ctx, Server.NA, "t", group)
+        await self.do_partial(ctx, Server.NA, "t")
 
     @commands.command()
-    async def eventsjp(self, ctx, group: StarterGroup = None):
+    async def eventsjp(self, ctx):
         """Display upcoming daily events for JP."""
-        await self.do_partial(ctx, Server.JP, "R", group)
+        await self.do_partial(ctx, Server.JP, "R")
 
     @commands.command()
-    async def eventskr(self, ctx, group: StarterGroup = None):
+    async def eventskr(self, ctx):
         """Display upcoming daily events for KR."""
-        await self.do_partial(ctx, Server.KR, "R", group)
+        await self.do_partial(ctx, Server.KR, "R")
 
-    async def do_partial(self, ctx, server: Server, output_type: str, group: StarterGroup = None):
+    async def do_partial(self, ctx, server: Server, output_type: str):
         server = server.value
-
-        if group is not None:
-            group = GROUPS[group.value]
 
         events = EventList(self.events)
         events = events.with_server(server)
         events = events.with_dungeon_type(DungeonType.SoloSpecial, DungeonType.Special)
         events = events.with_length(EventLength.limited)
-        output = self.do_partial_text(server, output_type, events, group)
+        output = self.do_partial_text(server, output_type, events)
         for page in pagify(output):
             await ctx.send(page)
 
-    def do_partial_text(self, server: Server, output_type: str, events, group: StarterGroup = None):
+    def do_partial_text(self, server: Server, output_type: str, events):
         active_events = sorted(events.active_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
         pending_events = sorted(events.pending_only(), key=lambda e: (e.open_datetime, e.dungeon_name), reverse=True)
 
-        if group is not None:
-            active_events = [e for e in active_events if e.group == group.lower()]
-            pending_events = [e for e in pending_events if e.group == group.lower()]
-
-        active_events.sort(key=lambda e: (GROUPS.index(e.group or 'red'), e.open_datetime))
-        pending_events.sort(key=lambda e: (GROUPS.index(e.group or 'red'), e.open_datetime))
+        active_events.sort(key=lambda e: e.open_datetime)
+        pending_events.sort(key=lambda e: e.open_datetime)
 
         if len(active_events) == 0 and len(pending_events) == 0:
-            return "No events available for " + server
+            return "No events available for " + server.name
 
         output = "**Events for {}**".format(server)
 
         if len(active_events) > 0:
             output += "\n\n" + "`  Remaining Dungeon      - Ending Time`"
-            for e in active_events:
-                output += "\n" + e.to_partial_event(self, output_type)
-
+            for event in active_events:
+                output += "\n" + event.to_partial_event(self, output_type)
         if len(pending_events) > 0:
             output += "\n\n" + "`  Dungeon                - " + ("ETA`" if output_type == "R" else "Start Time`")
-            for e in pending_events:
-                output += "\n" + e.to_partial_event(self, output_type)
+            for event in pending_events:
+                output += "\n" + event.to_partial_event(self, output_type)
         return output
 
     def get_most_recent_day_change(self):
@@ -425,23 +405,3 @@ class PadEvents(commands.Cog, AutoEvent):
             return "KR"
         else:
             return "JP"
-
-    def coalesce_event_data(self, events: Iterable[Event]) -> Set[Event]:
-        all_events = set()
-
-        grouped = defaultdict(lambda: {})
-        for event in events:
-            if event.group is None:
-                all_events.add(event)
-                continue
-            key = (event.open_datetime, event.close_datetime, event.server, event.dungeon.dungeon_id)
-            grouped[key][event.group] = event
-
-        for _, grouped_events in grouped.items():
-            if len(grouped_events) != 3:
-                all_events.update(grouped_events.values())
-                continue
-            grouped_events['red'].group = None
-            all_events.add(grouped_events['red'])
-
-        return all_events
