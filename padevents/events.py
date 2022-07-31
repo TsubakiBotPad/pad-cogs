@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Callable, Collection, TYPE_CHECKING
 
 import pytz
+from redbot.core.utils.chat_formatting import inline
 from tsutils.formatting import normalize_server_name
 from tsutils.time import JP_TIMEZONE, KR_TIMEZONE, NA_TIMEZONE
 
@@ -23,9 +24,8 @@ class Event:
     def __init__(self, scheduled_event: "ScheduledEventModel"):
         self.key = scheduled_event.event_id
         self.server = SUPPORTED_SERVERS[scheduled_event.server_id]
-        self.open_datetime: datetime = scheduled_event.open_datetime
-        self.close_datetime: datetime = scheduled_event.close_datetime
-        self.group = scheduled_event.group_name
+        self.open_datetime: datetime.datetime = scheduled_event.open_datetime
+        self.close_datetime: datetime.datetime = scheduled_event.close_datetime
         self.dungeon = scheduled_event.dungeon
         self.dungeon_name = self.dungeon.name_en if self.dungeon else 'unknown_dungeon'
 
@@ -79,20 +79,15 @@ class Event:
         else:
             return '{:2}m'.format(int(minutes))
 
-    def group_long_name(self):
-        return self.group.upper() if self.group is not None else "ALL"
-
     def to_partial_event(self, pe, output_type: str):
-        group = self.group_long_name()[0] if self.group is not None else ""
+        ret = inline(self.clean_dungeon_name.ljust(24) + "-")
         if self.is_started():
-            return "`" + group + " " + self.clean_dungeon_name + " " * (
-                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.end_from_now_discord(output_type)
+            return ret + self.end_from_now_discord(output_type)
         else:
-            return "`" + group + " " + self.clean_dungeon_name + " " * (
-                max(24 - len(self.clean_dungeon_name), 0)) + "-`" + self.start_from_now_discord(output_type)
+            return ret + self.start_from_now_discord(output_type)
 
     def __repr__(self):
-        return f"Event<{self.clean_dungeon_name} ({self.group} {self.server})>"
+        return f"Event<{self.clean_dungeon_name} ({self.server})>"
 
 
 class EventList:
@@ -114,9 +109,6 @@ class EventList:
 
     def with_dungeon_type(self, *dungeon_types):
         return self.with_func(lambda e: e.dungeon_type in dungeon_types)
-
-    def is_grouped(self):
-        return self.with_func(lambda e: e.group is not None)
 
     def pending_only(self):
         return self.with_func(lambda e: not e.is_started())
