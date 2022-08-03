@@ -427,6 +427,6 @@ class DungeonContext(object):
 
     def get_dungeon_mapping(self, subdungeons: Iterable[SubDungeonModel]) -> Mapping[DungeonModel, List[SubDungeonModel]]:
         mapping = defaultdict(list)
-        for sd in sorted(subdungeons, key=lambda sd: sd.sub_dungeon_id):
-            mapping[self.get_dungeon(sd.dungeon_id)].append(sd)
+        for subdungeon in sorted(subdungeons, key=lambda sd: sd.sub_dungeon_id):
+            mapping[self.get_dungeon(subdungeon.dungeon_id)].append(subdungeon)
         return mapping

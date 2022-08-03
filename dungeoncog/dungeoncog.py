@@ -235,6 +235,50 @@ class DungeonCog(commands.Cog):
                                        query_settings, SkyoLinksView.VIEW_TYPE, props)
         return await menu.create(ctx, state)
 
+    @commands.command()
+    async def jpdgname(self, ctx, *, search_text):
+        """Show the JP name of a dungeons"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+
+        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
+
+        await self.aliases_loaded.wait()
+        if search_text.replace(' ', '') not in self.aliases:
+            formatted_text = f'%{search_text}%'
+            sds = db.query_many(
+                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name, sub_dungeons.name_ja AS sd_name'
+                ' FROM sub_dungeons'
+                ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
+                ' WHERE LOWER(dungeons.name_en) LIKE ? OR LOWER(dungeons.name_ja) LIKE ?'
+                ' OR LOWER(sub_dungeons.name_en) LIKE ? OR LOWER(sub_dungeons.name_ja) LIKE ?'
+                ' ORDER BY dungeons.dungeon_id LIMIT 20', (formatted_text,) * 4)
+        else:
+            formatted_text = ', '.join(a for a in self.aliases[search_text.replace(' ', '')] if a.isnumeric())
+            sds = db.query_many(
+                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name, sub_dungeons.name_ja AS sd_name'
+                ' FROM sub_dungeons'
+                ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
+                f' WHERE dungeons.dungeon_id IN ({formatted_text}) OR sub_dungeon_id IN ({formatted_text})'
+                ' ORDER BY dungeons.dungeon_id LIMIT 20')
+
+        if not sds:
+            return await ctx.send(f"No dungeons found")
+
+        dungeons = defaultdict(lambda: {'subdungeons': []})
+        for sd in sds:
+            dungeons[sd.dungeon_id]['name'] = sd.dg_name
+            dungeons[sd.dungeon_id]['idx'] = sd.dungeon_id
+            dungeons[sd.dungeon_id]['subdungeons'].append({
+                'name': sd.sd_name,
+                'idx': sd.sub_dungeon_id})
+
+        menu = ClosableEmbedMenu.menu()
+        props = SkyoLinksViewProps(sorted(dungeons.values(), key=lambda d: d['idx']), link=False)
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       query_settings, SkyoLinksView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
+
     @commands.command(aliases=['firdg'])
     @auth_check('contentadmin')
     async def force_dungeon_index_reload(self, ctx):
