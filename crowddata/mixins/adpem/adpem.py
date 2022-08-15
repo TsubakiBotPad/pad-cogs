@@ -249,7 +249,7 @@ class AdPEMStats(CogMixin):
 
         async with ctx.typing():
             query = '" "'.join(query.split())
-            monsters = await dbcog.find_monsters(f'inadpem "{query}"')
+            monsters, _ = await dbcog.find_monsters(f'inadpem "{query}"')
             if not monsters:
                 return await ctx.send("No monsters matched that query.")
 
