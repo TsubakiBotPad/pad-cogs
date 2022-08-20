@@ -80,7 +80,7 @@ class Event:
             return '{:2}m'.format(int(minutes))
 
     def to_partial_event(self, pe, output_type: str):
-        ret = inline(self.clean_dungeon_name.ljust(24) + "-")
+        ret = inline(self.clean_dungeon_name.ljust(25) + "-")
         if self.is_started():
             return ret + self.end_from_now_discord(output_type)
         else:
