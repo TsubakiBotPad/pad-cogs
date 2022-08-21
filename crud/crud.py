@@ -213,7 +213,7 @@ class Crud(commands.Cog, EditSeries):
         sql = ('SELECT dungeon_id, name_en, name_ja, visible FROM dungeons'
                ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
                ' ORDER BY dungeon_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [search_text, search_text])
+        await self.execute_read(ctx, sql, (search_text, search_text))
 
     @crud.group()
     async def series(self, ctx):
@@ -226,7 +226,7 @@ class Crud(commands.Cog, EditSeries):
         sql = ('SELECT series_id, name_en, name_ja, name_ko FROM series'
                ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
                ' ORDER BY series_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [search_text, search_text])
+        await self.execute_read(ctx, sql, (search_text, search_text))
 
     @series.command(name="add")
     async def series_add(self, ctx, *elements):
