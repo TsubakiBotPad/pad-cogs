@@ -1,0 +1,29 @@
+{
+  "author": [
+    "The Tsubaki Bot Team"
+  ],
+  "description": "Very few commands. exposes dbcog to web.",
+  "end_user_data_statement": "Nothing is stored in this cog.",
+  "install_msg": "Use [p]dbcog setdatafile if it's applicable to you.",
+  "short": "Exposes dbcog",
+  "min_bot_version": "3.4.0",
+  "max_bot_version": "0.0.0",
+  "min_python_version": [
+    3,
+    8,
+    1
+  ],
+  "hidden": false,
+  "disabled": false,
+  "required_cogs": {},
+  "requirements": [
+    "tsutils>=5.0.0",
+    "pytz",
+    "regex",
+    "romkan",
+    "networkx"
+  ],
+  "tags": [
+    "PAD"
+  ]
+}
