@@ -13,6 +13,7 @@ app = FastAPI(
 origins = [
     "http://localhost",
     "http://localhost:3000",
+    "https://www.tsubakibot.com"
 ]
 
 app.add_middleware(
