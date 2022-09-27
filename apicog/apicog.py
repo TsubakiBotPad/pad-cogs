@@ -16,7 +16,7 @@ class APICog(commands.Cog):
         set_bot_ref(bot)
 
     async def entrypoint(self):
-        config = Config(app, host="0.0.0.0", port=80, log_level="info")
+        config = Config(app, host="0.0.0.0", port=81, log_level="info")
         self.server = Server(config=config)
         await asyncio.create_task(self.server.serve())
 
