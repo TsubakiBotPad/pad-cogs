@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Set, Optional, List, Dict, Any
 
 import romkan
@@ -13,10 +14,9 @@ from .leader_skill_model import LeaderSkillModel
 from .monster.monster_difference import MonsterDifference
 from .monster_stats import monster_stats
 from .series_model import SeriesModel
-from pydantic import BaseModel as pdBaseModel
 
 
-class MonsterModel(BaseModel, pdBaseModel):
+class MonsterModel(BaseModel):
     def __init__(self, **m):
         super().__init__()
         self.monster_id: int = m['monster_id']
@@ -63,10 +63,10 @@ class MonsterModel(BaseModel, pdBaseModel):
 
         self.name_en = (self.name_en_override or self.name_en).strip()
 
-        self.type1: int = enum_or_none(MonsterType, m['type_1_id'])
-        self.type2: int = enum_or_none(MonsterType, m['type_2_id'])
-        self.type3: int = enum_or_none(MonsterType, m['type_3_id'])
-        self.types: List[int] = list(filter(None, [self.type1, self.type2, self.type3]))
+        self.type1: Optional[MonsterType] = enum_or_none(MonsterType, m['type_1_id'])
+        self.type2: Optional[MonsterType] = enum_or_none(MonsterType, m['type_2_id'])
+        self.type3: Optional[MonsterType] = enum_or_none(MonsterType, m['type_3_id'])
+        self.types: List[MonsterType] = list(filter(None, [self.type1, self.type2, self.type3]))
 
         self.rarity: int = m['rarity']
         self.is_farmable: bool = m['is_farmable']
@@ -77,9 +77,9 @@ class MonsterModel(BaseModel, pdBaseModel):
         self.buy_mp: int = m['buy_mp']
         self.sell_gold: int = m['sell_gold']
         self.sell_mp: int = m['sell_mp']
-        self.reg_date: str = m['reg_date']
-        self.attr1: int = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
-        self.attr2: int = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
+        self.reg_date: datetime = m['reg_date']
+        self.attr1: Optional[Attribute] = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
+        self.attr2: Optional[Attribute] = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
         self.is_equip: bool = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable: bool = m['is_inheritable']
         self.is_stackable: bool = m['is_stackable']
@@ -113,7 +113,7 @@ class MonsterModel(BaseModel, pdBaseModel):
         self.has_animation: bool = m['has_animation']
         self.has_hqimage: bool = m['has_hqimage']
 
-        self.server_priority: str = m['server_priority']
+        self.server_priority = m['server_priority']
 
     @property
     def killers(self):
