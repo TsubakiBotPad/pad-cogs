@@ -19,6 +19,7 @@ decorator==5.1.1
 discord==1.0.1
 discord-menu
 discord.py
+fastapi==0.85.0
 frozendict==2.3.2
 fuzzywuzzy==0.18.0
 git+https://github.com/TsubakiBotPad/python-romkan.git
@@ -54,6 +55,7 @@ six==1.16.0
 tabulate==0.8.7
 tsutils
 typing-extensions==3.10.0.2
+uvicorn==0.18.3
 # uvloop==0.16.0
 wcwidth==0.2.5
 wheel
