@@ -1,10 +1,10 @@
-bot_ref = None
+bot = None
 
 
-def set_bot_ref(ref):
-    global bot_ref
-    bot_ref = ref
+def set_bot(ref):
+    global bot
+    bot = ref
 
 
 def get_bot():
-    return bot_ref
+    return bot

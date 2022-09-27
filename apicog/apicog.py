@@ -4,7 +4,7 @@ from redbot.core import commands
 from uvicorn import Server, Config
 
 from .api import app
-from .botref import set_bot_ref
+from .botref import set_bot
 
 
 class APICog(commands.Cog):
@@ -13,7 +13,7 @@ class APICog(commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        set_bot_ref(bot)
+        set_bot(bot)
 
     async def entrypoint(self):
         config = Config(app, host="0.0.0.0", port=81, log_level="info")
