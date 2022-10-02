@@ -81,6 +81,7 @@ class MonsterModel(BaseModel):
         self.is_stackable = m['is_stackable']
         self.evo_gem_id = m['evo_gem_id']
         self.orb_skin_id = m['orb_skin_id']
+        self.bgm_id = m['bgm_id']
         self.cost = m['cost']
         self.exp = m['exp']
         self.fodder_exp = m['fodder_exp']
