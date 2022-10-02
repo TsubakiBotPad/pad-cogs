@@ -346,6 +346,7 @@ class MonsterGraph:
                                    is_stackable=m.stackable == 1,
                                    evo_gem_id=m.evo_gem_id,
                                    orb_skin_id=m.orb_skin_id,
+                                   bgm_id=m.bgm_id,
                                    cost=m.cost,
                                    level=m.level,
                                    exp=m.exp,
