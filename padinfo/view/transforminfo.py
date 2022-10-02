@@ -116,6 +116,7 @@ class TransformInfoView(BaseIdMainView):
         rarity = Box(
             LabeledText('Rarity', '{} -> {}'.format(base_mon.rarity, transformed_mon.rarity)),
             Text("" if base_mon.orb_skin_id is None else "(Orb Skin)"),
+            Text("" if base_mon.bgm_id is None else "(BGM)"),
             delimiter=' '
         )
         cost = LabeledText('Cost', '{} -> {}'.format(base_mon.cost, transformed_mon.cost))
