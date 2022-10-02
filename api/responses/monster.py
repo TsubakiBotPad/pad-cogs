@@ -22,6 +22,7 @@ class MonsterResponse(BaseModel):
     attr2: Optional[Attribute]
     awakenings: List[Awakening]
     base_evo_id: int
+    bgm_id: Optional[int]
     buy_mp: Optional[int]
     collab_id: int
     cost: int
@@ -93,6 +94,7 @@ class MonsterResponse(BaseModel):
             attr2=m.attr2,
             awakenings=[Awakening.from_model(a) for a in m.awakenings],
             base_evo_id=m.base_evo_id,
+            bgm_id=m.bgm_id,
             buy_mp=m.buy_mp,
             collab_id=m.collab_id,
             cost=m.cost,
