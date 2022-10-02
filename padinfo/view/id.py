@@ -193,6 +193,7 @@ class IdView(BaseIdMainView, EvoScrollView):
             LabeledText('Rarity', str(m.rarity)),
             Text('({})'.format(LabeledText('Base', str(base_rarity)).to_markdown())),
             Text("" if m.orb_skin_id is None else "(Orb Skin)"),
+            Text("" if m.bgm_id is None else "(BGM)"),
             delimiter=' '
         )
 
