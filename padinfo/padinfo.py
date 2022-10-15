@@ -24,7 +24,7 @@ from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import converters
 from tsutils.query_settings.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, \
     LsMultiplier, \
-    MonsterLinkTarget
+    MonsterLinkTarget, SkillDisplay
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
@@ -1077,6 +1077,17 @@ class PadInfo(commands.Cog):
         await self._do_idsetting(ctx, 'linktarget', MonsterLinkTarget, value,
                                  'padindex', 'padindex',
                                  'ilmina', 'ilmina')
+
+    @idset.command()
+    async def skilldisplay(self, ctx, value: str):
+        """Monster skill display in your `[p]ids` queries
+
+        `[p]idset skilldisplay skilltexts`: [Default] Show skill descriptions.
+        `[p]idset skilldisplay skillnames`: Show the names of the skills.
+        """
+        await self._do_idsetting(ctx, 'skilldisplay', SkillDisplay, value,
+                                 'skilltexts', 'skilltexts',
+                                 'skillnames', 'skillnames')
 
     async def _do_idsetting(self, ctx, setting_name, enum_type: EnumMeta, value,
                             value1, value1_flag,
