@@ -33,7 +33,6 @@ h11==0.14.0
 idna==3.2
 Jinja2==3.1.2
 kiwisolver==1.4.4
-Levenshtein==0.20.7
 Markdown==3.3.4
 MarkupSafe==2.1.1
 multidict==5.1.0
@@ -54,11 +53,9 @@ PyNaCl==1.4.0
 pyodbc==4.0.30  # This version is important
 pyparsing==3.0.9
 python-dateutil==2.8.2
-levenshtein==0.20.7
 python-Levenshtein-wheels==0.13.2
 pytz==2021.1
 PyYAML==5.4.1
-rapidfuzz==2.11.1
 red-commons==1.0.0
 Red-DiscordBot @ git+https://github.com/Cog-Creators/Red-DiscordBot@ae80e62a1359b4f9f4ef1fd4290bd8a383f4b74c
 Red-Lavalink==0.11.0rc0
