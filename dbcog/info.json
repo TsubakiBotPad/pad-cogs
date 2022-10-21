@@ -19,6 +19,7 @@
     "globaladmin": "https://github.com/TsubakiBotPad/core-cogs"
   },
   "requirements": [
+    "levenshtein",
     "tsutils>=5.0.0",
     "pytz",
     "regex",

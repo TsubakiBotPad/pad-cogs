@@ -479,7 +479,7 @@ def calc_ratio_modifier(s1: Union[QueryToken, str], s2: str, prefix_weight: floa
             return 1.0 if s1.value == s2 else 0.0
         s1 = s1.value
 
-    return jaro_winkler(s1, s2, prefix_weight)
+    return jaro_winkler(s1, s2, prefix_weight=prefix_weight)
 
 
 def calc_ratio_name(token: Union[QueryToken, str], full_word: str, prefix_weight: float, index: MonsterIndex) -> float:
@@ -487,7 +487,7 @@ def calc_ratio_name(token: Union[QueryToken, str], full_word: str, prefix_weight
     string = token.value if isinstance(token, QueryToken) else token
 
     mw = index.mwt_to_len[full_word] != 1
-    jw = jaro_winkler(string, full_word, prefix_weight)
+    jw = jaro_winkler(string, full_word, prefix_weight=prefix_weight)
 
     if string != full_word:
         if isinstance(token, QueryToken) and token.exact:
