@@ -116,6 +116,7 @@ class TransformInfoView(BaseIdMainView):
         rarity = Box(
             LabeledText('Rarity', '{} -> {}'.format(base_mon.rarity, transformed_mon.rarity)),
             Text("" if base_mon.orb_skin_id is None else "(Orb Skin)"),
+            Text("" if base_mon.bgm_id is None else "(BGM)"),
             delimiter=' '
         )
         cost = LabeledText('Cost', '{} -> {}'.format(base_mon.cost, transformed_mon.cost))
@@ -171,8 +172,9 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def embed(cls, state: TransformInfoViewState):
         base_mon = state.base_mon
+        qs = state.query_settings
         transformed_mon = state.transformed_mon
-        lsmultiplier = state.query_settings.lsmultiplier
+        lsmultiplier = qs.lsmultiplier
         fields = [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in transformed_mon.types]),
@@ -200,9 +202,11 @@ class TransformInfoView(BaseIdMainView):
             EmbedField(
                 transformat(TransformInfoView.transform_active_header(transformed_mon).to_markdown()),
                 Box(
-                    Text(cls.active_skill_text(transformed_mon.active_skill, state.awoken_skill_map)),
+                    Text(cls.active_skill_text(
+                        transformed_mon.active_skill, state.awoken_skill_map, qs.skilldisplay)),
                     TransformInfoView.base_active_header(base_mon).to_markdown(),
-                    Text(cls.active_skill_text(base_mon.active_skill, state.awoken_skill_map))
+                    Text(cls.active_skill_text(
+                        base_mon.active_skill, state.awoken_skill_map, qs.skilldisplay))
                 )
             ),
             EmbedField(
@@ -219,11 +223,11 @@ class TransformInfoView(BaseIdMainView):
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=qs.embedcolor,
                 title=MonsterHeader.menu_title(transformed_mon,
                                                is_tsubaki=False,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(transformed_mon, state.query_settings)
+                url=MonsterLink.header_link(transformed_mon, qs)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon.monster_id)),
             embed_footer=embed_footer_with_state(state),

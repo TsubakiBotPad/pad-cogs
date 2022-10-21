@@ -193,6 +193,7 @@ class IdView(BaseIdMainView, EvoScrollView):
             LabeledText('Rarity', str(m.rarity)),
             Text('({})'.format(LabeledText('Base', str(base_rarity)).to_markdown())),
             Text("" if m.orb_skin_id is None else "(Orb Skin)"),
+            Text("" if m.bgm_id is None else "(BGM)"),
             delimiter=' '
         )
 
@@ -259,6 +260,7 @@ class IdView(BaseIdMainView, EvoScrollView):
     @classmethod
     def embed(cls, state: IdViewState):
         m = state.monster
+        qs = state.query_settings
         fields = [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
@@ -273,28 +275,28 @@ class IdView(BaseIdMainView, EvoScrollView):
                 inline=True
             ),
             EmbedField(
-                IdView.stats_header(m, state.previous_evolutions, state.query_settings).to_markdown(),
-                IdView.stats(m, state.previous_evolutions, state.query_settings),
+                IdView.stats_header(m, state.previous_evolutions, qs).to_markdown(),
+                IdView.stats(m, state.previous_evolutions, qs),
                 inline=True
             ),
             EmbedField(
                 cls.active_skill_header(m, state.previous_transforms).to_markdown(),
-                Text(cls.active_skill_text(m.active_skill, state.awoken_skill_map))
+                Text(cls.active_skill_text(m.active_skill, state.awoken_skill_map, qs.skilldisplay))
             ),
             EmbedField(
-                cls.leader_skill_header(m, state.query_settings.lsmultiplier, state.transform_base).to_markdown(),
-                Text(m.leader_skill.desc if m.leader_skill else 'None')
+                cls.leader_skill_header(m, qs.lsmultiplier, state.transform_base).to_markdown(),
+                cls.leader_skill_text(m.leader_skill, qs.skilldisplay)
             ),
             cls.evos_embed_field(state)
         ]
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=qs.embedcolor,
                 title=MonsterHeader.menu_title(m,
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(m, state.query_settings)),
+                url=MonsterLink.header_link(m, qs)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
             embed_footer=embed_footer_with_state(state),
             embed_fields=fields)
