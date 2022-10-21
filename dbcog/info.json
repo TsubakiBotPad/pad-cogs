@@ -19,7 +19,7 @@
     "globaladmin": "https://github.com/TsubakiBotPad/core-cogs"
   },
   "requirements": [
-    "levenshtein",
+    "python-Levenshtein-wheels",
     "tsutils>=5.0.0",
     "pytz",
     "regex",
