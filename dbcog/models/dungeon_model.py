@@ -50,7 +50,7 @@ class DungeonModel(BaseModel):
             '-★6 or lower Enhanced': '',
             'Revenge of the ': '',
             'A Gathering of ': '',
-            '-Supergravity': '',
+            '-Supergravity': '', 
             'Fest Exclusive': 'GFE',
         }
         for find, replace in clean_name_map.items():
