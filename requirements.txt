@@ -26,6 +26,7 @@ discord-menu==0.16.15
 discord.py @ git+https://github.com/Rapptz/discord.py@3d914e08e0c7df370987592affb3655d2a12f7d1
 distro==1.6.0
 fastapi==0.85.1
+firebase_admin==6.0.1
 fonttools==4.37.4
 frozendict==2.3.4
 fuzzywuzzy==0.18.0
