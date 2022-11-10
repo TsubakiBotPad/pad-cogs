@@ -500,7 +500,8 @@ class MonsterIndex:
 
         # Story
         def is_story(m, do_transform=True):
-            if 196 in m.all_series or any(196 in mat.all_series for mat in self.graph.evo_mats(m)):
+            if any(s.series_id == 196 for s in m.all_series) \
+                    or any(s.series_id == 196 for mat in self.graph.evo_mats(m) for s in mat.all_series):
                 return True
             if do_transform:
                 for pt in self.graph.get_transform_monsters(m):
