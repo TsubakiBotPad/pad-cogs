@@ -548,6 +548,10 @@ class MonsterGraph:
     def get_alt_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
         return [self.get_monster(m_id, server=monster.server_priority) for m_id in self.get_alt_ids(monster)]
 
+    def get_monsters_with_same_id(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {*filter(None, [self.get_monster(monster.monster_id % 10_000, server=monster.server_priority),
+                               self.get_monster(monster.monster_id + 10_000, server=monster.server_priority)])}
+
     def get_base_id(self, monster) -> int:
         # This fixes DMG.  I *hate* DMG.
         if monster.base_evo_id == 5802:
