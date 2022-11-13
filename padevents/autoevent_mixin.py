@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
+from typing import Any, Dict, Optional, Set, TypeVar, Union
 
 import discord
 import time
@@ -98,9 +98,11 @@ class AutoEvent:
         if not autoevent.get('include3p', True) and event.clean_dungeon_name.startswith("Multiplayer"):
             return False
         if autoevent.get('regex'):
-            return re.search(autoevent['searchstr'], event.clean_dungeon_name)
+            return re.search(autoevent['searchstr'], event.clean_dungeon_name) \
+                   or re.search(autoevent['searchstr'], event.dungeon_name)
         else:
-            return autoevent['searchstr'].lower() in event.clean_dungeon_name.lower()
+            return autoevent['searchstr'].lower() in event.clean_dungeon_name.lower() \
+                   or autoevent['searchstr'].lower() in event.dungeon_name.lower()
 
     @commands.group(aliases=['aep'])
     @commands.guild_only()
