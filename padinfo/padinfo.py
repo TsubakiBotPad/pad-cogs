@@ -1515,13 +1515,15 @@ class PadInfo(commands.Cog):
         """Attempt to link to a YouTube search of a leader in a dungeon"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
-        texts = []
         if '/' in search_text:
             texts = search_text.split('/')
         elif ',' in search_text:
             texts = search_text.split('/')
         else:
             texts = search_text.split(maxsplit=1)
+        if len(texts) < 2:
+            return await ctx.send(f"No monster found. Please provide both a dungeon and a monster. "
+                                  f"Perhaps you meant to use `{ctx.prefix}skyo` or `{ctx.prefix}jpdgname`?")
         dg_text = texts[0]
         mon_text = texts[1]
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
@@ -1533,7 +1535,8 @@ class PadInfo(commands.Cog):
 
         sds = await self.get_subdungeons(dg_text, db)
         if not sds:
-            return await ctx.send(f"No dungeons found")
+            return await ctx.send(f"No dungeons found. This command looks for `/` or `,` as a delimiter, "
+                                  f"maybe try again?")
 
         dungeons = self.make_dungeon_dict(sds)
 
