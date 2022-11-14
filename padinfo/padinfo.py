@@ -59,6 +59,7 @@ from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListVie
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.common import invalid_monster_text
 from padinfo.view.dungeon_list.jp_dungeon_name import JpDungeonNameViewProps, JpDungeonNameView
+from padinfo.view.dungeon_list.jpytdglead import JpYtDgLeadProps, JpYtDgLeadView
 from padinfo.view.dungeon_list.skyo_links import SkyoLinksView, SkyoLinksViewProps
 from padinfo.view.evos import EvosViewState
 from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
@@ -1507,6 +1508,41 @@ class PadInfo(commands.Cog):
         props = JpDungeonNameViewProps(sorted(dungeons.values(), key=lambda d: d['idx']))
         state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
                                        qs, JpDungeonNameView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
+
+    @commands.command()
+    async def jpytdglead(self, ctx, *, search_text):
+        """Attempt to link to a YouTube search of a leader in a dungeon"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+        texts = []
+        if '/' in search_text:
+            texts = search_text.split('/')
+        elif ',' in search_text:
+            texts = search_text.split('/')
+        else:
+            texts = search_text.split(maxsplit=1)
+        dg_text = texts[0]
+        mon_text = texts[1]
+        await ctx.send(dg_text)
+        await ctx.send(mon_text)
+        dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
+
+        monster = await dbcog.find_monster(mon_text, ctx.author.id)
+        if monster is None:
+            return await ctx.send(f"No monster found. This command looks for `/` or `,` as a delimiter, "
+                                  f"maybe try again?")
+
+        sds = await self.get_subdungeons(dg_text, db)
+        if not sds:
+            return await ctx.send(f"No dungeons found")
+
+        dungeons = self.make_dungeon_dict(sds)
+
+        menu = ClosableEmbedMenu.menu()
+        props = JpYtDgLeadProps(sorted(dungeons.values(), key=lambda d: d['idx']), monster)
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       dg_qs, JpYtDgLeadView.VIEW_TYPE, props)
         return await menu.create(ctx, state)
 
     async def get_subdungeons(self, search_text, db):

@@ -33,7 +33,7 @@ class DungeonListBase:
         return [EmbedField('Dungeons', Box(*ret, delimiter='\n'))]
 
     @classmethod
-    def format_dg_link(cls, dungeon, _props):
+    def format_dg_link(cls, dungeon, _props: DungeonListViewProps):
         return LinkedText(cls.escape_name(dungeon['name']),
                           cls.dungeon_link.format(dungeon['idx']))
 
@@ -53,11 +53,15 @@ class DungeonListBase:
         return name
 
     @classmethod
+    def description(cls, _props: DungeonListViewProps):
+        return 'The following dungeons were found.'
+
+    @classmethod
     def embed(cls, state: ClosableEmbedViewState, props: DungeonListViewProps):
         return EmbedView(
             EmbedMain(
                 color=state.query_settings.embedcolor,
-                description='The following dungeons were found.'
+                description=cls.description(props)
             ),
             embed_footer=embed_footer_with_state(state),
             embed_fields=cls.embed_fields(props.dungeons, props)
