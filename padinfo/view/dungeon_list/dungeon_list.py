@@ -34,12 +34,12 @@ class DungeonListBase:
 
     @classmethod
     def format_dg_link(cls, dungeon, _props: DungeonListViewProps):
-        return LinkedText(cls.escape_name(dungeon['name']),
+        return LinkedText(cls.escape_name(dungeon['name_en']),
                           cls.dungeon_link.format(dungeon['idx']))
 
     @classmethod
     def print_name(cls, subdungeon, props: DungeonListViewProps):
-        return LinkedText(cls.escape_name(subdungeon['name']),
+        return LinkedText(cls.escape_name(subdungeon['name_en']),
                           cls.format_sd_link(subdungeon, props))
 
     @classmethod

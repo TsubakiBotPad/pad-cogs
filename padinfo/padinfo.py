@@ -1510,7 +1510,7 @@ class PadInfo(commands.Cog):
                                        qs, JpDungeonNameView.VIEW_TYPE, props)
         return await menu.create(ctx, state)
 
-    @commands.command()
+    @commands.command(aliases=["jydl"])
     async def jpytdglead(self, ctx, *, search_text):
         """Attempt to link to a YouTube search of a leader in a dungeon"""
         dbcog = await self.get_dbcog()
@@ -1524,8 +1524,6 @@ class PadInfo(commands.Cog):
             texts = search_text.split(maxsplit=1)
         dg_text = texts[0]
         mon_text = texts[1]
-        await ctx.send(dg_text)
-        await ctx.send(mon_text)
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
 
         monster = await dbcog.find_monster(mon_text, ctx.author.id)
@@ -1550,7 +1548,8 @@ class PadInfo(commands.Cog):
         if search_text.replace(' ', '') not in self.aliases:
             formatted_text = f'%{search_text}%'
             sds = db.query_many(
-                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name, sub_dungeons.name_ja AS sd_name'
+                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name_ja, sub_dungeons.name_ja AS sd_name_ja,'
+                ' dungeons.name_en AS dg_name_en, sub_dungeons.name_en AS sd_name_en'
                 ' FROM sub_dungeons'
                 ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
                 ' WHERE LOWER(dungeons.name_en) LIKE ? OR LOWER(dungeons.name_ja) LIKE ?'
@@ -1559,7 +1558,8 @@ class PadInfo(commands.Cog):
             return sds
         formatted_text = ', '.join(a for a in self.aliases[search_text.replace(' ', '')] if a.isnumeric())
         sds = db.query_many(
-            'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name, sub_dungeons.name_ja AS sd_name'
+            'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name_ja, sub_dungeons.name_ja AS sd_name_ja,'
+            ' dungeons.name_en AS dg_name_en, sub_dungeons.name_en AS sd_name_en'
             ' FROM sub_dungeons'
             ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
             f' WHERE dungeons.dungeon_id IN ({formatted_text}) OR sub_dungeon_id IN ({formatted_text})'
@@ -1570,10 +1570,12 @@ class PadInfo(commands.Cog):
     def make_dungeon_dict(sds):
         dungeons = defaultdict(lambda: {'subdungeons': []})
         for sd in sds:
-            dungeons[sd.dungeon_id]['name'] = sd.dg_name
+            dungeons[sd.dungeon_id]['name'] = sd.dg_name_ja
+            dungeons[sd.dungeon_id]['name_en'] = sd.dg_name_en
             dungeons[sd.dungeon_id]['idx'] = sd.dungeon_id
             dungeons[sd.dungeon_id]['subdungeons'].append({
-                'name': sd.sd_name,
+                'name': sd.sd_name_ja,
+                'name_en': sd.sd_name_en,
                 'idx': sd.sub_dungeon_id})
         return dungeons
 
