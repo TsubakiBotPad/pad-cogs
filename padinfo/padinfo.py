@@ -1471,6 +1471,27 @@ class PadInfo(commands.Cog):
             await ctx.send(board.link)
 
     @commands.command()
+    async def droploc(self, ctx, *, query):
+        dbcog = await self.get_dbcog()
+
+        monster = await dbcog.find_monster(query, ctx.author.id)
+        if monster is None:
+            return await ctx.send("No monster found.")
+
+        subdgs = dbcog.database.dungeon.get_subdungeons_from_drop_monster(monster)
+        if not subdgs:
+            return await ctx.send("This monster does not drop in any dungeons.")
+
+        dgs = dbcog.database.dungeon.get_dungeon_mapping(subdgs)
+
+        msg = ""
+        for dg, sds in dgs.items():
+            msg += "\n" + dg.name_en
+            for sd in sds:
+                msg += "\n    " + sd.name_en
+        await ctx.send(msg[1:])
+
+    @commands.command()
     async def skyo(self, ctx, *, search_text):
         """Show the subdungeon ids of all matching dungeons"""
         dbcog = await self.get_dbcog()

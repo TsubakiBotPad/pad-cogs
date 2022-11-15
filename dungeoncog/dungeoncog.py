@@ -160,25 +160,3 @@ class DungeonCog(commands.Cog):
             "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
                                             dungeon.sub_dungeons[0].name_ja))
         await menu.create(ctx, view_state)
-
-
-    @commands.command()
-    async def droploc(self, ctx, *, query):
-        dbcog = await self.get_dbcog()
-
-        monster = await dbcog.find_monster(query, ctx.author.id)
-        if monster is None:
-            return await ctx.send("No monster found.")
-
-        subdgs = dbcog.database.dungeon.get_subdungeons_from_drop_monster(monster)
-        if not subdgs:
-            return await ctx.send("This monster does not drop in any dungeons.")
-
-        dgs = dbcog.database.dungeon.get_dungeon_mapping(subdgs)
-
-        msg = ""
-        for dg, sds in dgs.items():
-            msg += "\n" + dg.name_en
-            for sd in sds:
-                msg += "\n    " + sd.name_en
-        await ctx.send(msg[1:])
