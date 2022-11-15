@@ -19,16 +19,19 @@ class JpYtDgLeadView(DungeonListBase):
     VIEW_TYPE = 'JpYtDgLead'
     dungeon_link = 'https://www.youtube.com/results?search_query={}%20{}'
     subdungeon_link = 'https://www.youtube.com/results?search_query={}%20{}'
-    bad_chars = []
+    bad_chars = ['-']
+    whitespace = [' ', '　']
 
     @classmethod
     def format_dg_link(cls, dungeon, props: JpYtDgLeadProps):
+        link = cls.dungeon_link.format(dungeon['name'], cls.escape_name(props.monster.name_ja))
         return LinkedText(cls.escape_name(dungeon['name_en']),
-                          cls.dungeon_link.format(dungeon['name'], props.monster.name_ja).replace(' ', '%20').replace('　','%20'))
+                          cls.escape_whitespace(link))
 
     @classmethod
     def format_sd_link(cls, subdungeon, props: JpYtDgLeadProps):
-        return cls.subdungeon_link.format(subdungeon['name'].replace(' ', '%20').replace('　','%20'), props.monster.name_ja)
+        return cls.escape_whitespace((
+            cls.subdungeon_link.format(subdungeon['name'], cls.escape_name(props.monster.name_ja))))
 
     @classmethod
     def print_name(cls, subdungeon, props: JpYtDgLeadProps):
@@ -38,3 +41,9 @@ class JpYtDgLeadView(DungeonListBase):
     @classmethod
     def description(cls, props: JpYtDgLeadProps):
         return MonsterHeader.text_with_emoji(props.monster)
+
+    @classmethod
+    def escape_whitespace(cls, link):
+        for item in cls.whitespace:
+            link = link.replace(item, '%20')
+        return link
