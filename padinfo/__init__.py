@@ -12,3 +12,4 @@ async def setup(bot):
     bot.add_cog(n) if not __import__('asyncio').iscoroutinefunction(bot.add_cog) else await bot.add_cog(n)
     bot.loop.create_task(n.register_menu())
     bot.loop.create_task(n.reload_nicknames())
+    bot.loop.create_task(n.load_aliases())
