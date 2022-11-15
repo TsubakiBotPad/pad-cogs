@@ -1511,7 +1511,7 @@ class PadInfo(commands.Cog):
         return await menu.create(ctx, state)
 
     @commands.command(aliases=["jydl"])
-    async def jpytdglead(self, ctx, *, search_text):
+    async def jpyt(self, ctx, *, search_text):
         """Attempt to link to a YouTube search of a leader in a dungeon"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
