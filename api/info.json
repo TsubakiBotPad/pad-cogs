@@ -2,10 +2,10 @@
   "author": [
     "The Tsubaki Bot Team"
   ],
-  "description": "Very few commands, but loads all the monster data stored in Tsubaki.",
-  "end_user_data_statement": "ID Query Settings are stored in this cog.",
+  "description": "Very few commands. exposes dbcog to web.",
+  "end_user_data_statement": "Nothing is stored in this cog.",
   "install_msg": "Use [p]dbcog setdatafile if it's applicable to you.",
-  "short": "Loads monster data",
+  "short": "Exposes dbcog",
   "min_bot_version": "3.4.0",
   "max_bot_version": "0.0.0",
   "min_python_version": [
@@ -15,11 +15,8 @@
   ],
   "hidden": false,
   "disabled": false,
-  "required_cogs": {
-    "globaladmin": "https://github.com/TsubakiBotPad/core-cogs"
-  },
+  "required_cogs": {},
   "requirements": [
-    "python-Levenshtein-wheels",
     "tsutils>=5.0.0",
     "pytz",
     "regex",

@@ -346,6 +346,7 @@ class MonsterGraph:
                                    is_stackable=m.stackable == 1,
                                    evo_gem_id=m.evo_gem_id,
                                    orb_skin_id=m.orb_skin_id,
+                                   bgm_id=m.bgm_id,
                                    cost=m.cost,
                                    level=m.level,
                                    exp=m.exp,
@@ -546,6 +547,10 @@ class MonsterGraph:
 
     def get_alt_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
         return [self.get_monster(m_id, server=monster.server_priority) for m_id in self.get_alt_ids(monster)]
+
+    def get_monsters_with_same_id(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {*filter(None, [self.get_monster(monster.monster_id % 10_000, server=monster.server_priority),
+                               self.get_monster(monster.monster_id + 10_000, server=monster.server_priority)])}
 
     def get_base_id(self, monster) -> int:
         # This fixes DMG.  I *hate* DMG.
@@ -778,6 +783,9 @@ class MonsterGraph:
 
     def monster_is_orb_skin_evo(self, monster: MonsterModel) -> bool:
         return any(alt.orb_skin_id for alt in self.get_alt_monsters(monster))
+
+    def monster_is_bgm_evo(self, monster: MonsterModel) -> bool:
+        return any(alt.bgm_id for alt in self.get_alt_monsters(monster))
 
     def monster_is_exchange(self, monster: MonsterModel) -> bool:
         return bool(self._get_edges(monster, 'exchange_from'))

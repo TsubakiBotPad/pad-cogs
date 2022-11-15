@@ -50,7 +50,7 @@ class MonIdListener(commands.Cog):
         if dbcog is None:
             await channel.send("Error: DBCog Cog not loaded. Please alert a bot owner.")
             return
-        if re.search(r'\b\d{3}[ -,]{0,2}\d{3}[ -,]{0,2}\d{3}\b', content):  # friend code
+        if re.search(r'\b\d{3}.{0,2}\d{3}.{0,2}\d{3}\b', content):  # friend code
             return
         if "+" in content or "plus" in content:
             return

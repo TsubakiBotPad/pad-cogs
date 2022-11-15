@@ -220,6 +220,7 @@ class MiscModifiers(Enum):
     COLLAB = 'Metaseries: Collab'
     NEW = 'Newest monster in series'
     ORBSKIN = 'Grants an orb skin'
+    BGM = 'Grants a BGM'
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
     BLACK_MEDAL = 'Exchangable for black medals'
@@ -253,6 +254,7 @@ MISC_MAP = {
     MiscModifiers.COLLAB: ('collab',),
     MiscModifiers.NEW: ('new',),
     MiscModifiers.ORBSKIN: ('orbskin',),
+    MiscModifiers.BGM: ('bgm',),
     MiscModifiers.ANIMATED: ('animated',),
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),

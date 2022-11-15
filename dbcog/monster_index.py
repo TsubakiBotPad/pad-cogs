@@ -500,7 +500,8 @@ class MonsterIndex:
 
         # Story
         def is_story(m, do_transform=True):
-            if m.series_id == 196 or any(mat.series_id == 196 for mat in self.graph.evo_mats(m)):
+            if any(s.series_id == 196 for s in m.all_series) \
+                    or any(s.series_id == 196 for mat in self.graph.evo_mats(m) for s in mat.all_series):
                 return True
             if do_transform:
                 for pt in self.graph.get_transform_monsters(m):
@@ -567,6 +568,8 @@ class MonsterIndex:
         # Art
         if self.graph.monster_is_orb_skin_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.ORBSKIN])
+        if self.graph.monster_is_bgm_evo(monster):
+            modifiers.update(MISC_MAP[MiscModifiers.BGM])
         if monster.has_animation:
             modifiers.update(MISC_MAP[MiscModifiers.ANIMATED])
 

@@ -29,8 +29,18 @@ class TempCog(commands.Cog):
 
     @commands.Cog.listener('on_member_join')
     async def mod_user_join(self, member):
-        if member.guild.id != 89391974502649856:
-            return
-        await self.bot.get_channel(263512015635611650).send(
-            "{0.mention} Join name: {0.name} ({0.id})"
-            " joined the server. Created: {0.created_at}".format(member))
+        if member.guild.id == 89391974502649856:
+            await self.bot.get_channel(263512015635611650).send(
+                "{0.mention} Join name: {0.name} ({0.id})"
+                " joined the server. Created: {0.created_at}".format(member))
+
+        if member.guild.id == 435913115750629377:
+            await self.bot.get_channel(647601840891887641).send(
+                "{0.mention} Join name: {0.name} ({0.id})"
+                " joined the server. Created: {0.created_at}".format(member))
+            
+        if member.guild.id == 243014364129525760:
+            await self.bot.get_channel(362777217349976065).send(
+                "{0.mention} Join name: {0.name} ({0.id})"
+                " joined the server. Created: {0.created_at}".format(member))
+            

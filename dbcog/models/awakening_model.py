@@ -1,5 +1,5 @@
-from .base_model import BaseModel
 from .awoken_skill_model import AwokenSkillModel
+from .base_model import BaseModel
 
 
 class AwakeningModel(BaseModel):
@@ -8,13 +8,13 @@ class AwakeningModel(BaseModel):
     """
 
     def __init__(self, awoken_skill_model: AwokenSkillModel, **kwargs):
-        self.awakening_id = kwargs['awakening_id']
-        self.monster_id = kwargs['monster_id']
-        self.awoken_skill_id = kwargs['awoken_skill_id']
-        self.is_super = kwargs['is_super']
-        self.order_idx = kwargs['order_idx']
-        self.awoken_skill = awoken_skill_model
-        self.name = self.awoken_skill.name
+        self.awakening_id: int = kwargs['awakening_id']
+        self.monster_id: int = kwargs['monster_id']
+        self.awoken_skill_id: int = kwargs['awoken_skill_id']
+        self.is_super: int = kwargs['is_super']
+        self.order_idx: int = kwargs['order_idx']
+        self.awoken_skill: AwokenSkillModel = awoken_skill_model
+        self.name: str = self.awoken_skill.name
 
     def to_dict(self):
         return {

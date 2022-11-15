@@ -6,7 +6,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.query_settings.enums import LsMultiplier
+from tsutils.query_settings.enums import LsMultiplier, SkillDisplay
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
 
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
@@ -14,6 +14,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
+    from dbcog.models.leader_skill_model import LeaderSkillModel
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.active_skill_model import ActiveSkillModel
     from dbcog.models.awakening_model import AwakeningModel
@@ -124,7 +125,10 @@ class BaseIdMainView(BaseIdView, ABC):
 
     @classmethod
     def active_skill_text(cls, active_skill: Optional["ActiveSkillModel"],
-                          awoken_skill_map: Dict[int, "AwokenSkillModel"]):
+                          awoken_skill_map: Dict[int, "AwokenSkillModel"],
+                          skilldisplay: SkillDisplay):
+        if skilldisplay == SkillDisplay.skillnames:
+            return active_skill.name_en
         jinja2_replacements = {
             'awoskills': {f"id{awid}": f"{get_awakening_emoji(awid)} {awo.name_en}"
                           for awid, awo in awoken_skill_map.items()}
@@ -147,6 +151,15 @@ class BaseIdMainView(BaseIdView, ABC):
                 '\N{DOWN-POINTING RED TRIANGLE}') + '7x6)') if m != transform_base and transform_base.leader_skill.is_7x6 else None,
             delimiter=' '
         )
+
+    @classmethod
+    def leader_skill_text(cls, leader_skill: "LeaderSkillModel", skilldisplay: SkillDisplay):
+        if leader_skill is None:
+            return Text('None')
+
+        if skilldisplay == SkillDisplay.skillnames:
+            return Text(leader_skill.name_en)
+        return Text(leader_skill.desc)
 
     @classmethod
     @abstractmethod

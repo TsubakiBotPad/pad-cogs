@@ -1,38 +1,23 @@
-import asyncio
-import csv
-import io
 import logging
-from collections import defaultdict
 from typing import Any, TYPE_CHECKING
 
-import aiohttp
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
-from tsutils.cogs.globaladmin import auth_check
 from tsutils.enums import Server
-from tsutils.menu.view.closable_embed import ClosableEmbedViewState
-from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
-from dungeoncog.menu.closable_embed import ClosableEmbedMenu
 from dungeoncog.menu.dungeon import DungeonMenu
 from dungeoncog.menu.menu_map import dungeon_menu_map
 from dungeoncog.view.dungeon import DungeonViewState
-from dungeoncog.view.skyo_links import SkyoLinksView, SkyoLinksViewProps
 
 if TYPE_CHECKING:
-    from dbcog.database_manager import DBCogDatabase
     from dbcog.dungeon_context import DungeonContext
 
 logger = logging.getLogger('red.padbot-cogs.dungeoncog')
 EMBED_NOT_GENERATED = -1
 DEFAULT_SERVER = Server.COMBINED
-
-DUNGEON_ALIASES = "https://docs.google.com/spreadsheets/d/e/" \
-                  "2PACX-1vQ3F4shS6w2na4FXA-vZyyhKcOQ0zRA1B3T7zaX0Bm4cEjW-1IVw91josPtLgc9Zh_TGh8GTD6zFmd0" \
-                  "/pub?gid=0&single=true&output=csv"
 
 
 class DungeonCog(commands.Cog):
@@ -46,24 +31,9 @@ class DungeonCog(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
-        self.aliases = defaultdict(set)
-        self.aliases_loaded = asyncio.Event()
-
         gadmin: Any = self.bot.get_cog("GlobalAdmin")
         if gadmin:
             gadmin.register_perm("contentadmin")
-
-    async def load_aliases(self):
-        self.aliases_loaded.clear()
-        self.aliases = defaultdict(set)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(DUNGEON_ALIASES) as response:
-                reader = csv.reader(io.StringIO(await response.text()), delimiter=',')
-        next(reader)
-        for line in reader:
-            for a in line[2].replace(' ', '').split(','):
-                self.aliases[a].add(line[0] or line[1])
-        self.aliases_loaded.set()
 
     async def load_emojis(self):
         await self.bot.wait_until_ready()
@@ -190,54 +160,3 @@ class DungeonCog(commands.Cog):
             "EN: {}({})\nJP: {}({})".format(dungeon.name_en, dungeon.sub_dungeons[0].name_en, dungeon.name_ja,
                                             dungeon.sub_dungeons[0].name_ja))
         await menu.create(ctx, view_state)
-
-    @commands.command()
-    async def skyo(self, ctx, *, search_text):
-        """Show the subdungeon ids of all matching dungeons"""
-        dbcog = await self.get_dbcog()
-        db: "DBCogDatabase" = dbcog.database.database
-
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
-
-        await self.aliases_loaded.wait()
-        if search_text.replace(' ', '') not in self.aliases:
-            formatted_text = f'%{search_text}%'
-            sds = db.query_many(
-                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_en AS dg_name, sub_dungeons.name_en AS sd_name'
-                ' FROM sub_dungeons'
-                ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
-                ' WHERE LOWER(dungeons.name_en) LIKE ? OR LOWER(dungeons.name_ja) LIKE ?'
-                ' OR LOWER(sub_dungeons.name_en) LIKE ? OR LOWER(sub_dungeons.name_ja) LIKE ?'
-                ' ORDER BY dungeons.dungeon_id LIMIT 20', (formatted_text,) * 4)
-        else:
-            formatted_text = ', '.join(a for a in self.aliases[search_text.replace(' ', '')] if a.isnumeric())
-            sds = db.query_many(
-                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_en AS dg_name, sub_dungeons.name_en AS sd_name'
-                ' FROM sub_dungeons'
-                ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
-                f' WHERE dungeons.dungeon_id IN ({formatted_text}) OR sub_dungeon_id IN ({formatted_text})'
-                ' ORDER BY dungeons.dungeon_id LIMIT 20')
-
-        if not sds:
-            return await ctx.send(f"No dungeons found")
-
-        dungeons = defaultdict(lambda: {'subdungeons': []})
-        for sd in sds:
-            dungeons[sd.dungeon_id]['name'] = sd.dg_name
-            dungeons[sd.dungeon_id]['idx'] = sd.dungeon_id
-            dungeons[sd.dungeon_id]['subdungeons'].append({
-                'name': sd.sd_name,
-                'idx': sd.sub_dungeon_id})
-
-        menu = ClosableEmbedMenu.menu()
-        props = SkyoLinksViewProps(sorted(dungeons.values(), key=lambda d: d['idx']))
-        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
-                                       query_settings, SkyoLinksView.VIEW_TYPE, props)
-        return await menu.create(ctx, state)
-
-    @commands.command(aliases=['firdg'])
-    @auth_check('contentadmin')
-    async def force_dungeon_index_reload(self, ctx):
-        async with ctx.typing():
-            await self.load_aliases()
-        await ctx.send("Reloaded")

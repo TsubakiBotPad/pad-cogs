@@ -390,7 +390,8 @@ class SameEvoTree(SubqueryToken):
         super().__init__(fullvalue, subquery, negated=negated, exact=exact, dbcog=dbcog)
 
     def get_matching_monsters(self, monster):
-        return self.dbcog.database.graph.get_alt_monsters(monster)
+        return self.dbcog.database.graph.get_alt_monsters(monster) \
+               + list(self.dbcog.database.graph.get_monsters_with_same_id(monster))
 
 
 class AttributeToken(SpecialToken):
