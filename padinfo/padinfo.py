@@ -1510,8 +1510,8 @@ class PadInfo(commands.Cog):
                                        qs, JpDungeonNameView.VIEW_TYPE, props)
         return await menu.create(ctx, state)
 
-    @commands.command(aliases=["jydl"])
-    async def jpyt(self, ctx, *, search_text):
+    @commands.command(aliases=["jydl", "jpyt"], usage="<dungeon_name> / <monster_name>")
+    async def jpyoutube(self, ctx, *, search_text):
         """Attempt to link to a YouTube search of a leader in a dungeon"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
