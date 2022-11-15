@@ -24,11 +24,11 @@ class JpYtDgLeadView(DungeonListBase):
     @classmethod
     def format_dg_link(cls, dungeon, props: JpYtDgLeadProps):
         return LinkedText(cls.escape_name(dungeon['name_en']),
-                          cls.dungeon_link.format(dungeon['name'], props.monster.name_ja))
+                          cls.dungeon_link.format(dungeon['name'], props.monster.name_ja).replace(' ', '%20').replace('　','%20'))
 
     @classmethod
     def format_sd_link(cls, subdungeon, props: JpYtDgLeadProps):
-        return cls.subdungeon_link.format(subdungeon['name'], props.monster.name_ja)
+        return cls.subdungeon_link.format(subdungeon['name'].replace(' ', '%20').replace('　','%20'), props.monster.name_ja)
 
     @classmethod
     def print_name(cls, subdungeon, props: JpYtDgLeadProps):
