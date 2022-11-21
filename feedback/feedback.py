@@ -59,7 +59,7 @@ class Feedback(commands.Cog):
             await ctx.send(inline("I'm unable to deliver your message. Sorry."))
         else:
             await ctx.send(("Your message has been sent."
-                            " Abusing this feature will result in a blacklist.")
+                            " Thanks so much for helping to improve Tsubaki Bot!")
                            + success_message)
 
     @commands.command()
