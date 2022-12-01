@@ -140,7 +140,7 @@ class TransformInfoView(BaseIdMainView):
         active_cd = '({} cd)'.format(active_skill.cooldown_turns_min) if active_skill else 'None'
         return Box(
             get_emoji(cls.up_emoji_name),
-            BoldText('Transform Active Skill {}'.format(active_cd)),
+            BoldText('Transform AS {}'.format(active_cd)),
             delimiter=' '
         )
 

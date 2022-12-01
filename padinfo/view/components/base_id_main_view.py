@@ -90,7 +90,7 @@ class BaseIdMainView(BaseIdView, ABC):
 
         active_skill = m.active_skill
         if active_skill is None:
-            return BoldText('Active Skill')
+            return BoldText('AS')
 
         if len(previous_transforms) == 0:
             active_cd = "({} -> {})".format(active_skill.cooldown_turns_max, active_skill.cooldown_turns_min)
@@ -110,7 +110,7 @@ class BaseIdMainView(BaseIdView, ABC):
             active_cd = ' '.join(skill_texts)
 
         return Box(
-            BoldText('Active Skill'),
+            BoldText('AS'),
             cls.get_compound_active_text(active_skill),
             BoldText(active_cd),
             delimiter=' '
@@ -144,7 +144,7 @@ class BaseIdMainView(BaseIdView, ABC):
     @staticmethod
     def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
         return Box(
-            BoldText('Leader Skill'),
+            BoldText('LS'),
             BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
                      else get_emoji('1x') + ' ' + ls_single_multiplier_text(m.leader_skill)),
             BoldText('(' + get_emoji(
