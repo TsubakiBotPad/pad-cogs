@@ -47,7 +47,19 @@ class ScoreListener(commands.Cog):
         if not re.match(r"^(\d){2,3}[ ,]?(\d){3}$", content):  # invalid score
             return
         if not firebase_admin._apps:  # firebase instance not started
-            return
+            api_keys = await self.bot.get_shared_api_tokens("firebase")
+            if not api_keys["private_key"] or not api_keys["private_key_id"]:
+                await channel.send("The API keys are missing.")
+                return
+            SERVICE_ACCOUNT["private_key"] = api_keys["private_key"][:-1].replace(".", " ")
+            SERVICE_ACCOUNT["private_key_id"] = api_keys["private_key_id"]
+            cred = credentials.Certificate(SERVICE_ACCOUNT)
+            try:
+                firebase_admin.initialize_app(cred, {
+                    'databaseURL': "https://ranking-chart-default-rtdb.firebaseio.com"
+                })
+            except ValueError:
+                await channel.send("The API keys are invalid.")
 
         crown_ref = db.reference("/nacrowndata/")
         max_date_ref = db.reference("/info/maxDate/")
@@ -89,29 +101,6 @@ class ScoreListener(commands.Cog):
             await ctx.tick()
         except ValueError:
             await ctx.send("App does not exist.")
-
-    @scorelistener.command()
-    @auth_check('contentadmin')
-    async def startapp(self, ctx):
-        """Start Firebase App instance"""
-        api_keys = await self.bot.get_shared_api_tokens("firebase")
-        if not api_keys["private_key"] or not api_keys["private_key_id"]:
-            await ctx.send("The API keys are missing.")
-            return
-
-        if firebase_admin._apps:
-            await ctx.send("There is already a Firebase App instance.")
-            return
-        SERVICE_ACCOUNT["private_key"] = api_keys["private_key"][:-1].replace(".", " ")
-        SERVICE_ACCOUNT["private_key_id"] = api_keys["private_key_id"]
-        cred = credentials.Certificate(SERVICE_ACCOUNT)
-        try:
-            firebase_admin.initialize_app(cred, {
-                'databaseURL': "https://ranking-chart-default-rtdb.firebaseio.com"
-            })
-            await ctx.tick()
-        except ValueError:
-            await ctx.send("The API keys are invalid.")
 
     async def is_command(self, msg):
         prefixes = await self.bot.get_valid_prefixes()
