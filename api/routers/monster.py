@@ -16,7 +16,7 @@ async def get(monster_id):
 
 
 @monster_router.get("/team-builder/", response_model=MonsterWithEvosResponse)
-async def get(q: Union[str, None] = Query(default=None, min_length=1)):
+async def team_builder_query(q: Union[str, None] = Query(default=None, min_length=1)):
     dbcog = get_bot().get_cog("DBCog")
     monster = await dbcog.find_monster(q)
     alt_monsters = dbcog.database.graph.get_alt_monsters(monster)
