@@ -45,7 +45,7 @@ class MonsterResponse(BaseModel):
     is_stackable: bool
     latent_slots: int
     leader_skill: Optional[LeaderSkill]
-    leader_skill_id: int
+    leader_skill_id: Optional[int]
     level: int
     limit_mult: int
     monster_id: int
