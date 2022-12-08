@@ -44,7 +44,7 @@ class MonsterResponse(BaseModel):
     is_inheritable: bool
     is_stackable: bool
     latent_slots: int
-    leader_skill: LeaderSkill
+    leader_skill: Optional[LeaderSkill]
     leader_skill_id: int
     level: int
     limit_mult: int
@@ -116,7 +116,7 @@ class MonsterResponse(BaseModel):
             is_inheritable=m.is_inheritable,
             is_stackable=m.is_stackable,
             latent_slots=m.latent_slots,
-            leader_skill=LeaderSkill.from_model(m.leader_skill),
+            leader_skill=LeaderSkill.from_model(m.leader_skill) if m.leader_skill else None,
             leader_skill_id=m.leader_skill_id,
             level=m.level,
             limit_mult=m.limit_mult,
