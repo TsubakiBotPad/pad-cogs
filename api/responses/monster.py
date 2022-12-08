@@ -153,3 +153,15 @@ class MonsterResponse(BaseModel):
             voice_id_jp=m.voice_id_jp,
             voice_id_na=m.voice_id_na,
         )
+
+
+class MonsterWithEvosResponse(BaseModel):
+    monster: MonsterResponse
+    evolutions: List[MonsterResponse]
+
+    @staticmethod
+    def from_model(m: MonsterModel, evos: List[MonsterModel]):
+        monster = MonsterResponse.from_model(m)
+        evolutions = [MonsterResponse.from_model(e) for e in evos if e]
+
+        return MonsterWithEvosResponse(monster=monster, evolutions=evolutions)
