@@ -1,6 +1,6 @@
 from typing import Union
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 
 from api.botref import get_bot
 from api.responses.monster import MonsterResponse, MonsterWithEvosResponse, MonstersResponse
@@ -12,6 +12,11 @@ monster_router = APIRouter()
 async def get(monster_id):
     dbcog = get_bot().get_cog("DBCog")
     monster = await dbcog.find_monster(monster_id)
+
+    if not monster:
+        raise HTTPException(status_code=404, detail={
+            "error": "No monster found for {}".format(monster_id),
+            "code": 404})
     return MonsterResponse.from_model(monster)
 
 
@@ -32,5 +37,11 @@ async def getManyById(q: Union[str, None] = Query(default=None, min_length=1)):
 async def team_builder_query(q: Union[str, None] = Query(default=None, min_length=1)):
     dbcog = get_bot().get_cog("DBCog")
     monster = await dbcog.find_monster(q)
+
+    if not monster:
+        raise HTTPException(status_code=404, detail={
+            "error": "No monster found for {}".format(q),
+            "code": 404})
+
     alt_monsters = dbcog.database.graph.get_alt_monsters(monster)
     return MonsterWithEvosResponse.from_model(monster, alt_monsters)

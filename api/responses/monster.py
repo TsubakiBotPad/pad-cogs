@@ -167,9 +167,9 @@ class MonsterWithEvosResponse(BaseModel):
 
 
 class MonstersResponse(BaseModel):
-    monsters: List[MonsterResponse]
+    monsters: List[Optional[MonsterResponse]]
 
     @staticmethod
     def from_model(ms: List[MonsterModel]):
-        monsters = [MonsterResponse.from_model(m) for m in ms if m]
+        monsters = [MonsterResponse.from_model(m) if m else None for m in ms]
         return MonstersResponse(monsters=monsters)
