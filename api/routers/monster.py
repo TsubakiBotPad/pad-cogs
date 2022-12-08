@@ -15,7 +15,7 @@ async def get(monster_id):
     return MonsterResponse.from_model(monster)
 
 
-@monster_router.get("/", response_model=MonstersResponse)
+@monster_router.get("/get-many/", response_model=MonstersResponse)
 async def getManyById(q: Union[str, None] = Query(default=None, min_length=1)):
     monster_ids = q.split(",")
 
