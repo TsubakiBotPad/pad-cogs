@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 from dbcog.models.series_model import SeriesModel
@@ -8,7 +10,7 @@ class Series(BaseModel):
     name_ja: str
     name_en: str
     name_ko: str
-    series_type: str
+    series_type: Optional[str]
 
     @staticmethod
     def from_model(m: SeriesModel):
