@@ -10,6 +10,8 @@ import asyncio
 import logging
 import os
 import shutil
+import traceback
+
 import time
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -193,16 +195,19 @@ class DBCog(commands.Cog, IdTest):
         issues.extend(await self.run_tests())
 
         if issues and self.database.graph.debug_monster_ids is None:
-            channels = [self.bot.get_channel(await self.config.indexlog())]
-            if not any(channels):
-                channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
-                for channel in channels:
-                    await channel.send("Use `{}dbcog setfailurechannel <channel>`"
-                                       " to move these out of your DMs!"
-                                       "".format((await self.bot.get_valid_prefixes())[0]))
-            for page in pagify(f"Load Warnings:\n" + "\n".join(issues[:100])):
-                for channel in channels:
-                    await channel.send(box(page))
+            await self.report_failure(f"Load Warnings:\n" + "\n".join(issues[:100]))
+
+    async def report_failure(self, message):
+        channels = [self.bot.get_channel(await self.config.indexlog())]
+        if not any(channels):
+            channels = [owner for oid in self.bot.owner_ids if (owner := self.bot.get_user(oid))]
+            for channel in channels:
+                await channel.send("Use `{}dbcog setfailurechannel <channel>`"
+                                   " to move these out of your DMs!"
+                                   "".format((await self.bot.get_valid_prefixes())[0]))
+        for page in pagify(message):
+            for channel in channels:
+                await channel.send(box(page))
 
     async def get_index(self, server: Server = DEFAULT_SERVER) -> MonsterIndex:
         await self.indexes[server].is_ready.wait()
@@ -236,6 +241,7 @@ class DBCog(commands.Cog, IdTest):
             except Exception as ex:
                 short_wait = True
                 logger.exception("DBCog data download/refresh failed: %s", ex)
+                await self.report_failure("DBCog refresh failed:\n" + traceback.format_exc())
 
             try:
                 wait_time = 60 if short_wait else 60 * 60 * 4
