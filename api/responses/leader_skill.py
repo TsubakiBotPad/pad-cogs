@@ -13,7 +13,7 @@ class LeaderSkill(BaseModel):
     max_hp: int
     max_atk: int
     max_rcv: int
-    max_shield: int
+    max_shield: float
     max_combos: int
     bonus_damage: int
     mult_bonus_damage: int
