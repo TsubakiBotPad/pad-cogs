@@ -3,7 +3,7 @@ from enum import Enum
 from tsutils.enums import Server
 
 
-class Attribute(str, Enum):
+class Attribute(Enum):
     """Standard 5 PAD colors in enum form. Values correspond to DadGuide values."""
     Fire = 0
     Water = 1
@@ -14,7 +14,7 @@ class Attribute(str, Enum):
     Nil = 6
 
 
-class MonsterType(str, Enum):
+class MonsterType(Enum):
     Evolve = 0
     Balanced = 1
     Physical = 2
@@ -29,7 +29,7 @@ class MonsterType(str, Enum):
     Vendor = 15
 
 
-class InternalEvoType(str, Enum):
+class InternalEvoType(Enum):
     """Evo types unsupported by DadGuide."""
     Base = "Base"
     Normal = "Normal"
@@ -40,7 +40,7 @@ class InternalEvoType(str, Enum):
     SuperReincarnated = "Super Reincarnated"
 
 
-class AwakeningRestrictedLatent(str, Enum):
+class AwakeningRestrictedLatent(Enum):
     """Latent awakenings with availability gated by having an awakening"""
     UnmatchableClear = 606
     SpinnerClear = 607
@@ -58,7 +58,7 @@ DEFAULT_SERVER = Server.COMBINED
 SERVERS = [Server.COMBINED, Server.NA]
 
 
-class AwokenSkills(str, Enum):
+class AwokenSkills(Enum):
     ENHANCEDHP = 1
     ENHANCEDATK = 2
     ENHANCEDRCV = 3
