@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain
@@ -13,6 +13,13 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
+    from dbcog.find_monster.extra_info import SubqueryData, ExtraInfo
+
+
+class MonsterListQueriedProps:
+    def __init__(self, monster_list: List["MonsterModel"], extra_info: "ExtraInfo" = None):
+        self.extra_info = extra_info
+        self.monster_list = monster_list
 
 
 class MonsterListViewState(ViewStateBase):
@@ -20,7 +27,7 @@ class MonsterListViewState(ViewStateBase):
     MAX_ITEMS_PER_PANE = 11
 
     def __init__(self, original_author_id, menu_type, query,
-                 monster_list: List["MonsterModel"], query_settings: QuerySettings,
+                 queried_props: MonsterListQueriedProps, query_settings: QuerySettings,
                  title, message,
                  *,
                  current_page: int = 0,
@@ -33,7 +40,9 @@ class MonsterListViewState(ViewStateBase):
                  ):
         super().__init__(original_author_id, menu_type, query,
                          extra_state=extra_state)
-        paginated_monsters = self.paginate(monster_list)
+        paginated_monsters = self.paginate(queried_props.monster_list)
+        self.queried_props = queried_props
+        self.extra_info = self.queried_props.extra_info
         self.current_index = current_index
         self.current_page = current_page
         self.page_count = len(paginated_monsters)
@@ -91,7 +100,7 @@ class MonsterListViewState(ViewStateBase):
             return None
         title = ims['title']
 
-        monster_list = await cls.query_from_ims(dbcog, ims)
+        queried_props = await cls.query_from_ims(dbcog, ims)
         current_page = ims['current_page']
         current_index = ims.get('current_index')
 
@@ -106,7 +115,7 @@ class MonsterListViewState(ViewStateBase):
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
         return cls(original_author_id, menu_type, query,
-                   monster_list, query_settings,
+                   queried_props, query_settings,
                    title, idle_message,
                    current_page=current_page,
                    current_index=current_index,
@@ -118,7 +127,7 @@ class MonsterListViewState(ViewStateBase):
                    )
 
     @classmethod
-    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         ...
 
     @staticmethod
@@ -129,7 +138,8 @@ class MonsterListViewState(ViewStateBase):
 
     @classmethod
     async def query_paginated_from_ims(cls, dbcog, ims) -> List[List["MonsterModel"]]:
-        return cls.paginate(await cls.query_from_ims(dbcog, ims))
+        queried_props = await cls.query_from_ims(dbcog, ims)
+        return cls.paginate(queried_props.monster_list)
 
     def increment_page(self):
         if self.current_page < len(self.paginated_monsters) - 1:
@@ -190,11 +200,12 @@ class MonsterListView:
     VIEW_TYPE = 'MonsterList'
 
     @classmethod
-    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings):
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings,
+                     offset=0):
         if not len(monsters):
             return []
         return [MonsterHeader.box_with_emoji(
-            mon, link=True, prefix=cls.get_emoji(i, current_monster_id),
+            mon, link=True, prefix=cls.get_emoji(offset + i, current_monster_id),
             query_settings=query_settings) for i, mon in enumerate(monsters)]
 
     @classmethod
@@ -202,18 +213,67 @@ class MonsterListView:
         return char_to_emoji(str(i))
 
     @classmethod
+    def has_subqueries(cls, state):
+        if state.queried_props.extra_info is None:
+            return False
+        return state.queried_props.extra_info.subquery_data
+
+    @classmethod
+    def get_title(cls, state):
+        if not cls.has_subqueries(state):
+            return None
+        return state.title
+
+    @classmethod
     def embed(cls, state: MonsterListViewState):
-        fields = [
-            EmbedField(state.title,
-                       Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings))),
-            EmbedField(BoldText('Page'),
-                       Box('{} of {}'.format(state.current_page + 1, state.page_count)),
-                       inline=True
-                       )
-        ]
+        fields = []
+        if not cls.has_subqueries(state):
+            fields.append(
+                EmbedField(state.title,
+                           Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings)))
+            )
+
+        else:
+            cur_subq_id = None
+            cur_mon_list = []
+            offset = 0
+            i = 0
+            for m in state.monster_list:
+                subq_id = state.extra_info.get_subquery_mon(m.monster_id)
+                if cur_mon_list and subq_id != cur_subq_id:
+                    title = MonsterHeader.box_with_emoji(
+                        state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings,
+                        link=False)
+                    fields.append(
+                        EmbedField(
+                            title,
+                            Box(*cls.monster_list(
+                                cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
+                    )
+                    cur_mon_list = []
+                    offset += i
+                    i = 0
+                cur_mon_list.append(m)
+                cur_subq_id = subq_id
+                i += 1
+
+            title = MonsterHeader.box_with_emoji(
+                state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings, link=False)
+            fields.append(
+                EmbedField(
+                    title,
+                    Box(*cls.monster_list(
+                        cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
+            )
+
+        fields.append(EmbedField(BoldText('Page'),
+                                 Box('{} of {}'.format(state.current_page + 1, state.page_count)),
+                                 inline=True
+                                 ))
 
         return EmbedView(
             EmbedMain(
+                title=cls.get_title(state),
                 color=state.query_settings.embedcolor,
             ),
             embed_footer=embed_footer_with_state(state),

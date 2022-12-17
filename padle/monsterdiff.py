@@ -1,6 +1,7 @@
-from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_rarity_emoji, get_type_emoji, \
-    get_attribute_emoji_by_enum
 from typing import TYPE_CHECKING
+
+from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_enum, get_awakening_emoji, get_emoji, get_rarity_emoji, \
+    get_type_emoji
 
 if TYPE_CHECKING:
     from dbcog.dbcog import MonsterModel
@@ -92,11 +93,11 @@ class MonsterDiff:
         attr_feedback = []
         for num in self.attr_diff:
             if num == 0:
-                attr_feedback.append("\N{CROSS MARK}")
+                attr_feedback.append(get_emoji('red_cross_custom'))
             elif num == 0.5:
-                attr_feedback.append("\N{LARGE YELLOW SQUARE}")
+                attr_feedback.append(get_emoji('yellow_square_custom'))
             else:
-                attr_feedback.append("\N{WHITE HEAVY CHECK MARK}")
+                attr_feedback.append(get_emoji('green_check_custom'))
         line.append(get_attribute_emoji_by_enum(self.guess_monster.attr1))
         line.append(attr_feedback[0] + " / ")
         line.append(get_attribute_emoji_by_enum(self.guess_monster.attr2))
@@ -108,7 +109,7 @@ class MonsterDiff:
     def get_other_info_feedback_text(self) -> str:
         line = [get_rarity_emoji(self.guess_monster.rarity)]
         if self.rarity_diff == 0:
-            line.append("\N{WHITE HEAVY CHECK MARK} | ")
+            line.append(get_emoji('green_check_custom') + " | ")
         elif self.rarity_diff == -1:
             line.append("\N{DOWNWARDS BLACK ARROW}\N{VARIATION SELECTOR-16} | ")
         else:
@@ -116,13 +117,13 @@ class MonsterDiff:
         for type in self.guess_monster.types:
             line.append(get_type_emoji(type))
             if type in self.monster.types:
-                line.append("\N{WHITE HEAVY CHECK MARK} ")
+                line.append(get_emoji('green_check_custom') + " ")
             else:
-                line.append("\N{CROSS MARK} ")
+                line.append(get_emoji('red_cross_custom') + " ")
         line.append(" | Sell MP: ")
         line.append('{:,}'.format(self.guess_monster.sell_mp))
         if self.mp_diff == 0:
-            line.append("\N{WHITE HEAVY CHECK MARK}")
+            line.append(get_emoji('green_check_custom'))
         elif self.mp_diff == -1:
             line.append("\N{DOWNWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}")
         else:
@@ -138,9 +139,9 @@ class MonsterDiff:
             awakes.append(get_awakening_emoji(guess_awake.awoken_skill_id, guess_awake.name))
             val = self.awakenings_diff[index]
             if val == 0:
-                feedback.append("\N{CROSS MARK}")
+                feedback.append(get_emoji('red_cross_custom'))
             elif val == 0.5:
-                feedback.append("\N{LARGE YELLOW SQUARE}")
+                feedback.append(get_emoji('yellow_square_custom'))
             else:
-                feedback.append("\N{WHITE HEAVY CHECK MARK}")
+                feedback.append(get_emoji('green_check_custom'))
         return "\n".join(["".join(awakes), "".join(feedback)])

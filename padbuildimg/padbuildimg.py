@@ -781,6 +781,13 @@ class PadBuildImage(commands.Cog):
         self.bot = bot
         self.settings = PadBuildImgSettings("padbuildimg")
 
+    async def get_dbcog(self):
+        dbcog = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            raise ValueError("DBCog cog is not loaded")
+        await dbcog.wait_until_ready()
+        return dbcog
+
     @commands.command()
     async def helpbuildimg(self, ctx):
         """Help info for the buildimage command."""
@@ -853,10 +860,12 @@ class PadBuildImage(commands.Cog):
         """
         Refresh assets folder
         """
-        await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
-        awk_ids = self.bot.get_cog('DBCog').database.self.awoken_skill_map.keys()
-        await self.settings.downloadAllAssets(awk_ids)
-        await ctx.tick()
+        async with ctx.typing():
+            await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
+            dbcog = await self.get_dbcog()
+            awk_ids = dbcog.database.awoken_skill_map.keys()
+            await self.settings.downloadAllAssets(awk_ids)
+            await ctx.tick()
 
     @commands.command()
     @commands.guild_only()

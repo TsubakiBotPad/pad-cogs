@@ -47,8 +47,8 @@ class Feedback(commands.Cog):
         description = "Sent by {} {}".format(author, source)
 
         e = discord.Embed(description=message)
-        if author.avatar_url:
-            e.set_author(name=description, icon_url=author.avatar_url)
+        if author.avatar.url:
+            e.set_author(name=description, icon_url=ctx.author.avatar.url)
         else:
             e.set_author(name=description)
         e.set_footer(text=footer)
@@ -59,7 +59,7 @@ class Feedback(commands.Cog):
             await ctx.send(inline("I'm unable to deliver your message. Sorry."))
         else:
             await ctx.send(("Your message has been sent."
-                            " Abusing this feature will result in a blacklist.")
+                            " Thanks so much for helping to improve Tsubaki Bot!")
                            + success_message)
 
     @commands.command()
@@ -93,7 +93,7 @@ class Feedback(commands.Cog):
         embed.add_field(name="About the bot", value=about, inline=False)
         embed.add_field(name="Using the bot", value=using.format(ctx), inline=False)
         embed.add_field(name="Avatar credits", value=avatar, inline=False)
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
+        embed.set_thumbnail(url=self.bot.user.avatar.url)
 
         await ctx.send(embed=embed)
 

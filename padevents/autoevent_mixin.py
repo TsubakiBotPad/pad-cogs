@@ -1,15 +1,15 @@
 import logging
 import re
-import time
-from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
+from typing import Any, Dict, Optional, Set, TypeVar, Union
 
 import discord
+import time
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, inline
 from tsutils.cogs.donations import is_donor
 from tsutils.emoji import NO_EMOJI, YES_EMOJI
-from tsutils.enums import Server, StarterGroup
+from tsutils.enums import Server
 from tsutils.errors import ClientInlineTextException
 from tsutils.formatting import rmdiacritics
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message, send_confirmation_message
@@ -18,8 +18,6 @@ from padevents.events import Event
 
 logger = logging.getLogger('red.padbot-cogs.padevents')
 T = TypeVar("T")
-
-GROUPS = ['red', 'blue', 'green']
 
 
 def user_is_donor(ctx, only_patron=False):
@@ -54,11 +52,10 @@ class AutoEvent:
                     async with self.config.sent() as sent:
                         sent[str((key, event.key, gid))] = time.time()
 
-                    index = GROUPS.index(event.group or 'red')
-                    channel = guild.get_channel(aep['channels'][index])
+                    channel = guild.get_channel(aep['channel'])
                     if channel is None:
                         continue
-                    role = guild.get_role(aep['roles'][index])
+                    role = guild.get_role(aep['role'])
                     ment = role.mention if role else ""
                     offsetstr = "now"
                     if aep['offset']:
@@ -100,12 +97,12 @@ class AutoEvent:
             return False
         if not autoevent.get('include3p', True) and event.clean_dungeon_name.startswith("Multiplayer"):
             return False
-        if autoevent.get('group', 'red') != (event.group or 'red'):
-            return False
         if autoevent.get('regex'):
-            return re.search(autoevent['searchstr'], event.clean_dungeon_name)
+            return re.search(autoevent['searchstr'], event.clean_dungeon_name) \
+                   or re.search(autoevent['searchstr'], event.dungeon_name)
         else:
-            return autoevent['searchstr'].lower() in event.clean_dungeon_name.lower()
+            return autoevent['searchstr'].lower() in event.clean_dungeon_name.lower() \
+                   or autoevent['searchstr'].lower() in event.dungeon_name.lower()
 
     @commands.group(aliases=['aep'])
     @commands.guild_only()
@@ -115,9 +112,7 @@ class AutoEvent:
 
     @autoeventping.command(name="add", ignore_extra=False)
     async def aep_add(self, ctx, key, server: Server = None, searchstr=None,
-                      red_role: Optional[discord.Role] = None,
-                      blue_role: Optional[discord.Role] = None,
-                      green_role: Optional[discord.Role] = None,
+                      role: Optional[discord.Role] = None,
                       channel: discord.TextChannel = None):
         """Add a new autoeventping.
          Use `[p]aep set` with your chosen key to finish or update config.
@@ -136,21 +131,18 @@ class AutoEvent:
         if server:
             server = server.value
 
-        if blue_role is None:
-            blue_role = green_role = red_role
-
         default = {
-            'roles': [None, None, None],
-            'channels': [(channel or ctx.channel).id] * 3,
+            'role': None,
+            'channel': (channel or ctx.channel).id,
             'server': server or 'NA',
             'searchstr': searchstr and rmdiacritics(searchstr),
             'regex': False,
-            'enabled': bool(red_role or channel),
+            'enabled': bool(role or channel),
             'offset': 0,
         }
 
-        if red_role is not None:
-            default['roles'] = [red_role.id, blue_role.id, green_role and green_role.id]
+        if role is not None:
+            default['role'] = role.id
 
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             pingroles[key] = default
@@ -175,25 +167,17 @@ class AutoEvent:
         if key not in pingroles:
             await ctx.send("That key does not exist.")
             return
-        roles = [ctx.guild.get_role(role).mention
-                 if ctx.guild.get_role(role) is not None
-                 else "No Role"
-                 for role
-                 in pingroles[key]['roles']
-                 ]
-        chans = [ctx.bot.get_channel(c).mention
-                 if ctx.bot.get_channel(c) is not None
-                 else "No Channel"
-                 for c
-                 in pingroles[key]['channels']
-                 ]
+        role = (ctx.guild.get_role(pingroles[key]['role']).mention
+                if ctx.guild.get_role(pingroles[key]['role']) is not None
+                else "No Role")
+        channel = (ctx.bot.get_channel(pingroles[key]['channel']).mention
+                   if ctx.bot.get_channel(pingroles[key]['channel']) is not None
+                   else "No Channel")
         pr = (f"Key: `{key}`\n"
               f"\tStatus: {YES_EMOJI + ' enabled' if pingroles[key]['enabled'] else NO_EMOJI + ' disabled'}\n"
               f"\tSearch string: `{pingroles[key]['searchstr']}` {'(regex search)' * pingroles[key]['regex']}\n"
               f"\tServer: {pingroles[key]['server']}\n"
-              f"\tRed: {roles[0]} (In {chans[0]})\n"
-              f"\tBlue: {roles[1]} (In {chans[1]})\n"
-              f"\tGreen: {roles[2]} (In {chans[2]})\n"
+              f"\tRed: {role} (In {channel})\n"
               f"\tOffset: `{pingroles[key]['offset']} minutes`")
         await ctx.send(pr)
 
@@ -210,15 +194,12 @@ class AutoEvent:
     async def aep_set(self, ctx):
         """Sets specific parts of an autoeventping"""
 
-    async def aepchange(self, ctx, key: str, k: str, f: Callable[[T], T]):
+    async def aepset(self, ctx, key: str, k: str, v: Any):
         async with self.config.guild(ctx.guild).pingroles() as pingroles:
             if key not in pingroles:
                 await ctx.send("That key does not exist.")
                 return
-            pingroles[key][k] = f(pingroles[key][k])
-
-    async def aepset(self, ctx, key: str, k: str, v: Any):
-        await self.aepchange(ctx, key, k, lambda x: v)
+            pingroles[key][k] = v
 
     async def aepget(self, ctx, key: str):
         pingroles = await self.config.guild(ctx.guild).pingroles()
@@ -227,79 +208,16 @@ class AutoEvent:
                                             f" {', '.join(map(inline, pingroles))}")
         return pingroles[key]
 
-    async def aep_remove_channel(self, ctx, key, group, f):
-        pingroles = await self.config.guild(ctx.guild).pingroles()
-        if key not in pingroles:
-            raise ClientInlineTextException(f"Key `{key}` does not exist.  Available keys are:"
-                                            f" {', '.join(map(inline, pingroles))}")
-
-        if not await get_user_confirmation(ctx, "Are you sure you want to remove the {} channel for AEP `{}`?"
-                .format(group, key)):
-            await send_cancellation_message(ctx,
-                                            "No action was taken. You can set a channel with `{}aep set {}channel {} #channel_name`"
-                                            .format(ctx.prefix, group, key))
-            return
-        else:
-            await self.aepchange(ctx, key, 'channels', f)
-            await send_confirmation_message(ctx, "Okay, I removed the {} channel for the AEP `{}`"
-                                            .format(group, key))
-            return
-
     @aep_set.command(name="channel")
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
-        """Sets channel to ping for all groups"""
-        await self.aepset(ctx, key, 'channels', [channel.id] * 3)
+        """Sets channel to ping"""
+        await self.aepset(ctx, key, 'channel', channel.id)
         await ctx.tick()
-
-    @aep_set.command(name="redchannel")
-    async def aep_s_redchannel(self, ctx, key, channel: discord.TextChannel = None):
-        """Sets channel to ping when event is red"""
-        if channel is None:
-            await self.aep_remove_channel(ctx, key, "red", lambda x: [None, x[1], x[2]])
-        else:
-            await self.aepchange(ctx, key, 'channels', lambda x: [channel.id, x[1], x[2]])
-            await ctx.tick()
-
-    @aep_set.command(name="bluechannel")
-    async def aep_s_bluechannel(self, ctx, key, channel: discord.TextChannel = None):
-        """Sets channel to ping when event is blue"""
-        if channel is None:
-            await self.aep_remove_channel(ctx, key, "blue", lambda x: [x[0], None, x[2]])
-        else:
-            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], channel.id, x[2]])
-            await ctx.tick()
-
-    @aep_set.command(name="greenchannel")
-    async def aep_s_greenchannel(self, ctx, key, channel: discord.TextChannel = None):
-        """Sets channel to ping when event is green"""
-        if channel is None:
-            await self.aep_remove_channel(ctx, key, "green", lambda x: [x[0], x[1], None])
-        else:
-            await self.aepchange(ctx, key, 'channels', lambda x: [x[0], x[1], channel.id])
-            await ctx.tick()
 
     @aep_set.command(name="roles")
-    async def aep_s_roles(self, ctx, key, red: discord.Role, blue: discord.Role, green: discord.Role):
+    async def aep_s_roles(self, ctx, key, role: discord.Role):
         """Sets roles to ping"""
-        await self.aepset(ctx, key, 'roles', [red.id, blue.id, green.id])
-        await ctx.tick()
-
-    @aep_set.command(name="redrole")
-    async def aep_s_redrole(self, ctx, key, role: discord.Role):
-        """Sets role to ping when event is red"""
-        await self.aepchange(ctx, key, 'roles', lambda x: [role.id, x[1], x[2]])
-        await ctx.tick()
-
-    @aep_set.command(name="bluerole")
-    async def aep_s_bluerole(self, ctx, key, role: discord.Role):
-        """Sets role to ping when event is blue"""
-        await self.aepchange(ctx, key, 'roles', lambda x: [x[0], role.id, x[2]])
-        await ctx.tick()
-
-    @aep_set.command(name="greenrole")
-    async def aep_s_greenrole(self, ctx, key, role: discord.Role):
-        """Sets role to ping when event is green"""
-        await self.aepchange(ctx, key, 'roles', lambda x: [x[0], x[1], role.id])
+        await self.aepset(ctx, key, 'role', role.id)
         await ctx.tick()
 
     @aep_set.command(name="server")
@@ -366,14 +284,9 @@ class AutoEvent:
         """Auto Event DMs"""
 
     @autoeventdm.command(name="add")
-    async def aed_add(self, ctx, server: Server, searchstr, group: Optional[StarterGroup] = None, time_offset: int = 0):
+    async def aed_add(self, ctx, server: Server, searchstr, time_offset: int = 0):
         """Add a new autoeventdm"""
         server = server.value
-
-        if group is None:
-            group = 'red'
-        else:
-            group = GROUPS[group.value]
 
         if time_offset and not user_is_donor(ctx):
             await ctx.send("You must be a donor to set a time offset!")
@@ -385,7 +298,6 @@ class AutoEvent:
         default = {
             'key': time.time(),
             'server': server,
-            'group': group,
             'searchstr': searchstr,
             'include3p': True,
             'offset': time_offset,
@@ -422,7 +334,6 @@ class AutoEvent:
                f"\tSearch string: `{dmevents[corrected_index]['searchstr']}`\n"
                f"\t3P: {'included' if dmevents[corrected_index]['include3p'] else 'excluded'}\n"
                f"\tServer: {dmevents[corrected_index]['server']}\n"
-               f"\tGroup: {dmevents[corrected_index]['group'].title()} \n"
                f"\tOffset (Donor Only): `{dmevents[corrected_index]['offset']} minutes`")
         await ctx.send(ret)
 

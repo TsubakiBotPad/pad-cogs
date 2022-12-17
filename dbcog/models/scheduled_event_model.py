@@ -11,8 +11,7 @@ class ScheduledEventModel(BaseModel):
         self.event_type_id = kwargs.get("event_type_id")
         self.start_timestamp = kwargs.get("start_timestamp")
         self.end_timestamp = kwargs.get("end_timestamp")
-        self.group_name = kwargs.get("group_name")
-        self.url = kwargs.get("message")
+        self.message = kwargs.get("message")
         self.url = kwargs.get("url")
 
         self.dungeon: DungeonModel = kwargs.get("dungeon_model")

@@ -6,7 +6,7 @@ from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
-from tsutils.query_settings.enums import LsMultiplier
+from tsutils.query_settings.enums import LsMultiplier, SkillDisplay
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
 
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
@@ -14,6 +14,7 @@ from padinfo.view.base import BaseIdView
 from padinfo.view.components.view_state_base_id import ViewStateBaseId
 
 if TYPE_CHECKING:
+    from dbcog.models.leader_skill_model import LeaderSkillModel
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.active_skill_model import ActiveSkillModel
     from dbcog.models.awakening_model import AwakeningModel
@@ -28,12 +29,19 @@ def _killer_latent_emoji(latent_name: str):
     return get_emoji('latent_killer_{}'.format(latent_name.lower()))
 
 
-def _make_prefix(idx, compound_skill_type_id, subskill):
-    if compound_skill_type_id == 1:
+def _make_prefix(idx, skill, subskill):
+    if skill.compound_skill_type_id == 1:
         return emoji_cache.get_emoji('bd') + ' '
-    elif compound_skill_type_id in (2, 3):
+    elif skill.compound_skill_type_id in (2, 3):
         return number_emoji_small(idx) + (f' **[{subskill.cooldown}cd]** ' if idx != 1 else ' ')
     return ''
+
+
+def _make_suffix(idx, skill, subskill):
+    if subskill.board_76 != "Z" * (7 * 6):
+        return (f" [see 6x5](https://pad.dawnglare.com/?patt={subskill.board_65}&showfill=1) ·"
+                f" [see 7x6](https://pad.dawnglare.com/?patt={subskill.board_76}&showfill=1&height=6&width=7)")
+    return ""
 
 
 class BaseIdMainView(BaseIdView, ABC):
@@ -82,7 +90,7 @@ class BaseIdMainView(BaseIdView, ABC):
 
         active_skill = m.active_skill
         if active_skill is None:
-            return BoldText('Active Skill')
+            return BoldText('AS')
 
         if len(previous_transforms) == 0:
             active_cd = "({} -> {})".format(active_skill.cooldown_turns_max, active_skill.cooldown_turns_min)
@@ -102,7 +110,7 @@ class BaseIdMainView(BaseIdView, ABC):
             active_cd = ' '.join(skill_texts)
 
         return Box(
-            BoldText('Active Skill'),
+            BoldText('AS'),
             cls.get_compound_active_text(active_skill),
             BoldText(active_cd),
             delimiter=' '
@@ -117,7 +125,10 @@ class BaseIdMainView(BaseIdView, ABC):
 
     @classmethod
     def active_skill_text(cls, active_skill: Optional["ActiveSkillModel"],
-                          awoken_skill_map: Dict[int, "AwokenSkillModel"]):
+                          awoken_skill_map: Dict[int, "AwokenSkillModel"],
+                          skilldisplay: SkillDisplay):
+        if skilldisplay == SkillDisplay.skillnames:
+            return active_skill.name_en
         jinja2_replacements = {
             'awoskills': {f"id{awid}": f"{get_awakening_emoji(awid)} {awo.name_en}"
                           for awid, awo in awoken_skill_map.items()}
@@ -125,20 +136,30 @@ class BaseIdMainView(BaseIdView, ABC):
 
         if active_skill is None:
             return 'None'
-        return "\n".join(_make_prefix(c, active_skill.compound_skill_type_id, subskill)
+        return "\n".join(_make_prefix(c, active_skill, subskill)
                          + jinja2.Template(subskill.desc_templated).render(**jinja2_replacements)
+                         + _make_suffix(c, active_skill, subskill)
                          for c, subskill in enumerate(active_skill.active_subskills, 1))
 
     @staticmethod
     def leader_skill_header(m: "MonsterModel", lsmultiplier: LsMultiplier, transform_base: "MonsterModel"):
         return Box(
-            BoldText('Leader Skill'),
+            BoldText('LS'),
             BoldText(ls_multiplier_text(m.leader_skill) if lsmultiplier == LsMultiplier.lsdouble
                      else get_emoji('1x') + ' ' + ls_single_multiplier_text(m.leader_skill)),
             BoldText('(' + get_emoji(
                 '\N{DOWN-POINTING RED TRIANGLE}') + '7x6)') if m != transform_base and transform_base.leader_skill.is_7x6 else None,
             delimiter=' '
         )
+
+    @classmethod
+    def leader_skill_text(cls, leader_skill: "LeaderSkillModel", skilldisplay: SkillDisplay):
+        if leader_skill is None:
+            return Text('None')
+
+        if skilldisplay == SkillDisplay.skillnames:
+            return Text(leader_skill.name_en)
+        return Text(leader_skill.desc)
 
     @classmethod
     @abstractmethod

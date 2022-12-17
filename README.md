@@ -17,7 +17,7 @@ I suggest using [PyCharm Community](https://www.jetbrains.com/pycharm/download) 
 
 ## Check out the repo
 
-Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/pad-cogs).
+Fork this repo (you are probably already on the page, but if not [go here](https://github.com/TsubakiBotPad/pad-cogs)).
 
 > Note: If you are developing a cog that is in the [misc-cogs repo](https://github.com/TsubakiBotPad/misc-cogs), you may need to complete some steps for both pad-cogs AND misc-cogs.
 
@@ -67,11 +67,18 @@ e.g
 ^addpath /Users/Tsubaki/src/pad-cogs
 ```
 
-> Note: you may have to do this for `pad-cogs`, `core-cogs`, and `misc-cogs`.
+> Note: you may have to do this for `pad-cogs`, `core-cogs`, and `misc-cogs`. If you have forked and cloned core & misc cogs, this process is the same! However, if you are only developing in `pad-cogs`, and installing `core-cogs` & `misc-cogs` from remote repos then:
+> 
+> 1. `^load downloader` (this cog is always installed by default)
+> 2. `^repo install misc https://github.com/TsubakiBotPad/misc-cogs`
+> 3. `^repo install core https://github.com/TsubakiBotPad/core-cogs`
+> 4. Now you can install, for example, the `menulistener` cog with `^repo install core menulistener`. The `menulistener` cog is what makes the `^id` menus interactive instead of single-panel static screens with unusable emoji below them.
 
 ### Load cogs
 
-Load relevant cogs using the `^load` command.
+Load relevant cogs (whichever cogs you are developing, `dbcog`, and `padinfo`) using the `^load` command.
+
+> Node: We suggest you load `dbcog` and `padinfo` so that you will have something to test that your bot installation correctly installed; however, if your development does not involve dbcog as a dependency, you may want to keep it unloaded (`^unload dbcog`, get it back with `^load dbcog` at any time), simply because it is very slow for the bot to initialize dbcog on startup, and you will be restarting your bot a lot during development.
 
 ```
 Syntax: ^load <cog 1> ... <cog n>
@@ -91,6 +98,7 @@ You should now be able to run basic commands like `^id`
 ```
 
 Should return something like:
+
 <img width="597" alt="image" src="https://user-images.githubusercontent.com/880610/173267597-3cbee890-8411-4ac4-b99e-200b273f63ec.png" />
 
 Happy developing!
@@ -115,7 +123,7 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 
 | Cog           | Purpose                                                         |
 | ------------- | --------------------------------------------------------------- |
-| azurelane     | **DISCONTINUED** Azure Lane card lookup                         |
+| azurlane      | Azur Lane card lookup                                           |
 | crowddata     | Crowdsourced data collection                                    |
 | crud          | Database editor. Not useful for bots other than prod Tsubaki    |
 | dbcog         | Central cog to host all PAD data                                |
@@ -128,10 +136,9 @@ Most cogs here relate to the mobile game 'Puzzle & Dragons'.
 | padbuilds     | See user-made builds for dungeons i think??? (nobody uses this) |
 | padevents     | A scheduler cog to help players see upcoming daily GH dungeons. |
 | padglobal     | Global PAD info commands                                        |
+| padle         | A wordle-inspired monster guessing game                         |
 | padinfo       | Monster lookup and info display                                 |
 | padmonitor    | Keeps an eye out for PAD updates                                |
-| padsearch     | Search for monsters with specific attributes                    |
 | pipelineui    | Interface for running the pipeline (Tsubaki-only)               |
 | pricecheck    | Lumon's thing. Something about stamina trade equivalence        |
 | profile       | Global user PAD profile storage and lookup                      |
-| schoolidol    | **DISCONTINUED** Love Live! School Idol Festival card lookup    |

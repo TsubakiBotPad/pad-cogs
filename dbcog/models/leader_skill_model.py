@@ -1,26 +1,27 @@
 import re
+from typing import List
 
 from .base_model import BaseModel
 
 
 class LeaderSkillModel(BaseModel):
     def __init__(self, **kwargs):
-        self.leader_skill_id = kwargs['leader_skill_id']
-        self.name_ja = kwargs['name_ja']
-        self.name_en = kwargs['name_en']
-        self.name_ko = kwargs['name_ko']
-        self.max_hp = kwargs['max_hp']
-        self.max_atk = kwargs['max_atk']
-        self.max_rcv = kwargs['max_rcv']
-        self.max_shield = kwargs['max_shield']
-        self.max_combos = kwargs['max_combos']
-        self.bonus_damage = kwargs['bonus_damage']
-        self.mult_bonus_damage = kwargs['mult_bonus_damage']
-        self.extra_time = kwargs['extra_time']
-        self.tags = [int(tag) for tag in re.findall(r'\((\d+)\)', kwargs['tags'])]
-        self.desc_en = kwargs['desc_en']
-        self.desc_ja = kwargs['desc_ja']
-        self.desc_ko = kwargs['desc_ko']
+        self.leader_skill_id: int = kwargs['leader_skill_id']
+        self.name_ja: str = kwargs['name_ja']
+        self.name_en: str = kwargs['name_en']
+        self.name_ko: str = kwargs['name_ko']
+        self.max_hp: int = kwargs['max_hp']
+        self.max_atk: int = kwargs['max_atk']
+        self.max_rcv: int = kwargs['max_rcv']
+        self.max_shield: int = kwargs['max_shield']
+        self.max_combos: int = kwargs['max_combos']
+        self.bonus_damage: int = kwargs['bonus_damage']
+        self.mult_bonus_damage: int = kwargs['mult_bonus_damage']
+        self.extra_time: int = kwargs['extra_time']
+        self.tags: List[int] = [int(tag) for tag in re.findall(r'\((\d+)\)', kwargs['tags'])]
+        self.desc_en: str = kwargs['desc_en']
+        self.desc_ja: str = kwargs['desc_ja']
+        self.desc_ko: str = kwargs['desc_ko']
 
     @property
     def data(self):

@@ -1,12 +1,13 @@
 import re
-from collections import defaultdict
-from typing import Set
+from datetime import datetime
+from typing import Set, Optional, List, Dict, Any
 
 import romkan
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja, rmdiacritics
 
 from .active_skill_model import ActiveSkillModel
+from .awakening_model import AwakeningModel
 from .base_model import BaseModel
 from .enum_types import Attribute, AwakeningRestrictedLatent, MonsterType, enum_or_none
 from .leader_skill_model import LeaderSkillModel
@@ -17,39 +18,42 @@ from .series_model import SeriesModel
 
 class MonsterModel(BaseModel):
     def __init__(self, **m):
-        self.monster_id = m['monster_id']
-        self.monster_no_jp = m['monster_no_jp']
-        self.monster_no_na = m['monster_no_na']
-        self.monster_no_kr = m['monster_no_kr']
-        self.base_evo_id = m['base_evo_id']
+        super().__init__()
+        self.monster_id: int = m['monster_id']
+        self.monster_no_jp: int = m['monster_no_jp']
+        self.monster_no_na: int = m['monster_no_na']
+        self.monster_no_kr: int = m['monster_no_kr']
+        self.base_evo_id: int = m['base_evo_id']
 
-        self.on_jp = m['on_jp']
-        self.on_na = m['on_na']
-        self.on_kr = m['on_kr']
+        self.on_jp: bool = m['on_jp']
+        self.on_na: bool = m['on_na']
+        self.on_kr: bool = m['on_kr']
 
-        self.awakenings = sorted(m['awakenings'], key=lambda a: a.order_idx)
-        self.superawakening_count = sum(int(a.is_super) for a in self.awakenings)
+        self.awakenings: List[AwakeningModel] = sorted(m['awakenings'], key=lambda a: a.order_idx)
+        self.superawakening_count: int = sum(int(a.is_super) for a in self.awakenings)
         self.leader_skill: LeaderSkillModel = m['leader_skill']
-        self.leader_skill_id = self.leader_skill.leader_skill_id if self.leader_skill else None
+        self.leader_skill_id: int = self.leader_skill.leader_skill_id if self.leader_skill else None
         self.active_skill: ActiveSkillModel = m['active_skill']
-        self.active_skill_id = self.active_skill.active_skill_id if self.active_skill else None
+        self.active_skill_id: int = self.active_skill.active_skill_id if self.active_skill else None
 
-        self.series = m['series']
+        self.series: SeriesModel = m['series']
         self.all_series: Set[SeriesModel] = m['all_series']
-        self.series_id = m['series_id']
-        self.group_id = m['group_id']
-        self.name_ja = m['name_ja']
-        self.name_ko = m['name_ko']
-        self.name_en = self.unoverridden_name_en = m['name_en']
-        self.roma_subname = None
+        self.series_id: int = m['series_id']
+        self.group_id: int = m['group_id']
+        self.collab_id: int = m['collab_id']
+        self.name_ja: str = m['name_ja']
+        self.name_ko: str = m['name_ko']
+        self.name_en: str = m['name_en']
+        self.unoverridden_name_en: str = m['name_en']
+        self.roma_subname: Optional[str] = None
         if self.name_en == self.name_ja and not self.on_na:
             self.roma_subname = self.make_roma_subname(self.name_ja)
         else:
             # Remove annoying stuff from NA names, like Jörmungandr
             self.name_en = rmdiacritics(self.name_en)
 
-        self.name_en_override = None
-        # If the NA and JP names are the same, chances are the card isn't released in both reigions, and 
+        self.name_en_override: Optional[str] = None
+        # If the NA and JP names are the same, chances are the card isn't released in both reigions, and
         # if we have an override, chances are it's JP only because we wouldn't need one for an NA only card.
         # We aren't using the on_na flag here because that flag sucks and has false positives all the time
         if self.name_en == self.name_ja:
@@ -59,60 +63,61 @@ class MonsterModel(BaseModel):
 
         self.name_en = (self.name_en_override or self.name_en).strip()
 
-        self.type1 = enum_or_none(MonsterType, m['type_1_id'])
-        self.type2 = enum_or_none(MonsterType, m['type_2_id'])
-        self.type3 = enum_or_none(MonsterType, m['type_3_id'])
-        self.types = list(filter(None, [self.type1, self.type2, self.type3]))
+        self.type1: Optional[MonsterType] = enum_or_none(MonsterType, m['type_1_id'])
+        self.type2: Optional[MonsterType] = enum_or_none(MonsterType, m['type_2_id'])
+        self.type3: Optional[MonsterType] = enum_or_none(MonsterType, m['type_3_id'])
+        self.types: List[MonsterType] = list(filter(None, [self.type1, self.type2, self.type3]))
 
-        self.rarity = m['rarity']
-        self.is_farmable = m['is_farmable']
-        self.in_rem = m['in_rem']
-        self.in_pem = m['in_pem']
-        self.in_vem = m['in_vem']
-        self.in_mpshop = m['buy_mp'] is not None
-        self.buy_mp = m['buy_mp']
-        self.sell_gold = m['sell_gold']
-        self.sell_mp = m['sell_mp']
-        self.reg_date = m['reg_date']
-        self.attr1 = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
-        self.attr2 = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
-        self.is_equip = any([x.awoken_skill_id == 49 for x in self.awakenings])
-        self.is_inheritable = m['is_inheritable']
-        self.is_stackable = m['is_stackable']
-        self.evo_gem_id = m['evo_gem_id']
-        self.orb_skin_id = m['orb_skin_id']
-        self.cost = m['cost']
-        self.exp = m['exp']
-        self.fodder_exp = m['fodder_exp']
-        self.level = m['level']
-        self.limit_mult = m['limit_mult']
-        self.latent_slots = m['latent_slots']
+        self.rarity: int = m['rarity']
+        self.is_farmable: bool = m['is_farmable']
+        self.in_rem: bool = m['in_rem']
+        self.in_pem: bool = m['in_pem']
+        self.in_vem: bool = m['in_vem']
+        self.in_mpshop: bool = m['buy_mp'] is not None
+        self.buy_mp: int = m['buy_mp']
+        self.sell_gold: int = m['sell_gold']
+        self.sell_mp: int = m['sell_mp']
+        self.reg_date: datetime = m['reg_date']
+        self.attr1: Optional[Attribute] = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
+        self.attr2: Optional[Attribute] = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
+        self.is_equip: bool = any([x.awoken_skill_id == 49 for x in self.awakenings])
+        self.is_inheritable: bool = m['is_inheritable']
+        self.is_stackable: bool = m['is_stackable']
+        self.evo_gem_id: Optional[int] = m['evo_gem_id']
+        self.orb_skin_id: Optional[int] = m['orb_skin_id']
+        self.bgm_id: Optional[int] = m['bgm_id']
+        self.cost: int = m['cost']
+        self.exp: int = m['exp']
+        self.fodder_exp: int = m['fodder_exp']
+        self.level: int = m['level']
+        self.latent_slots: int = m['latent_slots']
 
-        self.hp_max = m['hp_max']
-        self.hp_min = m['hp_min']
-        self.hp_scale = m['hp_scale']
-        self.atk_max = m['atk_max']
-        self.atk_min = m['atk_min']
-        self.atk_scale = m['atk_scale']
-        self.rcv_max = m['rcv_max']
-        self.rcv_min = m['rcv_min']
-        self.rcv_scale = m['rcv_scale']
-        self.stat_values = {
+        # Use this to determine if a card is limitbreak-able. A value of 0 means that
+        # the card cannot be limitbroken.
+        self.limit_mult: int = m['limit_mult']
+
+        self.hp_max: int = m['hp_max']
+        self.hp_min: int = m['hp_min']
+        self.hp_scale: int = m['hp_scale']
+        self.atk_max: int = m['atk_max']
+        self.atk_min: int = m['atk_min']
+        self.atk_scale: int = m['atk_scale']
+        self.rcv_max: int = m['rcv_max']
+        self.rcv_min: int = m['rcv_min']
+        self.rcv_scale: int = m['rcv_scale']
+        self.stat_values: Dict[Any] = {
             'hp': {'min': self.hp_min, 'max': self.hp_max, 'scale': self.hp_scale},
             'atk': {'min': self.atk_min, 'max': self.atk_max, 'scale': self.atk_scale},
             'rcv': {'min': self.rcv_min, 'max': self.rcv_max, 'scale': self.rcv_scale}
         }
 
-        self.voice_id_jp = m['voice_id_jp']
-        self.voice_id_na = m['voice_id_na']
+        self.voice_id_jp: Optional[int] = m['voice_id_jp']
+        self.voice_id_na: Optional[int] = m['voice_id_na']
 
-        self.pronunciation_ja = m['pronunciation_ja']
-        self.has_animation = m['has_animation']
-        self.has_hqimage = m['has_hqimage']
+        self.has_animation: bool = m['has_animation']
+        self.has_hqimage: bool = m['has_hqimage']
 
         self.server_priority = m['server_priority']
-
-        self.search = MonsterSearchHelper(self)
 
     @property
     def killers(self):
@@ -207,106 +212,3 @@ class MonsterModel(BaseModel):
     def __repr__(self):
         server_prefix = self.server_priority.name + " " if self.server_priority != Server.COMBINED else ""
         return "Monster<{}{} ({})>".format(server_prefix, self.name_en, self.monster_id)
-
-
-class MonsterSearchHelper:
-    def __init__(self, m: MonsterModel):
-        self.name = '{} {}'.format(m.name_en, m.name_ja).lower()
-        leader_skill = m.leader_skill
-        self.leader = leader_skill.desc.lower() if leader_skill else ''
-        active_skill = m.active_skill
-        self.active_name = active_skill.name.lower() if active_skill and active_skill.name else ''
-        self.active_desc = active_skill.desc.lower() if active_skill and active_skill.desc else ''
-        self.active = '{} {}'.format(self.active_name, self.active_desc)
-        self.active_min = active_skill.cooldown_turns_min if active_skill else None
-        self.active_max = active_skill.cooldown_turns_max if active_skill else None
-
-        self.color = [m.attr1.name.lower()]
-        self.hascolor = [c.name.lower() for c in [m.attr1, m.attr2] if c]
-
-        self.hp, self.atk, self.rcv, self.weighted_stats = m.stats(lv=110)
-
-        self.types = [t.name for t in m.types]
-
-        def replace_colors(txt: str):
-            return txt.replace('red', 'fire').replace('blue', 'water').replace('green', 'wood')
-
-        self.leader = replace_colors(self.leader)
-        self.active = replace_colors(self.active)
-        self.active_name = replace_colors(self.active_name)
-        self.active_desc = replace_colors(self.active_desc)
-
-        self.board_change = []
-        self.orb_convert = defaultdict(list)
-        self.row_convert = []
-        self.column_convert = []
-
-        def color_txt_to_list(txt):
-            txt = txt.replace('and', ' ')
-            txt = txt.replace(',', ' ')
-            txt = txt.replace('orbs', ' ')
-            txt = txt.replace('orb', ' ')
-            txt = txt.replace('mortal poison', 'mortalpoison')
-            txt = txt.replace('jammers', 'jammer')
-            txt = txt.strip()
-            return txt.split()
-
-        def strip_prev_clause(txt: str, sep: str):
-            prev_clause_start_idx = txt.find(sep)
-            if prev_clause_start_idx >= 0:
-                prev_clause_start_idx += len(sep)
-                txt = txt[prev_clause_start_idx:]
-            return txt
-
-        def strip_next_clause(txt: str, sep: str):
-            next_clause_start_idx = txt.find(sep)
-            if next_clause_start_idx >= 0:
-                txt = txt[:next_clause_start_idx]
-            return txt
-
-        active_desc = self.active_desc
-        active_desc = active_desc.replace(' rows ', ' row ')
-        active_desc = active_desc.replace(' columns ', ' column ')
-        active_desc = active_desc.replace(' into ', ' to ')
-        active_desc = active_desc.replace('changes orbs to', 'all orbs to')
-
-        board_change_txt = 'all orbs to'
-        if board_change_txt in active_desc:
-            text = strip_prev_clause(active_desc, board_change_txt)
-            text = strip_next_clause(text, 'orbs')
-            text = strip_next_clause(text, ';')
-            self.board_change = color_txt_to_list(text)
-
-        text = active_desc
-        if 'row' in text:
-            parts = re.split(r'\Wand\W|;\W', text)
-            for i in range(0, len(parts)):
-                if 'row' in parts[i]:
-                    self.row_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        text = active_desc
-        if 'column' in text:
-            parts = re.split(r'\Wand\W|;\W', text)
-            for i in range(0, len(parts)):
-                if 'column' in parts[i]:
-                    self.column_convert.append(strip_next_clause(
-                        strip_prev_clause(parts[i], 'to '), ' orbs'))
-
-        convert_done = self.board_change or self.row_convert or self.column_convert
-
-        change_txt = 'change '
-        if not convert_done and change_txt in active_desc and 'orb' in active_desc:
-            text = active_desc
-            parts = re.split(r'\Wand\W|;\W', text)
-            for i in range(0, len(parts)):
-                parts[i] = strip_prev_clause(parts[i], change_txt) if change_txt in parts[i] else ''
-
-            for part in parts:
-                sub_parts = part.split(' to ')
-                if len(sub_parts) > 1:
-                    source_orbs = color_txt_to_list(sub_parts[0])
-                    dest_orbs = color_txt_to_list(sub_parts[1])
-                    for so in source_orbs:
-                        for do in dest_orbs:
-                            self.orb_convert[so].append(do)

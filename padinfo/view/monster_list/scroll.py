@@ -3,7 +3,7 @@ from typing import List, Optional, TYPE_CHECKING
 from tsutils.menu.components.config import UserConfig
 from tsutils.query_settings.query_settings import QuerySettings
 
-from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState
+from padinfo.view.monster_list.monster_list import MonsterListView, MonsterListViewState, MonsterListQueriedProps
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -14,7 +14,7 @@ class ScrollViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "Scroll"
 
     def __init__(self, original_author_id, menu_type, query,
-                 monster_list: List["MonsterModel"], query_settings: QuerySettings,
+                 queried_props: MonsterListQueriedProps, query_settings: QuerySettings,
                  title, message, current_monster_id: int,
                  *,
                  current_page: int = 0,
@@ -25,7 +25,7 @@ class ScrollViewState(MonsterListViewState):
                  extra_state=None,
                  child_message_id=None
                  ):
-        super().__init__(original_author_id, menu_type, query, monster_list, query_settings, title, message,
+        super().__init__(original_author_id, menu_type, query, queried_props, query_settings, title, message,
                          current_page=current_page, current_index=current_index, child_menu_type=child_menu_type,
                          child_reaction_list=child_reaction_list, reaction_list=reaction_list,
                          extra_state=extra_state, child_message_id=child_message_id)
@@ -49,7 +49,7 @@ class ScrollViewState(MonsterListViewState):
             return None
         title = ims['title']
 
-        monster_list = await cls.query_from_ims(dbcog, ims)
+        queried_props = await cls.query_from_ims(dbcog, ims)
         current_page = ims['current_page']
         current_index = ims.get('current_index')
 
@@ -64,7 +64,7 @@ class ScrollViewState(MonsterListViewState):
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
         return ScrollViewState(original_author_id, menu_type, query,
-                               monster_list, query_settings,
+                               queried_props, query_settings,
                                title, idle_message, ims['current_monster_id'],
                                current_page=current_page,
                                current_index=current_index,
@@ -76,7 +76,7 @@ class ScrollViewState(MonsterListViewState):
                                )
 
     @classmethod
-    async def do_query(cls, dbcog, monster) -> Optional[List["MonsterModel"]]:
+    async def do_query(cls, dbcog, monster) -> Optional[MonsterListQueriedProps]:
         prev_monster = dbcog.database.graph.numeric_prev_monster(monster)
         next_monster = dbcog.database.graph.numeric_next_monster(monster)
 
@@ -87,7 +87,7 @@ class ScrollViewState(MonsterListViewState):
         if next_monster is not None:
             monster_list.append(next_monster)
 
-        return monster_list
+        return MonsterListQueriedProps(monster_list)
 
     async def decrement_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
@@ -115,10 +115,10 @@ class ScrollViewState(MonsterListViewState):
         self.paginated_monsters = [monster_list]
 
     @classmethod
-    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         monster = await dbcog.find_monster(ims['raw_query'], ims['original_author_id'])
-        monster_list = await cls.do_query(dbcog, monster)
-        return monster_list
+        queried_props = await cls.do_query(dbcog, monster)
+        return queried_props
 
 
 class ScrollView(MonsterListView):

@@ -1,19 +1,24 @@
 import asyncio
+import csv
+import io
 import json
 import logging
 import os
 import random
 import re
+from collections import defaultdict
 from enum import EnumMeta
 from io import BytesIO
 from typing import Callable, List, Optional, TYPE_CHECKING, Type
 
+import aiohttp
 import discord
 from discord import Color
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import bold, box, inline, pagify
 from tsutils.cogs.donations import is_donor
+from tsutils.cogs.globaladmin import auth_check
 from tsutils.emoji import char_to_emoji
 from tsutils.enums import Server
 from tsutils.json_utils import safe_read_json
@@ -24,13 +29,14 @@ from tsutils.menu.view.simple_text import SimpleTextViewState
 from tsutils.query_settings import converters
 from tsutils.query_settings.enums import AltEvoSort, CardLevelModifier, CardModeModifier, CardPlusModifier, EvoGrouping, \
     LsMultiplier, \
-    MonsterLinkTarget
+    MonsterLinkTarget, SkillDisplay
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
     get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
+from padinfo.board_generator import BoardGenerator
 from padinfo.core.button_info import button_info
 from padinfo.core.leader_skills import leaderskill_query
 from padinfo.core.padinfo_settings import settings
@@ -52,6 +58,9 @@ from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProp
 from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListViewState
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.common import invalid_monster_text
+from padinfo.view.dungeon_list.jp_dungeon_name import JpDungeonNameViewProps, JpDungeonNameView
+from padinfo.view.dungeon_list.jpytdglead import JpYtDgLeadProps, JpYtDgLeadView
+from padinfo.view.dungeon_list.skyo_links import SkyoLinksView, SkyoLinksViewProps
 from padinfo.view.evos import EvosViewState
 from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
 from padinfo.view.id import IdViewState
@@ -63,7 +72,7 @@ from padinfo.view.lookup import LookupView
 from padinfo.view.materials import MaterialsViewState
 from padinfo.view.monster_list.all_mats import AllMatsViewState
 from padinfo.view.monster_list.id_search import IdSearchViewState
-from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListQueriedProps
 from padinfo.view.monster_list.scroll import ScrollViewState
 from padinfo.view.monster_list.static_monster_list import StaticMonsterListViewState
 from padinfo.view.otherinfo import OtherInfoViewState
@@ -74,6 +83,7 @@ from padinfo.view.transforminfo import TransformInfoViewState
 
 if TYPE_CHECKING:
     from dbcog.dbcog import DBCog
+    from dbcog.database_manager import DBCogDatabase
     from dbcog.models.monster_model import MonsterModel
     from dbcog.models.series_model import SeriesModel
 
@@ -82,6 +92,10 @@ logger = logging.getLogger('red.padbot-cogs.padinfo')
 EMBED_NOT_GENERATED = -1
 
 IDGUIDE = "https://github.com/TsubakiBotPad/pad-cogs/wiki/id-user-guide"
+
+DUNGEON_ALIASES = "https://docs.google.com/spreadsheets/d/e/" \
+                  "2PACX-1vQ3F4shS6w2na4FXA-vZyyhKcOQ0zRA1B3T7zaX0Bm4cEjW-1IVw91josPtLgc9Zh_TGh8GTD6zFmd0" \
+                  "/pub?gid=0&single=true&output=csv"
 
 HISTORY_DURATION = 11
 
@@ -115,6 +129,21 @@ class PadInfo(commands.Cog):
         self.awoken_emoji_names = {v: k for k, v in AWAKENING_ID_TO_EMOJI_NAME_MAP.items()}
         self.get_attribute_emoji_by_monster = get_attribute_emoji_by_monster
         self.settings = settings
+
+        self.aliases = defaultdict(set)
+        self.aliases_loaded = asyncio.Event()
+
+    async def load_aliases(self):
+        self.aliases_loaded.clear()
+        self.aliases = defaultdict(set)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(DUNGEON_ALIASES) as response:
+                reader = csv.reader(io.StringIO(await response.text()), delimiter=',')
+        next(reader)
+        for line in reader:
+            for a in line[2].replace(' ', '').split(','):
+                self.aliases[a].add(line[0] or line[1])
+        self.aliases_loaded.set()
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
@@ -470,7 +499,7 @@ class PadInfo(commands.Cog):
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
 
-    @commands.command()
+    @commands.command(aliases=['lu'])
     @checks.bot_has_permissions(embed_links=True)
     async def lookup(self, ctx, *, query: str):
         """Short info results for a monster query"""
@@ -532,13 +561,13 @@ class PadInfo(commands.Cog):
                            child_reaction_list=None):
         dbcog = await self.get_dbcog()
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        monster_list = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
+        queried_props = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
-        if not monster_list:
+        if not queried_props or not queried_props.monster_list:
             await ctx.send("No monster matched.")
             return
 
-        await self._do_monster_list(ctx, dbcog, query, monster_list, 'ID Search Results',
+        await self._do_monster_list(ctx, dbcog, query, queried_props, 'ID Search Results',
                                     IdSearchViewState,
                                     child_menu_type=child_menu_type,
                                     child_reaction_list=child_reaction_list)
@@ -561,7 +590,7 @@ class PadInfo(commands.Cog):
         _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dbcog, monster)
 
         title = 'Material For' if usedin else 'Gem is Material For'
-        await self._do_monster_list(ctx, dbcog, query, monster_list, title, AllMatsViewState)
+        await self._do_monster_list(ctx, dbcog, query, MonsterListQueriedProps(monster_list), title, AllMatsViewState)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
@@ -577,9 +606,10 @@ class PadInfo(commands.Cog):
         if monster_list is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos')
             return
-        await self._do_monster_list(ctx, dbcog, query, monster_list, 'Evolution List', StaticMonsterListViewState)
+        await self._do_monster_list(ctx, dbcog, query, MonsterListQueriedProps(monster_list),
+                                    'Evolution List', StaticMonsterListViewState)
 
-    async def _do_monster_list(self, ctx, dbcog, query, monster_list: List["MonsterModel"],
+    async def _do_monster_list(self, ctx, dbcog, query, queried_props: MonsterListQueriedProps,
                                title, view_state_type: Type[MonsterListViewState],
                                child_menu_type: Optional[str] = None,
                                child_reaction_list: Optional[List] = None
@@ -587,7 +617,7 @@ class PadInfo(commands.Cog):
         raw_query = query
         original_author_id = ctx.message.author.id
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         if child_menu_type is None:
@@ -596,7 +626,7 @@ class PadInfo(commands.Cog):
             child_reaction_list = child_panes_class.emoji_names()
 
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query,
-                                monster_list, query_settings,
+                                queried_props, query_settings,
                                 title, instruction_message,
                                 child_menu_type=child_menu_type,
                                 child_reaction_list=child_reaction_list,
@@ -636,16 +666,16 @@ class PadInfo(commands.Cog):
         if not monster:
             await self.send_id_failure_message(ctx, query)
             return
-        monster_list = await ScrollViewState.do_query(dbcog, monster)
+        queried_props = await ScrollViewState.do_query(dbcog, monster)
         title = 'Monster Book Scroll'
         raw_query = query
         original_author_id = ctx.message.author.id
         query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(monster_list))
+        initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query,
-                                monster_list, query_settings,
+                                queried_props, query_settings,
                                 title, instruction_message, monster.monster_id,
                                 child_menu_type=IdMenu.MENU_TYPE,
                                 child_reaction_list=IdMenuPanes.emoji_names(),
@@ -878,7 +908,8 @@ class PadInfo(commands.Cog):
         if not monster_list:
             await ctx.send('Did not find any recent queries in history.')
             return
-        await self._do_monster_list(ctx, dbcog, '', monster_list, 'Result History', StaticMonsterListViewState)
+        queried_props = MonsterListQueriedProps(monster_list)
+        await self._do_monster_list(ctx, dbcog, '', queried_props, 'Result History', StaticMonsterListViewState)
 
     @commands.command()
     async def padsay(self, ctx, server, *, query: str = None):
@@ -1074,6 +1105,17 @@ class PadInfo(commands.Cog):
         await self._do_idsetting(ctx, 'linktarget', MonsterLinkTarget, value,
                                  'padindex', 'padindex',
                                  'ilmina', 'ilmina')
+
+    @idset.command()
+    async def skilldisplay(self, ctx, value: str):
+        """Monster skill display in your `[p]ids` queries
+
+        `[p]idset skilldisplay skilltexts`: [Default] Show skill descriptions.
+        `[p]idset skilldisplay skillnames`: Show the names of the skills.
+        """
+        await self._do_idsetting(ctx, 'skilldisplay', SkillDisplay, value,
+                                 'skilltexts', 'skilltexts',
+                                 'skillnames', 'skillnames')
 
     async def _do_idsetting(self, ctx, setting_name, enum_type: EnumMeta, value,
                             value1, value1_flag,
@@ -1409,3 +1451,140 @@ class PadInfo(commands.Cog):
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
                                        query_settings, ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)
+
+    @commands.command()
+    async def boardlink(self, ctx, *, message):
+        """Generate a Dawnglare link from the user provided string.
+        Default fill direction is right then down.
+        Use -1 to invert fill, going down then right."""
+
+        board = BoardGenerator(message.upper())
+
+        if board.invalid_size:
+            await send_cancellation_message(ctx, "An invalid board was defined. Please enter a 5x4, 6x5, or 7x6 board.")
+
+        if board.invalid_orbs:
+            await send_cancellation_message(ctx,
+                                            f"An invalid letter was used. Only {board.allowed_letters} are allowed.")
+
+        if not (board.invalid_size or board.invalid_orbs):
+            await ctx.send(board.link)
+
+    @commands.command()
+    async def skyo(self, ctx, *, search_text):
+        """Show the subdungeon ids of all matching dungeons"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
+
+        sds = await self.get_subdungeons(search_text, db)
+
+        if not sds:
+            return await ctx.send(f"No dungeons found")
+
+        dungeons = self.make_dungeon_dict(sds)
+
+        menu = ClosableEmbedMenu.menu()
+        props = SkyoLinksViewProps(sorted(dungeons.values(), key=lambda d: d['idx']))
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       qs, SkyoLinksView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
+
+    @commands.command()
+    async def jpdgname(self, ctx, *, search_text):
+        """Show the JP name of a dungeons"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
+        sds = await self.get_subdungeons(search_text, db)
+        if not sds:
+            return await ctx.send(f"No dungeons found")
+
+        dungeons = self.make_dungeon_dict(sds)
+
+        menu = ClosableEmbedMenu.menu()
+        props = JpDungeonNameViewProps(sorted(dungeons.values(), key=lambda d: d['idx']))
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       qs, JpDungeonNameView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
+
+    @commands.command(aliases=["jydl", "jpyt"], usage="<dungeon_name> / <monster_name>")
+    async def jpyoutube(self, ctx, *, search_text):
+        """Attempt to link to a YouTube search of a leader in a dungeon"""
+        dbcog = await self.get_dbcog()
+        db: "DBCogDatabase" = dbcog.database.database
+        if '/' in search_text:
+            texts = search_text.split('/')
+        elif ',' in search_text:
+            texts = search_text.split('/')
+        else:
+            texts = search_text.split(maxsplit=1)
+        if len(texts) < 2:
+            return await ctx.send(f"No monster found. Please provide both a dungeon and a monster. "
+                                  f"Perhaps you meant to use `{ctx.prefix}skyo` or `{ctx.prefix}jpdgname`?")
+        dg_text = texts[0]
+        mon_text = texts[1]
+        dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
+
+        monster = await dbcog.find_monster(mon_text, ctx.author.id)
+        if monster is None:
+            return await ctx.send(f"No monster found. This command looks for `/` or `,` as a delimiter, "
+                                  f"maybe try again?")
+
+        sds = await self.get_subdungeons(dg_text, db)
+        if not sds:
+            return await ctx.send(f"No dungeons found. This command looks for `/` or `,` as a delimiter, "
+                                  f"maybe try again?")
+
+        dungeons = self.make_dungeon_dict(sds)
+
+        menu = ClosableEmbedMenu.menu()
+        props = JpYtDgLeadProps(sorted(dungeons.values(), key=lambda d: d['idx']), monster)
+        state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
+                                       dg_qs, JpYtDgLeadView.VIEW_TYPE, props)
+        return await menu.create(ctx, state)
+
+    async def get_subdungeons(self, search_text, db):
+        await self.aliases_loaded.wait()
+        if search_text.replace(' ', '') not in self.aliases:
+            formatted_text = f'%{search_text}%'
+            sds = db.query_many(
+                'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name_ja, sub_dungeons.name_ja AS sd_name_ja,'
+                ' dungeons.name_en AS dg_name_en, sub_dungeons.name_en AS sd_name_en'
+                ' FROM sub_dungeons'
+                ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
+                ' WHERE LOWER(dungeons.name_en) LIKE ? OR LOWER(dungeons.name_ja) LIKE ?'
+                ' OR LOWER(sub_dungeons.name_en) LIKE ? OR LOWER(sub_dungeons.name_ja) LIKE ?'
+                ' ORDER BY dungeons.dungeon_id LIMIT 20', (formatted_text,) * 4)
+            return sds
+        formatted_text = ', '.join(a for a in self.aliases[search_text.replace(' ', '')] if a.isnumeric())
+        sds = db.query_many(
+            'SELECT dungeons.dungeon_id, sub_dungeon_id, dungeons.name_ja AS dg_name_ja, sub_dungeons.name_ja AS sd_name_ja,'
+            ' dungeons.name_en AS dg_name_en, sub_dungeons.name_en AS sd_name_en'
+            ' FROM sub_dungeons'
+            ' JOIN dungeons ON sub_dungeons.dungeon_id = dungeons.dungeon_id'
+            f' WHERE dungeons.dungeon_id IN ({formatted_text}) OR sub_dungeon_id IN ({formatted_text})'
+            ' ORDER BY dungeons.dungeon_id LIMIT 20')
+        return sds
+
+    @staticmethod
+    def make_dungeon_dict(sds):
+        dungeons = defaultdict(lambda: {'subdungeons': []})
+        for sd in sds:
+            dungeons[sd.dungeon_id]['name'] = sd.dg_name_ja
+            dungeons[sd.dungeon_id]['name_en'] = sd.dg_name_en
+            dungeons[sd.dungeon_id]['idx'] = sd.dungeon_id
+            dungeons[sd.dungeon_id]['subdungeons'].append({
+                'name': sd.sd_name_ja,
+                'name_en': sd.sd_name_en,
+                'idx': sd.sub_dungeon_id})
+        return dungeons
+
+    @commands.command(aliases=['firdg'])
+    @auth_check('contentadmin')
+    async def force_dungeon_index_reload(self, ctx):
+        async with ctx.typing():
+            await self.load_aliases()
+        await ctx.send("Reloaded")

@@ -176,19 +176,28 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ATTR4BOOST: ('attr4', '4attr'),
     AwokenSkills.ATTR5BOOST: ('attr5', '5attr'),
     AwokenSkills.BLOBBOOST: ('blobboost', 'blob', 'brickboost', 'brick'),
-    AwokenSkills.ADDTYPEDRAGON: (),
-    AwokenSkills.ADDTYPEGOD: (),
-    AwokenSkills.ADDTYPEDEVIL: (),
-    AwokenSkills.ADDTYPEMACHINE: (),
-    AwokenSkills.ADDTYPEBALANCED: (),
-    AwokenSkills.ADDTYPEATTACKER: (),
-    AwokenSkills.ADDTYPEPHYSICAL: (),
-    AwokenSkills.ADDTYPEHEALER: (),
-    AwokenSkills.SUBATTRRED: (),
-    AwokenSkills.SUBATTRBLUE: (),
-    AwokenSkills.SUBATTRGREEN: (),
-    AwokenSkills.SUBATTRLIGHT: (),
-    AwokenSkills.SUBATTRDARK: (),
+    AwokenSkills.ADDTYPEDRAGON: ('typed', 'typedragon'),
+    AwokenSkills.ADDTYPEGOD: ('typeg', 'typegod'),
+    AwokenSkills.ADDTYPEDEVIL: ('typev', 'typedevil'),
+    AwokenSkills.ADDTYPEMACHINE: ('typem', 'typemachine'),
+    AwokenSkills.ADDTYPEBALANCED: ('typeb', 'typebalance', 'typebal', 'typebalanced'),
+    AwokenSkills.ADDTYPEATTACKER: ('typea', 'typeattacker'),
+    AwokenSkills.ADDTYPEPHYSICAL: ('typep', 'typephys', 'typephysical'),
+    AwokenSkills.ADDTYPEHEALER: ('typeh', 'typehealer'),
+    AwokenSkills.SUBATTRRED: ('subattrr', '?r+', 'subattr'),
+    AwokenSkills.SUBATTRBLUE: ('subattrb', '?b+', 'subattb'),
+    AwokenSkills.SUBATTRGREEN: ('subattrg', '?g+', 'subattg'),
+    AwokenSkills.SUBATTRLIGHT: ('subattrl', '?l+', 'subattl'),
+    AwokenSkills.SUBATTRDARK: ('subattrd', '?d+', 'subattd'),
+    AwokenSkills.TPAPLUS: ('tpa+', 'pronged+', 'tpa', 'pronged'),
+    AwokenSkills.SKILLCHARGEPLUS: ('rainbowhaste+', 'skillcharge+', 'hasteawo+', 'rainbowhaste', 'skillcharge', 'hasteawo'),
+    AwokenSkills.AUTOHEALPLUS: ('autoheal+', 'autoheal'),
+    AwokenSkills.ENHANCEDREDPLUS: ('oer+', 'oe+', 'oer', 'oe'),
+    AwokenSkills.ENHANCEDBLUEPLUS: ('oeb+', 'oe+', 'oeb', 'oe'),
+    AwokenSkills.ENHANCEDGREENPLUS: ('oeg+', 'oe+', 'oeg', 'oe'),
+    AwokenSkills.ENHANCEDLIGHTPLUS: ('oel+', 'oe+', 'oel', 'oe'),
+    AwokenSkills.ENHANCEDDARKPLUS: ('oed+', 'oe+','oed', 'oe'),
+    AwokenSkills.ENHANCEDHEALPLUS: ('htpa+', 'oeh+', 'oeh', 'oe'),
 }
 
 
@@ -211,6 +220,7 @@ class MiscModifiers(Enum):
     COLLAB = 'Metaseries: Collab'
     NEW = 'Newest monster in series'
     ORBSKIN = 'Grants an orb skin'
+    BGM = 'Grants a BGM'
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
     BLACK_MEDAL = 'Exchangable for black medals'
@@ -244,6 +254,7 @@ MISC_MAP = {
     MiscModifiers.COLLAB: ('collab',),
     MiscModifiers.NEW: ('new',),
     MiscModifiers.ORBSKIN: ('orbskin',),
+    MiscModifiers.BGM: ('bgm',),
     MiscModifiers.ANIMATED: ('animated',),
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),

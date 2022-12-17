@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from fnmatch import fnmatch
-from itertools import chain
-from typing import Iterable, List, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
+from typing import Iterable, List, Mapping, NamedTuple, Optional, Set, TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
 import regex as re
 from Levenshtein import jaro, jaro_winkler
+from itertools import chain
 from tsutils.helper_classes import DummyObject
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -27,6 +27,35 @@ TOKEN_JW_DISTANCE = .8
 EPSILON = .001
 
 
+class MonsterMatch:
+    def __init__(self):
+        # The total score of the monster
+        self.score: float = 0
+
+        # Match data for all name tokens
+        self.name: Set[TokenMatch] = set()
+
+        # Match data for all modifier tokens
+        self.mod: Set[TokenMatch] = set()
+
+    def __repr__(self):
+        return str((self.score, [t[0] for t in self.name], [t[0] for t in self.mod]))
+
+
+MatchMap = Mapping[MonsterModel, MonsterMatch]
+
+
+class MonsterInfo(NamedTuple):
+    # The best matching monster
+    matched_monster: Optional[MonsterModel]
+
+    # How the user tokens matched each monster
+    monster_matches: MatchMap
+
+    # All monsters that were not rejected by the query
+    valid_monsters: Set[MonsterModel]
+
+
 class MatchData(NamedTuple):
     # The actual matching token
     token: "QueryToken"
@@ -43,6 +72,12 @@ class MatchData(NamedTuple):
     # Which or result was chosen
     or_index: Optional[Tuple[int, str]] = None
 
+    # Is negatable
+    can_negate: bool = True
+
+    # From Evolution
+    from_evo: int = None
+
     def __repr__(self):
         ret = []
         if self.name_type is not None:
@@ -53,6 +88,8 @@ class MatchData(NamedTuple):
             ret.append("[Subattr]")
         if self.or_index is not None:
             ret.append(f"[Matched `{self.or_index[1]}`]")
+        if self.from_evo is not None:
+            ret.append(f"[From evo {self.from_evo}]")
         return " ".join(ret)
 
     def __or__(self, other) -> "MatchData":
@@ -85,7 +122,7 @@ class QueryToken(ABC):
     def __init__(self, value: str, *, negated: bool = False, exact: bool = False):
         self.value = value
         self.negated = negated
-        self.exact = exact
+        self.exact = exact or negated
 
     @abstractmethod
     async def matches(self, monster: MonsterModel, index: MonsterIndex) -> Tuple[float, Optional[TokenMatch]]:
@@ -278,8 +315,9 @@ class SubqueryToken(SpecialToken):
 
     async def prepare(self):
         m_info, _ = await self.dbcog.find_monster_debug(self.subquery)
-        self.sub_matches = m_info.monster_matches
-        self.valid_monsters = m_info.valid_monsters
+        pruned_m_info = await prune_results_subquery(m_info)
+        self.sub_matches = pruned_m_info.monster_matches
+        self.valid_monsters = pruned_m_info.valid_monsters
         self.max_score = max((self.sub_matches[mon].score for mon in self.valid_monsters), default=0)
 
     @abstractmethod
@@ -292,7 +330,7 @@ class SubqueryToken(SpecialToken):
             return False, MatchData(self)
         matched, score = max(((mon, self.sub_matches.get(mon, DummyObject(score=0)).score) for mon in mons),
                              key=lambda x: x[1])
-        return score / self.max_score, MatchData(self, subquery_result=matched)
+        return normalize_score(score, self.max_score), MatchData(self, subquery_result=matched)
 
 
 SQT = TypeVar("SQT", bound=Type[SubqueryToken])
@@ -343,6 +381,19 @@ class SeriesOf(SubqueryToken):
                                                       cache_key=('series_id', monster.series_id))
 
 
+class SameEvoTree(SubqueryToken):
+    label = 'sametree'
+    RE_MATCH = r"\((.+)\)"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        subquery, = re.fullmatch(self.RE_MATCH, fullvalue.lower()).groups()
+        super().__init__(fullvalue, subquery, negated=negated, exact=exact, dbcog=dbcog)
+
+    def get_matching_monsters(self, monster):
+        return self.dbcog.database.graph.get_alt_monsters(monster) \
+               + list(self.dbcog.database.graph.get_monsters_with_same_id(monster))
+
+
 class AttributeToken(SpecialToken):
     RE_MATCH = r"[rbgldx]|red|fire|blue|water|green|wood|light|yellow|dark|purple|nil|none|null|white"
 
@@ -366,7 +417,7 @@ class AttributeToken(SpecialToken):
         if monster.attr1 == self.attr:
             return True, MatchData(self)
         if monster.attr2 == self.attr:
-            return 1 - EPSILON, MatchData(self, subattr_match=True)
+            return 1 - EPSILON, MatchData(self, subattr_match=True, can_negate=False)
         return False, MatchData(self)
 
 
@@ -378,7 +429,6 @@ class OrToken(SpecialToken):
                            for s in re.sub(r'"[^"]+"|\'[^\']+\'',
                                            lambda m: m.group(0).replace(' ', '\0')[1:-1],
                                            fullvalue[1:-1]).split()]
-        print(self.subqueries)
 
         self.tokens: Optional[List[QueryToken]] = None
         self.results = []
@@ -403,8 +453,8 @@ class OrToken(SpecialToken):
             if monster not in subquery.valid_monsters:
                 continue
             score = subquery.sub_matches.get(monster, DummyObject(score=0)).score
-            if best_score < score / subquery.max_score:
-                best_score = score / subquery.max_score
+            if best_score < normalize_score(score, subquery.max_score):
+                best_score = normalize_score(score, subquery.max_score)
                 best_data = MatchData(self, or_index=(c, self.subqueries[c]))
         return best_score, best_data
 
@@ -474,6 +524,30 @@ async def string_to_token(string: str, dbcog: "DBCog") -> QueryToken:
     return RegularToken(string, negated=negated, exact=exact)
 
 
+async def prune_results_subquery(monster_info: "MonsterInfo") -> "MonsterInfo":
+    exacts = set()
+    for monster in monster_info.valid_monsters:
+        matched = False
+        for token in monster_info.monster_matches[monster].name:
+            if token.match_data.name_type != "fluff":
+                if token.matched == token.token:
+                    matched = True
+                else:
+                    break
+        else:
+            if matched:
+                exacts.add(monster)
+    return MonsterInfo(monster_info.matched_monster,
+                       monster_info.monster_matches,
+                       exacts or monster_info.valid_monsters)
+
+
+def normalize_score(score: float, max_score: float) -> float:
+    if max_score == 0:
+        return 1.0
+    return score / max_score
+
+
 SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     MultipleAwakeningToken,
     MonsterAttributeNumeric,
@@ -482,6 +556,7 @@ SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     SelfHasMaterial,
     HasMaterial,
     SeriesOf,
+    SameEvoTree,
     AttributeToken,
     OrToken,
     IDRangeToken,

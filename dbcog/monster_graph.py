@@ -87,6 +87,8 @@ ACTIVE_QUERY = """SELECT
   ass.desc_templated_ja AS ass_desc_templated_ja,
   ass.desc_templated_en AS ass_desc_templated_en,
   ass.desc_templated_ko AS ass_desc_templated_ko,
+  ass.board_65 AS ass_board_65,
+  ass.board_76 AS ass_board_76,
   ass.cooldown AS ass_cooldown,
   ap.active_part_id,
   ap.active_skill_type_id,
@@ -236,6 +238,8 @@ class MonsterGraph:
                     'desc_templated_ja': row.ass_desc_templated_ja,
                     'desc_templated_en': row.ass_desc_templated_en,
                     'desc_templated_ko': row.ass_desc_templated_ko,
+                    'board_65': row.ass_board_65,
+                    'board_76': row.ass_board_76,
                     'cooldown': row.ass_cooldown,
 
                     'active_parts': []
@@ -316,6 +320,7 @@ class MonsterGraph:
                                    all_series=monster_series[m.monster_id] or {series[0]},
                                    series_id=m.s_series_id,
                                    group_id=m.group_id,
+                                   collab_id=m.collab_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
                                    name_ja=m.name_ja,
@@ -341,12 +346,12 @@ class MonsterGraph:
                                    is_stackable=m.stackable == 1,
                                    evo_gem_id=m.evo_gem_id,
                                    orb_skin_id=m.orb_skin_id,
+                                   bgm_id=m.bgm_id,
                                    cost=m.cost,
                                    level=m.level,
                                    exp=m.exp,
                                    fodder_exp=m.fodder_exp,
                                    limit_mult=m.limit_mult,
-                                   pronunciation_ja=m.pronunciation_ja,
                                    voice_id_jp=m.voice_id_jp,
                                    voice_id_na=m.voice_id_na,
                                    hp_max=m.hp_max,
@@ -542,6 +547,10 @@ class MonsterGraph:
 
     def get_alt_monsters(self, monster: MonsterModel) -> List[MonsterModel]:
         return [self.get_monster(m_id, server=monster.server_priority) for m_id in self.get_alt_ids(monster)]
+
+    def get_monsters_with_same_id(self, monster: MonsterModel) -> Set[MonsterModel]:
+        return {*filter(None, [self.get_monster(monster.monster_id % 10_000, server=monster.server_priority),
+                               self.get_monster(monster.monster_id + 10_000, server=monster.server_priority)])}
 
     def get_base_id(self, monster) -> int:
         # This fixes DMG.  I *hate* DMG.
@@ -774,6 +783,9 @@ class MonsterGraph:
 
     def monster_is_orb_skin_evo(self, monster: MonsterModel) -> bool:
         return any(alt.orb_skin_id for alt in self.get_alt_monsters(monster))
+
+    def monster_is_bgm_evo(self, monster: MonsterModel) -> bool:
+        return any(alt.bgm_id for alt in self.get_alt_monsters(monster))
 
     def monster_is_exchange(self, monster: MonsterModel) -> bool:
         return bool(self._get_edges(monster, 'exchange_from'))

@@ -123,6 +123,8 @@ class Crud(commands.Cog, EditSeries):
                 await ctx.send(box(page))
 
     async def git_verify(self, ctx, folder, filename):
+        filepath = folder + filename
+        
         try:
             repo = pygit2.Repository(await self.config.pipeline_base())
         except pygit2.GitError:
@@ -145,7 +147,6 @@ class Crud(commands.Cog, EditSeries):
                                                         f" github username <username> token <access token>`")
 
         try:
-            filepath = folder + filename
             index = repo.index
             index.add(filepath)
             index.write()
@@ -212,7 +213,7 @@ class Crud(commands.Cog, EditSeries):
         sql = ('SELECT dungeon_id, name_en, name_ja, visible FROM dungeons'
                ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
                ' ORDER BY dungeon_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [search_text, search_text])
+        await self.execute_read(ctx, sql, (search_text, search_text))
 
     @crud.group()
     async def series(self, ctx):
@@ -225,7 +226,7 @@ class Crud(commands.Cog, EditSeries):
         sql = ('SELECT series_id, name_en, name_ja, name_ko FROM series'
                ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
                ' ORDER BY series_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, [search_text, search_text])
+        await self.execute_read(ctx, sql, (search_text, search_text))
 
     @series.command(name="add")
     async def series_add(self, ctx, *elements):
@@ -236,6 +237,8 @@ class Crud(commands.Cog, EditSeries):
         Example Usage:
         [p]crud series add key1 "Value1" key2 "Value2"
         """
+        if not elements:
+            return await ctx.send_help()
         if len(elements) % 2 != 0:
             return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
                                                         " multi-word values are in quotes")
@@ -285,8 +288,11 @@ class Crud(commands.Cog, EditSeries):
         Example Usage:
         [p]crud series edit 100 key1 "Value1" key2 "Value2"
         """
-        if len(elements) % 2 != 0:
+        if not elements:
             return await ctx.send_help()
+        if len(elements) % 2 != 0:
+            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
+                                                        " multi-word values are in quotes")
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in SERIES_KEYS for x in elements)):
@@ -361,8 +367,11 @@ class Crud(commands.Cog, EditSeries):
         Example Usage:
         [p]crud awokenskill add key1 "Value1" key2 "Value2"
         """
-        if len(elements) % 2 != 0:
+        if not elements:
             return await ctx.send_help()
+        if len(elements) % 2 != 0:
+            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
+                                                        " multi-word values are in quotes")
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
@@ -432,8 +441,11 @@ class Crud(commands.Cog, EditSeries):
 
         awoken_skill_id = int(awoken_skill_id)
 
-        if len(elements) % 2 != 0:
+        if not elements:
             return await ctx.send_help()
+        if len(elements) % 2 != 0:
+            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
+                                                        " multi-word values are in quotes")
         elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
 
         if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
@@ -512,6 +524,16 @@ class Crud(commands.Cog, EditSeries):
         if monster is None:
             return await ctx.send("No matching monster found.")
         await ctx.send(f"{MonsterHeader.text_with_emoji(monster)} is in GungHo Group #{monster.group_id}")
+
+    @commands.command(aliases=['collab#', 'ghcollab#'])
+    async def ghcollabn(self, ctx, *, query):
+        dbcog: Any = self.bot.get_cog("DBCog")
+        if dbcog is None:
+            return await ctx.send("DBCog not loaded.")
+        monster = await dbcog.find_monster(query, ctx.author.id)
+        if monster is None:
+            return await ctx.send("No matching monster found.")
+        await ctx.send(f"{MonsterHeader.text_with_emoji(monster)} is in GungHo Collab #{monster.collab_id}")
 
     @crud.command()
     async def setmyemail(self, ctx, email=None):
