@@ -90,8 +90,11 @@ class MonsterModel(BaseModel):
         self.exp: int = m['exp']
         self.fodder_exp: int = m['fodder_exp']
         self.level: int = m['level']
-        self.limit_mult: int = m['limit_mult']
         self.latent_slots: int = m['latent_slots']
+
+        # Use this to determine if a card is limitbreak-able. A value of 0 means that
+        # the card cannot be limitbroken.
+        self.limit_mult: int = m['limit_mult']
 
         self.hp_max: int = m['hp_max']
         self.hp_min: int = m['hp_min']
