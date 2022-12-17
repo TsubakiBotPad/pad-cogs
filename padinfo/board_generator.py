@@ -1,7 +1,7 @@
 class BoardGenerator(object):
     """Generate a Dawnglare link with optional inversion."""
 
-    allowed_letters = "RGBLDHXJMPZ"
+    allowed_letters = "RGBLDHXJMPSZ"
     inversion = "-1"
     dawnglare_link = "https://pad.dawnglare.com/?patt={}&showfill=1"
     board_sizes = {
