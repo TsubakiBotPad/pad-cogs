@@ -24,14 +24,22 @@ class JpYtDgLeadView(DungeonListBase):
 
     @classmethod
     def format_dg_link(cls, dungeon, props: JpYtDgLeadProps):
-        link = cls.dungeon_link.format(cls.escape_name(dungeon['name']), cls.escape_name(props.monster.name_ja))
+        if props.monster is None:
+            monster_name = "パズドラ"
+        else:
+            monster_name = cls.escape_name(props.monster.name_ja)
+        link = cls.dungeon_link.format(cls.escape_name(dungeon['name']), monster_name)
         return LinkedText(cls.escape_name(dungeon['name_en']),
                           cls.escape_whitespace(link))
 
     @classmethod
     def format_sd_link(cls, subdungeon, props: JpYtDgLeadProps):
+        if props.monster is None:
+            monster_name = "パズドラ"
+        else:
+            monster_name = cls.escape_name(props.monster.name_ja)
         return cls.escape_whitespace((
-            cls.subdungeon_link.format(cls.escape_name(subdungeon['name']), cls.escape_name(props.monster.name_ja))))
+            cls.subdungeon_link.format(cls.escape_name(subdungeon['name']), monster_name)))
 
     @classmethod
     def print_name(cls, subdungeon, props: JpYtDgLeadProps):
@@ -40,6 +48,8 @@ class JpYtDgLeadView(DungeonListBase):
 
     @classmethod
     def description(cls, props: JpYtDgLeadProps):
+        if props.monster is None:
+            return ""
         return MonsterHeader.text_with_emoji(props.monster)
 
     @classmethod
