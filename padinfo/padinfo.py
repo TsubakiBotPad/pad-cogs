@@ -782,13 +782,13 @@ class PadInfo(commands.Cog):
         dbcog = await self.get_dbcog()
         l_mon, l_query, r_mon, r_query = await leaderskill_query(dbcog, raw_query, ctx.author.id)
 
-        err_msg = ('{} query failed to match a monster: [ {} ]. If your query is multiple words,'
+        err_msg = ('{} query failed to match a monster: `{}`. If your query is multiple words,'
                    ' try separating the queries with / or wrap with quotes.')
         if l_mon is None:
-            await ctx.send(inline(err_msg.format('Left', l_query)))
+            await ctx.send(err_msg.format('Left', l_query))
             return
         if r_mon is None:
-            await ctx.send(inline(err_msg.format('Right', r_query)))
+            await ctx.send(err_msg.format('Right', r_query))
             return
 
         l_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
@@ -1512,30 +1512,29 @@ class PadInfo(commands.Cog):
 
     @commands.command(aliases=["jydl", "jpyt"], usage="<dungeon_name> / <monster_name>")
     async def jpyoutube(self, ctx, *, search_text):
-        """Attempt to link to a YouTube search of a leader in a dungeon"""
+        """Link to a YouTube search of a dungeon, with an option to specify leader"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
-        if '/' in search_text:
-            texts = search_text.split('/')
-        elif ',' in search_text:
-            texts = search_text.split('/')
+
+        if '/' in search_text or ',' in search_text:
+            if '/' in search_text:
+                texts = search_text.split('/')
+            else:
+                texts = search_text.split(',')
+            dg_text = texts[0]
+            mon_text = texts[1]
+            monster = await dbcog.find_monster(mon_text, ctx.author.id)
+            if monster is None:
+                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
+                                    f"maybe try again?")             
         else:
-            texts = search_text.split(maxsplit=1)
-        if len(texts) < 2:
-            return await ctx.send(f"No monster found. Please provide both a dungeon and a monster. "
-                                  f"Perhaps you meant to use `{ctx.prefix}skyo` or `{ctx.prefix}jpdgname`?")
-        dg_text = texts[0]
-        mon_text = texts[1]
+            dg_text = search_text
+            monster = None
+
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
-
-        monster = await dbcog.find_monster(mon_text, ctx.author.id)
-        if monster is None:
-            return await ctx.send(f"No monster found. This command looks for `/` or `,` as a delimiter, "
-                                  f"maybe try again?")
-
         sds = await self.get_subdungeons(dg_text, db)
         if not sds:
-            return await ctx.send(f"No dungeons found. This command looks for `/` or `,` as a delimiter, "
+            return await ctx.send(f"No dungeons found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
                                   f"maybe try again?")
 
         dungeons = self.make_dungeon_dict(sds)
