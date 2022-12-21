@@ -568,8 +568,10 @@ class MonsterIndex:
         # Art
         if self.graph.monster_is_orb_skin_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.ORBSKIN])
+            modifiers.update(MISC_MAP[MiscModifiers.MEDIA])
         if self.graph.monster_is_bgm_evo(monster):
             modifiers.update(MISC_MAP[MiscModifiers.BGM])
+            modifiers.update(MISC_MAP[MiscModifiers.MEDIA])
         if monster.has_animation:
             modifiers.update(MISC_MAP[MiscModifiers.ANIMATED])
 
