@@ -952,7 +952,7 @@ class PadInfo(commands.Cog):
     async def idset(self, ctx):
         """`[p]id` settings configuration"""
 
-    @idset.command(name="list")
+    @idset.command(name="list", aliases=['show'])
     async def idset_list(self, ctx):
         """`[p]id` settings list"""
         fm_flags = await self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags()
@@ -970,6 +970,7 @@ class PadInfo(commands.Cog):
             "naprio": 'On' if 'na_prio' not in fm_flags or fm_flags['na_prio'] == 1 else 'Off',
             "ormod prio": 'On' if 'ormod_prio' not in fm_flags or fm_flags['ormod_prio'] is True else 'Off',
             "server": 'Default' if 'server' not in fm_flags or fm_flags['server'] == 'COMBINED' else fm_flags['server'],
+            "skilldisplay": 'skilltexts' if 'skilldisplay' not in fm_flags else SkillDisplay(fm_flags['skilldisplay']).name,
             "(Donor Only) embedcolor": 'Default' if 'embedcolor' not in fm_flags else fm_flags['embedcolor'].title(),
         }
         await ctx.send(intro + '\n'.join(["\t{}: {}".format(k, v) for k, v in user_settings.items()]))
