@@ -68,7 +68,7 @@ class OtherInfoView(BaseIdView, EvoScrollView):
                         Text(statsbox(m, plus=0)),
                         LabeledText("JP Name", m.name_ja),
                         LinksView.linksbox(m),
-                        LabeledText("JP Added", str(m.reg_date)) if m.reg_date else None,
+                        LabeledText("Added to DB", str(m.reg_date)) if m.reg_date else None,
                         LabeledText("Series", m.series.name_en),
                         Box(
                             LabeledText("Sell MP", '{:,}'.format(m.sell_mp)),
@@ -78,7 +78,7 @@ class OtherInfoView(BaseIdView, EvoScrollView):
                             LabeledText("Sell Gold", '{:,}'.format(m.sell_gold))
                         ),
                         Box(
-                            LabeledText("XP to Max", '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
+                            LabeledText("`^expcurve`", '{:.1f}'.format(m.exp / 1000000).rstrip('0').rstrip('.') + 'M'
                             if m.exp >= 1000000 else '{:,}'.format(m.exp)),
                             LabeledText("Max Level", str(m.level)),
                             delimiter='  '),
