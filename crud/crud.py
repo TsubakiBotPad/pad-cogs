@@ -1,8 +1,6 @@
 import json
 import logging
-import os
 import re
-from datetime import datetime
 from io import BytesIO
 from typing import Any, TYPE_CHECKING
 
@@ -17,37 +15,14 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import get_user_confirmation, send_cancellation_message
 
 from crud.editseries import EditSeries
+from crud.tables.awoken_skills import CRUDAwokenSkills
+from crud.tables.latent_skills import CRUDLatentSkills
+from crud.tables.series import CRUDSeries
 
 if TYPE_CHECKING:
     from dbcog import DBCog
 
 logger = logging.getLogger('red.padbot-cogs.crud')
-
-SERIES_KEYS = {
-    "name_en": 'Untranslated',
-    "name_ja": 'Untranslated',
-    "name_ko": 'Untranslated',
-    "series_type": None,
-}
-
-AWOKEN_SKILL_KEYS = {
-    "awoken_skill_id": -1,
-    "name_en": 'Untranslated',
-    "name_ja": 'Untranslated',
-    "name_ko": 'Untranslated',
-    "desc_en": 'Untranslated',
-    "desc_ja": 'Untranslated',
-    "desc_ko": 'Untranslated',
-}
-
-SERIES_TYPES = [
-    "regular",
-    "event",
-    "seasonal",
-    "ghcollab",
-    "collab",
-    "lowpriority",
-]
 
 
 async def check_crud_channel(ctx):
@@ -55,7 +30,7 @@ async def check_crud_channel(ctx):
     return chan is None or chan == ctx.channel.id or ctx.author.id in ctx.bot.owner_ids
 
 
-class Crud(commands.Cog, EditSeries):
+class Crud(CRUDSeries, CRUDAwokenSkills, CRUDLatentSkills, EditSeries):
     """PadGuide CRUD"""
 
     json_folder = 'etl/pad/storage_processor/'
@@ -73,19 +48,24 @@ class Crud(commands.Cog, EditSeries):
         else:
             raise errors.CogLoadError("Global Administration cog must be loaded.  Make sure it's "
                                       "installed from core-cogs and load it via `^load globaladmin`")
+        self.setup_mixins()
 
     async def red_get_data_for_user(self, *, user_id):
         """Get a user's personal data."""
+        data = '\n'.join(await self.get_mixin_user_data(user_id))
+
         email = self.config.user_from_id(user_id)
         if email:
-            data = f"You have a stored email ({email})"
-        else:
+            data += f"You have a stored email ({email})\n"
+
+        if not data:
             data = "No data is stored for user with ID {}.\n".format(user_id)
         return {"user_data.txt": BytesIO(data.encode())}
 
     async def red_delete_data_for_user(self, *, requester, user_id):
         """Delete a user's personal data."""
         await self.config.user_from_id(user_id).clear()
+        await self.delete_mixin_user_data(requester, user_id)
 
     async def get_cursor(self):
         async with aiofiles.open(await self.config.config_file(), 'r') as db_config:
@@ -124,7 +104,7 @@ class Crud(commands.Cog, EditSeries):
 
     async def git_verify(self, ctx, folder, filename):
         filepath = folder + filename
-        
+
         try:
             repo = pygit2.Repository(await self.config.pipeline_base())
         except pygit2.GitError:
@@ -214,282 +194,6 @@ class Crud(commands.Cog, EditSeries):
                ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
                ' ORDER BY dungeon_id DESC LIMIT 20')
         await self.execute_read(ctx, sql, (search_text, search_text))
-
-    @crud.group()
-    async def series(self, ctx):
-        """Series related commands"""
-
-    @series.command(name="search")
-    async def series_search(self, ctx, *, search_text):
-        """Search for a series via its jp or na name"""
-        search_text = '%{}%'.format(search_text).lower()
-        sql = ('SELECT series_id, name_en, name_ja, name_ko FROM series'
-               ' WHERE lower(name_en) LIKE %s OR lower(name_ja) LIKE %s'
-               ' ORDER BY series_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, (search_text, search_text))
-
-    @series.command(name="add")
-    async def series_add(self, ctx, *elements):
-        """Add a new series.
-
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `series_type`
-
-        Example Usage:
-        [p]crud series add key1 "Value1" key2 "Value2"
-        """
-        if not elements:
-            return await ctx.send_help()
-        if len(elements) % 2 != 0:
-            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
-                                                        " multi-word values are in quotes")
-        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
-
-        if not (elements and all(x in SERIES_KEYS for x in elements)):
-            return await send_cancellation_message(ctx, f"Valid keys are {', '.join(map(inline, SERIES_KEYS))}")
-
-        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
-            return await send_cancellation_message(ctx, "`series_type` must be one of: " + ", ".join(SERIES_TYPES))
-
-        EXTRAS = {}
-        async with await self.get_cursor() as cursor:
-            await cursor.execute("SELECT MAX(series_id) AS max_id FROM series")
-            max_val = (await cursor.fetchall())[0]['max_id']
-            EXTRAS['series_id'] = max_val + 1
-        EXTRAS['tstamp'] = int(datetime.now().timestamp())
-        elements = {**SERIES_KEYS, **EXTRAS, **elements}
-
-        key_infix = ", ".join(elements.keys())
-        value_infix = ", ".join("%s" for v in elements.values())
-        sql = ('INSERT INTO series ({})'
-               ' VALUES ({})').format(key_infix, value_infix)
-
-        await self.execute_write(ctx, sql, (*elements.values(),))
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-        j.append({
-            'name_ja': elements['name_ja'],
-            'name_en': elements['name_en'],
-            'name_ko': elements['name_ko'],
-            'series_id': elements['series_id'],
-            'series_type': elements['series_type']
-        })
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'series.json')
-
-    @series.command(name="edit")
-    async def series_edit(self, ctx, series_id: int, *elements):
-        """Edit an existing series.
-
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `series_type`
-
-        Example Usage:
-        [p]crud series edit 100 key1 "Value1" key2 "Value2"
-        """
-        if not elements:
-            return await ctx.send_help()
-        if len(elements) % 2 != 0:
-            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
-                                                        " multi-word values are in quotes")
-        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
-
-        if not (elements and all(x in SERIES_KEYS for x in elements)):
-            return await ctx.send_help()
-
-        if "series_type" in elements and elements['series_type'] not in SERIES_TYPES:
-            return await ctx.send("`series_type` must be one of: " + ", ".join(SERIES_TYPES))
-
-        replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
-        sql = ('UPDATE series'
-               ' SET {}'
-               ' WHERE series_id = %s').format(replacement_infix)
-
-        await self.execute_write(ctx, sql, (*elements.values(), series_id))
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-        for e in j:
-            if e['series_id'] == series_id:
-                e.update(elements)
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'series.json')
-
-    @series.command(name="delete")
-    @checks.is_owner()
-    async def series_delete(self, ctx, series_id: int):
-        """Delete an existing series"""
-        sql = ('DELETE FROM series'
-               ' WHERE series_id = %s')
-
-        await self.execute_write(ctx, sql, series_id)
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'series.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-        for e in j[:]:
-            if e['series_id'] == series_id:
-                j.remove(e)
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'series.json')
-
-    @crud.group(aliases=["awos"])
-    async def awokenskill(self, ctx):
-        """Awoken skill related commands"""
-
-    @awokenskill.command(name="search")
-    async def awokenskill_search(self, ctx, *, search_text):
-        """Search for a awoken skill via its jp or na name"""
-        dbcog = await self.get_dbcog()
-        if search_text in dbcog.KNOWN_AWOKEN_SKILL_TOKENS:
-            where = f'awoken_skill_id = %s'
-            replacements = (dbcog.KNOWN_AWOKEN_SKILL_TOKENS[search_text].value,)
-        else:
-            where = f"lower(name_en) LIKE %s OR lower(name_ja) LIKE %s"
-            replacements = ('%{}%'.format(search_text).lower(),) * 2
-        sql = (f'SELECT awoken_skill_id, name_en, name_ja, name_ko, desc_en,'
-               f' desc_ja, desc_ko FROM awoken_skills'
-               f' WHERE {where}'
-               f' ORDER BY awoken_skill_id DESC LIMIT 20')
-        await self.execute_read(ctx, sql, replacements)
-
-    @awokenskill.command(name="add")
-    @checks.is_owner()
-    async def awokenskill_add(self, ctx, *elements):
-        """Add a new awoken skill.
-
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `desc_en`, `desc_ko`, `desc_ja`
-
-        Example Usage:
-        [p]crud awokenskill add key1 "Value1" key2 "Value2"
-        """
-        if not elements:
-            return await ctx.send_help()
-        if len(elements) % 2 != 0:
-            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
-                                                        " multi-word values are in quotes")
-        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
-
-        if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
-            return await ctx.send_help()
-
-        if "awoken_skill_id" not in elements or not elements["awoken_skill_id"].isdigit():
-            return await ctx.send("You must supply an numeric `awoken_skill_id` when adding a new awoken skill.")
-        elements["awoken_skill_id"] = int(elements["awoken_skill_id"])
-
-        EXTRAS = {
-            'adj_hp': 0,
-            'adj_atk': 0,
-            'adj_rcv': 0,
-            'tstamp': int(datetime.now().timestamp())
-        }
-        elements = {**AWOKEN_SKILL_KEYS, **EXTRAS, **elements}
-
-        key_infix = ", ".join(elements.keys())
-        value_infix = ", ".join("%s" for v in elements.values())
-        sql = ('INSERT INTO awoken_skills ({})'
-               ' VALUES ({})').format(key_infix, value_infix)
-
-        await self.execute_write(ctx, sql, (*elements.values(),))
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-        j.append({
-            "adj_atk": 0,
-            "adj_hp": 0,
-            "adj_rcv": 0,
-            "desc_ja": elements['desc_ja'],
-            "desc_ja_official": "Unknown Official Text",
-            "desc_ko": elements['desc_ko'],
-            "desc_ko_official": "Unknown Official Text",
-            "desc_en": elements['desc_en'],
-            "desc_en_official": "Unknown Official Text",
-            'name_ja': elements['name_ja'],
-            "name_ja_official": "Unknown Official Name",
-            'name_en': elements['name_en'],
-            "name_ko_official": "Unknown Official Name",
-            'name_ko': elements['name_ko'],
-            "name_en_official": "Unknown Official Name",
-            "pad_awakening_id": elements['awoken_skill_id'],
-        })
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
-
-    @awokenskill.command(name="edit")
-    async def awokenskill_edit(self, ctx, awoken_skill, *elements):
-        """Edit an existing awoken skill.
-
-        Valid element keys are: `name_en`, `name_ko`, `name_ja`, `desc_en`, `desc_ko`, `desc_ja`
-
-        Example Usage:
-        [p]crud awokenskill edit 100 key1 "Value1" key2 "Value2"
-        [p]crud awokenskill edit misc_comboboost key1 "Value1" key2 "Value2"
-        """
-        dbcog = await self.get_dbcog()
-        if awoken_skill in dbcog.KNOWN_AWOKEN_SKILL_TOKENS:
-            awoken_skill_id = dbcog.KNOWN_AWOKEN_SKILL_TOKENS[awoken_skill].value
-        elif awoken_skill.isdigit():
-            awoken_skill_id = int(awoken_skill)
-        else:
-            return await ctx.send("Invalid awoken skill.")
-
-        awoken_skill_id = int(awoken_skill_id)
-
-        if not elements:
-            return await ctx.send_help()
-        if len(elements) % 2 != 0:
-            return await send_cancellation_message(ctx, "Imbalanced key-value pairs. Make sure"
-                                                        " multi-word values are in quotes")
-        elements = {elements[i]: elements[i + 1] for i in range(0, len(elements), 2)}
-
-        if not (elements and all(x in AWOKEN_SKILL_KEYS for x in elements)):
-            return await ctx.send_help()
-
-        if 'awoken_skill_id' in elements:
-            return await ctx.send("`awoken_skill_id` is not a supported key for editing.")
-
-        replacement_infix = ", ".join(["{} = %s".format(k) for k in elements.keys()])
-        sql = ('UPDATE awoken_skills'
-               ' SET {}'
-               ' WHERE awoken_skill_id = %s').format(replacement_infix)
-
-        await self.execute_write(ctx, sql, (*elements.values(), awoken_skill_id))
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-
-        for e in j:
-            if e['pad_awakening_id'] == awoken_skill_id:
-                e.update(elements)
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
-
-    @awokenskill.command(name="delete")
-    @checks.is_owner()
-    async def awokenskill_delete(self, ctx, awoken_skill_id: int):
-        """Delete an existing awoken skill"""
-        sql = ('DELETE FROM awoken_skills'
-               ' WHERE awoken_skill_id = %s')
-
-        await self.execute_write(ctx, sql, awoken_skill_id)
-
-        fn = os.path.join(await self.config.pipeline_base(), self.json_folder, 'awoken_skill.json')
-        async with aiofiles.open(fn, 'r') as f:
-            j = json.loads(await f.read())
-        for e in j[:]:
-            if e['pad_awakening_id'] == awoken_skill_id:
-                j.remove(e)
-        async with aiofiles.open(fn, 'w') as f:
-            await f.write(json.dumps(j, indent=2, ensure_ascii=False, sort_keys=True))
-        await self.git_verify(ctx, self.json_folder, 'awoken_skill.json')
 
     @crud.command()
     @checks.is_owner()
