@@ -221,6 +221,7 @@ class MiscModifiers(Enum):
     NEW = 'Newest monster in series'
     ORBSKIN = 'Grants an orb skin'
     BGM = 'Grants a BGM'
+    MEDIA = 'Grants a form of media' # orb skin or BGM
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
     BLACK_MEDAL = 'Exchangable for black medals'
@@ -255,6 +256,7 @@ MISC_MAP = {
     MiscModifiers.NEW: ('new',),
     MiscModifiers.ORBSKIN: ('orbskin',),
     MiscModifiers.BGM: ('bgm',),
+    MiscModifiers.MEDIA: ('media',),
     MiscModifiers.ANIMATED: ('animated',),
     MiscModifiers.MEDAL_EXC: ('medal', 'shop'),
     MiscModifiers.BLACK_MEDAL: ('blackmetal',),
