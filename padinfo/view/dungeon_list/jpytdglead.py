@@ -21,11 +21,12 @@ class JpYtDgLeadView(DungeonListBase):
     subdungeon_link = 'https://www.youtube.com/results?search_query={}%20{}'
     bad_chars = ['-']
     whitespace = [' ', '　']
+    pazudora = "パズドラ"
 
     @classmethod
     def format_dg_link(cls, dungeon, props: JpYtDgLeadProps):
         if props.monster is None:
-            monster_name = "パズドラ"
+            monster_name = cls.pazudora
         else:
             monster_name = cls.escape_name(props.monster.name_ja)
         link = cls.dungeon_link.format(cls.escape_name(dungeon['name']), monster_name)
@@ -35,7 +36,7 @@ class JpYtDgLeadView(DungeonListBase):
     @classmethod
     def format_sd_link(cls, subdungeon, props: JpYtDgLeadProps):
         if props.monster is None:
-            monster_name = "パズドラ"
+            monster_name = cls.pazudora
         else:
             monster_name = cls.escape_name(props.monster.name_ja)
         return cls.escape_whitespace((

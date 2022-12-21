@@ -1515,23 +1515,31 @@ class PadInfo(commands.Cog):
         """Link to a YouTube search of a dungeon, with an option to specify leader"""
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
-        if '/' not in search_text:
-            dg_text = search_text
-            monster = None
 
-        elif '/' in search_text:
+        if '/' in search_text:
             texts = search_text.split('/')
             dg_text = texts[0]
             mon_text = texts[1]
             monster = await dbcog.find_monster(mon_text, ctx.author.id)
             if monster is None:
-                return await ctx.send(f"No monster found. This command uses `/` as an optional delimiter to specify a leader, "
+                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
+                                    f"maybe try again?")             
+        elif ',' in search_text:
+            texts = search_text.split(',')
+            dg_text = texts[0]
+            mon_text = texts[1]
+            monster = await dbcog.find_monster(mon_text, ctx.author.id)
+            if monster is None:
+                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
                                     f"maybe try again?")
+        else:
+            dg_text = search_text
+            monster = None
 
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
         sds = await self.get_subdungeons(dg_text, db)
         if not sds:
-            return await ctx.send(f"No dungeons found. This command uses `/` as an optional delimiter to specify a leader, "
+            return await ctx.send(f"No dungeons found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
                                   f"maybe try again?")
 
         dungeons = self.make_dungeon_dict(sds)
