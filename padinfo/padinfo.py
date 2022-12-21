@@ -782,13 +782,13 @@ class PadInfo(commands.Cog):
         dbcog = await self.get_dbcog()
         l_mon, l_query, r_mon, r_query = await leaderskill_query(dbcog, raw_query, ctx.author.id)
 
-        err_msg = ('{} query failed to match a monster: [ {} ]. If your query is multiple words,'
+        err_msg = ('{} query failed to match a monster: `{}`. If your query is multiple words,'
                    ' try separating the queries with / or wrap with quotes.')
         if l_mon is None:
-            await ctx.send(inline(err_msg.format('Left', l_query)))
+            await ctx.send(err_msg.format('Left', l_query))
             return
         if r_mon is None:
-            await ctx.send(inline(err_msg.format('Right', r_query)))
+            await ctx.send(err_msg.format('Right', r_query))
             return
 
         l_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
@@ -1516,22 +1516,17 @@ class PadInfo(commands.Cog):
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
 
-        if '/' in search_text:
-            texts = search_text.split('/')
+        if '/' in search_text or ',' in search_text:
+            if '/' in search_text:
+                texts = search_text.split('/')
+            else:
+                texts = search_text.split(',')
             dg_text = texts[0]
             mon_text = texts[1]
             monster = await dbcog.find_monster(mon_text, ctx.author.id)
             if monster is None:
                 return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
                                     f"maybe try again?")             
-        elif ',' in search_text:
-            texts = search_text.split(',')
-            dg_text = texts[0]
-            mon_text = texts[1]
-            monster = await dbcog.find_monster(mon_text, ctx.author.id)
-            if monster is None:
-                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
-                                    f"maybe try again?")
         else:
             dg_text = search_text
             monster = None
