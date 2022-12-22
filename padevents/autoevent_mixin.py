@@ -200,6 +200,7 @@ class AutoEvent:
                 await ctx.send("That key does not exist.")
                 return
             pingroles[key][k] = v
+        await ctx.tick()
 
     async def aepget(self, ctx, key: str):
         pingroles = await self.config.guild(ctx.guild).pingroles()
@@ -212,20 +213,17 @@ class AutoEvent:
     async def aep_s_channel(self, ctx, key, channel: discord.TextChannel):
         """Sets channel to ping"""
         await self.aepset(ctx, key, 'channel', channel.id)
-        await ctx.tick()
 
     @aep_set.command(name="roles")
     async def aep_s_roles(self, ctx, key, role: discord.Role):
         """Sets roles to ping"""
         await self.aepset(ctx, key, 'role', role.id)
-        await ctx.tick()
 
     @aep_set.command(name="server")
     async def aep_s_server(self, ctx, key, server: Server):
         """Sets which server to listen to events in"""
         server = server.value
         await self.aepset(ctx, key, 'server', server)
-        await ctx.tick()
 
     @aep_set.command(name="searchstr")
     async def aep_s_searchstr(self, ctx, key, *, searchstr):
@@ -238,7 +236,6 @@ class AutoEvent:
                 await ctx.send("Invalid regex searchstr. (`{}`)".format(searchstr))
                 return
         await self.aepset(ctx, key, 'searchstr', searchstr)
-        await ctx.tick()
 
     @aep_set.command(name="regex")
     async def aep_s_regex(self, ctx, key, regex: bool):
@@ -250,19 +247,16 @@ class AutoEvent:
                 await ctx.send("Invalid regex searchstr. (`{}`)".format((await self.aepget(ctx, key))['searchstr']))
                 return
         await self.aepset(ctx, key, 'regex', regex)
-        await ctx.tick()
 
     @aep_set.command(name="enabled", aliases=['enable'])
     async def aep_s_enabled(self, ctx, key, enabled: bool = True):
         """Sets whether or not ping is enabled"""
         await self.aepset(ctx, key, 'enabled', enabled)
-        await ctx.tick()
 
     @aep_set.command(name="disabled", aliases=['disable'])
     async def aep_s_disabled(self, ctx, key, disabled: bool = True):
         """Sets whether or not ping is disabled"""
         await self.aepset(ctx, key, 'enabled', not disabled)
-        await ctx.tick()
 
     @aep_set.command(name="offset")
     async def aep_s_offset(self, ctx, key, offset: int):
@@ -271,7 +265,6 @@ class AutoEvent:
             await ctx.send("Offset cannot be negative.")
             return
         await self.aepset(ctx, key, 'offset', offset)
-        await ctx.tick()
 
     @autoeventping.command(name="channelmessage")
     async def aep_channelmessage(self, ctx, channel: Optional[discord.TextChannel], enable: bool):
