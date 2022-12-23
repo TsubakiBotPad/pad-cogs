@@ -58,8 +58,10 @@ from padinfo.view.awakening_help import AwakeningHelpView, AwakeningHelpViewProp
 from padinfo.view.awakening_list import AwakeningListSortTypes, AwakeningListViewState
 from padinfo.view.button_info import ButtonInfoToggles, ButtonInfoViewState
 from padinfo.view.common import invalid_monster_text
+from padinfo.view.dungeon_list.dungeon_list import DungeonListViewProps, DungeonListBase
 from padinfo.view.dungeon_list.jp_dungeon_name import JpDungeonNameViewProps, JpDungeonNameView
 from padinfo.view.dungeon_list.jpytdglead import JpYtDgLeadProps, JpYtDgLeadView
+from padinfo.view.dungeon_list.jptwtdglead import JpTwtDgLeadProps, JpTwtDgLeadView
 from padinfo.view.dungeon_list.skyo_links import SkyoLinksView, SkyoLinksViewProps
 from padinfo.view.evos import EvosViewState
 from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
@@ -1514,6 +1516,14 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["jydl", "jpyt"], usage="<dungeon_name> / <monster_name>")
     async def jpyoutube(self, ctx, *, search_text):
         """Link to a YouTube search of a dungeon, with an option to specify leader"""
+        return await self.get_dl_menu(ctx, search_text, JpYtDgLeadProps, JpYtDgLeadView)
+
+    @commands.command(aliases=["jptwt"], usage="<dungeon_name> / <monster_name>")
+    async def jptwitter(self, ctx, *, search_text):
+        """Link to a Twitter search of a dungeon, with an option to specify leader"""
+        return await self.get_dl_menu(ctx, search_text, JpTwtDgLeadProps, JpTwtDgLeadView)
+    
+    async def get_dl_menu(self, ctx, search_text, props_type: Type[DungeonListViewProps], view_type: Type[DungeonListBase]):
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
 
@@ -1537,13 +1547,13 @@ class PadInfo(commands.Cog):
         if not sds:
             return await ctx.send(f"No dungeons found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
                                   f"maybe try again?")
-
+        
         dungeons = self.make_dungeon_dict(sds)
 
         menu = ClosableEmbedMenu.menu()
-        props = JpYtDgLeadProps(sorted(dungeons.values(), key=lambda d: d['idx']), monster)
+        props = props_type(sorted(dungeons.values(), key=lambda d: d['idx']), monster)
         state = ClosableEmbedViewState(ctx.message.author.id, ClosableEmbedMenu.MENU_TYPE, search_text,
-                                       dg_qs, JpYtDgLeadView.VIEW_TYPE, props)
+                                       dg_qs, view_type.VIEW_TYPE, props)
         return await menu.create(ctx, state)
 
     async def get_subdungeons(self, search_text, db):
