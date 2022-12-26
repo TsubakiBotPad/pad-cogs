@@ -12,7 +12,7 @@ from dbcog.models.monster_model import MonsterModel
 
 
 class MonsterResponse(BaseModel):
-    active_skill: ActiveSkill
+    active_skill: Optional[ActiveSkill]
     active_skill_id: int
     all_series: List[Series]
     atk_max: int
@@ -84,7 +84,7 @@ class MonsterResponse(BaseModel):
     @staticmethod
     def from_model(m: MonsterModel):
         return MonsterResponse(
-            active_skill=ActiveSkill.from_model(m.active_skill),
+            active_skill=ActiveSkill.from_model(m.active_skill) if m.active_skill else None,
             active_skill_id=m.active_skill_id,
             all_series=[Series.from_model(a) for a in m.all_series],
             atk_max=m.atk_max,
