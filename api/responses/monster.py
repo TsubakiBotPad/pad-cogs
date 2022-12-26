@@ -13,7 +13,7 @@ from dbcog.models.monster_model import MonsterModel
 
 class MonsterResponse(BaseModel):
     active_skill: Optional[ActiveSkill]
-    active_skill_id: int
+    active_skill_id: Optional[int]
     all_series: List[Series]
     atk_max: int
     atk_min: int
