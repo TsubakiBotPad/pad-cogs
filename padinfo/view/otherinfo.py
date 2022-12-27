@@ -41,9 +41,8 @@ def statsbox(m, plus: int):
             hp, atk, rcv, _ = m.stats(lv, plus=plus, inherit=inh)
             row_name = '(Inh)' if inh else 'Lv{}'.format(lv)
             if lv == 1 and inh:
-                pass
-            else:
-                tbl.add_row([row_name, hp, atk, rcv])
+                continue # Don't need to see inherits for Lv1
+            tbl.add_row([row_name, hp, atk, rcv])
     return box(tbl.get_string())
 
 
