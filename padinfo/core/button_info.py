@@ -41,7 +41,7 @@ TEAM_BUTTONS = [
 CARD_BUTTONS = [
     MonsterStat("Assassin{}      ", 5021, 200, []),
     MonsterStat("Satan{}         ", 4286, 300, []),
-    MonsterStat("Durandalf eq{}  ", 4723, 300, []),
+    MonsterStat("Durandalf eq{}  ", 4723, 400, []),
     MonsterStat("Balrog{}        ", 5108, 450, []),
     MonsterStat("Rathian eq{}    ", 9324, 500, []),
     MonsterStat("Brachydios eq{}", 4152, 1500, []),
