@@ -35,8 +35,9 @@ TEAM_BUTTONS = [
     # account for attributes when spacing
     MonsterStat("Nergi Hunter{}", 4172, 40, [2, 4]),
     MonsterStat("Oversoul{} ", 5273, 50, [0, 1, 2, 3, 4]),
-    MonsterStat("Ryuno Ume{}   ", 5252, 80, [2, 4]),
-    MonsterStat("Chu{}         ", 4316, 60, [1, 2])
+    MonsterStat("Chu{}         ", 4316, 60, [1, 2]),
+    MonsterStat("Alastair{}     ", 4687, 70, [2]),
+    MonsterStat("Ryuno Ume{}   ", 5252, 80, [2, 4])
 ]
 CARD_BUTTONS = [
     MonsterStat("Assassin{}      ", 5021, 200, []),
