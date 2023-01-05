@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from dbcog.models.active_skill_model import ActiveSkillModel, ActiveSubskillModel, ActivePartModel
+if TYPE_CHECKING:
+    from dbcog.models.active_skill_model import ActiveSkillModel, ActiveSubskillModel, ActivePartModel
 
 
 class ActivePart(BaseModel):
@@ -18,7 +19,7 @@ class ActivePart(BaseModel):
     desc_templated: str
 
     @staticmethod
-    def from_model(m: ActivePartModel):
+    def from_model(m: "ActivePartModel"):
         return ActivePart(
             active_part_id=m.active_part_id,
             active_skill_type_id=m.active_skill_type_id,
@@ -53,7 +54,7 @@ class ActiveSubskill(BaseModel):
     desc_templated: str
 
     @staticmethod
-    def from_model(m: ActiveSubskillModel):
+    def from_model(m: "ActiveSubskillModel"):
         return ActiveSubskill(
             active_subskill_id=m.active_subskill_id,
             name_ja=m.name_ja,
@@ -98,7 +99,7 @@ class ActiveSkill(BaseModel):
     desc_templated: str
 
     @staticmethod
-    def from_model(m: ActiveSkillModel):
+    def from_model(m: "ActiveSkillModel"):
         return ActiveSkill(
             active_skill_id=m.active_skill_id,
             compound_skill_type_id=m.compound_skill_type_id,

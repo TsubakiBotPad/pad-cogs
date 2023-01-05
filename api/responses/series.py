@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from dbcog.models.series_model import SeriesModel
+if TYPE_CHECKING:
+    from dbcog.models.series_model import SeriesModel
 
 
 class Series(BaseModel):
@@ -13,7 +14,7 @@ class Series(BaseModel):
     series_type: Optional[str]
 
     @staticmethod
-    def from_model(m: SeriesModel):
+    def from_model(m: "SeriesModel"):
         return Series(
             series_id=m.series_id,
             name_ja=m.name_ja,
