@@ -161,7 +161,7 @@ class MonsterWithEvosResponse(BaseModel):
     evolutions: List[MonsterResponse]
 
     @staticmethod
-    def from_model(m: MonsterModel, evos: List[MonsterModel]):
+    def from_model(m: "MonsterModel", evos: List["MonsterModel"]):
         monster = MonsterResponse.from_model(m)
         evolutions = [MonsterResponse.from_model(e) for e in evos if e]
         return MonsterWithEvosResponse(monster=monster, evolutions=evolutions)
@@ -171,6 +171,6 @@ class MonstersResponse(BaseModel):
     monsters: List[Optional[MonsterResponse]]
 
     @staticmethod
-    def from_model(ms: List[MonsterModel]):
+    def from_model(ms: List["MonsterModel"]):
         monsters = [MonsterResponse.from_model(m) if m else None for m in ms]
         return MonstersResponse(monsters=monsters)
