@@ -32,7 +32,10 @@ class PicView(BaseIdView, EvoScrollView):
             'Extra Links',
             Box(
                 Box(
-                    LinkedText('Animation', MonsterImage.spine(state.monster.monster_no_jp)),
+                    Text('Animation:'),
+                    LinkedText('(MP4)', MonsterImage.video(state.monster.monster_no_jp)),
+                    Text('|'),
+                    LinkedText('(GIF)', MonsterImage.gif(state.monster.monster_no_jp)),
                     delimiter=' '
                 ) if animated else None,
                 Box(
