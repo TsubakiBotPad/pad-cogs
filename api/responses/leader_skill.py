@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from dbcog.models.leader_skill_model import LeaderSkillModel
+if TYPE_CHECKING:
+    from dbcog.models.leader_skill_model import LeaderSkillModel
 
 
 class LeaderSkill(BaseModel):
@@ -24,7 +25,7 @@ class LeaderSkill(BaseModel):
     desc_ko: str
 
     @staticmethod
-    def from_model(m: LeaderSkillModel):
+    def from_model(m: "LeaderSkillModel"):
         return LeaderSkill(
             leader_skill_id=m.leader_skill_id,
             name_ja=m.name_ja,

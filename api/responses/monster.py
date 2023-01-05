@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel
 
@@ -7,8 +7,9 @@ from api.responses.awakening import Awakening
 from api.responses.leader_skill import LeaderSkill
 from api.responses.series import Series
 from api.responses.stat_values import StatValues
-from dbcog.models.enum_types import MonsterType, Attribute
-from dbcog.models.monster_model import MonsterModel
+
+if TYPE_CHECKING:
+    from dbcog.models.monster_model import MonsterModel
 
 
 class MonsterResponse(BaseModel):
@@ -18,8 +19,8 @@ class MonsterResponse(BaseModel):
     atk_max: int
     atk_min: int
     atk_scale: int
-    attr1: Optional[Attribute]
-    attr2: Optional[Attribute]
+    attr1: int
+    attr2: int
     awakenings: List[Awakening]
     base_evo_id: int
     bgm_id: Optional[int]
@@ -73,16 +74,16 @@ class MonsterResponse(BaseModel):
     server_priority: str
     stat_values: StatValues
     superawakening_count: int
-    type1: Optional[MonsterType]
-    type2: Optional[MonsterType]
-    type3: Optional[MonsterType]
-    types: List[MonsterType]
+    type1: int
+    type2: Optional[int]
+    type3: Optional[int]
+    types: List[int]
     unoverridden_name_en: str
     voice_id_jp: Optional[int]
     voice_id_na: Optional[int]
 
     @staticmethod
-    def from_model(m: MonsterModel):
+    def from_model(m: "MonsterModel"):
         return MonsterResponse(
             active_skill=ActiveSkill.from_model(m.active_skill) if m.active_skill else None,
             active_skill_id=m.active_skill_id,
@@ -90,8 +91,8 @@ class MonsterResponse(BaseModel):
             atk_max=m.atk_max,
             atk_min=m.atk_min,
             atk_scale=m.atk_scale,
-            attr1=m.attr1,
-            attr2=m.attr2,
+            attr1=m.attr1.value,
+            attr2=m.attr2.value,
             awakenings=[Awakening.from_model(a) for a in m.awakenings],
             base_evo_id=m.base_evo_id,
             bgm_id=m.bgm_id,
@@ -145,10 +146,10 @@ class MonsterResponse(BaseModel):
             server_priority=m.server_priority.name,
             stat_values=StatValues(**m.stat_values),
             superawakening_count=m.superawakening_count,
-            type1=m.type1,
-            type2=m.type2,
-            type3=m.type3,
-            types=m.types,
+            type1=m.type1.value,
+            type2=m.type2.value if m.type2 is not None else None,
+            type3=m.type3.value if m.type3 is not None else None,
+            types=[t.value for t in m.types],
             unoverridden_name_en=m.unoverridden_name_en,
             voice_id_jp=m.voice_id_jp,
             voice_id_na=m.voice_id_na,

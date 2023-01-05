@@ -1,6 +1,9 @@
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
-from dbcog.models.awoken_skill_model import AwokenSkillModel
+if TYPE_CHECKING:
+    from dbcog.models.awoken_skill_model import AwokenSkillModel
 
 
 class AwokenSkill(BaseModel):
@@ -17,7 +20,7 @@ class AwokenSkill(BaseModel):
     adj_rcv: int
 
     @staticmethod
-    def from_model(m: AwokenSkillModel):
+    def from_model(m: "AwokenSkillModel"):
         return AwokenSkill(
             awoken_skill_id=m.awoken_skill_id,
             name_ja=m.name_ja,
