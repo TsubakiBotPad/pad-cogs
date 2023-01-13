@@ -78,7 +78,7 @@ e.g
 
 Load relevant cogs (whichever cogs you are developing, `dbcog`, and `padinfo`) using the `^load` command.
 
-> Node: We suggest you load `dbcog` and `padinfo` so that you will have something to test that your bot installation correctly installed; however, if your development does not involve dbcog as a dependency, you may want to keep it unloaded (`^unload dbcog`, get it back with `^load dbcog` at any time), simply because it is very slow for the bot to initialize dbcog on startup, and you will be restarting your bot a lot during development.
+> Note: We suggest you load `dbcog` and `padinfo` so that you will have something to test that your bot installation correctly installed; however, if your development does not involve dbcog as a dependency, you may want to keep it unloaded (`^unload dbcog`, get it back with `^load dbcog` at any time), simply because it is very slow for the bot to initialize dbcog on startup, and you might be restarting your bot a lot during development, e.g. if you ever need to edit or update a library.
 
 ```
 Syntax: ^load <cog 1> ... <cog n>
