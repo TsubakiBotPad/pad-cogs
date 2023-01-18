@@ -298,5 +298,5 @@ class IdView(BaseIdMainView, EvoScrollView):
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(m, qs)),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=qs),
             embed_fields=fields)

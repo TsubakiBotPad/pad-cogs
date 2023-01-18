@@ -95,6 +95,6 @@ class AwakeningListView:
             EmbedMain(
                 color=state.query_settings.embedcolor,
             ),
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
             embed_fields=fields
         )

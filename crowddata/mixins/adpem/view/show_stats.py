@@ -68,5 +68,5 @@ class ShowStatsView:
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.most_commmon.monster_id)),
             embed_fields=fields,
-            embed_footer=embed_footer_with_state(state)
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings)
         )

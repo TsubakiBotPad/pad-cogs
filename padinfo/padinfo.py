@@ -994,6 +994,14 @@ class PadInfo(commands.Cog):
             fm_flags['embedcolor'] = color
         await ctx.tick()
 
+    @is_donor()
+    @idset.command()
+    async def favcard(self, ctx, card: int):
+        """(DONOR ONLY) The card to show in your `[p]id` footers!"""
+        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
+            fm_flags['favcard'] = card
+        await ctx.tick()
+
     @idset.command(usage="<on/off>")
     async def naprio(self, ctx, value: bool):
         """Whether `[p]id` will default away from new evos of monsters that aren't in NA yet"""

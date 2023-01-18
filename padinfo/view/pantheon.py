@@ -174,7 +174,7 @@ class PantheonView(BaseIdView, EvoScrollView):
                                                is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
                                                is_jp_buffed=state.is_jp_buffed).to_markdown(),
                 url=MonsterLink.header_link(state.monster, state.query_settings)),
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
             embed_fields=fields,
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
         )
