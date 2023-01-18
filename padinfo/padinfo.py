@@ -997,7 +997,13 @@ class PadInfo(commands.Cog):
     @is_donor()
     @idset.command()
     async def favcard(self, ctx, card: int):
-        """(DONOR ONLY) The card to show in your `[p]id` footers!"""
+        """(DONOR ONLY) The card to show in your `[p]id` footers!
+
+        Example:
+        `[p]idset favcard 3260`
+
+        To return to using the flower, enter `[p]idset favcard 0`. Only integer values are currently accepted.
+        """
         async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
             fm_flags['favcard'] = card
         await ctx.tick()
