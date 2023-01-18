@@ -56,4 +56,4 @@ class LeaderSkillSingleView:
                     BoldText(MonsterHeader.box_with_emoji(state.mon, query_settings=state.query_settings)),
                     Text(ls.desc if ls else 'None')),
                 color=state.query_settings.embedcolor),
-            embed_footer=embed_footer_with_state(state))
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings))

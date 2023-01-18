@@ -162,7 +162,7 @@ class MaterialsView(BaseIdView, EvoScrollView):
                 url=MonsterLink.header_link(state.monster, state.query_settings)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
             embed_fields=[f for f in [
                 mat_use_field(state.mats, "Evo materials", query_settings=state.query_settings)
                 if state.mats or not (state.monster.is_stackable or state.gem_override) else None,

@@ -9,6 +9,7 @@ from discordmenu.embed.view import EmbedView
 from discordmenu.embed.view_state import ViewState
 from tsutils.enums import Server
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.monster_header import MonsterHeader
 
 from dungeoncog.dungeon_monster import DungeonMonster
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class DungeonViewState(ViewState):
-    def __init__(self, original_author_id: int, menu_type: str, raw_query: str,
+    def __init__(self, original_author_id: int, menu_type: str, qs: QuerySettings, raw_query: str,
                  encounter: "EncounterModel", sub_dungeon_id: int, num_floors: int, floor: int, num_spawns: int,
                  floor_index: int, technical: int, database,
                  page: int = 0, verbose: bool = False):
@@ -35,6 +36,7 @@ class DungeonViewState(ViewState):
         self.num_spawns = num_spawns
         self.page = page
         self.verbose = verbose
+        self.query_settings = qs
 
     def serialize(self):
         ret = super().serialize()
@@ -46,7 +48,8 @@ class DungeonViewState(ViewState):
             'technical': self.technical,
             'pane_type': DungeonView.VIEW_TYPE,
             'verbose': self.verbose,
-            'page': self.page
+            'page': self.page,
+            'query_settings': self.query_settings.serialize(),
         })
         return ret
 
@@ -89,7 +92,9 @@ class DungeonViewState(ViewState):
 
         encounter_model = floor_models[floor_index]
 
-        return cls(original_author_id, menu_type, raw_query, encounter_model, sub_dungeon_id,
+        qs = QuerySettings.deserialize(ims.get('query_settings'))
+
+        return cls(original_author_id, menu_type, qs, raw_query, encounter_model, sub_dungeon_id,
                    num_floors, floor, len(floor_models), floor_index,
                    technical, dbcog.database, verbose=verbose, page=page)
 
@@ -181,7 +186,7 @@ class DungeonView:
                 description=desc,
             ),
             embed_fields=fields,
-            embed_footer=embed_footer_with_state(state)
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings)
         )
 
     @staticmethod

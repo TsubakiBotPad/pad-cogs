@@ -39,4 +39,5 @@ class PersonalStatsView:
                 color=props.query_settings.embedcolor),
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(props.monster.monster_id)),
-            embed_footer=embed_footer_with_state(state, text="Click the X to close."))
+            embed_footer=embed_footer_with_state(
+                state, text="Click the X to close.", qs=state.query_settings))
