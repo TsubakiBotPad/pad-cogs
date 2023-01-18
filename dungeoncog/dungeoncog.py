@@ -5,6 +5,7 @@ from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 from tsutils.enums import Server
+from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
 
 from dungeoncog.enemy_skills_pb2 import MonsterBehavior
@@ -109,6 +110,7 @@ class DungeonCog(commands.Cog):
         [p]dungeonid "castle of satan in the abyss" 3
         """
         dbcog = await self.get_dbcog()
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, dungeon_name)
         dungeon = await self.find_dungeon_from_name(ctx, dungeon_name, dbcog.database.dungeon, floor_name)
 
         if dungeon is None:
@@ -152,7 +154,7 @@ class DungeonCog(commands.Cog):
 
         menu = DungeonMenu.menu()
         original_author_id = ctx.message.author.id
-        view_state = DungeonViewState(original_author_id, 'DungeonMenu', dungeon_name, pm_dungeon[0][0],
+        view_state = DungeonViewState(original_author_id, 'DungeonMenu', qs, dungeon_name, pm_dungeon[0][0],
                                       dungeon.sub_dungeons[0].sub_dungeon_id, len(pm_dungeon), 1,
                                       len(pm_dungeon[0]), 0,
                                       int(dungeon.sub_dungeons[0].technical), dbcog.database, verbose=False)

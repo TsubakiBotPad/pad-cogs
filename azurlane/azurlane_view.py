@@ -76,5 +76,5 @@ class AzurlaneView:
                 url=url
             ),
             embed_body_image=EmbedBodyImage(url),
-            embed_footer=embed_footer_with_state(state)
+            embed_footer=embed_footer_with_state(state, qs=state.query_settings)
         )

@@ -230,6 +230,6 @@ class TransformInfoView(BaseIdMainView):
                 url=MonsterLink.header_link(transformed_mon, qs)
             ),
             embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon.monster_id)),
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=qs),
             embed_fields=fields
         )
