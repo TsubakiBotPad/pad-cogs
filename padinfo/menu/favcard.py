@@ -5,20 +5,11 @@ from discordmenu.embed.emoji import DELETE_MESSAGE_EMOJI
 from discordmenu.embed.menu import EmbedMenu
 from discordmenu.embed.transitions import EmbedMenuDefaultTransitions, EmbedTransition
 from discordmenu.embed.wrapper import EmbedWrapper
-from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.panes import MenuPanes
 from tsutils.menu.simple_text import SimpleTextMenu
-from tsutils.query_settings.enums import ChildMenuType
 
 from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
-from padinfo.view.evos import EvosView, EvosViewState
 from padinfo.view.favcard import FavcardViewState, FavcardView
-from padinfo.view.id import IdView, IdViewState
-from padinfo.view.materials import MaterialsView, MaterialsViewState
-from padinfo.view.otherinfo import OtherInfoView, OtherInfoViewState
-from padinfo.view.pantheon import PantheonView, PantheonViewState
-from padinfo.view.pic import PicView, PicViewState
 
 
 class FavcardMenu(EvoScrollMenu):
@@ -47,15 +38,6 @@ class FavcardMenu(EvoScrollMenu):
         view_state = await FavcardViewState.deserialize(dbcog, user_config, ims)
         control = FavcardMenu.home_control(view_state)
         return control
-
-    @staticmethod
-    async def respond_with_refresh(message: Optional[Message], ims, **data):
-        # This is used by disambig screen & other multi-message embeds, where we need to deserialize & then
-        # re-serialize the ims, with the same information in place
-        pane_type = ims.get('pane_type') or FavcardView.VIEW_TYPE
-        pane_type_to_func_map = FavcardMenuPanes.pane_types()
-        response_func = pane_type_to_func_map[pane_type]
-        return await response_func(message, ims, **data)
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
@@ -101,7 +83,6 @@ class FavcardMenuPanes(MenuPanes):
     DATA = {
         FavcardMenuEmoji.left: (FavcardMenu.respond_with_left, None),
         FavcardMenuEmoji.right: (FavcardMenu.respond_with_right, None),
-        FavcardMenuEmoji.refresh: (FavcardMenu.respond_with_refresh, None),
         FavcardMenuEmoji.delete: (FavcardMenu.respond_with_delete, None),
         FavcardMenuEmoji.select: (FavcardMenu.respond_with_select, None),
         FavcardMenuEmoji.home: (FavcardMenu.respond_with_home, FavcardView.VIEW_TYPE),
