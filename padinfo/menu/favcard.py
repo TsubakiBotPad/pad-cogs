@@ -71,7 +71,6 @@ class FavcardMenu(EvoScrollMenu):
 class FavcardMenuEmoji:
     left = '\N{BLACK LEFT-POINTING TRIANGLE}'
     right = '\N{BLACK RIGHT-POINTING TRIANGLE}'
-    refresh = "\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}"
     delete = '\N{CROSS MARK}'
     select = '\N{WHITE HEAVY CHECK MARK}'
     home = '\N{HOUSE BUILDING}'
@@ -88,7 +87,6 @@ class FavcardMenuPanes(MenuPanes):
         FavcardMenuEmoji.home: (FavcardMenu.respond_with_home, FavcardView.VIEW_TYPE),
     }
     HIDDEN_EMOJIS = [
-        FavcardMenuEmoji.refresh,
         FavcardMenuEmoji.delete,
         FavcardMenuEmoji.home,
     ]
