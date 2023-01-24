@@ -7,6 +7,7 @@ from discordmenu.embed.transitions import EmbedMenuDefaultTransitions, EmbedTran
 from discordmenu.embed.wrapper import EmbedWrapper
 from tsutils.menu.components.panes import MenuPanes
 from tsutils.menu.simple_text import SimpleTextMenu
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.menu.components.evo_scroll_mixin import EvoScrollMenu
 from padinfo.view.favcard import FavcardViewState, FavcardView
@@ -41,13 +42,9 @@ class FavcardMenu(EvoScrollMenu):
 
     @staticmethod
     async def respond_with_delete(message: Optional[Message], ims, **data):
-        if not ims.get('is_child'):
-            return await message.delete()
-        if ims.get('idle_message'):
-            ims['menu_type'] = SimpleTextMenu.MENU_TYPE
-            ims['message'] = ims['idle_message']
-            return await SimpleTextMenu.respond_with_message(message, ims, **data)
-        return await message.edit(content="Operation cancelled", embed=None)
+        ims['menu_type'] = SimpleTextMenu.MENU_TYPE
+        ims['message'] = 'Operation cancelled'
+        return await SimpleTextMenu.respond_with_message(message, ims, **data)
 
     @staticmethod
     async def respond_with_select(message: Optional[Message], ims, **data):
@@ -55,8 +52,10 @@ class FavcardMenu(EvoScrollMenu):
         user_config = data['user_config']
         view_state = await FavcardViewState.deserialize(dbcog, user_config, ims)
         await view_state.set_favcard(dbcog, ims)
-        new_card = ims["resolved_monster_id"]
-        return await message.edit(content=f"Your favcard has been set to {new_card}", embed=None)
+        new_card = MonsterHeader.text_with_emoji(dbcog.get_monster(int(ims["resolved_monster_id"])))
+        ims['menu_type'] = SimpleTextMenu.MENU_TYPE
+        ims['message'] = f"Your favcard has been set to {new_card}"
+        return await SimpleTextMenu.respond_with_message(message, ims, **data)
 
     @staticmethod
     def home_control(state: FavcardViewState):
