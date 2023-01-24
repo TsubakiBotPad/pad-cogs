@@ -32,7 +32,7 @@ from tsutils.query_settings.enums import AltEvoSort, CardLevelModifier, CardMode
     MonsterLinkTarget, SkillDisplay
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import AWAKENING_ID_TO_EMOJI_NAME_MAP, get_attribute_emoji_by_enum, \
-    get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji
+    get_attribute_emoji_by_monster, get_awakening_emoji, get_type_emoji, get_emoji
 from tsutils.tsubaki.monster_header import MonsterHeader
 from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
@@ -1010,6 +1010,15 @@ class PadInfo(commands.Cog):
         qs = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
         raw_query = query
         original_author_id = ctx.message.author.id
+
+        if query == '0':
+            ims = {
+                'resolved_monster_id': '0',
+                'original_author_id': original_author_id,
+            }
+            await FavcardViewState.set_favcard(dbcog, ims)
+            return await ctx.send("Your favcard has been reset to the flower. " + get_emoji("tsuflower"))
+
         monster = await self._get_monster(ctx, query)
 
         if monster is None:
