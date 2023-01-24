@@ -19,19 +19,14 @@ class ViewStateBaseId(ViewState, EvoScrollViewState):
                  extra_state=None):
         super().__init__(original_author_id=original_author_id, menu_type=menu_type, raw_query=raw_query,
                          extra_state=extra_state)
-        self.dfs_alt_monsters = alt_monsters
         self.reaction_list = reaction_list
         self.monster = monster
         self.is_jp_buffed = is_jp_buffed
         self.query = query
         self.query_settings = query_settings
 
-        if self.query_settings.evosort == AltEvoSort.dfs:
-            self.alt_monsters = self.dfs_alt_monsters
-        else:
-            self.alt_monsters = sorted(self.dfs_alt_monsters, key=lambda m: m.monster.monster_id)
-
-        self.alt_monster_ids = [m.monster.monster_id for m in self.alt_monsters]
+        self.alt_monsters = self.alt_monster_order_pref(alt_monsters, query_settings)
+        self.alt_monster_ids = self.alt_monster_ids(self.alt_monsters)
 
     def serialize(self):
         ret = super().serialize()

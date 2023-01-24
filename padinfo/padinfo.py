@@ -44,6 +44,7 @@ from padinfo.core.transforminfo import perform_transforminfo_query
 from padinfo.menu.awakening_list import AwakeningListMenu, AwakeningListMenuPanes
 from padinfo.menu.button_info import ButtonInfoMenu, ButtonInfoMenuPanes
 from padinfo.menu.closable_embed import ClosableEmbedMenu
+from padinfo.menu.favcard import FavcardMenu
 from padinfo.menu.id import IdMenu, IdMenuPanes
 from padinfo.menu.leader_skill import LeaderSkillMenu
 from padinfo.menu.leader_skill_single import LeaderSkillSingleMenu
@@ -65,6 +66,7 @@ from padinfo.view.dungeon_list.jptwtdglead import JpTwtDgLeadProps, JpTwtDgLeadV
 from padinfo.view.dungeon_list.skyo_links import SkyoLinksView, SkyoLinksViewProps
 from padinfo.view.evos import EvosViewState
 from padinfo.view.experience_curve import ExperienceCurveView, ExperienceCurveViewProps
+from padinfo.view.favcard import FavcardViewState
 from padinfo.view.id import IdViewState
 from padinfo.view.id_traceback import IdTracebackView, IdTracebackViewProps
 from padinfo.view.leader_skill import LeaderSkillViewState
@@ -996,7 +998,7 @@ class PadInfo(commands.Cog):
 
     @is_donor()
     @idset.command()
-    async def favcard(self, ctx, card: int):
+    async def favcard(self, ctx, *, query):
         """(DONOR ONLY) The card to show in your `[p]id` footers!
 
         Example:
@@ -1004,9 +1006,22 @@ class PadInfo(commands.Cog):
 
         To return to using the flower, enter `[p]idset favcard 0`. Only integer values are currently accepted.
         """
-        async with self.bot.get_cog("DBCog").config.user(ctx.author).fm_flags() as fm_flags:
-            fm_flags['favcard'] = card
-        await ctx.tick()
+        dbcog = await self.get_dbcog()
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
+        raw_query = query
+        original_author_id = ctx.message.author.id
+        monster = await self._get_monster(ctx, query)
+
+        if monster is None:
+            await self.send_id_failure_message(ctx, query)
+            return
+        alt_monsters = IdViewState.get_alt_monsters_and_evos(dbcog, monster)
+
+        menu = FavcardMenu.menu()
+        state = FavcardViewState(original_author_id, FavcardMenu.MENU_TYPE, raw_query,
+                                 query, monster,
+                                 alt_monsters, qs)
+        await menu.create(ctx, state)
 
     @idset.command(usage="<on/off>")
     async def naprio(self, ctx, value: bool):

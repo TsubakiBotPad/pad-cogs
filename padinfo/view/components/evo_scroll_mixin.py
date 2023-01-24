@@ -3,6 +3,7 @@ from typing import List, NamedTuple, Optional, TYPE_CHECKING
 
 from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import HighlightableLinks, LinkedText
+from tsutils.query_settings.enums import AltEvoSort
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterLink
 
@@ -38,6 +39,17 @@ class EvoScrollViewState:
         else:
             next_monster_id = self.alt_monster_ids[index + 1]
         ims['resolved_monster_id'] = str(next_monster_id)
+
+    @classmethod
+    def alt_monster_order_pref(cls, dfs_alt_monsters, qs: QuerySettings):
+        if qs.evosort == AltEvoSort.dfs:
+            return dfs_alt_monsters
+        else:
+            return sorted(dfs_alt_monsters, key=lambda m: m.monster.monster_id)
+
+    @classmethod
+    def alt_monster_ids(cls, alt_monsters):
+        return [m.monster.monster_id for m in alt_monsters]
 
     @classmethod
     def get_alt_monsters_and_evos(cls, dbcog, monster) -> List[MonsterEvolution]:
