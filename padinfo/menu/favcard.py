@@ -83,7 +83,7 @@ class FavcardMenuPanes(MenuPanes):
         FavcardMenuEmoji.right: (FavcardMenu.respond_with_right, None),
         FavcardMenuEmoji.delete: (FavcardMenu.respond_with_delete, None),
         FavcardMenuEmoji.select: (FavcardMenu.respond_with_select, None),
-        FavcardMenuEmoji.home: (FavcardMenu.respond_with_home, FavcardView.VIEW_TYPE),
+        FavcardMenuEmoji.home: (FavcardMenu.respond_with_home, None),
     }
     HIDDEN_EMOJIS = [
         FavcardMenuEmoji.delete,
