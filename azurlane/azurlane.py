@@ -6,6 +6,7 @@ from typing import Any
 
 import aiohttp
 from redbot.core import checks, commands, Config
+from tsutils.helper_functions import repeating_timer
 from tsutils.menu.components.config import BotConfig
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.user_interaction import send_cancellation_message
@@ -62,15 +63,15 @@ class AzurLane(commands.Cog):
 
     async def reload_al(self):
         await self.bot.wait_until_ready()
+        async for _ in repeating_timer(3600, lambda: self == self.bot.get_cog('AzurLane')):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(DATA_URL) as resp:
+                    raw_resp = await resp.text()
+                    self.card_data = json.loads(raw_resp)['items']
+            logger.info(f'Done retrieving cards: {len(self.card_data)}')
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(DATA_URL) as resp:
-                raw_resp = await resp.text()
-                self.card_data = json.loads(raw_resp)['items']
-        logger.info(f'Done retrieving cards: {len(self.card_data)}')
-
-        self.id_to_card = {c['id']: c for c in self.card_data}
-        self.names_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
+            self.id_to_card = {c['id']: c for c in self.card_data}
+            self.names_to_card = {'{}'.format(c['name_en']).lower(): c for c in self.card_data}
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
