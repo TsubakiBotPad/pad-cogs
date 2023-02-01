@@ -46,7 +46,11 @@ MONSTER_QUERY = """SELECT
   leader_skills{0}.tags,
   COALESCE(series.series_id, 0) AS s_series_id,
   exchanges.target_monster_id AS evo_gem_id,
-  drops.drop_id
+  drops.drop_id,
+  sizes.mp4_size,
+  sizes.gif_size,
+  sizes.hq_png_size,
+  sizes.hq_gif_size
 FROM
   monsters{0}
   LEFT OUTER JOIN leader_skills{0} ON monsters{0}.leader_skill_id = leader_skills{0}.leader_skill_id
@@ -57,6 +61,7 @@ FROM
   LEFT OUTER JOIN exchanges ON target_monsters.monster_id = exchanges.target_monster_id
   LEFT OUTER JOIN drops ON monsters{0}.monster_id = drops.monster_id
   LEFT OUTER JOIN monster_name_overrides ON monsters{0}.monster_id = monster_name_overrides.monster_id
+  LEFT OUTER JOIN monster_image_sizes AS sizes ON monsters{0}.monster_id = sizes.monster_id
 GROUP BY
   monsters{0}.monster_id"""
 
@@ -367,6 +372,11 @@ class MonsterGraph:
                                    has_animation=m.has_animation == 1,
                                    has_hqimage=m.has_hqimage == 1,
                                    server_priority=server,
+                                   drop_id=m.drop_id,
+                                   mp4_size=m.mp4_size,
+                                   gif_size=m.gif_size,
+                                   hq_png_size=m.hq_png_size,
+                                   hq_gif_size=m.hq_gif_size
                                    )
             if not m_model:
                 continue
