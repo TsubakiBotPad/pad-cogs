@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 
 class Awakening(BaseModel):
-    awakening_id: int
     monster_id: int
     awoken_skill_id: int
     is_super: int
@@ -20,7 +19,6 @@ class Awakening(BaseModel):
     @staticmethod
     def from_model(m: "AwakeningModel"):
         return Awakening(
-            awakening_id=m.awakening_id,
             monster_id=m.monster_id,
             awoken_skill_id=m.awoken_skill_id,
             is_super=m.is_super,

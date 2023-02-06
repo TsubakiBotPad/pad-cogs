@@ -115,24 +115,10 @@ ORDER BY
   act_ass.order_idx
 """
 
-# make sure we're only looking at the most recent row for any evolution
-# since the database might have old data in it still
-# group by `to_id` and not `evolution_id` because PAD monsters can only have 1 recipe, and
-# the evolution_id changes when data changes so grouping by evolution_id is unhelpful
 EVOS_QUERY = """SELECT
   evolutions{0}.*
 FROM
-  (
-    SELECT
-      evolution_id,
-      MAX(tstamp) AS tstamp
-    FROM
-      evolutions{0}
-    GROUP BY
-      to_id
-  ) AS latest_evolutions
-  INNER JOIN evolutions{0} ON evolutions{0}.evolution_id = latest_evolutions.evolution_id
-  AND evolutions{0}.tstamp = latest_evolutions.tstamp"""
+  evolutions{0}"""
 
 TRANSFORMS_QUERY = """SELECT
   transformations{0}.*
@@ -140,7 +126,6 @@ FROM
   transformations{0}"""
 
 AWAKENINGS_QUERY = """SELECT
-  awakenings{0}.awakening_id,
   awakenings{0}.monster_id,
   awakenings{0}.is_super,
   awakenings{0}.order_idx,
