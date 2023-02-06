@@ -8,7 +8,6 @@ class AwakeningModel(BaseModel):
     """
 
     def __init__(self, awoken_skill_model: AwokenSkillModel, **kwargs):
-        self.awakening_id: int = kwargs['awakening_id']
         self.monster_id: int = kwargs['monster_id']
         self.awoken_skill_id: int = kwargs['awoken_skill_id']
         self.is_super: int = kwargs['is_super']
@@ -18,7 +17,9 @@ class AwakeningModel(BaseModel):
 
     def to_dict(self):
         return {
-            'awakening_id': self.awakening_id,
+            'monster_id': self.monster_id,
+            'order_idx': self.order_idx,
+            'awoken_skill_id': self.awoken_skill_id
         }
 
     def __eq__(self, other):
