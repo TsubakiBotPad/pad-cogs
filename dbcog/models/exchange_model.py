@@ -8,7 +8,6 @@ from .base_model import BaseModel
 
 class ExchangeModel(BaseModel):
     def __init__(self, **kwargs):
-        self.exchange_id = kwargs['exchange_id']
         self.trade_id = kwargs['trade_id']
         self.server = Server(('JP', 'NA', 'KR')[kwargs['server_id']])
         self.target_monster_id = kwargs['target_monster_id']
