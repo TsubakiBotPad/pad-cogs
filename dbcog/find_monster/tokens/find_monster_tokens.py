@@ -417,7 +417,8 @@ class AttributeToken(SpecialToken):
         if monster.attr1 == self.attr:
             return True, MatchData(self)
         if monster.attr2 == self.attr:
-            return 1 - EPSILON, MatchData(self, subattr_match=True, can_negate=False)
+            # 2ε so it doesn't have mess with manual tokens for seasonals
+            return 1 - (2 * EPSILON), MatchData(self, subattr_match=True, can_negate=False)
         return False, MatchData(self)
 
 
