@@ -1,20 +1,15 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 import jinja2
-from discord.types.embed import EmbedField
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
-from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.query_settings.enums import LsMultiplier, SkillDisplay
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
-from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
-from padinfo.view.base import BaseIdView
-from padinfo.view.components.padinfo_view import PadinfoView
-from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
+from padinfo.view.components.view_state_base_id import IdBaseView
 
 if TYPE_CHECKING:
     from dbcog.models.leader_skill_model import LeaderSkillModel

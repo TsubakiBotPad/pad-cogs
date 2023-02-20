@@ -1,15 +1,11 @@
 from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedBodyImage, EmbedField, EmbedMain, EmbedThumbnail
+from discordmenu.embed.components import EmbedBodyImage, EmbedField, EmbedThumbnail
 from discordmenu.embed.text import LinkedText, Text
-from discordmenu.embed.view import EmbedView
 from tsutils.formatting import filesize
-from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki.links import MonsterImage, MonsterLink
-from tsutils.tsubaki.monster_header import MonsterHeader
+from tsutils.tsubaki.links import MonsterImage
 
-from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
 from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
 

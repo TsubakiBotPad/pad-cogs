@@ -61,9 +61,9 @@ class LeaderSkillView:
             embed_main=EmbedMain(
                 title=ls_multiplier_text(lls, rls),
                 description=Box(
-                    BoldText(MonsterHeader.box_with_emoji(state.l_mon, query_settings=state.l_query_settings)),
+                    BoldText(MonsterHeader.box_with_emoji(state.l_mon, qs=state.l_query_settings)),
                     Text(lls.desc if lls else 'None'),
-                    BoldText(MonsterHeader.box_with_emoji(state.r_mon, query_settings=state.r_query_settings)),
+                    BoldText(MonsterHeader.box_with_emoji(state.r_mon, qs=state.r_query_settings)),
                     Text(rls.desc if rls else 'None')),
                 color=state.l_query_settings.embedcolor),
             embed_footer=embed_footer_with_state(state, qs=state.l_query_settings))

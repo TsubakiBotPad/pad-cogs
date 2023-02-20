@@ -53,7 +53,7 @@ class LeaderSkillSingleView:
             embed_main=EmbedMain(
                 title=ls_single_multiplier_text(ls),
                 description=Box(
-                    BoldText(MonsterHeader.box_with_emoji(state.mon, query_settings=state.query_settings)),
+                    BoldText(MonsterHeader.box_with_emoji(state.mon, qs=state.query_settings)),
                     Text(ls.desc if ls else 'None')),
                 color=state.query_settings.embedcolor),
             embed_footer=embed_footer_with_state(state, qs=state.query_settings))

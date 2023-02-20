@@ -1,17 +1,13 @@
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
+from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import BoldText, LabeledText, Text
-from discordmenu.embed.view import EmbedView
 from tsutils.enums import Server
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings.enums import CardLevelModifier, CardModeModifier, CardPlusModifier
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji
-from tsutils.tsubaki.links import MonsterImage, MonsterLink
-from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.view.common import get_monster_from_ims, invalid_monster_text
 from padinfo.view.components.base_id_main_view import BaseIdMainView
@@ -167,7 +163,6 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 class IdView(BaseIdMainView, EvoScrollView):
-
     VIEW_TYPE = 'Id'
 
     @classmethod

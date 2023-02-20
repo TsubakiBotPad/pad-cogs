@@ -376,12 +376,12 @@ class PadInfo(commands.Cog):
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                                   alt_monsters, is_jp_buffed, query_settings,
+        state = MaterialsViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                                   alt_monsters, is_jp_buffed,
                                    mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override,
                                    reaction_list=initial_reaction_list
                                    )
@@ -412,12 +412,12 @@ class PadInfo(commands.Cog):
             return
         alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                                  alt_monsters, is_jp_buffed, query_settings,
+        state = PantheonViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                                  alt_monsters, is_jp_buffed,
                                   pantheon_list, series_name, base_monster,
                                   reaction_list=initial_reaction_list
                                   )
@@ -473,12 +473,12 @@ class PadInfo(commands.Cog):
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                                   alt_monsters, is_jp_buffed, query_settings,
+        state = OtherInfoViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                                   alt_monsters, is_jp_buffed,
                                    reaction_list=initial_reaction_list
                                    )
         menu = IdMenu.menu(initial_control=IdMenu.otherinfo_control)
@@ -843,6 +843,7 @@ class PadInfo(commands.Cog):
     async def transforminfo(self, ctx, *, query):
         """Show info about a transform card, including some helpful details about the base card."""
         dbcog = await self.get_dbcog()
+        raw_query = query
         base_mon, transformed_mon, monster_ids = await perform_transforminfo_query(dbcog, query, ctx.author.id)
 
         if not base_mon:
@@ -857,12 +858,11 @@ class PadInfo(commands.Cog):
         tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = TransformInfoMenuPanes.get_user_reaction_list(len(monster_ids))
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(base_mon)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, query,
-                                       base_mon, transformed_mon, tfinfo_queried_props, monster_ids,
+        state = TransformInfoViewState(original_author_id, TransformInfoMenu.MENU_TYPE, raw_query, query, qs,
+                                       transformed_mon, base_mon, tfinfo_queried_props, monster_ids,
                                        is_jp_buffed,
-                                       query_settings,
                                        reaction_list=reaction_list)
         menu = TransformInfoMenu.menu()
         await menu.create(ctx, state)
