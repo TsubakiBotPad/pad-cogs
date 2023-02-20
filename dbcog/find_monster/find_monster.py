@@ -33,9 +33,9 @@ class FindMonster:
         self.index = self.dbcog.indexes[Server(flags['server'])]
 
     async def _process_settings(self, original_query: str) -> str:
-        query_settings = QuerySettings.extract(self.flags, original_query)
+        qs = QuerySettings.extract(self.flags, original_query)
 
-        self.index = await self.dbcog.get_index(query_settings.server)
+        self.index = await self.dbcog.get_index(qs.server)
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?(?:\s+|$)', ' ', original_query)
 

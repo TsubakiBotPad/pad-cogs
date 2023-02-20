@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
@@ -23,7 +23,7 @@ async def get_monster_from_ims(dbcog, ims: dict):
     return monster
 
 
-def get_awoken_skill_description(awoken_skill: "AwokenSkillModel", show_help: bool = False, token_map: dict = None):
+def get_awoken_skill_description(awoken_skill: "AwokenSkillModel", show_help: Union[bool, Any] = False, token_map: dict = None):
     if token_map is None:
         token_map = {}
     emoji_text = get_awakening_emoji(awoken_skill.awoken_skill_id, awoken_skill.name)

@@ -77,10 +77,10 @@ class WhichView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 title='Which {}'.format(name),
                 description=get_description(definition, timestamp, success)
             ),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
+            embed_footer=embed_footer_with_state(state, qs=state.qs),
             embed_fields=fields
         )

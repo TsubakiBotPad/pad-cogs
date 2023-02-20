@@ -125,7 +125,7 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW, qs: Optional[QuerySett
             em, qs=qs) for em in mons[:max_mons]), text))
 
 
-def skillup_field(mons, sec, link, query_settings):
+def skillup_field(mons, sec, link, qs):
     text = None
     text2 = None
     if len(mons) == 0:
@@ -143,7 +143,7 @@ def skillup_field(mons, sec, link, query_settings):
     return EmbedField(
         "Skillups",
         Box(*(MonsterHeader.box_with_emoji(
-            em, qs=query_settings) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
+            em, qs=qs) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
 
 
 class MaterialsView(IdBaseView, EvoScrollView):
