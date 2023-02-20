@@ -1,12 +1,9 @@
 from typing import List
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain
-from discordmenu.embed.view import EmbedView
+from discordmenu.embed.components import EmbedField
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.pad_view import PadViewState, PadView
-from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings.query_settings import QuerySettings
 
 from padinfo.view.common import get_awoken_skill_description
@@ -57,8 +54,8 @@ class AwakeningListViewState(PadViewState):
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
         token_map = dbcog.AWOKEN_SKILL_TOKEN_MAP
-        query_settings = QuerySettings.deserialize(ims.get('qs'))
-        return AwakeningListViewState(original_author_id, menu_type, query_settings, sort_type, paginated_skills,
+        qs = QuerySettings.deserialize(ims.get('qs'))
+        return AwakeningListViewState(original_author_id, menu_type, qs, sort_type, paginated_skills,
                                       current_page, token_map, reaction_list=reaction_list)
 
     @classmethod

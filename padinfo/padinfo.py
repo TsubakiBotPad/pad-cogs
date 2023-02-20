@@ -529,7 +529,6 @@ class PadInfo(commands.Cog):
             history.pop()
         await self.config.user(ctx.author).id_history.set(history)
 
-    @commands.command(aliases=["bi"])
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def buttoninfo(self, ctx, *, query: str):
@@ -823,7 +822,6 @@ class PadInfo(commands.Cog):
         friend_cog = self.bot.get_cog("Friend")
         return (await friend_cog.get_friends(original_author_id)) if friend_cog else []
 
-    @commands.command(aliases=["lss"])
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
