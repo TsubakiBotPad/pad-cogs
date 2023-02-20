@@ -113,7 +113,7 @@ class MaterialsViewState(ViewStateBaseId):
         return mats, usedin, gemid, gemusedin, skillups, skillup_evo_count, link, gem_override
 
 
-def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW, query_settings: Optional[QuerySettings] = None):
+def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW, qs: Optional[QuerySettings] = None):
     text = None
     if len(mons) == 0:
         text = "None"
@@ -122,7 +122,7 @@ def mat_use_field(mons, title, max_mons=MAX_MONS_TO_SHOW, query_settings: Option
     return EmbedField(
         title,
         Box(*(MonsterHeader.box_with_emoji(
-            em, query_settings=query_settings) for em in mons[:max_mons]), text))
+            em, qs=qs) for em in mons[:max_mons]), text))
 
 
 def skillup_field(mons, sec, link, query_settings):
@@ -143,7 +143,7 @@ def skillup_field(mons, sec, link, query_settings):
     return EmbedField(
         "Skillups",
         Box(*(MonsterHeader.box_with_emoji(
-            em, query_settings=query_settings) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
+            em, qs=query_settings) for em in mons[:MAX_MONS_TO_SHOW]), text, text2))
 
 
 class MaterialsView(IdBaseView, EvoScrollView):
@@ -152,7 +152,7 @@ class MaterialsView(IdBaseView, EvoScrollView):
     @classmethod
     def embed_fields(cls, state: MaterialsViewState) -> List[EmbedField]:
         return [f for f in [
-            mat_use_field(state.mats, "Evo materials", query_settings=state.qs)
+            mat_use_field(state.mats, "Evo materials", qs=state.qs)
             if state.mats or not (state.monster.is_stackable or state.gem_override) else None,
             mat_use_field(state.usedin, "Material for", 10, state.qs)
             if state.usedin else None,

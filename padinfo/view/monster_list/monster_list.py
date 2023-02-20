@@ -206,7 +206,7 @@ class MonsterListView:
             return []
         return [MonsterHeader.box_with_emoji(
             mon, link=True, prefix=cls.get_emoji(offset + i, current_monster_id),
-            query_settings=query_settings) for i, mon in enumerate(monsters)]
+            qs=query_settings) for i, mon in enumerate(monsters)]
 
     @classmethod
     def get_emoji(cls, i: int, _current_monster_id: int):
@@ -242,7 +242,7 @@ class MonsterListView:
                 subq_id = state.extra_info.get_subquery_mon(m.monster_id)
                 if cur_mon_list and subq_id != cur_subq_id:
                     title = MonsterHeader.box_with_emoji(
-                        state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings,
+                        state.extra_info.get_monster(cur_subq_id), qs=state.query_settings,
                         link=False)
                     fields.append(
                         EmbedField(
@@ -258,7 +258,7 @@ class MonsterListView:
                 i += 1
 
             title = MonsterHeader.box_with_emoji(
-                state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings, link=False)
+                state.extra_info.get_monster(cur_subq_id), qs=state.query_settings, link=False)
             fields.append(
                 EmbedField(
                     title,

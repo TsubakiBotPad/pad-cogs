@@ -118,7 +118,7 @@ class ExperienceCurveView:
             EmbedMain(
                 color=state.query_settings.embedcolor,
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
-                url=MonsterLink.header_link(props.monster, query_settings=state.query_settings),
+                url=MonsterLink.header_link(props.monster, qs=state.query_settings),
                 description=Text(f'lv{props.low} -> lv{props.high} ('
                                  + (trunc_humanize(props.monster.exp_curve) if props.monster.exp_curve else "no")
                                  + f' curve)'),

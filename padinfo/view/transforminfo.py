@@ -173,7 +173,7 @@ class TransformInfoView(BaseIdMainView):
     @classmethod
     def embed_fields(cls, state: TransformInfoViewState) -> List[EmbedField]:
         base_mon = state.base_mon
-        qs = state.query_settings
+        qs = state.qs
         transformed_mon = state.transformed_mon
         lsmultiplier = qs.lsmultiplier
         fields = [
@@ -222,3 +222,9 @@ class TransformInfoView(BaseIdMainView):
             )
         ]
         return fields
+
+    @classmethod
+    def embed_title(cls, state: TransformInfoViewState) -> Optional[str]:
+        m = state.monster
+        return MonsterHeader.menu_title(m,
+                                        is_jp_buffed=state.is_jp_buffed).to_markdown()

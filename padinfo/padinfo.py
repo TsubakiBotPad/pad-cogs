@@ -727,7 +727,7 @@ class PadInfo(commands.Cog):
         series_object: "SeriesModel" = monster.series
         title = series_object.name_en
         paginated_monsters = None
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         rarity = None
         for rarity in SeriesScrollMenu.RARITY_INITIAL_TRY_ORDER:
             paginated_monsters = await SeriesScrollViewState.do_query(dbcog, monster.series_id,
@@ -742,8 +742,7 @@ class PadInfo(commands.Cog):
         instruction_message = 'Click a reaction to see monster details!'
 
         state = SeriesScrollViewState(original_author_id, SeriesScrollMenu.MENU_TYPE, raw_query, query,
-                                      series_id, paginated_monsters, 0, int(rarity),
-                                      query_settings,
+                                      qs, series_id, paginated_monsters, 0, int(rarity),
                                       all_rarities,
                                       title, instruction_message,
                                       reaction_list=initial_reaction_list)
@@ -757,7 +756,7 @@ class PadInfo(commands.Cog):
             'user_config': user_config,
         }
         child_state = SimpleTextViewState(original_author_id, SeriesScrollMenu.MENU_TYPE,
-                                          raw_query, query_settings,
+                                          raw_query, qs,
                                           instruction_message,
                                           reaction_list=[]
                                           )
