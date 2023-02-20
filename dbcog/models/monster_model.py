@@ -119,11 +119,12 @@ class MonsterModel(BaseModel):
 
         self.server_priority = m['server_priority']
 
-        self.drop_id = m['drop_id'],
-        self.mp4_size = m['mp4_size'],
-        self.gif_size = m['gif_size'],
-        self.hq_png_size = m['hq_png_size'],
-        self.hq_gif_size = m['hq_gif_size'],
+        self.drop_id = m['drop_id']
+        self.mp4_size = m['mp4_size']
+        self.gif_size = m['gif_size']
+        self.hq_png_size = m['hq_png_size']
+        self.hq_gif_size = m['hq_gif_size']
+        self.icon_fallback = m['icon_fallback']
 
     @property
     def killers(self):

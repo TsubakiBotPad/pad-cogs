@@ -59,7 +59,7 @@ class TransformInfoViewState(ViewStateBase):
         monster_ids = ims['resolved_monster_ids']
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
 
         base_mon = dbcog.get_monster(base_mon_id, server=query_settings.server)
         transformed_mon = dbcog.get_monster(transformed_mon_id, server=query_settings.server)

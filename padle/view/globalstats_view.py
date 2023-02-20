@@ -55,7 +55,7 @@ class GlobalStatsViewState(ViewStateBase):
         reaction_list = ims['reaction_list']
         current_day = ims['current_day']
         num_days = ims['num_days']
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         daily_scores_list = await padle_cog.config.save_daily_scores()
         cur_day_scores = await padle_cog.config.all_scores()
         if num_days == current_day:

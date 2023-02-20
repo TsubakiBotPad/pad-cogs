@@ -92,7 +92,7 @@ class DungeonViewState(ViewState):
 
         encounter_model = floor_models[floor_index]
 
-        qs = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
 
         return cls(original_author_id, menu_type, qs, raw_query, encounter_model, sub_dungeon_id,
                    num_floors, floor, len(floor_models), floor_index,

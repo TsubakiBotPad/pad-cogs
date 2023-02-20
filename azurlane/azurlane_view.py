@@ -37,7 +37,7 @@ class AzurlaneViewState(ViewStateBase):
     async def deserialize(cls, alcog, _user_config: UserConfig, ims: dict):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         reaction_list = ims['reaction_list']
         image_idx = ims['current_index']
 

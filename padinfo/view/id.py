@@ -42,13 +42,14 @@ class IdViewState(ViewStateBaseId):
     nadiff_jp_only_text = ', which is only in JP'
     nadiff_identical_text = ', which is the same in NA & JP'
 
-    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, raw_query, query, qs: QuerySettings,
+                 monster: "MonsterModel",
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool,
                  id_queried_props: IdQueriedProps,
                  fallback_message: str = None, reaction_list: List[str] = None,
                  is_child: bool = False, extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, monster,
-                         alt_monsters, is_jp_buffed, query_settings,
+        super().__init__(original_author_id, menu_type, raw_query, query, qs, monster,
+                         alt_monsters, is_jp_buffed,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.fallback_message = fallback_message
@@ -82,7 +83,7 @@ class IdViewState(ViewStateBaseId):
         raw_query = ims['raw_query']
         # This is to support the 2 vs 1 monster query difference between ^ls and ^id
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
         menu_type = ims['menu_type']
         original_author_id = ims['original_author_id']
         reaction_list = ims.get('reaction_list')
@@ -90,8 +91,8 @@ class IdViewState(ViewStateBaseId):
         is_child = ims.get('is_child')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, monster,
-                   alt_monsters, is_jp_buffed, query_settings,
+        return cls(original_author_id, menu_type, raw_query, query, qs, monster,
+                   alt_monsters, is_jp_buffed,
                    id_queried_props,
                    fallback_message=fallback_message,
                    reaction_list=reaction_list,
@@ -99,7 +100,7 @@ class IdViewState(ViewStateBaseId):
                    extra_state=ims)
 
     async def set_server(self, dbcog, server: Server):
-        self.query_settings.server = server
+        self.qs.server = server
         self.monster = dbcog.database.graph.get_monster(self.monster.monster_id, server=server)
         self.alt_monsters = self.get_alt_monsters_and_evos(dbcog, self.monster)
         id_queried_props = await self.do_query(dbcog, self.monster)
@@ -166,6 +167,7 @@ def _monster_is_enhance(m: "MonsterModel"):
 
 
 class IdView(BaseIdMainView, EvoScrollView):
+
     VIEW_TYPE = 'Id'
 
     @classmethod
@@ -206,10 +208,10 @@ class IdView(BaseIdMainView, EvoScrollView):
         return Box(rarity, cost, series, acquire, true_evo_type)
 
     @classmethod
-    def stats(cls, m: "MonsterModel", previous_evolutions, query_settings: QuerySettings):
-        plus = cls.get_plus_status(previous_evolutions, query_settings.cardplus)
-        multiplayer = query_settings.cardmode == CardModeModifier.coop
-        lb_level = 110 if query_settings.cardlevel == CardLevelModifier.lv110 else 120
+    def stats(cls, m: "MonsterModel", previous_evolutions, qs: QuerySettings):
+        plus = cls.get_plus_status(previous_evolutions, qs.cardplus)
+        multiplayer = qs.cardmode == CardModeModifier.coop
+        lb_level = 110 if qs.cardlevel == CardLevelModifier.lv110 else 120
         hp, atk, rcv, weighted = m.stats(plus=plus, multiplayer=multiplayer)
 
         lb_hp, lb_atk, lb_rcv, lb_weighted = (None, None, None, None)
@@ -232,19 +234,19 @@ class IdView(BaseIdMainView, EvoScrollView):
         return 297 if cardplus == CardPlusModifier.plus297 else 0
 
     @classmethod
-    def stats_header(cls, m: "MonsterModel", previous_evolutions, query_settings: QuerySettings):
+    def stats_header(cls, m: "MonsterModel", previous_evolutions, qs: QuerySettings):
         voice_emoji = get_awakening_emoji(63) if m.awakening_count(63) and not m.is_equip else ''
 
         multiboost_emoji = None
-        if m.awakening_count(30) and query_settings.cardmode == CardModeModifier.coop:
+        if m.awakening_count(30) and qs.cardmode == CardModeModifier.coop:
             multiboost_emoji = get_emoji('misc_multiboost')
 
         plus_emoji = get_emoji('plus_297')
-        if cls.get_plus_status(previous_evolutions, query_settings.cardplus) != 297:
+        if cls.get_plus_status(previous_evolutions, qs.cardplus) != 297:
             plus_emoji = get_emoji('plus_0')
 
         lb_emoji = get_emoji('lv110')
-        if m.limit_mult > 0 and query_settings.cardlevel == CardLevelModifier.lv120:
+        if m.limit_mult > 0 and qs.cardlevel == CardLevelModifier.lv120:
             lb_emoji = get_emoji('lv120')
 
         header = Box(
@@ -258,10 +260,10 @@ class IdView(BaseIdMainView, EvoScrollView):
         return header
 
     @classmethod
-    def embed(cls, state: IdViewState):
+    def embed_fields(cls, state: IdViewState) -> List[EmbedField]:
         m = state.monster
-        qs = state.query_settings
-        fields = [
+        qs = state.qs
+        return [
             EmbedField(
                 '/'.join(['{}'.format(t.name) for t in m.types]),
                 Box(
@@ -289,14 +291,3 @@ class IdView(BaseIdMainView, EvoScrollView):
             ),
             cls.evos_embed_field(state)
         ]
-
-        return EmbedView(
-            EmbedMain(
-                color=qs.embedcolor,
-                title=MonsterHeader.menu_title(m,
-                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(m, qs)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id)),
-            embed_footer=embed_footer_with_state(state, qs=qs),
-            embed_fields=fields)

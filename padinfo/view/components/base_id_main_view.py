@@ -2,16 +2,19 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 import jinja2
+from discord.types.embed import EmbedField
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.query_settings.enums import LsMultiplier, SkillDisplay
 from tsutils.tsubaki.custom_emoji import get_awakening_emoji, get_emoji, number_emoji_small
+from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.core.leader_skills import ls_multiplier_text, ls_single_multiplier_text
 from padinfo.view.base import BaseIdView
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.padinfo_view import PadinfoView
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
 
 if TYPE_CHECKING:
     from dbcog.models.leader_skill_model import LeaderSkillModel
@@ -44,7 +47,8 @@ def _make_suffix(idx, skill, subskill):
     return ""
 
 
-class BaseIdMainView(BaseIdView, ABC):
+class BaseIdMainView(IdBaseView, ABC):
+
     transform_emoji_names = ['downr', 'downo', 'downy', 'downg', 'downb', 'downp']
     up_emoji_name = 'upgr'
     down_emoji_name = transform_emoji_names[0]
@@ -160,8 +164,3 @@ class BaseIdMainView(BaseIdView, ABC):
         if skilldisplay == SkillDisplay.skillnames:
             return Text(leader_skill.name_en)
         return Text(leader_skill.desc)
-
-    @classmethod
-    @abstractmethod
-    def embed(cls, state: ViewStateBaseId) -> EmbedView:
-        ...

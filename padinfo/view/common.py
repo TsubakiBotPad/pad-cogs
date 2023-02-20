@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 async def get_monster_from_ims(dbcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
-    query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+    query_settings = QuerySettings.deserialize(ims.get('qs'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
     resolved_monster_id = int(resolved_monster_id_str or 0)

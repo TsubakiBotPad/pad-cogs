@@ -55,7 +55,7 @@ class AwakeningListViewState(ViewStateBase):
         menu_type = ims['menu_type']
         reaction_list = ims['reaction_list']
         token_map = dbcog.AWOKEN_SKILL_TOKEN_MAP
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         return AwakeningListViewState(original_author_id, menu_type, query_settings, sort_type, paginated_skills,
                                       current_page, token_map, reaction_list=reaction_list)
 

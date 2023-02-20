@@ -270,10 +270,10 @@ class PadInfo(commands.Cog):
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                            alt_monsters, is_jp_buffed, query_settings, id_queried_props,
+        state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                            alt_monsters, is_jp_buffed, id_queried_props,
                             reaction_list=initial_reaction_list)
         menu = IdMenu.menu()
         await menu.create(ctx, state)
@@ -334,7 +334,7 @@ class PadInfo(commands.Cog):
         alt_monsters = EvosViewState.get_alt_monsters_and_evos(dbcog, monster)
         alt_versions, gem_versions = await EvosViewState.do_query(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
         if alt_versions is None:
             await self.send_invalid_monster_message(ctx, query, monster, ', which has no alt evos or gems')
@@ -343,8 +343,8 @@ class PadInfo(commands.Cog):
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                              alt_monsters, is_jp_buffed, query_settings,
+        state = EvosViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                              alt_monsters, is_jp_buffed,
                               alt_versions, gem_versions,
                               reaction_list=initial_reaction_list
                               )
@@ -443,12 +443,12 @@ class PadInfo(commands.Cog):
 
         alt_monsters = PicViewState.get_alt_monsters_and_evos(dbcog, monster)
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         full_reaction_list = IdMenuPanes.emoji_names()
         initial_reaction_list = await get_id_menu_initial_reaction_list(ctx, dbcog, monster, full_reaction_list)
 
-        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                             alt_monsters, is_jp_buffed, query_settings,
+        state = PicViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                             alt_monsters, is_jp_buffed,
                              reaction_list=initial_reaction_list
                              )
         menu = IdMenu.menu(initial_control=IdMenu.pic_control)

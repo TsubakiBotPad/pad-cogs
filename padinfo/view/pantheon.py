@@ -57,7 +57,7 @@ class PantheonViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')

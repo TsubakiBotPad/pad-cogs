@@ -12,20 +12,21 @@ from tsutils.tsubaki.monster_header import MonsterHeader
 from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import MonsterEvolution
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
 
 
 class EvosViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
-                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, raw_query, query, qs: QuerySettings,
+                 monster: "MonsterModel",
+                 alt_monsters: List[MonsterEvolution], is_jp_buffed: bool,
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, monster,
-                         alt_monsters, is_jp_buffed, query_settings,
+        super().__init__(original_author_id, menu_type, raw_query, qs, query, monster,
+                         alt_monsters, is_jp_buffed,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.alt_versions = alt_versions
@@ -50,7 +51,7 @@ class EvosViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
@@ -73,7 +74,7 @@ class EvosViewState(ViewStateBaseId):
         return alt_versions, gem_versions
 
 
-class EvosView(BaseIdView):
+class EvosView(IdBaseView):
     VIEW_TYPE = 'Evos'
 
     @staticmethod
@@ -86,11 +87,11 @@ class EvosView(BaseIdView):
         ]
 
     @classmethod
-    def embed(cls, state: EvosViewState):
+    def embed_fields(cls, state: EvosViewState) -> List[EmbedField]:
         fields = [
             EmbedField(
                 ("{} evolution" if len(state.alt_versions) == 1 else "{} evolutions").format(len(state.alt_versions)),
-                Box(*EvosView._evo_lines(state.alt_versions, state.monster, state.query_settings)))]
+                Box(*EvosView._evo_lines(state.alt_versions, state.monster, state.qs)))]
 
         if state.gem_versions:
             fields.append(
@@ -98,15 +99,5 @@ class EvosView(BaseIdView):
                     ("{} evolve gem" if len(state.gem_versions) == 1 else "{} evolve gems").format(
                         len(state.gem_versions)),
                     Box(*EvosView._evo_lines(
-                        state.gem_versions, state.monster, state.query_settings))))
-
-        return EmbedView(
-            EmbedMain(
-                color=state.query_settings.embedcolor,
-                title=MonsterHeader.menu_title(state.monster,
-                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(state.monster, state.query_settings)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
-            embed_fields=fields)
+                        state.gem_versions, state.monster, state.qs))))
+        return fields

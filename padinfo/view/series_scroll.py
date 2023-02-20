@@ -98,7 +98,7 @@ class SeriesScrollViewState(ViewStateBase):
         series_id = ims['series_id']
         rarity = ims['rarity']
         all_rarities = ims['all_rarities']
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        query_settings = QuerySettings.deserialize(ims.get('qs'))
         paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, query_settings.server)
         current_page = ims['current_page']
         title = ims['title']

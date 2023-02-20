@@ -8,8 +8,3 @@ from padinfo.view.components.view_state_base_id import ViewStateBaseId
 class BaseIdView(metaclass=ABCMeta):
     VIEW_TYPE: str
     TSUBAKI = 2141
-
-    @classmethod
-    @abstractmethod
-    def embed(cls, state: ViewStateBaseId) -> EmbedView:
-        ...
