@@ -72,7 +72,7 @@ class MonsterListViewState(ViewStateBase):
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
             'monster_list': [m.monster_id for m in self.monster_list],
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.query_settings.serialize(),
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
@@ -89,7 +89,7 @@ class MonsterListViewState(ViewStateBase):
             'reaction_list': self.child_reaction_list,
             'menu_type': self.child_menu_type,
             'resolved_monster_id': self.current_monster_id,
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.query_settings.serialize(),
             'idle_message': self.idle_message,
         }
         return extra_ims

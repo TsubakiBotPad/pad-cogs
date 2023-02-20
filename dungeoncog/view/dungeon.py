@@ -49,7 +49,7 @@ class DungeonViewState(ViewState):
             'pane_type': DungeonView.VIEW_TYPE,
             'verbose': self.verbose,
             'page': self.page,
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.query_settings.serialize(),
         })
         return ret
 

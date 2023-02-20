@@ -58,7 +58,7 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
             'device_setting': self.display_options.device,
             'max_level_setting': self.display_options.max_level,
             'resolved_monster_id': self.monster.monster_id,
-            'query_settings': self.query_settings.serialize()
+            'qs': self.query_settings.serialize()
         })
         return ret
 
@@ -67,7 +67,7 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        query_settings = QuerySettings.deserialize(ims['qs'])
         display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
         monster = dbcog.get_monster(int(ims['resolved_monster_id']))
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)

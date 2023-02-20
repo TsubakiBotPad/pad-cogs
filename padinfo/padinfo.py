@@ -674,12 +674,12 @@ class PadInfo(commands.Cog):
         title = 'Monster Book Scroll'
         raw_query = query
         original_author_id = ctx.message.author.id
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query,
-                                queried_props, query_settings,
+                                queried_props, qs,
                                 title, instruction_message, monster.monster_id,
                                 child_menu_type=IdMenu.MENU_TYPE,
                                 child_reaction_list=IdMenuPanes.emoji_names(),
@@ -700,8 +700,8 @@ class PadInfo(commands.Cog):
         full_reaction_list = IdMenuPanes.emoji_names()
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, monster,
-                                  alt_monsters, is_jp_buffed, query_settings, id_queried_props,
+        child_state = IdViewState(original_author_id, IdMenu.MENU_TYPE, raw_query, query, qs, monster,
+                                  alt_monsters, is_jp_buffed, id_queried_props,
                                   reaction_list=full_reaction_list)
         child_menu = IdMenu.menu()
         child_message = await child_menu.create(ctx, child_state)
@@ -794,12 +794,14 @@ class PadInfo(commands.Cog):
             await ctx.send(err_msg.format('Right', r_query))
             return
 
-        l_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
-        r_query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, r_query or l_query)
+        lqs = await QuerySettings.extract_raw(ctx.author, self.bot, l_query)
+        rqs = await QuerySettings.extract_raw(ctx.author, self.bot, r_query or l_query)
 
         original_author_id = ctx.message.author.id
-        state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, l_mon, r_mon,
-                                     l_query, r_query, l_query_settings, r_query_settings)
+        state = LeaderSkillViewState(original_author_id, LeaderSkillMenu.MENU_TYPE, raw_query, raw_query,
+                                     lqs,
+                                     l_mon, r_mon,
+                                     l_query, r_query, lqs, rqs)
         menu = LeaderSkillMenu.menu()
         await menu.create(ctx, state)
 
@@ -973,7 +975,8 @@ class PadInfo(commands.Cog):
             "naprio": 'On' if 'na_prio' not in fm_flags or fm_flags['na_prio'] == 1 else 'Off',
             "ormod prio": 'On' if 'ormod_prio' not in fm_flags or fm_flags['ormod_prio'] is True else 'Off',
             "server": 'Default' if 'server' not in fm_flags or fm_flags['server'] == 'COMBINED' else fm_flags['server'],
-            "skilldisplay": 'skilltexts' if 'skilldisplay' not in fm_flags else SkillDisplay(fm_flags['skilldisplay']).name,
+            "skilldisplay": 'skilltexts' if 'skilldisplay' not in fm_flags else SkillDisplay(
+                fm_flags['skilldisplay']).name,
             "(Donor Only) embedcolor": 'Default' if 'embedcolor' not in fm_flags else fm_flags['embedcolor'].title(),
         }
         await ctx.send(intro + '\n'.join(["\t{}: {}".format(k, v) for k, v in user_settings.items()]))
@@ -1559,8 +1562,9 @@ class PadInfo(commands.Cog):
     async def jptwitter(self, ctx, *, search_text):
         """Link to a Twitter search of a dungeon, with an option to specify leader"""
         return await self.get_dl_menu(ctx, search_text, JpTwtDgLeadProps, JpTwtDgLeadView)
-    
-    async def get_dl_menu(self, ctx, search_text, props_type: Type[DungeonListViewProps], view_type: Type[DungeonListBase]):
+
+    async def get_dl_menu(self, ctx, search_text, props_type: Type[DungeonListViewProps],
+                          view_type: Type[DungeonListBase]):
         dbcog = await self.get_dbcog()
         db: "DBCogDatabase" = dbcog.database.database
 
@@ -1573,8 +1577,9 @@ class PadInfo(commands.Cog):
             mon_text = texts[1]
             monster = await dbcog.find_monster(mon_text, ctx.author.id)
             if monster is None:
-                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
-                                    f"maybe try again?")             
+                return await ctx.send(
+                    f"No monster found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
+                    f"maybe try again?")
         else:
             dg_text = search_text
             monster = None
@@ -1582,9 +1587,10 @@ class PadInfo(commands.Cog):
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
         sds = await self.get_subdungeons(dg_text, db)
         if not sds:
-            return await ctx.send(f"No dungeons found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
-                                  f"maybe try again?")
-        
+            return await ctx.send(
+                f"No dungeons found. This command uses `/` or `,` as an optional delimiter to specify a leader, "
+                f"maybe try again?")
+
         dungeons = self.make_dungeon_dict(sds)
 
         menu = ClosableEmbedMenu.menu()

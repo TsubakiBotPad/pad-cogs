@@ -30,7 +30,7 @@ class GlobalStatsViewState(ViewStateBase):
             'current_day': self.current_day,
             'reaction_list': self.reaction_list,
             'num_days': self.num_days,
-            'query_settings': self.query_settings.serialize()
+            'qs': self.query_settings.serialize()
         })
         return ret
 

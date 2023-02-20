@@ -28,7 +28,7 @@ class AzurlaneViewState(ViewStateBase):
         ret = super().serialize()
         ret.update({
             'idx': self.c['id'],
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.query_settings.serialize(),
             'current_index': self.image_idx,
         })
         return ret

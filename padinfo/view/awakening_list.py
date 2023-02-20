@@ -42,7 +42,7 @@ class AwakeningListViewState(ViewStateBase):
             'current_page': self.current_page,
             'total_pages': self.total_pages,
             'sort_type': self.sort_type,
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.query_settings.serialize(),
         })
         return ret
 

@@ -36,5 +36,5 @@ class IdSearchViewState(MonsterListViewState):
     @classmethod
     async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         queried_props = await cls.do_query(dbcog, ims['raw_query'], ims['original_author_id'],
-                                           QuerySettings.deserialize(ims['query_settings']))
+                                           QuerySettings.deserialize(ims['qs']))
         return queried_props

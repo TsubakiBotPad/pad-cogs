@@ -143,7 +143,7 @@ class SeriesScrollViewState(PadViewState):
     async def query_from_ims(dbcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        query_settings = QuerySettings.deserialize(ims['qs'])
         paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, query_settings.server)
         return paginated_monsters
 
