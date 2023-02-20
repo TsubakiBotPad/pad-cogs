@@ -302,15 +302,15 @@ class PadInfo(commands.Cog):
         id_queried_props = await IdViewState.do_query(dbcog, monster)
 
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
-        state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, monster,
-                            alt_monsters, is_jp_buffed, query_settings, id_queried_props)
+        state = IdViewState(original_author_id, NaDiffMenu.MENU_TYPE, raw_query, query, qs, monster,
+                            alt_monsters, is_jp_buffed, id_queried_props)
         menu = NaDiffMenu.menu()
         message = state.get_na_diff_invalid_message()
         if message:
             state = SimpleTextViewState(original_author_id, NaDiffMenu.MENU_TYPE,
-                                        raw_query, query_settings, message)
+                                        raw_query, qs, message)
             menu = NaDiffMenu.menu(initial_control=NaDiffMenu.message_control)
         await menu.create(ctx, state)
         await self.log_id_result(ctx, monster.monster_id)
@@ -620,17 +620,17 @@ class PadInfo(commands.Cog):
                                ):
         raw_query = query
         original_author_id = ctx.message.author.id
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         initial_reaction_list = MonsterListMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
         if child_menu_type is None:
-            child_menu_type = query_settings.child_menu_type.name
+            child_menu_type = qs.child_menu_type.name
             _, child_panes_class = padinfo_menu_map[child_menu_type]
             child_reaction_list = child_panes_class.emoji_names()
 
         state = view_state_type(original_author_id, view_state_type.VIEW_STATE_TYPE, query,
-                                queried_props, query_settings,
+                                qs, queried_props,
                                 title, instruction_message,
                                 child_menu_type=child_menu_type,
                                 child_reaction_list=child_reaction_list,
@@ -646,7 +646,7 @@ class PadInfo(commands.Cog):
             'user_config': user_config,
         }
         child_state = SimpleTextViewState(original_author_id, view_state_type.VIEW_STATE_TYPE,
-                                          raw_query, query_settings,
+                                          raw_query, qs,
                                           instruction_message,
                                           reaction_list=[]
                                           )
@@ -1030,8 +1030,8 @@ class PadInfo(commands.Cog):
 
         menu = FavcardMenu.menu()
         state = FavcardViewState(original_author_id, FavcardMenu.MENU_TYPE, raw_query,
-                                 query, monster,
-                                 alt_monsters, qs)
+                                 query, qs, monster,
+                                 alt_monsters)
         await menu.create(ctx, state)
 
     @idset.command(usage="<on/off>")
