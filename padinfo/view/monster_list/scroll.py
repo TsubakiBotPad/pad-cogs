@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 class ScrollViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "Scroll"
 
-    def __init__(self, original_author_id, menu_type, query,
-                 queried_props: MonsterListQueriedProps, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, query, qs: QuerySettings,
+                 queried_props: MonsterListQueriedProps,
                  title, message, current_monster_id: int,
                  *,
                  current_page: int = 0,
@@ -25,7 +25,7 @@ class ScrollViewState(MonsterListViewState):
                  extra_state=None,
                  child_message_id=None
                  ):
-        super().__init__(original_author_id, menu_type, query, queried_props, query_settings, title, message,
+        super().__init__(original_author_id, menu_type, query, qs, queried_props, title, message,
                          current_page=current_page, current_index=current_index, child_menu_type=child_menu_type,
                          child_reaction_list=child_reaction_list, reaction_list=reaction_list,
                          extra_state=extra_state, child_message_id=child_message_id)
@@ -55,7 +55,7 @@ class ScrollViewState(MonsterListViewState):
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('qs'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
@@ -63,8 +63,8 @@ class ScrollViewState(MonsterListViewState):
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
-        return ScrollViewState(original_author_id, menu_type, query,
-                               queried_props, query_settings,
+        return ScrollViewState(original_author_id, menu_type, query, qs,
+                               queried_props,
                                title, idle_message, ims['current_monster_id'],
                                current_page=current_page,
                                current_index=current_index,
@@ -91,7 +91,7 @@ class ScrollViewState(MonsterListViewState):
 
     async def decrement_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
-        monster = db_context.graph.get_monster(self.current_monster_id, server=self.query_settings.server)
+        monster = db_context.graph.get_monster(self.current_monster_id, server=self.qs.server)
 
         prev_monster: "MonsterModel" = dbcog.database.graph.numeric_prev_monster(monster)
         if prev_monster is None:
@@ -104,7 +104,7 @@ class ScrollViewState(MonsterListViewState):
 
     async def increment_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
-        monster = db_context.graph.get_monster(self.current_monster_id, server=self.query_settings.server)
+        monster = db_context.graph.get_monster(self.current_monster_id, server=self.qs.server)
         next_monster = dbcog.database.graph.numeric_next_monster(monster)
         if next_monster is None:
             # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
