@@ -150,7 +150,7 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.CLOUDRESIST: ('cloudres', 'cloud'),
     AwokenSkills.TAPERESIST: ('taperes', 'tape'),
     AwokenSkills.SKILLBOOSTPLUS: ('sb+', 'sb'),
-    AwokenSkills.HP80ORMORE: ('>80', 'highhp'),
+    AwokenSkills.HP50ORMORE: ('>80', '>50', 'highhp'),
     AwokenSkills.HP50ORLESS: ('<50', 'lowhp'),
     AwokenSkills.ELSHIELD: ('elshield', 'elh', 'hel'),
     AwokenSkills.ELATTACK: ('el',),
@@ -196,8 +196,10 @@ AWOKEN_SKILL_MAP = {
     AwokenSkills.ENHANCEDBLUEPLUS: ('oeb+', 'oe+', 'oeb', 'oe'),
     AwokenSkills.ENHANCEDGREENPLUS: ('oeg+', 'oe+', 'oeg', 'oe'),
     AwokenSkills.ENHANCEDLIGHTPLUS: ('oel+', 'oe+', 'oel', 'oe'),
-    AwokenSkills.ENHANCEDDARKPLUS: ('oed+', 'oe+','oed', 'oe'),
+    AwokenSkills.ENHANCEDDARKPLUS: ('oed+', 'oe+', 'oed', 'oe'),
     AwokenSkills.ENHANCEDHEALPLUS: ('htpa+', 'oeh+', 'oeh', 'oe'),
+    AwokenSkills.ANTISKILLBOOST: ('sb-',),
+    AwokenSkills.LEVITATE: ('levitate',),
 }
 
 
@@ -221,7 +223,7 @@ class MiscModifiers(Enum):
     NEW = 'Newest monster in series'
     ORBSKIN = 'Grants an orb skin'
     BGM = 'Grants a BGM'
-    MEDIA = 'Grants a form of media' # orb skin or BGM
+    MEDIA = 'Grants a form of media'  # orb skin or BGM
     ANIMATED = 'Animated monster'
     MEDAL_EXC = 'Exchangable for vendor mats'
     BLACK_MEDAL = 'Exchangable for black medals'
