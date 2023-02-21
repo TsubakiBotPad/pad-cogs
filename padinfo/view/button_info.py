@@ -35,9 +35,10 @@ class ButtonInfoToggles:
 
 
 class ButtonInfoViewState(PadViewState, EvoScrollViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, display_options: ButtonInfoToggles,
+    def __init__(self, original_author_id, menu_type, raw_query, qs: QuerySettings,
+                 display_options: ButtonInfoToggles,
                  monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
-                 info: ButtonInfoResult, qs: QuerySettings,
+                 info: ButtonInfoResult,
                  reaction_list: List[str] = None):
         super().__init__(original_author_id, menu_type, raw_query, raw_query, qs, extra_state=None)
         self.display_options = display_options
@@ -70,8 +71,8 @@ class ButtonInfoViewState(PadViewState, EvoScrollViewState):
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         info = button_info.get_info(dbcog, monster)
         reaction_list = ims['reaction_list']
-        return ButtonInfoViewState(original_author_id, menu_type, raw_query, display_options,
-                                   monster, alt_monsters, info, qs, reaction_list=reaction_list)
+        return ButtonInfoViewState(original_author_id, menu_type, raw_query, qs, display_options,
+                                   monster, alt_monsters, info, reaction_list=reaction_list)
 
     def set_player_count(self, new_count):
         self.display_options.players = new_count

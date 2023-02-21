@@ -39,5 +39,5 @@ class IdTracebackView:
                 EmbedField('Matched Modifier Tokens', Box(props.modifier_tokens)),
                 EmbedField('Equally-scoring matches', Box(props.lower_priority_monsters)),
             ],
-            embed_footer=embed_footer_with_state(state),
+            embed_footer=embed_footer_with_state(state, qs=state.qs),
         )

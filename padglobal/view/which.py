@@ -1,10 +1,17 @@
+from typing import TYPE_CHECKING
+
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedMain, EmbedField
+from discordmenu.embed.components import EmbedMain, EmbedField, EmbedThumbnail
 from discordmenu.embed.text import Text
 from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.view.closable_embed import ClosableEmbedViewState
+from tsutils.tsubaki.links import MonsterImage
+from tsutils.tsubaki.monster_header import MonsterHeader
+
+if TYPE_CHECKING:
+    from dbcog.models.monster_model import MonsterModel
 
 STAR = '* '
 BULLET_EMOJIS = ['db', 'dp', 'dg']
@@ -12,8 +19,8 @@ UNKNOWN_EDIT_TIMESTAMP = '1970-01-01'
 
 
 class WhichViewProps:
-    def __init__(self, name: str, definition: str, timestamp: str, success: bool):
-        self.name = name
+    def __init__(self, monster: "MonsterModel", definition: str, timestamp: str, success: bool):
+        self.monster = monster
         self.definition = definition
         self.timestamp = timestamp
         self.success = success
@@ -68,7 +75,7 @@ class WhichView:
 
     @staticmethod
     def embed(state: ClosableEmbedViewState, props: WhichViewProps):
-        name = props.name
+        m = props.monster
         definition = props.definition
         timestamp = props.timestamp
         success = props.success
@@ -78,9 +85,10 @@ class WhichView:
         return EmbedView(
             EmbedMain(
                 color=state.qs.embedcolor,
-                title='Which {}'.format(name),
+                title='Which {}'.format(MonsterHeader.text_with_emoji(m, qs=state.qs)),
                 description=get_description(definition, timestamp, success)
             ),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_fallback)),
             embed_footer=embed_footer_with_state(state, qs=state.qs),
             embed_fields=fields
         )

@@ -36,7 +36,7 @@ class DungeonViewState(ViewState):
         self.num_spawns = num_spawns
         self.page = page
         self.verbose = verbose
-        self.query_settings = qs
+        self.qs = qs
 
     def serialize(self):
         ret = super().serialize()
@@ -49,7 +49,7 @@ class DungeonViewState(ViewState):
             'pane_type': DungeonView.VIEW_TYPE,
             'verbose': self.verbose,
             'page': self.page,
-            'qs': self.query_settings.serialize(),
+            'qs': self.qs.serialize(),
         })
         return ret
 
@@ -182,11 +182,12 @@ class DungeonView:
             )
         return EmbedView(
             EmbedMain(
+                color=state.qs.embedcolor,
                 title=title,
                 description=desc,
             ),
             embed_fields=fields,
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings)
+            embed_footer=embed_footer_with_state(state, qs=state.qs)
         )
 
     @staticmethod

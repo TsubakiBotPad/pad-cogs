@@ -1,14 +1,11 @@
 from typing import List, TYPE_CHECKING, Optional
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain
+from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import BoldText
-from discordmenu.embed.view import EmbedView
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.menu.pad_view import PadView, PadViewState
-from tsutils.menu.view.view_state_base import ViewStateBase
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -143,8 +140,8 @@ class SeriesScrollViewState(PadViewState):
     async def query_from_ims(dbcog, ims) -> List[List["MonsterModel"]]:
         series_id = ims['series_id']
         rarity = ims['rarity']
-        query_settings = QuerySettings.deserialize(ims['qs'])
-        paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, query_settings.server)
+        qs = QuerySettings.deserialize(ims['qs'])
+        paginated_monsters = await SeriesScrollViewState.do_query(dbcog, series_id, rarity, qs.server)
         return paginated_monsters
 
     async def decrement_page(self, dbcog):
@@ -156,8 +153,8 @@ class SeriesScrollViewState(PadViewState):
             if len(self.all_rarities) > 1:
                 rarity_index = self.all_rarities.index(self.rarity)
                 self.rarity = self.all_rarities[rarity_index - 1]
-                self.paginated_monsters = await SeriesScrollViewState.do_query(dbcog, self.series_id, self.rarity,
-                                                                               self.query_settings.server)
+                self.paginated_monsters = await SeriesScrollViewState.do_query(
+                    dbcog, self.series_id, self.rarity, self.qs.server)
                 self.current_index = None
             self.current_page = len(self.paginated_monsters) - 1
 
@@ -173,8 +170,8 @@ class SeriesScrollViewState(PadViewState):
             if len(self.all_rarities) > 1:
                 rarity_index = self.all_rarities.index(self.rarity)
                 self.rarity = self.all_rarities[(rarity_index + 1) % len(self.all_rarities)]
-                self.paginated_monsters = await SeriesScrollViewState.do_query(dbcog, self.series_id, self.rarity,
-                                                                               self.query_settings.server)
+                self.paginated_monsters = await SeriesScrollViewState.do_query(
+                    dbcog, self.series_id, self.rarity, self.qs.server)
                 self.current_index = None
             self.current_page = 0
 

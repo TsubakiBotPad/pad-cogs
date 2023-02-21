@@ -497,8 +497,8 @@ class PadInfo(commands.Cog):
             self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        embed = LinksView.embed(monster, query_settings).to_embed()
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        embed = LinksView.embed(monster, qs).to_embed()
         await ctx.send(embed=embed)
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
@@ -514,8 +514,8 @@ class PadInfo(commands.Cog):
             self.save_historic_data(query, monster)
             return
         await self.log_id_result(ctx, monster.monster_id)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        embed = LookupView.embed(monster, query_settings).to_embed()
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        embed = LookupView.embed(monster, qs).to_embed()
         await ctx.send(embed=embed)
         await self.log_id_result(ctx, monster.monster_id)
         self.save_historic_data(query, monster)
@@ -541,11 +541,12 @@ class PadInfo(commands.Cog):
 
         original_author_id = ctx.message.author.id
         info = button_info.get_info(dbcog, monster)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         display_options = ButtonInfoToggles()
         alt_monsters = ButtonInfoViewState.get_alt_monsters_and_evos(dbcog, monster)
-        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query, display_options,
-                                    monster, alt_monsters, info, query_settings,
+        state = ButtonInfoViewState(original_author_id, ButtonInfoMenu.MENU_TYPE, query,  qs,
+                                    display_options,
+                                    monster, alt_monsters, info,
                                     reaction_list=ButtonInfoMenuPanes.get_user_reaction_list(display_options))
         menu = ButtonInfoMenu.menu()
         await menu.create(ctx, state)
@@ -564,8 +565,8 @@ class PadInfo(commands.Cog):
     async def _do_idsearch(self, ctx, query, child_menu_type=None,
                            child_reaction_list=None):
         dbcog = await self.get_dbcog()
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
-        queried_props = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        queried_props = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, qs)
 
         if not queried_props or not queried_props.monster_list:
             await ctx.send("No monster matched.")
@@ -831,10 +832,10 @@ class PadInfo(commands.Cog):
             await self.send_id_failure_message(ctx, query)
             return
 
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
 
         original_author_id = ctx.message.author.id
-        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, query_settings,
+        state = LeaderSkillSingleViewState(original_author_id, LeaderSkillSingleMenu.MENU_TYPE, query, qs,
                                            monster)
         menu = LeaderSkillSingleMenu.menu()
         await menu.create(ctx, state)
@@ -875,14 +876,14 @@ class PadInfo(commands.Cog):
 
         Leave <query> blank to see a list of every awakening in the game."""
         dbcog = await self.get_dbcog()
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query or '')
 
         # TODO: Fix this absolutely awful way of finding if the query is empty but has a QS
         if not query or query.startswith('--'):
             sort_type = AwakeningListSortTypes.numerical
             paginated_skills = await AwakeningListViewState.do_query(dbcog, sort_type)
             menu = AwakeningListMenu.menu()
-            state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, query_settings,
+            state = AwakeningListViewState(ctx.message.author.id, AwakeningListMenu.MENU_TYPE, qs,
                                            sort_type, paginated_skills, 0, dbcog.AWOKEN_SKILL_TOKEN_MAP,
                                            reaction_list=AwakeningListMenuPanes.get_user_reaction_list(sort_type))
             await menu.create(ctx, state)
@@ -898,7 +899,7 @@ class PadInfo(commands.Cog):
         menu = ClosableEmbedMenu.menu()
         props = AwakeningHelpViewProps(monster=monster, token_map=dbcog.AWOKEN_SKILL_TOKEN_MAP)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       query_settings, AwakeningHelpView.VIEW_TYPE, props)
+                                       qs, AwakeningHelpView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command(aliases=['idhist'])
@@ -1446,11 +1447,11 @@ class PadInfo(commands.Cog):
 
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         props = IdTracebackViewProps(monster=monster, score=score, name_tokens=ntokenstr, modifier_tokens=mtokenstr,
                                      lower_priority_monsters=lpstr if lower_prio else "None")
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       query_settings, IdTracebackView.VIEW_TYPE, props)
+                                       qs, IdTracebackView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command()
@@ -1489,10 +1490,10 @@ class PadInfo(commands.Cog):
 
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         props = ExperienceCurveViewProps(monster=monster, low=start, high=end, offset=offset)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query,
-                                       query_settings, ExperienceCurveView.VIEW_TYPE, props)
+                                       qs, ExperienceCurveView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     @commands.command()
