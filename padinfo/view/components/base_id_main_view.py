@@ -128,7 +128,6 @@ class BaseIdMainView(IdBaseView, ABC):
                           skilldisplay: SkillDisplay):
         if skilldisplay == SkillDisplay.skillnames:
             return active_skill.name_en
-        print(active_skill.desc_templated)
         jinja2_replacements = {
             'awoskills': {f"id{awid}": f"{get_awakening_emoji(awid)} {awo.name_en}"
                           for awid, awo in awoken_skill_map.items()}
