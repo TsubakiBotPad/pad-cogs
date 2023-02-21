@@ -166,10 +166,13 @@ class SpecialToken(QueryToken):
     async def special_matches(self, monster: MonsterModel) -> Tuple[Union[bool, float], MatchData]:
         return True, MatchData(self)
 
-    async def matches(self, monster, index):
+    async def matches(self, monster, index: MonsterIndex):
         mult, data = await self.special_matches(monster)
         if self.value in index.modifiers[monster] and mult <= 1:
             # If the full value is actually a modifier
+            return 1.0, TokenMatch(self.value, self.value, MatchData(self))
+        if monster in index.name_tokens[self.value].union(index.manual[self.value]) and mult <= 1:
+            # If the full value is actually a name token
             return 1.0, TokenMatch(self.value, self.value, MatchData(self))
         return mult, TokenMatch(self.value, '', data)
 
@@ -435,11 +438,11 @@ class _NotNull:
 
 
 class MultiAttributeToken(SpecialToken):
-    RE_MATCH = r"[rbgldx\?!]{2,3}"
+    RE_MATCH = r"(?:[rbgldx\?!]/?){2,3}"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         self.attrs = []
-        for a in fullvalue:
+        for a in fullvalue.replace('/',''):
             if a == 'r':
                 self.attrs.append(Attribute.Fire)
             elif a == 'b':
