@@ -678,8 +678,8 @@ class PadInfo(commands.Cog):
         initial_reaction_list = ScrollMenuPanes.get_initial_reaction_list(len(queried_props.monster_list))
         instruction_message = 'Click a reaction to see monster details!'
 
-        state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query,
-                                queried_props, qs,
+        state = ScrollViewState(original_author_id, ScrollViewState.VIEW_STATE_TYPE, query, qs,
+                                queried_props,
                                 title, instruction_message, monster.monster_id,
                                 child_menu_type=IdMenu.MENU_TYPE,
                                 child_reaction_list=IdMenuPanes.emoji_names(),

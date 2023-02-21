@@ -5,6 +5,7 @@ from discordmenu.embed.components import EmbedField, EmbedMain
 from discordmenu.embed.text import LabeledText
 from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -26,10 +27,10 @@ class IdTracebackView:
     VIEW_TYPE = 'IdTraceback'
 
     @staticmethod
-    def embed(state, props: IdTracebackViewProps):
+    def embed(state: ClosableEmbedViewState, props: IdTracebackViewProps):
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
                 description=Box(LabeledText('Total score', str(round(props.score, 2))))
             ),
