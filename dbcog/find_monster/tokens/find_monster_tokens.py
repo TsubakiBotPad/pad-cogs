@@ -394,15 +394,15 @@ class SameEvoTree(SubqueryToken):
                + list(self.dbcog.database.graph.get_monsters_with_same_id(monster))
 
 
-class AttributeToken(SpecialToken):
+class SingleAttributeToken(SpecialToken):
     RE_MATCH = r"[rbgldx]|red|fire|blue|water|green|wood|light|yellow|dark|purple|nil|none|null|white"
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
-        if fullvalue in ('r', 'red', 'fire'):
+        if fullvalue in ('r', 'fire', 'red'):
             self.attr = Attribute.Fire
-        elif fullvalue in ('b', 'blue', 'water'):
+        elif fullvalue in ('b', 'water', 'blue'):
             self.attr = Attribute.Water
-        elif fullvalue in ('g', 'green', 'wood'):
+        elif fullvalue in ('g', 'wood', 'green'):
             self.attr = Attribute.Wood
         elif fullvalue in ('l', 'light', 'yellow'):
             self.attr = Attribute.Light
@@ -414,11 +414,71 @@ class AttributeToken(SpecialToken):
         super().__init__(fullvalue, negated=negated, exact=exact, dbcog=dbcog)
 
     async def special_matches(self, monster):
-        if monster.attr1 == self.attr:
+        if monster.attr1 == self.attr or (monster.attr1 == Attribute.Nil and monster.attr2 == self.attr):
             return True, MatchData(self)
         if monster.attr2 == self.attr:
             # 2ε so it doesn't have mess with manual tokens for seasonals
             return 1 - (2 * EPSILON), MatchData(self, subattr_match=True, can_negate=False)
+        if monster.attr3 == self.attr:
+            return 1 - (3 * EPSILON), MatchData(self, subattr_match=True, can_negate=False)
+        return False, MatchData(self)
+
+
+class _AnyAttribute:
+    def __eq__(self, other):
+        return True
+
+
+class _NotNull:
+    def __eq__(self, other):
+        return other != Attribute.Nil
+
+
+class MultiAttributeToken(SpecialToken):
+    RE_MATCH = r"[rbgldx\?!]{2,3}"
+
+    def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
+        self.attrs = []
+        for a in fullvalue:
+            if a == 'r':
+                self.attrs.append(Attribute.Fire)
+            elif a == 'b':
+                self.attrs.append(Attribute.Water)
+            elif a == 'g':
+                self.attrs.append(Attribute.Wood)
+            elif a == 'l':
+                self.attrs.append(Attribute.Light)
+            elif a == 'd':
+                self.attrs.append(Attribute.Dark)
+            elif a == 'x':
+                self.attrs.append(Attribute.Nil)
+            elif a == '?':
+                self.attrs.append(_AnyAttribute())
+            elif a == '!':
+                self.attrs.append(_NotNull())
+        super().__init__(fullvalue, negated=negated, exact=exact, dbcog=dbcog)
+
+    async def special_matches(self, monster):
+        if len(self.attrs) == 3:
+            if self.attrs[0] == monster.attr1 and self.attrs[1] == monster.attr2 and self.attrs[2] == monster.attr3:
+                # 123
+                return True, MatchData(self)
+            if self.attrs[0] == monster.attr1 and self.attrs[1] == monster.attr3 and self.attrs[2] == monster.attr2:
+                # 132
+                return 1 - (2 * EPSILON), MatchData(self)
+        elif len(self.attrs) == 2:
+            if self.attrs[0] == monster.attr1 and self.attrs[1] == monster.attr2 and monster.attr3 == Attribute.Nil:
+                # 12x
+                return True, MatchData(self)
+            if self.attrs[0] == monster.attr1 and self.attrs[1] == monster.attr2:
+                # 12?
+                return 1 - (2 * EPSILON), MatchData(self)
+            if self.attrs[0] == monster.attr2 and self.attrs[1] == monster.attr3:
+                # ?12
+                return 1 - (3 * EPSILON), MatchData(self, subattr_match=True, can_negate=False)
+            if self.attrs[0] == monster.attr1 and self.attrs[1] == monster.attr3:
+                # 1?2
+                return 1 - (4 * EPSILON), MatchData(self)
         return False, MatchData(self)
 
 
@@ -558,7 +618,8 @@ SPECIAL_TOKEN_TYPES: Set[Type[SpecialToken]] = {
     HasMaterial,
     SeriesOf,
     SameEvoTree,
-    AttributeToken,
+    SingleAttributeToken,
+    MultiAttributeToken,
     OrToken,
     IDRangeToken,
 }

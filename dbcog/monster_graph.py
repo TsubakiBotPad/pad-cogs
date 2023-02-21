@@ -313,6 +313,7 @@ class MonsterGraph:
                                    collab_id=m.collab_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
+                                   attribute_3_id=m.attribute_3_id,
                                    name_ja=m.name_ja,
                                    name_en=m.name_en,
                                    name_ko=m.name_ko,
