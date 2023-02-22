@@ -554,11 +554,21 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=["ids"])
     @checks.bot_has_permissions(embed_links=True)
     async def idsearch(self, ctx, *, query):
+        """Usually called `[p]ids`. Receive several `[p]id` results at once, using a two menu sydtem.
+
+         Example queries:
+         - `[p]ids marvel 7*b rem` to get all 7* base rarity rem Marvel cards
+         - `[p]ids orbskin`to get all orb skins
+         - `[p]ids rb` to get all red-blue cards
+         """
         await self._do_idsearch(ctx, query)
 
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def nadiffs(self, ctx, *, query):
+        """See the differences between several NA & JP cards at once.
+        Example usage: `[p]nadiffs Heroine` or `[p]nadiffs orbskin`
+        """
         await self._do_idsearch(ctx, query, child_menu_type=NaDiffMenu.MENU_TYPE,
                                 child_reaction_list=NaDiffMenuPanes.emoji_names())
 
@@ -600,6 +610,9 @@ class PadInfo(commands.Cog):
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def evolist(self, ctx, *, query):
+        """See all evos of a card, using a two-menu system.
+        Example usage: `[p]evolist Jiraiya`
+        """
         dbcog = await self.get_dbcog()
         monster = await dbcog.find_monster(query, ctx.author.id)
 
@@ -665,6 +678,9 @@ class PadInfo(commands.Cog):
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def scroll(self, ctx, *, query: str):
+        """Scroll numerically through PAD cards, using a two-menu system.
+        Example usage: `[p]scroll Tsubaki`
+        """
         dbcog = await self.get_dbcog()
         monster = await dbcog.find_monster(query, ctx.author.id)
 
@@ -718,6 +734,9 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['collabscroll', 'ss'])
     @checks.bot_has_permissions(embed_links=True)
     async def seriesscroll(self, ctx, *, query):
+        """Scroll through a collab, grouped by rarity. Defaults to rarity 6.
+        Example usage: `[p]seriesscroll Marvel`
+        """
         dbcog = await self.get_dbcog()
         monster = await dbcog.find_monster(query, ctx.author.id)
 
@@ -826,6 +845,10 @@ class PadInfo(commands.Cog):
     @commands.command(aliases=['lssingle'])
     @checks.bot_has_permissions(embed_links=True)
     async def leaderskillsingle(self, ctx, *, query):
+        """See the 1x of a leaderskill, without implying a mirror pair
+
+        Example usage: `[p]lssingle Nautilus`
+        """
         dbcog = await self.get_dbcog()
         monster = await dbcog.find_monster(query, ctx.author.id)
         if not monster:
@@ -1457,6 +1480,9 @@ class PadInfo(commands.Cog):
     @commands.command()
     @checks.bot_has_permissions(embed_links=True)
     async def expcurve(self, ctx, start, end: Optional[int], *, query=''):
+        """See the experience needed to max level a card.
+        Example usage: `[p]expcurve Tsubaki`
+        """
         if start.isdigit() and end is None and not query:
             start, end, query = '', None, start
 
