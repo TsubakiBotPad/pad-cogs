@@ -21,7 +21,7 @@ class EvosViewState(ViewStateBaseId):
                  alt_versions: List["MonsterModel"], gem_versions: List["MonsterModel"],
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, qs, query, monster,
+        super().__init__(original_author_id, menu_type, raw_query, query, qs, monster,
                          alt_monsters, is_jp_buffed,
                          reaction_list=reaction_list,
                          extra_state=extra_state)

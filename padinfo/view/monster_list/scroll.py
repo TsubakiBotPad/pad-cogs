@@ -97,10 +97,10 @@ class ScrollViewState(MonsterListViewState):
         if prev_monster is None:
             # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
             return
-        monster_list = await self.do_query(dbcog, prev_monster)
+        query_result = await self.do_query(dbcog, prev_monster)
 
         self._current_monster_id = prev_monster.monster_id
-        self.paginated_monsters = [monster_list]
+        self.paginated_monsters = [query_result.monster_list]
 
     async def increment_index(self, dbcog):
         db_context: "DbContext" = dbcog.database
@@ -109,10 +109,10 @@ class ScrollViewState(MonsterListViewState):
         if next_monster is None:
             # TODO: raise an error here so that the "omg yikes" sign shows up once that's based on an error again
             return
-        monster_list = await self.do_query(dbcog, next_monster)
+        query_result = await self.do_query(dbcog, next_monster)
 
         self._current_monster_id = next_monster.monster_id
-        self.paginated_monsters = [monster_list]
+        self.paginated_monsters = [query_result.monster_list]
 
     @classmethod
     async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:

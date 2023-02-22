@@ -2,7 +2,7 @@ from typing import List, TYPE_CHECKING
 
 from tsutils.query_settings.query_settings import QuerySettings
 
-from padinfo.view.monster_list.monster_list import MonsterListViewState
+from padinfo.view.monster_list.monster_list import MonsterListViewState, MonsterListQueriedProps
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -26,8 +26,8 @@ class StaticMonsterListViewState(MonsterListViewState):
         return monster_list
 
     @classmethod
-    async def query_from_ims(cls, dbcog, ims) -> List["MonsterModel"]:
+    async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         monster_ids = ims['full_monster_list']
         qs = QuerySettings.deserialize(ims['qs'])
         monster_list = await cls.do_query(dbcog, monster_ids, qs.server)
-        return monster_list
+        return MonsterListQueriedProps(monster_list)
