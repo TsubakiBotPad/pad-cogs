@@ -442,7 +442,7 @@ class MultiAttributeToken(SpecialToken):
 
     def __init__(self, fullvalue, *, negated=False, exact=False, dbcog):
         self.attrs = []
-        for a in fullvalue.replace('/',''):
+        for a in fullvalue.replace('/', ''):
             if a == 'r':
                 self.attrs.append(Attribute.Fire)
             elif a == 'b':
