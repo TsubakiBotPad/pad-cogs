@@ -11,13 +11,13 @@ from redbot.core.utils import AsyncIter
 from tsutils.enums import Server
 from tsutils.formatting import contains_ja
 
+from dbcog.find_monster.token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, EVO_MAP, EvoTypes, \
+    HAZARDOUS_IN_NAME_MODS, KNOWN_MODIFIERS, LEGAL_END_TOKENS, MISC_MAP, MULTI_WORD_TOKENS, MiscModifiers, \
+    PROBLEMATIC_SERIES_TOKENS, TYPE_MAP
 from .errors import InvalidGraphState
-from .models.enum_types import AwokenSkills, DEFAULT_SERVER
+from .models.enum_types import Attribute, AwokenSkills, DEFAULT_SERVER
 from .models.monster_model import MonsterModel
 from .monster_graph import MonsterGraph
-from dbcog.find_monster.token_mappings import ALL_TOKEN_DICTS, AWOKEN_SKILL_MAP, COLOR_MAP, DUAL_COLOR_MAP, EVO_MAP, EvoTypes, \
-    HAZARDOUS_IN_NAME_MODS, KNOWN_MODIFIERS, LEGAL_END_TOKENS, MISC_MAP, MULTI_WORD_TOKENS, MiscModifiers, \
-    PROBLEMATIC_SERIES_TOKENS, SUB_COLOR_MAP, TYPE_MAP
 
 logger = logging.getLogger('red.pad-cogs.dbcog.monster_index')
 
@@ -388,16 +388,9 @@ class MonsterIndex:
 
         basemon = self.graph.get_base_monster(monster)
 
-        # Main Color
-        modifiers.update(COLOR_MAP[monster.attr1])
-
-        # Sub Color
-        modifiers.update(SUB_COLOR_MAP[monster.attr2])
-        if monster.attr1.value == 6:
-            modifiers.update(COLOR_MAP[monster.attr2])
-
-        # Both Colors
-        modifiers.update(DUAL_COLOR_MAP[(monster.attr1, monster.attr2)])
+        # Attribute is now done with a special token
+        if Attribute.Nil not in (monster.attr1, monster.attr2, monster.attr3):
+            modifiers.update(MISC_MAP[MiscModifiers.NONULLATTR])
 
         # Type
         for mt in monster.types:

@@ -80,6 +80,7 @@ class MonsterModel(BaseModel):
         self.reg_date: datetime = m['reg_date']
         self.attr1: Optional[Attribute] = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
         self.attr2: Optional[Attribute] = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
+        self.attr3: Optional[Attribute] = enum_or_none(Attribute, m['attribute_3_id'], Attribute.Nil)
         self.is_equip: bool = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable: bool = m['is_inheritable']
         self.is_stackable: bool = m['is_stackable']
