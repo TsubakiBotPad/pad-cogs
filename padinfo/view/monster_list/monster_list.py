@@ -1,19 +1,17 @@
-from typing import List, Optional, TYPE_CHECKING, Dict
+from typing import List, Optional, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain
+from discordmenu.embed.components import EmbedField
 from discordmenu.embed.text import BoldText
-from discordmenu.embed.view import EmbedView
 from tsutils.emoji import char_to_emoji
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.menu.view.view_state_base import ViewStateBase
+from tsutils.menu.pad_view import PadView, PadViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.monster_header import MonsterHeader
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
-    from dbcog.find_monster.extra_info import SubqueryData, ExtraInfo
+    from dbcog.find_monster.extra_info import ExtraInfo
 
 
 class MonsterListQueriedProps:
@@ -22,12 +20,12 @@ class MonsterListQueriedProps:
         self.monster_list = monster_list
 
 
-class MonsterListViewState(ViewStateBase):
+class MonsterListViewState(PadViewState):
     VIEW_STATE_TYPE: str
     MAX_ITEMS_PER_PANE = 11
 
-    def __init__(self, original_author_id, menu_type, query,
-                 queried_props: MonsterListQueriedProps, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, query, qs: QuerySettings,
+                 queried_props: MonsterListQueriedProps,
                  title, message,
                  *,
                  current_page: int = 0,
@@ -38,7 +36,7 @@ class MonsterListViewState(ViewStateBase):
                  extra_state=None,
                  child_message_id=None
                  ):
-        super().__init__(original_author_id, menu_type, query,
+        super().__init__(original_author_id, menu_type, query, query, qs,
                          extra_state=extra_state)
         paginated_monsters = self.paginate(queried_props.monster_list)
         self.queried_props = queried_props
@@ -54,7 +52,6 @@ class MonsterListViewState(ViewStateBase):
         self.paginated_monsters = paginated_monsters
         self.reaction_list = reaction_list
         self.query = query
-        self.query_settings = query_settings
 
     @property
     def current_monster_id(self) -> Optional[int]:
@@ -72,7 +69,6 @@ class MonsterListViewState(ViewStateBase):
             'pane_type': MonsterListView.VIEW_TYPE,
             'title': self.title,
             'monster_list': [m.monster_id for m in self.monster_list],
-            'query_settings': self.query_settings.serialize(),
             'current_page': self.current_page,
             'reaction_list': self.reaction_list,
             'child_message_id': self.child_message_id,
@@ -89,7 +85,7 @@ class MonsterListViewState(ViewStateBase):
             'reaction_list': self.child_reaction_list,
             'menu_type': self.child_menu_type,
             'resolved_monster_id': self.current_monster_id,
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.qs.serialize(),
             'idle_message': self.idle_message,
         }
         return extra_ims
@@ -106,7 +102,7 @@ class MonsterListViewState(ViewStateBase):
 
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
@@ -114,8 +110,8 @@ class MonsterListViewState(ViewStateBase):
         child_menu_type = ims.get('child_menu_type')
         child_reaction_list = ims.get('child_reaction_list')
         idle_message = ims.get('idle_message')
-        return cls(original_author_id, menu_type, query,
-                   queried_props, query_settings,
+        return cls(original_author_id, menu_type, query, qs,
+                   queried_props,
                    title, idle_message,
                    current_page=current_page,
                    current_index=current_index,
@@ -196,17 +192,17 @@ class MonsterListViewState(ViewStateBase):
         self.current_index = new_index
 
 
-class MonsterListView:
+class MonsterListView(PadView):
     VIEW_TYPE = 'MonsterList'
 
     @classmethod
-    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, query_settings: QuerySettings,
+    def monster_list(cls, monsters: List["MonsterModel"], current_monster_id: int, qs: QuerySettings,
                      offset=0):
         if not len(monsters):
             return []
         return [MonsterHeader.box_with_emoji(
             mon, link=True, prefix=cls.get_emoji(offset + i, current_monster_id),
-            query_settings=query_settings) for i, mon in enumerate(monsters)]
+            qs=qs) for i, mon in enumerate(monsters)]
 
     @classmethod
     def get_emoji(cls, i: int, _current_monster_id: int):
@@ -219,18 +215,18 @@ class MonsterListView:
         return state.queried_props.extra_info.subquery_data
 
     @classmethod
-    def get_title(cls, state):
+    def embed_title(cls, state: MonsterListViewState) -> Optional[str]:
         if not cls.has_subqueries(state):
             return None
         return state.title
 
     @classmethod
-    def embed(cls, state: MonsterListViewState):
+    def embed_fields(cls, state: MonsterListViewState) -> List[EmbedField]:
         fields = []
         if not cls.has_subqueries(state):
             fields.append(
                 EmbedField(state.title,
-                           Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.query_settings)))
+                           Box(*cls.monster_list(state.monster_list, state.current_monster_id, state.qs)))
             )
 
         else:
@@ -242,13 +238,13 @@ class MonsterListView:
                 subq_id = state.extra_info.get_subquery_mon(m.monster_id)
                 if cur_mon_list and subq_id != cur_subq_id:
                     title = MonsterHeader.box_with_emoji(
-                        state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings,
+                        state.extra_info.get_monster(cur_subq_id), qs=state.qs,
                         link=False)
                     fields.append(
                         EmbedField(
                             title,
                             Box(*cls.monster_list(
-                                cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
+                                cur_mon_list, state.current_monster_id, state.qs, offset=offset)))
                     )
                     cur_mon_list = []
                     offset += i
@@ -258,23 +254,16 @@ class MonsterListView:
                 i += 1
 
             title = MonsterHeader.box_with_emoji(
-                state.extra_info.get_monster(cur_subq_id), query_settings=state.query_settings, link=False)
+                state.extra_info.get_monster(cur_subq_id), qs=state.qs, link=False)
             fields.append(
                 EmbedField(
                     title,
                     Box(*cls.monster_list(
-                        cur_mon_list, state.current_monster_id, state.query_settings, offset=offset)))
+                        cur_mon_list, state.current_monster_id, state.qs, offset=offset)))
             )
 
         fields.append(EmbedField(BoldText('Page'),
                                  Box('{} of {}'.format(state.current_page + 1, state.page_count)),
                                  inline=True
                                  ))
-
-        return EmbedView(
-            EmbedMain(
-                title=cls.get_title(state),
-                color=state.query_settings.embedcolor,
-            ),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
-            embed_fields=fields)
+        return fields

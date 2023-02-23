@@ -266,9 +266,9 @@ class AdPEMStats(CogMixin):
         most_common = Counter(m for m in total if m in monsters).most_common(1)[0][0]
         menu = ClosableEmbedMenu.menu()
         props = ShowStatsViewProps(total, adj, you, valid, most_common)
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, query)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, query)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, query.replace('"', ''),
-                                       query_settings, ShowStatsView.VIEW_TYPE, props)
+                                       qs, ShowStatsView.VIEW_TYPE, props)
 
         await menu.create(ctx, state)
 

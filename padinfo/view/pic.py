@@ -1,17 +1,13 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedBodyImage, EmbedField, EmbedMain
+from discordmenu.embed.components import EmbedBodyImage, EmbedField, EmbedThumbnail
 from discordmenu.embed.text import LinkedText, Text
-from discordmenu.embed.view import EmbedView
 from tsutils.formatting import filesize
-from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.tsubaki.links import MonsterImage, MonsterLink
-from tsutils.tsubaki.monster_header import MonsterHeader
+from tsutils.tsubaki.links import MonsterImage
 
-from padinfo.view.base import BaseIdView
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -27,7 +23,7 @@ class PicViewState(ViewStateBaseId):
         return ret
 
 
-class PicView(BaseIdView, EvoScrollView):
+class PicView(IdBaseView, EvoScrollView):
     VIEW_TYPE = 'Pic'
 
     @classmethod
@@ -63,24 +59,18 @@ class PicView(BaseIdView, EvoScrollView):
         )
 
     @classmethod
-    def embed(cls, state: PicViewState):
+    def embed_fields(cls, state: PicViewState) -> List[EmbedField]:
         m = state.monster
-        url = MonsterImage.picture(state.monster.monster_id)
-        fields = [
+        return [
             cls.animation_field(m),
             cls.orb_skin_field(m),
             cls.evos_embed_field(state)
         ]
 
-        return EmbedView(
-            EmbedMain(
-                color=state.query_settings.embedcolor,
-                title=MonsterHeader.menu_title(state.monster,
-                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(state.monster, state.query_settings)
-            ),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
-            embed_fields=fields,
-            embed_body_image=EmbedBodyImage(url),
-        )
+    @classmethod
+    def embed_body_image(cls, state: PicViewState) -> Optional[EmbedBodyImage]:
+        return EmbedBodyImage(MonsterImage.picture(state.monster.monster_id))
+
+    @classmethod
+    def embed_thumbnail(cls, state: PicViewState) -> Optional[EmbedThumbnail]:
+        return None

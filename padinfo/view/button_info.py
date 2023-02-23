@@ -1,12 +1,10 @@
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional, Union
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedAuthor, EmbedField, EmbedMain
+from discordmenu.embed.components import EmbedAuthor, EmbedField
 from discordmenu.embed.text import BlockText, Text
-from discordmenu.embed.view import EmbedView
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
-from tsutils.menu.view.view_state_base import ViewStateBase
+from tsutils.menu.pad_view import PadView, PadViewState
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
@@ -36,17 +34,17 @@ class ButtonInfoToggles:
         self.max_level = max_level_setting
 
 
-class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
-    def __init__(self, original_author_id, menu_type, raw_query, display_options: ButtonInfoToggles,
+class ButtonInfoViewState(PadViewState, EvoScrollViewState):
+    def __init__(self, original_author_id, menu_type, raw_query, qs: QuerySettings,
+                 display_options: ButtonInfoToggles,
                  monster: "MonsterModel", alt_monsters: List[MonsterEvolution],
-                 info: ButtonInfoResult, query_settings: QuerySettings,
+                 info: ButtonInfoResult,
                  reaction_list: List[str] = None):
-        super().__init__(original_author_id, menu_type, raw_query, extra_state=None, reaction_list=reaction_list)
+        super().__init__(original_author_id, menu_type, raw_query, raw_query, qs, extra_state=None)
         self.display_options = display_options
         self.monster = monster
         self.info = info
-        self.query_settings = query_settings
-
+        self.reaction_list = reaction_list
         self.alt_monsters = alt_monsters
         self.alt_monster_ids = [m.monster.monster_id for m in self.alt_monsters]
 
@@ -58,7 +56,7 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
             'device_setting': self.display_options.device,
             'max_level_setting': self.display_options.max_level,
             'resolved_monster_id': self.monster.monster_id,
-            'query_settings': self.query_settings.serialize()
+            'reaction_list': self.reaction_list
         })
         return ret
 
@@ -67,14 +65,14 @@ class ButtonInfoViewState(ViewStateBase, EvoScrollViewState):
         raw_query = ims['raw_query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        query_settings = QuerySettings.deserialize(ims['query_settings'])
+        qs = QuerySettings.deserialize(ims['qs'])
         display_options = ButtonInfoToggles(ims['players_setting'], ims['device_setting'], ims['max_level_setting'])
         monster = dbcog.get_monster(int(ims['resolved_monster_id']))
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         info = button_info.get_info(dbcog, monster)
         reaction_list = ims['reaction_list']
-        return ButtonInfoViewState(original_author_id, menu_type, raw_query, display_options,
-                                   monster, alt_monsters, info, query_settings, reaction_list=reaction_list)
+        return ButtonInfoViewState(original_author_id, menu_type, raw_query, qs, display_options,
+                                   monster, alt_monsters, info, reaction_list=reaction_list)
 
     def set_player_count(self, new_count):
         self.display_options.players = new_count
@@ -107,7 +105,7 @@ def get_mobile_btn_str(btn_str):
     return '\n'.join(output)
 
 
-class ButtonInfoView(EvoScrollView):
+class ButtonInfoView(EvoScrollView, PadView):
     VIEW_TYPE = 'ButtonInfo'
 
     @staticmethod
@@ -124,7 +122,20 @@ class ButtonInfoView(EvoScrollView):
         )
 
     @classmethod
-    def embed(cls, state: ButtonInfoViewState):
+    def embed_description(cls, state: ButtonInfoViewState) -> Optional[Union[Box, str]]:
+        is_coop = state.display_options.players == ButtonInfoOptions.coop
+        return '(Co-op mode)' if is_coop else '(Singleplayer mode)'
+
+    @classmethod
+    def embed_author(cls, state: ButtonInfoViewState) -> Optional[EmbedAuthor]:
+        return EmbedAuthor(
+            MonsterHeader.menu_title(state.monster).to_markdown(),
+            MonsterLink.header_link(state.monster, state.qs),
+            MonsterImage.icon(state.monster.monster_id)
+        )
+
+    @classmethod
+    def embed_fields(cls, state: ButtonInfoViewState) -> List[EmbedField]:
         is_coop = state.display_options.players == ButtonInfoOptions.coop
         is_desktop = state.display_options.device == ButtonInfoOptions.desktop
         max_110 = state.display_options.max_level == ButtonInfoOptions.limit_break
@@ -197,17 +208,4 @@ class ButtonInfoView(EvoScrollView):
             ) if not is_desktop else None,
             cls.evos_embed_field(state)
         ]
-
-        return EmbedView(
-            EmbedMain(
-                color=state.query_settings.embedcolor,
-                description='(Co-op mode)' if is_coop else '(Singleplayer mode)'
-            ),
-            embed_author=EmbedAuthor(
-                MonsterHeader.menu_title(monster).to_markdown(),
-                MonsterLink.header_link(monster, state.query_settings),
-                MonsterImage.icon(monster.monster_id)
-            ),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
-            embed_fields=fields
-        )
+        return fields

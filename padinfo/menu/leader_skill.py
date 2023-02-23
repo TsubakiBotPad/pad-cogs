@@ -21,10 +21,9 @@ class LeaderSkillMenu:
     async def respond_with_right(message: Optional[Message], ims, **data):
         dbcog = data['dbcog']
         user_config = data['user_config']
-
         # Extract the query from the ls state
         ims['query'] = ims['r_query']
-        ims['query_settings'] = ims['r_query_settings']
+        ims['qs'] = ims['rqs']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
@@ -37,7 +36,7 @@ class LeaderSkillMenu:
 
         # Extract the query from the ls state
         ims['query'] = ims['l_query']
-        ims['query_settings'] = ims['l_query_settings']
+        ims['qs'] = ims['lqs']
         ims['resolved_monster_id'] = None
         id_view_state = await IdViewState.deserialize(dbcog, user_config, ims)
         id_control = LeaderSkillMenu.id_control(id_view_state)
