@@ -1,19 +1,15 @@
 from typing import List, TYPE_CHECKING
 
 from discordmenu.embed.base import Box
-from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
-from discordmenu.embed.view import EmbedView
+from discordmenu.embed.components import EmbedField
 from tsutils.menu.components.config import UserConfig
-from tsutils.menu.components.footers import embed_footer_with_state
 from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_enum, get_attribute_emoji_by_monster, get_rarity_emoji
-from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 
-from padinfo.view.base import BaseIdView
 from padinfo.view.common import get_monster_from_ims
 from padinfo.view.components.evo_scroll_mixin import EvoScrollView, MonsterEvolution
-from padinfo.view.components.view_state_base_id import ViewStateBaseId
+from padinfo.view.components.view_state_base_id import ViewStateBaseId, IdBaseView
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -24,13 +20,14 @@ NIL_ATT = 'Nil'
 
 
 class PantheonViewState(ViewStateBaseId):
-    def __init__(self, original_author_id, menu_type, raw_query, query, monster: "MonsterModel",
-                 alt_monsters, is_jp_buffed, query_settings,
+    def __init__(self, original_author_id, menu_type, raw_query, query, qs: QuerySettings,
+                 monster: "MonsterModel",
+                 alt_monsters, is_jp_buffed,
                  pantheon_list: List[MonsterEvolution], series_name: str, base_monster,
                  reaction_list: List[str] = None,
                  extra_state=None):
-        super().__init__(original_author_id, menu_type, raw_query, query, monster,
-                         alt_monsters, is_jp_buffed, query_settings,
+        super().__init__(original_author_id, menu_type, raw_query, query, qs, monster,
+                         alt_monsters, is_jp_buffed,
                          reaction_list=reaction_list,
                          extra_state=extra_state)
         self.series_name = series_name
@@ -57,14 +54,14 @@ class PantheonViewState(ViewStateBaseId):
         alt_monsters = cls.get_alt_monsters_and_evos(dbcog, monster)
         raw_query = ims['raw_query']
         query = ims.get('query') or raw_query
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         reaction_list = ims.get('reaction_list')
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(monster)
 
-        return cls(original_author_id, menu_type, raw_query, query, monster,
-                   alt_monsters, is_jp_buffed, query_settings,
+        return cls(original_author_id, menu_type, raw_query, query, qs, monster,
+                   alt_monsters, is_jp_buffed,
                    pantheon_list, series_name, base_monster,
                    reaction_list=reaction_list,
                    extra_state=ims)
@@ -147,34 +144,22 @@ class PantheonViewState(ViewStateBaseId):
         return pantheon_list, cls.make_series_name(series_name, filters), base_mon
 
 
-def _pantheon_lines(monsters, base_monster, query_settings):
+def _pantheon_lines(monsters, base_monster, qs):
     if not len(monsters):
         return []
     return [
-        MonsterHeader.box_with_emoji(mon, link=mon.monster_id != base_monster.monster_id, query_settings=query_settings)
+        MonsterHeader.box_with_emoji(mon, link=mon.monster_id != base_monster.monster_id, qs=qs)
         for mon in sorted(monsters, key=lambda x: int(x.monster_id))
     ]
 
 
-class PantheonView(BaseIdView, EvoScrollView):
+class PantheonView(IdBaseView, EvoScrollView):
     VIEW_TYPE = 'Pantheon'
 
     @classmethod
-    def embed(cls, state: PantheonViewState):
-        fields = [EmbedField(
+    def embed_fields(cls, state: PantheonViewState) -> List[EmbedField]:
+        return [EmbedField(
             'Pantheon: {}'.format(state.series_name),
-            Box(*_pantheon_lines(state.pantheon_list, state.base_monster, state.query_settings))
+            Box(*_pantheon_lines(state.pantheon_list, state.base_monster, state.qs))
         ),
             cls.evos_embed_field(state)]
-
-        return EmbedView(
-            EmbedMain(
-                color=state.query_settings.embedcolor,
-                title=MonsterHeader.menu_title(state.monster,
-                                               is_tsubaki=state.alt_monsters[0].monster.monster_id == cls.TSUBAKI,
-                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(state.monster, state.query_settings)),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
-            embed_fields=fields,
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(state.monster.monster_id)),
-        )

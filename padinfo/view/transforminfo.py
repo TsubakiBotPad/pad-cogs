@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.components import EmbedField, EmbedMain, EmbedThumbnail
@@ -14,6 +14,7 @@ from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 
 from padinfo.view.components.base_id_main_view import BaseIdMainView
+from padinfo.view.components.padinfo_view import PadinfoViewState
 
 if TYPE_CHECKING:
     from dbcog.models.monster_model import MonsterModel
@@ -27,11 +28,12 @@ class TransformInfoQueriedProps:
         self.awoken_skill_map = awoken_skill_map
 
 
-class TransformInfoViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, raw_query, base_mon, transformed_mon,
-                 tfinfo_queried_props: TransformInfoQueriedProps, monster_ids, is_jp_buffed, query_settings,
+class TransformInfoViewState(PadinfoViewState):
+    def __init__(self, original_author_id, menu_type, raw_query, query, qs: QuerySettings,
+                 transformed_mon, base_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
                  reaction_list):
-        super().__init__(original_author_id, menu_type, raw_query, extra_state=None)
+        super().__init__(original_author_id, menu_type, raw_query, query, qs, transformed_mon,
+                         extra_state=None)
         self.base_mon = base_mon
         self.transformed_mon = transformed_mon
         self.acquire_raw = tfinfo_queried_props.acquire_raw
@@ -39,39 +41,38 @@ class TransformInfoViewState(ViewStateBase):
         self.awoken_skill_map = tfinfo_queried_props.awoken_skill_map
         self.monster_ids = monster_ids
         self.is_jp_buffed = is_jp_buffed
-        self.query_settings: QuerySettings = query_settings
         self.reaction_list = reaction_list
 
     def serialize(self):
         ret = super().serialize()
         ret.update({
-            'query_settings': self.query_settings.serialize(),
             'resolved_monster_ids': self.monster_ids,
             'reaction_list': self.reaction_list
         })
         return ret
 
     @staticmethod
-    async def deserialize(dbcog, user_config: UserConfig, ims: dict):
+    async def deserialize(dbcog, user_config: UserConfig, ims: dict):  # noqa
         raw_query = ims['raw_query']
+        query = ims['query']
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
         monster_ids = ims['resolved_monster_ids']
         base_mon_id = monster_ids[0]
         transformed_mon_id = monster_ids[1]
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
 
-        base_mon = dbcog.get_monster(base_mon_id, server=query_settings.server)
-        transformed_mon = dbcog.get_monster(transformed_mon_id, server=query_settings.server)
+        base_mon = dbcog.get_monster(base_mon_id, server=qs.server)
+        transformed_mon = dbcog.get_monster(transformed_mon_id, server=qs.server)
 
         tfinfo_queried_props = await TransformInfoViewState.do_query(dbcog, transformed_mon)
         reaction_list = ims['reaction_list']
         is_jp_buffed = dbcog.database.graph.monster_is_discrepant(
             base_mon) or dbcog.database.graph.monster_is_discrepant(transformed_mon)
 
-        return TransformInfoViewState(original_author_id, menu_type, raw_query,
-                                      base_mon, transformed_mon, tfinfo_queried_props, monster_ids, is_jp_buffed,
-                                      query_settings,
+        return TransformInfoViewState(original_author_id, menu_type, query, raw_query, qs,
+                                      transformed_mon, base_mon, tfinfo_queried_props,
+                                      monster_ids, is_jp_buffed,
                                       reaction_list=reaction_list)
 
     @staticmethod
@@ -170,9 +171,9 @@ class TransformInfoView(BaseIdMainView):
         )
 
     @classmethod
-    def embed(cls, state: TransformInfoViewState):
+    def embed_fields(cls, state: TransformInfoViewState) -> List[EmbedField]:
         base_mon = state.base_mon
-        qs = state.query_settings
+        qs = state.qs
         transformed_mon = state.transformed_mon
         lsmultiplier = qs.lsmultiplier
         fields = [
@@ -220,16 +221,10 @@ class TransformInfoView(BaseIdMainView):
                 )
             )
         ]
+        return fields
 
-        return EmbedView(
-            EmbedMain(
-                color=qs.embedcolor,
-                title=MonsterHeader.menu_title(transformed_mon,
-                                               is_tsubaki=False,
-                                               is_jp_buffed=state.is_jp_buffed).to_markdown(),
-                url=MonsterLink.header_link(transformed_mon, qs)
-            ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(transformed_mon.monster_id)),
-            embed_footer=embed_footer_with_state(state, qs=qs),
-            embed_fields=fields
-        )
+    @classmethod
+    def embed_title(cls, state: TransformInfoViewState) -> Optional[str]:
+        m = state.monster
+        return MonsterHeader.menu_title(m,
+                                        is_jp_buffed=state.is_jp_buffed).to_markdown()

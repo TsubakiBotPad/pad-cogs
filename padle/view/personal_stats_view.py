@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 
 
 class PersonalStatsViewProps:
-    def __init__(self, query_settings: QuerySettings, username: str, played: int, win_rate: float,
+    def __init__(self, qs: QuerySettings, username: str, played: int, win_rate: float,
                  cur_streak: int, max_streak: int, favorite_monster: "MonsterModel"):
-        self.query_settings = query_settings
+        self.qs = qs
         self.username = username
         self.played = played
         self.win_rate = win_rate
@@ -36,8 +36,8 @@ class PersonalStatsView:
                              f"**Current Streak**: {props.cur_streak}\n"
                              f"**Max Streak**: {props.max_streak}\n"
                              f"**Favorite Guessed Monster**: {MonsterHeader.menu_title(props.monster).to_markdown()}"),
-                color=props.query_settings.embedcolor),
+                color=props.qs.embedcolor),
             embed_thumbnail=EmbedThumbnail(
                 MonsterImage.icon(props.monster.monster_id)),
             embed_footer=embed_footer_with_state(
-                state, text="Click the X to close.", qs=state.query_settings))
+                state, text="Click the X to close.", qs=state.qs))

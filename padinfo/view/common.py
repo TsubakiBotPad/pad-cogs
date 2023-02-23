@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 
 from discordmenu.embed.base import Box
 from discordmenu.embed.text import BoldText, Text
@@ -13,17 +13,17 @@ if TYPE_CHECKING:
 
 async def get_monster_from_ims(dbcog, ims: dict):
     query = ims.get('query') or ims['raw_query']
-    query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+    qs = QuerySettings.deserialize(ims.get('qs'))
 
     resolved_monster_id_str = ims.get('resolved_monster_id')
     resolved_monster_id = int(resolved_monster_id_str or 0)
     if resolved_monster_id:
-        return dbcog.database.graph.get_monster(resolved_monster_id, server=query_settings.server)
+        return dbcog.database.graph.get_monster(resolved_monster_id, server=qs.server)
     monster = await dbcog.find_monster(query, ims['original_author_id'])
     return monster
 
 
-def get_awoken_skill_description(awoken_skill: "AwokenSkillModel", show_help: bool = False, token_map: dict = None):
+def get_awoken_skill_description(awoken_skill: "AwokenSkillModel", show_help: Union[bool, Any] = False, token_map: dict = None):
     if token_map is None:
         token_map = {}
     emoji_text = get_awakening_emoji(awoken_skill.awoken_skill_id, awoken_skill.name)

@@ -60,7 +60,7 @@ class DungeonListBase:
     def embed(cls, state: ClosableEmbedViewState, props: DungeonListViewProps):
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 description=cls.description(props)
             ),
             embed_footer=embed_footer_with_state(state),

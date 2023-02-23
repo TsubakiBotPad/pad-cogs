@@ -776,15 +776,15 @@ class PadGlobal(commands.Cog):
                 await ctx.author.send(box(page))
             return
 
-        name, definition, timestamp, success = await self._resolve_which(ctx, term)
-        if name is None or definition is None:
+        monster, definition, timestamp, success = await self._resolve_which(ctx, term)
+        if monster is None or definition is None:
             return
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, term)
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, term)
         original_author_id = ctx.message.author.id
         menu = ClosableEmbedMenu.menu()
-        props = WhichViewProps(name=name, definition=definition, timestamp=timestamp, success=success)
+        props = WhichViewProps(monster=monster, definition=definition, timestamp=timestamp, success=success)
         state = ClosableEmbedViewState(original_author_id, ClosableEmbedMenu.MENU_TYPE, term,
-                                       query_settings, WhichView.VIEW_TYPE, props)
+                                       qs, WhichView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
     async def _resolve_which(self, ctx, term):
@@ -799,7 +799,6 @@ class PadGlobal(commands.Cog):
 
         m = db_context.graph.get_base_monster(m)
 
-        name = get_attribute_emoji_by_monster(m) + " " + m.name_en.split(",")[-1].strip()
         monster_id = m.monster_id
         definition = self.settings.which().get(monster_id, None)
         timestamp = UNKNOWN_EDIT_TIMESTAMP
@@ -808,7 +807,7 @@ class PadGlobal(commands.Cog):
             definition, timestamp = definition
 
         if definition is not None:
-            return name, definition, timestamp, True
+            return m, definition, timestamp, True
 
         monster = dbcog.get_monster(monster_id)
 

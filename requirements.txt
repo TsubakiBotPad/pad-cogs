@@ -22,7 +22,7 @@ commonmark==0.9.1
 contextlib2==21.6.0
 contourpy==1.0.5
 cycler==0.11.0
-discord-menu==0.16.15
+discord-menu
 discord.py @ git+https://github.com/Rapptz/discord.py@3d914e08e0c7df370987592affb3655d2a12f7d1
 distro==1.6.0
 fastapi==0.85.1
