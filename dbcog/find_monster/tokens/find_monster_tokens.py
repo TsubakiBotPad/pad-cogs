@@ -173,7 +173,7 @@ class SpecialToken(QueryToken):
             return 1.0, TokenMatch(self.value, self.value, MatchData(self))
         if monster in index.name_tokens[self.value].union(index.manual[self.value]) and mult <= 1:
             # If the full value is actually a name token
-            return 1.0, TokenMatch(self.value, self.value, MatchData(self))
+            return 1.0 - EPSILON, TokenMatch(self.value, self.value, MatchData(self))
         return mult, TokenMatch(self.value, '', data)
 
     async def prepare(self):
