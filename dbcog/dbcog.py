@@ -424,13 +424,9 @@ class DBCog(commands.Cog, IdTest):
         stable = [(series[k].name_en, ", ".join(map(inline, v)))
                   for k, v in (await self.get_index(server)).series_id_to_pantheon_nickname.items()]
         ret += "\n\n### Series\n\n" + tabulate(stable, headers=["Meaning", "Tokens"], tablefmt="github")
-        ctable = [(k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in maps.COLOR_MAP.items()]
-        ctable += [("Sub " + k.name.replace("Nil", "None"), ", ".join(map(inline, v))) for k, v in
-                   maps.SUB_COLOR_MAP.items()]
-        for k, v in maps.DUAL_COLOR_MAP.items():
-            k0name = k[0].name.replace("Nil", "None")
-            k1name = k[1].name.replace("Nil", "None")
-            ctable.append((k0name + "/" + k1name, ", ".join(map(inline, v))))
-        ret += "### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ctable = [('Fire', 'r'), ('Water', 'b'), ('Wood', 'g'), ('Light', 'l'), ('Dark', 'd'),
+                  ('None', 'x'), ('Wildcard', '?'), ('Not None', '!')]
+        ret += "\n\n### Attributes\n\n" + tabulate(ctable, headers=["Meaning", "Tokens"], tablefmt="github")
+        ret += "\n\nChain up to 3 of them for more combinations!"
 
         await ctx.send(file=text_to_file(ret, filename="table.md"))

@@ -1263,7 +1263,6 @@ class PadInfo(commands.Cog):
                f"     Treenames: {' '.join(sorted(t for t, ms in index.manual_treenames.items() if mon in ms))}\n"
                f"     Nicknames: {' '.join(sorted(t for t, ms in index.manual_cardnames.items() if mon in ms))}\n\n"
                f"[Modifier Tokens]\n"
-               f"     Attribute: {mod_token_str(lambda t: t.split('-')[0] in dbcog.token_maps.COLOR_TOKENS)}\n"
                f"     Awakening: {mod_token_str(lambda t: t.split('-')[0] in dbcog.token_maps.AWAKENING_TOKENS)}\n"
                f"    Evo & Type: {mod_token_str(lambda t: t.split('-')[0] in EVOANDTYPE)}\n"
                f"         Other: {mod_token_str(lambda t: t.split('-')[0] not in dbcog.token_maps.OTHER_HIDDEN_TOKENS)}\n"
@@ -1367,15 +1366,6 @@ class PadInfo(commands.Cog):
               for k, v in tms.MISC_MAP.items() if token in v],
             *["Awakening: " + get_awakening_emoji(k) + ' ' + awakenings[k.value].name_en + additmods(v, token)
               for k, v in tms.AWOKEN_SKILL_MAP.items() if token in v],
-            *["Main attr: " + get_attribute_emoji_by_enum(k, None) + ' ' + k.name.replace("Nil", "None") +
-              additmods(v, token)
-              for k, v in tms.COLOR_MAP.items() if token in v],
-            *["Sub attr: " + get_attribute_emoji_by_enum(False, k) + ' ' + k.name.replace("Nil", "None") +
-              additmods(v, token)
-              for k, v in tms.SUB_COLOR_MAP.items() if token in v],
-            *["Dual attr: " + get_attribute_emoji_by_enum(k[0], k[1]) + ' ' + k[0].name.replace("Nil", "None") +
-              '/' + k[1].name.replace("Nil", "None") + additmods(v, token)
-              for k, v in tms.DUAL_COLOR_MAP.items() if token in v],
             *["Series: " + series[k].name_en + additmods(v, token)
               for k, v in index.series_id_to_pantheon_nickname.items() if token in v],
 
