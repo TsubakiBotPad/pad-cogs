@@ -6,6 +6,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cog_settings import CogSettings
 from tsutils.formatting import normalize_server_name
+from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
 logger = logging.getLogger('red.padbot-cogs.profile')
 
@@ -87,11 +88,11 @@ class Profile(commands.Cog):
         if profile_msg is None:
             return
 
-        warning = inline("{} asked me to send you this message. Report any harassment to the mods.".format(
-            ctx.author.name))
+        warning = "{} asked me to send you this message. Report any harassment to the mods.".format(
+            ctx.author.name)
         msg = warning + "\n" + profile_msg
         await ctx.send(user, msg)
-        await ctx.author.send(inline("Sent your profile to " + user.name))
+        await send_confirmation_message(ctx, "Sent your profile to " + user.name)
 
     @commands.command()
     async def idfor(self, ctx, user: discord.User, server=None):
@@ -110,7 +111,7 @@ class Profile(commands.Cog):
             server = self.settings.getDefaultServer(user_id)
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send(inline('Unsupported server: ' + server))
+            await send_cancellation_message(ctx, 'Unsupported server: ' + server)
             return
         return server
 
@@ -127,7 +128,7 @@ class Profile(commands.Cog):
         line2 = format_name_line(server, pad_name, pad_id)
         line3 = profile_text
 
-        msg = inline(line1) + "\n" + box(line2 + "\n" + line3)
+        msg = line1 + "\n" + box(line2 + "\n" + line3)
         return msg
 
     @commands.group()
@@ -142,11 +143,11 @@ class Profile(commands.Cog):
         """
         server = normalize_server_name(server)
         if server not in SUPPORTED_SERVERS:
-            await ctx.send(inline('Unsupported server: ' + server))
+            await send_cancellation_message(ctx, 'Unsupported server: ' + server)
             return
 
         self.settings.setDefaultServer(ctx.author.id, server)
-        await ctx.send(inline('Set your default server to: ' + server))
+        await send_confirmation_message(ctx, 'Set your default server to: ' + server)
 
     @profile.command(name="id")
     async def _id(self, ctx, server, *, pad_id):
@@ -160,11 +161,11 @@ class Profile(commands.Cog):
 
         clean_id = validate_and_clean_id(pad_id)
         if clean_id is None:
-            await ctx.send(inline('Your ID looks invalid, expected a 9 digit code, got: {}'.format(id)))
+            await send_cancellation_message(ctx, 'Your ID looks invalid, expected a 9 digit code, got: {}'.format(id))
             return
 
         self.settings.setId(ctx.author.id, server, clean_id)
-        await ctx.send(inline('Set your id for {} to: {}'.format(server, format_id(clean_id))))
+        await send_confirmation_message(ctx, 'Set your id for {} to: {}'.format(server, format_id(clean_id)))
 
     @profile.command()
     async def name(self, ctx, server, *name):
@@ -175,7 +176,7 @@ class Profile(commands.Cog):
 
         name = " ".join(name)
         self.settings.setName(ctx.author.id, server, name)
-        await ctx.send(inline('Set your name for {} to: {}'.format(server, name)))
+        await send_confirmation_message(ctx, 'Set your name for {} to: {}'.format(server, name))
 
     @profile.command()
     async def text(self, ctx, server, *text):
@@ -190,11 +191,11 @@ class Profile(commands.Cog):
         text = " ".join(text).strip()
 
         if text == '':
-            await ctx.send(inline('Profile text required'))
+            await send_cancellation_message(ctx, 'Profile text required')
             return
 
         self.settings.setProfileText(ctx.author.id, server, text)
-        await ctx.send(inline('Set your profile for ' + server + ' to:\n' + text))
+        await send_confirmation_message(ctx, 'Set your profile for ' + server + ' to:\n' + text)
 
     @profile.command()
     async def clear(self, ctx, server=None):
@@ -205,11 +206,11 @@ class Profile(commands.Cog):
         user_id = ctx.author.id
         if server is None:
             self.settings.clearProfile(user_id)
-            await ctx.send(inline('Cleared your profile for all servers'))
+            await send_confirmation_message(ctx, 'Cleared your profile for all servers')
         else:
             server = normalize_server_name(server)
             self.settings.clearProfile(user_id, server)
-            await ctx.send(inline('Cleared your profile for ' + server))
+            await send_confirmation_message(ctx, 'Cleared your profile for ' + server)
 
     @profile.command()
     async def search(self, ctx, server, *search_text):
@@ -223,7 +224,7 @@ class Profile(commands.Cog):
 
         search_text = " ".join(search_text).strip().lower()
         if search_text == '':
-            await ctx.send(inline('Search text required'))
+            await send_cancellation_message(ctx, 'Search text required')
             return
 
         # Get all profiles for server
@@ -238,7 +239,7 @@ class Profile(commands.Cog):
 
         template = 'Found {}/{} matching profiles in {} for : {}'
         msg = template.format(len(matching_profiles), len(profiles), server, search_text)
-        await ctx.send(inline(msg))
+        await ctx.send(msg)
 
         if len(matching_profiles) == 0:
             return

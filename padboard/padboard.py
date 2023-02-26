@@ -3,6 +3,7 @@ import cv2
 import discord
 import numpy as np
 from tsutils.formatting import extract_image_url
+from tsutils.user_interaction import send_cancellation_message
 
 from .padvision import NeuralClassifierBoardExtractor
 from io import BytesIO
@@ -85,11 +86,11 @@ class PadBoard(commands.Cog):
         try:
             img_board_nc = await self.nc_classify(image_data)
         except IOError:
-            await ctx.send("PadVision not loaded.")
+            await send_cancellation_message(ctx, "PadVision not loaded.")
             return
 
         if not img_board_nc:
-            await ctx.send(inline("TFLite path not set."))
+            await send_cancellation_message(ctx, "TFLite path not set.")
             return
 
         board_text_nc = ''.join([''.join(r) for r in img_board_nc])
@@ -109,15 +110,15 @@ class PadBoard(commands.Cog):
 
         if not image_url:
             if user:
-                await ctx.send(inline("Couldn't find an image in that user's recent messages."))
+                await send_cancellation_message(ctx, "Couldn't find an image in that user's recent messages.")
             else:
-                await ctx.send(
-                    inline("Couldn't find an image in your recent messages. Upload or link to one and try again"))
+                await send_cancellation_message(ctx,
+                    "Couldn't find an image in your recent messages. Upload or link to one and try again")
             return None
 
         image_data = await self.download_image(image_url)
         if not image_data:
-            await ctx.send(inline("failed to download"))
+            await send_cancellation_message("Failed to download")
             return None
 
         return image_data
