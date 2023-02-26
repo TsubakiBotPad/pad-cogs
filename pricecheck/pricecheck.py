@@ -3,6 +3,7 @@ from io import BytesIO
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cogs.globaladmin import auth_check
+from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
 DISCLAIMER = "**Disclaimer**: This is Lumon's data. Use at your own discretion."
 
@@ -48,21 +49,21 @@ class PriceCheck(commands.Cog):
         """Displays pricing data for a tradable non-collab gem."""
         dbcog = self.bot.get_cog("DBCog")
         if dbcog is None:
-            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
+            await send_cancellation_message(ctx, "Error: Cog not loaded.  Please alert a bot owner.")
             return
         if "gem" not in query.lower():
             query += " gem"
         m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
-            await ctx.send("Monster not found.")
+            await send_cancellation_message(ctx, "Monster not found.")
             return
         base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
             if base_id not in pcs:
                 if m.sell_mp < 100:
-                    await ctx.send("{} does not have PC data.".format(m.name_en))
+                    await send_cancellation_message(ctx, "{} does not have PC data.".format(m.name_en))
                 else:
-                    await ctx.send("{} is not tradable.".format(m.name_en))
+                    await send_cancellation_message(ctx, "{} is not tradable.".format(m.name_en))
                 return
             sc, foot = pcs[base_id]
         pct = PC_TEXT.format(name=m.name_en,
@@ -89,13 +90,13 @@ class PriceCheck(commands.Cog):
         """Adds stamina cost data to a card."""
         dbcog = self.bot.get_cog("DBCog")
         if dbcog is None:
-            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
+            await send_cancellation_message(ctx, "Error: Cog not loaded.  Please alert a bot owner.")
             return
         if "gem" not in query.lower():
             query += " gem"
         m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
-            await ctx.send("Monster not found.")
+            await send_cancellation_message(ctx, "Monster not found.")
             return
         base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
@@ -110,13 +111,13 @@ class PriceCheck(commands.Cog):
         """Adds notes regarding the stamina cost of a card."""
         dbcog = self.bot.get_cog('DBCog')
         if dbcog is None:
-            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
+            await send_cancellation_message(ctx, "Error: Cog not loaded.  Please alert a bot owner.")
             return
         if "gem" not in query.lower():
             query += " gem"
         m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
-            await ctx.send("Monster not found.")
+            await send_cancellation_message(ctx, "Monster not found.")
             return
         base_id = str(dbcog.database.graph.get_base_id(m))
         async with self.config.pcs() as pcs:
@@ -131,20 +132,20 @@ class PriceCheck(commands.Cog):
         """Removes stamina cost data from a card."""
         dbcog = self.bot.get_cog('DBCog')
         if dbcog is None:
-            await ctx.send(inline("Error: Cog not loaded.  Please alert a bot owner."))
+            await send_cancellation_message(ctx, "Error: Cog not loaded.  Please alert a bot owner.")
             return
         if "gem" not in query.lower():
             query += " gem"
         m = await dbcog.find_monster(query, ctx.author.id)
         if not m:
-            await ctx.send("Monster not found.")
+            await send_cancellation_message(ctx, "Monster not found.")
             return
         async with self.config.pcs() as pcs:
             if str(dbcog.database.graph.get_base_id(m)) not in pcs:
-                await ctx.send("{} does not have PC data.".format(m.name_en))
+                await send_cancellation_message(ctx, "{} does not have PC data.".format(m.name_en))
                 return
             del pcs[str(dbcog.database.graph.get_base_id(m))]
-        await ctx.send("Removed PC data from {}.".format(m.name_en))
+        await send_confirmation_message(ctx, "Removed PC data from {}.".format(m.name_en))
 
     @pcadmin.command()
     async def setdmonly(self, ctx, value: bool = True):
