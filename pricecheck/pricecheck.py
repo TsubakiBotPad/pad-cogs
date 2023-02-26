@@ -144,7 +144,7 @@ class PriceCheck(commands.Cog):
                 await ctx.send("{} does not have PC data.".format(m.name_en))
                 return
             del pcs[str(dbcog.database.graph.get_base_id(m))]
-        await ctx.send(inline("Removed PC data from {}.".format(m.name_en)))
+        await ctx.send("Removed PC data from {}.".format(m.name_en))
 
     @pcadmin.command()
     async def setdmonly(self, ctx, value: bool = True):

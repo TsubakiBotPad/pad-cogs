@@ -820,7 +820,7 @@ class PadBuildImage(commands.Cog):
                 if ctx.guild and self.settings.dmOnly(ctx.guild.id):
                     try:
                         await ctx.author.send(file=discord.File(build_io, 'pad_build.png'))
-                        await ctx.send(inline('Sent build to {}'.format(ctx.author)))
+                        await ctx.send('Sent build to {}'.format(ctx.author))
                     except discord.errors.Forbidden as ex:
                         await ctx.send(inline('Failed to send build to {}'.format(ctx.author)))
                 else:

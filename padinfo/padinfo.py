@@ -371,7 +371,7 @@ class PadInfo(commands.Cog):
             await MaterialsViewState.do_query(dbcog, monster)
 
         if mats is None:
-            await ctx.send(inline("This monster has no mats or skillups and isn't used in any evolutions"))
+            await ctx.send("This monster has no mats or skillups and isn't used in any evolutions.")
             return
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dbcog, monster)
@@ -588,7 +588,7 @@ class PadInfo(commands.Cog):
             return
         monster_list = await AllMatsViewState.do_query(dbcog, monster)
         if not monster_list:
-            await ctx.send(inline("This monster is not a mat for anything nor does it have a gem"))
+            await ctx.send("This monster is not a mat for anything nor does it have a gem.")
             return
 
         _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dbcog, monster)
@@ -920,7 +920,7 @@ class PadInfo(commands.Cog):
         """Speak the voice line of a monster into your current chat"""
         voice = ctx.author.voice
         if not voice:
-            await ctx.send(inline('You must be in a voice channel to use this command'))
+            await ctx.send(inline('You must be in a voice channel to use this command.'))
             return
         channel = voice.channel
 
