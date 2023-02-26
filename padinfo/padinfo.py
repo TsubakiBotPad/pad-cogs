@@ -371,7 +371,7 @@ class PadInfo(commands.Cog):
             await MaterialsViewState.do_query(dbcog, monster)
 
         if mats is None:
-            await send_cancellation_message(ctx, "This monster has no mats or skillups and isn't used in any evolutions.")
+            await ctx.send("This monster has no mats or skillups and isn't used in any evolutions.")
             return
 
         alt_monsters = MaterialsViewState.get_alt_monsters_and_evos(dbcog, monster)
@@ -407,7 +407,7 @@ class PadInfo(commands.Cog):
 
         pantheon_list, series_name, base_monster = await PantheonViewState.do_query(dbcog, monster)
         if pantheon_list is None:
-            await send_cancellation_message(ctx, 'Unable to find a pantheon for the result of your query,'
+            await ctx.send('Unable to find a pantheon for the result of your query,'
                            + ' [{}] {}.'.format(monster.monster_id, monster.name_en))
             return
         alt_monsters = PantheonViewState.get_alt_monsters_and_evos(dbcog, monster)
@@ -568,7 +568,7 @@ class PadInfo(commands.Cog):
         queried_props = await IdSearchViewState.do_query(dbcog, query, ctx.author.id, query_settings)
 
         if not queried_props or not queried_props.monster_list:
-            await send_cancellation_message(ctx, "No monster matched.")
+            await ctx.send("No monster matched.")
             return
 
         await self._do_monster_list(ctx, dbcog, query, queried_props, 'ID Search Results',
@@ -588,7 +588,7 @@ class PadInfo(commands.Cog):
             return
         monster_list = await AllMatsViewState.do_query(dbcog, monster)
         if not monster_list:
-            await send_cancellation_message(ctx, "This monster is not a mat for anything nor does it have a gem.")
+            await ctx.send("This monster is not a mat for anything nor does it have a gem.")
             return
 
         _, usedin, _, gemusedin, _, _, _, _ = await MaterialsViewState.do_query(dbcog, monster)
@@ -910,7 +910,7 @@ class PadInfo(commands.Cog):
         monster_list = [dbcog.get_monster(m) for m in history]
 
         if not monster_list:
-            await send_cancellation_message(ctx, 'Did not find any recent queries in history.')
+            await ctx.send('Did not find any recent queries in history.')
             return
         queried_props = MonsterListQueriedProps(monster_list)
         await self._do_monster_list(ctx, dbcog, '', queried_props, 'Result History', StaticMonsterListViewState)
@@ -939,13 +939,13 @@ class PadInfo(commands.Cog):
         if monster is not None:
             voice_id = monster.voice_id_jp if server == 'jp' else monster.voice_id_na
             if voice_id is None:
-                await send_cancellation_message(ctx, "No voice file found for " + monster.name_en)
+                await ctx.send("No voice file found for " + monster.name_en)
                 return
             base_dir = settings.voiceDir()
             voice_file = os.path.join(base_dir, server, '{0:03d}.wav'.format(voice_id))
             header = '{} ({})'.format(MonsterHeader.text_with_emoji(monster), server)
             if not os.path.exists(voice_file):
-                await send_cancellation_message(ctx, 'Could not find voice for ' + header)
+                await ctx.send('Could not find voice for ' + header)
                 return
             await ctx.send('Speaking for ' + header)
             await speech_cog.play_path(channel, voice_file)
@@ -1232,7 +1232,7 @@ class PadInfo(commands.Cog):
 
     @staticmethod
     async def send_id_failure_message(ctx, query: str):
-        await send_cancellation_message(ctx, "Sorry, your query {0} didn't match any results :(\n"
+        await ctx.send("Sorry, your query {0} didn't match any results :(\n"
                        "See <{2}> for "
                        "documentation on `{1.prefix}id`! You can also  run `{1.prefix}idhelp <monster id>` to get "
                        "help with querying a specific monster.".format(inline(query), ctx, IDGUIDE))
@@ -1409,13 +1409,13 @@ class PadInfo(commands.Cog):
         m_info, e_info = await dbcog.find_monster_debug(query)
 
         if m_info.matched_monster is None:
-            await send_cancellation_message(ctx, "No monster matched.")
+            await ctx.send("No monster matched.")
             return
 
         if selected_monster_id is not None:
             selected = {m for m in m_info.valid_monsters if m.monster_id == selected_monster_id}
             if not selected:
-                await send_cancellation_message(ctx, "The requested monster was not found as a result of the query.")
+                await ctx.send("The requested monster was not found as a result of the query.")
                 return
             monster = selected.pop()
         else:
@@ -1522,7 +1522,7 @@ class PadInfo(commands.Cog):
         sds = await self.get_subdungeons(search_text, db)
 
         if not sds:
-            return await send_cancellation_message(ctx, f"No dungeons found")
+            return await ctx.send(f"No dungeons found")
 
         dungeons = self.make_dungeon_dict(sds)
 
@@ -1541,7 +1541,7 @@ class PadInfo(commands.Cog):
         qs = await QuerySettings.extract_raw(ctx.author, self.bot, search_text)
         sds = await self.get_subdungeons(search_text, db)
         if not sds:
-            return await send_cancellation_message(ctx, f"No dungeons found")
+            return await ctx.send(f"No dungeons found")
 
         dungeons = self.make_dungeon_dict(sds)
 
@@ -1574,8 +1574,8 @@ class PadInfo(commands.Cog):
             mon_text = texts[1]
             monster = await dbcog.find_monster(mon_text, ctx.author.id)
             if monster is None:
-                return await send_cancellation_message(ctx, f"No monster found. This command uses `/` or `,` as an "
-                                    f"optional delimiter to specify a leader, maybe try again?")
+                return await ctx.send(f"No monster found. This command uses `/` or `,` as an optional delimiter to "
+                                    f"specify a leader, maybe try again?")
         else:
             dg_text = search_text
             monster = None
@@ -1583,8 +1583,8 @@ class PadInfo(commands.Cog):
         dg_qs = await QuerySettings.extract_raw(ctx.author, self.bot, dg_text)
         sds = await self.get_subdungeons(dg_text, db)
         if not sds:
-            return await send_cancellation_message(ctx, f"No dungeons found. This command uses `/` or `,` as an "
-                                  f"optional delimiter to specify a leader, maybe try again?")
+            return await ctx.send(f"No dungeons found. This command uses `/` or `,` as an optional delimiter to "
+                                  f"specify a leader, maybe try again?")
         
         dungeons = self.make_dungeon_dict(sds)
 
