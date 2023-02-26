@@ -80,6 +80,7 @@ class MonsterModel(BaseModel):
         self.reg_date: datetime = m['reg_date']
         self.attr1: Optional[Attribute] = enum_or_none(Attribute, m['attribute_1_id'], Attribute.Nil)
         self.attr2: Optional[Attribute] = enum_or_none(Attribute, m['attribute_2_id'], Attribute.Nil)
+        self.attr3: Optional[Attribute] = enum_or_none(Attribute, m['attribute_3_id'], Attribute.Nil)
         self.is_equip: bool = any([x.awoken_skill_id == 49 for x in self.awakenings])
         self.is_inheritable: bool = m['is_inheritable']
         self.is_stackable: bool = m['is_stackable']
@@ -119,11 +120,12 @@ class MonsterModel(BaseModel):
 
         self.server_priority = m['server_priority']
 
-        self.drop_id = m['drop_id'],
-        self.mp4_size = m['mp4_size'],
-        self.gif_size = m['gif_size'],
-        self.hq_png_size = m['hq_png_size'],
-        self.hq_gif_size = m['hq_gif_size'],
+        self.drop_id = m['drop_id']
+        self.mp4_size = m['mp4_size']
+        self.gif_size = m['gif_size']
+        self.hq_png_size = m['hq_png_size']
+        self.hq_gif_size = m['hq_gif_size']
+        self.icon_fallback = m['icon_fallback']
 
     @property
     def killers(self):

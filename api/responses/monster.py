@@ -21,6 +21,7 @@ class MonsterResponse(BaseModel):
     atk_scale: int
     attr1: int
     attr2: int
+    attr3: int
     awakenings: List[Awakening]
     base_evo_id: int
     bgm_id: Optional[int]
@@ -93,6 +94,7 @@ class MonsterResponse(BaseModel):
             atk_scale=m.atk_scale,
             attr1=m.attr1.value,
             attr2=m.attr2.value,
+            attr3=m.attr3.value,
             awakenings=[Awakening.from_model(a) for a in m.awakenings],
             base_evo_id=m.base_evo_id,
             bgm_id=m.bgm_id,

@@ -16,31 +16,6 @@ def inverse_map(token_map: Mapping[K, Tuple[V]]) -> Mapping[V, Tuple[K]]:
     return ret
 
 
-COLOR_MAP = {
-    Attribute.Fire: ('r', 'red', 'fire'),
-    Attribute.Water: ('b', 'blue', 'water'),
-    Attribute.Wood: ('g', 'green', 'wood'),
-    Attribute.Light: ('l', 'light', 'yellow'),
-    Attribute.Dark: ('d', 'dark', 'purple'),
-    Attribute.Nil: ('nil', 'x', 'none', 'null', 'white')
-}
-
-SUB_COLOR_MAP = {k: tuple('?' + t for t in v if t != "white") for k, v in COLOR_MAP.items()}
-
-DUAL_COLOR_MAP = {}
-for cid1, cns1 in COLOR_MAP.items():
-    for cid2, cns2 in COLOR_MAP.items():
-        _ts = ()
-        for t1 in cns1:
-            for t2 in cns2:
-                if t2 in ("white",):
-                    continue
-                if len(t1) + len(t2) == 2:
-                    _ts += (t1 + t2,)
-                if (len(t1) == 1) == (len(t2) == 1):
-                    _ts += (t1 + "/" + t2,)
-        DUAL_COLOR_MAP[(cid1, cid2)] = _ts
-
 TYPE_MAP = {
     MonsterType.Evolve: ('evolve',),
     MonsterType.Balanced: ('balanced', 'bal', 'balance'),
@@ -236,6 +211,7 @@ class MiscModifiers(Enum):
     GFESHOP = 'GFE exchangable'
     GFESHOP6S = '6* GFE exchangable'
     GFESHOP7S = '7* GFE exchangable'
+    NONULLATTR = 'Has no null attributes'
 
 
 MISC_MAP = {
@@ -271,6 +247,7 @@ MISC_MAP = {
     MiscModifiers.GFESHOP: ('gfeshop',),
     MiscModifiers.GFESHOP6S: ('6*gfeshop', 'gfeshop6*'),
     MiscModifiers.GFESHOP7S: ('7*gfeshop', 'gfeshop7*'),
+    MiscModifiers.NONULLATTR: ('3ping', '!!!'),
 }
 
 MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
@@ -281,9 +258,6 @@ MULTI_WORD_TOKENS = {tuple(ts.split()) for ts in {
 }}
 
 ALL_TOKEN_DICTS = {
-    *COLOR_MAP.values(),
-    *SUB_COLOR_MAP.values(),
-    *DUAL_COLOR_MAP.values(),
     *TYPE_MAP.values(),
     *AWOKEN_SKILL_MAP.values(),
     *EVO_MAP.values(),
@@ -292,18 +266,11 @@ ALL_TOKEN_DICTS = {
 
 KNOWN_MODIFIERS = {v for vs in ALL_TOKEN_DICTS for v in vs}
 
-COLOR_TOKENS = {
-    *sum(COLOR_MAP.values(), ()),
-    *sum(SUB_COLOR_MAP.values(), ()),
-    *sum(DUAL_COLOR_MAP.values(), ()),
-}
-
 AWAKENING_TOKENS = {*sum(AWOKEN_SKILL_MAP.values(), ())}
 EVO_TOKENS = {*sum(EVO_MAP.values(), ())}
 TYPE_TOKENS = {*sum(TYPE_MAP.values(), ())}
 
 OTHER_HIDDEN_TOKENS = set() \
-    .union(COLOR_TOKENS) \
     .union(AWAKENING_TOKENS) \
     .union(EVO_TOKENS) \
     .union(TYPE_TOKENS)
