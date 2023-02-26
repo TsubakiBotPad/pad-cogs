@@ -13,15 +13,15 @@ class IdSearchViewState(MonsterListViewState):
     VIEW_STATE_TYPE = "IdSearch"
 
     @classmethod
-    async def do_query(cls, dbcog, query, original_author_id, query_settings: QuerySettings) \
+    async def do_query(cls, dbcog, query, original_author_id, qs: QuerySettings) \
             -> Optional[MonsterListQueriedProps]:
         found_monsters, extra_info = await dbcog.find_monsters(query, original_author_id)
 
         if not found_monsters:
             return None
 
-        # print(query_settings.serialize())
-        if query_settings.evogrouping == EvoGrouping.splitevos:
+        # print(qs.serialize())
+        if qs.evogrouping == EvoGrouping.splitevos:
             return found_monsters
         used = set()
         monster_list = []
@@ -36,5 +36,5 @@ class IdSearchViewState(MonsterListViewState):
     @classmethod
     async def query_from_ims(cls, dbcog, ims) -> MonsterListQueriedProps:
         queried_props = await cls.do_query(dbcog, ims['raw_query'], ims['original_author_id'],
-                                           QuerySettings.deserialize(ims['query_settings']))
+                                           QuerySettings.deserialize(ims['qs']))
         return queried_props

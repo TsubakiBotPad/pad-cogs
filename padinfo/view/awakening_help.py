@@ -71,7 +71,7 @@ class AwakeningHelpView:
     @staticmethod
     def embed(state: ClosableEmbedViewState, props: AwakeningHelpViewProps):
         monster = props.monster
-        show_help = state.query_settings.showhelp.value
+        show_help = state.qs.showhelp.value
         token_map = props.token_map
         fields = [
             EmbedField('Normal Awakenings', get_normal_awakenings(monster, show_help, token_map)),
@@ -80,14 +80,14 @@ class AwakeningHelpView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 description='This monster has no awakenings.' if not monster.awakenings else ''
             ),
             embed_author=EmbedAuthor(
                 MonsterHeader.menu_title(monster).to_markdown(),
-                MonsterLink.header_link(monster, query_settings=state.query_settings),
+                MonsterLink.header_link(monster, qs=state.qs),
                 MonsterImage.icon(monster.monster_id)
             ),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings),
+            embed_footer=embed_footer_with_state(state, qs=state.qs),
             embed_fields=fields
         )

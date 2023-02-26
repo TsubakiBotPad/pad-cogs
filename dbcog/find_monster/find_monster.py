@@ -33,9 +33,9 @@ class FindMonster:
         self.index = self.dbcog.indexes[Server(flags['server'])]
 
     async def _process_settings(self, original_query: str) -> str:
-        query_settings = QuerySettings.extract(self.flags, original_query)
+        qs = QuerySettings.extract(self.flags, original_query)
 
-        self.index = await self.dbcog.get_index(query_settings.server)
+        self.index = await self.dbcog.get_index(qs.server)
 
         return re.sub(r'\s*(--|—)\w+(:{.+?})?(?:\s+|$)', ' ', original_query)
 
@@ -81,17 +81,18 @@ class FindMonster:
         lastmodpos = False
 
         # Suffixes
-        for i, value in enumerate(tokenized_query[::-1]):
-            token = await string_to_token(value, self.dbcog)
+        if len(tokenized_query) > 1:
+            for i, value in enumerate(tokenized_query[::-1]):
+                token = await string_to_token(value, self.dbcog)
 
-            if any(self.calc_ratio_modifier(m, token.value.split('-')[0], .1) > MODIFIER_JW_DISTANCE
-                   for m in self.index.suffixes) or isinstance(token, SpecialToken):
-                # TODO: Store this as a list of regexes.  Don't split on '-' anymore.
-                modifiers.append(token)
-            else:
-                if i != 0:
-                    tokenized_query = tokenized_query[:-i]
-                break
+                if any(self.calc_ratio_modifier(m, token.value.split('-')[0], .1) > MODIFIER_JW_DISTANCE
+                       for m in self.index.suffixes) or isinstance(token, SpecialToken):
+                    # TODO: Store this as a list of regexes.  Don't split on '-' anymore.
+                    modifiers.append(token)
+                else:
+                    if i != 0:
+                        tokenized_query = tokenized_query[:-i]
+                    break
 
         # Prefixes
         for i, value in enumerate(tokenized_query):

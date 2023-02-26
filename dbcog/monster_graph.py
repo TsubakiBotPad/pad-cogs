@@ -160,6 +160,8 @@ FROM
 
 SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
+ICON_FALLBACKS = {9806: "01", 9801: "01"}
+
 
 class MonsterGraph:
     def __init__(self, database: DBCogDatabase, debug_monster_ids: Optional[List[int]] = None):
@@ -313,6 +315,7 @@ class MonsterGraph:
                                    collab_id=m.collab_id,
                                    attribute_1_id=m.attribute_1_id,
                                    attribute_2_id=m.attribute_2_id,
+                                   attribute_3_id=m.attribute_3_id,
                                    name_ja=m.name_ja,
                                    name_en=m.name_en,
                                    name_ko=m.name_ko,
@@ -361,7 +364,8 @@ class MonsterGraph:
                                    mp4_size=m.mp4_size,
                                    gif_size=m.gif_size,
                                    hq_png_size=m.hq_png_size,
-                                   hq_gif_size=m.hq_gif_size
+                                   hq_gif_size=m.hq_gif_size,
+                                   icon_fallback=ICON_FALLBACKS.get(m.monster_id)
                                    )
             if not m_model:
                 continue

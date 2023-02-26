@@ -8,6 +8,7 @@ from discordmenu.embed.view import EmbedView
 from discordmenu.emoji.emoji_cache import emoji_cache
 from redbot.core.utils.chat_formatting import humanize_number
 from tsutils.menu.components.footers import embed_footer_with_state
+from tsutils.menu.view.closable_embed import ClosableEmbedViewState
 from tsutils.tsubaki.links import MonsterImage, MonsterLink
 from tsutils.tsubaki.monster_header import MonsterHeader
 
@@ -109,21 +110,22 @@ class ExperienceCurveView:
     VIEW_TYPE = 'ExperienceCurve'
 
     @staticmethod
-    def embed(state, props: ExperienceCurveViewProps):
+    def embed(state: ClosableEmbedViewState, props: ExperienceCurveViewProps):
         regular = get_normal_exp_difference(props.monster, props.low, props.high, props.offset)
         lb = get_lb_exp_difference(props.monster, props.low, props.high, props.offset)
         slb = get_slb_exp_difference(props.monster, props.low, props.high, props.offset)
         is_light = props.monster.full_damage_attr.value == 3
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 title=MonsterHeader.menu_title(props.monster, use_emoji=True),
-                url=MonsterLink.header_link(props.monster, query_settings=state.query_settings),
+                url=MonsterLink.header_link(props.monster, qs=state.qs),
                 description=Text(f'lv{props.low} -> lv{props.high} ('
                                  + (trunc_humanize(props.monster.exp_curve) if props.monster.exp_curve else "no")
                                  + f' curve)'),
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(props.monster.monster_id)),
+            embed_thumbnail=EmbedThumbnail(
+                MonsterImage.icon(props.monster.monster_id, props.monster.icon_fallback)),
             embed_fields=[
                 EmbedField(
                     title='Exact',
@@ -161,4 +163,4 @@ class ExperienceCurveView:
                     inline=True
                 )
             ],
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings))
+            embed_footer=embed_footer_with_state(state, qs=state.qs))

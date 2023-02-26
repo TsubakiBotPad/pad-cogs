@@ -248,9 +248,9 @@ class PADle(commands.Cog):
             all = await self.config.save_daily_scores()
             stats = all[day - 1][1]
             monster = dbcog.get_monster(all[day - 1][0])
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, "")
         global_stats_menu = GlobalStatsMenu.menu()
-        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, query_settings, "",
+        state = GlobalStatsViewState(ctx.author.id, GlobalStatsMenu.MENU_TYPE, qs, "",
                                      current_day=day, num_days=num_days, monster=monster, stats=stats)
         await global_stats_menu.create(ctx, state)
 
@@ -286,10 +286,10 @@ class PADle(commands.Cog):
         dbcog = await self.get_dbcog()
         m = dbcog.get_monster(mode)
         menu = PersonalStatsMenu.menu()
-        query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, "")
-        props = PersonalStatsViewProps(query_settings, ctx.author.name, played, wins / played,
+        qs = await QuerySettings.extract_raw(ctx.author, self.bot, "")
+        props = PersonalStatsViewProps(qs, ctx.author.name, played, wins / played,
                                        cur_streak, max_streak, m)
-        state = ClosableEmbedViewState(ctx.author.id, PersonalStatsMenu.MENU_TYPE, "", query_settings,
+        state = ClosableEmbedViewState(ctx.author.id, PersonalStatsMenu.MENU_TYPE, "", qs,
                                        PersonalStatsView.VIEW_TYPE, props)
         await menu.create(ctx, state)
 
@@ -317,9 +317,9 @@ class PADle(commands.Cog):
         if guess_monster is None:
             close_menu = ClosableEmbedMenu.menu()
             props = PADleMonsterConfirmationViewProps("Monster not found, please try again.")
-            query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
+            qs = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
             state = ClosableEmbedViewState(ctx.author.id, ClosableEmbedMenu.MENU_TYPE, guess,
-                                           query_settings, PADleMonsterConfirmationView.VIEW_TYPE, props)
+                                           qs, PADleMonsterConfirmationView.VIEW_TYPE, props)
             await close_menu.create(ctx, state)
             return
 
@@ -357,7 +357,7 @@ class PADle(commands.Cog):
         points = guess_monster_diff.get_diff_score()
 
         padle_menu = PADleScrollMenu.menu()
-        # query_settings = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
+        # qs = await QuerySettings.extract_raw(ctx.author, self.bot, guess)
         cur_page = ceil(len(todays_guesses) / 5) - 1
         page_guesses = await PADleScrollViewState.do_queries(dbcog,
                                                              todays_guesses[((cur_page) * 5):((cur_page + 1) * 5)])

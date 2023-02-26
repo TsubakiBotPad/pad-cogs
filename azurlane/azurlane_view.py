@@ -14,12 +14,12 @@ ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'sevent
 
 
 class AzurlaneViewState(ViewStateBase):
-    def __init__(self, original_author_id, menu_type, query_settings: QuerySettings,
+    def __init__(self, original_author_id, menu_type, qs: QuerySettings,
                  c, image_idx,
                  extra_state=None, reaction_list=None
                  ):
         super().__init__(original_author_id, menu_type, '', extra_state=extra_state, reaction_list=reaction_list)
-        self.query_settings = query_settings
+        self.qs = qs
         self.menu_type = menu_type
         self.image_idx = image_idx
         self.c = c
@@ -28,7 +28,7 @@ class AzurlaneViewState(ViewStateBase):
         ret = super().serialize()
         ret.update({
             'idx': self.c['id'],
-            'query_settings': self.query_settings.serialize(),
+            'qs': self.qs.serialize(),
             'current_index': self.image_idx,
         })
         return ret
@@ -37,12 +37,12 @@ class AzurlaneViewState(ViewStateBase):
     async def deserialize(cls, alcog, _user_config: UserConfig, ims: dict):
         original_author_id = ims['original_author_id']
         menu_type = ims['menu_type']
-        query_settings = QuerySettings.deserialize(ims.get('query_settings'))
+        qs = QuerySettings.deserialize(ims.get('qs'))
         reaction_list = ims['reaction_list']
         image_idx = ims['current_index']
 
         card = alcog.id_to_card[ims['idx']]
-        return AzurlaneViewState(original_author_id, menu_type, query_settings, card, image_idx,
+        return AzurlaneViewState(original_author_id, menu_type, qs, card, image_idx,
                                  reaction_list=reaction_list)
 
 
@@ -71,10 +71,10 @@ class AzurlaneView:
 
         return EmbedView(
             EmbedMain(
-                color=state.query_settings.embedcolor,
+                color=state.qs.embedcolor,
                 title=f'[{cid}] {name} - {image_title}',
                 url=url
             ),
             embed_body_image=EmbedBodyImage(url),
-            embed_footer=embed_footer_with_state(state, qs=state.query_settings)
+            embed_footer=embed_footer_with_state(state, qs=state.qs)
         )

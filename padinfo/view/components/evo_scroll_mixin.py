@@ -21,7 +21,7 @@ class EvoScrollViewState:
     alt_monster_ids: List[int]
     monster: "MonsterModel"
     alt_monsters: List["MonsterEvolution"]
-    query_settings: QuerySettings
+    qs: QuerySettings
 
     def decrement_monster(self, dbcog, ims: dict):
 
@@ -81,7 +81,7 @@ class EvoScrollView:
             HighlightableLinks(
                 links=[LinkedText(
                     EvoScrollView.alt_fmt(evo),
-                    MonsterLink.header_link(evo.monster, state.query_settings)
+                    MonsterLink.header_link(evo.monster, state.qs)
                 ) for evo in state.alt_monsters],
                 highlighted=next(i for i, me in enumerate(state.alt_monsters)
                                  if state.monster.monster_id == me.monster.monster_id)
