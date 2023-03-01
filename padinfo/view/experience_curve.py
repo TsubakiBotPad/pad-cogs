@@ -125,7 +125,7 @@ class ExperienceCurveView:
                                  + f' curve)'),
             ),
             embed_thumbnail=EmbedThumbnail(
-                MonsterImage.icon(props.monster.monster_id, props.monster.icon_fallback)),
+                MonsterImage.icon(props.monster.monster_id, props.monster.icon_cachebreak)),
             embed_fields=[
                 EmbedField(
                     title='Exact',

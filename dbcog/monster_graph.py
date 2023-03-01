@@ -160,7 +160,7 @@ FROM
 
 SERVER_ID_WHERE_CONDITION = " AND server_id = {}"
 
-ICON_FALLBACKS = {9806: "01", 9801: "01"}
+ICON_CACHEBREAKS = {9806: "01", 9801: "01", 9610: "01"}
 
 
 class MonsterGraph:
@@ -365,7 +365,7 @@ class MonsterGraph:
                                    gif_size=m.gif_size,
                                    hq_png_size=m.hq_png_size,
                                    hq_gif_size=m.hq_gif_size,
-                                   icon_fallback=ICON_FALLBACKS.get(m.monster_id)
+                                   icon_cachebreak=ICON_CACHEBREAKS.get(m.monster_id)
                                    )
             if not m_model:
                 continue
