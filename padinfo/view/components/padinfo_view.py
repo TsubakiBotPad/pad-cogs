@@ -38,4 +38,4 @@ class PadinfoView(PadView):
     @classmethod
     def embed_thumbnail(cls, state: PadinfoViewState) -> Optional[EmbedThumbnail]:
         m = state.monster
-        return EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_fallback))
+        return EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_cachebreak))
