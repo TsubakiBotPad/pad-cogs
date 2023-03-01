@@ -32,4 +32,4 @@ class LinksView:
                 title=MonsterHeader.menu_title(m).to_markdown(),
                 description=LinksView.linksbox(m),
                 url=MonsterLink.header_link(m, qs)),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_fallback)))
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_cachebreak)))

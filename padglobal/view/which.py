@@ -88,7 +88,7 @@ class WhichView:
                 title='Which {}'.format(MonsterHeader.text_with_emoji(m, qs=state.qs)),
                 description=get_description(definition, timestamp, success)
             ),
-            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_fallback)),
+            embed_thumbnail=EmbedThumbnail(MonsterImage.icon(m.monster_id, cachebreak=m.icon_cachebreak)),
             embed_footer=embed_footer_with_state(state, qs=state.qs),
             embed_fields=fields
         )
