@@ -15,4 +15,4 @@ class InvalidMonsterId(KeyError):
 
 class QueryFailure(OperationalError):
     def __str__(self):
-        return "query_many failed. Most of the time this is because you need to update pad-cogs, possibly also tsutils. Possibly it's due to a bug in the software or pipeline code."
+        return "A query failed. Most of the time this is because you need to update pad-cogs, possibly also tsutils. Possibly it's due to a bug in the software or pipeline code."
