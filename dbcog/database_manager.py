@@ -1,6 +1,9 @@
 import logging
 import sqlite3 as lite
+from sqlite3 import OperationalError
 from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
+
+from dbcog.errors import QueryFailure
 
 logger = logging.getLogger('red.padbot-cogs.dbcog.database_manager')
 
@@ -71,7 +74,10 @@ class DBCogDatabase:
             param = ()
 
         cursor = self._con.cursor()
-        cursor.execute(query, param)
+        try:
+            cursor.execute(query, param)
+        except OperationalError:
+            raise QueryFailure
         res = cursor.fetchone()
         if res is not None:
             return DictWithAttrAccess(res)
@@ -79,14 +85,18 @@ class DBCogDatabase:
 
     def query_many(self, query: str, param: Tuple = None, idx_key: Optional[str] = None,
                    as_generator: bool = False, as_type: Type[T] = DictWithAttrAccess) \
-        -> Union[Generator[T, None, None],
-                 List[T],
-                 Dict[Any, T]]:
+            -> Union[Generator[T, None, None],
+                     List[T],
+                     Dict[Any, T]]:
         if param is None:
             param = ()
 
         cursor = self._con.cursor()
-        cursor.execute(query, param)
+        try:
+            cursor.execute(query, param)
+        except OperationalError:
+            raise QueryFailure
+
         if cursor.rowcount == 0:
             return []
         if as_generator:
