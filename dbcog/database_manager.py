@@ -3,7 +3,7 @@ import sqlite3 as lite
 from sqlite3 import OperationalError
 from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
 
-from dbcog.errors import QueryManyFailure
+from dbcog.errors import QueryFailure
 
 logger = logging.getLogger('red.padbot-cogs.dbcog.database_manager')
 
@@ -74,7 +74,10 @@ class DBCogDatabase:
             param = ()
 
         cursor = self._con.cursor()
-        cursor.execute(query, param)
+        try:
+            cursor.execute(query, param)
+        except OperationalError:
+            raise QueryFailure
         res = cursor.fetchone()
         if res is not None:
             return DictWithAttrAccess(res)
@@ -92,7 +95,7 @@ class DBCogDatabase:
         try:
             cursor.execute(query, param)
         except OperationalError:
-            raise QueryManyFailure
+            raise QueryFailure
 
         if cursor.rowcount == 0:
             return []
