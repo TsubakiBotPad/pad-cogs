@@ -900,7 +900,7 @@ class PadGlobal(commands.Cog):
         base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no, m.name_en))
         name = m.monster_id
 
         is_int = re.fullmatch(r'\d+', term)
@@ -910,7 +910,7 @@ class PadGlobal(commands.Cog):
             if not await get_user_confirmation(ctx, "Are you sure you want to {} which info for {} [{}] {}?".format(
                     'edit the' if op == 'edited' else 'add new',
                     get_attribute_emoji_by_monster(m),
-                    m.monster_no_na,
+                    m.monster_no,
                     m.name_en)):
                 return
 
@@ -919,7 +919,7 @@ class PadGlobal(commands.Cog):
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addWhich(name, definition)
         await send_confirmation_message(ctx, "PAD which info successfully {} for [{}] {}.".format(bold(op),
-                                                                                        m.monster_no_na, m.name_en))
+                                                                                        m.monster_no, m.name_en))
 
     @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pwhich_remove(self, ctx, *, monster_id: int):
@@ -929,7 +929,7 @@ class PadGlobal(commands.Cog):
         base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no, m.name_en))
         if not await get_user_confirmation(ctx,
                                            "Are you sure you want to globally remove the which data for {}?".format(
                                                m.name_en)):
@@ -965,7 +965,7 @@ class PadGlobal(commands.Cog):
         base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no, m.name_en))
         mon_id = m.monster_id
 
         # ask for extra confirmation if the term was not an id
@@ -974,7 +974,7 @@ class PadGlobal(commands.Cog):
                                                'Are you sure you want to {} to the which info for {} [{}] {}?'.format(
                                                    operation,
                                                    get_attribute_emoji_by_monster(m),
-                                                   m.monster_no_na,
+                                                   m.monster_no,
                                                    m.name_en)):
                 return
 
@@ -999,7 +999,7 @@ class PadGlobal(commands.Cog):
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
             await send_confirmation_message(ctx, "Successfully {} to PAD which info for [{}] {}.".format(
-                                                                        bold('appended'), m.monster_no_na, m.name_en))
+                                                                        bold('appended'), m.monster_no, m.name_en))
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
@@ -1398,7 +1398,7 @@ class PadGlobal(commands.Cog):
         base_monster = (await self.get_dbcog()).database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no, m.name_en))
         name = m.monster_id
 
         op = 'edited' if name in self.settings.leaderGuide() else 'added'
@@ -1418,7 +1418,7 @@ class PadGlobal(commands.Cog):
         base_monster = dbcog.database.graph.get_base_monster(m)
         if m != base_monster:
             m = base_monster
-            await ctx.send("I think you meant {} for {}.".format(m.monster_no_na, m.name_en))
+            await ctx.send("I think you meant {} for {}.".format(m.monster_no, m.name_en))
         if not await get_user_confirmation(ctx,
                                            "Are you sure you want to globally remove the leaderguide data for {}?".format(
                                                m.name_en)):

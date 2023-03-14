@@ -235,10 +235,10 @@ class MonsterIndex:
             self.modifiers[m] = await self.get_modifiers(m)
 
             # ID
-            self.manual_cardnames[str(m.monster_no_na)].add(m)
+            self.manual_cardnames[str(m.monster_no)].add(m)
             if m.monster_id > 10000:
                 self.manual_cardnames[str(m.monster_id)].add(m)
-            if m.monster_no_na != m.monster_no_jp:
+            if m.on_na and m.on_jp and m.monster_no_na != m.monster_no_jp:
                 self.name_tokens['na' + str(m.monster_no_na)].add(m)
                 self.name_tokens['jp' + str(m.monster_no_jp)].add(m)
 

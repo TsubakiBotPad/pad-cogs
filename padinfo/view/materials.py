@@ -80,7 +80,7 @@ class MaterialsViewState(ViewStateBaseId):
         mats = db_context.graph.evo_mats(monster)
         usedin = db_context.graph.material_of_monsters(monster)
         evo_gem = db_context.graph.evo_gem_monster(monster)
-        gemid = str(evo_gem.monster_no_na) if evo_gem else None
+        gemid = str(evo_gem.monster_no) if evo_gem else None
         gemusedin = db_context.graph.material_of_monsters(evo_gem) if evo_gem else []
         skillups = []
         skillup_evo_count = 0
