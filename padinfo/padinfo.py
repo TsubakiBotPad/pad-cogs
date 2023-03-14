@@ -259,7 +259,7 @@ class PadInfo(commands.Cog):
             return
 
         # id3 messaging stuff
-        if monster and monster.monster_no_na != monster.monster_no_jp:
+        if monster and monster.on_na and monster.on_jp and monster.monster_no_na != monster.monster_no_jp:
             await ctx.send(f"The NA ID and JP ID of this card differ! The JP ID is {monster.monster_id}, so "
                            f"you can query with {ctx.prefix}id jp{monster.monster_id}." +
                            (" Make sure you use the **JP id number** when updating the Google doc!!!!!" if

@@ -209,7 +209,7 @@ class FindMonster:
                 not monster.is_equip,
                 self.dbcog.database.graph.get_adjusted_rarity(monster),
                 -or_prio_score,
-                monster.monster_no_na)
+                monster.monster_no)
 
     def _get_monster_evos(self, matched_mons: Set[MonsterModel], matches: MatchMap) -> Set[MonsterModel]:
         monster_evos = set()
