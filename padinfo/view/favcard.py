@@ -63,4 +63,4 @@ class FavcardView(PadinfoView, EvoScrollView):
     @classmethod
     def embed_thumbnail(cls, state: FavcardViewState) -> Optional[EmbedThumbnail]:
         return EmbedThumbnail(MonsterImage.icon(state.monster.monster_id,
-                                                cachebreak=state.monster.icon_fallback))
+                                                cachebreak=state.monster.icon_cachebreak))

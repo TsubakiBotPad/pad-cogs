@@ -127,7 +127,7 @@ class MonsterModel(BaseModel):
         self.gif_size = m['gif_size']
         self.hq_png_size = m['hq_png_size']
         self.hq_gif_size = m['hq_gif_size']
-        self.icon_fallback = m['icon_fallback']
+        self.icon_cachebreak = m['icon_cachebreak']
 
     @property
     def killers(self):

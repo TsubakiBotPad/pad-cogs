@@ -23,7 +23,8 @@ from tsutils.query_settings.query_settings import QuerySettings
 from tsutils.time import NA_TIMEZONE
 from tsutils.tsubaki.custom_emoji import get_attribute_emoji_by_monster
 from tsutils.tsubaki.links import CLOUDFRONT_URL
-from tsutils.user_interaction import get_user_confirmation, get_user_reaction
+from tsutils.user_interaction import get_user_confirmation, get_user_reaction, send_cancellation_message, \
+    send_confirmation_message
 
 from padglobal.menu.closable_embed import ClosableEmbedMenu
 from padglobal.menu.menu_map import padglobal_menu_map
@@ -543,7 +544,7 @@ class PadGlobal(commands.Cog):
                 msg += ' (corrected to {})'.format(corrected_term)
             await ctx.send(inline(msg))
         else:
-            await ctx.send(inline('No definition found'))
+            await send_cancellation_message(ctx, 'No definition found')
 
     @commands.command()
     @commands.check(check_enabled)
@@ -556,7 +557,7 @@ class PadGlobal(commands.Cog):
                 definition_output = '**{}** : {}'.format(term, definition)
                 await ctx.send(self.emojify(definition_output))
             else:
-                await ctx.send(inline('No definition found'))
+                await send_cancellation_message(ctx, 'No definition found')
             return
 
         msg = self.glossary_to_text(ctx)
@@ -622,14 +623,14 @@ class PadGlobal(commands.Cog):
                                                "Are you sure you want to edit the glossary info for {}?".format(term)):
                 return
         self.settings.addGlossary(term, definition)
-        await ctx.send("PAD glossary term successfully {}.".format(bold(op)))
+        await send_confirmation_message(ctx, "PAD glossary term successfully {}.".format(bold(op)))
 
     @pglossary.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pglossary_remove(self, ctx, *, term):
         """Removes a term from the glossary."""
         term = term.lower()
         if term not in self.settings.glossary():
-            await ctx.send("Glossary item doesn't exist.")
+            await send_cancellation_message(ctx, "Glossary item doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
                                            "Are you sure you want to globally remove the glossary data for {}?".format(
@@ -647,7 +648,7 @@ class PadGlobal(commands.Cog):
             if definition:
                 await ctx.send(self.emojify(definition))
             else:
-                await ctx.send(inline('No mechanics found'))
+                await send_cancellation_message(ctx, 'No mechanics found')
             return
         msg = await self.boss_to_text(ctx)
         for page in pagify(msg):
@@ -720,7 +721,7 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
-            await ctx.send(f"No monster found for `{term}`")
+            await send_cancellation_message(ctx, f"No monster found for `{term}`")
             return
 
         base = dbcog.database.graph.get_base_monster(m)
@@ -735,7 +736,7 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addBoss(base.monster_id, definition)
-        await ctx.send("PAD boss mechanics successfully {}.".format(bold(op)))
+        await send_confirmation_message(ctx, "PAD boss mechanics successfully {}.".format(bold(op)))
 
     @pboss.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pboss_remove(self, ctx, *, term):
@@ -746,13 +747,13 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
-            await ctx.send(f"No monster found for `{term}`.  Make sure you didn't use quotes.")
+            await send_cancellation_message(ctx, f"No monster found for `{term}`.  Make sure you didn't use quotes.")
             return
 
         base = dbcog.database.graph.get_base_monster(m)
 
         if base.monster_id not in self.settings.boss():
-            await ctx.send("Boss mechanics item doesn't exist.")
+            await send_cancellation_message(ctx, "Boss mechanics item doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
                                            "Are you sure you want to globally remove the boss data for {}?".format(
@@ -794,7 +795,7 @@ class PadGlobal(commands.Cog):
         term = term.lower().replace('?', '')
         m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
-            await ctx.send(inline('No monster matched that query'))
+            await send_cancellation_message(ctx, 'No monster matched that query')
             return None, None, None, None
 
         m = db_context.graph.get_base_monster(m)
@@ -819,7 +820,7 @@ class PadGlobal(commands.Cog):
             top_monster = db_context.graph.get_numerical_sort_top_monster(monster)
             return name, SIMPLE_TREE_MSG.format(top_monster.monster_id, top_monster.name_en), None, False
         else:
-            await ctx.send('No which info for {} (#{})'.format(name, monster_id))
+            await send_cancellation_message(ctx, 'No which info for {} (#{})'.format(name, monster_id))
             return None, None, None, None
 
     @commands.command()
@@ -866,7 +867,7 @@ class PadGlobal(commands.Cog):
             ctx.author.name, result_output)
         for page in pagify(result):
             await to_user.send(page)
-        await ctx.send("Sent info on {} to {}".format(name, to_user.name))
+        await send_confirmation_message(ctx, "Sent info on {} to {}".format(name, to_user.name))
 
     @commands.group()
     @auth_check('contentadmin')
@@ -893,7 +894,7 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
-            await ctx.send(f"No monster found for `{term}`")
+            await send_cancellation_message(ctx, f"No monster found for `{term}`")
             return
 
         base_monster = dbcog.database.graph.get_base_monster(m)
@@ -917,7 +918,8 @@ class PadGlobal(commands.Cog):
         definition = definition.replace(u'\u200b', '')
         definition = replace_emoji_names_with_code(self._get_emojis(), definition)
         self.settings.addWhich(name, definition)
-        await ctx.send("PAD which info successfully {} for [{}] {}.".format(bold(op), m.monster_no, m.name_en))
+        await send_confirmation_message(ctx, "PAD which info successfully {} for [{}] {}.".format(bold(op),
+                                                                                        m.monster_no, m.name_en))
 
     @pwhich.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def pwhich_remove(self, ctx, *, monster_id: int):
@@ -935,7 +937,7 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         if name not in self.settings.which():
-            await ctx.send("Which item doesn't exist.")
+            await send_cancellation_message(ctx, "Which item doesn't exist.")
             return
 
         self.settings.rmWhich(name)
@@ -957,7 +959,7 @@ class PadGlobal(commands.Cog):
         term = term.lower()
         m = await dbcog.find_monster(term, ctx.author.id)
         if m is None:
-            await ctx.send(f"No monster found for `{term}`")
+            await send_cancellation_message(ctx, f"No monster found for `{term}`")
             return
 
         base_monster = dbcog.database.graph.get_base_monster(m)
@@ -981,7 +983,7 @@ class PadGlobal(commands.Cog):
                                            "No which info exists for {}. Would you like to add a new entry?".format(
                                                m.name_en)):
                 self.settings.addWhich(mon_id, addition)
-                await ctx.send("PAD which info successfully {}.".format(bold('added')))
+                await send_confirmation_message(ctx, "PAD which info successfully {}.".format(bold('added')))
             return
 
         definition, _ = self.settings.which().get(mon_id, None)
@@ -992,12 +994,12 @@ class PadGlobal(commands.Cog):
 
         if operation == 'prepend':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(addition, definition))
-            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('prepended'), m.monster_no,
-                                                                                   m.name_en))
+            await send_confirmation_message(ctx, "Successfully {} to PAD which info for [{}] {}.".format(
+                                                                        bold('prepended'), m.monster_no_na, m.name_en))
         elif operation == 'append':
             self.settings.addWhich(mon_id, '{}\n\n{}'.format(definition, addition))
-            await ctx.send("Successfully {} to PAD which info for [{}] {}.".format(bold('appended'), m.monster_no,
-                                                                                   m.name_en))
+            await send_confirmation_message(ctx, "Successfully {} to PAD which info for [{}] {}.".format(
+                                                                        bold('appended'), m.monster_no, m.name_en))
         else:
             raise KeyError("Invalid operation: Must be \'prepend\' or \'append\'")
 
@@ -1080,7 +1082,7 @@ class PadGlobal(commands.Cog):
         """Remove the emoji server by ID"""
         ess = self.settings.emojiServers()
         if server_id not in ess:
-            await ctx.send("That emoji server is not set.")
+            await send_cancellation_message(ctx, "That emoji server is not set.")
             return
         ess.remove(server_id)
         self.settings.save_settings()
@@ -1361,14 +1363,14 @@ class PadGlobal(commands.Cog):
                                                    term)):
                 return
         self.settings.addDungeonGuide(term, definition)
-        await ctx.send("PAD dungeon guide successfully {}.".format(bold(op)))
+        await send_confirmation_message(ctx, "PAD dungeon guide successfully {}.".format(bold(op)))
 
     @dungeon.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def dungeon_remove(self, ctx, term: str):
         """Removes a dungeon guide from the [p]guide command"""
         term = term.lower()
         if term not in self.settings.dungeonGuide():
-            await ctx.send("DungeonGuide doesn't exist.")
+            await send_cancellation_message(ctx, "DungeonGuide doesn't exist.")
             return
         if not await get_user_confirmation(ctx,
                                            "Are you sure you want to globally remove the dungeonguide data for {}?".format(
@@ -1406,7 +1408,7 @@ class PadGlobal(commands.Cog):
                                                    m.name_en)):
                 return
         self.settings.addLeaderGuide(name, definition)
-        await ctx.send("PAD leader guide info successfully {}.".format(bold(op)))
+        await send_confirmation_message(ctx, "PAD leader guide info successfully {}.".format(bold(op)))
 
     @leader.command(name='remove', aliases=['rm', 'delete', 'del'])
     async def leader_remove(self, ctx, monster_id: int):
@@ -1424,7 +1426,7 @@ class PadGlobal(commands.Cog):
         name = m.monster_id
 
         if name not in self.settings.leaderGuide():
-            await ctx.send("LeaderGuide doesn't exist.")
+            await send_cancellation_message(ctx, "LeaderGuide doesn't exist.")
             return
 
         self.settings.rmLeaderGuide(name)

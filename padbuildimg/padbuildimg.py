@@ -14,6 +14,7 @@ from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline
 from tsutils.cog_settings import CogSettings
 from tsutils.tsubaki.links import CLOUDFRONT_URL
+from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
 HELP_MSG = """
 ^buildimg <build_shorthand>
@@ -820,14 +821,14 @@ class PadBuildImage(commands.Cog):
                 if ctx.guild and self.settings.dmOnly(ctx.guild.id):
                     try:
                         await ctx.author.send(file=discord.File(build_io, 'pad_build.png'))
-                        await ctx.send(inline('Sent build to {}'.format(ctx.author)))
+                        await ctx.send('Sent build to {}'.format(ctx.author))
                     except discord.errors.Forbidden as ex:
-                        await ctx.send(inline('Failed to send build to {}'.format(ctx.author)))
+                        await send_cancellation_message(ctx, 'Failed to send build to {}'.format(ctx.author))
                 else:
                     try:
                         await ctx.send(file=discord.File(build_io, 'pad_build.png'))
                     except discord.errors.Forbidden as ex:
-                        await ctx.send(inline("Failed to send build. (Insufficient Permisisons)"))
+                        await send_cancellation_message(ctx, "Failed to send build. (Insufficient Permissions)")
         else:
             await ctx.send(box('Invalid build, see ^helpbuildimg'))
         return 0
@@ -852,7 +853,7 @@ class PadBuildImage(commands.Cog):
             self.settings.setBuildImgParamsByKey(param_key, param_value)
             await ctx.send(box('Set {} to {}'.format(param_key, param_value)))
         else:
-            await ctx.send(box('Invaalid parameter {}'.format(param_key)))
+            await ctx.send(box('Invalid parameter {}'.format(param_key)))
 
     @commands.command()
     @checks.is_owner()
@@ -861,7 +862,7 @@ class PadBuildImage(commands.Cog):
         Refresh assets folder
         """
         async with ctx.typing():
-            await ctx.send('Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
+            await send_confirmation_message(ctx, 'Downloading assets to {}'.format(self.settings.buildImgParams().ASSETS_DIR))
             dbcog = await self.get_dbcog()
             awk_ids = dbcog.database.awoken_skill_map.keys()
             await self.settings.downloadAllAssets(awk_ids)

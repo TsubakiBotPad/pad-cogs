@@ -8,7 +8,8 @@ import pymysql
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import box, inline, pagify
 from tsutils.cog_settings import CogSettings
-from tsutils.user_interaction import send_repeated_consecutive_messages
+from tsutils.user_interaction import send_repeated_consecutive_messages, send_cancellation_message, \
+    send_confirmation_message
 
 logger = logging.getLogger('red.padbot-cogs.pipelineui')
 
@@ -85,7 +86,7 @@ class PipelineUI(commands.Cog):
                 u = int(user)
                 self.settings.rmAdmin(u)
             except ValueError:
-                await ctx.send(inline("Invalid user id."))
+                await send_cancellation_message(ctx, "Invalid user id.")
                 return
         await ctx.tick()
 
@@ -157,21 +158,23 @@ class PipelineUI(commands.Cog):
     @is_padguidedb_admin()
     async def loaddungeon(self, ctx, server: str, dungeon_id: int, dungeon_floor_id: int, queues: int = 1):
         if queues > 5:
-            await ctx.send("You must send less than 5 queues.")
+            await send_cancellation_message(ctx, "You must send less than 5 queues.")
             return
         elif self.queue_size + queues > 60:
-            await ctx.send("The size of the queue cannot exceed 60.  It is currently {}.".format(self.queue_size))
+            await send_cancellation_message(ctx, "The size of the queue cannot exceed 60.  It is currently {}.".format(
+                                                    self.queue_size))
             return
         elif not self.settings.hasUserInfo(server):
-            await ctx.send("There is no account associated with server '{}'.".format(server.upper()))
+            await send_cancellation_message(ctx, "There is no account associated with server '{}'.".format(
+                                                    server.upper()))
             return
 
         self.queue_size += queues
         if queues == 1:
-            await ctx.send(inline('Queueing load in slot {}'.format(self.queue_size)))
+            await send_confirmation_message(ctx, 'Queueing load in slot {}'.format(self.queue_size))
         else:
-            await ctx.send(
-                inline('Queueing loads in slots {}-{}'.format(self.queue_size - queues + 1, self.queue_size)))
+            await send_confirmation_message(ctx, 'Queueing loads in slots {}-{}'.format(self.queue_size - queues + 1,
+                                                                                   self.queue_size))
 
         event_loop = asyncio.get_event_loop()
         for queue in range(queues):
@@ -200,8 +203,8 @@ class PipelineUI(commands.Cog):
                 await send_repeated_consecutive_messages(ctx, inline(
                     'Load for {} {} {} failed'.format(server, dungeon_id, dungeon_floor_id)))
             else:
-                await send_repeated_consecutive_messages(ctx, inline(
-                    'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id)))
+                await send_repeated_consecutive_messages(ctx,
+                    'Load for {} {} {} finished'.format(server, dungeon_id, dungeon_floor_id))
             self.queue_size -= 1
 
     @pipelineui.command()
@@ -278,11 +281,11 @@ class PipelineUI(commands.Cog):
 
     async def runetl(self, ctx, *args):
         if self.pipeline_lock.locked():
-            await ctx.send(inline('Manual pipeline already running'))
+            await send_cancellation_message(ctx, 'Manual pipeline already running')
             return
 
         async with self.pipeline_lock:
-            await ctx.send(inline('Running pipeline: this could take a while'))
+            await ctx.send('Running pipeline: this could take a while')
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.fullETLFile(),
@@ -295,20 +298,20 @@ class PipelineUI(commands.Cog):
 
         if b"Pipeline completed successfully!" not in stderr:
             logger.error("Pipeline Error:\n" + stderr.decode())
-            await ctx.send(inline('Pipeline failed'))
+            await send_cancellation_message(ctx,'Pipeline failed')
         else:
-            await ctx.send(inline('Pipeline finished'))
+            await send_confirmation_message(ctx, 'Pipeline finished')
 
     @pipeline.command()
     @is_padguidedb_admin()
     async def processdungeon(self, ctx):
         """Runs the dungeon processor script."""
         if self.dungeon_lock.locked():
-            await ctx.send(inline('Dungeon processor already running'))
+            await send_cancellation_message(ctx, 'Dungeon processor already running')
             return
 
         async with self.dungeon_lock:
-            await ctx.send(inline('Running dungeon processor: this could take a while'))
+            await ctx.send('Running dungeon processor: this could take a while')
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.dungeonProcessorFile(),
@@ -319,18 +322,18 @@ class PipelineUI(commands.Cog):
             stdout, stderr = await process.communicate()
             for page in pagify(str(stderr)):
                 await ctx.send(box(page))
-        await ctx.send(inline('Dungeon processing finished'))
+        await send_confirmation_message(ctx, 'Dungeon processing finished')
 
     @pipeline.command()
     @is_padguidedb_admin()
     async def extractimages(self, ctx):
         """Runs a job which downloads image updates, generates full images, and portraits."""
         if self.extract_images_lock.locked():
-            await ctx.send(inline('Extract images already running'))
+            await send_cancellation_message(ctx, 'Extract images already running')
             return
 
         async with self.extract_images_lock:
-            await ctx.send(inline('Running image extract pipeline: this could take a while'))
+            await ctx.send('Running image extract pipeline: this could take a while')
             process = await asyncio.create_subprocess_exec(
                 'bash',
                 self.settings.imageUpdateFile(),
@@ -342,9 +345,9 @@ class PipelineUI(commands.Cog):
 
             if stderr:
                 logger.error("Image Extract Error:\n" + stderr.decode())
-                await ctx.send(inline('Image extract failed'))
+                await send_cancellation_message(ctx, 'Image extract failed')
                 return
-        await ctx.send(inline('Image extract finished'))
+        await send_confirmation_message(ctx, 'Image extract finished')
 
     @pipelineui.command()
     @checks.is_owner()

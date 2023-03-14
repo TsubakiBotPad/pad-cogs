@@ -4,6 +4,7 @@ import discord
 from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import inline
 from tsutils.cog_settings import CogSettings
+from tsutils.user_interaction import send_cancellation_message, send_confirmation_message
 
 
 class Feedback(commands.Cog):
@@ -56,9 +57,9 @@ class Feedback(commands.Cog):
         try:
             await feedback_channel.send(embed=e)
         except:
-            await ctx.send(inline("I'm unable to deliver your message. Sorry."))
+            await send_cancellation_message(ctx, "I'm unable to deliver your message. Sorry.")
         else:
-            await ctx.send(("Your message has been sent."
+            await send_confirmation_message(ctx, ("Your message has been sent."
                             " Thanks so much for helping to improve Tsubaki Bot!")
                            + success_message)
 
