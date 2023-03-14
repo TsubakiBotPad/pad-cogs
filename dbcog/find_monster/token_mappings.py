@@ -306,7 +306,7 @@ PLUS_AWOKENSKILL_MAP = {
 }
 
 NUMERIC_MONSTER_ATTRIBUTE_ALIASES = {
-    (('monster_no_na',),): ('monsterid', 'monsterno', 'monster#'),
+    (('monster_no',),): ('monsterid', 'monsterno', 'monster#'),
     (('base_evo_id',),): ('baseid',),
     (('superawakening_count',),): ('sacount',),
     (('leader_skill', 'leader_skill_id'),): ('lsid',),

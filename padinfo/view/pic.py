@@ -34,11 +34,11 @@ class PicView(IdBaseView, EvoScrollView):
             'Animation',
             Box(
                 Box(
-                    LinkedText(f'MP4 ({filesize(m.mp4_size)})', MonsterImage.video(m.monster_no_jp)),
+                    LinkedText(f'MP4 ({filesize(m.mp4_size)})', MonsterImage.video(m.monster_id)),
                     Text('|'),
-                    LinkedText(f'GIF ({filesize(m.gif_size)})', MonsterImage.gif(m.monster_no_jp)),
+                    LinkedText(f'GIF ({filesize(m.gif_size)})', MonsterImage.gif(m.monster_id)),
                     Text('|'),
-                    LinkedText(f'GIF ({filesize(m.hq_gif_size)})', MonsterImage.hq_gif(m.monster_no_jp)),
+                    LinkedText(f'GIF ({filesize(m.hq_gif_size)})', MonsterImage.hq_gif(m.monster_id)),
                     delimiter=' '
                 )
             ),

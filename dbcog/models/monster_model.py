@@ -23,6 +23,8 @@ class MonsterModel(BaseModel):
         self.monster_no_jp: int = m['monster_no_jp']
         self.monster_no_na: int = m['monster_no_na']
         self.monster_no_kr: int = m['monster_no_kr']
+        self.monster_no = self.monster_no_na or self.monster_no_jp
+
         self.base_evo_id: int = m['base_evo_id']
 
         self.on_jp: bool = m['on_jp']

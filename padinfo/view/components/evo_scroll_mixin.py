@@ -96,4 +96,4 @@ class EvoScrollView:
             fmt = "{}"
         else:
             fmt = "⌊{}⌋"
-        return fmt.format(evo.monster.monster_no_na)
+        return fmt.format(evo.monster.monster_no)

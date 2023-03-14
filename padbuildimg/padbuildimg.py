@@ -532,7 +532,7 @@ class PadBuildImageGenerator(object):
                         else:
                             result_card['GOLD_STAR'] = False
                     result_card[
-                        'MNO'] = card.monster_no_na if card.monster_no_na != card.monster_id else card.monster_no_jp
+                        'MNO'] = card.monster_no
                     result_card['ID'] = card.monster_id
             elif tok.type == 'P_ALL':
                 if tok.value >= 297:
