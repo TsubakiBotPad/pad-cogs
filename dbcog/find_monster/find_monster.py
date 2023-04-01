@@ -198,7 +198,7 @@ class FindMonster:
                 not monster.is_equip if not {m[0] for m in matches[monster].mod}.intersection(
                     {'new', 'base'}) else True,
                 # Match na on id overlap
-                bool(monster.monster_id > 10000 and re.search(r"\d{4}", " ".join(tokenized_query))),
+                bool(monster.monster_id > 50000 and re.search(r"\d{4}", " ".join(tokenized_query))),
                 SERIES_TYPE_PRIORITY.get(monster.series.series_type),
                 monster.on_na if monster.series.series_type == "collab" else True,
                 self.dbcog.database.graph.monster_is_rem_evo(monster),

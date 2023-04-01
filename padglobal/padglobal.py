@@ -811,6 +811,7 @@ class PadGlobal(commands.Cog):
             return m, definition, timestamp, True
 
         monster = dbcog.get_monster(monster_id)
+        name = monster.name_en
 
         if db_context.graph.monster_is_mp_evo(monster) and not monster.in_rem:
             return name, MP_BUY_MSG.format(ctx.prefix), None, False
@@ -1035,7 +1036,7 @@ class PadGlobal(commands.Cog):
         items = list()
         monsters = []
         for w in self.settings.which():
-            w %= 10000
+            w %= 50000
 
             m = (await self.get_dbcog()).get_monster(w)
             name = m.name_en.split(', ')[-1]

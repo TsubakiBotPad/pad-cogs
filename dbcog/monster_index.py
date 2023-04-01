@@ -236,7 +236,7 @@ class MonsterIndex:
 
             # ID
             self.manual_cardnames[str(m.monster_no)].add(m)
-            if m.monster_id > 10000:
+            if m.monster_id > 50000:
                 self.manual_cardnames[str(m.monster_id)].add(m)
             if m.on_na and m.on_jp and m.monster_no_na != m.monster_no_jp:
                 self.name_tokens['na' + str(m.monster_no_na)].add(m)
@@ -577,9 +577,9 @@ class MonsterIndex:
             modifiers.update(MISC_MAP[MiscModifiers.INNA])
             if not monster.on_jp:
                 modifiers.update(MISC_MAP[MiscModifiers.ONLYNA])
-        if monster.monster_id + 10000 in self.graph.graph_dict[monster.server_priority].nodes:
+        if monster.monster_id + 50000 in self.graph.graph_dict[monster.server_priority].nodes:
             modifiers.add("idjp")
-        if monster.monster_id > 10000:
+        if monster.monster_id > 50000:
             modifiers.add("idna")
 
         # Has Gem
